@@ -1,0 +1,42 @@
+/////////////////////////////////
+Name: Thresa Kelly
+Date: 9/29/2022
+/////////////////////////////////
+
+Python tutorial: 
+    https://code.visualstudio.com/docs/python/python-tutorial 
+
+Verify python installation: 
+
+    # Linux/macOS
+    python3 --version
+
+    # Windows
+    py -3 --version
+
+Enter the .venv python enviornment: 
+
+    >> & <path>/.venv/Scripts/Activate.ps1
+    example: >> & C:/git/Python-POD-API/.venv/Scripts/Activate.ps1
+
+If the activate command generates the message "Activate.ps1 is not digitally signed. 
+You cannot run this script on the current system.", then you need to temporarily change 
+the PowerShell execution policy to allow scripts to run.
+
+    >> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+
+Install python packages while in .venv:
+
+    # macOS
+    >> python3 -m pip install PACKAGENAME
+
+    # Windows (may require elevation)
+    >> python -m pip install PACKAGENAME
+
+    # Linux (Debian)
+    >> apt-get install python3-tk
+    >> python3 -m pip install PACKAGENAME
+
+Python packages installed to .venv (as of 9/29/2022):
+    - numpy
+    - pyserial 
