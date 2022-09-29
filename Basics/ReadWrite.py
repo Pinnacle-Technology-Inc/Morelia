@@ -15,20 +15,29 @@ if not portList:
     sys.exit('[!] No COM ports in use. Exiting program.')
 
 # request port from user
-portNum = input('Select port: COM')
+comNum = input('Select port: COM')
 
 # search for port
 portUse = None
 for port in portList:
-    if port.startswith('COM'+portNum):
-        portUse = port
+    if port.startswith('COM'+comNum):
+        portUse = 'COM' + comNum 
 
 # check if port exists
 if portUse==None : 
     sys.exit('[!] COM port does not exist. Exiting program.')
 
-print('Using: ', portUse)
+# setup serial
+serialInst = serial.Serial()
+serialInst.baudrate = 96000 # ? 
+serialInst.port = portUse
+serialInst.open()
 
+# read!
+while True:
+    if serialInst.in_waiting : 
+        packet = serialInst.readline()
+        print(packet)
 
 # # read from the board
 # def Read():
@@ -50,5 +59,4 @@ print('Using: ', portUse)
 #     D     = "0x44"          # 3D is the checksum value, in ASCII numerals
 #     ETX   = "0x03"          # indicates the end of a packet
 #     # Because the packets are all ASCII character encoded, there should never be a 0x02 or 0x03 
-
 #     pass 
