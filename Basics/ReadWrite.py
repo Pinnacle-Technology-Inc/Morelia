@@ -8,13 +8,28 @@ portList = []
 for port in allPorts:
     portList.append(str(port))
     print(str(port))
-    
+
 # check if the list is empty 
 if not portList:
     print('[!] No COM ports in use')
     # TODO end program 
 
 # request port from user
+portNum = input('Select port: COM')
+
+# search for port
+portUse = None
+for port in portList:
+    if port.startswith('COM'+portNum):
+        portUse = port
+
+# check if port exists
+if portUse==None : 
+    print('[!] COM port does not exist')
+    # TODO end program 
+
+print('Using: ', portUse)
+
 
 # # read from the board
 # def Read():
