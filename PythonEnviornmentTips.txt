@@ -44,7 +44,7 @@ Install python packages while in .venv:
 Python packages installed to .venv (as of 9/29/2022):
     - numpy
     - pyserial 
-
+    - os-sys
 
 Useful links:
     - Python tutorial: https://code.visualstudio.com/docs/python/python-tutorial 
