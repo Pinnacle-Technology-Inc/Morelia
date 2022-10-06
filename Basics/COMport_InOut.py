@@ -89,18 +89,6 @@ class COM_io :
                 # read packet up to  and including newline ('\n')
                 return(self.serialInst.readline())
     
-
-    def ReadNow(self, numBytes) : 
-        # do not continue of serial is not open 
-        if(self.IsSerialClosed()) :
-            return(None)
-        # get bytes if in waiting 
-        if self.serialInst.in_waiting : 
-            # read packet
-            return(self.serialInst.read(numBytes) )
-        # else return None 
-        return(None)
-
     def Read(self, numBytes):
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
