@@ -1,5 +1,4 @@
 import serial.tools.list_ports
-import sys 
 
 # get all COM ports in use
 allPorts = serial.tools.list_ports.comports()
@@ -12,7 +11,7 @@ for port in allPorts:
 
 # check if the list is empty 
 if not portList:
-    sys.exit('[!] No COM ports in use. Exiting program.')
+    raise Exception('[!] No COM ports in use. Exiting program.')
 
 # request port from user
 comNum = input('Select port: COM')
@@ -25,7 +24,7 @@ for port in portList:
 
 # check if port exists
 if portUse==None : 
-    sys.exit('[!] COM port does not exist. Exiting program.')
+    raise Exception('[!] COM port does not exist. Exiting program.')
 
 # setup serial
 serialInst = serial.Serial()
