@@ -1,4 +1,3 @@
-from struct import pack
 from POD_io import COM_io
 
 # get port list 
