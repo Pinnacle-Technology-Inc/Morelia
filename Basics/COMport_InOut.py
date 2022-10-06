@@ -79,24 +79,16 @@ class COM_io :
         else :
             return(None)
 
-    def ReadLineNow(self) : 
+    def ReadLine(self):
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
             return(None)
-        # get packet if in waiting 
-        if self.serialInst.in_waiting : 
-            # read packet up to  and including newline ('\n')
-            return(self.serialInst.readline() )
-        # else return None 
-        return(None)
-
-    def ReadLine(self):
+        # wait until port is in waiting, then read line 
         while True :
-            # get packiet 
-            packet = self.ReadLineNow()
-            # return when packet is not None 
-            if(packet) :
-                return(packet) 
+            if self.serialInst.in_waiting : 
+                # read packet up to  and including newline ('\n')
+                return(self.serialInst.readline())
+    
 
     def ReadNow(self, numBytes) : 
         # do not continue of serial is not open 
@@ -110,34 +102,15 @@ class COM_io :
         return(None)
 
     def Read(self, numBytes):
+        # do not continue of serial is not open 
+        if(self.IsSerialClosed()) :
+            return(None)
+        # wait until port is in waiting, then read 
         while True :
-            # get packet 
-            packet = self.ReadNow(numBytes)
-            # return when packet is not None 
-            if(packet) :
-                return(packet) 
+            if self.serialInst.in_waiting : 
+                # read packet
+                return(self.serialInst.read(numBytes) )
 
     def Write(self, message) : 
         if(self.IsSerialOpen()) : 
             self.serialInst.write(message)
-
-
-# =================== NOTE ===================
-
-# # write a message to the board
-# def Write(msg):
-#     pass
-
-# # write ping command to device, and device shoudld return the same string
-# def Ping():
-    
-#     # basic pod ping command: STX 0 0 0 2 3 D ETX
-#     # Sending that hex string to a pod device should cause it to return the same string
-#     STX   = "0x02"          # indicates the start of a packet
-#     ZERO  = "0x30"          # vvv
-#     TWO   = "0x32"          # 0002 is the command number in ASCII numerals
-#     THREE = "0x33"          # vvv
-#     D     = "0x44"          # 3D is the checksum value, in ASCII numerals
-#     ETX   = "0x03"          # indicates the end of a packet
-#     # Because the packets are all ASCII character encoded, there should never be a 0x02 or 0x03 
-#     pass 
