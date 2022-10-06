@@ -1,9 +1,10 @@
+from struct import pack
 import serial.tools.list_ports
 
 # make class that
-# 1. shows comports (static method)
-# 2. opens COM (constructor)
-# 3. reads from COM
+# 1. shows comports (static method) DONE
+# 2. opens COM (constructor) DONE
+# 3. reads from COM DONE 
 # 4. write to COM
 
 class COM_io : 
@@ -11,12 +12,30 @@ class COM_io :
     # class variables 
     serialInst = serial.Serial()
 
+    @staticmethod
+    def GetCOMportsList() : 
+        # get all COM ports in use
+        allPorts = serial.tools.list_ports.comports()
+        # convert COM ports to string list 
+        portList = []
+        for port in allPorts:
+            portList.append(str(port))
+            print(str(port))
+        # end
+        return(portList)
+
     def __init__(self, port, baudrate=96000) :
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 
+    def __del__(self):
+        # close port
+        self.CloseSerialPort()
+
     def CloseSerialPort(self):
-        self.serialInst.close()
+        # close port if open 
+        if(self.serialInst.isOpen()) :
+            self.serialInst.close()
 
     def OpenSerialPort(self, port, baudrate=96000) : 
         # close current port if it is open
@@ -51,23 +70,23 @@ class COM_io :
         # end 
         return(portName)
 
-    @staticmethod
-    def GetCOMportsList() : 
-        # get all COM ports in use
-        allPorts = serial.tools.list_ports.comports()
-        # convert COM ports to string list 
-        portList = []
-        for port in allPorts:
-            portList.append(str(port))
-            print(str(port))
-        # end
-        return(portList)
+    def ReadLineNow(self) : 
+        # get packet if in waiting 
+        if self.serialInst.in_waiting : 
+            return(self.serialInst.readline() )
+        # else return None 
+        return(None)
+
+    def ReadLineWhenReady(self):
+        while True :
+            # get packiet 
+            packet = self.ReadLineNow()
+            # return when packet is not None 
+            if(packet) :
+                return(packet) 
+    
 
 # =================== NOTE ===================
-
-# # read from the board
-# def Read():
-#     pass
 
 # # write a message to the board
 # def Write(msg):
