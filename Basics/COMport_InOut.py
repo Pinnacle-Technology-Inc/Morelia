@@ -99,6 +99,16 @@ class COM_io :
                 # read packet
                 return(self.serialInst.read(numBytes) )
 
+    def ReadUntil(self, eol) :
+        # do not continue of serial is not open 
+        if(self.IsSerialClosed()) :
+            return(None)
+        # wait until port is in waiting, then read 
+        while True :
+            if self.serialInst.in_waiting : 
+                # read packet until end of line (eol) character 
+                return(self.serialInst.read_until(eol) )
+
     def Write(self, message) : 
         if(self.IsSerialOpen()) : 
             self.serialInst.write(message)
