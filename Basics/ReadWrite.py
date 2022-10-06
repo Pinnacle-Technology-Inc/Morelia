@@ -1,4 +1,4 @@
-from POD_io import COM_io
+from COMport_InOut import COM_io
 
 # get port list 
 portList = COM_io.GetCOMportsList()
