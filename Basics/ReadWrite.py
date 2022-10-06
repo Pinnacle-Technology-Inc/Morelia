@@ -30,5 +30,6 @@ print('serial port in use:', com.GetPortName())
 
 # read!
 while True:
-    packet = com.ReadLineWhenReady()
+    # packet = com.ReadLine()
+    packet = com.Read(7)
     print(packet)

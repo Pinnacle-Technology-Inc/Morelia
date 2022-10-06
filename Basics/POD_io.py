@@ -25,14 +25,22 @@ class COM_io :
         # close port 
         self.CloseSerialPort()
 
+    def IsSerialOpen(self) : 
+        # true if serial port is open, false otherwise 
+        return(self.serialInst.isOpen())
+
+    def IsSerialClosed(self) :
+        # true if serial port is closed, false otherwise 
+        return(not self.IsSerialOpen())
+
     def CloseSerialPort(self):
         # close port if open 
-        if(self.serialInst.isOpen()) :
+        if(self.IsSerialOpen()) :
             self.serialInst.close()
 
     def OpenSerialPort(self, port, baudrate=9600) : 
         # close current port if it is open
-        if(self.serialInst.isOpen()) : 
+        if(self.IsSerialOpen()) : 
             self.CloseSerialPort()
         # get name 
         name = self.BuildPortName(port)
@@ -65,7 +73,7 @@ class COM_io :
 
     def GetPortName(self) : 
         # return the port name if a port is open
-        if(self.serialInst.isOpen()) : 
+        if(self.IsSerialOpen()) : 
             return(self.serialInst.name) 
         # otherwise return nothing
         else :
@@ -73,7 +81,7 @@ class COM_io :
 
     def ReadLineNow(self) : 
         # do not continue of serial is not open 
-        if(self.serialInst.isOpen() == False) :
+        if(self.IsSerialClosed()) :
             return(None)
         # get packet if in waiting 
         if self.serialInst.in_waiting : 
@@ -82,14 +90,35 @@ class COM_io :
         # else return None 
         return(None)
 
-    def ReadLineWhenReady(self):
+    def ReadLine(self):
         while True :
             # get packiet 
             packet = self.ReadLineNow()
             # return when packet is not None 
             if(packet) :
                 return(packet) 
+
+    def ReadNow(self, numBytes) : 
+        # do not continue of serial is not open 
+        if(self.IsSerialClosed()) :
+            return(None)
+        # get bytes if in waiting 
+        if self.serialInst.in_waiting : 
+            # read packet
+            return(self.serialInst.read(numBytes) )
+        # else return None 
+        return(None)
+
+    def Read(self, numBytes):
+        while True :
+            # get packet 
+            packet = self.ReadNow(numBytes)
+            # return when packet is not None 
+            if(packet) :
+                return(packet) 
+
     
+
 
 # =================== NOTE ===================
 
