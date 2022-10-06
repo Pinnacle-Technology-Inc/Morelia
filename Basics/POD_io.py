@@ -117,7 +117,9 @@ class COM_io :
             if(packet) :
                 return(packet) 
 
-    
+    def Write(self, message) : 
+        if(self.IsSerialOpen()) : 
+            self.serialInst.write(message)
 
 
 # =================== NOTE ===================
