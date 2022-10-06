@@ -1,4 +1,3 @@
-from struct import pack
 import serial.tools.list_ports
 
 class COM_io : 
