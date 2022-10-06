@@ -5,14 +5,12 @@ from POD_io import COM_io
 portList = COM_io.GetCOMportsList()
 
 # check if the list is empty 
-if not portList:
-    raise Exception('[!] No COM ports in use. Exiting program.')
-
+if (len(portList) == 0):
+    raise Exception('[!] No COM ports in use.')
 # use single option 
-if( len(portList) == 1): 
+elif (len(portList) == 1): 
     phrase = portList[0].split(' ')
     portUse = phrase[0]
-    print('--> Using ', portUse)
 # choose port 
 else:
     # request port from user
@@ -24,10 +22,11 @@ else:
             portUse = 'COM' + comNum 
     # check if port exists
     if portUse==None : 
-        raise Exception('[!] COM port does not exist. Exiting program.')
+        raise Exception('[!] COM port does not exist.')
 
 # create COM object 
 com = COM_io(portUse)
+print('serial port in use:', com.GetPortName())
 
 # read!
 while True:

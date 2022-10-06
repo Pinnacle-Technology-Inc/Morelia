@@ -1,12 +1,6 @@
 from struct import pack
 import serial.tools.list_ports
 
-# make class that
-# 1. shows comports (static method) DONE
-# 2. opens COM (constructor) DONE
-# 3. reads from COM DONE 
-# 4. write to COM
-
 class COM_io : 
 
     # class variables 
@@ -24,12 +18,12 @@ class COM_io :
         # end
         return(portList)
 
-    def __init__(self, port, baudrate=96000) :
+    def __init__(self, port, baudrate=9600) :
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 
     def __del__(self):
-        # close port
+        # close port 
         self.CloseSerialPort()
 
     def CloseSerialPort(self):
@@ -37,42 +31,54 @@ class COM_io :
         if(self.serialInst.isOpen()) :
             self.serialInst.close()
 
-    def OpenSerialPort(self, port, baudrate=96000) : 
+    def OpenSerialPort(self, port, baudrate=9600) : 
         # close current port if it is open
         if(self.serialInst.isOpen()) : 
             self.CloseSerialPort()
         # get name 
-        portName = self.BuildPortName(port)
-        # if the 'portName' is not None
-        if(portName) : 
+        name = self.BuildPortName(port)
+        # if the 'Name' is not None
+        if(name) : 
             # initialize and open serial port 
             self.serialInst.baudrate = baudrate
-            self.serialInst.port = portName
+            self.serialInst.port = name
             self.serialInst.open()
         else : 
             # throw an error 
             raise Exception('Port does not exist.')
 
     def BuildPortName(self, port) : 
-        portName = None
+        name = None
         # is 'port' the port number? 
         if (isinstance(port, int)) : 
             # build port name 
-            portName = 'COM' + str(port)
+            name = 'COM' + str(port)
         elif (isinstance(port, str)): 
             # is 'port' the port name or just the number?
             if port.startswith('COM'):
                 # assume that 'port' is the full name  
-                portName = port
+                name = port
             else : 
                 # assume that 'port' is just the number 
-                portName = 'COM' + port
+                name = 'COM' + port
         # end 
-        return(portName)
+        return(name)
+
+    def GetPortName(self) : 
+        # return the port name if a port is open
+        if(self.serialInst.isOpen()) : 
+            return(self.serialInst.name) 
+        # otherwise return nothing
+        else :
+            return(None)
 
     def ReadLineNow(self) : 
+        # do not continue of serial is not open 
+        if(self.serialInst.isOpen() == False) :
+            return(None)
         # get packet if in waiting 
         if self.serialInst.in_waiting : 
+            # read packet up to  and including newline ('\n')
             return(self.serialInst.readline() )
         # else return None 
         return(None)
