@@ -58,6 +58,35 @@ class POD_Basics(COM_io) :
     def GetCommandDescriptions():
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
+    @staticmethod
+    def ChecksumInt(byteArr):
+        # sum together all bytes in byteArr
+        sum = 0
+        for b in byteArr : 
+            sum = sum + b
+        # invert and get last byte 
+        checksum  = ~sum & 0xFF
+        # return the checksum 
+        return(checksum)
+
+    @staticmethod
+    def ChecksumBytes(byteArr):
+        # calculate checksum 
+        checksum = POD_Basics.ChecksumInt(byteArr)
+        # get hex string
+        cs_str = hex(checksum)
+        length = len(cs_str)
+        # get last two characters and make uppercase
+        b0_char = cs_str[length-2].upper()
+        b1_char = cs_str[length-1].upper()
+        # get ascii code for characters
+        b0_ascii = ord(b0_char)
+        b1_ascii = ord(b1_char)
+        # get bytes from ascii 
+        b = bytes([b0_ascii,b1_ascii])
+        # return checksum converted to bytes
+        return(b)
+
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600, allowBinaryPackets=False) : 
