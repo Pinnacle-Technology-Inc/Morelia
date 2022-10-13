@@ -58,4 +58,10 @@ class POD_Basics(COM_io) :
     def GetCommandDescriptions():
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
-    
+    # ====== DUNDER METHODS ======
+
+    def __init__(self, port, baudrate=9600, allowBinaryPackets=False) : 
+        # initialize serial port 
+        super().__init__(port, baudrate=baudrate)
+        # flag if binary packets are allowed 
+        self.__allowBinaryPackets = allowBinaryPackets
