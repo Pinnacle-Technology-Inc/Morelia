@@ -45,4 +45,54 @@ from BasicPodProtocol import POD_Basics
 
 barr = bytearray([0x30,0x30,0x30,0x32])
 check = POD_Basics.ChecksumBytes(barr)
-print(check)
+# print(check)
+
+
+stx = bytes.fromhex('02')
+# cmd = ???
+cs = POD_Basics.ChecksumBytes(barr)
+etx = bytes.fromhex('03')
+# message = stx + cmd + cs + etx
+
+# HERE VVV make into function 
+
+numBytes = 4
+
+num = 100
+numhex = hex(num).replace('0x','')
+splitnumhex = [x for x in numhex]
+# print(splitnumhex)
+
+asciilist= []
+for character in splitnumhex: 
+    asciilist.append(ord(character))
+
+# print(asciilist)
+
+blist = []
+for ascii in asciilist :
+    blist.append(bytes([ascii]))
+
+# print(blist)
+
+if len(blist) < numBytes: 
+
+    zero = bytes([ord('0')])
+    preNum = numBytes - len(blist)
+    pre = [zero] * preNum
+    post = pre + blist
+    print(post)
+
+msg = post[0]
+
+for i in range(numBytes-1) : 
+    msg = msg + post[i+1]
+
+print(msg)
+
+# make funtion ^^^
+
+print(hex(msg[0]))
+print(hex(msg[1]))
+print(hex(msg[2]))
+print(hex(msg[3]))

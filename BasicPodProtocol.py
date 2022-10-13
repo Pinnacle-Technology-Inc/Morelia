@@ -87,6 +87,15 @@ class POD_Basics(COM_io) :
         # return checksum converted to bytes
         return(b)
 
+    @staticmethod
+    def PODpacket_standard() : 
+        pass
+
+
+    @staticmethod
+    def PODpacket_payload(payload) :   
+        pass 
+
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600, allowBinaryPackets=False) : 
