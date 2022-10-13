@@ -27,6 +27,8 @@ else:
 com = COM_io(portUse)
 print('serial port in use:', com.GetPortName())
 
+# === test functions of COM_io
+
 # # read!
 # while True:
 #     # packet = com.ReadLine()
