@@ -44,4 +44,18 @@ class POD_Basics(COM_io) :
     # binary flag 
     __allowBinaryPackets = False
 
+    # ====== STATIC METHODS ======
+
+    @staticmethod
+    def GetCommandNumbers():
+        return(POD_Basics.__COMMAND_NUMBERS)
+    
+    @staticmethod
+    def GetCommandNames():
+        return(POD_Basics.__COMMAND_NAMES)
+
+    @staticmethod
+    def GetCommandDescriptions():
+        return(POD_Basics.__COMMAND_DESCRIPTIONS)
+
     
