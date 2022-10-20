@@ -49,10 +49,6 @@ from BasicPodProtocol import POD_Basics
 # print(check)
 
 
-
-
-
-
 stx = bytes.fromhex('02')
 cmd = POD_Basics.ValueToBytes(2, 4) 
 cs = POD_Basics.Checksum(cmd)

@@ -59,6 +59,16 @@ class POD_Basics(COM_io) :
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
     @staticmethod
+    def stx():
+        # return STX character used to indicate start of a packet 
+        return(bytes.fromhex('02'))
+
+    @staticmethod
+    def etx():
+        # return ETX character used to indicate end of a packet 
+        return(bytes.fromhex('03'))
+
+    @staticmethod
     def ValueToBytes(value, numBytes) : 
         # convert number into a hex string and remove the '0x' prefix
         num_hexStr = hex(value).replace('0x','')
