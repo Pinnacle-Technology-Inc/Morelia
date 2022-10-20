@@ -5,58 +5,10 @@ class POD_Basics(COM_io) :
     # ====== GLOBAL VARIABLES ======
 
     # command numbers 
-    __COMMAND_NUMBERS = [0,1,2,3,4,5,6,7,8,9,10,11,12]
-
-    # command names
-    __COMMAND_NAMES = [
-        'ACK',
-        'NACK',
-        'PING',
-        'RESET',
-        'ERROR',
-        'STATUS',
-        'STREAM',
-        'BOOT',
-        'TYPE',
-        'ID'
-        'SAMPLE RATE',
-        'BINARY',
-        'FIRMWARE VERSION'
-    ]
-
-    # command description 
-    __COMMAND_DESCRIPTIONS = [
-        '0 = ACK - Deprecated in favor of responding with the command number received',
-        '1 = NACK - Used to indicate an unsupported command was received',
-        '2 = PING - Basic ping command to check if a device is alive and communicating',
-        '3 = RESET - Causes the device to reset.  Devices also send this command upon bootup',
-        '4 = ERROR - Reports error codes; mostly unused',
-        '5 = STATUS - Reports status codes; mostly unused',
-        '6 = STREAM - Enables or disables streaming of binary packets on the device',
-        '7 = BOOT - Instructs the device to enter bootload mode',
-        '8 = TYPE - Gets the device type. Often unused due to USB descriptor duplicating this function',
-        '9 = ID - ID number for the device. Often unused due to USB descriptor duplicating this function',
-        '10 = SAMPLE RATE - Gets the sample rate of the device.  Often unused in favor of just setting it.',
-        '11 = BINARY - Indicates a binary packet.  See Binary Packets below',
-        '12 = FIRMWARE VERSION - Returns firmware version of the device'
-    ]
-
-    # binary flag 
-    __allowBinaryPackets = False
+    __COMMAND_NUMBERS_STANDARD = [0,1,2,3,4,5,7,8,9,10,12]
+    __COMMAND_NUMBERS_PAYLOAD  = [6,11]
 
     # ====== STATIC METHODS ======
-
-    @staticmethod
-    def GetCommandNumbers():
-        return(POD_Basics.__COMMAND_NUMBERS)
-    
-    @staticmethod
-    def GetCommandNames():
-        return(POD_Basics.__COMMAND_NAMES)
-
-    @staticmethod
-    def GetCommandDescriptions():
-        return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
     @staticmethod
     def STX():
@@ -167,9 +119,19 @@ class POD_Basics(COM_io) :
 
     # ====== PUBLIC METHODS ======
 
-    def Set_AllowBinaryPackets(self, flag) : 
-        # set the class instance's flag to allow binary packets to 'flag' parameter
-        self.__allowBinaryPackets = flag
+    # ------ GETTERS ------
 
-    def Get_AllowBinaryPackets(self) : 
-        return(self.__allowBinaryPackets)
+    def Get_CommandNumbers_Standard(self):
+        return(self.__COMMAND_NUMBERS_STANDARD)
+    
+    def Get_CommandNumbers_Payload(self):
+        return(self.__COMMAND_NUMBERS_PAYLOAD)
+    
+    # ------ SETTERS ------
+
+    def Set_CommandNumbers_Standard(self, cmdList) : 
+            self.__COMMAND_NUMBERS_STANDARD = cmdList
+
+    def Set_COMMAND_NUMBERS_PAYLOAD(self, cmdList) : 
+            self.__COMMAND_NUMBERS_PAYLOAD = cmdList
+
