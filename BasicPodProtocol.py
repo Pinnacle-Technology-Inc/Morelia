@@ -59,12 +59,12 @@ class POD_Basics(COM_io) :
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
     @staticmethod
-    def stx():
+    def STX():
         # return STX character used to indicate start of a packet 
         return(bytes.fromhex('02'))
 
     @staticmethod
-    def etx():
+    def ETX():
         # return ETX character used to indicate end of a packet 
         return(bytes.fromhex('03'))
 
@@ -77,7 +77,7 @@ class POD_Basics(COM_io) :
         num_hexStr_list = [x.upper() for x in num_hexStr]
         
         # convert each digit to an ascii code
-        asciilist= []
+        asciilist = []
         for character in num_hexStr_list: 
             # convert character to its ascii code and append to list  
             asciilist.append(ord(character))
@@ -87,9 +87,8 @@ class POD_Basics(COM_io) :
         for ascii in asciilist :
             # convert ascii code to bytes and add to list 
             blist.append(bytes([ascii]))
-
-        # if the number of bytes is smaller that requested, 
-        # add zeros to beginning of the bytes to get desired size
+        
+        # if the number of bytes is smaller that requested, add zeros to beginning of the bytes to get desired size
         if (len(blist) < numBytes): 
             # ascii code for zero
             zero = bytes([ord('0')])
@@ -97,17 +96,13 @@ class POD_Basics(COM_io) :
             pre = [zero] * (numBytes - len(blist))
             # concatenate zeros list to remaining bytes
             post = pre + blist
-
-        # if the number of bytes is greater that requested, 
-        # keep the lowest bytes, remove the overflow 
+        # if the number of bytes is greater that requested, keep the lowest bytes, remove the overflow 
         elif (len(blist) > numBytes) : 
             # get minimum index of bytes to keep
             min = len(blist) - numBytes
             # get indeces from min to end of list 
             post = blist[min:]
-
-        # if the number of bytes is equal to that requested, 
-        # keep the all the bytes, change nothing
+        # if the number of bytes is equal to that requested, keep the all the bytes, change nothing
         else : 
             post = blist
 
@@ -136,13 +131,30 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def PODpacket_standard() : 
-        pass
+    def PODpacket_standard(commandNumber) : 
+        # prepare components of packet
+        stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
+        cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
+        csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
+        etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
+        # concatenate packet components
+        packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
+        # return complete bytes packet
+        return(packet)
 
 
     @staticmethod
-    def PODpacket_payload(payload) :   
-        pass 
+    def PODpacket_payload(commandNumber, payload) :   
+        # prepare components of packet
+        stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
+        cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
+        csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
+        etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
+        # concatenate packet components with payload
+        packet = stx + cmd + payload + csm + etx
+        # return complete bytes packet
+        return(packet) 
+
 
     # ====== DUNDER METHODS ======
 
