@@ -56,43 +56,93 @@ etx = bytes.fromhex('03')
 
 # HERE VVV make into function 
 
-numBytes = 4
+def ValueToBytes(value, numBytes) : 
+    # convert number into a hex string and remove the '0x' prefix
+    num_hexStr = hex(value).replace('0x','')
 
-num = 100
-numhex = hex(num).replace('0x','')
-splitnumhex = [x for x in numhex]
-# print(splitnumhex)
+    # split to access individual digits 
+    num_hexStr_list = [x for x in num_hexStr]
 
-asciilist= []
-for character in splitnumhex: 
-    asciilist.append(ord(character))
+    # convert each digit to an ascii code
+    asciilist= []
+    for character in num_hexStr_list: 
+        # convert character to its ascii code and append to list  
+        asciilist.append(ord(character))
 
-# print(asciilist)
+    # get bytes for the ascii number 
+    blist = []
+    for ascii in asciilist :
+        # convert ascii code to bytes and add to list 
+        blist.append(bytes([ascii]))
 
-blist = []
-for ascii in asciilist :
-    blist.append(bytes([ascii]))
+    # if the number of bytes is smaller that requested, 
+    # add zeros to beginning of the bytes to get desired size
+    if (len(blist) < numBytes): 
+        # ascii code for zero
+        zero = bytes([ord('0')])
+        # create list of zeros with size (NumberOfBytesWanted - LengthOfCurrentBytes))
+        pre = [zero] * (numBytes - len(blist))
+        # concatenate zeros list to remaining bytes
+        post = pre + blist
 
-# print(blist)
+    # if the number of bytes is greater that requested, 
+    # keep the lowest bytes, remove the overflow 
+    elif (len(blist) > numBytes) : 
+        # get minimum index of bytes to keep
+        min = len(blist) - numBytes
+        # get indeces from min to end of list 
+        post = blist[min:]
 
-if len(blist) < numBytes: 
+    # if the number of bytes is equal to that requested, 
+    # keep the all the bytes, change nothing
+    else : 
+        post = blist
 
-    zero = bytes([ord('0')])
-    preNum = numBytes - len(blist)
-    pre = [zero] * preNum
-    post = pre + blist
-    print(post)
+    # initialize message to first byte in 'post'
+    msg = post[0]
+    for i in range(numBytes-1) : 
+        # concatenate next byte to end of the message 
+        msg = msg + post[i+1]
 
-msg = post[0]
+    # return a byte message of a desired size 
+    return(msg)
 
-for i in range(numBytes-1) : 
-    msg = msg + post[i+1]
+# numBytes = 4
+# num = 100
 
-print(msg)
+# numhex = hex(num).replace('0x','')
+# splitnumhex = [x for x in numhex]
+# # print(splitnumhex)
+
+# asciilist= []
+# for character in splitnumhex: 
+#     asciilist.append(ord(character))
+
+# # print(asciilist)
+
+# blist = []
+# for ascii in asciilist :
+#     blist.append(bytes([ascii]))
+
+# # print(blist)
+
+# if len(blist) < numBytes: 
+
+#     zero = bytes([ord('0')])
+#     preNum = numBytes - len(blist)
+#     pre = [zero] * preNum
+#     post = pre + blist
+#     print(post)
+
+# msg = post[0]
+# for i in range(numBytes-1) : 
+#     msg = msg + post[i+1]
+
+# print(msg)
 
 # make funtion ^^^
 
-print(hex(msg[0]))
-print(hex(msg[1]))
-print(hex(msg[2]))
-print(hex(msg[3]))
+msg = ValueToBytes(100, 4) 
+
+for b in msg:
+    print(hex(b))
