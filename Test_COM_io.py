@@ -1,3 +1,4 @@
+from tabnanny import check
 from Serial_InOut import COM_io
 from BasicPodProtocol import POD_Basics
 
@@ -43,21 +44,25 @@ from BasicPodProtocol import POD_Basics
 # com.Write(ping)
 # print('PING:', com.ReadUntil(stopat))
 
-barr = bytearray([0x30,0x30,0x30,0x32])
-check = POD_Basics.ChecksumBytes(barr)
+# barr = bytearray([0x30,0x30,0x30,0x32])
+# check = POD_Basics.ChecksumBytes(barr)
 # print(check)
+
+
+
+
 
 
 stx = bytes.fromhex('02')
 cmd = POD_Basics.ValueToBytes(2, 4) 
-cs = POD_Basics.ChecksumBytes(barr)
+cs = POD_Basics.Checksum(cmd)
 etx = bytes.fromhex('03')
 message = stx + cmd + cs + etx
 print(message)
 
 # next fix checksum to handle valueto bytes 
 
-# test
-msg = POD_Basics.ValueToBytes(2, 4) 
-for b in msg:
-    print(hex(b))
+# # test
+# msg = POD_Basics.ValueToBytes(2, 4) 
+# for b in msg:
+#     print(hex(b))

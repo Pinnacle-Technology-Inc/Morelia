@@ -59,42 +59,13 @@ class POD_Basics(COM_io) :
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
     @staticmethod
-    def ChecksumInt(bytes):
-        # sum together all bytes in byteArr
-        sum = 0
-        for b in bytes : 
-            sum = sum + b
-        # invert and get last byte 
-        checksum  = ~sum & 0xFF
-        # return the checksum 
-        return(checksum)
-
-    @staticmethod
-    def ChecksumBytes(bytes):
-        # calculate checksum 
-        checksum = POD_Basics.ChecksumInt(bytes)
-        # get hex string
-        cs_str = hex(checksum)
-        length = len(cs_str)
-        # get last two characters and make uppercase
-        b0_char = cs_str[length-2].upper()
-        b1_char = cs_str[length-1].upper()
-        # get ascii code for characters
-        b0_ascii = ord(b0_char)
-        b1_ascii = ord(b1_char)
-        # get bytes from ascii 
-        b = bytes([b0_ascii,b1_ascii])
-        # return checksum converted to bytes
-        return(b)
-
-    @staticmethod
     def ValueToBytes(value, numBytes) : 
         # convert number into a hex string and remove the '0x' prefix
         num_hexStr = hex(value).replace('0x','')
 
-        # split to access individual digits 
-        num_hexStr_list = [x for x in num_hexStr]
-
+        # split into list to access each digit, and make each hex character digit uppercase 
+        num_hexStr_list = [x.upper() for x in num_hexStr]
+        
         # convert each digit to an ascii code
         asciilist= []
         for character in num_hexStr_list: 
@@ -139,6 +110,21 @@ class POD_Basics(COM_io) :
         # return a byte message of a desired size 
         return(msg)
 
+
+    @staticmethod
+    def Checksum(bytesIn):
+        # sum together all bytes in byteArr
+        sum = 0
+        for b in bytesIn : 
+            sum = sum + b
+        # invert and get last byte 
+        cs  = ~sum & 0xFF
+        # convert int into bytes 
+        cs_bytes = POD_Basics.ValueToBytes(cs, 2)
+        # return checksum bytes
+        return(cs_bytes)
+
+
     @staticmethod
     def PODpacket_standard() : 
         pass
@@ -155,6 +141,7 @@ class POD_Basics(COM_io) :
         super().__init__(port, baudrate=baudrate)
         # flag if binary packets are allowed 
         self.__allowBinaryPackets = allowBinaryPackets
+
 
     # ====== PUBLIC METHODS ======
 
