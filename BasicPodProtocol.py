@@ -4,9 +4,9 @@ class POD_Basics(COM_io) :
 
     # ====== GLOBAL VARIABLES ======
 
-    # command numbers 
-    __COMMAND_NUMBERS_STANDARD = [0,1,2,3,4,5,7,8,9,10,12]
-    __COMMAND_NUMBERS_PAYLOAD  = [6,11]
+    __standard_commandNumbers  = [0,1,2,3,4,5,7,8,9,10,12]
+    __payload_commandNumbers   = [6] #,11] # 11 is binary... figure this one out later
+    __payload_argumentBytes    = [2] #,??]
 
     # ====== STATIC METHODS ======
 
@@ -121,17 +121,37 @@ class POD_Basics(COM_io) :
 
     # ------ GETTERS ------
 
-    def Get_CommandNumbers_Standard(self):
-        return(self.__COMMAND_NUMBERS_STANDARD)
+    def GetStandardCommandNumbers(self):
+        return(self.__standard_commandNumbers)
     
-    def Get_CommandNumbers_Payload(self):
-        return(self.__COMMAND_NUMBERS_PAYLOAD)
+    def GetPayloadCommandNumbers(self):
+        return(self.__payload_commandNumbers)
     
+    def GetPayloadArgumentBytes(self):
+        self.__payload_argumentBytes
+
     # ------ SETTERS ------
 
-    def Set_CommandNumbers_Standard(self, cmdList) : 
-            self.__COMMAND_NUMBERS_STANDARD = cmdList
+    def SetStandardCommands(self, cmdList) : 
+            self.__standard_commandNumbers = cmdList
 
-    def Set_COMMAND_NUMBERS_PAYLOAD(self, cmdList) : 
-            self.__COMMAND_NUMBERS_PAYLOAD = cmdList
+    def SetPayloadCommands(self, cmdList, argList) : 
+            self.__payload_commandNumbers = cmdList
+            self.__payload_argumentBytes = argList
 
+    # ------ POD FUNCTIONS ------
+
+    def WriteStandardPacket(self, commandNumber) : 
+        # throw exception if command number is invalid 
+        if(commandNumber not in self.__standard_commandNumbers) : 
+            raise Exception('Invalid POD command.')
+        # build packet
+        packet = POD_Basics.PODpacket_standard(commandNumber)
+        # write packet to serial port 
+        self.Write(packet)
+
+    def ReadPodPacket(self) : 
+        # read from serial port until ETX
+        packet = self.ReadUntil(POD_Basics.ETX())
+        # return packet 
+        return(packet)
