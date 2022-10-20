@@ -169,3 +169,7 @@ class POD_Basics(COM_io) :
         packet = POD_Basics.PODpacket_payload(commandNumber, payload)
         # write packet to serial port 
         self.Write(packet)
+
+# TODO 
+# 1. change how to handle command numbers and stuff. Instead of a list, use a tuple/dict. Store the command number, name, and argument (if applicable)
+# 2. when reading, check for both etx and stx. if stx, start over. 
