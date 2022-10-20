@@ -59,10 +59,10 @@ class POD_Basics(COM_io) :
         return(POD_Basics.__COMMAND_DESCRIPTIONS)
 
     @staticmethod
-    def ChecksumInt(byteArr):
+    def ChecksumInt(bytes):
         # sum together all bytes in byteArr
         sum = 0
-        for b in byteArr : 
+        for b in bytes : 
             sum = sum + b
         # invert and get last byte 
         checksum  = ~sum & 0xFF
@@ -70,9 +70,9 @@ class POD_Basics(COM_io) :
         return(checksum)
 
     @staticmethod
-    def ChecksumBytes(byteArr):
+    def ChecksumBytes(bytes):
         # calculate checksum 
-        checksum = POD_Basics.ChecksumInt(byteArr)
+        checksum = POD_Basics.ChecksumInt(bytes)
         # get hex string
         cs_str = hex(checksum)
         length = len(cs_str)
