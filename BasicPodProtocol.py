@@ -155,3 +155,9 @@ class POD_Basics(COM_io) :
         super().__init__(port, baudrate=baudrate)
         # flag if binary packets are allowed 
         self.__allowBinaryPackets = allowBinaryPackets
+
+    # ====== PUBLIC METHODS ======
+
+    def Set_AllowBinaryPackets(self, flag) : 
+        # set the class instance's flag to allow binary packets to 'flag' parameter
+        self.__allowBinaryPackets = flag
