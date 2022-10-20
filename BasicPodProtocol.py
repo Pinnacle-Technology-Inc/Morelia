@@ -158,3 +158,6 @@ class POD_Basics(COM_io) :
     def Set_AllowBinaryPackets(self, flag) : 
         # set the class instance's flag to allow binary packets to 'flag' parameter
         self.__allowBinaryPackets = flag
+
+    def Get_AllowBinaryPackets(self) : 
+        return(self.__allowBinaryPackets)
