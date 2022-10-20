@@ -100,7 +100,7 @@ class POD_Basics(COM_io) :
         # prepare components of packet
         stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
         cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
-        csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
+        csm = POD_Basics.Checksum(cmd+payload)          # checksum (2 bytes)
         etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
         # concatenate packet components with payload
         packet = stx + cmd + payload + csm + etx
@@ -141,17 +141,31 @@ class POD_Basics(COM_io) :
 
     # ------ POD FUNCTIONS ------
 
-    def WriteStandardPacket(self, commandNumber) : 
-        # throw exception if command number is invalid 
-        if(commandNumber not in self.__standard_commandNumbers) : 
-            raise Exception('Invalid POD command.')
-        # build packet
-        packet = POD_Basics.PODpacket_standard(commandNumber)
-        # write packet to serial port 
-        self.Write(packet)
-
     def ReadPodPacket(self) : 
         # read from serial port until ETX
         packet = self.ReadUntil(POD_Basics.ETX())
         # return packet 
         return(packet)
+        
+    def WriteStandardPacket(self, commandNumber) : 
+        # throw exception if command number is invalid 
+        if(commandNumber not in self.__standard_commandNumbers) : 
+            raise Exception('Invalid POD command number.')
+        # build packet
+        packet = POD_Basics.PODpacket_standard(commandNumber)
+        # write packet to serial port 
+        self.Write(packet)
+
+    def WritePayloadPacket(self, commandNumber, payload) : 
+        # throw exception if command number is invalid 
+        if(commandNumber not in self.__payload_commandNumbers) : 
+            raise Exception('Invalid POD command number.')
+        # throw exception if payload is wrong size 
+        idx = self.__payload_commandNumbers.index(commandNumber) # get index of command number
+        payloadSize = self.__payload_argumentBytes[idx] # get number of bytes for this command
+        if(len(payload) != payloadSize):
+            raise Exception('POD packet payload is invalid.')
+        # build packet
+        packet = POD_Basics.PODpacket_payload(commandNumber, payload)
+        # write packet to serial port 
+        self.Write(packet)

@@ -1,4 +1,3 @@
-from re import A
 from Serial_InOut import COM_io
 from BasicPodProtocol import POD_Basics
 
@@ -34,3 +33,8 @@ cmd = 2
 print('COMMAND:', cmd)
 pod.WriteStandardPacket(cmd)
 print('RESPONSE:', pod.ReadPodPacket())
+
+# # STREAM
+# cmd = 6
+# payload = bytes.fromhex('3031')
+# pod.WritePayloadPacket(cmd, payload)
