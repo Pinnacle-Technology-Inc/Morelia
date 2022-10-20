@@ -21,11 +21,6 @@ class COM_io :
         # end
         return(portList)
 
-    @staticmethod
-    def HexStrToByteArray(hexStr) :
-        # convert a string of hex values to a byte array
-        return(bytearray.fromhex(hexStr))
-
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) :
