@@ -5,28 +5,25 @@ class POD_Basics(COM_io) :
     # ====== GLOBAL VARIABLES ======
 
     # index keys for dict values 
-    __NAME = 0
+    __NAME      = 0
     __ARGUMENTS = 1
-    __RETURNS = 2
+    __RETURNS   = 2
 
-    __standard_commands = {
-        # key(command number) : value([command name, return bytes]) 
-        0   : [ 'ACK',                  0       ],
-        1   : [ 'NACK',                 0       ],
-        2   : [ 'PING',                 0       ],
-        3   : [ 'RESET',                0       ],
-        4   : [ 'ERROR',                1       ],
-        5   : [ 'STATUS',               None    ],  # NONE is placeholder, I dont know this now
-        7   : [ 'BOOT',                 None    ],
-        8   : [ 'TYPE',                 1       ],
-        9   : [ 'ID',                   None    ],
-        10  : [ 'SAMPLE RATE',          None    ],
-        12  : [ 'FIRMWARE VERSION',     3       ]
-    }
-
-    __payload_commands = {
-        # key(command number) : value([command name, number of argument bytes, number of return bytes]) 
-        6   : [ 'STREAM',               1,      1   ] 
+    __commands = {
+        # key(command number) : value([command name, argument ascii bytes, return bytes]) 
+        0   : [ 'ACK',                  0,      0       ],
+        1   : [ 'NACK',                 0,      0       ],
+        2   : [ 'PING',                 0,      0       ],
+        3   : [ 'RESET',                0,      0       ],
+        4   : [ 'ERROR',                0,      2       ],
+        5   : [ 'STATUS',               0,      None    ],  # NONE is placeholder, I dont know this right now...
+        6   : [ 'STREAM',               2,      2       ], 
+        7   : [ 'BOOT',                 0,      None    ],
+        8   : [ 'TYPE',                 0,      2       ],
+        9   : [ 'ID',                   0,      None    ],
+        10  : [ 'SAMPLE RATE',          0,      None    ],
+        11  : [ 'BINARY',               None,   None    ],
+        12  : [ 'FIRMWARE VERSION',     0,      6       ]
     }
 
     # ====== STATIC METHODS ======
@@ -131,108 +128,97 @@ class POD_Basics(COM_io) :
 
     # ====== DUNDER METHODS ======
 
-    def __init__(self, port, baudrate=9600, allowBinaryPackets=False) : 
+    def __init__(self, port, baudrate=9600) : 
         # initialize serial port 
         super().__init__(port, baudrate=baudrate)
-        # flag if binary packets are allowed 
-        self.__allowBinaryPackets = allowBinaryPackets
+        # want to initialize anything else? do that here :)
 
 
     # ====== PUBLIC METHODS ======
 
-    # ------ GETTERS ------
+    # ------ COMMAND DICT ACCESS ------
 
-    def GetStandardCommandNumbers(self):
-        return(self.__standard_commands)
-    
-    def GetPayloadCommandNumbers(self):
-        return(self.__payload_commands)
+    # TODO add and remove dict entry 
 
-    # ------ SETTERS ------
+    def SetCommands(self, cmdDict) : 
+        self.__commands = cmdDict
+        
+    def GetCommands(self):
+        return(self.__commands)
 
-    def SetStandardCommands(self, cmdDict) : 
-            self.__standard_commands = cmdDict
-
-    def SetPayloadCommands(self, cmdDict) : 
-            self.__payload_commands = cmdDict
-
-    # ------ POD FUNCTIONS ------
-
-    def GetCommandNumber_Standard(self, name) : 
+    def CommandNumber(self, name) : 
         # search through dict to find key 
-        for key,val in self.__standard_commands.items() :
-            if(name == val) : 
+        for key,val in self.__commands.items() :
+            if(name == val[self.__NAME]) : 
                 return(key)
         # no match
         return(None)
 
-    def GetCommandNumber_Payload(self, name) : 
-        # search through dict to find key 
-        for key,val in self.__payload_commands.items() :
-            if(name == val[self.__NAME]) : 
-                # return the command number 
-                return(key)
-        # no match
-        return(None) 
-
-    def GetArgumentBytes_Payload(self, cmd) :
+    def ArgumentBytes(self, cmd) : 
         # search through dict to find matching entry  
-        for key,val in self.__payload_commands.items() :
+        for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
                 # return the number of bytes in the command return 
                 return(val[self.__ARGUMENTS])
         # no match
         return(None) 
 
-    def WriteStandardPacket(self, cmd) : 
-        # throw exception if command number is invalid 
-        if(cmd not in self.__standard_commands) : 
-            raise Exception('Invalid POD command.')
+    def ReturnBytes(self,cmd) : 
+        # search through dict to find matching entry  
+        for key,val in self.__commands.items() :
+            if(cmd == key or cmd == val[self.__NAME]) : 
+                # return the number of bytes in the command return 
+                return(val[self.__RETURNS])
+        # no match
+        return(None) 
 
-        # get command number 
-        if(isinstance(cmd,str)):
-            cmdNum = self.GetCommandNumber_Standard(cmd)
-        else: 
-            cmdNum = cmd
-
-        # build packet
-        packet = POD_Basics.PODpacket_standard(cmdNum)
-
-        # write packet to serial port 
-        self.Write(packet)
-
-    def WritePayloadPacket(self, cmd, payload) : 
-        # throw exception if command number is invalid 
+    def DoesCommandExist(self, cmd) : 
+        # initialize to false
         isValidCmd = False
-        for key,val in self.__payload_commands.items() : 
+        # check each command number and name to try to find match 
+        for key,val in self.__commands.items() : 
             if(cmd==key or cmd==val[self.__NAME]):
+                # set to true if match found 
                 isValidCmd = True
-        if(not isValidCmd) :
-            raise Exception('Invalid POD command number.')
+        # return true if the command is in the command dict, false otherwise
+        return(isValidCmd)
 
-        # throw exception if payload is wrong size 
-        payloadSize = self.GetArgumentBytes_Payload(cmd)
-        if(len(payload) != payloadSize):
-            raise Exception('POD packet payload is invalid.')
+
+    # ------ POD COMMUNICATION ------
+
+    def WritePacket(self, cmd, payload=None) : 
+        # return False if command is not valid
+        if(not self.DoesCommandExist(cmd)) : 
+            return(False)
 
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.GetCommandNumber_Payload(cmd)
+            cmdNum = self.CommandNumber(cmd)
         else: 
             cmdNum = cmd
 
-        # build packet
-        packet = POD_Basics.PODpacket_payload(cmdNum, payload)
+        # build payload packet if a packet is given 
+        if(payload):
+            # return False if payload is not the correct size
+            if( len(payload) != self.ArgumentBytes(cmdNum)):
+                return(False)
+            # build packet with paylaod 
+            packet = POD_Basics.PODpacket_payload(cmdNum, payload)
+        # otherwise, build standard packet 
+        else : 
+            # write standard packet to serial port 
+            packet = POD_Basics.PODpacket_standard(cmdNum)
 
         # write packet to serial port 
         self.Write(packet)
-
+        # return true to mark successful write :)
+        return(True)
 
     def ReadPodPacket(self) :      
-        # init
-        time = 0
+        # initialize 
+        time    = 0
         TIMEOUT = 100   
-        b = None 
+        b       = None 
 
         # read until STX found
         while(b != self.STX() and time<TIMEOUT) :
@@ -256,11 +242,7 @@ class POD_Basics(COM_io) :
 
         # raise exception if timeout occurs
         if(time==TIMEOUT) : 
-            raise Exception('Timout when reading from POD device.')
+            raise Exception('Timeout when reading from POD device.')
 
         # return packet containing STX+message+ETX
         return(packet)
-
-
-# TODO 
-# 1. change how to handle command numbers and stuff. Instead of a list, use a tuple/dict. Store the command number, name, and argument (if applicable)
