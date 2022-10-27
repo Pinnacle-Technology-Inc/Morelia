@@ -141,18 +141,21 @@ class POD_Basics(COM_io) :
 
     # ------ POD FUNCTIONS ------
 
-    def ReadPodPacket(self) :         
-        # read until STX found
+    def ReadPodPacket(self) :      
+        # init
+        time = 0
+        TIMEOUT = 100   
         b = None 
-        while(b != self.STX()) :
-            # read next byte  
-            b = self.Read(1)
+        # read until STX found
+        while(b != self.STX() and time<TIMEOUT) :
+            time += 1           # increment counter
+            b = self.Read(1)    # read next byte  
         # set first byte of packet to STX
         packet = b
         # get bytes until ETX, or start over at next STX
-        while(b != self.ETX()) : 
-            # read next byte
-            b = self.Read(1)
+        while(b != self.ETX() and time<TIMEOUT) : 
+            time += 1           # increment counter
+            b = self.Read(1)    # read next byte
             # check if STX
             if(b == self.STX()):
                 # forget previous packet and start with STX 
@@ -160,6 +163,9 @@ class POD_Basics(COM_io) :
             else : 
                 # append byte to end message
                 packet = packet + b
+        # raise exception if timeout occurs
+        if(time==TIMEOUT) : 
+            raise Exception('Timout when reading from POD device.')
         # return packet containing STX+message+ETX
         return(packet)
         
@@ -188,4 +194,3 @@ class POD_Basics(COM_io) :
 
 # TODO 
 # 1. change how to handle command numbers and stuff. Instead of a list, use a tuple/dict. Store the command number, name, and argument (if applicable)
-# 2. when reading, check for both etx and stx. if stx, start over. 
