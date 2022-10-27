@@ -141,10 +141,26 @@ class POD_Basics(COM_io) :
 
     # ------ POD FUNCTIONS ------
 
-    def ReadPodPacket(self) : 
-        # read from serial port until ETX
-        packet = self.ReadUntil(POD_Basics.ETX())
-        # return packet 
+    def ReadPodPacket(self) :         
+        # read until STX found
+        b = None 
+        while(b != self.STX()) :
+            # read next byte  
+            b = self.Read(1)
+        # set first byte of packet to STX
+        packet = b
+        # get bytes until ETX, or start over at next STX
+        while(b != self.ETX()) : 
+            # read next byte
+            b = self.Read(1)
+            # check if STX
+            if(b == self.STX()):
+                # forget previous packet and start with STX 
+                packet =  b
+            else : 
+                # append byte to end message
+                packet = packet + b
+        # return packet containing STX+message+ETX
         return(packet)
         
     def WriteStandardPacket(self, commandNumber) : 
