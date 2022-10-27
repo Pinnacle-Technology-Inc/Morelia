@@ -16,13 +16,13 @@ class POD_Basics(COM_io) :
         2   : [ 'PING',                 0,      0       ],
         3   : [ 'RESET',                0,      0       ],
         4   : [ 'ERROR',                0,      2       ],
-        5   : [ 'STATUS',               0,      None    ],  # NONE is placeholder, I dont know this right now...
+        5   : [ 'STATUS',               0,      0       ],
         6   : [ 'STREAM',               2,      2       ], 
-        7   : [ 'BOOT',                 0,      None    ],
+        7   : [ 'BOOT',                 0,      0       ],
         8   : [ 'TYPE',                 0,      2       ],
-        9   : [ 'ID',                   0,      None    ],
-        10  : [ 'SAMPLE RATE',          0,      None    ],
-        11  : [ 'BINARY',               None,   None    ],
+        9   : [ 'ID',                   0,      0       ],
+        10  : [ 'SAMPLE RATE',          0,      0       ],
+        11  : [ 'BINARY',               None,   None    ],  # binary commands are typically recieved only
         12  : [ 'FIRMWARE VERSION',     0,      6       ]
     }
 
@@ -125,7 +125,23 @@ class POD_Basics(COM_io) :
         # return complete bytes packet
         return(packet) 
 
+    @staticmethod
+    def UnpackPodCommand(msg, MinPacketBytes=8) : 
+        # get number of bytes in message
+        packetBytes = len(msg)
+        # create dict
+        msg_unpacked = {
+            'Command Number' : msg[1:5],                            # four bytes after STX
+            'Checksum'       : msg[(packetBytes-3):(packetBytes-1)] # two bytes before ETX
+        }
+        # add packet if available 
+        if( (packetBytes - MinPacketBytes) > 0) : 
+            msg_unpacked['Packet'] = msg[5:(packetBytes-3)]         # remaining bytes between command number and checksum 
+            
+        # return unpacked POD command
+        return(msg_unpacked)
 
+        
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) : 
@@ -214,7 +230,7 @@ class POD_Basics(COM_io) :
         # return true to mark successful write :)
         return(True)
 
-    def ReadPodPacket(self) :      
+    def ReadPodPacket(self) : # assume non-binary 
         # initialize 
         time    = 0
         TIMEOUT = 1000   
@@ -246,3 +262,17 @@ class POD_Basics(COM_io) :
 
         # return packet containing STX+message+ETX
         return(packet)
+
+    def ReadVariableBinaryPacket(self) :
+        # contain a normal POD packet with the binary command, and the payload is the length of the binary portion.  The binary portion also includes an ASCII checksum and ETX.
+        
+        # read POD packet
+        start = self.ReadPodPacket()
+        # check command number, quit if not valid 
+        # read binary packet length
+        # continue reading binary packet
+        # end after reading length and seeing ETX
+
+    def ReadFixedBinaryPacket(self):
+        # fixed: Generally contains the typical STX and ASCII command number, followed by the binary data, followed by a CS and ETX.
+        pass
