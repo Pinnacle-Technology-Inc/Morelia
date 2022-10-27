@@ -6,8 +6,8 @@ class POD_Basics(COM_io) :
 
     # index keys for dict values 
     __NAME = 0
-    __RETURNS = 1
-    __ARGUMRNTS = 2
+    __ARGUMENTS = 1
+    __RETURNS = 2
 
     __standard_commands = {
         # key(command number) : value([command name, return bytes]) 
@@ -169,7 +169,7 @@ class POD_Basics(COM_io) :
     def GetCommandNumber_Payload(self, name) : 
         # search through dict to find key 
         for key,val in self.__payload_commands.items() :
-            if(name == val[self.NAME]) : 
+            if(name == val[self.__NAME]) : 
                 # return the command number 
                 return(key)
         # no match
@@ -178,9 +178,9 @@ class POD_Basics(COM_io) :
     def GetArgumentBytes_Payload(self, cmd) :
         # search through dict to find matching entry  
         for key,val in self.__payload_commands.items() :
-            if(cmd == key or cmd == val[self.NAME]) : 
+            if(cmd == key or cmd == val[self.__NAME]) : 
                 # return the number of bytes in the command return 
-                return(val[self.ARGUMRNTS])
+                return(val[self.__ARGUMENTS])
         # no match
         return(None) 
 
@@ -204,8 +204,8 @@ class POD_Basics(COM_io) :
     def WritePayloadPacket(self, cmd, payload) : 
         # throw exception if command number is invalid 
         isValidCmd = False
-        for key,val in self.__payload_commandNumbers.items() : 
-            if(cmd==key or cmd==val[self.NAME]):
+        for key,val in self.__payload_commands.items() : 
+            if(cmd==key or cmd==val[self.__NAME]):
                 isValidCmd = True
         if(not isValidCmd) :
             raise Exception('Invalid POD command number.')
