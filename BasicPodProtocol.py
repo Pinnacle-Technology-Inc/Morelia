@@ -217,7 +217,7 @@ class POD_Basics(COM_io) :
     def ReadPodPacket(self) :      
         # initialize 
         time    = 0
-        TIMEOUT = 100   
+        TIMEOUT = 1000   
         b       = None 
 
         # read until STX found
