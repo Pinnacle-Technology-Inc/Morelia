@@ -123,7 +123,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def PODpacket_payload(commandNumber, payload) :   
+    def PODpacket_StandardWithPayload(commandNumber, payload) :   
         # prepare components of packet
         stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
         cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
@@ -135,7 +135,7 @@ class POD_Basics(COM_io) :
         return(packet) 
 
     @staticmethod
-    def UnpackPodCommand(msg) : 
+    def UnpackPodCommand_Standard(msg) : 
         # POD packet = STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         MinPacketBytes=8
 
@@ -161,6 +161,20 @@ class POD_Basics(COM_io) :
         # return unpacked POD command
         return(msg_unpacked)
 
+    @staticmethod
+    def UnpackPodCommand_Legacy(msg) : 
+        # TODO 
+        pass
+
+    @staticmethod
+    def UnpackPodCommand_VariableBinary(msg) : 
+        # TODO 
+        pass
+
+    @staticmethod
+    def UnpackPodCommand_FixedBinary(msg) : 
+        # TODO 
+        pass
 
     # ====== DUNDER METHODS ======
 
@@ -174,13 +188,19 @@ class POD_Basics(COM_io) :
 
     # ------ COMMAND DICT ACCESS ------
 
-    # TODO add and remove dict entry 
-
     def SetCommands(self, cmdDict) : 
         self.__commands = cmdDict
         
     def GetCommands(self):
         return(self.__commands)
+
+    def AddCommand(num,name,arg,ret):
+        # TODO
+        pass
+
+    def RemoveCommand(cmd) :
+        # TODO
+        pass
 
     def CommandNumber(self, name) : 
         # search through dict to find key 
@@ -219,7 +239,6 @@ class POD_Basics(COM_io) :
         # return true if the command is in the command dict, false otherwise
         return(isValidCmd)
 
-
     # ------ POD COMMUNICATION ------
 
     def WritePacket(self, cmd, payload=None) : 
@@ -239,7 +258,7 @@ class POD_Basics(COM_io) :
             if( len(payload) != self.ArgumentBytes(cmdNum)):
                 return(False)
             # build packet with paylaod 
-            packet = POD_Basics.PODpacket_payload(cmdNum, payload)
+            packet = POD_Basics.PODpacket_StandardWithPayload(cmdNum, payload)
         # otherwise, build standard packet 
         else : 
             # write standard packet to serial port 
@@ -304,7 +323,7 @@ class POD_Basics(COM_io) :
         
         # read standard POD packet
         start = self.ReadPODpacket_Standard()
-        startDict = self.UnpackPodCommand(start)
+        startDict = self.UnpackPodCommand_Standard(start)
 
         # check if command number is valid, return if not
         cmd = self.AsciiBytesToInt(startDict['Command Number'])
