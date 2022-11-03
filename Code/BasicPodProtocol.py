@@ -2,32 +2,40 @@ from Serial_InOut import COM_io
 
 class POD_Basics(COM_io) : 
 
-    # ====== GLOBAL VARIABLES ======
+    # ====== GLOBAL CONSTANTS ======
 
-    # index keys for __commands dict values 
+    # index keys for self.__commands dict values 
     __NAME      = 0
     __ARGUMENTS = 1
     __RETURNS   = 2
 
-    # flag used to mark if __commands dict value has no real value 
+
+    # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
 
-    # contains allowed POD commands
-    __commands = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
-        0   : [ 'ACK',                  0,      0           ],
-        1   : [ 'NACK',                 0,      0           ],
-        2   : [ 'PING',                 0,      0           ],
-        3   : [ 'RESET',                0,      0           ],
-        4   : [ 'ERROR',                0,      2           ],
-        5   : [ 'STATUS',               0,      0           ],
-        6   : [ 'STREAM',               2,      2           ], 
-        7   : [ 'BOOT',                 0,      0           ],
-        8   : [ 'TYPE',                 0,      2           ],
-        9   : [ 'ID',                   0,      0           ],
-        10  : [ 'SAMPLE RATE',          0,      0           ],
-        11  : [ 'BINARY',               0,      __NOVALUE   ],  # No return bytes because the length depends on the message
-        12  : [ 'FIRMWARE VERSION',     0,      6           ]
-    }
+
+    # ====== DUNDER METHODS ======
+
+    def __init__(self, port, baudrate=9600) : 
+        # initialize serial port 
+        super().__init__(port, baudrate=baudrate)
+        
+        # contains allowed POD commands
+        self.__commands = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
+            0   : [ 'ACK',                  0,      0               ],
+            1   : [ 'NACK',                 0,      0               ],
+            2   : [ 'PING',                 0,      0               ],
+            3   : [ 'RESET',                0,      0               ],
+            4   : [ 'ERROR',                0,      2               ],
+            5   : [ 'STATUS',               0,      0               ],
+            6   : [ 'STREAM',               2,      2               ], 
+            7   : [ 'BOOT',                 0,      0               ],
+            8   : [ 'TYPE',                 0,      2               ],
+            9   : [ 'ID',                   0,      0               ],
+            10  : [ 'SAMPLE RATE',          0,      0               ],
+            11  : [ 'BINARY',               0,      self.__NOVALUE  ],  # No return bytes because the length depends on the message
+            12  : [ 'FIRMWARE VERSION',     0,      6               ]
+        }
 
     # ====== STATIC METHODS ======
 
@@ -197,14 +205,6 @@ class POD_Basics(COM_io) :
 
         # return unpacked POD command with variable length binary packet 
         return(msg_unpacked)
-
-
-    # ====== DUNDER METHODS ======
-
-    def __init__(self, port, baudrate=9600) : 
-        # initialize serial port 
-        super().__init__(port, baudrate=baudrate)
-        # want to initialize anything else? do that here :)
 
 
     # ====== PUBLIC METHODS ======
