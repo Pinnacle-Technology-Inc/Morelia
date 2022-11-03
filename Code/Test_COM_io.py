@@ -28,14 +28,8 @@ else:
 pod = POD_Basics(portUse)
 print('serial port in use:', pod.GetPortName())
 
-####################################################################################################################
+########## TESTING ##########################################################################################################
 print('\n\n')
-
-msg = pod.WritePacket(6, bytes.fromhex('3030'))
-print(msg)
-
-msg = pod.ReadPODpacket_Standard()
-print(msg)
 
 
 print('\n\n')

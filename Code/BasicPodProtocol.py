@@ -12,7 +12,7 @@ class POD_Basics(COM_io) :
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
 
-    # number of active POD devices
+    # number of active POD devices, maintained by __init__ and __del__ 
     __NUMPOD = 0
 
 
@@ -49,11 +49,21 @@ class POD_Basics(COM_io) :
         POD_Basics.__NUMPOD -= 1
 
     # ============ STATIC METHODS ============  ========================================================================================================================
+    
+    # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def GetNumberOfPODDevices() :
         # returns the counter tracking the number of active pod devices
         return(POD_Basics.__NUMPOD)
+
+    @staticmethod
+    def GetNoValue() : 
+        # returns the no value marker for commands dict 
+        return(POD_Basics.__NOVALUE)
+
+
+    # ------------ USEFUL VALUES ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
     @staticmethod
@@ -66,6 +76,9 @@ class POD_Basics(COM_io) :
     def ETX():
         # return ETX character used to indicate end of a packet 
         return(bytes.fromhex('03'))
+
+
+    # ------------ CONVERSIONS ------------     ------------------------------------------------------------------------------------------------------------------------
 
 
     @staticmethod
@@ -126,6 +139,9 @@ class POD_Basics(COM_io) :
         return(msg_int)
 
 
+    # ------------ POD PACKETS ------------         ------------------------------------------------------------------------------------------------------------------------
+
+
     @staticmethod
     def Checksum(bytesIn):
         # sum together all bytes in byteArr
@@ -159,7 +175,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def UnpackPODcommand_Standard(msg) : 
+    def UnpackPODpacket_Standard(msg) : 
         # standard POD packet with optional payload = 
         #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         MINBYTES=8
@@ -184,9 +200,8 @@ class POD_Basics(COM_io) :
         # return unpacked POD command
         return(msg_unpacked)
 
-
     @staticmethod
-    def UnpackPODcommand_VariableBinary(msg) : 
+    def UnpackPODpacket_VariableBinary(msg) : 
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
@@ -218,8 +233,10 @@ class POD_Basics(COM_io) :
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
+
     # ------------ COMMAND DICT ACCESS ------------ ------------------------------------------------------------------------------------------------------------------------
         
+
     def GetCommands(self):
         return(self.__commands)
 
@@ -294,6 +311,7 @@ class POD_Basics(COM_io) :
 
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
+
 
     def WritePacket(self, cmd, payload=None) : 
         # return False if command is not valid
@@ -371,7 +389,7 @@ class POD_Basics(COM_io) :
         
         # read standard POD packet
         start = self.ReadPODpacket_Standard()
-        startDict = self.UnpackPODcommand_Standard(start)
+        startDict = self.UnpackPODpacket_Standard(start)
 
         # check if command number is valid, return if not
         cmd = self.AsciiBytesToInt(startDict['Command Number'])
