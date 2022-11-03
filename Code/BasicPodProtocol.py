@@ -2,22 +2,21 @@ from Serial_InOut import COM_io
 
 class POD_Basics(COM_io) : 
 
-    # ====== GLOBAL CONSTANTS ======
+    # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
     # index keys for self.__commands dict values 
     __NAME      = 0
     __ARGUMENTS = 1
     __RETURNS   = 2
 
-
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
-
 
     # number of active POD devices
     __NUMPOD = 0
 
-    # ====== DUNDER METHODS ======
+
+    # ============ DUNDER METHODS ============      ========================================================================================================================
 
     def __init__(self, port, baudrate=9600) : 
         # initialize serial port 
@@ -49,7 +48,7 @@ class POD_Basics(COM_io) :
         # decrement number of POD device counter
         POD_Basics.__NUMPOD -= 1
 
-    # ====== STATIC METHODS ======
+    # ============ STATIC METHODS ============  ========================================================================================================================
 
     @staticmethod
     def GetNumberOfPodDevices() :
@@ -225,9 +224,9 @@ class POD_Basics(COM_io) :
         return(msg_unpacked)
 
 
-    # ====== PUBLIC METHODS ======
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
 
-    # ------ COMMAND DICT ACCESS ------
+    # ------------ COMMAND DICT ACCESS ------------ ------------------------------------------------------------------------------------------------------------------------
         
     def GetCommands(self):
         return(self.__commands)
@@ -302,7 +301,7 @@ class POD_Basics(COM_io) :
         return(isValidCmd)
 
 
-    # ------ POD COMMUNICATION ------
+    # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
     def WritePacket(self, cmd, payload=None) : 
         # return False if command is not valid
