@@ -31,8 +31,11 @@ print('serial port in use:', pod.GetPortName())
 ####################################################################################################################
 print('\n\n')
 
-pl = bytes.fromhex('3031')
-msg = pod.PODpacket_Standard(6,payload=pl)
+msg = pod.WritePacket(6, bytes.fromhex('3030'))
 print(msg)
+
+msg = pod.ReadPODpacket_Standard()
+print(msg)
+
 
 print('\n\n')

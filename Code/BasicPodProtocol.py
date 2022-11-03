@@ -306,22 +306,28 @@ class POD_Basics(COM_io) :
         else: 
             cmdNum = cmd
 
-        # build payload packet if a packet is given 
-        if(payload):
-            # return False if payload is not the correct size
-            if( len(payload) != self.ArgumentBytes(cmdNum)):
-                return(False)
-            # build packet with paylaod 
-            packet = self.PODpacket_Standard(cmdNum, payload=payload)
-        # otherwise, build standard packet 
-        else : 
-            # write standard packet to serial port 
-            packet = self.PODpacket_Standard(cmdNum)
+        # check if the command requires a payload
+        argSize = self.ArgumentBytes(cmdNum)
+        if(argSize > 0) : 
+            # check to see if a payload was given 
+            if(not payload):
+                raise Exception('POD command requires a payload.')
+            # then check that payload is of correct type
+            elif(not isinstance(payload, bytes)) :
+                raise Exception('Payload must be of type(bytes).')
+            # then check that payload is of correct size
+            elif(len(payload) != argSize):
+                raise Exception('Payload is the wrong size.')
+            # else : everything is good! continue 
+
+        # build POD packet 
+        packet = self.PODpacket_Standard(cmdNum, payload=payload)
 
         # write packet to serial port 
         self.Write(packet)
-        # return true to mark successful write :)
-        return(True)
+
+        # returns packet that was written
+        return(packet)
 
 
     def ReadPODpacket_Standard(self) : # assume non-binary 
@@ -360,18 +366,8 @@ class POD_Basics(COM_io) :
 
     def ReadPODpacket_VariableBinary(self) :
         # Variable binary packet: contain a normal POD packet with the binary command, 
-        # and the payload is the length of the binary portion. 
-        # The binary portion also includes an ASCII checksum and ETX.
-        #  BYTES    : POSITION                        : CONTENTS          -- TIPS
-        # ------------------------------------------------------------------------------------
-        #  1        : 0                               : STX               -- BEGIN STANDARD POD PACKET 
-        #  4        : 1-4                             : COMMAND
-        #  4        : 5-8                             : LENGTH
-        #  2        : 9-10                            : CHECKSUM
-        #  1        : 11                              : ETX               -- END STANDARD POD PACKET
-        #  LENGTH   : 12-(12+LENGTH)                  : BINARY DATA       -- BEGIN BINARY PACKET
-        #  2        : (12+LENGTH+1) - (12+LENGTH+3)   : BINARY CHECKSUM
-        #  1        : (12+LENGTH+4)                   : ETX               -- END BINARY PACKET
+        #   and the payload is the length of the binary portion. The binary portion also 
+        #   includes an ASCII checksum and ETX.
         
         # read standard POD packet
         start = self.ReadPODpacket_Standard()
