@@ -9,8 +9,7 @@ class POD_Basics(COM_io) :
     __ARGUMENTS = 1
     __RETURNS   = 2
 
-    __commands = {
-        # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]) 
+    __commands = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
         0   : [ 'ACK',                  0,      0       ],
         1   : [ 'NACK',                 0,      0       ],
         2   : [ 'PING',                 0,      0       ],
@@ -33,10 +32,12 @@ class POD_Basics(COM_io) :
         # return STX character used to indicate start of a packet 
         return(bytes.fromhex('02'))
 
+
     @staticmethod
     def ETX():
         # return ETX character used to indicate end of a packet 
         return(bytes.fromhex('03'))
+
 
     @staticmethod
     def ValueToBytes(value, numBytes) : 
@@ -84,6 +85,7 @@ class POD_Basics(COM_io) :
 
         # return a byte message of a desired size 
         return(msg)
+
 
     @staticmethod
     def AsciiBytesToInt(msg_b):
@@ -134,6 +136,7 @@ class POD_Basics(COM_io) :
         # return complete bytes packet
         return(packet) 
 
+
     @staticmethod
     def UnpackPodCommand_Standard(msg) : 
         # standard POD packet with optional payload = 
@@ -159,7 +162,7 @@ class POD_Basics(COM_io) :
 
         # return unpacked POD command
         return(msg_unpacked)
-        
+
 
     @staticmethod
     def UnpackPodCommand_VariableBinary(msg) : 
@@ -191,6 +194,7 @@ class POD_Basics(COM_io) :
         # return unpacked POD command with variable length binary packet 
         return(msg_unpacked)
 
+
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) : 
@@ -206,13 +210,16 @@ class POD_Basics(COM_io) :
     def GetCommands(self):
         return(self.__commands)
 
+
     def AddCommand(num,name,arg,ret):
         # TODO
         pass
 
+
     def RemoveCommand(cmd) :
         # TODO
         pass
+
 
     def CommandNumber(self, name) : 
         # search through dict to find key 
@@ -221,6 +228,7 @@ class POD_Basics(COM_io) :
                 return(key)
         # no match
         return(None)
+
 
     def ArgumentBytes(self, cmd) : 
         # search through dict to find matching entry  
@@ -231,6 +239,7 @@ class POD_Basics(COM_io) :
         # no match
         return(None) 
 
+
     def ReturnBytes(self,cmd) : 
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
@@ -239,6 +248,7 @@ class POD_Basics(COM_io) :
                 return(val[self.__RETURNS])
         # no match
         return(None) 
+
 
     def DoesCommandExist(self, cmd) : 
         # initialize to false
@@ -250,6 +260,7 @@ class POD_Basics(COM_io) :
                 isValidCmd = True
         # return true if the command is in the command dict, false otherwise
         return(isValidCmd)
+
 
     # ------ POD COMMUNICATION ------
 
@@ -280,6 +291,7 @@ class POD_Basics(COM_io) :
         self.Write(packet)
         # return true to mark successful write :)
         return(True)
+
 
     def ReadPODpacket_Standard(self) : # assume non-binary 
         # initialize 
@@ -313,6 +325,7 @@ class POD_Basics(COM_io) :
 
         # return packet containing STX+message+ETX
         return(packet)
+
 
     def ReadPODpacket_VariableBinary(self) :
         # Variable binary packet: contain a normal POD packet with the binary command, 
