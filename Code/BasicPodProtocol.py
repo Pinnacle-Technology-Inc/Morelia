@@ -141,29 +141,21 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def PODpacket_Standard(commandNumber) : 
+    def PODpacket_Standard(commandNumber, payload=None) : 
         # prepare components of packet
-        stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4) # command number (4 bytes)
-        csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
-        etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
-        # concatenate packet components
-        packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
+        stx = POD_Basics.STX()                              # STX indicating start of packet (1 byte)
+        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
+        etx = POD_Basics.ETX()                              # ETX indicating end of packet (1 byte)
+        # build packet with payload 
+        if(payload) :
+            csm = POD_Basics.Checksum(cmd+payload)          # checksum (2 bytes)
+            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
+        # build packet with NO payload 
+        else :
+            csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
+            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
         # return complete bytes packet
         return(packet)
-
-
-    @staticmethod
-    def PODpacket_StandardWithPayload(commandNumber, payload) :   
-        # prepare components of packet
-        stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4) # command number (4 bytes)
-        csm = POD_Basics.Checksum(cmd+payload)          # checksum (2 bytes)
-        etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
-        # concatenate packet components with payload
-        packet = stx + cmd + payload + csm + etx
-        # return complete bytes packet
-        return(packet) 
 
 
     @staticmethod
@@ -320,7 +312,7 @@ class POD_Basics(COM_io) :
             if( len(payload) != self.ArgumentBytes(cmdNum)):
                 return(False)
             # build packet with paylaod 
-            packet = self.PODpacket_StandardWithPayload(cmdNum, payload)
+            packet = self.PODpacket_Standard(cmdNum, payload=payload)
         # otherwise, build standard packet 
         else : 
             # write standard packet to serial port 

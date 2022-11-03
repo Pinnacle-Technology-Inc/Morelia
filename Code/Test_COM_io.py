@@ -31,14 +31,8 @@ print('serial port in use:', pod.GetPortName())
 ####################################################################################################################
 print('\n\n')
 
-pod1 = POD_Basics(portUse)
-pod2 = POD_Basics(portUse)
-
-
-print(POD_Basics.GetNumberOfPodDevices())
-del pod1
-del pod2
-del pod
-print(POD_Basics.GetNumberOfPodDevices())
+pl = bytes.fromhex('3031')
+msg = pod.PODpacket_Standard(6,payload=pl)
+print(msg)
 
 print('\n\n')
