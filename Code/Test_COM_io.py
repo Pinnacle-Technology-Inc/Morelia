@@ -29,21 +29,18 @@ pod = POD_Basics(portUse)
 print('serial port in use:', pod.GetPortName())
 
 ####################################################################################################################
+print('\n\n')
+cmds = pod.GetCommands()
+print(cmds)
 
-cmd = bytes.fromhex('30303042')
-length = bytes.fromhex('30303634') 
-csm = pod.Checksum(cmd+length)
-blength = pod.AsciiBytesToInt(length)
-binaryMsg = bytes.fromhex('00')
-for i in range(blength-1) : 
-    binaryMsg = binaryMsg + bytes.fromhex('00') 
-binaryCsm = pod.Checksum(binaryMsg)
-msgPOD = pod.STX() + cmd + length + csm + pod.ETX()
-msg = msgPOD + binaryMsg + binaryCsm + pod.ETX()
-# print(msg)
+pod1 = POD_Basics(portUse)
+pod2 = POD_Basics(portUse)
 
-msgDict = pod.UnpackPodCommand_VariableBinary(msg)
-print(msgDict)
+pod1.AddCommand(99,'test',99,99)
 
-msgPODDict = pod.UnpackPodCommand_Standard(msgPOD)
-print(msgPODDict)
+cmds1 = pod1.GetCommands()
+print(cmds1)
+cmds2 = pod2.GetCommands()
+print(cmds2)
+
+print('\n\n')

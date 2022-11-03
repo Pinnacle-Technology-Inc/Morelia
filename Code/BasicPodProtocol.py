@@ -9,20 +9,24 @@ class POD_Basics(COM_io) :
     __ARGUMENTS = 1
     __RETURNS   = 2
 
+    # flag used to mark if __commands dict value has no real value 
+    __NOVALUE = -1
+
+    # contains allowed POD commands
     __commands = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
-        0   : [ 'ACK',                  0,      0       ],
-        1   : [ 'NACK',                 0,      0       ],
-        2   : [ 'PING',                 0,      0       ],
-        3   : [ 'RESET',                0,      0       ],
-        4   : [ 'ERROR',                0,      2       ],
-        5   : [ 'STATUS',               0,      0       ],
-        6   : [ 'STREAM',               2,      2       ], 
-        7   : [ 'BOOT',                 0,      0       ],
-        8   : [ 'TYPE',                 0,      2       ],
-        9   : [ 'ID',                   0,      0       ],
-        10  : [ 'SAMPLE RATE',          0,      0       ],
-        11  : [ 'BINARY',               0,      None    ],  # No return bytes because the length depends on the message
-        12  : [ 'FIRMWARE VERSION',     0,      6       ]
+        0   : [ 'ACK',                  0,      0           ],
+        1   : [ 'NACK',                 0,      0           ],
+        2   : [ 'PING',                 0,      0           ],
+        3   : [ 'RESET',                0,      0           ],
+        4   : [ 'ERROR',                0,      2           ],
+        5   : [ 'STATUS',               0,      0           ],
+        6   : [ 'STREAM',               2,      2           ], 
+        7   : [ 'BOOT',                 0,      0           ],
+        8   : [ 'TYPE',                 0,      2           ],
+        9   : [ 'ID',                   0,      0           ],
+        10  : [ 'SAMPLE RATE',          0,      0           ],
+        11  : [ 'BINARY',               0,      __NOVALUE   ],  # No return bytes because the length depends on the message
+        12  : [ 'FIRMWARE VERSION',     0,      6           ]
     }
 
     # ====== STATIC METHODS ======
@@ -211,18 +215,35 @@ class POD_Basics(COM_io) :
         return(self.__commands)
 
 
-    def AddCommand(self,num,name,arg,ret):
-        # TODO
-        pass
-        self.__commands[num] = [str(name),arg,ret]
+    def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
+        # command number and name must not already exist 
+        if(    self.DoesCommandExist(commandNumber)
+            or self.DoesCommandExist(commandName)
+        ):
+            # return false to mark failed add 
+            return(False)
+        # add entry to dict 
+        self.__commands[int(commandNumber)] = [str(commandName).upper(),int(argumentBytes),int(returnBytes)]
+        # return true to mark successful add
+        return(True)
 
 
     def RemoveCommand(self,cmd) :
-        # TODO
-        pass
+        # return false if command is not in dict 
+        if(not self.DoesCommandExist(cmd)): 
+            return(False)
+        # get command number 
+        if(isinstance(cmd,str)):
+            cmdNum = self.CommandNumberFromName(cmd)
+        else: 
+            cmdNum = cmd
+        # remove entry in dict
+        self.__commands.pop(cmdNum)
+        # return true to mark that cmd was removed from dict
+        return(True)
 
 
-    def CommandNumber(self, name) : 
+    def CommandNumberFromName(self, name) : 
         # search through dict to find key 
         for key,val in self.__commands.items() :
             if(name == val[self.__NAME]) : 
@@ -272,7 +293,7 @@ class POD_Basics(COM_io) :
 
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.CommandNumber(cmd)
+            cmdNum = self.CommandNumberFromName(cmd)
         else: 
             cmdNum = cmd
 
@@ -282,11 +303,11 @@ class POD_Basics(COM_io) :
             if( len(payload) != self.ArgumentBytes(cmdNum)):
                 return(False)
             # build packet with paylaod 
-            packet = POD_Basics.PODpacket_StandardWithPayload(cmdNum, payload)
+            packet = self.PODpacket_StandardWithPayload(cmdNum, payload)
         # otherwise, build standard packet 
         else : 
             # write standard packet to serial port 
-            packet = POD_Basics.PODpacket_Standard(cmdNum)
+            packet = self.PODpacket_Standard(cmdNum)
 
         # write packet to serial port 
         self.Write(packet)
