@@ -27,39 +27,3 @@ else:
 # create COM object 
 pod = POD_Basics(portUse)
 print('serial port in use:', pod.GetPortName())
-
-# # # PING 
-# # cmd = 2
-# # print('COMMAND:', cmd)
-# # if(pod.WritePacket(cmd)):
-# #     print('RESPONSE:', pod.ReadPodPacket())
-# # else:
-# #     print('Command ' + str(cmd) + ' write failed')
-
-# # # STREAM
-# # cmd = 6
-# # payload = bytes.fromhex('3030')
-# # print('COMMAND:', cmd)
-# # if(pod.WritePacket(cmd, payload)):
-# #     print('RESPONSE:', pod.ReadPodPacket())
-# # else:
-# #     print('Command ' + str(cmd) + ' write failed')
-
-cmd = bytes.fromhex('30303042')
-
-length = bytes.fromhex('30303634') 
-
-csm = pod.Checksum(cmd+length)
-
-blength = pod.AsciiBytesToInt(length)
-binaryMsg = bytes.fromhex('00')
-for i in range(blength-1) : 
-    binaryMsg = binaryMsg + bytes.fromhex('00') 
-
-binaryCsm = pod.Checksum(binaryMsg)
-
-msg = pod.STX() + cmd + length + csm + pod.ETX() + binaryMsg + binaryCsm + pod.ETX()
-
-print(msg)
-print(len(msg))
-
