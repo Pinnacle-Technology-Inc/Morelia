@@ -22,7 +22,7 @@ class POD_Basics(COM_io) :
         8   : [ 'TYPE',                 0,      2       ],
         9   : [ 'ID',                   0,      0       ],
         10  : [ 'SAMPLE RATE',          0,      0       ],
-        11  : [ 'BINARY',               None,   None    ],  # No argument as binary commands are recieved only. No return bytes because the length depends on the message
+        11  : [ 'BINARY',               0,      None    ],  # No return bytes because the length depends on the message
         12  : [ 'FIRMWARE VERSION',     0,      6       ]
     }
 
@@ -136,28 +136,27 @@ class POD_Basics(COM_io) :
 
     @staticmethod
     def UnpackPodCommand_Standard(msg) : 
-        # POD packet = STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-        MinPacketBytes=8
+        # standard POD packet with optional payload = 
+        #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+        MINBYTES=8
 
         # get number of bytes in message
         packetBytes = len(msg)
 
-        # return none of message does not have enough bytes, start with STX, or end with ETX
-        if( (packetBytes < MinPacketBytes)  or 
-            (msg[0].to_bytes(1,'big') != POD_Basics.STX())    or
-            (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        # message must have enough bytes, start with STX, or end with ETX
+        if(    (packetBytes < MINBYTES)
+            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
         ) : 
             raise Exception('Cannot unpack POD command.')
 
-        # create dict and add command number and checksum
-        msg_unpacked = {
-            'Command Number' : msg[1:5],                            # four bytes after STX
-            'Checksum'       : msg[(packetBytes-3):(packetBytes-1)] # two bytes before ETX
-        }
-        # add packet to dict, if available 
-        if( (packetBytes - MinPacketBytes) > 0) : 
-            msg_unpacked['Packet'] = msg[5:(packetBytes-3)]         # remaining bytes between command number and checksum 
-            
+        # create dict and add command number, payload, and checksum
+        msg_unpacked = {}
+        msg_unpacked['Command Number']  = msg[1:5]                                  # 4 bytes after STX
+        if( (packetBytes - MINBYTES) > 0) : # add packet to dict, if available 
+            msg_unpacked['Payload']     = msg[5:(packetBytes-3)]                    # remaining bytes between command number and checksum 
+        msg_unpacked['Checksum']        = msg[(packetBytes-3):(packetBytes-1)]      # 2 bytes before ETX
+
         # return unpacked POD command
         return(msg_unpacked)
 
@@ -168,8 +167,33 @@ class POD_Basics(COM_io) :
 
     @staticmethod
     def UnpackPodCommand_VariableBinary(msg) : 
-        # TODO 
-        pass
+        # variable binary POD packet = 
+        #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
+        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
+        MINBYTES = 15
+
+        # get number of bytes in message
+        packetBytes = len(msg)
+
+        # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
+        if(    (packetBytes < MINBYTES)                        
+            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            raise Exception('Cannot unpack POD command.')
+
+        # create dict and add command number and checksum
+        msg_unpacked = {
+            'Command Number'        : msg[1:5],                                 # 4 bytes after STX
+            'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
+            'Checksum'              : msg[9:11],                                # 2 bytes before ETX
+            'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
+            'Binary Checksum'       : msg[(packetBytes-3) : (packetBytes-1)]    # 2 bytes before binary ETX
+        }
+
+        # return unpacked POD command with variable length binary packet 
+        return(msg_unpacked)
 
     @staticmethod
     def UnpackPodCommand_FixedBinary(msg) : 
@@ -187,9 +211,6 @@ class POD_Basics(COM_io) :
     # ====== PUBLIC METHODS ======
 
     # ------ COMMAND DICT ACCESS ------
-
-    def SetCommands(self, cmdDict) : 
-        self.__commands = cmdDict
         
     def GetCommands(self):
         return(self.__commands)
@@ -269,7 +290,7 @@ class POD_Basics(COM_io) :
         # return true to mark successful write :)
         return(True)
 
-    def ReadPODpacket_Standard(self) : # assume non-binary 
+    def ReadPODpacket(self) : # assume non-binary 
         # initialize 
         time    = 0
         TIMEOUT = 1000   
@@ -302,10 +323,6 @@ class POD_Basics(COM_io) :
         # return packet containing STX+message+ETX
         return(packet)
 
-    def ReadPodPacket_Legacy(self) : 
-        # TODO 
-        pass
-
     def ReadPodPacket_VariableBinary(self) :
         # Variable binary packet: contain a normal POD packet with the binary command, 
         # and the payload is the length of the binary portion. 
@@ -322,7 +339,7 @@ class POD_Basics(COM_io) :
         #  1        : (12+LENGTH+4)                   : ETX               -- END BINARY PACKET
         
         # read standard POD packet
-        start = self.ReadPODpacket_Standard()
+        start = self.ReadPODpacket()
         startDict = self.UnpackPodCommand_Standard(start)
 
         # check if command number is valid, return if not
@@ -331,7 +348,7 @@ class POD_Basics(COM_io) :
             raise Exception('Invalid binary POD command.')
 
         # read binary packet length
-        numOfbinaryBytes = self.AsciiBytesToInt(startDict['Packet'])
+        numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
     
         # continue reading  packet
         binaryMsg = self.Read(numOfbinaryBytes)
