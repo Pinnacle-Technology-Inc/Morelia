@@ -51,7 +51,7 @@ class POD_Basics(COM_io) :
     # ============ STATIC METHODS ============  ========================================================================================================================
 
     @staticmethod
-    def GetNumberOfPodDevices() :
+    def GetNumberOfPODDevices() :
         # returns the counter tracking the number of active pod devices
         return(POD_Basics.__NUMPOD)
 
@@ -159,7 +159,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def UnpackPodCommand_Standard(msg) : 
+    def UnpackPODcommand_Standard(msg) : 
         # standard POD packet with optional payload = 
         #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         MINBYTES=8
@@ -186,7 +186,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def UnpackPodCommand_VariableBinary(msg) : 
+    def UnpackPODcommand_VariableBinary(msg) : 
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
@@ -375,7 +375,7 @@ class POD_Basics(COM_io) :
         
         # read standard POD packet
         start = self.ReadPODpacket_Standard()
-        startDict = self.UnpackPodCommand_Standard(start)
+        startDict = self.UnpackPODcommand_Standard(start)
 
         # check if command number is valid, return if not
         cmd = self.AsciiBytesToInt(startDict['Command Number'])
