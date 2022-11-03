@@ -47,10 +47,16 @@ print('serial port in use:', pod.GetPortName())
 
 cmd = bytes.fromhex('30303042')
 length = bytes.fromhex('30303634') 
-csm = POD_Basics.Checksum(cmd+length)
+csm = pod.Checksum(cmd+length)
 
 msg = pod.STX() + cmd + length + csm + pod.ETX() # 1 + 4 + 4 + 2 + 1
 print(msg)
 
 msg_split = pod.UnpackPodCommand(msg)
 print(msg_split)
+
+cmd = pod.AsciiBytesToInt(msg_split['Command Number'])
+print(cmd)
+
+length = pod.AsciiBytesToInt(msg_split['Packet'])
+print(length)
