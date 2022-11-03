@@ -30,19 +30,15 @@ print('serial port in use:', pod.GetPortName())
 
 ####################################################################################################################
 print('\n\n')
-cmds = pod.GetCommands()
-print(cmds)
 
 pod1 = POD_Basics(portUse)
 pod2 = POD_Basics(portUse)
 
-pod1.AddCommand(99,'test',99,99)
-
-cmds1 = pod1.GetCommands()
-print(cmds1)
-cmds2 = pod2.GetCommands()
-print(cmds2)
-
 
 print(POD_Basics.GetNumberOfPodDevices())
+del pod1
+del pod2
+del pod
+print(POD_Basics.GetNumberOfPodDevices())
+
 print('\n\n')

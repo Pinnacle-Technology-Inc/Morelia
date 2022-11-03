@@ -43,6 +43,12 @@ class POD_Basics(COM_io) :
         # increment number of POD device counter
         POD_Basics.__NUMPOD += 1
 
+    def __del__(self):
+        # serial destructor 
+        super().__del__()
+        # decrement number of POD device counter
+        POD_Basics.__NUMPOD -= 1
+
     # ====== STATIC METHODS ======
 
     @staticmethod
