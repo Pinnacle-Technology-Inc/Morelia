@@ -40,7 +40,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def ValueToBytes(value, numBytes) : 
+    def IntToAsciiBytes(value, numBytes) : 
         # convert number into a hex string and remove the '0x' prefix
         num_hexStr = hex(value).replace('0x','')
 
@@ -106,7 +106,7 @@ class POD_Basics(COM_io) :
         # invert and get last byte 
         cs  = ~sum & 0xFF
         # convert int into bytes 
-        cs_bytes = POD_Basics.ValueToBytes(cs, 2)
+        cs_bytes = POD_Basics.IntToAsciiBytes(cs, 2)
         # return checksum bytes
         return(cs_bytes)
 
@@ -115,7 +115,7 @@ class POD_Basics(COM_io) :
     def PODpacket_Standard(commandNumber) : 
         # prepare components of packet
         stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
+        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4) # command number (4 bytes)
         csm = POD_Basics.Checksum(cmd)                  # checksum (2 bytes)
         etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
         # concatenate packet components
@@ -128,7 +128,7 @@ class POD_Basics(COM_io) :
     def PODpacket_StandardWithPayload(commandNumber, payload) :   
         # prepare components of packet
         stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
+        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4) # command number (4 bytes)
         csm = POD_Basics.Checksum(cmd+payload)          # checksum (2 bytes)
         etx = POD_Basics.ETX()                          # ETX indicating end of packet (1 byte)
         # concatenate packet components with payload
@@ -211,12 +211,13 @@ class POD_Basics(COM_io) :
         return(self.__commands)
 
 
-    def AddCommand(num,name,arg,ret):
+    def AddCommand(self,num,name,arg,ret):
         # TODO
         pass
+        self.__commands[num] = [str(name),arg,ret]
 
 
-    def RemoveCommand(cmd) :
+    def RemoveCommand(self,cmd) :
         # TODO
         pass
 
