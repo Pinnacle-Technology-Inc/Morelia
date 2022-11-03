@@ -52,23 +52,5 @@ csm = POD_Basics.Checksum(cmd+length)
 msg = pod.STX() + cmd + length + csm + pod.ETX() # 1 + 4 + 4 + 2 + 1
 print(msg)
 
-def UnpackPodCommand(msg, MinPacketBytes=8) : 
-    # get number of bytes in message
-    packetBytes = len(msg)
-    # create dict
-    msg_unpacked = {
-        'Command Number' : msg[1:5],                            # four bytes after STX
-        'Checksum'       : msg[(packetBytes-3):(packetBytes-1)] # two bytes before ETX
-    }
-    # add packet if available 
-    if( (packetBytes - MinPacketBytes) > 0) : 
-        msg_unpacked['Packet'] = msg[5:(packetBytes-3)]         # remaining bytes between command number and checksum 
-          
-    # return unpacked POD command
-    return(msg_unpacked)
-
-msg_split = UnpackPodCommand(msg)
-print(msg_split)
-
 msg_split = pod.UnpackPodCommand(msg)
 print(msg_split)

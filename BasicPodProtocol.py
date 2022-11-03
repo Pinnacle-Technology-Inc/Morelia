@@ -126,22 +126,33 @@ class POD_Basics(COM_io) :
         return(packet) 
 
     @staticmethod
-    def UnpackPodCommand(msg, MinPacketBytes=8) : 
+    def UnpackPodCommand(msg) : 
+        # POD packet = STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+        MinPacketBytes=8
+
         # get number of bytes in message
         packetBytes = len(msg)
-        # create dict
+
+        # return none of message does not have enough bytes, start with STX, or end with ETX
+        if( (packetBytes < MinPacketBytes)  or 
+            (msg[0].to_bytes(1,'big') != POD_Basics.STX())    or
+            (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            return(None)
+
+        # create dict and add command number and checksum
         msg_unpacked = {
             'Command Number' : msg[1:5],                            # four bytes after STX
             'Checksum'       : msg[(packetBytes-3):(packetBytes-1)] # two bytes before ETX
         }
-        # add packet if available 
+        # add packet to dict, if available 
         if( (packetBytes - MinPacketBytes) > 0) : 
             msg_unpacked['Packet'] = msg[5:(packetBytes-3)]         # remaining bytes between command number and checksum 
             
         # return unpacked POD command
         return(msg_unpacked)
 
-        
+
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) : 
@@ -274,5 +285,5 @@ class POD_Basics(COM_io) :
         # end after reading length and seeing ETX
 
     def ReadFixedBinaryPacket(self):
-        # fixed: Generally contains the typical STX and ASCII command number, followed by the binary data, followed by a CS and ETX.
+        # Generally contains the typical STX and ASCII command number, followed by the binary data, followed by a CS and ETX.
         pass
