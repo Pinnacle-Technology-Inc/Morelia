@@ -46,17 +46,20 @@ print('serial port in use:', pod.GetPortName())
 # #     print('Command ' + str(cmd) + ' write failed')
 
 cmd = bytes.fromhex('30303042')
+
 length = bytes.fromhex('30303634') 
+
 csm = pod.Checksum(cmd+length)
 
-msg = pod.STX() + cmd + length + csm + pod.ETX() # 1 + 4 + 4 + 2 + 1
+blength = pod.AsciiBytesToInt(length)
+binaryMsg = bytes.fromhex('00')
+for i in range(blength-1) : 
+    binaryMsg = binaryMsg + bytes.fromhex('00') 
+
+binaryCsm = pod.Checksum(binaryMsg)
+
+msg = pod.STX() + cmd + length + csm + pod.ETX() + binaryMsg + binaryCsm + pod.ETX()
+
 print(msg)
+print(len(msg))
 
-msg_split = pod.UnpackPodCommand(msg)
-print(msg_split)
-
-cmd = pod.AsciiBytesToInt(msg_split['Command Number'])
-print(cmd)
-
-length = pod.AsciiBytesToInt(msg_split['Packet'])
-print(length)

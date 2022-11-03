@@ -22,7 +22,7 @@ class POD_Basics(COM_io) :
         8   : [ 'TYPE',                 0,      2       ],
         9   : [ 'ID',                   0,      0       ],
         10  : [ 'SAMPLE RATE',          0,      0       ],
-        11  : [ 'BINARY',               None,   None    ],  # binary commands are typically recieved only
+        11  : [ 'BINARY',               None,   None    ],  # No argument as binary commands are recieved only. No return bytes because the length depends on the message
         12  : [ 'FIRMWARE VERSION',     0,      6       ]
     }
 
@@ -110,7 +110,7 @@ class POD_Basics(COM_io) :
 
 
     @staticmethod
-    def PODpacket_standard(commandNumber) : 
+    def PODpacket_Standard(commandNumber) : 
         # prepare components of packet
         stx = POD_Basics.STX()                          # STX indicating start of packet (1 byte)
         cmd = POD_Basics.ValueToBytes(commandNumber, 4) # command number (4 bytes)
@@ -147,7 +147,7 @@ class POD_Basics(COM_io) :
             (msg[0].to_bytes(1,'big') != POD_Basics.STX())    or
             (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
         ) : 
-            return(None)
+            raise Exception('Cannot unpack POD command.')
 
         # create dict and add command number and checksum
         msg_unpacked = {
@@ -243,14 +243,14 @@ class POD_Basics(COM_io) :
         # otherwise, build standard packet 
         else : 
             # write standard packet to serial port 
-            packet = POD_Basics.PODpacket_standard(cmdNum)
+            packet = POD_Basics.PODpacket_Standard(cmdNum)
 
         # write packet to serial port 
         self.Write(packet)
         # return true to mark successful write :)
         return(True)
 
-    def ReadPodPacket(self) : # assume non-binary 
+    def ReadPODpacket_Standard(self) : # assume non-binary 
         # initialize 
         time    = 0
         TIMEOUT = 1000   
@@ -283,18 +283,55 @@ class POD_Basics(COM_io) :
         # return packet containing STX+message+ETX
         return(packet)
 
-    def ReadVariableBinaryPacket(self) :
-        # contain a normal POD packet with the binary command, and the payload is the length of the binary portion.  The binary portion also includes an ASCII checksum and ETX.
+    def ReadPodPacket_Legacy(self) : 
+        # TODO 
+        pass
+
+    def ReadPodPacket_VariableBinary(self) :
+        # Variable binary packet: contain a normal POD packet with the binary command, 
+        # and the payload is the length of the binary portion. 
+        # The binary portion also includes an ASCII checksum and ETX.
+        #  BYTES    : POSITION                        : CONTENTS          -- TIPS
+        # ------------------------------------------------------------------------------------
+        #  1        : 0                               : STX               -- BEGIN STANDARD POD PACKET 
+        #  4        : 1-4                             : COMMAND
+        #  4        : 5-8                             : LENGTH
+        #  2        : 9-10                            : CHECKSUM
+        #  1        : 11                              : ETX               -- END STANDARD POD PACKET
+        #  LENGTH   : 12-(12+LENGTH)                  : BINARY DATA       -- BEGIN BINARY PACKET
+        #  2        : (12+LENGTH+1) - (12+LENGTH+3)   : BINARY CHECKSUM
+        #  1        : (12+LENGTH+4)                   : ETX               -- END BINARY PACKET
         
-        # read POD packet
-        start = self.ReadPodPacket()
+        # read standard POD packet
+        start = self.ReadPODpacket_Standard()
         startDict = self.UnpackPodCommand(start)
 
-        # read binary packet length
-   
-        # continue reading binary packet
-        # end after reading length and seeing ETX
+        # check if command number is valid, return if not
+        cmd = self.AsciiBytesToInt(startDict['Command Number'])
+        if(not self.DoesCommandExist(cmd)) : 
+            raise Exception('Invalid binary POD command.')
 
-    def ReadFixedBinaryPacket(self):
-        # Generally contains the typical STX and ASCII command number, followed by the binary data, followed by a CS and ETX.
+        # read binary packet length
+        numOfbinaryBytes = self.AsciiBytesToInt(startDict['Packet'])
+    
+        # continue reading  packet
+        binaryMsg = self.Read(numOfbinaryBytes)
+        binaryCsm = self.Read(2)
+        binaryLast = self.Read(1)
+
+        # verify that Last is ETX
+        if(binaryLast != self.ETX()) : 
+            raise Exception('Bad binary read.')
+
+        # build complete message
+        packet = start + binaryMsg + binaryCsm + binaryLast
+
+        # return complete variable length binary packet
+        return(packet)
+
+    def ReadPodPacket_FixedBinary(self):
+        # Fixed length binary packet: Generally contains the typical STX and ASCII command number, 
+        # followed by the binary data, followed by a CS and ETX.
+
+        # TODO 
         pass
