@@ -159,11 +159,7 @@ class POD_Basics(COM_io) :
 
         # return unpacked POD command
         return(msg_unpacked)
-
-    @staticmethod
-    def UnpackPodCommand_Legacy(msg) : 
-        # TODO 
-        pass
+        
 
     @staticmethod
     def UnpackPodCommand_VariableBinary(msg) : 
