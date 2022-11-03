@@ -14,6 +14,9 @@ class POD_Basics(COM_io) :
     __NOVALUE = -1
 
 
+    # number of active POD devices
+    __NUMPOD = 0
+
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) : 
@@ -37,7 +40,16 @@ class POD_Basics(COM_io) :
             12  : [ 'FIRMWARE VERSION',     0,      6               ]
         }
 
+        # increment number of POD device counter
+        POD_Basics.__NUMPOD += 1
+
     # ====== STATIC METHODS ======
+
+    @staticmethod
+    def GetNumberOfPodDevices() :
+        # returns the counter tracking the number of active pod devices
+        return(POD_Basics.__NUMPOD)
+
 
     @staticmethod
     def STX():

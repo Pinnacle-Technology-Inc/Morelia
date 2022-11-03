@@ -43,4 +43,6 @@ print(cmds1)
 cmds2 = pod2.GetCommands()
 print(cmds2)
 
+
+print(POD_Basics.GetNumberOfPodDevices())
 print('\n\n')
