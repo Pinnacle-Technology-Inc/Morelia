@@ -4,6 +4,7 @@ class POD_Basics(COM_io) :
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
+
     # index keys for self.__commands dict values 
     __NAME      = 0
     __ARGUMENTS = 1
@@ -17,6 +18,7 @@ class POD_Basics(COM_io) :
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
+
 
     def __init__(self, port, baudrate=9600) : 
         # initialize serial port 
@@ -48,9 +50,12 @@ class POD_Basics(COM_io) :
         # decrement number of POD device counter
         POD_Basics.__NUMPOD -= 1
 
+
     # ============ STATIC METHODS ============  ========================================================================================================================
     
+
     # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
+
 
     @staticmethod
     def GetNumberOfPODDevices() :
@@ -188,7 +193,7 @@ class POD_Basics(COM_io) :
             or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
             or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
         ) : 
-            raise Exception('Cannot unpack POD command.')
+            raise Exception('Cannot unpack an invalid POD packet.')
 
         # create dict and add command number, payload, and checksum
         msg_unpacked = {}
@@ -216,7 +221,7 @@ class POD_Basics(COM_io) :
             or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
             or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
         ) : 
-            raise Exception('Cannot unpack POD command.')
+            raise Exception('Cannot unpack an invalid POD packet.')
 
         # create dict and add command number and checksum
         msg_unpacked = {
