@@ -1,4 +1,4 @@
-from Serial_InOut import COM_io
+from SerialCommunication import COM_io
 from BasicPodProtocol import POD_Basics
 
 # get port list 

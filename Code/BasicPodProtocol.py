@@ -1,4 +1,4 @@
-from Serial_InOut import COM_io
+from SerialCommunication import COM_io
 from PodCommands import POD_Commands
 
 class POD_Basics(COM_io) : 
