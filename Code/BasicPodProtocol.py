@@ -1,7 +1,7 @@
 from SerialCommunication import COM_io
 from PodCommands import POD_Commands
 
-class POD_Basics(COM_io) : 
+class POD_Basics : 
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
@@ -15,17 +15,14 @@ class POD_Basics(COM_io) :
 
     def __init__(self, port, baudrate=9600) : 
         # initialize serial port 
-        super().__init__(port, baudrate=baudrate)
-        
-        # create object to handle command dict 
+        self.__port = COM_io(port, baudrate=9600)
+        # create object to handle commands 
         self.__commands = POD_Commands()
-
         # increment number of POD device counter
         POD_Basics.__NUMPOD += 1
 
+
     def __del__(self):
-        # serial destructor 
-        super().__del__()
         # decrement number of POD device counter
         POD_Basics.__NUMPOD -= 1
 
@@ -263,7 +260,7 @@ class POD_Basics(COM_io) :
         packet = self.PODpacket_Standard(cmdNum, payload=payload)
 
         # write packet to serial port 
-        self.Write(packet)
+        self.__port.Write(packet)
 
         # returns packet that was written
         return(packet)
@@ -277,16 +274,16 @@ class POD_Basics(COM_io) :
 
         # read until STX found
         while(b != self.STX() and time<TIMEOUT) :
-            time += 1           # increment counter
-            b = self.Read(1)    # read next byte  
+            time += 1                   # increment counter
+            b = self.__port.Read(1)     # read next byte  
 
         # set first byte of packet to STX
         packet = b
 
         # get bytes until ETX, or start over at next STX
         while(b != self.ETX() and time<TIMEOUT) : 
-            time += 1           # increment counter
-            b = self.Read(1)    # read next byte
+            time += 1                   # increment counter
+            b = self.__port.Read(1)     # read next byte
             # check if STX
             if(b == self.STX()):
                 # forget previous packet and start with STX 
@@ -320,10 +317,10 @@ class POD_Basics(COM_io) :
         # read binary packet length
         numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
     
-        # continue reading  packet
-        binaryMsg  = self.Read(numOfbinaryBytes) # read binary packet
-        binaryCsm  = self.Read(2)                # read checksum
-        binaryLast = self.Read(1)                # read ETX
+        # continue reading packet
+        binaryMsg  = self.__port.Read(numOfbinaryBytes) # read binary packet
+        binaryCsm  = self.__port.Read(2)                # read checksum
+        binaryLast = self.__port.Read(1)                # read ETX
 
         # verify that Last is ETX
         if(binaryLast != self.ETX()) : 

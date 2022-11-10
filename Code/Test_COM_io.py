@@ -26,10 +26,17 @@ else:
 
 # create COM object 
 pod = POD_Basics(portUse)
-print('serial port in use:', pod.GetPortName())
+
+# verify communication link
+wrt = pod.WritePacket('PING')
+red = pod.ReadPODpacket_Standard()
+if(wrt == red):
+    print('Communication successful')
+else:
+    print('Communication Failiure')
+
 
 ########## TESTING ##########################################################################################################
 print('\n\n')
-
 
 print('\n\n')
