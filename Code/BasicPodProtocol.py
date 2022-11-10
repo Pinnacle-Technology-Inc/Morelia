@@ -263,16 +263,6 @@ class POD_Basics :
         return(self._commands.GetCommands())
 
 
-    def AddDeviceCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
-        # Add command to this instance's command dict object 
-        return(self._commands.AddCommand(commandNumber,commandName,argumentBytes,returnBytes))
-
-
-    def RemoveDeviceCommand(self,cmd) :
-        # Remove command to this instance's command dict object 
-        return(self._commands.RemoveCommand(cmd))
-
-
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
