@@ -1,6 +1,6 @@
 from SerialCommunication import COM_io
 from BasicPodProtocol import POD_Basics
-
+from PodDevice_8206HR import POD_8206HR
 # get port list 
 portList = COM_io.GetCOMportsList()
 
@@ -39,6 +39,7 @@ else:
 ########## TESTING ##########################################################################################################
 print('\n\n')
 
-
+pod8206HR = POD_8206HR(portUse)
+print(pod8206HR.GetDeviceCommands())
 
 print('\n\n')

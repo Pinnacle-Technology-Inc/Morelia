@@ -15,9 +15,9 @@ class POD_Basics :
 
     def __init__(self, port, baudrate=9600) : 
         # initialize serial port 
-        self.__port = COM_io(port, baudrate)
+        self._port = COM_io(port, baudrate)
         # create object to handle commands 
-        self.__commands = POD_Commands()
+        self._commands = POD_Commands()
         # increment number of POD device counter
         POD_Basics.__NUMPOD += 1
 
@@ -260,17 +260,17 @@ class POD_Basics :
 
     def GetDeviceCommands(self):
         # Get commands from this instance's command dict object 
-        return(self.__commands.GetCommands())
+        return(self._commands.GetCommands())
 
 
     def AddDeviceCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
         # Add command to this instance's command dict object 
-        return(self.__commands.AddCommand(commandNumber,commandName,argumentBytes,returnBytes))
+        return(self._commands.AddCommand(commandNumber,commandName,argumentBytes,returnBytes))
 
 
     def RemoveDeviceCommand(self,cmd) :
         # Remove command to this instance's command dict object 
-        return(self.__commands.RemoveCommand(cmd))
+        return(self._commands.RemoveCommand(cmd))
 
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
@@ -278,17 +278,17 @@ class POD_Basics :
 
     def WritePacket(self, cmd, payload=None) : 
         # return False if command is not valid
-        if(not self.__commands.DoesCommandExist(cmd)) : 
+        if(not self._commands.DoesCommandExist(cmd)) : 
             return(False)
 
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.__commands.CommandNumberFromName(cmd)
+            cmdNum = self._commands.CommandNumberFromName(cmd)
         else: 
             cmdNum = cmd
 
         # check if the command requires a payload
-        argSize = self.__commands.ArgumentBytes(cmdNum)
+        argSize = self._commands.ArgumentBytes(cmdNum)
         if(argSize > 0) : 
             # check to see if a payload was given 
             if(not payload):
@@ -305,7 +305,7 @@ class POD_Basics :
         packet = self.PODpacket_Standard(cmdNum, payload=payload)
 
         # write packet to serial port 
-        self.__port.Write(packet)
+        self._port.Write(packet)
 
         # returns packet that was written
         return(packet)
@@ -320,7 +320,7 @@ class POD_Basics :
         # read until STX found
         while(b != self.STX() and time<TIMEOUT) :
             time += 1                   # increment counter
-            b = self.__port.Read(1)     # read next byte  
+            b = self._port.Read(1)     # read next byte  
 
         # set first byte of packet to STX
         packet = b
@@ -328,7 +328,7 @@ class POD_Basics :
         # get bytes until ETX, or start over at next STX
         while(b != self.ETX() and time<TIMEOUT) : 
             time += 1                   # increment counter
-            b = self.__port.Read(1)     # read next byte
+            b = self._port.Read(1)     # read next byte
             # check if STX
             if(b == self.STX()):
                 # forget previous packet and start with STX 
@@ -356,16 +356,16 @@ class POD_Basics :
 
         # check if command number is valid, return if not
         cmd = self.AsciiBytesToInt(startDict['Command Number'])
-        if(not self.__commands.DoesCommandExist(cmd)) : 
+        if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('Invalid binary POD command.')
 
         # read binary packet length
         numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
     
         # continue reading packet
-        binaryMsg  = self.__port.Read(numOfbinaryBytes) # read binary packet
-        binaryCsm  = self.__port.Read(2)                # read checksum
-        binaryLast = self.__port.Read(1)                # read ETX
+        binaryMsg  = self._port.Read(numOfbinaryBytes) # read binary packet
+        binaryCsm  = self._port.Read(2)                # read checksum
+        binaryLast = self._port.Read(1)                # read ETX
 
         # verify that Last is ETX
         if(binaryLast != self.ETX()) : 
