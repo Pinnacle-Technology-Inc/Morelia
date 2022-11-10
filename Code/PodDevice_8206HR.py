@@ -24,7 +24,7 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(105, 'GET TTL IN',           POD_Commands.U8(),                      POD_Commands.U8()       )
         self._commands.AddCommand(106, 'GET TTL PORT',         0,                                      POD_Commands.U8()       )
         self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,                                      POD_Commands.U8()       )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,                                      15                      )
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,                                      16                      )     # see ReadPODpacket_Binary()
 
     # ============ STATIC METHODS ============      ========================================================================================================================
 
@@ -60,13 +60,16 @@ class POD_8206HR(POD_Basics) :
         while(packet != self.STX()) :
             packet = self._port.Read(1)     # read next byte  
 
-        # read remaining 14 bytes
-        packet += self._port.Read(14)
+        # read remaining 15 bytes
+        packet += self._port.Read(15)
 
         # verify that Last is ETX
-        last = packet[len(packet)].to_bytes(1,'big')
+        last = packet[len(packet)-1].to_bytes(1,'big')
         if(last != self.ETX()) : 
             raise Exception('Bad binary read.')
         
         # return full binary packet
         return(packet)
+
+    
+    # TODO unpack binary pod message 

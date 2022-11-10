@@ -40,6 +40,12 @@ else:
 print('\n\n')
 
 pod8206HR = POD_8206HR(portUse)
-print(pod8206HR.GetDeviceCommands())
+
+pod8206HR.WritePacket(6, bytes.fromhex('3031')) # turn on stream 
+
+for i in range(10):
+    print(pod8206HR.ReadPODpacket_Binary())
+
+pod8206HR.WritePacket(6, bytes.fromhex('3030')) # turn off stream 
 
 print('\n\n')
