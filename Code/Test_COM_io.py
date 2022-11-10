@@ -1,4 +1,5 @@
-from Serial_InOut import COM_io
+from SerialCommunication import COM_io
+from BasicPodProtocol import POD_Basics
 
 # get port list 
 portList = COM_io.GetCOMportsList()
@@ -24,20 +25,20 @@ else:
         raise Exception('[!] COM port does not exist.')
 
 # create COM object 
-com = COM_io(portUse)
-print('serial port in use:', com.GetPortName())
+pod = POD_Basics(portUse)
 
-# === test functions of COM_io
+# verify communication link
+wrt = pod.WritePacket('PING')
+red = pod.ReadPODpacket_Standard()
+if(wrt == red):
+    print('Communication successful')
+else:
+    print('Communication Failiure')
 
-# # read!
-# while True:
-#     # packet = com.ReadLine()
-#     # packet = com.Read(7)
-#     packet = com.ReadUntil(b'\r')
-#     print(packet)
 
-ping = COM_io.HexStrToByteArray('0230303032334403')
-stopat = COM_io.HexStrToByteArray('03')
+########## TESTING ##########################################################################################################
+print('\n\n')
 
-com.Write(ping)
-print('PING:', com.ReadUntil(stopat))
+
+
+print('\n\n')
