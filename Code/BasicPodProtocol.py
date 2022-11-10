@@ -223,7 +223,7 @@ class POD_Basics :
         csmValid = POD_Basics.Checksum(packet)
         csm = msgDict['Checksum'] 
 
-        # check if checksums match
+        # return True if checksums match 
         if(csm == csmValid) :
             return(True)
         else:
@@ -236,7 +236,7 @@ class POD_Basics :
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
 
         # recreate POD packets 
-        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + 'Binary Packet Length'
+        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + msgDict['Binary Packet Length']
         packetBin = msgDict['Binary Data']
 
         # get checksums 
