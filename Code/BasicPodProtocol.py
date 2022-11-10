@@ -234,8 +234,6 @@ class POD_Basics :
     def IsPodPacketValid_VariableBinary(msg) :
         # unpack standard POD packet 
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
-        # get number of entries in dict (2=command+checksum, 3=command+payload+checksum)
-        numEntries = len(msgDict)
 
         # recreate POD packets 
         packetPre = msgDict['Command Number'] + msgDict['Command Number'] + 'Binary Packet Length'
