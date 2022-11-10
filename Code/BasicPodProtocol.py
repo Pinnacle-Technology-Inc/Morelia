@@ -1,17 +1,10 @@
 from Serial_InOut import COM_io
+from PodCommands import POD_Commands
 
 class POD_Basics(COM_io) : 
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
-
-    # index keys for self.__commands dict values 
-    __NAME      = 0
-    __ARGUMENTS = 1
-    __RETURNS   = 2
-
-    # flag used to mark if self.__commands dict value has no real value 
-    __NOVALUE = -1
 
     # number of active POD devices, maintained by __init__ and __del__ 
     __NUMPOD = 0
@@ -24,22 +17,8 @@ class POD_Basics(COM_io) :
         # initialize serial port 
         super().__init__(port, baudrate=baudrate)
         
-        # contains allowed POD commands
-        self.__commands = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
-            0   : [ 'ACK',                  0,      0               ],
-            1   : [ 'NACK',                 0,      0               ],
-            2   : [ 'PING',                 0,      0               ],
-            3   : [ 'RESET',                0,      0               ],
-            4   : [ 'ERROR',                0,      2               ],
-            5   : [ 'STATUS',               0,      0               ],
-            6   : [ 'STREAM',               2,      2               ], 
-            7   : [ 'BOOT',                 0,      0               ],
-            8   : [ 'TYPE',                 0,      2               ],
-            9   : [ 'ID',                   0,      0               ],
-            10  : [ 'SAMPLE RATE',          0,      0               ],
-            11  : [ 'BINARY',               0,      self.__NOVALUE  ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      6               ]
-        }
+        # create object to handle command dict 
+        self.__commands = POD_Commands()
 
         # increment number of POD device counter
         POD_Basics.__NUMPOD += 1
@@ -61,11 +40,6 @@ class POD_Basics(COM_io) :
     def GetNumberOfPODDevices() :
         # returns the counter tracking the number of active pod devices
         return(POD_Basics.__NUMPOD)
-
-    @staticmethod
-    def GetNoValue() : 
-        # returns the no value marker for commands dict 
-        return(POD_Basics.__NOVALUE)
 
 
     # ------------ USEFUL VALUES ------------   ------------------------------------------------------------------------------------------------------------------------
@@ -242,77 +216,19 @@ class POD_Basics(COM_io) :
     # ------------ COMMAND DICT ACCESS ------------ ------------------------------------------------------------------------------------------------------------------------
         
 
-    def GetCommands(self):
-        return(self.__commands)
+    def GetDeviceCommands(self):
+        # Get commands from this instance's command dict object 
+        return(self.__commands.GetCommands())
 
 
-    def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
-        # command number and name must not already exist 
-        if(    self.DoesCommandExist(commandNumber)
-            or self.DoesCommandExist(commandName)
-        ):
-            # return false to mark failed add 
-            return(False)
-        # add entry to dict 
-        self.__commands[int(commandNumber)] = [str(commandName).upper(),int(argumentBytes),int(returnBytes)]
-        # return true to mark successful add
-        return(True)
+    def AddDeviceCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
+        # Add command to this instance's command dict object 
+        return(self.__commands.AddCommand(commandNumber,commandName,argumentBytes,returnBytes))
 
 
-    def RemoveCommand(self,cmd) :
-        # return false if command is not in dict 
-        if(not self.DoesCommandExist(cmd)): 
-            return(False)
-        # get command number 
-        if(isinstance(cmd,str)):
-            cmdNum = self.CommandNumberFromName(cmd)
-        else: 
-            cmdNum = cmd
-        # remove entry in dict
-        self.__commands.pop(cmdNum)
-        # return true to mark that cmd was removed from dict
-        return(True)
-
-
-    def CommandNumberFromName(self, name) : 
-        # search through dict to find key 
-        for key,val in self.__commands.items() :
-            if(name == val[self.__NAME]) : 
-                return(key)
-        # no match
-        return(None)
-
-
-    def ArgumentBytes(self, cmd) : 
-        # search through dict to find matching entry  
-        for key,val in self.__commands.items() :
-            if(cmd == key or cmd == val[self.__NAME]) : 
-                # return the number of bytes in the command return 
-                return(val[self.__ARGUMENTS])
-        # no match
-        return(None) 
-
-
-    def ReturnBytes(self,cmd) : 
-        # search through dict to find matching entry  
-        for key,val in self.__commands.items() :
-            if(cmd == key or cmd == val[self.__NAME]) : 
-                # return the number of bytes in the command return 
-                return(val[self.__RETURNS])
-        # no match
-        return(None) 
-
-
-    def DoesCommandExist(self, cmd) : 
-        # initialize to false
-        isValidCmd = False
-        # check each command number and name to try to find match 
-        for key,val in self.__commands.items() : 
-            if(cmd==key or cmd==val[self.__NAME]):
-                # set to true if match found 
-                isValidCmd = True
-        # return true if the command is in the command dict, false otherwise
-        return(isValidCmd)
+    def RemoveDeviceCommand(self,cmd) :
+        # Remove command to this instance's command dict object 
+        return(self.__commands.RemoveCommand(cmd))
 
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
@@ -320,17 +236,17 @@ class POD_Basics(COM_io) :
 
     def WritePacket(self, cmd, payload=None) : 
         # return False if command is not valid
-        if(not self.DoesCommandExist(cmd)) : 
+        if(not self.__commands.DoesCommandExist(cmd)) : 
             return(False)
 
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.CommandNumberFromName(cmd)
+            cmdNum = self.__commands.CommandNumberFromName(cmd)
         else: 
             cmdNum = cmd
 
         # check if the command requires a payload
-        argSize = self.ArgumentBytes(cmdNum)
+        argSize = self.__commands.ArgumentBytes(cmdNum)
         if(argSize > 0) : 
             # check to see if a payload was given 
             if(not payload):
@@ -398,16 +314,16 @@ class POD_Basics(COM_io) :
 
         # check if command number is valid, return if not
         cmd = self.AsciiBytesToInt(startDict['Command Number'])
-        if(not self.DoesCommandExist(cmd)) : 
+        if(not self.__commands.DoesCommandExist(cmd)) : 
             raise Exception('Invalid binary POD command.')
 
         # read binary packet length
         numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
     
         # continue reading  packet
-        binaryMsg  = self.Read(numOfbinaryBytes)
-        binaryCsm  = self.Read(2)
-        binaryLast = self.Read(1)
+        binaryMsg  = self.Read(numOfbinaryBytes) # read binary packet
+        binaryCsm  = self.Read(2)                # read checksum
+        binaryLast = self.Read(1)                # read ETX
 
         # verify that Last is ETX
         if(binaryLast != self.ETX()) : 

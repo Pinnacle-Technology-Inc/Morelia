@@ -10,8 +10,10 @@ class POD_Commands :
     __ARGUMENTS = 1
     __RETURNS   = 2
 
+
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
+
 
     # stores basic standard POD commands 
     __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
@@ -29,6 +31,7 @@ class POD_Commands :
             11  : [ 'BINARY',               0,      __NOVALUE       ],  # No return bytes because the length depends on the message
             12  : [ 'FIRMWARE VERSION',     0,      6               ]
         }
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
