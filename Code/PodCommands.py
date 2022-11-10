@@ -14,6 +14,9 @@ class POD_Commands :
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
 
+    # number of bytes for a given payload value (U=unsigned, #=bit)
+    __U8  = 2
+    __U16 = 4
 
     # stores basic standard POD commands 
     __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
@@ -21,15 +24,15 @@ class POD_Commands :
             1   : [ 'NACK',                 0,      0               ],
             2   : [ 'PING',                 0,      0               ],
             3   : [ 'RESET',                0,      0               ],
-            4   : [ 'ERROR',                0,      2               ],
+            4   : [ 'ERROR',                0,      __U8            ],
             5   : [ 'STATUS',               0,      0               ],
-            6   : [ 'STREAM',               2,      2               ], 
+            6   : [ 'STREAM',               __U8,      __U8         ], 
             7   : [ 'BOOT',                 0,      0               ],
-            8   : [ 'TYPE',                 0,      2               ],
+            8   : [ 'TYPE',                 0,      __U8            ],
             9   : [ 'ID',                   0,      0               ],
             10  : [ 'SAMPLE RATE',          0,      0               ],
             11  : [ 'BINARY',               0,      __NOVALUE       ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      6               ]
+            12  : [ 'FIRMWARE VERSION',     0,      __U8*3          ]
         }
 
 
@@ -45,10 +48,19 @@ class POD_Commands :
 
 
     @staticmethod
-    def GetNoValue() : 
+    def NoValue() : 
         # returns the no value marker for commands dict 
         return(POD_Commands.__NOVALUE)
 
+    @staticmethod
+    def U8() : 
+        # returns the no value marker for commands dict 
+        return(POD_Commands.__U8)
+
+    @staticmethod
+    def U16() : 
+        # returns the no value marker for commands dict 
+        return(POD_Commands.__U16)
 
     @staticmethod
     def GetBasicCommands() : 
