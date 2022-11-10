@@ -176,6 +176,7 @@ class POD_Basics :
         # return unpacked POD command
         return(msg_unpacked)
 
+
     @staticmethod
     def UnpackPODpacket_VariableBinary(msg) : 
         # variable binary POD packet = 
@@ -205,6 +206,52 @@ class POD_Basics :
 
         # return unpacked POD command with variable length binary packet 
         return(msg_unpacked)
+
+    @staticmethod
+    def IsPodPacketValid_Standard(msg) :
+        # unpack standard POD packet 
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
+        # get number of entries in dict (2=command+checksum, 3=command+payload+checksum)
+        numEntries = len(msgDict)
+
+        # recreate POD packet 
+        packet = msgDict['Command Number']
+        if(numEntries == 3) : # has a payload 
+            packet += msgDict['Payload']
+        
+        # get checksums 
+        csmValid = POD_Basics.Checksum(packet)
+        csm = msgDict['Checksum'] 
+
+        # check if checksums match
+        if(csm == csmValid) :
+            return(True)
+        else:
+            return(False)
+
+
+    @staticmethod
+    def IsPodPacketValid_VariableBinary(msg) :
+        # unpack standard POD packet 
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
+        # get number of entries in dict (2=command+checksum, 3=command+payload+checksum)
+        numEntries = len(msgDict)
+
+        # recreate POD packets 
+        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + 'Binary Packet Length'
+        packetBin = msgDict['Binary Data']
+
+        # get checksums 
+        csmPreValid = POD_Basics.Checksum(packetPre)
+        csmBinValid = POD_Basics.Checksum(packetBin)
+        csmPre = msgDict['Checksum']
+        csmBin = msgDict['Binary Checksum']
+
+        # return True if both checksums are valid  
+        if(csmPre==csmPreValid and csmBin==csmBinValid) :
+            return(True)
+        else :
+            return(False)
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
