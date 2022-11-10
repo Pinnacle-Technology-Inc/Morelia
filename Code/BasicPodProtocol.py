@@ -178,36 +178,6 @@ class POD_Basics :
 
 
     @staticmethod
-    def UnpackPODpacket_VariableBinary(msg) : 
-        # variable binary POD packet = 
-        #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
-        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
-        MINBYTES = 15
-
-        # get number of bytes in message
-        packetBytes = len(msg)
-
-        # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
-        if(    (packetBytes < MINBYTES)                        
-            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
-            or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
-        ) : 
-            raise Exception('Cannot unpack an invalid POD packet.')
-
-        # create dict and add command number and checksum
-        msg_unpacked = {
-            'Command Number'        : msg[1:5],                                 # 4 bytes after STX
-            'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
-            'Checksum'              : msg[9:11],                                # 2 bytes before ETX
-            'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
-            'Binary Checksum'       : msg[(packetBytes-3) : (packetBytes-1)]    # 2 bytes before binary ETX
-        }
-
-        # return unpacked POD command with variable length binary packet 
-        return(msg_unpacked)
-
-    @staticmethod
     def IsPodPacketValid_Standard(msg) :
         # unpack standard POD packet 
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
@@ -227,28 +197,6 @@ class POD_Basics :
         if(csm == csmValid) :
             return(True)
         else:
-            return(False)
-
-
-    @staticmethod
-    def IsPodPacketValid_VariableBinary(msg) :
-        # unpack standard POD packet 
-        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
-
-        # recreate POD packets 
-        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + msgDict['Binary Packet Length']
-        packetBin = msgDict['Binary Data']
-
-        # get checksums 
-        csmPreValid = POD_Basics.Checksum(packetPre)
-        csmBinValid = POD_Basics.Checksum(packetBin)
-        csmPre = msgDict['Checksum']
-        csmBin = msgDict['Binary Checksum']
-
-        # return True if both checksums are valid  
-        if(csmPre==csmPreValid and csmBin==csmBinValid) :
-            return(True)
-        else :
             return(False)
 
 
@@ -335,6 +283,64 @@ class POD_Basics :
         return(packet)
 
 
+
+# =====================================================================================================================================================
+# HANDLE THESE FUNCTIONS ELSEWHERE
+# =====================================================================================================================================================
+""""
+
+    @staticmethod
+    def IsPodPacketValid_VariableBinary(msg) :
+        # unpack standard POD packet 
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
+
+        # recreate POD packets 
+        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + msgDict['Binary Packet Length']
+        packetBin = msgDict['Binary Data']
+
+        # get checksums 
+        csmPreValid = POD_Basics.Checksum(packetPre)
+        csmBinValid = POD_Basics.Checksum(packetBin)
+        csmPre = msgDict['Checksum']
+        csmBin = msgDict['Binary Checksum']
+
+        # return True if both checksums are valid  
+        if(csmPre==csmPreValid and csmBin==csmBinValid) :
+            return(True)
+        else :
+            return(False)
+
+
+    @staticmethod
+    def UnpackPODpacket_VariableBinary(msg) : 
+        # variable binary POD packet = 
+        #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
+        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
+        MINBYTES = 15
+
+        # get number of bytes in message
+        packetBytes = len(msg)
+
+        # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
+        if(    (packetBytes < MINBYTES)                        
+            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            raise Exception('Cannot unpack an invalid POD packet.')
+
+        # create dict and add command number and checksum
+        msg_unpacked = {
+            'Command Number'        : msg[1:5],                                 # 4 bytes after STX
+            'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
+            'Checksum'              : msg[9:11],                                # 2 bytes before ETX
+            'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
+            'Binary Checksum'       : msg[(packetBytes-3) : (packetBytes-1)]    # 2 bytes before binary ETX
+        }
+
+        # return unpacked POD command with variable length binary packet 
+        return(msg_unpacked)
+
     def ReadPODpacket_VariableBinary(self) :
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
@@ -366,3 +372,6 @@ class POD_Basics :
 
         # return complete variable length binary packet
         return(packet)
+
+
+"""
