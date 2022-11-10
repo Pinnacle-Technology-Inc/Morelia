@@ -20,19 +20,19 @@ class POD_Commands :
 
     # stores basic standard POD commands 
     __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
-            0   : [ 'ACK',                  0,      0               ],
-            1   : [ 'NACK',                 0,      0               ],
-            2   : [ 'PING',                 0,      0               ],
-            3   : [ 'RESET',                0,      0               ],
-            4   : [ 'ERROR',                0,      __U8            ],
-            5   : [ 'STATUS',               0,      0               ],
-            6   : [ 'STREAM',               __U8,      __U8         ], 
-            7   : [ 'BOOT',                 0,      0               ],
-            8   : [ 'TYPE',                 0,      __U8            ],
-            9   : [ 'ID',                   0,      0               ],
-            10  : [ 'SAMPLE RATE',          0,      0               ],
-            11  : [ 'BINARY',               0,      __NOVALUE       ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      __U8*3          ]
+            0   : [ 'ACK',                  0,      0           ],
+            1   : [ 'NACK',                 0,      0           ],
+            2   : [ 'PING',                 0,      0           ],
+            3   : [ 'RESET',                0,      0           ],
+            4   : [ 'ERROR',                0,      __U8        ],
+            5   : [ 'STATUS',               0,      0           ],
+            6   : [ 'STREAM',               __U8,   __U8        ], 
+            7   : [ 'BOOT',                 0,      0           ],
+            8   : [ 'TYPE',                 0,      __U8        ],
+            9   : [ 'ID',                   0,      0           ],
+            10  : [ 'SAMPLE RATE',          0,      0           ],
+            11  : [ 'BINARY',               0,      __NOVALUE   ],  # No return bytes because the length depends on the message
+            12  : [ 'FIRMWARE VERSION',     0,      __U8*3      ]
         }
 
 
