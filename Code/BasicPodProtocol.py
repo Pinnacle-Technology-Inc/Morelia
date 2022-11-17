@@ -176,6 +176,18 @@ class POD_Basics :
         # return unpacked POD command
         return(msg_unpacked)
 
+    @staticmethod
+    def TranslateUnpackedPODpacket_Standard(msgDict) : 
+        # initialize dictionary 
+        msgDictT = {}
+        # translate the binary ascii encoding into a readable integer
+        msgDictT['Command Number'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        if( 'Payload' in msgDict) :
+            msgDictT['Payload'] = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
+        msgDictT['Checksum'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        # return translated unpacked POD packet 
+        return(msgDictT)
+
 
     @staticmethod
     def ValidateChecksum(msg):
