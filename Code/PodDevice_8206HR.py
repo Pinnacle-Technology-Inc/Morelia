@@ -5,7 +5,13 @@ class POD_8206HR(POD_Basics) :
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
+
+    # number of bytes for a Binary 4 packet 
+    __B4LENGTH = 16
+
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
+
 
     def __init__(self, port, baudrate=9600) :
         # initialize POD_Basics
@@ -13,30 +19,33 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
+        __B4LENGTH = POD_8206HR.__B4LENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand(100, 'GET SAMPLE RATE',      0,       U16      )
-        self._commands.AddCommand(101, 'SET SAMPLE RATE',      U16,     0        )
-        self._commands.AddCommand(102, 'GET LOWPASS',          U8,      U16      )
-        self._commands.AddCommand(103, 'SET LOWPASS',          U8+U16,  0        )
-        self._commands.AddCommand(104, 'SET TTL OUT',          U8+U8,   0        )
-        self._commands.AddCommand(105, 'GET TTL IN',           U8,      U8       )
-        self._commands.AddCommand(106, 'GET TTL PORT',         0,       U8       )
-        self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,       U8       )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       16       )     # see ReadPODpacket_Binary()
+        self._commands.AddCommand(100, 'GET SAMPLE RATE',      0,       U16         )
+        self._commands.AddCommand(101, 'SET SAMPLE RATE',      U16,     0           )
+        self._commands.AddCommand(102, 'GET LOWPASS',          U8,      U16         )
+        self._commands.AddCommand(103, 'SET LOWPASS',          U8+U16,  0           )
+        self._commands.AddCommand(104, 'SET TTL OUT',          U8+U8,   0           )
+        self._commands.AddCommand(105, 'GET TTL IN',           U8,      U8          )
+        self._commands.AddCommand(106, 'GET TTL PORT',         0,       U8          )
+        self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,       U8          )
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       __B4LENGTH  )     # see ReadPODpacket_Binary()
+
 
     # ============ STATIC METHODS ============      ========================================================================================================================
+
 
     @staticmethod
     def UnpackPODpacket_Binary(msg) : 
         # Binary 4 format = 
         #   STX (1 byte) + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) 
         #   + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
-        MINBYTES=16
+        MINBYTES = POD_8206HR.__B4LENGTH
 
         # get number of bytes in message
         packetBytes = len(msg)
@@ -61,6 +70,18 @@ class POD_8206HR(POD_Basics) :
         
         # return unpacked POD command
         return(msg_unpacked)
+
+
+    @staticmethod
+    def UnpackPODpacket(msg):
+        # determine what type of pod packet using length of msg
+        length = len(msg)
+        # message is binary 
+        if(length == POD_8206HR.__B4LENGTH) : 
+            return( POD_8206HR.UnpackPODpacket_Binary(msg) ) 
+        # message may be standard (length checked within unpacking function )
+        else :
+            return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 

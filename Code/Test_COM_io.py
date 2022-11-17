@@ -47,10 +47,8 @@ pod8206HR = POD_8206HR(portUse)
 print(pod8206HR.WritePacket(6, bytes.fromhex('3030'))) # turn off stream 
 
 msg  = pod8206HR.ReadPODpacket_Standard()
-msgU = pod8206HR.UnpackPODpacket_Standard(msg)
+msgU = pod8206HR.UnpackPODpacket(msg)
 
-
-
-print(  pod8206HR.ValidateChecksum(msg)    )
+print(msgU)
 
 print('\n\n')
