@@ -178,27 +178,20 @@ class POD_Basics :
 
 
     @staticmethod
-    def IsPodPacketValid_Standard(msg) :
-        # unpack standard POD packet 
-        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
-        # get number of entries in dict (2=command+checksum, 3=command+payload+checksum)
-        numEntries = len(msgDict)
-
-        # recreate POD packet 
-        packet = msgDict['Command Number']
-        if(numEntries == 3) : # has a payload 
-            packet += msgDict['Payload']
-        
-        # get checksums 
-        csmValid = POD_Basics.Checksum(packet)
-        csm = msgDict['Checksum'] 
-
+    def ValidateChecksum(msg):
+        # assume that msg contains STX + packet + csm + ETX. 
+        # This assumption is good for more all pod packets (except variable length binary packet)
+        packetBytes = len(msg)
+        # get message contents excluding STX/ETX
+        msgPacket = msg[1:packetBytes-3]
+        msgCsm = msg[packetBytes-3:packetBytes-1]
+        # calculate checksum from content packet  
+        csmValid = POD_Basics.Checksum(msgPacket)
         # return True if checksums match 
-        if(csm == csmValid) :
+        if(msgCsm == csmValid) :
             return(True)
         else:
             return(False)
-
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -249,7 +242,7 @@ class POD_Basics :
         return(packet)
 
 
-    def ReadPODpacket_Standard(self) : # assume non-binary 
+    def ReadPODpacket_Standard(self, validateChecksum=True) : # assume non-binary 
         # initialize 
         time    = 0
         TIMEOUT = 1000   
@@ -278,6 +271,11 @@ class POD_Basics :
         # raise exception if timeout occurs
         if(time==TIMEOUT) : 
             raise Exception('Timeout when reading from POD device.')
+
+        if(validateChecksum) :
+            # raise exception if chacksum is invalid
+            if(POD_Basics.ValidateChecksum(packet) == False ):
+                raise Exception('Bit error in recieved POD message.')
 
         # return packet containing STX+message+ETX
         return(packet)
@@ -372,6 +370,5 @@ class POD_Basics :
 
         # return complete variable length binary packet
         return(packet)
-
 
 """
