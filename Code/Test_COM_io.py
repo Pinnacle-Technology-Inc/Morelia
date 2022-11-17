@@ -33,7 +33,8 @@ red = pod.ReadPODpacket_Standard()
 if(wrt == red):
     print('Communication successful: ', red)
 else:
-    print('Communication Failiure: ', red)
+    raise Exception('Communication Failiure: ', red)
+    
 
 
 ########## TESTING ##########################################################################################################

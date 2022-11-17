@@ -7,7 +7,7 @@ class POD_8206HR(POD_Basics) :
 
 
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH = 16
+    __B4LENGTH = 16 # if you change this, be sure to fix UnpackPODpacket_Binary()
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -19,7 +19,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
-        __B4LENGTH = POD_8206HR.__B4LENGTH
+        B4LENGTH = POD_8206HR.__B4LENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
@@ -34,7 +34,7 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(105, 'GET TTL IN',           U8,      U8          )
         self._commands.AddCommand(106, 'GET TTL PORT',         0,       U8          )
         self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,       U8          )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       __B4LENGTH  )     # see ReadPODpacket_Binary()
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       B4LENGTH    )     # see ReadPODpacket_Binary()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
@@ -83,7 +83,9 @@ class POD_8206HR(POD_Basics) :
         else :
             return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
 
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
+
 
     def ReadPODpacket_Binary(self, validateChecksum=True) :
         """
@@ -109,14 +111,16 @@ class POD_8206HR(POD_Basics) :
         15	    0x03	        Binary		ETX
         ------------------------------------------------------------
         """
+        # length of Binary 4 packet 
+        B4length = POD_8206HR.__B4LENGTH # == 16 
 
         # read until STX found
         packet = None
         while(packet != self.STX()) :
             packet = self._port.Read(1)     # read next byte  
 
-        # read remaining 15 bytes
-        packet += self._port.Read(15)
+        # read remaining bytes
+        packet += self._port.Read(B4length-1)
 
         # verify that Last is ETX
         last = packet[len(packet)-1].to_bytes(1,'big')
