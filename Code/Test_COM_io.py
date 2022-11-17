@@ -31,9 +31,9 @@ pod = POD_Basics(portUse)
 wrt = pod.WritePacket('PING')
 red = pod.ReadPODpacket_Standard()
 if(wrt == red):
-    print('Communication successful')
+    print('Communication successful: ', red)
 else:
-    print('Communication Failiure')
+    print('Communication Failiure: ', red)
 
 
 ########## TESTING ##########################################################################################################
@@ -41,11 +41,16 @@ print('\n\n')
 
 pod8206HR = POD_8206HR(portUse)
 
-pod8206HR.WritePacket(6, bytes.fromhex('3031')) # turn on stream 
+# print(pod8206HR.WritePacket(6, bytes.fromhex('3031'))) # turn on stream 
+# print(pod8206HR.ReadPODpacket_Standard() )
 
-for i in range(10):
-    print(pod8206HR.ReadPODpacket_Binary())
+print(pod8206HR.WritePacket(6, bytes.fromhex('3030'))) # turn off stream 
 
-pod8206HR.WritePacket(6, bytes.fromhex('3030')) # turn off stream 
+msg  = pod8206HR.ReadPODpacket_Standard()
+msgU = pod8206HR.UnpackPODpacket_Standard(msg)
+
+
+
+print(  pod8206HR.ValidateChecksum(msg)    )
 
 print('\n\n')

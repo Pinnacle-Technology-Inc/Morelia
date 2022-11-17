@@ -28,9 +28,39 @@ class POD_8206HR(POD_Basics) :
 
     # ============ STATIC METHODS ============      ========================================================================================================================
 
+    @staticmethod
+    def UnpackPODpacket_Binary(msg) : 
+        # standard POD packet with optional payload = 
+        #   STX (1 byte) + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
+        MINBYTES=16
+
+        # get number of bytes in message
+        packetBytes = len(msg)
+
+        # message must have enough bytes, start with STX, or end with ETX
+        if(    (packetBytes < MINBYTES)
+            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            raise Exception('Cannot unpack an invalid POD packet.')
+
+        # create dict and separate message parts
+        msg_unpacked = {
+            'Command Number'    : msg[1:5],
+            'Packet #'          : msg[5].to_bytes(1,'big'),
+            'TTL'               : msg[6].to_bytes(1,'big'),
+            'Ch0'               : msg[7:9],
+            'Ch1'               : msg[9:11],
+            'Ch2'               : msg[11:13],
+            'Checksum'          : msg[13:15]
+        }
+        
+        # return unpacked POD command
+        return(msg_unpacked)
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
-    def ReadPODpacket_Binary(self) :
+    def ReadPODpacket_Binary(self, validateChecksum=True) :
         """
         Binary 4 Data Format
         ------------------------------------------------------------		
@@ -68,6 +98,11 @@ class POD_8206HR(POD_Basics) :
         if(last != self.ETX()) : 
             raise Exception('Bad binary read.')
         
+        if(validateChecksum) :
+            # raise exception if chacksum is invalid
+            if(POD_Basics.ValidateChecksum(packet) == False ):
+                raise Exception('Bit error in recieved POD message.')
+
         # return full binary packet
         return(packet)
 
