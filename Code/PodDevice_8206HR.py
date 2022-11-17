@@ -102,6 +102,18 @@ class POD_8206HR(POD_Basics) :
             return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
 
 
+    @staticmethod
+    def TranslatePODpacket(msg):
+        # determine what type of pod packet using length of msg
+        length = len(msg)
+        # message is binary 
+        if(length == POD_8206HR.__B4LENGTH) : 
+            return( POD_8206HR.TranslatePODpacket_Binary(msg) ) 
+        # message may be standard (length checked within unpacking function )
+        else :
+            return( POD_8206HR.TranslatePODpacket_Standard(msg) )
+
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
