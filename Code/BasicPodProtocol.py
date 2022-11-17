@@ -193,7 +193,7 @@ class POD_Basics :
         msg_unpacked['Command Number']  = msg[1:5]                                  # 4 bytes after STX
         if( (packetBytes - MINBYTES) > 0) : # add packet to dict, if available 
             msg_unpacked['Payload']     = msg[5:(packetBytes-3)]                    # remaining bytes between command number and checksum 
-        msg_unpacked['Checksum']        = msg[(packetBytes-3):(packetBytes-1)]      # 2 bytes before ETX
+        # msg_unpacked['Checksum']        = msg[(packetBytes-3):(packetBytes-1)]      # 2 bytes before ETX
 
         # return unpacked POD command
         return(msg_unpacked)
@@ -209,7 +209,7 @@ class POD_Basics :
         msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
             msgDictTrans['Payload']     = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
-        msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        # msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
