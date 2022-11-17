@@ -115,6 +115,11 @@ class POD_Basics :
         return(msg_int)
 
 
+    @staticmethod
+    def BinaryBytesToInt(msg, byteorder='big', signed=False) :
+        # convert a binary message represented by bytes into an integer
+        return(int.from_bytes(msg,byteorder=byteorder,signed=signed))
+
     # ------------ POD PACKETS ------------         ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -201,10 +206,10 @@ class POD_Basics :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictTrans['Command Number'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
-            msgDictTrans['Payload'] = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
-        msgDictTrans['Checksum'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+            msgDictTrans['Payload']     = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
+        msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 

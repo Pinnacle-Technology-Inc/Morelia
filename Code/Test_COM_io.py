@@ -42,20 +42,23 @@ print('\n\n')
 
 pod8206HR = POD_8206HR(portUse)
 
-# # print(pod8206HR.WritePacket(6, bytes.fromhex('3031'))) # turn on stream 
-# # print(pod8206HR.ReadPODpacket_Standard() )
-# print(pod8206HR.WritePacket(6, bytes.fromhex('3030'))) # turn off stream 
-# msg  = pod8206HR.ReadPODpacket_Standard()
-# msgU = pod8206HR.UnpackPODpacket(msg)
-# print(msgU)
+print(pod8206HR.WritePacket(6, bytes.fromhex('3031'))) # turn on stream 
+print(pod8206HR.ReadPODpacket_Standard() )
+print(pod8206HR.WritePacket(6, bytes.fromhex('3030'))) # turn off stream 
+msg  = pod8206HR.ReadPODpacket_Binary()
+msgU = pod8206HR.UnpackPODpacket(msg)
+Tmsg = pod8206HR.TranslatePODpacket_Binary(msg)
 
-
-print(pod8206HR.WritePacket(100)) 
-msg = pod8206HR.ReadPODpacket_Standard()
-Umsg = pod8206HR.UnpackPODpacket(msg)
-Tmsg = pod8206HR.TranslatePODpacket_Standard(msg)
-
-print(Umsg)
+print(msgU)
 print(Tmsg)
+
+
+# print(pod8206HR.WritePacket(100)) 
+# msg = pod8206HR.ReadPODpacket_Standard()
+# Umsg = pod8206HR.UnpackPODpacket(msg)
+# Tmsg = pod8206HR.TranslatePODpacket_Standard(msg)
+
+# print(Umsg)
+# print(Tmsg)
 
 print('\n\n')

@@ -73,6 +73,24 @@ class POD_8206HR(POD_Basics) :
 
 
     @staticmethod
+    def TranslatePODpacket_Binary(msg):
+        # unpack parts of POD packet into dict
+        msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
+        # initialize dictionary for translated values 
+        msgDictTrans = {}
+        # translate the binary ascii encoding into a readable integer
+        msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Packet #']        = POD_Basics.BinaryBytesToInt(msgDict['Packet #'])
+        msgDictTrans['TTL']             = POD_Basics.BinaryBytesToInt(msgDict['TTL'])
+        msgDictTrans['Ch0']             = POD_Basics.BinaryBytesToInt(msgDict['Ch0']) 
+        msgDictTrans['Ch1']             = POD_Basics.BinaryBytesToInt(msgDict['Ch1']) 
+        msgDictTrans['Ch2']             = POD_Basics.BinaryBytesToInt(msgDict['Ch2']) 
+        msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Checksum'])
+        # return translated unpacked POD packet 
+        return(msgDictTrans)
+
+
+    @staticmethod
     def UnpackPODpacket(msg):
         # determine what type of pod packet using length of msg
         length = len(msg)
