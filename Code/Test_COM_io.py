@@ -53,9 +53,9 @@ pod8206HR = POD_8206HR(portUse)
 print(pod8206HR.WritePacket(100)) 
 msg = pod8206HR.ReadPODpacket_Standard()
 Umsg = pod8206HR.UnpackPODpacket(msg)
-UTmsg = pod8206HR.TranslateUnpackedPODpacket_Standard(Umsg)
+Tmsg = pod8206HR.TranslatePODpacket_Standard(msg)
 
 print(Umsg)
-print(UTmsg)
+print(Tmsg)
 
 print('\n\n')

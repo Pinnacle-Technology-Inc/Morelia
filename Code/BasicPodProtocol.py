@@ -133,6 +133,23 @@ class POD_Basics :
 
 
     @staticmethod
+    def ValidateChecksum(msg):
+        # assume that msg contains STX + packet + csm + ETX. 
+        # This assumption is good for more all pod packets (except variable length binary packet)
+        packetBytes = len(msg)
+        # get message contents excluding STX/ETX
+        msgPacket = msg[1:packetBytes-3]
+        msgCsm = msg[packetBytes-3:packetBytes-1]
+        # calculate checksum from content packet  
+        csmValid = POD_Basics.Checksum(msgPacket)
+        # return True if checksums match 
+        if(msgCsm == csmValid) :
+            return(True)
+        else:
+            return(False)
+
+
+    @staticmethod
     def PODpacket_Standard(commandNumber, payload=None) : 
         # prepare components of packet
         stx = POD_Basics.STX()                              # STX indicating start of packet (1 byte)
@@ -176,35 +193,22 @@ class POD_Basics :
         # return unpacked POD command
         return(msg_unpacked)
 
+
     @staticmethod
-    def TranslateUnpackedPODpacket_Standard(msgDict) : 
-        # initialize dictionary 
-        msgDictT = {}
+    def TranslatePODpacket_Standard(msg) : 
+        # unpack parts of POD packet into dict
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+        # initialize dictionary for translated values 
+        msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictT['Command Number'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Command Number'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
-            msgDictT['Payload'] = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
-        msgDictT['Checksum'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+            msgDictTrans['Payload'] = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
+        msgDictTrans['Checksum'] = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         # return translated unpacked POD packet 
-        return(msgDictT)
+        return(msgDictTrans)
 
-
-    @staticmethod
-    def ValidateChecksum(msg):
-        # assume that msg contains STX + packet + csm + ETX. 
-        # This assumption is good for more all pod packets (except variable length binary packet)
-        packetBytes = len(msg)
-        # get message contents excluding STX/ETX
-        msgPacket = msg[1:packetBytes-3]
-        msgCsm = msg[packetBytes-3:packetBytes-1]
-        # calculate checksum from content packet  
-        csmValid = POD_Basics.Checksum(msgPacket)
-        # return True if checksums match 
-        if(msgCsm == csmValid) :
-            return(True)
-        else:
-            return(False)
-
+   
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
