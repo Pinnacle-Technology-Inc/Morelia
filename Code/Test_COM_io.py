@@ -40,30 +40,16 @@ else:
 ########## TESTING ##########################################################################################################
 print('\n\n')
 
-wrt = pod.WritePacket(8)
-red = pod.ReadPODpacket()
+pod8206HR = POD_8206HR(portUse)
 
-redT = pod.TranslatePODpacket_Standard(red)
-print(redT)
+pod8206HR.WritePacket(6, bytes.fromhex('3031')) # turn on stream 
 
-# # pod8206HR = POD_8206HR(portUse)
+for i in range(10) :
+    msg  = pod8206HR.ReadPODpacket()
+    Tmsg = pod8206HR.TranslatePODpacket(msg)
+    print(Tmsg)
 
-# # pod8206HR.WritePacket(6, bytes.fromhex('3031')) # turn on stream 
-# # print(pod8206HR.TranslatePODpacket(pod8206HR.ReadPODpacket_Standard() ))
-# pod8206HR.WritePacket(6, bytes.fromhex('3030')) # turn off stream # this doesnt work??? It just keeps on streaming....
+pod8206HR.WritePacket(6, bytes.fromhex('3030')) # turn off stream # this doesnt work??? It just keeps on streaming....
 
-# for i in range(10) :
-#     msg  = pod8206HR.ReadPODpacket_Binary()
-#     Tmsg = pod8206HR.TranslatePODpacket(msg)
-#     print(Tmsg)
-
-
-# print(pod8206HR.WritePacket(100)) 
-# msg = pod8206HR.ReadPODpacket_Standard()
-# Umsg = pod8206HR.UnpackPODpacket(msg)
-# Tmsg = pod8206HR.TranslatePODpacket_Standard(msg)
-
-# print(Umsg)
-# print(Tmsg)
 
 print('\n\n')

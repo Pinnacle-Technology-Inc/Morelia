@@ -329,18 +329,6 @@ class POD_Basics :
         # return complete 4 byte long command packet
         return(cmd)
 
-    def _Read_Standard(self, prePacket, validateChecksum=True):
-        # read until ETX 
-        packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
-
-        # check for valid  
-        if(validateChecksum) :
-            if( not self._ValidateChecksum_Standard(packet) ) :
-                raise Exception('Bad checksum for standard POD packet read.')
-
-        # return packet
-        return(packet)
-
     def _Read_ToETX(self, validateChecksum=True) : 
         # initialize 
         packet = None
@@ -360,14 +348,26 @@ class POD_Basics :
         # return packet
         return(packet)
 
+
+    def _Read_Standard(self, prePacket, validateChecksum=True):
+        # read until ETX 
+        packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
+        # check for valid  
+        if(validateChecksum) :
+            if( not self._ValidateChecksum(packet) ) :
+                raise Exception('Bad checksum for standard POD packet read.')
+        # return packet
+        return(packet)
+
+
     def _Read_Binary(self, prePacket, validateChecksum=True):
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
          
         # read standard POD packet 
-        startPacket = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
-        startDict = self.UnpackPODpacket_Standard(startPacket)
+        startPacket = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        startDict   = self.UnpackPODpacket_Standard(startPacket)
 
         # get length of binary packet 
         numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
@@ -383,7 +383,9 @@ class POD_Basics :
 
         # check if checksum is correct 
         if(validateChecksum):
-            if(not self._ValidateChecksum_Binary(packet) ) :
+            csmCalc = self._Checksum(binaryMsg)
+            csm = binaryEnd[0:2]
+            if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
 
         # return complete variable length binary packet
@@ -408,9 +410,9 @@ class POD_Basics :
 
 
     @staticmethod
-    def _ValidateChecksum_Standard(msg):
+    def _ValidateChecksum(msg):
         # assume that msg contains STX + packet + csm + ETX. 
-        # This assumption is good for more all pod packets (except variable length binary packet)
+        # This assumption is good for more all pod packets except variable length binary packet
         packetBytes = len(msg)
         # get message contents excluding STX/ETX
         msgPacket = msg[1:packetBytes-3]
@@ -421,25 +423,6 @@ class POD_Basics :
         if(msgCsm == csmValid) :
             return(True)
         else:
-            return(False)
-
-
-    @staticmethod
-    def _ValidateChecksum_Binary(msg) :
-        # unpack standard POD packet 
-        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
-        # recreate POD packets 
-        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + msgDict['Binary Packet Length']
-        packetBin = msgDict['Binary Data']
-        # get checksums 
-        csmPreValid = POD_Basics._Checksum(packetPre)
-        csmBinValid = POD_Basics._Checksum(packetBin)
-        csmPre = msgDict['Checksum']
-        csmBin = msgDict['Binary Checksum']
-        # return True if both checksums are valid  
-        if(csmPre==csmPreValid and csmBin==csmBinValid) :
-            return(True)
-        else :
             return(False)
 
 
