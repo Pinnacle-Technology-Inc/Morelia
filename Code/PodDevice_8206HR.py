@@ -148,12 +148,8 @@ class POD_8206HR(POD_Basics) :
         15	    0x03	        Binary		ETX
         ------------------------------------------------------------
         """
-        # initialize packet 
-        packet = prePacket # STX + command 
-        # read packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX)
-        packet += self._port.Read(8)
-        # read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet += self._Read_ToETX(validateChecksum=validateChecksum)
+        # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
+        packet = prePacket + self._port.Read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
