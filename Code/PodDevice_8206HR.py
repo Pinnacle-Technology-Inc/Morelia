@@ -150,78 +150,13 @@ class POD_8206HR(POD_Basics) :
         """
         # initialize packet 
         packet = prePacket # STX + command 
-
-        # read packet number and TTL (2 bytes)
-        b = None 
-        countToBinary = 0
-        while(countToBinary < 2) :
-            # read next byte and add to packet 
-            countToBinary += 1
-            b = self._port.Read(1)
-            packet += b
-            # start over if STX is found 
-            if(b == self.STX() ) : 
-                self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
-            # return if ETX is found
-            if(b == self.ETX() ) : 
-                return(packet)
-
-        # read binary packet (6 bytes)
-        packet += self._port.Read(POD_8206HR.__B4CHLENGTH)
-
-        # read csm and ETX (3 bytes)
+        # read packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX)
+        packet += self._port.Read(8)
+        # read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet += self._Read_ToETX(validateChecksum=validateChecksum)
-
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
-
         # return complete variable length binary packet
         return(packet)
-
-
-    # def ReadPODpacket_Binary(self, validateChecksum=True) :
-    #     """
-    #     Binary 4 Data Format
-    #     ------------------------------------------------------------		
-    #     Byte    Index	        Value	
-    #     ------------------------------------------------------------		
-    #     0	    0x02	        Binary		STX
-    #     1	    0	            ASCII		Command Number Byte 0
-    #     2	    0	            ASCII		Command Number Byte 1
-    #     3	    B	            ASCII		Command Number Byte 2
-    #     4	    4	            ASCII		Command Number Byte 3
-    #     5	    Packet Number 	Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
-    #     6	    TTL	            Binary		The byte value of the TTL port.  Value would be equivalent to the command 106 GET TTL PORT above
-    #     7	    Ch0 LSB	        Binary		Least significant byte of the Channel 0 (EEG1) value
-    #     8	    Ch0 MSB	        Binary		Most significant byte of the Channel 0 (EEG1) value
-    #     9	    Ch1 LSB	        Binary		Channel 1 / EEG2 LSB
-    #     10	    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
-    #     11	    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
-    #     12	    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
-    #     13	    Checksum MSB	ASCII		MSB of checksum
-    #     14	    Checksum LSB	ASCII		LSB of checkxum
-    #     15	    0x03	        Binary		ETX
-    #     ------------------------------------------------------------
-    #     """
-    #     # read until STX found
-    #     packet = None
-    #     while(packet != self.STX()) :
-    #         packet = self._port.Read(1)     # read next byte  
-
-    #     # read remaining bytes
-    #     packet += self._port.Read(POD_8206HR.__B4LENGTH-1) # == 16 - 1
-
-    #     # verify that Last is ETX
-    #     last = packet[len(packet)-1].to_bytes(1,'big')
-    #     if(last != self.ETX()) : 
-    #         raise Exception('Bad binary read.')
-        
-    #     if(validateChecksum) :
-    #         # raise exception if chacksum is invalid
-    #         if(POD_Basics.ValidateChecksum(packet) == False ):
-    #             raise Exception('Bit error in recieved POD message.')
-
-    #     # return full binary packet
-    #     return(packet)
