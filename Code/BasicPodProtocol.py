@@ -145,14 +145,13 @@ class POD_Basics :
         msg_unpacked['Command Number']  = msg[1:5]                                  # 4 bytes after STX
         if( (packetBytes - MINBYTES) > 0) : # add packet to dict, if available 
             msg_unpacked['Payload']     = msg[5:(packetBytes-3)]                    # remaining bytes between command number and checksum 
-        # msg_unpacked['Checksum']        = msg[(packetBytes-3):(packetBytes-1)]      # 2 bytes before ETX
 
         # return unpacked POD command
         return(msg_unpacked)
 
 
     @staticmethod
-    def UnpackPODpacket_VariableBinary(msg) : 
+    def UnpackPODpacket_Binary(msg) : 
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
@@ -173,9 +172,7 @@ class POD_Basics :
         msg_unpacked = {
             'Command Number'        : msg[1:5],                                 # 4 bytes after STX
             'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
-            'Checksum'              : msg[9:11],                                # 2 bytes before ETX
             'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
-            'Binary Checksum'       : msg[(packetBytes-3) : (packetBytes-1)]    # 2 bytes before binary ETX
         }
 
         # return unpacked POD command with variable length binary packet 
@@ -192,15 +189,23 @@ class POD_Basics :
         msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
             msgDictTrans['Payload']     = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
-        # msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
    
     @staticmethod
     def TranslatePODpacket_Binary(msg) : 
-        pass
-    
+        # unpack parts of POD packet into dict
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+        # initialize dictionary for translated values 
+        msgDictTrans = {}
+        # translate the binary ascii encoding into a readable integer
+        msgDictTrans['Command Number']          = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Binary Packet Length']    = POD_Basics.AsciiBytesToInt(msgDict['Binary Packet Length'])
+        msgDictTrans['Binary Data']             = msgDict['Binary Data'] # leave this as bytes, change type if needed 
+        # return translated unpacked POD packet 
+        return(msgDictTrans)
+
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -263,6 +268,7 @@ class POD_Basics :
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
+
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 

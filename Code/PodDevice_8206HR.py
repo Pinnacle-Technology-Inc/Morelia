@@ -64,9 +64,8 @@ class POD_8206HR(POD_Basics) :
             'TTL'               : msg[6].to_bytes(1,'big'),
             'Ch0'               : msg[7:9],
             'Ch1'               : msg[9:11],
-            'Ch2'               : msg[11:13]#,
-            # 'Checksum'          : msg[13:15]
-        }
+            'Ch2'               : msg[11:13]
+            }
         
         # return unpacked POD command
         return(msg_unpacked)
@@ -85,7 +84,6 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans['Ch0']             = POD_Basics.BinaryBytesToInt(msgDict['Ch0']) # do I want these as int or keep as binary ?
         msgDictTrans['Ch1']             = POD_Basics.BinaryBytesToInt(msgDict['Ch1']) # do I want these as int or keep as binary ?
         msgDictTrans['Ch2']             = POD_Basics.BinaryBytesToInt(msgDict['Ch2']) # do I want these as int or keep as binary ?
-        # msgDictTrans['Checksum']        = POD_Basics.AsciiBytesToInt(msgDict['Checksum'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
