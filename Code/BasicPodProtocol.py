@@ -139,7 +139,7 @@ class POD_Basics :
 
 
     @staticmethod
-    def ValidateChecksum(msg):
+    def ValidateChecksum_Standard(msg):
         # assume that msg contains STX + packet + csm + ETX. 
         # This assumption is good for more all pod packets (except variable length binary packet)
         packetBytes = len(msg)
@@ -152,6 +152,28 @@ class POD_Basics :
         if(msgCsm == csmValid) :
             return(True)
         else:
+            return(False)
+
+
+    @staticmethod
+    def ValidateChecksum_Binary(msg) :
+        # unpack standard POD packet 
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg) 
+
+        # recreate POD packets 
+        packetPre = msgDict['Command Number'] + msgDict['Command Number'] + msgDict['Binary Packet Length']
+        packetBin = msgDict['Binary Data']
+
+        # get checksums 
+        csmPreValid = POD_Basics.Checksum(packetPre)
+        csmBinValid = POD_Basics.Checksum(packetBin)
+        csmPre = msgDict['Checksum']
+        csmBin = msgDict['Binary Checksum']
+
+        # return True if both checksums are valid  
+        if(csmPre==csmPreValid and csmBin==csmBinValid) :
+            return(True)
+        else :
             return(False)
 
 
@@ -201,6 +223,37 @@ class POD_Basics :
 
 
     @staticmethod
+    def UnpackPODpacket_VariableBinary(msg) : 
+        # variable binary POD packet = 
+        #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
+        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
+        MINBYTES = 15
+
+        # get number of bytes in message
+        packetBytes = len(msg)
+
+        # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
+        if(    (packetBytes < MINBYTES)                        
+            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            raise Exception('Cannot unpack an invalid POD packet.')
+
+        # create dict and add command number and checksum
+        msg_unpacked = {
+            'Command Number'        : msg[1:5],                                 # 4 bytes after STX
+            'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
+            'Checksum'              : msg[9:11],                                # 2 bytes before ETX
+            'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
+            'Binary Checksum'       : msg[(packetBytes-3) : (packetBytes-1)]    # 2 bytes before binary ETX
+        }
+
+        # return unpacked POD command with variable length binary packet 
+        return(msg_unpacked)
+
+    
+    @staticmethod
     def TranslatePODpacket_Standard(msg) : 
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
@@ -215,6 +268,11 @@ class POD_Basics :
         return(msgDictTrans)
 
    
+    @staticmethod
+    def TranslatePODpacket_Binary(msg) : 
+        pass
+    
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
@@ -264,43 +322,176 @@ class POD_Basics :
         return(packet)
 
 
-    def ReadPODpacket_Standard(self, validateChecksum=True) : # assume non-binary 
-        # initialize 
-        time    = 0
-        TIMEOUT = 1000   
-        b       = None 
-
-        # read until STX found
-        while(b != self.STX() and time<TIMEOUT) :
-            time += 1                   # increment counter
+    def ReadPODpacket(self, validateChecksum=True):
+        # read until STX is found
+        b = None
+        while(b != self.STX()) :
             b = self._port.Read(1)     # read next byte  
-
-        # set first byte of packet to STX
-        packet = b
-
-        # get bytes until ETX, or start over at next STX
-        while(b != self.ETX() and time<TIMEOUT) : 
-            time += 1                   # increment counter
-            b = self._port.Read(1)     # read next byte
-            # check if STX
-            if(b == self.STX()):
-                # forget previous packet and start with STX 
-                packet =  b
-            else : 
-                # append byte to end message
-                packet = packet + b
-
-        # raise exception if timeout occurs
-        if(time==TIMEOUT) : 
-            raise Exception('Timeout when reading from POD device.')
-
-        if(validateChecksum) :
-            # raise exception if chacksum is invalid
-            if(POD_Basics.ValidateChecksum(packet) == False ):
-                raise Exception('Bit error in recieved POD message.')
-
-        # return packet containing STX+message+ETX
+        # continue reading packet  
+        packet = self.__ReadPODpacket_Recursive(validateChecksum=validateChecksum)
+        # return final packet
         return(packet)
+
+
+    # ============ PRIVATE METHODS ============      ========================================================================================================================
+
+    def __ReadPODpacket_Recursive(self, validateChecksum=True) : 
+        # start packet with STX
+        packet = self.STX()
+
+        # read next 4 bytes of the command number 
+        cmd = self.__Read_GetCommand(validateChecksum=validateChecksum)
+        packet += cmd 
+
+        # return packet if cmd ends in ETX
+        if(cmd[len(cmd)-1].to_bytes(1,'big') == self.ETX()) : 
+            return(packet)
+
+        # determine the command number
+        cmdNum = self.AsciiBytesToInt(cmd)
+
+        # check if command number is valid
+        if( not self._commands.DoesCommandExist(cmdNum) ) :
+            raise Exception('Cannot read an invalid command: ', cmdNum)
+        
+
+        # then check if it is standard or binary
+        if( self._commands.IsCommandBinary(cmdNum) ) : 
+            # binary read
+            packet = self.__Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
+        else : 
+            # standard read 
+            packet = self.__Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
+
+        # return packet
+        return(packet)
+
+
+    def __Read_GetCommand(self, validateChecksum=True) : 
+        # initialize 
+        cmd = None
+        cmdCounter = 0
+
+        # read next 4 bytes to get command number
+        while(cmdCounter < 4) : 
+            # read next byte 
+            b = self._port.Read(1)
+            cmdCounter += 1
+            # build command packet 
+            if(cmd == None) : 
+                cmd = b
+            else : 
+                cmd += b
+            # start over if STX is found 
+            if(b == self.STX() ) : 
+                self.__ReadPODpacket_Recursive(validateChecksu=validateChecksum)
+            # return if ETX is found
+            if(b == self.ETX() ) : 
+                return(cmd)
+
+        # return complete 4 byte long command packet
+        return(cmd)
+
+    def __Read_Standard(self, prePacket, validateChecksum=True):
+        # read until ETX 
+        packet = prePacket + self.__Read_ReadToETX(validateChecksum=validateChecksum)
+
+        # check for valid  
+        if(validateChecksum) :
+            if( not self.ValidateChecksum_Standard(packet) ) :
+                raise Exception('Bad checksum for standard POD packet read.')
+
+        # return packet
+        return(packet)
+
+    def __Read_ReadToETX(self, validateChecksum=True) : 
+        # initialize 
+        packet = None
+        b = None
+        # stop reading after finding ETX
+        while(b != self.ETX()) : 
+            # read next byte
+            b = self._port.Read(1)
+            # build packet 
+            if(packet == None) : 
+                packet = b
+            else : 
+                packet += b
+            # start over if STX
+            if(b == self.STX()) : 
+                self.__ReadPODpacket_Recursive(validateChecksum=validateChecksum)
+        # return packet
+        return(packet)
+
+    def __Read_Binary(self, prePacket, validateChecksum=True):
+        # Variable binary packet: contain a normal POD packet with the binary command, 
+        #   and the payload is the length of the binary portion. The binary portion also 
+        #   includes an ASCII checksum and ETX.        
+         
+        # read standard POD packet 
+        startPacket = prePacket + self.__Read_ReadToETX(validateChecksum=validateChecksum)
+        startDict = self.UnpackPODpacket_Standard(startPacket)
+
+        # get length of binary packet 
+        numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
+
+        # read binary packet
+        binaryMsg = self._port.Read(numOfbinaryBytes) # read binary packet
+
+        # read csm and etx
+        binaryEnd = self.__Read_ReadToETX(validateChecksum=validateChecksum)
+
+        # build complete message
+        packet = startPacket + binaryMsg + binaryEnd
+
+        # check if checksum is correct 
+        if(validateChecksum):
+            if(not self.ValidateChecksum_Binary(packet) ) :
+                raise Exception('Bad checksum for binary POD packet read.')
+
+        # return complete variable length binary packet
+        return(packet)
+
+
+
+
+    # def __ReadPODpacket_Standard(self, validateChecksum=True) :
+    #     # initialize 
+    #     time    = 0
+    #     TIMEOUT = 1000   
+    #     b       = None 
+
+    #     # read until STX found
+    #     while(b != self.STX() and time<TIMEOUT) :
+    #         time += 1                   # increment counter
+    #         b = self._port.Read(1)     # read next byte  
+
+    #     # set first byte of packet to STX
+    #     packet = b
+
+    #     # get bytes until ETX, or start over at next STX
+    #     while(b != self.ETX() and time<TIMEOUT) : 
+    #         time += 1                   # increment counter
+    #         b = self._port.Read(1)     # read next byte
+    #         # check if STX
+    #         if(b == self.STX()):
+    #             # forget previous packet and start with STX 
+    #             packet =  b
+    #         else : 
+    #             # append byte to end message
+    #             packet = packet + b
+
+    #     # raise exception if timeout occurs
+    #     if(time==TIMEOUT) : 
+    #         raise Exception('Timeout when reading from POD device.')
+
+    #     if(validateChecksum) :
+    #         # raise exception if chacksum is invalid
+    #         if(POD_Basics.ValidateChecksum(packet) == False ):
+    #             raise Exception('Bit error in recieved POD message.')
+
+    #     # return packet containing STX+message+ETX
+    #     return(packet)
 
 
 
