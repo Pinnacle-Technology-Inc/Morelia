@@ -9,6 +9,7 @@ class POD_Commands :
     __NAME      = 0
     __ARGUMENTS = 1
     __RETURNS   = 2
+    __BINARY    =3
 
 
     # flag used to mark if self.__commands dict value has no real value 
@@ -19,20 +20,20 @@ class POD_Commands :
     __U16 = 4
 
     # stores basic standard POD commands 
-    __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes]), 
-            0   : [ 'ACK',                  0,      0           ],
-            1   : [ 'NACK',                 0,      0           ],
-            2   : [ 'PING',                 0,      0           ],
-            3   : [ 'RESET',                0,      0           ],
-            4   : [ 'ERROR',                0,      __U8        ],
-            5   : [ 'STATUS',               0,      0           ],
-            6   : [ 'STREAM',               __U8,   __U8        ], 
-            7   : [ 'BOOT',                 0,      0           ],
-            8   : [ 'TYPE',                 0,      __U8        ],
-            9   : [ 'ID',                   0,      0           ],
-            10  : [ 'SAMPLE RATE',          0,      0           ],
-            11  : [ 'BINARY',               0,      __NOVALUE   ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      __U8*3      ]
+    __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes, binary flag ]), 
+            0   : [ 'ACK',                  0,      0,          False   ],
+            1   : [ 'NACK',                 0,      0,          False   ],
+            2   : [ 'PING',                 0,      0,          False   ],
+            3   : [ 'RESET',                0,      0,          False   ],
+            4   : [ 'ERROR',                0,      __U8,       False   ],
+            5   : [ 'STATUS',               0,      0,          False   ],
+            6   : [ 'STREAM',               __U8,   __U8,       False   ], 
+            7   : [ 'BOOT',                 0,      0,          False   ],
+            8   : [ 'TYPE',                 0,      __U8,       False   ],
+            9   : [ 'ID',                   0,      0,          False   ],
+            10  : [ 'SAMPLE RATE',          0,      0,          False   ],
+            11  : [ 'BINARY',               0,      __NOVALUE,  True    ],  # No return bytes because the length depends on the message
+            12  : [ 'FIRMWARE VERSION',     0,      __U8*3,     False   ]
         }
 
 
@@ -80,7 +81,7 @@ class POD_Commands :
         self.__commands = POD_Commands.__BASICCOMMANDS
 
 
-    def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes):
+    def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes,isBinary):
         # command number and name must not already exist 
         if(    self.DoesCommandExist(commandNumber)
             or self.DoesCommandExist(commandName)
@@ -88,7 +89,7 @@ class POD_Commands :
             # return false to mark failed add 
             return(False)
         # add entry to dict 
-        self.__commands[int(commandNumber)] = [str(commandName).upper(),int(argumentBytes),int(returnBytes)]
+        self.__commands[int(commandNumber)] = [str(commandName).upper(),int(argumentBytes),int(returnBytes),bool(isBinary)]
         # return true to mark successful add
         return(True)
 
@@ -121,7 +122,7 @@ class POD_Commands :
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
-                # return the number of bytes in the command return 
+                # return the number of bytes in the command argument 
                 return(val[self.__ARGUMENTS])
         # no match
         return(None) 
@@ -133,6 +134,16 @@ class POD_Commands :
             if(cmd == key or cmd == val[self.__NAME]) : 
                 # return the number of bytes in the command return 
                 return(val[self.__RETURNS])
+        # no match
+        return(None) 
+
+
+    def IsCommandBinary(self, cmd):
+        # search through dict to find matching entry  
+        for key,val in self.__commands.items() :
+            if(cmd == key or cmd == val[self.__NAME]) : 
+                # return true if the command is binary, false otherwise
+                return(val[self.__BINARY])
         # no match
         return(None) 
 
