@@ -3,10 +3,6 @@ import serial.tools.list_ports
 # read and write to serial COM ports 
 class COM_io : 
 
-    # ====== GLOBAL VARIABLES ======
-
-    __serialInst = serial.Serial()
-
     # ====== STATIC METHODS ======
 
     @staticmethod
@@ -24,6 +20,8 @@ class COM_io :
     # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) :
+        # initialize port 
+        self.__serialInst = serial.Serial()
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 
