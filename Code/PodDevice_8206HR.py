@@ -5,10 +5,12 @@ class POD_8206HR(POD_Basics) :
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
+
     # number of bytes for ch0-2 in a  Binary 4 packet 
     __B4CHLENGTH = 6
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH = __B4CHLENGTH + 10 
+    __B4LENGTH = __B4CHLENGTH + 10 # 16
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -34,7 +36,7 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(105, 'GET TTL IN',           U8,      U8,     False   )
         self._commands.AddCommand(106, 'GET TTL PORT',         0,       U8,     False   )
         self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,       U8,     False   )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       B4,     True    )     # see ReadPODpacket_Binary()
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       B4,     True    )     # see _Read_Binary()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
