@@ -16,7 +16,7 @@ class COM_io :
         # end
         return(portList)
 
-    # ====== DUNDER METHODS ======seri
+    # ====== DUNDER METHODS ======
 
     def __init__(self, port, baudrate=9600) :
         # initialize port 
