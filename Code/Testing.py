@@ -2,8 +2,10 @@ from SerialCommunication import COM_io
 from BasicPodProtocol import POD_Basics
 from PodDevice_8206HR import POD_8206HR
 from PodCommands import POD_Commands
+
 # get port list 
 portList = COM_io.GetCOMportsList()
+print('Ports:\t',portList)
 # check if the list is empty 
 if (len(portList) == 0):
     raise Exception('[!] No COM ports in use.')
@@ -59,8 +61,17 @@ def ex1():
     del pod4
     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
 
-# 2. command access
+# 2. initialization of commands 
 def ex2():
+    # create a pod device by passing the appropriate serial port 
+    podB = POD_Basics(portUse)
+    podR = POD_8206HR(portUse)
+    # print initialized commands  
+    print('Basic commands:\n', podB.GetDeviceCommands(),'\n')
+    print('8206HR commands:\n',podR.GetDeviceCommands(),'\n')
+
+# 3. command access
+def ex3():
     # create command dict object
     cmds = POD_Commands()
     print('POD_Commands initialization:\n',cmds.GetCommands(),'\n')
@@ -78,15 +89,6 @@ def ex2():
     print('TEST1 argument:\t',  cmds.ArgumentBytes('TEST1'))
     print('TEST1 return:\t',    cmds.ReturnBytes('TEST1'))
     print('TEST1 binary:\t',    cmds.IsCommandBinary('TEST1'))
-
-# 3. initialization of commands 
-def ex3():
-    # create a pod device by passing the appropriate serial port 
-    podB = POD_Basics(portUse)
-    podR = POD_8206HR(portUse)
-    # print initialized commands  
-    print('Basic commands:\n', podB.GetDeviceCommands(),'\n')
-    print('8206HR commands:\n',podR.GetDeviceCommands(),'\n')
 
 # 4. read and write 
 def ex4():
@@ -112,38 +114,26 @@ def ex4():
         print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
     print('\n')
     w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 0 = OFF
-    # # Try to get a response after stream 
-    # for i in range(10):
-    #     w = podR.WritePacket('PING')
-    #     print('Write (PING):\t', podR.TranslatePODpacket(w))
-    #     r = podR.ReadPODpacket()
-    #     print('Read (PING):\t',podR.TranslatePODpacket(r))
+
+# 5. burst binary read
+def ex5():
+    podR = POD_8206HR(portUse)
+    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
+    r = podR.ReadPODpacket()
+    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 1 = ON
+    while(True):
+        r = podR.ReadPODpacket()
+        print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
 
 # run demos
-ex1()
-print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-ex2()
-print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-ex3()
-print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-ex4()
-
-# conversions
-
+# ex1()
+# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# ex2()
+# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# ex3()
+# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# ex4()
+# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# ex5()
 
 print('\n\n')
-
-# pod8206HR = POD_8206HR(portUse)
-
-# # pod8206HR.WritePacket('GET FILTER CONFIG')
-# # print(pod8206HR.TranslatePODpacket(pod8206HR.ReadPODpacket()))
-
-# pod8206HR.WritePacket(6, bytes.fromhex('3031')) # turn on stream 
-# for i in range(10) :
-#     msg  = pod8206HR.ReadPODpacket()
-#     Tmsg = pod8206HR.TranslatePODpacket(msg)
-#     print(Tmsg)
-# pod8206HR.WritePacket(6, bytes.fromhex('3030')) # turn off stream # this doesnt work??? It just keeps on streaming....
-# msg  = pod8206HR.ReadPODpacket()
-# Tmsg = pod8206HR.TranslatePODpacket(msg)
-# print(Tmsg)
