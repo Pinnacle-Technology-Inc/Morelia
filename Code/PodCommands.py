@@ -9,8 +9,7 @@ class POD_Commands :
     __NAME      = 0
     __ARGUMENTS = 1
     __RETURNS   = 2
-    __BINARY    =3
-
+    __BINARY    = 3
 
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
@@ -19,30 +18,13 @@ class POD_Commands :
     __U8  = 2
     __U16 = 4
 
-    # stores basic standard POD commands 
-    __BASICCOMMANDS = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes, binary flag ]), 
-            0   : [ 'ACK',                  0,      0,          False   ],
-            1   : [ 'NACK',                 0,      0,          False   ],
-            2   : [ 'PING',                 0,      0,          False   ],
-            3   : [ 'RESET',                0,      0,          False   ],
-            4   : [ 'ERROR',                0,      __U8,       False   ],
-            5   : [ 'STATUS',               0,      0,          False   ],
-            6   : [ 'STREAM',               __U8,   __U8,       False   ], 
-            7   : [ 'BOOT',                 0,      0,          False   ],
-            8   : [ 'TYPE',                 0,      __U8,       False   ],
-            9   : [ 'ID',                   0,      0,          False   ],
-            10  : [ 'SAMPLE RATE',          0,      0,          False   ],
-            11  : [ 'BINARY',               0,      __NOVALUE,  True    ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      __U8*3,     False   ]
-        }
-
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
     def __init__(self) : 
         # contains allowed POD commands (basic set)
-        self.__commands = POD_Commands.__BASICCOMMANDS
+        self.__commands = POD_Commands.GetBasicCommands()
 
 
     # ============ STATIC METHODS ============  ========================================================================================================================
@@ -65,7 +47,27 @@ class POD_Commands :
 
     @staticmethod
     def GetBasicCommands() : 
-        return(POD_Commands.__BASICCOMMANDS)
+        # constants 
+        U8 = POD_Commands.U8()
+        NOVALUE = POD_Commands.NoValue()
+        # basic standard POD commands 
+        basics = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes, binary flag ]), 
+            0   : [ 'ACK',                  0,      0,          False   ],
+            1   : [ 'NACK',                 0,      0,          False   ],
+            2   : [ 'PING',                 0,      0,          False   ],
+            3   : [ 'RESET',                0,      0,          False   ],
+            4   : [ 'ERROR',                0,      U8,         False   ],
+            5   : [ 'STATUS',               0,      0,          False   ],
+            6   : [ 'STREAM',               U8,     U8,         False   ], 
+            7   : [ 'BOOT',                 0,      0,          False   ],
+            8   : [ 'TYPE',                 0,      U8,         False   ],
+            9   : [ 'ID',                   0,      0,          False   ],
+            10  : [ 'SAMPLE RATE',          0,      0,          False   ],
+            11  : [ 'BINARY',               0,      NOVALUE,    True    ],  # No return bytes because the length depends on the message
+            12  : [ 'FIRMWARE VERSION',     0,      U8*3,       False   ]
+        }
+        # return dict of commands 
+        return(basics)
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -78,7 +80,7 @@ class POD_Commands :
 
     def RestoreBasicCommands(self) : 
         # set commands to the basic command set 
-        self.__commands = POD_Commands.__BASICCOMMANDS
+        self.__commands = POD_Commands.GetBasicCommands()
 
 
     def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes,isBinary):

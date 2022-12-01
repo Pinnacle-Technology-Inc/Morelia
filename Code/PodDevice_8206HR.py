@@ -19,7 +19,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
-        B4 = POD_8206HR.__B4CHLENGTH
+        B4  = POD_8206HR.__B4CHLENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
