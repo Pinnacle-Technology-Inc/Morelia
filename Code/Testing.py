@@ -101,25 +101,26 @@ def ex4():
     print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
     print('\n')
     # Write and Read standard POD message with a packet 
-    w = podR.WritePacket('GET LOWPASS', podR.IntToAsciiBytes(0,2)) # 0 = EEG1
+    w = podR.WritePacket('GET LOWPASS', 0) # 0 = EEG1
     print('Write (GET LOWPASS):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
     r = podR.ReadPODpacket()
     print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
-    print('\n')
-    # Write and Read binary 
-    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
-    print('Write (STREAM):\t', podR.TranslatePODpacket(w))
-    for i in range(10) : 
-        r = podR.ReadPODpacket()
-        print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
-    print('\n')
-    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 0 = OFF
+    # print('\n')
+    # # Write and Read binary 
+    # w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
+    # print('Write (STREAM):\t', podR.TranslatePODpacket(w))
+    # for i in range(10) : 
+    #     r = podR.ReadPODpacket()
+    #     print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
+    # print('\n')
+    # w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 0 = OFF
 
-# 5. burst binary read
+# 5.  binary read
 def ex5():
     podR = POD_8206HR(portUse)
     w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
     r = podR.ReadPODpacket()
+    print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
     w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 1 = ON
     while(True):
         r = podR.ReadPODpacket()

@@ -222,6 +222,7 @@ class POD_Basics :
 
 
     def WritePacket(self, cmd, payload=None) : 
+        
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
             return(False)
@@ -232,22 +233,37 @@ class POD_Basics :
         else: 
             cmdNum = cmd
 
-        # check if the command requires a payload
+        # get length of expected paylaod 
         argSize = self._commands.ArgumentBytes(cmdNum)
-        if(argSize > 0) : 
+
+        # initialize payload to None, set to payload if given
+        pld = None 
+
+        # command requires a payload. 
+        if( argSize > 0 ):
             # check to see if a payload was given 
-            if(not payload):
+            if(payload == None):
                 raise Exception('POD command requires a payload.')
-            # then check that payload is of correct type
-            elif(not isinstance(payload, bytes)) :
-                raise Exception('Payload must be of type(bytes).')
-            # then check that payload is of correct size
-            elif(len(payload) != argSize):
-                raise Exception('Payload is the wrong size.')
-            # else : everything is good! continue 
+            
+            # if integer payload is given... 
+            if(isinstance(payload,int)):
+                # ... convert to bytes of the expected length 
+                pld = POD_Basics.IntToAsciiBytes(payload,argSize)
+            # if bytes payload is given...
+            elif(isinstance(payload, bytes)):
+                # ... throw error if payload is the wrong size ... 
+                if( len(payload) != argSize) :
+                    raise Exception('Payload is the wrong size.')
+                # ... otherwise, accept payload as given. 
+                else:
+                    pld = payload
+            # bad type given 
+            else :
+                raise Exception('Payload is an invalid type')
+            
 
         # build POD packet 
-        packet = self._BuildPODpacket_Standard(cmdNum, payload=payload)
+        packet = self._BuildPODpacket_Standard(cmdNum, payload=pld)
 
         # write packet to serial port 
         self._port.Write(packet)
