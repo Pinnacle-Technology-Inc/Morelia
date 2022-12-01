@@ -58,10 +58,29 @@ def ex1():
     del pod3
     del pod4
     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
-# ex1()
 
 # 2. command access
 def ex2():
+    # create command dict object
+    cmds = POD_Commands()
+    print('POD_Commands initialization:\n',cmds.GetCommands(),'\n')
+    # adding commands to dict 
+    cmds.AddCommand(991,'TEST1',199,919,True)
+    cmds.AddCommand(992,'TEST2',299,929,True)
+    cmds.AddCommand(993,'TEST3',299,939,True)
+    print('POD_Commands (Add):\n',cmds.GetCommands(),'\n')
+    # removing command from dict 
+    cmds.RemoveCommand('TEST3')
+    print('POD_Commands (Rem):\n',cmds.GetCommands(),'\n')
+    # helpful functions 
+    print('TEST1 exists:\t',    cmds.DoesCommandExist('TEST1'))
+    print('TEST1 number:\t',    cmds.CommandNumberFromName('TEST1'))
+    print('TEST1 argument:\t',  cmds.ArgumentBytes('TEST1'))
+    print('TEST1 return:\t',    cmds.ReturnBytes('TEST1'))
+    print('TEST1 binary:\t',    cmds.IsCommandBinary('TEST1'))
+
+# 3. initialization of commands 
+def ex3():
     # create a pod device by passing the appropriate serial port 
     podB = POD_Basics(portUse)
     podR = POD_8206HR(portUse)
@@ -69,21 +88,47 @@ def ex2():
     print('Basic commands:\n', podB.GetDeviceCommands(),'\n')
     print('8206HR commands:\n',podR.GetDeviceCommands(),'\n')
 
-    # create command dict object
-    cmds = POD_Commands()
-    print('8206HR commands:\n',cmds.GetCommands(),'\n')
+# 4. read and write 
+def ex4():
+    # create pod device object 
+    podR = POD_8206HR(portUse)
+    # Write and Read standard POD message with no packet 
+    w = podR.WritePacket('PING')
+    print('Write (PING):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
+    r = podR.ReadPODpacket()
+    print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+    print('\n')
+    # Write and Read standard POD message with a packet 
+    w = podR.WritePacket('GET LOWPASS', podR.IntToAsciiBytes(0,2)) # 0 = EEG1
+    print('Write (GET LOWPASS):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
+    r = podR.ReadPODpacket()
+    print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+    print('\n')
+    # Write and Read binary 
+    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
+    print('Write (STREAM):\t', podR.TranslatePODpacket(w))
+    for i in range(10) : 
+        r = podR.ReadPODpacket()
+        print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
+    print('\n')
+    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 0 = OFF
+    # # Try to get a response after stream 
+    # for i in range(10):
+    #     w = podR.WritePacket('PING')
+    #     print('Write (PING):\t', podR.TranslatePODpacket(w))
+    #     r = podR.ReadPODpacket()
+    #     print('Read (PING):\t',podR.TranslatePODpacket(r))
+
+# run demos
+ex1()
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 ex2()
-
-
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+ex3()
+print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+ex4()
 
 # conversions
-# command dict access (add/remove)
-# write messages
-# read messages 
-# unpack and translate messages
-
-
-
 
 
 print('\n\n')
