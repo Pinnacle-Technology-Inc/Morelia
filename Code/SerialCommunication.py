@@ -13,11 +13,10 @@ class COM_io :
         portList = []
         for port in allPorts:
             portList.append(str(port))
-            print(str(port))
         # end
         return(portList)
 
-    # ====== DUNDER METHODS ======
+    # ====== DUNDER METHODS ======seri
 
     def __init__(self, port, baudrate=9600) :
         # initialize port 
