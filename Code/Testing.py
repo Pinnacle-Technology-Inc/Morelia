@@ -42,27 +42,8 @@ print('\n\n')
 
 # DEMO 
 
-# # 1. creating pod devices & device counters !!BUSTED!! CAN NO LONGER OPEN TWO COM PORTS WITH SAME SERIAL PORT
-# def ex1():
-#     # create a pod device by passing the appropriate serial port 
-#     pod1 = POD_Basics(portUse)
-#     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
-#     # creating new pod objects increments counter 
-#     pod2 = POD_Basics(portUse)
-#     pod3 = POD_Basics(portUse)
-#     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
-#     # creating subclasses of pod basics also increments counter 
-#     pod4 = POD_8206HR(portUse)
-#     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
-#     # deleting pod devices decrements counter
-#     del pod1
-#     del pod2
-#     del pod3
-#     del pod4
-#     print('Number of POD devices:\t', POD_Basics.GetNumberOfPODDevices())
-
-# 2. initialization of commands 
-def ex2():
+# initialization of commands 
+def InitCommands():
     # Basic POD object
     podB = POD_Basics(portUse)
     print('Basic commands:\n', podB.GetDeviceCommands(),'\n')
@@ -72,8 +53,8 @@ def ex2():
     print('8206HR commands:\n',podR.GetDeviceCommands(),'\n')
     del podR
 
-# 3. command access
-def ex3():
+# command access
+def CommandAccess():
     # create command dict object
     cmds = POD_Commands()
     print('POD_Commands initialization:\n',cmds.GetCommands(),'\n')
@@ -92,8 +73,8 @@ def ex3():
     print('TEST1 return:\t',    cmds.ReturnBytes('TEST1'))
     print('TEST1 binary:\t',    cmds.IsCommandBinary('TEST1'))
 
-# 4. standard read and write 
-def ex4():
+# standard read and write 
+def StandardReadWrite():
     # create pod device object 
     podR = POD_8206HR(portUse)
     # Write and Read standard POD message with no packet 
@@ -109,7 +90,7 @@ def ex4():
     print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
     
 # 5.  binary read
-def ex5():
+def BinaryRead():
     podR = POD_8206HR(portUse)
     w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
     r = podR.ReadPODpacket()
@@ -120,14 +101,12 @@ def ex5():
         print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
 
 # run demos
-### ex1() # busted 
+# InitCommands()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# ex2()
+# CommandAccess()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# ex3()
+# StandardReadWrite()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# ex4()
-# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# ex5()
+# BinaryRead()
 
 print('\n\n')
