@@ -207,6 +207,66 @@ class POD_Basics :
         return(msgDictTrans)
 
 
+    # ------------ CHECKSUM HANDLING ------------             ------------------------------------------------------------------------------------------------------------------------
+
+
+    @staticmethod
+    def _Checksum(bytesIn):
+        # sum together all bytes in byteArr
+        sum = 0
+        for b in bytesIn : 
+            sum = sum + b
+        # invert and get last byte 
+        cs  = ~sum & 0xFF
+        # convert int into bytes 
+        cs_bytes = POD_Basics.IntToAsciiBytes(cs, 2)
+        # return checksum bytes
+        return(cs_bytes)
+
+
+    @staticmethod
+    def _ValidateChecksum(msg):
+        # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all pod packets except variable length binary packet
+        # get length of POD packet 
+        packetBytes = len(msg)
+        # check that packet begins with STX and ends with ETX
+        if(    (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        ) : 
+            raise Exception('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
+        # get message contents excluding STX/ETX
+        msgPacket = msg[1:packetBytes-3]
+        msgCsm = msg[packetBytes-3:packetBytes-1]
+        # calculate checksum from content packet  
+        csmValid = POD_Basics._Checksum(msgPacket)
+        # return True if checksums match 
+        if(msgCsm == csmValid) :
+            return(True)
+        else:
+            return(False)
+
+
+    # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
+ 
+
+    @staticmethod
+    def _BuildPODpacket_Standard(commandNumber, payload=None) : 
+        # prepare components of packet
+        stx = POD_Basics.STX()                              # STX indicating start of packet (1 byte)
+        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
+        etx = POD_Basics.ETX()                              # ETX indicating end of packet (1 byte)
+        # build packet with payload 
+        if(payload) :
+            csm = POD_Basics._Checksum(cmd+payload)         # checksum (2 bytes)
+            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
+        # build packet with NO payload 
+        else :
+            csm = POD_Basics._Checksum(cmd)                 # checksum (2 bytes)
+            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
+        # return complete bytes packet
+        return(packet)
+        
+        
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
@@ -225,7 +285,7 @@ class POD_Basics :
         
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
-            return(False)
+            raise Exception('POD command does not Exist.')
 
         # get command number 
         if(isinstance(cmd,str)):
@@ -407,57 +467,3 @@ class POD_Basics :
         # return complete variable length binary packet
         return(packet)
 
-
-    # ------------ CHECKSUM HANDLING ------------             ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def _Checksum(bytesIn):
-        # sum together all bytes in byteArr
-        sum = 0
-        for b in bytesIn : 
-            sum = sum + b
-        # invert and get last byte 
-        cs  = ~sum & 0xFF
-        # convert int into bytes 
-        cs_bytes = POD_Basics.IntToAsciiBytes(cs, 2)
-        # return checksum bytes
-        return(cs_bytes)
-
-
-    @staticmethod
-    def _ValidateChecksum(msg):
-        # assume that msg contains STX + packet + csm + ETX. 
-        # This assumption is good for more all pod packets except variable length binary packet
-        packetBytes = len(msg)
-        # get message contents excluding STX/ETX
-        msgPacket = msg[1:packetBytes-3]
-        msgCsm = msg[packetBytes-3:packetBytes-1]
-        # calculate checksum from content packet  
-        csmValid = POD_Basics._Checksum(msgPacket)
-        # return True if checksums match 
-        if(msgCsm == csmValid) :
-            return(True)
-        else:
-            return(False)
-
-
-    # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
- 
-
-    @staticmethod
-    def _BuildPODpacket_Standard(commandNumber, payload=None) : 
-        # prepare components of packet
-        stx = POD_Basics.STX()                              # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = POD_Basics.ETX()                              # ETX indicating end of packet (1 byte)
-        # build packet with payload 
-        if(payload) :
-            csm = POD_Basics._Checksum(cmd+payload)          # checksum (2 bytes)
-            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
-        # build packet with NO payload 
-        else :
-            csm = POD_Basics._Checksum(cmd)                  # checksum (2 bytes)
-            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
-        # return complete bytes packet
-        return(packet)

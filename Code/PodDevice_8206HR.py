@@ -6,10 +6,8 @@ class POD_8206HR(POD_Basics) :
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
 
-    # number of bytes for ch0-2 in a  Binary 4 packet 
-    __B4CHLENGTH = 6
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH = __B4CHLENGTH + 10 # 16
+    __B4LENGTH = 16
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -21,7 +19,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
-        B4  = POD_8206HR.__B4CHLENGTH
+        B4  = POD_8206HR.__B4LENGTH -1 -4 -2 -1 # length minus STX, command number, checksum, ETX = 16 - 8 = 8
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
