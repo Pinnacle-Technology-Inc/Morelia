@@ -56,8 +56,8 @@ class POD_8206HR(POD_Basics) :
 
         # message must have enough bytes, start with STX, or end with ETX
         if(    (packetBytes != MINBYTES)
-            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
         ) : 
             raise Exception('Cannot unpack an invalid POD packet.')
 
@@ -82,12 +82,12 @@ class POD_8206HR(POD_Basics) :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
-        msgDictTrans['Packet #']        = POD_Basics.BinaryBytesToInt(msgDict['Packet #'])
-        msgDictTrans['TTL']             = POD_Basics.BinaryBytesToInt(msgDict['TTL'])
-        msgDictTrans['Ch0']             = POD_Basics.BinaryBytesToInt(msgDict['Ch0']) # do I want these as int or keep as binary ?
-        msgDictTrans['Ch1']             = POD_Basics.BinaryBytesToInt(msgDict['Ch1']) # do I want these as int or keep as binary ?
-        msgDictTrans['Ch2']             = POD_Basics.BinaryBytesToInt(msgDict['Ch2']) # do I want these as int or keep as binary ?
+        msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt(msgDict['Packet #'])
+        msgDictTrans['TTL']             = POD_Packets.BinaryBytesToInt(msgDict['TTL'])
+        msgDictTrans['Ch0']             = POD_Packets.BinaryBytesToInt(msgDict['Ch0']) # do I want these as int or keep as binary ?
+        msgDictTrans['Ch1']             = POD_Packets.BinaryBytesToInt(msgDict['Ch1']) # do I want these as int or keep as binary ?
+        msgDictTrans['Ch2']             = POD_Packets.BinaryBytesToInt(msgDict['Ch2']) # do I want these as int or keep as binary ?
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
