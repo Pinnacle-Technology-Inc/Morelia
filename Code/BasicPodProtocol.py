@@ -1,5 +1,6 @@
 from SerialCommunication import COM_io
 from PodCommands import POD_Commands
+from PodPacketHandling import POD_Packets
 
 class POD_Basics : 
 
@@ -39,88 +40,6 @@ class POD_Basics :
         return(POD_Basics.__NUMPOD)
 
 
-    # ------------ USEFUL VALUES ------------   ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def STX():
-        # return STX character used to indicate start of a packet 
-        return(bytes.fromhex('02'))
-
-
-    @staticmethod
-    def ETX():
-        # return ETX character used to indicate end of a packet 
-        return(bytes.fromhex('03'))
-
-
-    # ------------ CONVERSIONS ------------     ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def IntToAsciiBytes(value, numBytes) : 
-        # convert number into a hex string and remove the '0x' prefix
-        num_hexStr = hex(value).replace('0x','')
-
-        # split into list to access each digit, and make each hex character digit uppercase 
-        num_hexStr_list = [x.upper() for x in num_hexStr]
-        
-        # convert each digit to an ascii code
-        asciilist = []
-        for character in num_hexStr_list: 
-            # convert character to its ascii code and append to list  
-            asciilist.append(ord(character))
-
-        # get bytes for the ascii number 
-        blist = []
-        for ascii in asciilist :
-            # convert ascii code to bytes and add to list 
-            blist.append(bytes([ascii]))
-        
-        # if the number of bytes is smaller that requested, add zeros to beginning of the bytes to get desired size
-        if (len(blist) < numBytes): 
-            # ascii code for zero
-            zero = bytes([ord('0')])
-            # create list of zeros with size (NumberOfBytesWanted - LengthOfCurrentBytes))
-            pre = [zero] * (numBytes - len(blist))
-            # concatenate zeros list to remaining bytes
-            post = pre + blist
-        # if the number of bytes is greater that requested, keep the lowest bytes, remove the overflow 
-        elif (len(blist) > numBytes) : 
-            # get minimum index of bytes to keep
-            min = len(blist) - numBytes
-            # get indeces from min to end of list 
-            post = blist[min:]
-        # if the number of bytes is equal to that requested, keep the all the bytes, change nothing
-        else : 
-            post = blist
-
-        # initialize message to first byte in 'post'
-        msg = post[0]
-        for i in range(numBytes-1) : 
-            # concatenate next byte to end of the message 
-            msg = msg + post[i+1]
-
-        # return a byte message of a desired size 
-        return(msg)
-
-
-    @staticmethod
-    def AsciiBytesToInt(msg_b):
-        # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
-        msg_str = str(msg_b) [2 : len(str(msg_b))-1]
-        # convert string into base 16 int (reads string as hex number, returns decimal int)
-        msg_int = int(msg_str,16)
-        # return int
-        return(msg_int)
-
-
-    @staticmethod
-    def BinaryBytesToInt(msg, byteorder='big', signed=False) :
-        # convert a binary message represented by bytes into an integer
-        return(int.from_bytes(msg,byteorder=byteorder,signed=signed))
-
-
     # ------------ POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -135,8 +54,8 @@ class POD_Basics :
 
         # message must have enough bytes, start with STX, or end with ETX
         if(    (packetBytes < MINBYTES)
-            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
         ) : 
             raise Exception('Cannot unpack an invalid POD packet.')
 
@@ -162,9 +81,9 @@ class POD_Basics :
 
         # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
         if(    (packetBytes < MINBYTES)                        
-            or (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
-            or (msg[11].to_bytes(1,'big') != POD_Basics.ETX())
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
+            or (msg[11].to_bytes(1,'big') != POD_Packets.ETX())
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
         ) : 
             raise Exception('Cannot unpack an invalid POD packet.')
 
@@ -186,9 +105,9 @@ class POD_Basics :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictTrans['Command Number']  = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
-            msgDictTrans['Payload']     = POD_Basics.AsciiBytesToInt(msgDict['Payload'])
+            msgDictTrans['Payload']     = POD_Packets.AsciiBytesToInt(msgDict['Payload'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -200,8 +119,8 @@ class POD_Basics :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictTrans['Command Number']          = POD_Basics.AsciiBytesToInt(msgDict['Command Number'])
-        msgDictTrans['Binary Packet Length']    = POD_Basics.AsciiBytesToInt(msgDict['Binary Packet Length'])
+        msgDictTrans['Command Number']          = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
+        msgDictTrans['Binary Packet Length']    = POD_Packets.AsciiBytesToInt(msgDict['Binary Packet Length'])
         msgDictTrans['Binary Data']             = msgDict['Binary Data'] # leave this as bytes, change type if needed 
         # return translated unpacked POD packet 
         return(msgDictTrans)
@@ -211,61 +130,26 @@ class POD_Basics :
 
 
     @staticmethod
-    def _Checksum(bytesIn):
-        # sum together all bytes in byteArr
-        sum = 0
-        for b in bytesIn : 
-            sum = sum + b
-        # invert and get last byte 
-        cs  = ~sum & 0xFF
-        # convert int into bytes 
-        cs_bytes = POD_Basics.IntToAsciiBytes(cs, 2)
-        # return checksum bytes
-        return(cs_bytes)
-
-
-    @staticmethod
     def _ValidateChecksum(msg):
         # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all pod packets except variable length binary packet
         # get length of POD packet 
         packetBytes = len(msg)
         # check that packet begins with STX and ends with ETX
-        if(    (msg[0].to_bytes(1,'big') != POD_Basics.STX()) 
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Basics.ETX())
+        if(    (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
         ) : 
             raise Exception('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
         msgPacket = msg[1:packetBytes-3]
         msgCsm = msg[packetBytes-3:packetBytes-1]
         # calculate checksum from content packet  
-        csmValid = POD_Basics._Checksum(msgPacket)
+        csmValid = POD_Packets.Checksum(msgPacket)
         # return True if checksums match 
         if(msgCsm == csmValid) :
             return(True)
         else:
             return(False)
 
-
-    # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
- 
-
-    @staticmethod
-    def _BuildPODpacket_Standard(commandNumber, payload=None) : 
-        # prepare components of packet
-        stx = POD_Basics.STX()                              # STX indicating start of packet (1 byte)
-        cmd = POD_Basics.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = POD_Basics.ETX()                              # ETX indicating end of packet (1 byte)
-        # build packet with payload 
-        if(payload) :
-            csm = POD_Basics._Checksum(cmd+payload)         # checksum (2 bytes)
-            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
-        # build packet with NO payload 
-        else :
-            csm = POD_Basics._Checksum(cmd)                 # checksum (2 bytes)
-            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
-        # return complete bytes packet
-        return(packet)
-        
         
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -308,7 +192,7 @@ class POD_Basics :
             # if integer payload is given... 
             if(isinstance(payload,int)):
                 # ... convert to bytes of the expected length 
-                pld = POD_Basics.IntToAsciiBytes(payload,argSize)
+                pld = POD_Packets.IntToAsciiBytes(payload,argSize)
             # if bytes payload is given...
             elif(isinstance(payload, bytes)):
                 # ... throw error if payload is the wrong size ... 
@@ -323,7 +207,7 @@ class POD_Basics :
             
 
         # build POD packet 
-        packet = self._BuildPODpacket_Standard(cmdNum, payload=pld)
+        packet = POD_Packets.BuildPODpacket_Standard(cmdNum, payload=pld)
 
         # write packet to serial port 
         self._port.Write(packet)
@@ -335,7 +219,7 @@ class POD_Basics :
     def ReadPODpacket(self, validateChecksum=True):
         # read until STX is found
         b = None
-        while(b != self.STX()) :
+        while(b != POD_Packets.STX()) :
             b = self._port.Read(1)     # read next byte  
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
@@ -350,18 +234,18 @@ class POD_Basics :
 
     def _ReadPODpacket_Recursive(self, validateChecksum=True) : 
         # start packet with STX
-        packet = self.STX()
+        packet = POD_Packets.STX()
 
         # read next 4 bytes of the command number 
         cmd = self._Read_GetCommand(validateChecksum=validateChecksum)
         packet += cmd 
 
         # return packet if cmd ends in ETX
-        if(cmd[len(cmd)-1].to_bytes(1,'big') == self.ETX()) : 
+        if(cmd[len(cmd)-1].to_bytes(1,'big') == POD_Packets.ETX()) : 
             return(packet)
 
         # determine the command number
-        cmdNum = self.AsciiBytesToInt(cmd)
+        cmdNum = POD_Packets.AsciiBytesToInt(cmd)
 
         # check if command number is valid
         if( not self._commands.DoesCommandExist(cmdNum) ) :
@@ -396,7 +280,7 @@ class POD_Basics :
             else : 
                 cmd += b
             # start over if STX is found 
-            if(b == self.STX() ) : 
+            if(b == POD_Packets.STX() ) : 
                 self._ReadPODpacket_Recursive(validateChecksu=validateChecksum)
             # return if ETX is found
             if(b == self.ETX() ) : 
@@ -419,7 +303,7 @@ class POD_Basics :
             else : 
                 packet += b
             # start over if STX
-            if(b == self.STX()) : 
+            if(b == POD_Packets.STX()) : 
                 self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return packet
         return(packet)
@@ -446,7 +330,7 @@ class POD_Basics :
         startDict   = self.UnpackPODpacket_Standard(startPacket)
 
         # get length of binary packet 
-        numOfbinaryBytes = self.AsciiBytesToInt(startDict['Payload'])
+        numOfbinaryBytes = POD_Packets.AsciiBytesToInt(startDict['Payload'])
 
         # read binary packet
         binaryMsg = self._port.Read(numOfbinaryBytes) # read binary packet
@@ -459,7 +343,7 @@ class POD_Basics :
 
         # check if checksum is correct 
         if(validateChecksum):
-            csmCalc = self._Checksum(binaryMsg)
+            csmCalc = POD_Packets.Checksum(binaryMsg)
             csm = binaryEnd[0:2]
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
