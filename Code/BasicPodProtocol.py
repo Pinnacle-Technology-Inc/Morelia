@@ -165,6 +165,12 @@ class POD_Basics :
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
+    def WriteRead(self, cmd, payload=None, validateChecksum=True)  :
+        w = self.WritePacket(cmd, payload)
+        r = self.ReadPODpacket(validateChecksum)
+        return(r)
+
+
     def WritePacket(self, cmd, payload=None) : 
         
         # return False if command is not valid

@@ -89,7 +89,7 @@ def StandardReadWrite():
     r = podR.ReadPODpacket()
     print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
     
-# 5.  binary read
+# binary read
 def BinaryRead():
     podR = POD_8206HR(portUse)
     w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
@@ -100,13 +100,18 @@ def BinaryRead():
         r = podR.ReadPODpacket()
         print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
 
+# write and read (standard)
+def WriteRead():
+    podR = POD_8206HR(portUse)
+    # Write and Read standard POD message with no packet 
+    r = podR.WriteRead('PING')
+    print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+
 # run demos
-InitCommands()
-# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-CommandAccess()
-# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-StandardReadWrite()
-# print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+# InitCommands()
+# CommandAccess()
+# StandardReadWrite()
 # BinaryRead()
+WriteRead()
 
 print('\n\n')
