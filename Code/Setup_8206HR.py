@@ -60,6 +60,7 @@ class Setup_8206HR :
 
             # setup device 
             self._ChooseSampleRate(podDevices[i])
+            ### LEFT OFF HERE.... SETUP LOWPASS AND TTL
 
             # move to next device 
             i+=1
@@ -175,4 +176,5 @@ class Setup_8206HR :
 
     @staticmethod
     def _ChooseLowpassForEEG(eeg, pod):
+        ### LEFT OFF HERE....
         pass
