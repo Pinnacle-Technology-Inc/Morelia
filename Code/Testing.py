@@ -58,9 +58,9 @@ def CommandAccess():
     cmds = POD_Commands()
     print('POD_Commands initialization:\n',cmds.GetCommands(),'\n')
     # adding commands to dict 
-    cmds.AddCommand(991,'TEST1',199,919,True)
-    cmds.AddCommand(992,'TEST2',299,929,True)
-    cmds.AddCommand(993,'TEST3',299,939,True)
+    cmds.AddCommand(991,'TEST1',(199,),(919,),True)
+    cmds.AddCommand(992,'TEST2',(299,),(929,),True)
+    cmds.AddCommand(993,'TEST3',(299,),(939,),True)
     print('POD_Commands (Add):\n',cmds.GetCommands(),'\n')
     # removing command from dict 
     cmds.RemoveCommand('TEST3')
@@ -100,10 +100,10 @@ def StandardReadWrite():
 # binary read
 def BinaryRead():
     podR = POD_8206HR(portUse)
-    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(1,2)) # 1 = ON
+    w = podR.WritePacket('STREAM', 1) # 1 = ON
     r = podR.ReadPODpacket()
     print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
-    w = podR.WritePacket('STREAM', podR.IntToAsciiBytes(0,2)) # 1 = ON5
+    w = podR.WritePacket('STREAM', 0) # 0 = OFF
     while(True):
         r = podR.ReadPODpacket()
         print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
