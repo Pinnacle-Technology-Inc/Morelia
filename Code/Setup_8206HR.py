@@ -24,17 +24,44 @@ class Setup_8206HR :
 
         # get the number of devices 
         numDevices = self.SetNumberOfDevices()
-        print('\n')
 
-        # get port name of each device 
-        portNames = [''] * numDevices
-        for i in range(numDevices) : 
-            print('- Device #',i+1)
+        # initialize lists 
+        portNames = [None] * numDevices
+        podDevices = [None] * numDevices
+
+        # setup each POD device 
+        i=0
+        while(i < numDevices) : 
+            # current index 
+            print('\n- Device #'+str(i+1))
+
+            # get name of port
             portNames[i] = self.ChoosePort(forbidden=portNames)
-            print('\n')
-        print('Selected Ports:', portNames)
+            port = portNames[i].split(' ')[0] # isolate 'COM#' from full port name 
 
+            # get baud rate 
+            baudrate = self.ChooseBaudrate(default=False)
+
+            # setup device 
+            try :
+                # create POD device
+                podDevices[i] = POD_8206HR(port=port, baudrate=baudrate)
+                # ping to test connection 
+                self.TestConnection(podDevices[i])
+                print('Successfully connected '+port+' to Device #'+str(i+1)+'.')
+            except :
+                # fail message 
+                print('[!] Failed to connect '+port+' to Device #'+str(i+1)+'. Try again.')
+                # reset values 
+                portNames[i] = None
+                podDevices[i] = None
+                # retry 
+                continue
+
+            # move to next device 
+            i+=1
         
+
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
@@ -42,6 +69,11 @@ class Setup_8206HR :
         try : 
             # request user imput
             n = int(input('How many POD devices do you want to use?: '))
+            # number must be positive
+            if(n<=0):
+                print('[!] Number must be greater than zero.')
+                return(self.SetNumberOfDevices())
+            # return number of POD devices 
             return(n)
         except : 
             # print error and start over
@@ -80,3 +112,34 @@ class Setup_8206HR :
         # if return condition not reached...
         print('[!] COM'+choice+' does not exist. Try again.')
         return(self.ChoosePort(forbidden))
+
+    
+    def ChooseBaudrate(self, default=False):
+        # return default
+        if(default):
+            return(9600)
+        # else use user input 
+        try : 
+            # request user imput
+            n = int(input('Set baud rate: '))
+            # number must be positive
+            if(n<=0):
+                print('[!] Number must be greater than zero.')
+                return(self.ChooseBaudrate(default))
+            # return baudrate
+            return(n)
+        except : 
+            # print error and start over
+            print('[!] Please enter an integer number.')
+            return(self.ChooseBaudrate(default))
+
+
+    def TestConnection(self, pod):
+        # write ping, excpect to read ping 
+        w = pod.WritePacket('PING')
+        r = pod.ReadPODpacket()
+        # connection successful if write and read match 
+        if(w==r):
+            return(True)
+        else:
+            raise Exception('[!] Connection failed. ')
