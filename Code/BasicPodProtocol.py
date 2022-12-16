@@ -1,6 +1,6 @@
-from SerialCommunication import COM_io
-from PodCommands import POD_Commands
-from PodPacketHandling import POD_Packets
+from SerialCommunication    import COM_io
+from PodPacketHandling      import POD_Packets
+from PodCommands            import POD_Commands
 
 class POD_Basics : 
 

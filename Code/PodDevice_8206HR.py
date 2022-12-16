@@ -1,5 +1,6 @@
-from BasicPodProtocol import POD_Basics
-from PodCommands import POD_Commands
+from BasicPodProtocol       import POD_Basics
+from PodPacketHandling      import POD_Packets
+from PodCommands            import POD_Commands
 
 class POD_8206HR(POD_Basics) : 
 
