@@ -162,6 +162,10 @@ class POD_Basics :
         return(self._commands.GetCommands())
 
 
+    def SetBaudrateOfDevice(self, baudrate) : 
+        # set baudrate of the open COM port. Returns true if successful.
+        return(self._port.SetBaudrate(baudrate))
+
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 

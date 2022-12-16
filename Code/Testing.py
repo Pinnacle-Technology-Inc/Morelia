@@ -102,16 +102,26 @@ def BinaryRead():
 
 # write and read (standard)
 def WriteRead():
+    # create pod device object 
     podR = POD_8206HR(portUse)
     # Write and Read standard POD message with no packet 
     r = podR.WriteRead('PING')
     print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+
+
+def Baudrate(br=9600) :
+    # create pod device object  
+    podR = POD_8206HR(portUse)
+    # set baudrate
+    b = podR.SetBaudrateOfDevice(br)
+    print('Was changing baudrate successful?:', b)
 
 # run demos
 # InitCommands()
 # CommandAccess()
 # StandardReadWrite()
 # BinaryRead()
-WriteRead()
+# WriteRead()
+Baudrate()
 
 print('\n\n')

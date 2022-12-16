@@ -82,6 +82,15 @@ class COM_io :
             # throw an error 
             raise Exception('Port does not exist.')
 
+    def SetBaudrate(self, baudrate) :
+        # port must be open 
+        if(self.IsSerialOpen) : 
+            # set baudrate 
+            self.__serialInst.baudrate = baudrate
+            return(True) 
+        else : 
+            return(False)
+
     # ----- GETTERS -----
 
     def GetPortName(self) : 
