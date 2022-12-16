@@ -76,7 +76,7 @@ def CommandAccess():
 def StandardReadWrite():
     # create pod device object 
     podR = POD_8206HR(portUse)
-    
+
     # Write and Read standard POD message with no packet 
     w = podR.WritePacket('PING')
     print('Write (PING):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
@@ -128,7 +128,7 @@ def Baudrate(br=9600) :
 # run demos
 # InitCommands()
 # CommandAccess()
-StandardReadWrite()
+# StandardReadWrite()
 # BinaryRead()
 # WriteRead()
 # Baudrate()

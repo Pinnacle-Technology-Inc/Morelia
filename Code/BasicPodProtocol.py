@@ -98,8 +98,7 @@ class POD_Basics :
         return(msg_unpacked)
 
     
-    @staticmethod
-    def TranslatePODpacket_Standard(msg) : 
+    def TranslatePODpacket_Standard(self, msg) : 
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
         # initialize dictionary for translated values 
@@ -107,7 +106,31 @@ class POD_Basics :
         # translate the binary ascii encoding into a readable integer
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
-            msgDictTrans['Payload']     = POD_Packets.AsciiBytesToInt(msgDict['Payload'])
+            # get payload bytes
+            pldBytes = msgDict['Payload']
+            # get sizes 
+            pldSizes = (len(pldBytes),)
+            argSizes = self._commands.ArgumentBytes(msgDictTrans['Command Number'])
+            retSizes = self._commands.ReturnBytes(msgDictTrans['Command Number'])
+            # determine which size tuple to use
+            if( sum(pldSizes) == sum(argSizes)):
+                useSizes = argSizes
+            elif( sum(pldSizes) == sum(retSizes)):
+                useSizes = retSizes
+            else:
+                useSizes = pldSizes
+            # split up payload using tuple of sizes 
+            pldSplit = [None]*len(useSizes)
+            startByte = 0
+            for i in range(len(useSizes)) : 
+                # count to stop byte
+                endByte = startByte + useSizes[i]
+                # get bytes 
+                pldSplit[i] = POD_Packets.AsciiBytesToInt(pldBytes[startByte:endByte])
+                # get new start byte
+                startByte = endByte
+            # save translated payload
+            msgDictTrans['Payload'] = tuple(pldSplit)
         # return translated unpacked POD packet 
         return(msgDictTrans)
 

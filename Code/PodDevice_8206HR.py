@@ -38,9 +38,6 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True    )     # see _Read_Binary()
 
 
-    # ============ STATIC METHODS ============      ========================================================================================================================
-
-
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -106,9 +103,9 @@ class POD_8206HR(POD_Basics) :
         else :
             return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
 
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
 
-    @staticmethod
-    def TranslatePODpacket(msg):
+    def TranslatePODpacket(self, msg):
         # determine what type of pod packet using length of msg
         length = len(msg)
         # message is binary 
@@ -116,7 +113,7 @@ class POD_8206HR(POD_Basics) :
             return( POD_8206HR.TranslatePODpacket_Binary(msg) ) 
         # message may be standard (length checked within unpacking function )
         else :
-            return( POD_8206HR.TranslatePODpacket_Standard(msg) )
+            return( POD_8206HR.TranslatePODpacket_Standard(self,msg) )
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
