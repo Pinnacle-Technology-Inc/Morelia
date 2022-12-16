@@ -101,11 +101,11 @@ def BinaryRead():
         print('Read (BINARY4 DATA):\t', podR.TranslatePODpacket(r))
 
 # run demos
-# InitCommands()
+InitCommands()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# CommandAccess()
+CommandAccess()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-# StandardReadWrite()
+StandardReadWrite()
 # print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 # BinaryRead()
 

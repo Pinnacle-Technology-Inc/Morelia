@@ -283,7 +283,7 @@ class POD_Basics :
             if(b == POD_Packets.STX() ) : 
                 self._ReadPODpacket_Recursive(validateChecksu=validateChecksum)
             # return if ETX is found
-            if(b == self.ETX() ) : 
+            if(b == POD_Packets.ETX() ) : 
                 return(cmd)
 
         # return complete 4 byte long command packet
@@ -294,7 +294,7 @@ class POD_Basics :
         packet = None
         b = None
         # stop reading after finding ETX
-        while(b != self.ETX()) : 
+        while(b != POD_Packets.ETX()) : 
             # read next byte
             b = self._port.Read(1)
             # build packet 
