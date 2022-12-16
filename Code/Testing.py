@@ -76,23 +76,27 @@ def CommandAccess():
 def StandardReadWrite():
     # create pod device object 
     podR = POD_8206HR(portUse)
-    # # Write and Read standard POD message with no packet 
-    # w = podR.WritePacket('PING')
-    # print('Write (PING):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
-    # r = podR.ReadPODpacket()
-    # print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
-    # print('\n')
-    # # Write and Read standard POD message with a packet 
-    # w = podR.WritePacket('GET LOWPASS', 1) # 0 = EEG1, 1 = EEG2, 2 = EEG3/EMG
-    # print('Write (GET LOWPASS):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
-    # r = podR.ReadPODpacket()
-    # print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
-    # # write and read standard POD message with multiple items in packet
-    w = podR.WritePacket('SET LOWPASS', (1,40))
-    print('Write (SET LOWPASS):\t', w )#, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
-    r = podR.ReadPODpacket()
-    print('Read (SET LOWPASS):\t', r)#, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
     
+    # Write and Read standard POD message with no packet 
+    w = podR.WritePacket('PING')
+    print('Write (PING):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
+    r = podR.ReadPODpacket()
+    print('Read (PING):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+    print('\n')
+    
+    # write and read standard POD message with multiple items in packet
+    w = podR.WritePacket('SET LOWPASS', (1,40))
+    print('Write (SET LOWPASS):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
+    r = podR.ReadPODpacket()
+    print('Read (SET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+    print('\n')
+
+    # Write and Read standard POD message with a packet 
+    w = podR.WritePacket('GET LOWPASS', 1) # 0 = EEG1, 1 = EEG2, 2 = EEG3/EMG
+    print('Write (GET LOWPASS):\t', w, podR.UnpackPODpacket(w), podR.TranslatePODpacket(w))
+    r = podR.ReadPODpacket()
+    print('Read (GET LOWPASS):\t', r, podR.UnpackPODpacket(r), podR.TranslatePODpacket(r))
+
 # binary read
 def BinaryRead():
     podR = POD_8206HR(portUse)
