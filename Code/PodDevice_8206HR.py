@@ -27,15 +27,15 @@ class POD_8206HR(POD_Basics) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand(100, 'GET SAMPLE RATE',      0,       U16,    False   )
-        self._commands.AddCommand(101, 'SET SAMPLE RATE',      U16,     0,      False   )
-        self._commands.AddCommand(102, 'GET LOWPASS',          U8,      U16,    False   )
-        self._commands.AddCommand(103, 'SET LOWPASS',          U8+U16,  0,      False   )
-        self._commands.AddCommand(104, 'SET TTL OUT',          U8+U8,   0,      False   )
-        self._commands.AddCommand(105, 'GET TTL IN',           U8,      U8,     False   )
-        self._commands.AddCommand(106, 'GET TTL PORT',         0,       U8,     False   )
-        self._commands.AddCommand(107, 'GET FILTER CONFIG',    0,       U8,     False   )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        0,       B4,     True    )     # see _Read_Binary()
+        self._commands.AddCommand(100, 'GET SAMPLE RATE',      (0,),       (U16,),    False   )
+        self._commands.AddCommand(101, 'SET SAMPLE RATE',      (U16,),     (0,),      False   )
+        self._commands.AddCommand(102, 'GET LOWPASS',          (U8,),      (U16,),    False   )
+        self._commands.AddCommand(103, 'SET LOWPASS',          (U8,U16),   (0,),      False   )
+        self._commands.AddCommand(104, 'SET TTL OUT',          (U8,U8),    (0,),      False   )
+        self._commands.AddCommand(105, 'GET TTL IN',           (U8,),      (U8,),     False   )
+        self._commands.AddCommand(106, 'GET TTL PORT',         (0,),       (U8,),     False   )
+        self._commands.AddCommand(107, 'GET FILTER CONFIG',    (0,),       (U8,),     False   )
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True    )     # see _Read_Binary()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================

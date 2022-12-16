@@ -175,8 +175,7 @@ class POD_Basics :
         return(r)
 
 
-    def WritePacket(self, cmd, payload=None) : 
-        
+    def WritePacket(self, cmd, payload=None) :         
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not Exist.')
@@ -188,29 +187,56 @@ class POD_Basics :
             cmdNum = cmd
 
         # get length of expected paylaod 
-        argSize = self._commands.ArgumentBytes(cmdNum)
+        argSizes = self._commands.ArgumentBytes(cmdNum)
 
         # initialize payload to None, set to payload if given
         pld = None 
-
+        
         # command requires a payload. 
-        if( argSize > 0 ):
+        if( sum(argSizes) > 0 ):
             # check to see if a payload was given 
             if(payload == None):
                 raise Exception('POD command requires a payload.')
             
-            # if integer payload is given... 
+            # if integer payload is given ... 
             if(isinstance(payload,int)):
-                # ... convert to bytes of the expected length 
-                pld = POD_Packets.IntToAsciiBytes(payload,argSize)
+                # check that command only uses one argument 
+                if( len(argSizes)!=1) : 
+                    raise Exception('POD command payload requires multiple arguments, use a tuple.')
+                # convert to bytes of the expected length 
+                pld = POD_Packets.IntToAsciiBytes(payload,sum(argSizes))
+
             # if bytes payload is given...
             elif(isinstance(payload, bytes)):
-                # ... throw error if payload is the wrong size ... 
-                if( len(payload) != argSize) :
+                # throw error if payload is the wrong size  
+                if( len(payload) != sum(argSizes)) :
                     raise Exception('Payload is the wrong size.')
-                # ... otherwise, accept payload as given. 
+                # otherwise, accept payload as given. 
                 else:
                     pld = payload
+
+            # if tuple payload is given...
+            elif(isinstance(payload, tuple)):
+                # check that there are the correct number of arguments
+                if(len(payload) != len(argSizes)) : 
+                    raise Exception('Payload has an incorrect number of items.')
+
+                # build list of bytes payload parts 
+                tempPld = [None]*len(payload)
+                for i in range(len(payload)) : 
+                    if(isinstance(payload[i], int)) :
+                        # convert to bytes of the expected length 
+                        tempPld[i] = POD_Packets.IntToAsciiBytes(payload[i],argSizes[i])
+                    elif(isinstance(payload[i], bytes) and len(payload[i])==argSizes[i]):
+                        # accept bytes payload as given
+                        tempPld[i] = payload[i]
+                    else:
+                        raise Exception('Payload has invalid values.')
+                # concatenate list items
+                pld = tempPld[0]
+                for i in range(len(tempPld)-1):
+                    pld += tempPld[i+1]
+
             # bad type given 
             else :
                 raise Exception('Payload is an invalid type')

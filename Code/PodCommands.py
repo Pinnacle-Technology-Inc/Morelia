@@ -49,20 +49,20 @@ class POD_Commands :
         U8 = POD_Commands.U8()
         NOVALUE = POD_Commands.NoValue()
         # basic standard POD commands 
-        basics = { # key(command number) : value([command name, number of argument ascii bytes, number of return bytes, binary flag ]), 
-            0   : [ 'ACK',                  0,      0,          False   ],
-            1   : [ 'NACK',                 0,      0,          False   ],
-            2   : [ 'PING',                 0,      0,          False   ],
-            3   : [ 'RESET',                0,      0,          False   ],
-            4   : [ 'ERROR',                0,      U8,         False   ],
-            5   : [ 'STATUS',               0,      0,          False   ],
-            6   : [ 'STREAM',               U8,     U8,         False   ], 
-            7   : [ 'BOOT',                 0,      0,          False   ],
-            8   : [ 'TYPE',                 0,      U8,         False   ],
-            9   : [ 'ID',                   0,      0,          False   ],
-            10  : [ 'SAMPLE RATE',          0,      0,          False   ],
-            11  : [ 'BINARY',               0,      NOVALUE,    True    ],  # No return bytes because the length depends on the message
-            12  : [ 'FIRMWARE VERSION',     0,      U8*3,       False   ]
+        basics = { # key(command number) : value([command name, (number of argument ascii bytes), (number of return bytes), binary flag ]), 
+            0   : [ 'ACK',                  (0,),      (0,),          False   ],
+            1   : [ 'NACK',                 (0,),      (0,),          False   ],
+            2   : [ 'PING',                 (0,),      (0,),          False   ],
+            3   : [ 'RESET',                (0,),      (0,),          False   ],
+            4   : [ 'ERROR',                (0,),      (U8,),         False   ],
+            5   : [ 'STATUS',               (0,),      (0,),          False   ],
+            6   : [ 'STREAM',               (U8,),     (U8,),         False   ], 
+            7   : [ 'BOOT',                 (0,),      (0,),          False   ],
+            8   : [ 'TYPE',                 (0,),      (U8,),         False   ],
+            9   : [ 'ID',                   (0,),      (0,),          False   ],
+            10  : [ 'SAMPLE RATE',          (0,),      (0,),          False   ],
+            11  : [ 'BINARY',               (0,),      (NOVALUE,),    True    ],  # No return bytes because the length depends on the message
+            12  : [ 'FIRMWARE VERSION',     (0,),      (U8,U8,U8),    False   ]
         }
         # return dict of commands 
         return(basics)
@@ -89,7 +89,7 @@ class POD_Commands :
             # return false to mark failed add 
             return(False)
         # add entry to dict 
-        self.__commands[int(commandNumber)] = [str(commandName).upper(),int(argumentBytes),int(returnBytes),bool(isBinary)]
+        self.__commands[int(commandNumber)] = [str(commandName).upper(),tuple(argumentBytes),tuple(returnBytes),bool(isBinary)]
         # return true to mark successful add
         return(True)
 
