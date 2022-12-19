@@ -1,4 +1,4 @@
-import time 
+import sys
 
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -34,7 +34,7 @@ class Setup_8206HR :
         i=0
         while(i < numDevices) : 
             # current index 
-            print('\n- Device #'+str(i+1))
+            print('\n-- Device #'+str(i+1)+' --\n')
 
             # get name of port
             portNames[i] = self._ChoosePort(forbidden=portNames)
@@ -49,7 +49,7 @@ class Setup_8206HR :
                 podDevices[i] = POD_8206HR(port=port, baudrate=baudrate)
                 # ping to test connection 
                 self._TestConnection(podDevices[i])
-                print('Successfully connected '+port+' to Device #'+str(i+1)+'.')
+                print('Successfully connected '+port+' to Device #'+str(i+1)+'.\n')
             except :
                 # fail message 
                 print('[!] Failed to connect '+port+' to Device #'+str(i+1)+'. Try again.')
@@ -62,13 +62,14 @@ class Setup_8206HR :
             # setup device 
             self._ChooseSampleRate(podDevices[i])
             self._ChooseLowpass(podDevices[i])
-            ### LEFT OFF HERE.... SETUP LOWPASS AND TTL
 
             # move to next device 
             i+=1
         
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
+
+    # ------------ CONNECT PORT ------------
 
     @staticmethod
     def _SetNumberOfDevices() : 
@@ -149,6 +150,7 @@ class Setup_8206HR :
         if(not pod.WritePacket('PING') == pod.ReadPODpacket()):
             raise Exception('[!] Connection failed. ')
 
+    # ------------ DEVICE SETTINGS ------------
     
     @staticmethod
     def _ChooseSampleRate(pod):
@@ -166,7 +168,7 @@ class Setup_8206HR :
             return(Setup_8206HR._ChooseSampleRate(pod))
 
         # write sample rate to device 
-        w = pod.WritePacket('SET SAMPLE RATE', sampleRate)
+        w = Setup_8206HR._WritePacket_Try(pod=pod, cmd='SET SAMPLE RATE', payload=sampleRate)
 
 
     @staticmethod
@@ -191,6 +193,16 @@ class Setup_8206HR :
             return(Setup_8206HR._ChooseSampleRate(pod))
 
         # write lowpass for EEG# to device 
-        w = pod.WritePacket('SET LOWPASS', (eeg, lowpass))
+        w = Setup_8206HR._WritePacket_Try(pod=pod, cmd='SET LOWPASS', payload=(eeg, lowpass))
 
 
+    # ------------ READ/WRITE ------------
+
+    @staticmethod
+    def _WritePacket_Try(pod, cmd, payload=None):
+        try:
+            w = pod.WritePacket(cmd=cmd, payload=payload)
+            return(w)
+        except : 
+            print('[!] Connection error: could not write to POD device.')
+            sys.exit('[!!!] Fatal Error: closing program.')
