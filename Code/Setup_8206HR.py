@@ -36,9 +36,7 @@ class Setup_8206HR :
 
         # get setup parameters for all POD devices
         self._SetParam_allPODdevices()
-        # display 
-        self._DisplayPODdeviceParameters()
-        # fix dict 
+        # allow user to edit parameters
         self._ValidateParams()
 
 
@@ -79,13 +77,14 @@ class Setup_8206HR :
 
 
     def _ValidateParams(self) : 
+        # display all pod devices and parameters
+        self._DisplayPODdeviceParameters()
         # ask if params are good or not
         validParams = Setup_8206HR._AskYN(question='Are the POD device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
+            # edit the parameters table
             self._EditParams()
-            # display 
-            self._DisplayPODdeviceParameters()
             # prompt again
             self._ValidateParams()
 
