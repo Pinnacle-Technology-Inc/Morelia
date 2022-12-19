@@ -29,55 +29,40 @@ class Setup_8206HR :
         # - save data to file 
         # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
-        self._SetupPODdevices()
+        podDict = self.GetPODdeviceParameters()
+        print(podDict)
 
-        
-        
-    def _SetupPODdevices(self) : 
+
+
+    
+
+
+    # ============ PUBLIC STATIC METHODS ============      ========================================================================================================================
+
+    @staticmethod
+    def _GetPODdeviceParameters() : 
         # get the number of devices 
-        numDevices = self._SetNumberOfDevices()
-
-        # initialize lists 
+        numDevices = Setup_8206HR._SetNumberOfDevices()
+        # initialize 
         portNames = [None] * numDevices
-        self._podDevices = [None] * numDevices
-
-        # setup each POD device 
-        i=0
-        while(i < numDevices) : 
+        podDict = {}
+        # get information for each POD device 
+        for i in range(numDevices) : 
             # current index 
             print('\n-- Device #'+str(i+1)+' --\n')
-
             # get name of port
-            portNames[i] = self._ChoosePort(forbidden=portNames)
-            port = portNames[i].split(' ')[0] # isolate 'COM#' from full port name 
+            portNames[i] = Setup_8206HR._ChoosePort(forbidden=portNames)
+            # add entry to dict
+            podDict[i] = {
+                'Port'          : portNames[i].split(' ')[0], # isolate 'COM#' from full port name
+                'Baud Rate'     : Setup_8206HR._ChooseBaudrate(),
+                'Sample Rate'   : Setup_8206HR._ChooseSampleRate(),
+                'Low Pass'      : Setup_8206HR._ChooseLowpass()
+            }
+        # return dict containing information to setup all POD devices
+        return(podDict)
 
-            # get baud rate 
-            baudrate = self._ChooseBaudrate()
-
-            # create POD device 
-            try :
-                # create POD device
-                self._podDevices[i] = POD_8206HR(port=port, baudrate=baudrate)
-                # ping to test connection 
-                self._TestConnection(self._podDevices[i])
-                print('Successfully connected '+port+' to Device #'+str(i+1)+'.\n')
-            except :
-                # fail message 
-                print('[!] Failed to connect '+port+' to Device #'+str(i+1)+'. Try again.')
-                # reset values 
-                portNames[i] = None
-                self._podDevices[i] = None
-                # retry 
-                continue
-
-            # setup device 
-            self._ChooseSampleRate(self._podDevices[i])
-            self._ChooseLowpass(self._podDevices[i])
-
-            # move to next device 
-            i+=1
-    # ============ PROTECTED METHODS ============      ========================================================================================================================
-
+    # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
     # ------------ CONNECT PORT ------------
 
@@ -163,48 +148,50 @@ class Setup_8206HR :
     # ------------ DEVICE SETTINGS ------------
     
     @staticmethod
-    def _ChooseSampleRate(pod):
+    def _ChooseSampleRate():
         try : 
             # get sample rate from user 
             sampleRate = int(input('Sample rate (Hz): '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseSampleRate(pod))
+            return(Setup_8206HR._ChooseSampleRate())
 
         # check for valid input
         if(sampleRate<100 or sampleRate>2000) : 
             print('[!] Sample rate must be between 100-2000.')
-            return(Setup_8206HR._ChooseSampleRate(pod))
+            return(Setup_8206HR._ChooseSampleRate())
 
-        # write sample rate to device 
-        w = Setup_8206HR._WritePacket_Try(pod=pod, cmd='SET SAMPLE RATE', payload=sampleRate)
+        # return sample rate
+        return(sampleRate)
+       
+
+    @staticmethod
+    def _ChooseLowpass():
+        # get lowpass for all EEG
+        return({
+            'EEG1'      : Setup_8206HR._ChooseLowpassForEEG(0),
+            'EEG2'      : Setup_8206HR._ChooseLowpassForEEG(1),
+            'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG(2),
+        })
 
 
     @staticmethod
-    def _ChooseLowpass(pod):
-        # 0 = EEG1, 1 = EEG2, 2 = EEG3/EMG
-        for eeg in range(3) : 
-            Setup_8206HR._ChooseLowpassForEEG(eeg, pod)
-
-    @staticmethod
-    def _ChooseLowpassForEEG(eeg, pod):
+    def _ChooseLowpassForEEG(eeg):
         try : 
             # get lowpass from user 
             lowpass = int(input('Lowpass (Hz) for EEG'+str(eeg)+': '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseLowpassForEEG(eeg, pod))
-
+            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
         # check for valid input
         if(lowpass<11 or lowpass>500) : 
             print('[!] Sample rate must be between 11-500 Hz.')
-            return(Setup_8206HR._ChooseSampleRate(pod))
-
-        # write lowpass for EEG# to device 
-        w = Setup_8206HR._WritePacket_Try(pod=pod, cmd='SET LOWPASS', payload=(eeg, lowpass))
-
+            return(Setup_8206HR._ChooseSampleRate())
+        # return lowpass
+        return(lowpass)
+        
 
     # ------------ READ/WRITE ------------
 
