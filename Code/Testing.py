@@ -137,7 +137,8 @@ from Setup_8206HR           import Setup_8206HR
 
 print('\n\n')
 
-go = Setup_8206HR()
+save = {0: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 9600, 'Sample Rate': 500, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
+go = Setup_8206HR(save)
 go.Run()
 
 print('\n\n')

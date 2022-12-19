@@ -31,12 +31,14 @@ class Setup_8206HR :
         # - continually get data
         # - make plot using data
         # - save data to file 
-        # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
 
-        # get setup parameters for all POD devices
-        self._SetParam_allPODdevices()
-        # allow user to edit parameters
+        # ask user for parameters if they were not initialized 
+        if(len(self._podParametersDict) == 0) : 
+            # get setup parameters for all POD devices
+            self._SetParam_allPODdevices()
+        
+        # display parameters and allow user to edit them
         self._ValidateParams()
 
 
@@ -79,6 +81,8 @@ class Setup_8206HR :
             self._EditParams()
             # prompt again
             self._ValidateParams()
+        else:
+            print('Dictionary of current POD parameter Set: \n', self._podParametersDict)
 
 
     def _EditParams(self) :
