@@ -26,6 +26,7 @@ You cannot run this script on the current system.", then you need to temporarily
 the PowerShell execution policy to allow scripts to run.
 
     >> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+    >> <reenter .venv python enviornment> 
 
 
 Install python packages while in .venv:
@@ -41,10 +42,11 @@ Install python packages while in .venv:
     >> python3 -m pip install PACKAGENAME
 
 
-Python packages installed to .venv (as of 9/29/2022):
-    - numpy
-    - pyserial 
-    - os-sys
+Python packages installed to .venv (as of 12/19/2022):
+    - numpy         (9/29/2022)
+    - pyserial      (9/29/2022)
+    - os-sys        (9/29/2022)
+    - texttable     (12/19/2022)
 
 Useful links:
     - Python tutorial: https://code.visualstudio.com/docs/python/python-tutorial 
