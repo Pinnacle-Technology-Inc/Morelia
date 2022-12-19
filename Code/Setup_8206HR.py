@@ -43,6 +43,9 @@ class Setup_8206HR :
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
 
+    # ------------ SET PARAMETERS ------------
+
+
     def _SetParam_allPODdevices(self) :
         # get the number of devices 
         numDevices = self._SetNumberOfDevices()
@@ -62,18 +65,7 @@ class Setup_8206HR :
         self._podParametersDict = podDict
 
 
-    def _DisplayPODdeviceParameters(self) : 
-        # print title 
-        print('\nParameters for all POD Devices:')
-        # setup table 
-        tab = texttable.Texttable()
-        # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
-        # write rows
-        for key,val in self._podParametersDict.items() :
-            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
-        # show table 
-        print(tab.draw())
+    # ------------ EDIT PARAMETERS ------------
 
 
     def _ValidateParams(self) : 
@@ -118,10 +110,27 @@ class Setup_8206HR :
             return(podKey)
 
 
+    # ------------ DISPLAY ------------
+
+
+    def _DisplayPODdeviceParameters(self) : 
+        # print title 
+        print('\nParameters for all POD Devices:')
+        # setup table 
+        tab = texttable.Texttable()
+        # write column names
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+        # show table 
+        print(tab.draw())
+    
+    
     # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
 
-    # ------------ PARAMS ------------
+    # ------------ DEVICE SETUP ------------
 
 
     @staticmethod
@@ -132,11 +141,7 @@ class Setup_8206HR :
                 'Sample Rate'   : Setup_8206HR._ChooseSampleRate(),
                 'Low Pass'      : Setup_8206HR._ChooseLowpass()
             })
-
-
     
-
-    # ------------ CONNECT PORT ------------
 
     @staticmethod
     def _SetNumberOfDevices() : 
@@ -153,6 +158,9 @@ class Setup_8206HR :
             # print error and start over
             print('[!] Please enter an integer number.')
             return(Setup_8206HR._SetNumberOfDevices())
+
+
+    # ------------ PORT SETTINGS ------------
 
 
     @staticmethod
@@ -179,13 +187,18 @@ class Setup_8206HR :
         print('Available COM Ports:', portList)
         # request port from user
         choice = input('Select port: COM')
-        # search for port in list
-        for port in portList:
-            if port.startswith('COM'+choice):
-                return(port)
-        # if return condition not reached...
-        print('[!] COM'+choice+' does not exist. Try again.')
-        return(Setup_8206HR._ChoosePort(forbidden))
+        # choice cannot be an empty string
+        if(choice == ''):
+            print('[!] Please choose a COM port.')
+            return(Setup_8206HR._ChoosePort(forbidden))
+        else:
+            # search for port in list
+            for port in portList:
+                if port.startswith('COM'+choice):
+                    return(port)
+            # if return condition not reached...
+            print('[!] COM'+choice+' does not exist. Try again.')
+            return(Setup_8206HR._ChoosePort(forbidden))
 
     
     @staticmethod
@@ -209,14 +222,9 @@ class Setup_8206HR :
             return(Setup_8206HR._ChooseBaudrate(useDefault,defaultValue))
 
 
-    @staticmethod
-    def _TestConnection(pod):
-        # connection successful if write and read match 
-        if(not pod.WritePacket('PING') == pod.ReadPODpacket()):
-            raise Exception('[!] Connection failed. ')
-
-    # ------------ DEVICE SETTINGS ------------
+    # ------------ POD DEVICE SETTINGS ------------
     
+
     @staticmethod
     def _ChooseSampleRate():
         try : 
@@ -263,6 +271,7 @@ class Setup_8206HR :
 
     # ------------ READ/WRITE ------------
 
+
     @staticmethod
     def _WritePacket_Try(pod, cmd, payload=None, quitIfFail=True):
         try:
@@ -273,7 +282,16 @@ class Setup_8206HR :
             if(quitIfFail) :
                 sys.exit('[!!!] Fatal Error: closing program.')
 
+
+    @staticmethod
+    def _TestConnection(pod):
+        # connection successful if write and read match 
+        if(not pod.WritePacket('PING') == pod.ReadPODpacket()):
+            raise Exception('[!] Connection failed. ')
+
+
     # ------------ HELPER ------------
+
 
     @staticmethod
     def _AskYN(question) : 
@@ -285,3 +303,5 @@ class Setup_8206HR :
         else:
             print('[!] Please enter \'y\' or \'n\'.')
             return(Setup_8206HR._AskYN(question))
+
+    
