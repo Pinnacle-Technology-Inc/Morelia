@@ -10,8 +10,11 @@ class Setup_8206HR :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self) :
-        self._podParametersDict = {}
+    def __init__(self, podParametersDict=None) :
+        if(podParametersDict != None) : 
+            self._podParametersDict = podParametersDict
+        else:
+            self._podParametersDict = {}
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -30,14 +33,17 @@ class Setup_8206HR :
         # - save data to file 
         # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
+
         # get setup parameters for all POD devices
         self._SetParam_allPODdevices()
         # display 
         self._DisplayPODdeviceParameters()
         # fix dict 
-        self._CheckParams()
+        self._ValidateParams()
+
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
+
 
     def _SetParam_allPODdevices(self) :
         # get the number of devices 
@@ -72,16 +78,16 @@ class Setup_8206HR :
         print(tab.draw())
 
 
-    def _CheckParams(self) : 
+    def _ValidateParams(self) : 
         # ask if params are good or not
-        validParams = self._ValidateParams()
+        validParams = Setup_8206HR._AskYN(question='Are the POD device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
             # display 
             self._DisplayPODdeviceParameters()
             # prompt again
-            self._CheckParams()
+            self._ValidateParams()
 
 
     def _EditParams(self) :
@@ -129,17 +135,7 @@ class Setup_8206HR :
             })
 
 
-    @staticmethod
-    def _ValidateParams() : 
-        response = input('Are the POD device parameters correct? (y/n): ')
-        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
-            return(True)
-        elif(response=='n' or response=='N' or response=='no' or response=='No'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_8206HR._ValidateParams())
-
+    
 
     # ------------ CONNECT PORT ------------
 
@@ -281,5 +277,12 @@ class Setup_8206HR :
     # ------------ HELPER ------------
 
     @staticmethod
-    def _PrintBoarder():
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    def _AskYN(question) : 
+        response = input(str(question)+' (y/n): ')
+        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
+            return(True)
+        elif(response=='n' or response=='N' or response=='no' or response=='No'):
+            return(False)
+        else:
+            print('[!] Please enter \'y\' or \'n\'.')
+            return(Setup_8206HR._AskYN(question))

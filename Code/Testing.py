@@ -140,13 +140,4 @@ print('\n\n')
 go = Setup_8206HR()
 go.Run()
 
-
-# d = {0: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Baud Rate': 444, 'Sample Rate': 444, 'Low Pass': {'EEG1': 44, 'EEG2': 44, 'EEG3/EMG': 44}}, 1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 555, 'Sample Rate': 555, 'Low Pass': {'EEG1': 55, 'EEG2': 55, 'EEG3/EMG': 55}}}
-# k = 0
-# for x in d.values():
-#     print(x['Port'])
-
-# n = [x['Port'] for x in d.values() if d[k]['Port'] != x['Port']]
-# print(n)
-
 print('\n\n')
