@@ -42,11 +42,35 @@ class Setup_8206HR :
         # ask if params are good or not
         validParams = self._ValidateParams()
         if(not validParams) : 
-            print('oh no :(')
-        else:
-            print('oh yeah :D')
-
+            editThis = Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict)
+            
+            print('oh no :(', editThis)
         
+
+    @staticmethod
+    def _EditParams(podParamDict) :
+        pass
+        
+    @staticmethod
+    def _SelectPODdeviceFromDictToEdit(podParamDict):
+        try:
+            # get pod device number from user 
+            podKey = ( int(input('Edit POD Device #: ')) - 1 )
+        except : 
+            # print error and start over
+            print('[!] Please enter an integer number.')
+            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podParamDict))
+
+        # check is pod device exists
+        keys = podParamDict.keys()
+        if(podKey not in keys) : 
+            print('[!] Invalid POD device number. Please try again.')
+            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podParamDict))
+        else:
+            # return the pod device number
+            return(podKey)
+
+
     @staticmethod
     def _ValidateParams() : 
         response = input('Are the POD device parameters correct? (y/n): ')
@@ -61,7 +85,7 @@ class Setup_8206HR :
 
     # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
-    # ------------ GET SETUP PARAMS ------------
+    # ------------ SETUP PARAMS ------------
 
     @staticmethod
     def _GetParam_allPODdevices() :
@@ -74,17 +98,24 @@ class Setup_8206HR :
         for i in range(numDevices) : 
             # current index 
             print('\n-- Device #'+str(i+1)+' --\n')
-            # get name of port
-            portNames[i] = Setup_8206HR._ChoosePort(forbidden=portNames)
-            # add entry to dict
-            podDict[i] = {
-                'Port'          : portNames[i].split(' ')[0], # isolate 'COM#' from full port name
+            # get parameters
+            onePodDict = Setup_8206HR._GetParam_onePODdevice(portNames)
+            # update lists 
+            portNames[i] = onePodDict['Port']
+            podDict[i] = onePodDict
+        # return dict containing information to setup all POD devices
+        return(podDict)
+
+
+    @staticmethod
+    def _GetParam_onePODdevice(forbiddenNames) : 
+        return({
+                'Port'          : Setup_8206HR._ChoosePort(forbiddenNames), # isolate 'COM#' from full port name
                 'Baud Rate'     : Setup_8206HR._ChooseBaudrate(),
                 'Sample Rate'   : Setup_8206HR._ChooseSampleRate(),
                 'Low Pass'      : Setup_8206HR._ChooseLowpass()
-            }
-        # return dict containing information to setup all POD devices
-        return(podDict)
+            })
+
 
     @staticmethod
     def _DisplayPODdeviceParameters(podDeviceDict) : 
@@ -94,7 +125,7 @@ class Setup_8206HR :
         tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in podDeviceDict.items() :
-            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
 
@@ -222,7 +253,7 @@ class Setup_8206HR :
         # check for valid input
         if(lowpass<11 or lowpass>500) : 
             print('[!] Sample rate must be between 11-500 Hz.')
-            return(Setup_8206HR._ChooseSampleRate())
+            return(Setup_8206HR._ChooseLowpassForEEG())
         # return lowpass
         return(lowpass)
         
