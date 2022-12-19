@@ -11,21 +11,24 @@ class Setup_8206HR :
 
 
     def __init__(self, podParametersDict=None) :
+        # initialize dictionary of POD device parameters
         if(podParametersDict != None) : 
             self._podParametersDict = podParametersDict
         else:
             self._podParametersDict = {}
+
+        # initialize dictionary of POD devices
+        self._podDevices = {}
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
     def Run(self) :
 
-        # TODO
+        #   TODO
         # DONE - get port from comport list
         # DONE - create pod device and connect to comport 
-        # DONE - test connection using PING 
-        # DONE - setup sample rate, LP1, LP2, LP3, gain
+        # DONE - setup sample rate, LP1, LP2, LP3
         # - setup file to save to
         # - start streaming
         # - continually get data
@@ -41,6 +44,26 @@ class Setup_8206HR :
         # display parameters and allow user to edit them
         self._ValidateParams()
 
+        # connect and initialize all POD devices
+        self._ConnectPODdevices()
+
+
+    def _ConnectPODdevices(self) : 
+        print('\nConnecting POD devices...')
+        # setup each POD device
+        for key,val in self._podParametersDict.items():
+            try : 
+                # get params
+                port     = val['Port'].split(' ')[0] # isolate COM# from rest of string
+                baudrate = val['Baud Rate']
+                # create POD device 
+                self._podDevices[key] = POD_8206HR(port, baudrate)
+                # write setup parameters
+                # TODO
+                print('Successfully connected Device #'+str(key+1)+' to '+port+'.')
+            except : 
+                print('Failed to connect Device #'+str(key+1)+' to '+port+'.')
+                
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
@@ -82,7 +105,7 @@ class Setup_8206HR :
             # prompt again
             self._ValidateParams()
         else:
-            print('Dictionary of current POD parameter Set: \n', self._podParametersDict)
+            print('Dictionary of current POD parameter set: \n', self._podParametersDict)
 
 
     def _EditParams(self) :
@@ -290,8 +313,10 @@ class Setup_8206HR :
     @staticmethod
     def _TestConnection(pod):
         # connection successful if write and read match 
-        if(not pod.WritePacket('PING') == pod.ReadPODpacket()):
-            raise Exception('[!] Connection failed. ')
+        if(pod.WritePacket('PING') == pod.ReadPODpacket()):
+            return(True)
+        else:
+            return(False)
 
 
     # ------------ HELPER ------------

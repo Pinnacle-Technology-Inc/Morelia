@@ -40,7 +40,7 @@ class COM_io :
             # is 'port' the port name or just the number?
             if port.startswith('COM'):
                 # assume that 'port' is the full name  
-                name = port
+                name = port.split(' ')[0]
             else : 
                 # assume that 'port' is just the number 
                 name = 'COM' + port
