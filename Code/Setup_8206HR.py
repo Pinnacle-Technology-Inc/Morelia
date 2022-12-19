@@ -39,33 +39,50 @@ class Setup_8206HR :
         print('\nParameters for all POD Devices:')
         self._DisplayPODdeviceParameters(podDict)
 
-        # ask if params are good or not
-        validParams = self._ValidateParams()
-        if(not validParams) : 
-            editThis = Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict)
-            
-            print('oh no :(', editThis)
-        
+        # fix dict 
+        podDict = Setup_8206HR._CheckParams(podDict)
 
     @staticmethod
-    def _EditParams(podParamDict) :
-        pass
-        
+    def _EditParams(podDict) :
+        # chose device # to edit
+        editThis = Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict)
+        # get all port names except for device# to be edited
+        forbiddenNames  = [x['Port'] for x in podDict.values() if podDict[editThis]['Port'] != x['Port']]
+        # edit device
+        podDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
+        # return edited dict
+        return(podDict)
+
     @staticmethod
-    def _SelectPODdeviceFromDictToEdit(podParamDict):
+    def _CheckParams(podDict) : 
+        # ask if params are good or not
+        validParams = Setup_8206HR._ValidateParams()
+        # edit if the parameters are not correct 
+        if(not validParams) : 
+            podDict = Setup_8206HR._EditParams(podDict)
+            # display 
+            print('\nParameters for all POD Devices:')
+            Setup_8206HR._DisplayPODdeviceParameters(podDict)
+            # prompt again
+            return(Setup_8206HR._CheckParams(podDict))
+        else:
+            return(podDict)
+            
+    @staticmethod
+    def _SelectPODdeviceFromDictToEdit(podDict):
         try:
             # get pod device number from user 
             podKey = ( int(input('Edit POD Device #: ')) - 1 )
         except : 
             # print error and start over
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podParamDict))
+            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict))
 
         # check is pod device exists
-        keys = podParamDict.keys()
+        keys = podDict.keys()
         if(podKey not in keys) : 
             print('[!] Invalid POD device number. Please try again.')
-            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podParamDict))
+            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict))
         else:
             # return the pod device number
             return(podKey)
