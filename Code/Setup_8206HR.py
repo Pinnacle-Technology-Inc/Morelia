@@ -38,11 +38,30 @@ class Setup_8206HR :
         # display 
         print('\nParameters for all POD Devices:')
         self._DisplayPODdeviceParameters(podDict)
+
+        # ask if params are good or not
+        validParams = self._ValidateParams()
+        if(not validParams) : 
+            print('oh no :(')
+        else:
+            print('oh yeah :D')
+
         
+    @staticmethod
+    def _ValidateParams() : 
+        response = input('Are the POD device parameters correct? (y/n): ')
+        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
+            return(True)
+        elif(response=='n' or response=='N' or response=='no' or response=='No'):
+            return(False)
+        else:
+            print('[!] Please enter \'y\' or \'n\'.')
+            return(Setup_8206HR._ValidateParams())
 
 
+    # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
-    # ============ PUBLIC STATIC METHODS ============      ========================================================================================================================
+    # ------------ GET SETUP PARAMS ------------
 
     @staticmethod
     def _GetParam_allPODdevices() :
@@ -78,9 +97,6 @@ class Setup_8206HR :
             tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
-
-
-    # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
     # ------------ CONNECT PORT ------------
 
