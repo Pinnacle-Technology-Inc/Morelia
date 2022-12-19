@@ -137,8 +137,8 @@ def Baudrate(br=9600) :
 
 print('\n\n')
 
-# go = Setup_8206HR()
-# go.Run()
+go = Setup_8206HR()
+go.Run()
 
 
 print('\n\n')

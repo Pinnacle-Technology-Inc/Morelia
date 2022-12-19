@@ -19,6 +19,7 @@ class Setup_8206HR :
         # - continually get data
         # - make plot using data
         # - save data to file 
+        # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
 
 
@@ -60,12 +61,12 @@ class Setup_8206HR :
 
             # setup device 
             self._ChooseSampleRate(podDevices[i])
+            self._ChooseLowpass(podDevices[i])
             ### LEFT OFF HERE.... SETUP LOWPASS AND TTL
 
             # move to next device 
             i+=1
         
-
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
@@ -153,7 +154,7 @@ class Setup_8206HR :
     def _ChooseSampleRate(pod):
         try : 
             # get sample rate from user 
-            sampleRate = int(input('Sample rate: '))
+            sampleRate = int(input('Sample rate (Hz): '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
@@ -169,12 +170,27 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _ChooseLowpassForEEG(pod):
+    def _ChooseLowpass(pod):
         # 0 = EEG1, 1 = EEG2, 2 = EEG3/EMG
         for eeg in range(3) : 
             Setup_8206HR._ChooseLowpassForEEG(eeg, pod)
 
     @staticmethod
     def _ChooseLowpassForEEG(eeg, pod):
-        ### LEFT OFF HERE....
-        pass
+        try : 
+            # get lowpass from user 
+            lowpass = int(input('Lowpass (Hz) for EEG'+str(eeg)+': '))
+        except : 
+            # if bad input, start over 
+            print('[!] Please enter an integer number.')
+            return(Setup_8206HR._ChooseLowpassForEEG(eeg, pod))
+
+        # check for valid input
+        if(lowpass<11 or lowpass>500) : 
+            print('[!] Sample rate must be between 11-500 Hz.')
+            return(Setup_8206HR._ChooseSampleRate(pod))
+
+        # write lowpass for EEG# to device 
+        w = pod.WritePacket('SET LOWPASS', (eeg, lowpass))
+
+
