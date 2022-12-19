@@ -5,6 +5,14 @@ from PodDevice_8206HR       import POD_8206HR
 
 class Setup_8206HR : 
     
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
+
+    def __init__(self) :
+        # initialize 
+        self._podDevices = [None]
+
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
     def Run(self) :
@@ -21,14 +29,17 @@ class Setup_8206HR :
         # - save data to file 
         # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
+        self._SetupPODdevices()
 
-
+        
+        
+    def _SetupPODdevices(self) : 
         # get the number of devices 
         numDevices = self._SetNumberOfDevices()
 
         # initialize lists 
         portNames = [None] * numDevices
-        podDevices = [None] * numDevices
+        self._podDevices = [None] * numDevices
 
         # setup each POD device 
         i=0
@@ -46,28 +57,27 @@ class Setup_8206HR :
             # create POD device 
             try :
                 # create POD device
-                podDevices[i] = POD_8206HR(port=port, baudrate=baudrate)
+                self._podDevices[i] = POD_8206HR(port=port, baudrate=baudrate)
                 # ping to test connection 
-                self._TestConnection(podDevices[i])
+                self._TestConnection(self._podDevices[i])
                 print('Successfully connected '+port+' to Device #'+str(i+1)+'.\n')
             except :
                 # fail message 
                 print('[!] Failed to connect '+port+' to Device #'+str(i+1)+'. Try again.')
                 # reset values 
                 portNames[i] = None
-                podDevices[i] = None
+                self._podDevices[i] = None
                 # retry 
                 continue
 
             # setup device 
-            self._ChooseSampleRate(podDevices[i])
-            self._ChooseLowpass(podDevices[i])
+            self._ChooseSampleRate(self._podDevices[i])
+            self._ChooseLowpass(self._podDevices[i])
 
             # move to next device 
             i+=1
-        
-
     # ============ PROTECTED METHODS ============      ========================================================================================================================
+
 
     # ------------ CONNECT PORT ------------
 
@@ -199,10 +209,11 @@ class Setup_8206HR :
     # ------------ READ/WRITE ------------
 
     @staticmethod
-    def _WritePacket_Try(pod, cmd, payload=None):
+    def _WritePacket_Try(pod, cmd, payload=None, quitIfFail=True):
         try:
             w = pod.WritePacket(cmd=cmd, payload=payload)
             return(w)
         except : 
             print('[!] Connection error: could not write to POD device.')
-            sys.exit('[!!!] Fatal Error: closing program.')
+            if(quitIfFail) :
+                sys.exit('[!!!] Fatal Error: closing program.')
