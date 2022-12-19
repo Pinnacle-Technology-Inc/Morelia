@@ -1,5 +1,7 @@
+# venv 
 import sys
-
+import texttable
+# local 
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
 
@@ -9,8 +11,7 @@ class Setup_8206HR :
 
 
     def __init__(self) :
-        # initialize 
-        self._podDevices = [None]
+        pass
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -21,7 +22,7 @@ class Setup_8206HR :
         # DONE - get port from comport list
         # DONE - create pod device and connect to comport 
         # DONE - test connection using PING 
-        # - setup sample rate, LP1, LP2, LP3, gain
+        # DONE - setup sample rate, LP1, LP2, LP3, gain
         # - setup file to save to
         # - start streaming
         # - continually get data
@@ -29,18 +30,22 @@ class Setup_8206HR :
         # - save data to file 
         # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
-        podDict = self.GetPODdeviceParameters()
-        print(podDict)
+        # get setup parameters for all POD devices
+        Setup_8206HR._PrintBoarder()
+        podDict = self._GetParam_allPODdevices()
+        Setup_8206HR._PrintBoarder()
 
+        # display 
+        print('\nParameters for all POD Devices:')
+        self._DisplayPODdeviceParameters(podDict)
+        
 
-
-    
 
 
     # ============ PUBLIC STATIC METHODS ============      ========================================================================================================================
 
     @staticmethod
-    def _GetPODdeviceParameters() : 
+    def _GetParam_allPODdevices() :
         # get the number of devices 
         numDevices = Setup_8206HR._SetNumberOfDevices()
         # initialize 
@@ -61,6 +66,19 @@ class Setup_8206HR :
             }
         # return dict containing information to setup all POD devices
         return(podDict)
+
+    @staticmethod
+    def _DisplayPODdeviceParameters(podDeviceDict) : 
+        # setup table 
+        tab = texttable.Texttable()
+        # write column names
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        # write rows
+        for key,val in podDeviceDict.items() :
+            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+        # show table 
+        print(tab.draw())
+
 
     # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
@@ -151,7 +169,7 @@ class Setup_8206HR :
     def _ChooseSampleRate():
         try : 
             # get sample rate from user 
-            sampleRate = int(input('Sample rate (Hz): '))
+            sampleRate = int(input('Set sample rate (Hz): '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
@@ -180,7 +198,7 @@ class Setup_8206HR :
     def _ChooseLowpassForEEG(eeg):
         try : 
             # get lowpass from user 
-            lowpass = int(input('Lowpass (Hz) for EEG'+str(eeg)+': '))
+            lowpass = int(input('Set lowpass (Hz) for EEG'+str(eeg)+': '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
@@ -204,3 +222,9 @@ class Setup_8206HR :
             print('[!] Connection error: could not write to POD device.')
             if(quitIfFail) :
                 sys.exit('[!!!] Fatal Error: closing program.')
+
+    # ------------ HELPER ------------
+
+    @staticmethod
+    def _PrintBoarder():
+        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
