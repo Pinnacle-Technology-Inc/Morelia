@@ -40,9 +40,8 @@ class Setup_8206HR :
         if(len(self._podParametersDict) == 0) : 
             # get setup parameters for all POD devices
             self._SetParam_allPODdevices()
-        
-        # display parameters and allow user to edit them
-        self._ValidateParams()
+            # display parameters and allow user to edit them
+            self._ValidateParams()
 
         # connect and initialize all POD devices
         self._ConnectPODdevices()
