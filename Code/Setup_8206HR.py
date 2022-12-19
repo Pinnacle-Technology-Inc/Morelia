@@ -53,16 +53,20 @@ class Setup_8206HR :
         # setup each POD device
         for key,val in self._podParametersDict.items():
             try : 
-                # get params
-                port     = val['Port'].split(' ')[0] # isolate COM# from rest of string
-                baudrate = val['Baud Rate']
+                # get port name 
+                port = val['Port'].split(' ')[0] # isolate COM# from rest of string
                 # create POD device 
-                self._podDevices[key] = POD_8206HR(port, baudrate)
+                self._podDevices[key] = POD_8206HR(port, val['Baud Rate'])
                 # write setup parameters
-                # TODO
-                print('Successfully connected Device #'+str(key+1)+' to '+port+'.')
+                self._podDevices[key].WritePacket('SET SAMPLE RATE', val['Sample Rate'])
+                self._podDevices[key].WritePacket('SET LOWPASS', (0, val['Low Pass']['EEG1']))
+                self._podDevices[key].WritePacket('SET LOWPASS', (1, val['Low Pass']['EEG2']))
+                self._podDevices[key].WritePacket('SET LOWPASS', (3, val['Low Pass']['EEG3/EMG']))
+                # done 
+                print('Successfully connected POD device #'+str(key+1)+' to '+port+'.')
             except : 
-                print('Failed to connect Device #'+str(key+1)+' to '+port+'.')
+                print('Failed to connect POD device #'+str(key+1)+' to '+port+'.')
+                sys.exit('[!] Fatal error... ending program.')
                 
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
