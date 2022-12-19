@@ -11,7 +11,7 @@ class Setup_8206HR :
 
 
     def __init__(self) :
-        pass
+        self._podParametersDict = {}
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -31,83 +31,17 @@ class Setup_8206HR :
         # - ** make function that goes through setup and generates a dict to pass to Setup_8206HR __init__ to autosetup 
 
         # get setup parameters for all POD devices
-        Setup_8206HR._PrintBoarder()
-        podDict = self._GetParam_allPODdevices()
-        Setup_8206HR._PrintBoarder()
-
+        self._SetParam_allPODdevices()
         # display 
-        print('\nParameters for all POD Devices:')
-        self._DisplayPODdeviceParameters(podDict)
-
+        self._DisplayPODdeviceParameters()
         # fix dict 
-        podDict = Setup_8206HR._CheckParams(podDict)
+        self._CheckParams()
 
-    @staticmethod
-    def _EditParams(podDict) :
-        # chose device # to edit
-        editThis = Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict)
-        # get all port names except for device# to be edited
-        forbiddenNames  = [x['Port'] for x in podDict.values() if podDict[editThis]['Port'] != x['Port']]
-        # edit device
-        podDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
-        # return edited dict
-        return(podDict)
+    # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
-    @staticmethod
-    def _CheckParams(podDict) : 
-        # ask if params are good or not
-        validParams = Setup_8206HR._ValidateParams()
-        # edit if the parameters are not correct 
-        if(not validParams) : 
-            podDict = Setup_8206HR._EditParams(podDict)
-            # display 
-            print('\nParameters for all POD Devices:')
-            Setup_8206HR._DisplayPODdeviceParameters(podDict)
-            # prompt again
-            return(Setup_8206HR._CheckParams(podDict))
-        else:
-            return(podDict)
-            
-    @staticmethod
-    def _SelectPODdeviceFromDictToEdit(podDict):
-        try:
-            # get pod device number from user 
-            podKey = ( int(input('Edit POD Device #: ')) - 1 )
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict))
-
-        # check is pod device exists
-        keys = podDict.keys()
-        if(podKey not in keys) : 
-            print('[!] Invalid POD device number. Please try again.')
-            return(Setup_8206HR._SelectPODdeviceFromDictToEdit(podDict))
-        else:
-            # return the pod device number
-            return(podKey)
-
-
-    @staticmethod
-    def _ValidateParams() : 
-        response = input('Are the POD device parameters correct? (y/n): ')
-        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
-            return(True)
-        elif(response=='n' or response=='N' or response=='no' or response=='No'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_8206HR._ValidateParams())
-
-
-    # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
-
-    # ------------ SETUP PARAMS ------------
-
-    @staticmethod
-    def _GetParam_allPODdevices() :
+    def _SetParam_allPODdevices(self) :
         # get the number of devices 
-        numDevices = Setup_8206HR._SetNumberOfDevices()
+        numDevices = self._SetNumberOfDevices()
         # initialize 
         portNames = [None] * numDevices
         podDict = {}
@@ -120,8 +54,69 @@ class Setup_8206HR :
             # update lists 
             portNames[i] = onePodDict['Port']
             podDict[i] = onePodDict
-        # return dict containing information to setup all POD devices
-        return(podDict)
+        # save dict containing information to setup all POD devices
+        self._podParametersDict = podDict
+
+
+    def _DisplayPODdeviceParameters(self) : 
+        # print title 
+        print('\nParameters for all POD Devices:')
+        # setup table 
+        tab = texttable.Texttable()
+        # write column names
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+        # show table 
+        print(tab.draw())
+
+
+    def _CheckParams(self) : 
+        # ask if params are good or not
+        validParams = self._ValidateParams()
+        # edit if the parameters are not correct 
+        if(not validParams) : 
+            self._EditParams()
+            # display 
+            self._DisplayPODdeviceParameters()
+            # prompt again
+            self._CheckParams()
+
+
+    def _EditParams(self) :
+        # chose device # to edit
+        editThis = self._SelectPODdeviceFromDictToEdit()
+        # get all port names except for device# to be edited
+        forbiddenNames  = [x['Port'] for x in self._podParametersDict.values() if self._podParametersDict[editThis]['Port'] != x['Port']]
+        # edit device
+        print('\n-- Device #'+str(editThis+1)+' --\n')
+        self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
+    
+            
+    def _SelectPODdeviceFromDictToEdit(self):
+        try:
+            # get pod device number from user 
+            podKey = ( int(input('Edit POD Device #: ')) - 1 )
+        except : 
+            # print error and start over
+            print('[!] Please enter an integer number.')
+            return(self._SelectPODdeviceFromDictToEdit())
+
+        # check is pod device exists
+        keys = self._podParametersDict.keys()
+        if(podKey not in keys) : 
+            print('[!] Invalid POD device number. Please try again.')
+            return(self._SelectPODdeviceFromDictToEdit())
+        else:
+            # return the pod device number
+            return(podKey)
+
+
+    # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
+
+
+    # ------------ PARAMS ------------
 
 
     @staticmethod
@@ -135,16 +130,16 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _DisplayPODdeviceParameters(podDeviceDict) : 
-        # setup table 
-        tab = texttable.Texttable()
-        # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
-        # write rows
-        for key,val in podDeviceDict.items() :
-            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
-        # show table 
-        print(tab.draw())
+    def _ValidateParams() : 
+        response = input('Are the POD device parameters correct? (y/n): ')
+        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
+            return(True)
+        elif(response=='n' or response=='N' or response=='no' or response=='No'):
+            return(False)
+        else:
+            print('[!] Please enter \'y\' or \'n\'.')
+            return(Setup_8206HR._ValidateParams())
+
 
     # ------------ CONNECT PORT ------------
 
@@ -171,7 +166,6 @@ class Setup_8206HR :
         portListAll = COM_io.GetCOMportsList()
         # remove forbidden ports 
         portList = [x for x in portListAll if x not in forbidden]
-
         # check if the list is empty 
         if (len(portList) == 0):
             # print error and keep trying to get ports
@@ -179,7 +173,6 @@ class Setup_8206HR :
             while(len(portList) == 0) : 
                 portListAll = COM_io.GetCOMportsList()
                 portList = [x for x in portListAll if x not in forbidden]
-
         # return port
         return(portList)
 
@@ -238,12 +231,10 @@ class Setup_8206HR :
             # if bad input, start over 
             print('[!] Please enter an integer number.')
             return(Setup_8206HR._ChooseSampleRate())
-
         # check for valid input
         if(sampleRate<100 or sampleRate>2000) : 
             print('[!] Sample rate must be between 100-2000.')
             return(Setup_8206HR._ChooseSampleRate())
-
         # return sample rate
         return(sampleRate)
        
@@ -270,7 +261,7 @@ class Setup_8206HR :
         # check for valid input
         if(lowpass<11 or lowpass>500) : 
             print('[!] Sample rate must be between 11-500 Hz.')
-            return(Setup_8206HR._ChooseLowpassForEEG())
+            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
         # return lowpass
         return(lowpass)
         
