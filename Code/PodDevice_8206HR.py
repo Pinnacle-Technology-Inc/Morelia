@@ -82,9 +82,9 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt(msgDict['Packet #'])
         msgDictTrans['TTL']             = POD_Packets.BinaryBytesToInt(msgDict['TTL'])
-        msgDictTrans['Ch0']             = POD_Packets.BinaryBytesToInt(msgDict['Ch0']) # do I want these as int or keep as binary ?
-        msgDictTrans['Ch1']             = POD_Packets.BinaryBytesToInt(msgDict['Ch1']) # do I want these as int or keep as binary ?
-        msgDictTrans['Ch2']             = POD_Packets.BinaryBytesToInt(msgDict['Ch2']) # do I want these as int or keep as binary ?
+        msgDictTrans['Ch0']             = POD_Packets.BinaryBytesToInt(msgDict['Ch0'],byteorder='little')
+        msgDictTrans['Ch1']             = POD_Packets.BinaryBytesToInt(msgDict['Ch1'],byteorder='little')
+        msgDictTrans['Ch2']             = POD_Packets.BinaryBytesToInt(msgDict['Ch2'],byteorder='little')
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
