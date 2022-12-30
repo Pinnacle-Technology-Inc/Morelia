@@ -35,11 +35,17 @@ class Setup_8206HR :
         self._ConnectAllPODdevices()
         
 
+    def __del__(self):
+        # delete all POD objects 
+        self._DisconnectAllPODdevices
+
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
+
 
     def Run(self) :
 
-        #   TODO
+        # TODO
         # DONE - get port from comport list
         # DONE - create pod device and connect to comport 
         # DONE - setup sample rate, LP1, LP2, LP3
