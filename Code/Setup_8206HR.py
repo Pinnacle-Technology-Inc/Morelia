@@ -159,14 +159,18 @@ class Setup_8206HR :
         # chose device # to edit
         editThis = self._SelectPODdeviceFromDictToEdit()
         # get all port names except for device# to be edited
-        forbiddenNames = self._GetForbiddenNames().remove(self._podParametersDict[editThis]['Port'])
+        forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis]['Port'])
         # edit device
         print('\n-- Device #'+str(editThis+1)+' --\n')
         self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
     
 
-    def _GetForbiddenNames(self):
-        return( [x['Port'] for x in self._podParametersDict.values()] )
+    def _GetForbiddenNames(self, exclude=None):
+        if(exclude == None) : 
+            portNames = [x['Port'] for x in self._podParametersDict.values()]
+        else :
+            portNames = [x['Port'] for x in self._podParametersDict.values() if exclude != x['Port']]
+        return(portNames)
             
 
     def _SelectPODdeviceFromDictToEdit(self):
@@ -270,8 +274,11 @@ class Setup_8206HR :
     def _GetPortsList(forbidden=[]) : 
         # get port list 
         portListAll = COM_io.GetCOMportsList()
-        # remove forbidden ports 
-        portList = [x for x in portListAll if x not in forbidden]
+        if(forbidden):
+            # remove forbidden ports
+            portList = [x for x in portListAll if x not in forbidden]
+        else:
+            portList = portListAll
         # check if the list is empty 
         if (len(portList) == 0):
             # print error and keep trying to get ports
