@@ -24,7 +24,7 @@ class Setup_8206HR :
         self._options = {
             1 : 'Show Current POD devices.',
             2 : 'Edit POD device settings.',
-            3 : 'Add a POD device.',
+            3 : 'Connect a new POD device.',
             4 : 'Start Streaming.',
             5 : 'Quit.'
         }
@@ -97,13 +97,16 @@ class Setup_8206HR :
             self._DisplayPODdeviceParameters()
             self._EditParams()
             self._ValidateParams()
+            self._ConnectAllPODdevices()
 
         # Add a POD device.
         elif(choice == 3):  
             nextNum = max(self._podParametersDict.keys())+1
             print('\n-- Device #'+str(nextNum+1)+' --\n')
-            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
+            param = self._GetParam_onePODdevice(self._GetForbiddenNames())
+            self._podParametersDict[nextNum] = param
             self._ValidateParams()
+            self._ConnectAllPODdevices()
 
          # Start Streaming.
         elif(choice == 4): 
@@ -112,7 +115,6 @@ class Setup_8206HR :
         # Quit.
         else:               
             pass
-
 
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
@@ -191,8 +193,15 @@ class Setup_8206HR :
             # return the pod device number
             return(podKey)
 
+    def _DisconnectAllPODdevices(self) :
+        for k in list(self._podDevices.keys()) : 
+            pod = self._podDevices.pop(k)
+            del pod 
 
     def _ConnectAllPODdevices(self) : 
+        # delete existing 
+        self._DisconnectAllPODdevices()
+        # connect new devices
         print('\nConnecting POD devices...')
         # setup each POD device
         for key,val in self._podParametersDict.items():
@@ -243,7 +252,7 @@ class Setup_8206HR :
     @staticmethod
     def _GetParam_onePODdevice(forbiddenNames) : 
         return({
-                'Port'          : Setup_8206HR._ChoosePort(forbiddenNames), # isolate 'COM#' from full port name
+                'Port'          : Setup_8206HR._ChoosePort(forbiddenNames),
                 'Baud Rate'     : Setup_8206HR._ChooseBaudrate(),
                 'Sample Rate'   : Setup_8206HR._ChooseSampleRate(),
                 'Low Pass'      : Setup_8206HR._ChooseLowpass()
