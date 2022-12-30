@@ -53,7 +53,7 @@ class Setup_8206HR :
             # display parameters and allow user to edit them
             self._ValidateParams()
         # connect and initialize all POD devices
-        self._ConnectPODdevices()
+        self._ConnectAllPODdevices()
 
         # == option loop 
         # init looping condition 
@@ -171,33 +171,37 @@ class Setup_8206HR :
             return(podKey)
 
 
-    def _ConnectPODdevices(self) : 
-        print('\nConnecting POD devices...')
+    def _ConnectAllPODdevices(self) : 
+        print('Connecting POD devices...')
         # setup each POD device
         for key,val in self._podParametersDict.items():
-            try : 
-                # get port name 
-                port = val['Port'].split(' ')[0] # isolate COM# from rest of string
-                # create POD device 
-                self._podDevices[key] = POD_8206HR(port, val['Baud Rate'])
-                # write setup parameters
-                self._podDevices[key].WritePacket('SET SAMPLE RATE', val['Sample Rate'])
-                self._podDevices[key].WritePacket('SET LOWPASS', (0, val['Low Pass']['EEG1']))
-                self._podDevices[key].WritePacket('SET LOWPASS', (1, val['Low Pass']['EEG2']))
-                self._podDevices[key].WritePacket('SET LOWPASS', (2, val['Low Pass']['EEG3/EMG']))
-                # done 
-                print('Successfully connected POD device #'+str(key+1)+' to '+port+'.\n')
-            except : 
-                print('Failed to connect POD device #'+str(key+1)+' to '+port+'.')
-                sys.exit('[!] Fatal error... ending program.\n')
+           self._ConnectPODdevice(key,val)
                 
+
+    def _ConnectPODdevice(self, deviceNum, deviceParams) : 
+        try : 
+            # get port name 
+            port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
+            # create POD device 
+            self._podDevices[deviceNum] = POD_8206HR(port, deviceParams['Baud Rate'])
+            # write setup parameters
+            self._podDevices[deviceNum].WritePacket('SET SAMPLE RATE', deviceParams['Sample Rate'])
+            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
+            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
+            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
+            # done 
+            print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.\n')
+        except : 
+            print('Failed to connect POD device #'+str(deviceNum+1)+' to '+port+'.')
+            sys.exit('[!] Fatal error... ending program.\n')
+
 
     # ------------ DISPLAY ------------
 
 
     def _DisplayPODdeviceParameters(self) : 
         # print title 
-        print('\nParameters for all POD Devices:')
+        print('Parameters for all POD Devices:')
         # setup table 
         tab = texttable.Texttable()
         # write column names
