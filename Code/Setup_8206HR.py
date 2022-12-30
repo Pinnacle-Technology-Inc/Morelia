@@ -5,6 +5,17 @@ import texttable
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
 
+# TODO
+# DONE - get port from comport list
+# DONE - create pod device and connect to comport 
+# DONE - setup sample rate, LP1, LP2, LP3
+# - setup TTL stuff ???
+# - setup file to save to
+# - start streaming
+# - continually get data
+# - make plot using data
+# - save data to file 
+
 class Setup_8206HR : 
     
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -44,19 +55,6 @@ class Setup_8206HR :
 
 
     def Run(self) :
-
-        # TODO
-        # DONE - get port from comport list
-        # DONE - create pod device and connect to comport 
-        # DONE - setup sample rate, LP1, LP2, LP3
-        # - setup file to save to
-        # - start streaming
-        # - continually get data
-        # - make plot using data
-        # - save data to file 
-
-
-        # == option loop 
         # init looping condition 
         choice = 0
         quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # abstracted way to get dict key for 'Quit.'
@@ -74,6 +72,11 @@ class Setup_8206HR :
         for i in range (100) : 
             self._ReadAll()
         self._WriteStreamAll(start=False)
+        # TODO left off here...
+        # how many times should I read
+        # dont forget to convert into volts
+        # output to file 
+
 
     def _WriteStreamAll(self, start=True):
         # for each pod device 
@@ -81,11 +84,13 @@ class Setup_8206HR :
         # write/read stream 
            pod.WriteRead(cmd='STREAM', payload=int(start))
     
+    
     def _ReadAll(self) : 
         # for each pod device 
         for devNum,pod in self._podDevices.items() :
             r = pod.TranslatePODpacket(pod.ReadPODpacket())
             print(devNum, r)
+
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
