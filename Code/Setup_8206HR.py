@@ -11,16 +11,8 @@ class Setup_8206HR :
 
 
     def __init__(self, podParametersDict=None) :
-        # initialize dictionary of POD device parameters
-        if(podParametersDict != None) : 
-            self._podParametersDict = podParametersDict
-            self._DisplayPODdeviceParameters()
-        else:
-            self._podParametersDict = {}
-
         # initialize dictionary of POD devices
         self._podDevices = {}
-
         # initialize options --> NOTE if you change this, be sure to update _DoOption()
         self._options = {
             1 : 'Print dictionary of POD devices.',
@@ -30,7 +22,18 @@ class Setup_8206HR :
             5 : 'Start Streaming.',
             6 : 'Quit.'
         }
+        # initialize dictionary of POD device parameters
+        if(podParametersDict != None) : 
+            self._podParametersDict = podParametersDict
+            self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
+        else:
+            self._podParametersDict = {}
+            self._SetParam_allPODdevices()  # get setup parameters for all POD devices
+            self._ValidateParams()          # display parameters and allow user to edit them
 
+        # connect and initialize all POD devices
+        self._ConnectAllPODdevices()
+        
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -46,16 +49,6 @@ class Setup_8206HR :
         # - make plot using data
         # - save data to file 
 
-
-        # == setup 
-        # ask user for parameters if they were not initialized 
-        if(len(self._podParametersDict) == 0) : 
-            # get setup parameters for all POD devices
-            self._SetParam_allPODdevices()
-            # display parameters and allow user to edit them
-            self._ValidateParams()
-        # connect and initialize all POD devices
-        self._ConnectAllPODdevices()
 
         # == option loop 
         # init looping condition 
