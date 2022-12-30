@@ -68,13 +68,14 @@ class Setup_8206HR :
     # ------------ OPTIONS ------------
 
     def _PrintOptions(self):
+        print('\nOptions:')
         for key,val in self._options.items() : 
             print(str(key)+'. '+val)
     
     def _AskOption(self):
         try:
             # get option number from user 
-            choice = int(input('What would you like to do?: '))
+            choice = int(input('\nWhat would you like to do?: '))
         except : 
             # print error and ask again
             print('[!] Please enter an integer number.')
@@ -139,7 +140,7 @@ class Setup_8206HR :
             # prompt again
             self._ValidateParams()
         else:
-            print('Dictionary of current POD parameter set: \n', self._podParametersDict)
+            print('\nDictionary of current POD parameter set: \n', self._podParametersDict)
 
 
     def _EditParams(self) :
@@ -172,7 +173,7 @@ class Setup_8206HR :
 
 
     def _ConnectAllPODdevices(self) : 
-        print('Connecting POD devices...')
+        print('\nConnecting POD devices...')
         # setup each POD device
         for key,val in self._podParametersDict.items():
            self._ConnectPODdevice(key,val)
@@ -190,10 +191,10 @@ class Setup_8206HR :
             self._podDevices[deviceNum].WritePacket('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
             self._podDevices[deviceNum].WritePacket('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
             # done 
-            print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.\n')
+            print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.')
         except : 
             print('Failed to connect POD device #'+str(deviceNum+1)+' to '+port+'.')
-            sys.exit('[!] Fatal error... ending program.\n')
+            sys.exit('[!] Fatal error... ending program.')
 
 
     # ------------ DISPLAY ------------
@@ -201,7 +202,7 @@ class Setup_8206HR :
 
     def _DisplayPODdeviceParameters(self) : 
         # print title 
-        print('Parameters for all POD Devices:')
+        print('\nParameters for all POD Devices:')
         # setup table 
         tab = texttable.Texttable()
         # write column names
