@@ -66,10 +66,26 @@ class Setup_8206HR :
             choice = self._AskOption()
             self._DoOption(choice)
 
-    # ------------ WORKING ------------
 
-    def _StreamAll() : 
-        pass
+    # ------------ STREAM ------------
+
+    def _StreamAll(self) : 
+        self._WriteStreamAll(start=True)
+        for i in range (100) : 
+            self._ReadAll()
+        self._WriteStreamAll(start=False)
+
+    def _WriteStreamAll(self, start=True):
+        # for each pod device 
+        for pod in self._podDevices.values() : 
+        # write/read stream 
+           pod.WriteRead(cmd='STREAM', payload=int(start))
+    
+    def _ReadAll(self) : 
+        # for each pod device 
+        for devNum,pod in self._podDevices.items() :
+            r = pod.TranslatePODpacket(pod.ReadPODpacket())
+            print(devNum, r)
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
@@ -183,10 +199,10 @@ class Setup_8206HR :
             # create POD device 
             self._podDevices[deviceNum] = POD_8206HR(port, deviceParams['Baud Rate'])
             # write setup parameters
-            self._podDevices[deviceNum].WritePacket('SET SAMPLE RATE', deviceParams['Sample Rate'])
-            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
-            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
-            self._podDevices[deviceNum].WritePacket('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
+            self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
+            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
+            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
+            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
             # done 
             print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.')
         except : 
@@ -243,7 +259,7 @@ class Setup_8206HR :
 
          # Start Streaming.
         elif(choice == 5): 
-            pass
+            self._StreamAll()
 
         # Quit.
         else:               
