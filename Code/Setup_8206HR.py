@@ -20,6 +20,15 @@ class Setup_8206HR :
         # initialize dictionary of POD devices
         self._podDevices = {}
 
+        # initialize options
+        self._options = {
+            1 : 'Show Current POD devices.',
+            2 : 'Edit POD device settings.',
+            3 : 'Add a POD device.',
+            4 : 'Start Streaming.',
+            5 : 'Quit.'
+        }
+
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -36,49 +45,62 @@ class Setup_8206HR :
         # - save data to file 
 
 
+        # == setup 
         # ask user for parameters if they were not initialized 
         if(len(self._podParametersDict) == 0) : 
             # get setup parameters for all POD devices
             self._SetParam_allPODdevices()
             # display parameters and allow user to edit them
             self._ValidateParams()
-
         # connect and initialize all POD devices
         self._ConnectPODdevices()
 
-        # option menu
-        options = {
-            1 : 'Show Current POD devices.',
-            2 : 'Edit POD device settings.',
-            3 : 'Add a POD device.',
-            4 : 'Start Streaming.',
-            5 : 'Quit.'
-        }
-        self._PrintOptions(options)
-        choice = self._AskOption(options)
+        # == option loop 
+        # init looping condition 
+        choice = 0
+        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')]
+        # keep prompting user until user wants to quit
+        while(choice != quit) :
+            self._PrintOptions()
+            choice = self._AskOption()
+            self._DoOption(choice)
 
     # ------------ OPTIONS ------------
 
-    @staticmethod
-    def _PrintOptions(optionDict):
-        for key,val in optionDict.items() : 
+    def _PrintOptions(self):
+        for key,val in self._options.items() : 
             print(str(key)+'. '+val)
     
-    @staticmethod
-    def _AskOption(optionDict):
+    def _AskOption(self):
         try:
             # get option number from user 
             choice = int(input('What would you like to do?: '))
         except : 
             # print error and ask again
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._AskOption(optionDict))
+            return(self._AskOption())
         # choice must be an available option 
-        if(not choice in optionDict.keys()):
+        if(not choice in self._options.keys()):
             print('[!] Invalid Selection. Please choose an available option.')
-            return(Setup_8206HR._AskOption(optionDict))
+            return(self._AskOption())
         # return valid choice
         return(choice)
+
+    def _DoOption(self, choice) : 
+        if  (choice == 1):  # Show Current POD devices.
+            self._DisplayPODdeviceParameters()
+        elif(choice == 2):  # Edit POD device settings.
+            self._DisplayPODdeviceParameters()
+            self._EditParams()
+            self._ValidateParams()
+        elif(choice == 3):  # Add a POD device.
+            pass
+        elif(choice == 4):  # Start Streaming.
+            pass
+        else:               # Quit.
+            pass
+
+
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
