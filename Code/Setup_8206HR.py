@@ -20,13 +20,14 @@ class Setup_8206HR :
         # initialize dictionary of POD devices
         self._podDevices = {}
 
-        # initialize options
+        # initialize options --> NOTE if you change this, be sure to update _DoOption()
         self._options = {
-            1 : 'Show Current POD devices.',
-            2 : 'Edit POD device settings.',
-            3 : 'Connect a new POD device.',
-            4 : 'Start Streaming.',
-            5 : 'Quit.'
+            1 : 'Print dictionary of POD devices.',
+            2 : 'Show table of POD devices.',
+            3 : 'Edit POD device settings.',
+            4 : 'Connect a new POD device.',
+            5 : 'Start Streaming.',
+            6 : 'Quit.'
         }
 
 
@@ -58,7 +59,7 @@ class Setup_8206HR :
         # == option loop 
         # init looping condition 
         choice = 0
-        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')]
+        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # get dict key for 'Quit.'
         # keep prompting user until user wants to quit
         while(choice != quit) :
             self._PrintOptions()
@@ -88,35 +89,36 @@ class Setup_8206HR :
         return(choice)
 
     def _DoOption(self, choice) : 
+        # Print dictionary of POD devices.
+        if  (choice == 1):
+            print('\nDictionary of current POD parameter set:')
+            print(self._podParametersDict)
         # Show Current POD devices.
-        if  (choice == 1):  
-            self._DisplayPODdeviceParameters()
-
-        # Edit POD device settings.
         elif(choice == 2):  
+            self._DisplayPODdeviceParameters()
+        # Edit POD device settings.
+        elif(choice == 3):  
             self._DisplayPODdeviceParameters()
             self._EditParams()
             self._ValidateParams()
             self._ConnectAllPODdevices()
-
         # Add a POD device.
-        elif(choice == 3):  
+        elif(choice == 4):  
             nextNum = max(self._podParametersDict.keys())+1
             print('\n-- Device #'+str(nextNum+1)+' --\n')
-            param = self._GetParam_onePODdevice(self._GetForbiddenNames())
-            self._podParametersDict[nextNum] = param
+            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
             self._ValidateParams()
             self._ConnectAllPODdevices()
 
          # Start Streaming.
-        elif(choice == 4): 
+        elif(choice == 5): 
             pass
 
         # Quit.
         else:               
             pass
 
-
+        
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
     
@@ -153,8 +155,6 @@ class Setup_8206HR :
             self._EditParams()
             # prompt again
             self._ValidateParams()
-        else:
-            print('\nDictionary of current POD parameter set: \n', self._podParametersDict)
 
 
     def _EditParams(self) :
