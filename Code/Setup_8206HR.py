@@ -88,17 +88,29 @@ class Setup_8206HR :
         return(choice)
 
     def _DoOption(self, choice) : 
-        if  (choice == 1):  # Show Current POD devices.
+        # Show Current POD devices.
+        if  (choice == 1):  
             self._DisplayPODdeviceParameters()
-        elif(choice == 2):  # Edit POD device settings.
+
+        # Edit POD device settings.
+        elif(choice == 2):  
             self._DisplayPODdeviceParameters()
             self._EditParams()
             self._ValidateParams()
-        elif(choice == 3):  # Add a POD device.
+
+        # Add a POD device.
+        elif(choice == 3):  
+            nextNum = max(self._podParametersDict.keys())+1
+            print('\n-- Device #'+str(nextNum+1)+' --\n')
+            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
+            self._ValidateParams()
+
+         # Start Streaming.
+        elif(choice == 4): 
             pass
-        elif(choice == 4):  # Start Streaming.
-            pass
-        else:               # Quit.
+
+        # Quit.
+        else:               
             pass
 
 
@@ -147,12 +159,16 @@ class Setup_8206HR :
         # chose device # to edit
         editThis = self._SelectPODdeviceFromDictToEdit()
         # get all port names except for device# to be edited
-        forbiddenNames  = [x['Port'] for x in self._podParametersDict.values() if self._podParametersDict[editThis]['Port'] != x['Port']]
+        forbiddenNames = self._GetForbiddenNames().remove(self._podParametersDict[editThis]['Port'])
         # edit device
         print('\n-- Device #'+str(editThis+1)+' --\n')
         self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
     
+
+    def _GetForbiddenNames(self):
+        return( [x['Port'] for x in self._podParametersDict.values()] )
             
+
     def _SelectPODdeviceFromDictToEdit(self):
         try:
             # get pod device number from user 
