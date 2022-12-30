@@ -46,32 +46,44 @@ class Setup_8206HR :
         # connect and initialize all POD devices
         self._ConnectPODdevices()
 
+        # option menu
+        options = {
+            1 : 'Show Current POD devices.',
+            2 : 'Edit POD device settings.',
+            3 : 'Add a POD device.',
+            4 : 'Start Streaming.',
+            5 : 'Quit.'
+        }
+        self._PrintOptions(options)
+        choice = self._AskOption(options)
 
-    def _ConnectPODdevices(self) : 
-        print('\nConnecting POD devices...')
-        # setup each POD device
-        for key,val in self._podParametersDict.items():
-            try : 
-                # get port name 
-                port = val['Port'].split(' ')[0] # isolate COM# from rest of string
-                # create POD device 
-                self._podDevices[key] = POD_8206HR(port, val['Baud Rate'])
-                # write setup parameters
-                self._podDevices[key].WritePacket('SET SAMPLE RATE', val['Sample Rate'])
-                self._podDevices[key].WritePacket('SET LOWPASS', (0, val['Low Pass']['EEG1']))
-                self._podDevices[key].WritePacket('SET LOWPASS', (1, val['Low Pass']['EEG2']))
-                self._podDevices[key].WritePacket('SET LOWPASS', (3, val['Low Pass']['EEG3/EMG']))
-                # done 
-                print('Successfully connected POD device #'+str(key+1)+' to '+port+'.')
-            except : 
-                print('Failed to connect POD device #'+str(key+1)+' to '+port+'.')
-                sys.exit('[!] Fatal error... ending program.')
-                
+    # ------------ OPTIONS ------------
+
+    @staticmethod
+    def _PrintOptions(optionDict):
+        for key,val in optionDict.items() : 
+            print(str(key)+'. '+val)
+    
+    @staticmethod
+    def _AskOption(optionDict):
+        try:
+            # get option number from user 
+            choice = int(input('What would you like to do?: '))
+        except : 
+            # print error and ask again
+            print('[!] Please enter an integer number.')
+            return(Setup_8206HR._AskOption(optionDict))
+        # choice must be an available option 
+        if(not choice in optionDict.keys()):
+            print('[!] Invalid Selection. Please choose an available option.')
+            return(Setup_8206HR._AskOption(optionDict))
+        # return valid choice
+        return(choice)
 
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
-
-    # ------------ SET PARAMETERS ------------
+    
+    # ------------ SETUP ------------
 
 
     def _SetParam_allPODdevices(self) :
@@ -91,9 +103,6 @@ class Setup_8206HR :
             podDict[i] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
-
-
-    # ------------ EDIT PARAMETERS ------------
 
 
     def _ValidateParams(self) : 
@@ -139,6 +148,27 @@ class Setup_8206HR :
             # return the pod device number
             return(podKey)
 
+
+    def _ConnectPODdevices(self) : 
+        print('\nConnecting POD devices...')
+        # setup each POD device
+        for key,val in self._podParametersDict.items():
+            try : 
+                # get port name 
+                port = val['Port'].split(' ')[0] # isolate COM# from rest of string
+                # create POD device 
+                self._podDevices[key] = POD_8206HR(port, val['Baud Rate'])
+                # write setup parameters
+                self._podDevices[key].WritePacket('SET SAMPLE RATE', val['Sample Rate'])
+                self._podDevices[key].WritePacket('SET LOWPASS', (0, val['Low Pass']['EEG1']))
+                self._podDevices[key].WritePacket('SET LOWPASS', (1, val['Low Pass']['EEG2']))
+                self._podDevices[key].WritePacket('SET LOWPASS', (2, val['Low Pass']['EEG3/EMG']))
+                # done 
+                print('Successfully connected POD device #'+str(key+1)+' to '+port+'.\n')
+            except : 
+                print('Failed to connect POD device #'+str(key+1)+' to '+port+'.')
+                sys.exit('[!] Fatal error... ending program.\n')
+                
 
     # ------------ DISPLAY ------------
 
