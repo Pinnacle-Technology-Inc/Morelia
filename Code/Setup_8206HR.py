@@ -14,6 +14,7 @@ class Setup_8206HR :
         # initialize dictionary of POD device parameters
         if(podParametersDict != None) : 
             self._podParametersDict = podParametersDict
+            self._DisplayPODdeviceParameters()
         else:
             self._podParametersDict = {}
 
@@ -59,66 +60,18 @@ class Setup_8206HR :
         # == option loop 
         # init looping condition 
         choice = 0
-        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # get dict key for 'Quit.'
+        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # abstracted way to get dict key for 'Quit.'
         # keep prompting user until user wants to quit
         while(choice != quit) :
             self._PrintOptions()
             choice = self._AskOption()
             self._DoOption(choice)
 
-    # ------------ OPTIONS ------------
+    # ------------ WORKING ------------
 
-    def _PrintOptions(self):
-        print('\nOptions:')
-        for key,val in self._options.items() : 
-            print(str(key)+'. '+val)
-    
-    def _AskOption(self):
-        try:
-            # get option number from user 
-            choice = int(input('\nWhat would you like to do?: '))
-        except : 
-            # print error and ask again
-            print('[!] Please enter an integer number.')
-            return(self._AskOption())
-        # choice must be an available option 
-        if(not choice in self._options.keys()):
-            print('[!] Invalid Selection. Please choose an available option.')
-            return(self._AskOption())
-        # return valid choice
-        return(choice)
+    def _StreamAll() : 
+        pass
 
-    def _DoOption(self, choice) : 
-        # Print dictionary of POD devices.
-        if  (choice == 1):
-            print('\nDictionary of current POD parameter set:')
-            print(self._podParametersDict)
-        # Show Current POD devices.
-        elif(choice == 2):  
-            self._DisplayPODdeviceParameters()
-        # Edit POD device settings.
-        elif(choice == 3):  
-            self._DisplayPODdeviceParameters()
-            self._EditParams()
-            self._ValidateParams()
-            self._ConnectAllPODdevices()
-        # Add a POD device.
-        elif(choice == 4):  
-            nextNum = max(self._podParametersDict.keys())+1
-            print('\n-- Device #'+str(nextNum+1)+' --\n')
-            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
-            self._ValidateParams()
-            self._ConnectAllPODdevices()
-
-         # Start Streaming.
-        elif(choice == 5): 
-            pass
-
-        # Quit.
-        else:               
-            pass
-
-        
     # ============ PROTECTED INSTANCE METHODS ============      ========================================================================================================================
 
     
@@ -144,6 +97,20 @@ class Setup_8206HR :
         self._podParametersDict = podDict
 
 
+    def _DisplayPODdeviceParameters(self) : 
+        # print title 
+        print('\nParameters for all POD Devices:')
+        # setup table 
+        tab = texttable.Texttable()
+        # write column names
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+        # show table 
+        print(tab.draw())
+        
+    
     def _ValidateParams(self) : 
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
@@ -193,10 +160,12 @@ class Setup_8206HR :
             # return the pod device number
             return(podKey)
 
+
     def _DisconnectAllPODdevices(self) :
         for k in list(self._podDevices.keys()) : 
             pod = self._podDevices.pop(k)
             del pod 
+
 
     def _ConnectAllPODdevices(self) : 
         # delete existing 
@@ -226,23 +195,62 @@ class Setup_8206HR :
             sys.exit('[!] Fatal error... ending program.')
 
 
-    # ------------ DISPLAY ------------
+    # ------------ OPTIONS ------------
 
 
-    def _DisplayPODdeviceParameters(self) : 
-        # print title 
-        print('\nParameters for all POD Devices:')
-        # setup table 
-        tab = texttable.Texttable()
-        # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
-        # write rows
-        for key,val in self._podParametersDict.items() :
-            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
-        # show table 
-        print(tab.draw())
+    def _PrintOptions(self):
+        print('\nOptions:')
+        for key,val in self._options.items() : 
+            print(str(key)+'. '+val)
     
-    
+
+    def _AskOption(self):
+        try:
+            # get option number from user 
+            choice = int(input('\nWhat would you like to do?: '))
+        except : 
+            # print error and ask again
+            print('[!] Please enter an integer number.')
+            return(self._AskOption())
+        # choice must be an available option 
+        if(not choice in self._options.keys()):
+            print('[!] Invalid Selection. Please choose an available option.')
+            return(self._AskOption())
+        # return valid choice
+        return(choice)
+
+
+    def _DoOption(self, choice) : 
+        # Print dictionary of POD devices.
+        if  (choice == 1):
+            print('\nDictionary of current POD parameter set:')
+            print(self._podParametersDict)
+        # Show Current POD devices.
+        elif(choice == 2):  
+            self._DisplayPODdeviceParameters()
+        # Edit POD device settings.
+        elif(choice == 3):  
+            self._DisplayPODdeviceParameters()
+            self._EditParams()
+            self._ValidateParams()
+            self._ConnectAllPODdevices()
+        # Add a POD device.
+        elif(choice == 4):  
+            nextNum = max(self._podParametersDict.keys())+1
+            print('\n-- Device #'+str(nextNum+1)+' --\n')
+            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
+            self._ValidateParams()
+            self._ConnectAllPODdevices()
+
+         # Start Streaming.
+        elif(choice == 5): 
+            pass
+
+        # Quit.
+        else:               
+            print('\nQuitting...\n')
+
+
     # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
 
 
