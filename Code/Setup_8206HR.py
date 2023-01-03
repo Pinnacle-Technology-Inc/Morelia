@@ -77,25 +77,48 @@ class Setup_8206HR :
     # ------------ FILE ------------ TODO move this 
 
     def _SetupSaveFile(self) : 
-        pass 
-        path = Setup_8206HR._GetFilePath()
-        print(path)
-        # self._GetFileName()
+        self._saveFile = self._GetFilePath()
 
     @staticmethod
     def _GetFilePath() : 
         # ask user for path 
-        path = input('Where would you like to create a save file? Path: ')
-        # prompt again if path does not exist
-        if(not os.path.isdir(path)) : 
-            print('[!] Directory does not exist. Please input a valid path, and do not include a file name.')
+        path = input('\nWhere would you like to create a save file?\nPath: ')
+        # split into path/name and extension 
+        name, ext = os.path.splitext(path)
+
+        # if there is no extension , assume that a file name was not given and path ends with a directory 
+        if(ext == '') : 
+            # ask user for file name 
+            fileName = Setup_8206HR._GetFileName()
+            # check for slash 
+            if( ('/' in name) and (not name.endswith('/')) )  :
+                name = name+'/'
+            elif(not name.endswith('\\')) : 
+                name = name+'\\'
+            # return complete path and filename 
+            return(name+fileName)
+
+        # prompt again if bad extension is given 
+        elif(ext!='.csv' and ext!='.txt') : 
+            print('[!] Filename must end in .csv or .txt.')
             return(Setup_8206HR._GetFilePath())
-        # return path string 
-        return(path)
 
+        # path is correct
+        else :
+            return(path)
 
-    def _GetFileName(self) : 
-        pass
+    @staticmethod
+    def _GetFileName():
+        # ask user for file name 
+        name, ext = os.path.splitext(input('File name: '))
+        # default to csv if no extension is given
+        if(ext=='') : ext='.csv'
+        # check if extension is correct 
+        if(ext!='.csv' and ext!='.txt') : 
+            print('[!] Filename must end in .csv or .txt.')
+            return(Setup_8206HR._GetFileName())
+        # return file name with extension 
+        return(name+ext)
 
     def _OpenSaveFile(self) : 
         pass
