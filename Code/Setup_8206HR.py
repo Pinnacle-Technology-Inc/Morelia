@@ -87,8 +87,8 @@ class Setup_8206HR :
         # ask user for path 
         path = input('Where would you like to create a save file? Path: ')
         # prompt again if path does not exist
-        if(not os.path.exists(path)) : 
-            print('[!] Directory path does not exist. Please input a valid path.')
+        if(not os.path.isdir(path)) : 
+            print('[!] Directory does not exist. Please input a valid path, and do not include a file name.')
             return(Setup_8206HR._GetFilePath())
         # return path string 
         return(path)
