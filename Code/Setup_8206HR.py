@@ -82,7 +82,7 @@ class Setup_8206HR :
     @staticmethod
     def _GetFilePath() : 
         # ask user for path 
-        path = input('\nWhere would you like to create a save file?\nPath: ')
+        path = input('\nWhere would you like to save streaming data to?\nPath: ')
         # split into path/name and extension 
         name, ext = os.path.splitext(path)
 
@@ -125,6 +125,7 @@ class Setup_8206HR :
 
     def _CloseSaveFile(self) : 
         pass 
+
     # ------------ STREAM ------------ TODO move this 
 
     def _StreamAll(self) : 
@@ -175,20 +176,6 @@ class Setup_8206HR :
             podDict[i] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
-
-
-    def _DisplayPODdeviceParameters(self) : 
-        # print title 
-        print('\nParameters for all POD Devices:')
-        # setup table 
-        tab = texttable.Texttable()
-        # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
-        # write rows
-        for key,val in self._podParametersDict.items() :
-            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
-        # show table 
-        print(tab.draw())
         
     
     def _ValidateParams(self) : 
@@ -303,8 +290,7 @@ class Setup_8206HR :
     def _DoOption(self, choice) : 
         # Print dictionary of POD devices.
         if  (choice == 1):
-            print('\nDictionary of current POD parameter set:')
-            print(self._podParametersDict)
+            self._PrintPODdeviceParamDict()
         # Show Current POD devices.
         elif(choice == 2):  
             self._DisplayPODdeviceParameters()
@@ -326,14 +312,37 @@ class Setup_8206HR :
             self._SetupSaveFile()
         # Print save file name and path.
         elif(choice == 6): 
-            pass
+            self._PrintSaveFile()
         # Start Streaming.
         elif(choice == 7): 
             self._StreamAll()
-
         # Quit.
         else:               
             print('\nQuitting...\n')
+
+    # ------------ DISPLAY ------------
+
+
+    def _PrintSaveFile(self):
+        print('\nStreaming data will be saved to '+self._saveFile)
+
+
+    def _PrintPODdeviceParamDict(self):
+        print('\nDictionary of current POD parameter set:\n'+self._podParametersDict)
+
+
+    def _DisplayPODdeviceParameters(self) : 
+        # print title 
+        print('\nParameters for all POD Devices:')
+        # setup table 
+        tab = texttable.Texttable()
+        # write column names
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+        # show table 
+        print(tab.draw())
 
 
     # ============ PROTECTED STATIC METHODS ============      ========================================================================================================================
