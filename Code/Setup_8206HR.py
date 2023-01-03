@@ -482,29 +482,6 @@ class Setup_8206HR :
             print('\nQuitting...\n')
 
 
-    # ------------ READ/WRITE ------------
-
-
-    @staticmethod
-    def _WritePacket_Try(pod, cmd, payload=None, quitIfFail=True):
-        try:
-            w = pod.WritePacket(cmd=cmd, payload=payload)
-            return(w)
-        except : 
-            print('[!] Connection error: could not write to POD device.')
-            if(quitIfFail) :
-                sys.exit('[!!!] Fatal Error: closing program.')
-
-
-    @staticmethod
-    def _TestConnection(pod):
-        # connection successful if write and read match 
-        if(pod.WritePacket('PING') == pod.ReadPODpacket()):
-            return(True)
-        else:
-            return(False)
-
-
     # ------------ HELPER ------------
 
 
