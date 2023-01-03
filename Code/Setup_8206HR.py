@@ -53,9 +53,6 @@ class Setup_8206HR :
             self._saveFileName = saveFile
         else:
             self._saveFileName = self._GetFilePath()
-        # open file 
-        self._OpenSaveFile()
-        self._WriteHeaderToFile()
        
 
     def __del__(self):
@@ -454,7 +451,19 @@ class Setup_8206HR :
 
     def _WriteHeaderToFile(self) : 
         if(self._IsSaveFileOpen()): 
+            # write column names to file 
             self._saveFile.write('Device #,Packet #,TTL,ch0,ch1,ch2\n')
+
+
+    def _WriteDataToFile(self, devNum, dataPacket):
+        if(self._IsSaveFileOpen()): 
+            # get useful data in list 
+            data = [devNum, dataPacket['Packet #'], dataPacket['Packet #'], dataPacket['TTL'], dataPacket['Ch0'], dataPacket['Ch1'], dataPacket['Ch2']]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in data) + '\n'
+            # write data to file 
+            self._saveFile.write(line)
+
 
     # ------------ OPTIONS ------------
 
@@ -502,8 +511,6 @@ class Setup_8206HR :
         # Setup save file for streaming.
         elif(choice == 5): 
             self._saveFileName = self._GetFilePath()
-            self._OpenSaveFile()
-            self._WriteHeaderToFile()
         # Print save file name and path.
         elif(choice == 6): 
             self._PrintSaveFile()
