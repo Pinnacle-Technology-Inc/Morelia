@@ -151,15 +151,15 @@ class Setup_8206HR :
             self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
             self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
             # done 
-            print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.')
+            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
         except : 
-            print('Failed to connect POD device #'+str(deviceNum+1)+' to '+port+'.')
+            print('Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
             sys.exit('[!] Fatal error... ending program.')  # TODO find a better way to address error instead of crashing 
 
 
     def _AddPODdevice(self):
         nextNum = max(self._podParametersDict.keys())+1
-        self._PrintDeviceNumber(nextNum+1)
+        self._PrintDeviceNumber(nextNum)
         self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
 
 
@@ -180,7 +180,7 @@ class Setup_8206HR :
             onePodDict = Setup_8206HR._GetParam_onePODdevice(portNames)
             # update lists 
             portNames[i] = onePodDict['Port']
-            podDict[i] = onePodDict
+            podDict[i+1] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
 
@@ -321,14 +321,14 @@ class Setup_8206HR :
         # get all port names except for device# to be edited
         forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis]['Port'])
         # edit device
-        self._PrintDeviceNumber(editThis+1)
+        self._PrintDeviceNumber(editThis)
         self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
 
 
     def _SelectPODdeviceFromDictToEdit(self):
         try:
             # get pod device number from user 
-            podKey = ( int(input('Edit POD Device #: ')) - 1 )
+            podKey = int(input('Edit POD Device #: '))
         except : 
             # print error and start over
             print('[!] Please enter an integer number.')
@@ -372,7 +372,7 @@ class Setup_8206HR :
         tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key+1, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
         
@@ -487,8 +487,6 @@ class Setup_8206HR :
         else:               
             print('\nQuitting...\n')
 
-
-    
 
     # ------------ HELPER ------------
 
