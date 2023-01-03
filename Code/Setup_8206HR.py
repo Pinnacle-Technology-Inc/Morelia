@@ -40,22 +40,10 @@ class Setup_8206HR :
             7 : 'Start Streaming.',
             8 : 'Quit.'
         }
-        # get dictionary of POD device parameters
-        if(podParametersDict != None) : 
-            self._podParametersDict = podParametersDict
-            self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
-        else:
-            self._SetParam_allPODdevices()  # get setup parameters for all POD devices
-            self._ValidateParams()          # display parameters and allow user to edit them
-        # connect and initialize all POD devices
-        self._ConnectAllPODdevices()
+        # setup 
+        self.SetupPODparameters(podParametersDict)
+        self.SetupSaveFile(saveFile)
 
-        # initialize file name and path 
-        if(saveFile != None) :
-            self._saveFileName = saveFile
-        else:
-            self._saveFileName = self._GetFilePath()
-       
 
     def __del__(self):
         # delete all POD objects 
@@ -65,6 +53,26 @@ class Setup_8206HR :
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
+
+
+    def SetupPODparameters(self, podParametersDict):
+        # get dictionary of POD device parameters
+        if(podParametersDict==None):
+            self._SetParam_allPODdevices()  # get setup parameters for all POD devices
+            self._ValidateParams()          # display parameters and allow user to edit them
+        else:
+            self._podParametersDict = podParametersDict
+            self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
+        # connect and initialize all POD devices
+        self._ConnectAllPODdevices()
+
+
+    def SetupSaveFile(self, saveFile):
+        # initialize file name and path 
+        if(saveFile == None) :
+            self._saveFileName = self._GetFilePath()
+        else:
+            self._saveFileName = saveFile
 
 
     def Run(self) :
