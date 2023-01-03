@@ -23,10 +23,12 @@ class Setup_8206HR :
 
 
     def __init__(self, saveFile=None, podParametersDict=None) :
-        # initialize dictionary of POD devices
+        # initialize class instance variables
         self._podDevices = {}
-        # initialize options --> NOTE if you change this, be sure to update _DoOption()
-        self._options = {
+        self._podParametersDict = {}
+        self._saveFileName = ''
+        self._saveFile = None 
+        self._options = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Print dictionary of POD devices.',
             2 : 'Show table of POD devices.',
             3 : 'Edit POD device settings.',
@@ -41,7 +43,6 @@ class Setup_8206HR :
             self._podParametersDict = podParametersDict
             self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
         else:
-            self._podParametersDict = {}
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
             self._ValidateParams()          # display parameters and allow user to edit them
         # connect and initialize all POD devices
@@ -49,15 +50,19 @@ class Setup_8206HR :
 
         # initialize file name and path 
         if(saveFile != None) :
-            self._saveFile = saveFile
+            self._saveFileName = saveFile
         else:
-            self._saveFile = ''
-            self._SetupSaveFile()
+            self._saveFileName = self._GetFilePath()
+        # open file 
+        self._OpenSaveFile()
+        self._WriteHeaderToFile()
        
 
     def __del__(self):
         # delete all POD objects 
         self._DisconnectAllPODdevices
+        # close file
+        self._CloseSaveFile()
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -381,12 +386,8 @@ class Setup_8206HR :
 
 
     def _PrintSaveFile(self):
-        print('\nStreaming data will be saved to '+self._saveFile)
-    
-    
-    def _SetupSaveFile(self) : 
-        self._saveFile = self._GetFilePath()
-
+        print('\nStreaming data will be saved to '+self._saveFileName)
+ 
 
     @staticmethod
     def _GetFilePath() : 
@@ -430,6 +431,30 @@ class Setup_8206HR :
         # return file name with extension 
         return(name+ext)
 
+
+    def _OpenSaveFile(self):
+        # close if already open 
+        if(self._IsSaveFileOpen()) : self._CloseSaveFile()
+        # open file to write to 
+        self._saveFile = open(self._saveFileName, 'w')
+
+
+    def _CloseSaveFile(self):
+        # close the open file 
+        if(self._IsSaveFileOpen()) : 
+            self._saveFile.close()
+    
+
+    def _IsSaveFileOpen(self):
+        # check that file exists 
+        if(self._saveFile == None) : return(False)
+        # check if closed 
+        else: return(not self._saveFile.closed)
+
+
+    def _WriteHeaderToFile(self) : 
+        if(self._IsSaveFileOpen()): 
+            self._saveFile.write('Device #,Packet #,TTL,ch0,ch1,ch2\n')
 
     # ------------ OPTIONS ------------
 
@@ -476,7 +501,9 @@ class Setup_8206HR :
             self._ConnectAllPODdevices()
         # Setup save file for streaming.
         elif(choice == 5): 
-            self._SetupSaveFile()
+            self._saveFileName = self._GetFilePath()
+            self._OpenSaveFile()
+            self._WriteHeaderToFile()
         # Print save file name and path.
         elif(choice == 6): 
             self._PrintSaveFile()
