@@ -88,28 +88,36 @@ class Setup_8206HR :
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
     
+
     # ------------ STREAM ------------ TODO move this 
+
 
     def _Stream(self) : 
         print('\nStreaming data from all POD devices...')
         # open file
         self._OpenSaveFile()
         self._WriteHeaderToFile()
-        # read from POD devices 
-        self._WritePODstream(start=True)
+        # read from POD 
+        self._StartStream()
         for i in range (100) : 
             self._ReadAll()
         # stop streaming 
-        self._WritePODstream(start=False)
+        self._StopStream()
         self._CloseSaveFile()
 
-
-    def _WritePODstream(self, start=True):
-        # write STREAM command to each pod device 
+    
+    def _StartStream(self):
         for pod in self._podDevices.values() : 
-           pod.WriteRead(cmd='STREAM', payload=int(start))
-    
-    
+            # write then read once 
+            r = pod.WriteRead(cmd='STREAM', payload=1) 
+        return(r)   # all read packes should be same 
+
+    def _StopStream(self):
+        for pod in self._podDevices.values() : 
+            # write only 
+            w = pod.WritePacket(cmd='STREAM', payload=0)
+        return(w)   # all write packets should be same 
+
     def _ReadAll(self) : 
         # read binary packet from each POD device 
         for devNum,pod in self._podDevices.items() :
