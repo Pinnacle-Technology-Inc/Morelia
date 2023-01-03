@@ -11,14 +11,16 @@ from PodDevice_8206HR       import POD_8206HR
 # DONE - create pod device and connect to comport 
 # DONE - setup sample rate, LP1, LP2, LP3
 # - setup TTL stuff ???
-# - setup file to save to
-# - start streaming
-# - continually get data
+# DONE - setup file to save to
+# DONE - start streaming
+# DONE- continually get data
+# - stop streaming 
 # - make plot using data
-# - save data to file 
+# DONE - save data to file 
 
 class Setup_8206HR : 
     
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -38,7 +40,7 @@ class Setup_8206HR :
             7 : 'Start Streaming.',
             8 : 'Quit.'
         }
-        # initialize dictionary of POD device parameters
+        # get dictionary of POD device parameters
         if(podParametersDict != None) : 
             self._podParametersDict = podParametersDict
             self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
@@ -80,29 +82,32 @@ class Setup_8206HR :
     
     # ------------ STREAM ------------ TODO move this 
 
-    def _StreamAll(self) : 
-        self._WriteStreamAll(start=True)
+    def _Stream(self) : 
+        print('\nStreaming data from all POD devices...')
+        # open file
+        self._OpenSaveFile()
+        self._WriteHeaderToFile()
+        # read from POD devices 
+        self._WritePODstream(start=True)
         for i in range (100) : 
             self._ReadAll()
-        self._WriteStreamAll(start=False)
-        # TODO left off here...
-        # how many times should I read
-        # dont forget to convert into volts
-        # output to file 
+        # stop streaming 
+        self._WritePODstream(start=False)
+        self._CloseSaveFile()
 
 
-    def _WriteStreamAll(self, start=True):
-        # for each pod device 
+    def _WritePODstream(self, start=True):
+        # write STREAM command to each pod device 
         for pod in self._podDevices.values() : 
-        # write/read stream 
            pod.WriteRead(cmd='STREAM', payload=int(start))
     
     
     def _ReadAll(self) : 
-        # for each pod device 
+        # read binary packet from each POD device 
         for devNum,pod in self._podDevices.items() :
             r = pod.TranslatePODpacket(pod.ReadPODpacket())
-            print(devNum, r)
+            # TODO convert to volts 
+            self._WriteDataToFile(devNum, r)
 
 
     # ------------ DEVICES ------------
@@ -458,7 +463,7 @@ class Setup_8206HR :
     def _WriteDataToFile(self, devNum, dataPacket):
         if(self._IsSaveFileOpen()): 
             # get useful data in list 
-            data = [devNum, dataPacket['Packet #'], dataPacket['Packet #'], dataPacket['TTL'], dataPacket['Ch0'], dataPacket['Ch1'], dataPacket['Ch2']]
+            data = [devNum, dataPacket['Packet #'], dataPacket['TTL'], dataPacket['Ch0'], dataPacket['Ch1'], dataPacket['Ch2']]
             # convert data into comma separated string
             line = ','.join(str(x) for x in data) + '\n'
             # write data to file 
@@ -516,7 +521,7 @@ class Setup_8206HR :
             self._PrintSaveFile()
         # Start Streaming.
         elif(choice == 7): 
-            self._StreamAll()
+            self._Stream()
         # Quit.
         else:               
             print('\nQuitting...\n')
