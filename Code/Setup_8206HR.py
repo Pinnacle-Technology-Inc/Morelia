@@ -105,6 +105,21 @@ class Setup_8206HR :
         self._StopStream()
         self._CloseSaveFile()
 
+        # TODO use multithreading to handle streaming!
+        # - make a thread for each POD device. 
+        #       These threads should write STREAM ON to their device, 
+        #       then continually read until a STREAM OFF packet is read. 
+        #       each thread should write to its own file 
+        #           use the given path but add the device number to the filename: path\filename_<DEVICE#>.ext
+        #           alternativly, ask user for a path and filename when setting up the device params
+        # - make a thread that asks for user input
+        #       ask user "press any key to stop streaming: ". 
+        #       when the user gives an input, write STREAM OFF to each POD device. 
+        #       print "finishing up..." until the POD device threads are done reading 
+        # - print time from start to stop read 
+        # TODO convert ch value into volts 
+
+
     
     def _StartStream(self):
         for pod in self._podDevices.values() : 
