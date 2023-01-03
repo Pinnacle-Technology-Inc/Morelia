@@ -1,4 +1,5 @@
 # venv 
+import os
 import sys
 import texttable
 # local 
@@ -77,11 +78,21 @@ class Setup_8206HR :
 
     def _SetupSaveFile(self) : 
         pass 
-        # self._GetFilePath()
+        path = Setup_8206HR._GetFilePath()
+        print(path)
         # self._GetFileName()
 
-    def _GetFilePath(self) : 
-        pass
+    @staticmethod
+    def _GetFilePath() : 
+        # ask user for path 
+        path = input('Where would you like to create a save file? Path: ')
+        # prompt again if path does not exist
+        if(not os.path.exists(path)) : 
+            print('[!] Directory path does not exist. Please input a valid path.')
+            return(Setup_8206HR._GetFilePath())
+        # return path string 
+        return(path)
+
 
     def _GetFileName(self) : 
         pass
