@@ -21,7 +21,7 @@ class Setup_8206HR :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, podParametersDict=None) :
+    def __init__(self, saveFile=None, podParametersDict=None) :
         # initialize dictionary of POD devices
         self._podDevices = {}
         # initialize options --> NOTE if you change this, be sure to update _DoOption()
@@ -30,8 +30,10 @@ class Setup_8206HR :
             2 : 'Show table of POD devices.',
             3 : 'Edit POD device settings.',
             4 : 'Connect a new POD device.',
-            5 : 'Start Streaming.',
-            6 : 'Quit.'
+            5 : 'Setup save file for streaming.',
+            6 : 'Print save file name and path.',
+            7 : 'Start Streaming.',
+            8 : 'Quit.'
         }
         # initialize dictionary of POD device parameters
         if(podParametersDict != None) : 
@@ -41,10 +43,16 @@ class Setup_8206HR :
             self._podParametersDict = {}
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
             self._ValidateParams()          # display parameters and allow user to edit them
-
         # connect and initialize all POD devices
         self._ConnectAllPODdevices()
-        
+
+        # initialize file name and path 
+        if(saveFile != None) :
+            self._saveFile = saveFile
+        else:
+            self._saveFile = ''
+            self._SetupSaveFile() # TODO call func to save 
+       
 
     def __del__(self):
         # delete all POD objects 
@@ -65,7 +73,25 @@ class Setup_8206HR :
             self._DoOption(choice)
 
 
-    # ------------ STREAM ------------
+    # ------------ FILE ------------ TODO move this 
+
+    def _SetupSaveFile(self) : 
+        pass 
+        # self._GetFilePath()
+        # self._GetFileName()
+
+    def _GetFilePath(self) : 
+        pass
+
+    def _GetFileName(self) : 
+        pass
+
+    def _OpenSaveFile(self) : 
+        pass
+
+    def _CloseSaveFile(self) : 
+        pass 
+    # ------------ STREAM ------------ TODO move this 
 
     def _StreamAll(self) : 
         self._WriteStreamAll(start=True)
@@ -261,9 +287,14 @@ class Setup_8206HR :
             self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
             self._ValidateParams()
             self._ConnectAllPODdevices()
-
-         # Start Streaming.
+        # Setup save file for streaming.
         elif(choice == 5): 
+            self._SetupSaveFile()
+        # Print save file name and path.
+        elif(choice == 6): 
+            pass
+        # Start Streaming.
+        elif(choice == 7): 
             self._StreamAll()
 
         # Quit.
