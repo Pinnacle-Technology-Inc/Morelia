@@ -154,7 +154,13 @@ class Setup_8206HR :
             print('Successfully connected POD device #'+str(deviceNum+1)+' to '+port+'.')
         except : 
             print('Failed to connect POD device #'+str(deviceNum+1)+' to '+port+'.')
-            sys.exit('[!] Fatal error... ending program.')
+            sys.exit('[!] Fatal error... ending program.')  # TODO find a better way to address error instead of crashing 
+
+
+    def _AddPODdevice(self):
+        nextNum = max(self._podParametersDict.keys())+1
+        self._PrintDeviceNumber(nextNum+1)
+        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
 
 
     # ------------ SETUP POD PARAMETERS ------------
@@ -169,7 +175,7 @@ class Setup_8206HR :
         # get information for each POD device 
         for i in range(numDevices) : 
             # current index 
-            print('\n-- Device #'+str(i+1)+' --\n')
+            self._PrintDeviceNumber(i+1)
             # get parameters
             onePodDict = Setup_8206HR._GetParam_onePODdevice(portNames)
             # update lists 
@@ -305,9 +311,7 @@ class Setup_8206HR :
         validParams = Setup_8206HR._AskYN(question='Are the POD device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
-            # edit the parameters table
             self._EditParams()
-            # prompt again
             self._ValidateParams()
 
 
@@ -317,7 +321,7 @@ class Setup_8206HR :
         # get all port names except for device# to be edited
         forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis]['Port'])
         # edit device
-        print('\n-- Device #'+str(editThis+1)+' --\n')
+        self._PrintDeviceNumber(editThis+1)
         self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
 
 
@@ -350,9 +354,13 @@ class Setup_8206HR :
 
     # ------------ DISPLAY POD PARAMETERS ------------
 
+    @staticmethod
+    def _PrintDeviceNumber(num):
+        print('\n-- Device #'+str(num)+' --\n')
+
 
     def _PrintPODdeviceParamDict(self):
-        print('\nDictionary of current POD parameter set:\n'+self._podParametersDict)
+        print('\nDictionary of current POD parameter set:\n'+str(self._podParametersDict))
 
 
     def _DisplayPODdeviceParameters(self) : 
@@ -463,9 +471,7 @@ class Setup_8206HR :
             self._ConnectAllPODdevices()
         # Add a POD device.
         elif(choice == 4):  
-            nextNum = max(self._podParametersDict.keys())+1
-            print('\n-- Device #'+str(nextNum+1)+' --\n')
-            self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
+            self._AddPODdevice()
             self._ValidateParams()
             self._ConnectAllPODdevices()
         # Setup save file for streaming.
@@ -481,6 +487,8 @@ class Setup_8206HR :
         else:               
             print('\nQuitting...\n')
 
+
+    
 
     # ------------ HELPER ------------
 
