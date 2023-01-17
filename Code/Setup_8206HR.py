@@ -3,6 +3,7 @@ import os
 import sys
 import texttable
 import threading 
+import time 
 # local 
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -120,26 +121,18 @@ class Setup_8206HR :
         # - print time from start to stop read 
         # TODO convert ch value into volts 
 
-
-    
-    # def _StartStream(self):
-    #     for pod in self._podDevices.values() : 
-    #         # write then read once 
-    #         r = pod.WriteRead(cmd='STREAM', payload=1) 
-    #     return(r)   # all read packes should be same 
-
     def _StopStream(self):
         for pod in self._podDevices.values() : 
             # write only 
             w = pod.WritePacket(cmd='STREAM', payload=0)
         return(w)   # all write packets should be same 
 
-    # def _ReadAll(self) : 
-    #     # read binary packet from each POD device 
-    #     for devNum,pod in self._podDevices.items() :
-    #         r = pod.TranslatePODpacket(pod.ReadPODpacket())
-    #         # TODO convert to volts 
-    #         self._WriteDataToFile(devNum, r)
+
+    def _AskToStopStream(self):
+        input('\nPress Enter to stop streaming:')
+        self._StopStream()
+        print('Finishing up...')
+
 
     @staticmethod
     def _StreamUntilStop(pod, num, readDict):
@@ -151,7 +144,6 @@ class Setup_8206HR :
         reading = True
         while(reading) : 
             r = pod.ReadPODpacket()
-            print(r)
             # check what was read
             if(r == stopAt) : 
                 reading = False
@@ -161,7 +153,7 @@ class Setup_8206HR :
                 readDict[num].append(pkt)
 
 
-    def _Stream(self) : 
+    def _StreamThreading(self) : 
         # create dict for pod device readouts
         podReadouts = {key: [] for key in self._podDevices.keys()}
         # make threads for each device 
@@ -170,15 +162,18 @@ class Setup_8206HR :
         # ask for user input 
         userThread = threading.Thread(target=self._AskToStopStream)
         userThread.start()
-        # join all threads 
+        # join all threads - wait until all threads are finished before continuing 
         userThread.join()
         for t in readThreads.values() : t.join()
+        # return dictionary of streaming values 
+        return(podReadouts)
 
-    def _AskToStopStream(self):
-        input('\nPress Enter to stop streaming:')
-        self._StopStream()
-        print('Finishing up...')
 
+    def _Stream(self) :
+        # start stream
+        podReadouts = self._TimeFunc(self._StreamThreading)
+
+   
     # ------------ DEVICES ------------
 
 
@@ -430,6 +425,7 @@ class Setup_8206HR :
 
     # ------------ DISPLAY POD PARAMETERS ------------
 
+
     @staticmethod
     def _PrintDeviceNumber(num):
         print('\n-- Device #'+str(num)+' --\n')
@@ -610,4 +606,15 @@ class Setup_8206HR :
             print('[!] Please enter \'y\' or \'n\'.')
             return(Setup_8206HR._AskYN(question))
 
-    
+
+    @staticmethod
+    def _TimeFunc(func) : 
+        # start time 
+        ti = time.time()
+        # function 
+        f = func()
+        # stop time
+        tf = time.time()
+        print('\nExecution time:', str(round(tf-ti,3)), 'sec')
+        # return function's return
+        return(f)
