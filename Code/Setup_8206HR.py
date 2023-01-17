@@ -31,7 +31,6 @@ class Setup_8206HR :
         self._podDevices = {}
         self._podParametersDict = {}
         self._saveFileName = ''
-        self._saveFile = None 
         self._options = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Print dictionary of POD devices.',
             2 : 'Show table of POD devices.',
@@ -50,8 +49,6 @@ class Setup_8206HR :
     def __del__(self):
         # delete all POD objects 
         self._DisconnectAllPODdevices
-        # close file
-        self._CloseSaveFile()
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -93,33 +90,20 @@ class Setup_8206HR :
 
     # ------------ STREAM ------------ TODO move this 
 
+    # TODO use multithreading to handle streaming!
+    # - make a thread for each POD device. 
+    #       These threads should write STREAM ON to their device, 
+    #       then continually read until a STREAM OFF packet is read. 
+    #       each thread should write to its own file 
+    #           use the given path but add the device number to the filename: path\filename_<DEVICE#>.ext
+    #           alternativly, ask user for a path and filename when setting up the device params
+    # - make a thread that asks for user input
+    #       ask user "press any key to stop streaming: ". 
+    #       when the user gives an input, write STREAM OFF to each POD device. 
+    #       print "finishing up..." until the POD device threads are done reading 
+    # - print time from start to stop read 
+    # TODO convert ch value into volts 
 
-    # def _Stream(self) : 
-    #     print('\nStreaming data from all POD devices...')
-        # # open file
-        # self._OpenSaveFile()
-        # self._WriteHeaderToFile()
-        # # read from POD 
-        # self._StartStream()
-        # for i in range (100) : 
-        #     self._ReadAll()
-        # # stop streaming 
-        # self._StopStream()
-        # self._CloseSaveFile()
-
-        # TODO use multithreading to handle streaming!
-        # - make a thread for each POD device. 
-        #       These threads should write STREAM ON to their device, 
-        #       then continually read until a STREAM OFF packet is read. 
-        #       each thread should write to its own file 
-        #           use the given path but add the device number to the filename: path\filename_<DEVICE#>.ext
-        #           alternativly, ask user for a path and filename when setting up the device params
-        # - make a thread that asks for user input
-        #       ask user "press any key to stop streaming: ". 
-        #       when the user gives an input, write STREAM OFF to each POD device. 
-        #       print "finishing up..." until the POD device threads are done reading 
-        # - print time from start to stop read 
-        # TODO convert ch value into volts 
 
     def _StopStream(self):
         for pod in self._podDevices.values() : 
@@ -135,7 +119,7 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _StreamUntilStop(pod, num, readDict):
+    def _StreamUntilStop(pod, file):
         # write start streaming command to pod device 
         startAt = pod.WriteRead(cmd='STREAM', payload=1)
         # get packet to mark stop streaming 
@@ -148,30 +132,31 @@ class Setup_8206HR :
             if(r == stopAt) : 
                 reading = False
             elif(r != startAt) : 
-                # write what is read to a dict
-                pkt = pod.TranslatePODpacket(r) # TODO convert to volts 
-                readDict[num].append(pkt)
+                # write what is read to file 
+                data = pod.TranslatePODpacket(r) # TODO convert to volts 
+                Setup_8206HR._WriteDataToFile(data, file)
 
 
     def _StreamThreading(self) : 
-        # create dict for pod device readouts
-        podReadouts = {key: [] for key in self._podDevices.keys()}
-        # make threads for each device 
-        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,devNum,podReadouts)) for devNum,pod in self._podDevices.items()}
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads
+        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,podFiles[devNum])) for devNum,pod in self._podDevices.items()}
+        userThread  = threading.Thread(target=self._AskToStopStream)
+        # start streaming 
         for t in readThreads.values() : t.start()
-        # ask for user input 
-        userThread = threading.Thread(target=self._AskToStopStream)
         userThread.start()
         # join all threads - wait until all threads are finished before continuing 
         userThread.join()
         for t in readThreads.values() : t.join()
-        # return dictionary of streaming values 
-        return(podReadouts)
+        # close all files 
+        for file in podFiles.values() : file.close()
+        print('Save complete!')
 
-
+    
     def _Stream(self) :
         # start stream
-        podReadouts = self._TimeFunc(self._StreamThreading)
+        self._TimeFunc(self._StreamThreading)
 
    
     # ------------ DEVICES ------------
@@ -499,40 +484,26 @@ class Setup_8206HR :
         return(name+ext)
 
 
-    def _OpenSaveFile(self):
-        # close if already open 
-        if(self._IsSaveFileOpen()) : self._CloseSaveFile()
+    def _OpenSaveFile(self, devNum) : 
+        # build file name 
+        name, ext = os.path.splitext(self._saveFileName)
+        fname = name+'_'+str(devNum)+ext
         # open file to write to 
-        self._saveFile = open(self._saveFileName, 'w')
+        f = open(fname, 'w')
+        # write column names to header
+        f.write('Packet #,TTL,ch0,ch1,ch2\n')
+        # return file 
+        return(f)
 
 
-    def _CloseSaveFile(self):
-        # close the open file 
-        if(self._IsSaveFileOpen()) : 
-            self._saveFile.close()
-    
-
-    def _IsSaveFileOpen(self):
-        # check that file exists 
-        if(self._saveFile == None) : return(False)
-        # check if closed 
-        else: return(not self._saveFile.closed)
-
-
-    def _WriteHeaderToFile(self) : 
-        if(self._IsSaveFileOpen()): 
-            # write column names to file 
-            self._saveFile.write('Device #,Packet #,TTL,ch0,ch1,ch2\n')
-
-
-    def _WriteDataToFile(self, devNum, dataPacket):
-        if(self._IsSaveFileOpen()): 
-            # get useful data in list 
-            data = [devNum, dataPacket['Packet #'], dataPacket['TTL'], dataPacket['Ch0'], dataPacket['Ch1'], dataPacket['Ch2']]
-            # convert data into comma separated string
-            line = ','.join(str(x) for x in data) + '\n'
-            # write data to file 
-            self._saveFile.write(line)
+    @staticmethod
+    def _WriteDataToFile(data, file):
+        # get useful data in list 
+        data = [data['Packet #'], data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
+        # convert data into comma separated string
+        line = ','.join(str(x) for x in data) + '\n'
+        # write data to file 
+        file.write(line)
 
 
     # ------------ OPTIONS ------------
