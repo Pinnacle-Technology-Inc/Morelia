@@ -15,13 +15,13 @@ from PodDevice_8206HR       import POD_8206HR
 # - setup TTL stuff ???
 # DONE - setup file to save to
 # DONE - start streaming
-# DONE- continually get data
-# - stop streaming 
-# - make plot using data
+# DONE - continually get data
+# DONE - stop streaming 
+# N/A  - make plot using data
 # DONE - save data to file 
 
 class Setup_8206HR : 
-    
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -116,7 +116,7 @@ class Setup_8206HR :
                 reading = False
             elif(r != startAt) : 
                 # write what is read to file 
-                data = pod.TranslatePODpacket(r)                # TODO convert to volts 
+                data = pod.TranslatePODpacket(r)                # TODO convert to volts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
                 Setup_8206HR._WriteDataToFile(data, file)
 
 
