@@ -88,33 +88,15 @@ class Setup_8206HR :
     # ============ PRIVATE METHODS ============      ========================================================================================================================
     
 
-    # ------------ STREAM ------------ TODO move this 
-
-    # TODO use multithreading to handle streaming!
-    # - make a thread for each POD device. 
-    #       These threads should write STREAM ON to their device, 
-    #       then continually read until a STREAM OFF packet is read. 
-    #       each thread should write to its own file 
-    #           use the given path but add the device number to the filename: path\filename_<DEVICE#>.ext
-    #           alternativly, ask user for a path and filename when setting up the device params
-    # - make a thread that asks for user input
-    #       ask user "press any key to stop streaming: ". 
-    #       when the user gives an input, write STREAM OFF to each POD device. 
-    #       print "finishing up..." until the POD device threads are done reading 
-    # - print time from start to stop read 
-    # TODO convert ch value into volts 
-
-
-    def _StopStream(self):
-        for pod in self._podDevices.values() : 
-            # write only 
-            w = pod.WritePacket(cmd='STREAM', payload=0)
-        return(w)   # all write packets should be same 
+    # ------------ STREAM ------------ 
 
 
     def _AskToStopStream(self):
+        # get any input from user 
         input('\nPress Enter to stop streaming:')
-        self._StopStream()
+        # tell devices to stop streaming 
+        for pod in self._podDevices.values() : 
+            pod.WritePacket(cmd='STREAM', payload=0)
         print('Finishing up...')
 
 
@@ -127,13 +109,14 @@ class Setup_8206HR :
         # start reading 
         reading = True
         while(reading) : 
+            # read POD device 
             r = pod.ReadPODpacket()
             # check what was read
             if(r == stopAt) : 
                 reading = False
             elif(r != startAt) : 
                 # write what is read to file 
-                data = pod.TranslatePODpacket(r) # TODO convert to volts 
+                data = pod.TranslatePODpacket(r)                # TODO convert to volts 
                 Setup_8206HR._WriteDataToFile(data, file)
 
 
@@ -485,9 +468,9 @@ class Setup_8206HR :
 
 
     def _OpenSaveFile(self, devNum) : 
-        # build file name 
+        # build file name --> path\filename_<DEVICE#>.ext
         name, ext = os.path.splitext(self._saveFileName)
-        fname = name+'_'+str(devNum)+ext
+        fname = name+'_'+str(devNum)+ext    
         # open file to write to 
         f = open(fname, 'w')
         # write column names to header
@@ -583,9 +566,7 @@ class Setup_8206HR :
         # start time 
         ti = time.time()
         # function 
-        f = func()
+        func()
         # stop time
         tf = time.time()
         print('\nExecution time:', str(round(tf-ti,3)), 'sec')
-        # return function's return
-        return(f)
