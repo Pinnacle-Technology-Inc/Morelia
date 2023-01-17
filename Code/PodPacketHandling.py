@@ -120,6 +120,7 @@ class POD_Packets() :
         return(packet)
 
     
+    @staticmethod
     def PayloadToBytes(payload, argSizes) :             
         # if integer payload is given ... 
         if(isinstance(payload,int)):

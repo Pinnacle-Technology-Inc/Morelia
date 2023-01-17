@@ -198,20 +198,17 @@ class POD_Basics :
         return(r)
 
 
-    def WritePacket(self, cmd, payload=None) :         
+    def GetPODpacket(self, cmd, payload=None) :
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not Exist.')
-
         # get command number 
         if(isinstance(cmd,str)):
             cmdNum = self._commands.CommandNumberFromName(cmd)
         else: 
             cmdNum = cmd
-
         # get length of expected paylaod 
         argSizes = self._commands.ArgumentBytes(cmdNum)
-        
         # check if command requires a payload. 
         if( sum(argSizes) > 0 ):
             # check to see if a payload was given 
@@ -221,13 +218,17 @@ class POD_Basics :
             pld = POD_Packets.PayloadToBytes(payload, argSizes)
         else :
             pld = None
-            
         # build POD packet 
         packet = POD_Packets.BuildPODpacket_Standard(cmdNum, payload=pld)
+        # return complete packet 
+        return(packet)
+    
 
+    def WritePacket(self, cmd, payload=None) :                     
+        # POD packet 
+        packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
         self._port.Write(packet)
-
         # returns packet that was written
         return(packet)
 

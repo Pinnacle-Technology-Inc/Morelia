@@ -4,6 +4,8 @@ from PodDevice_8206HR       import POD_8206HR
 from PodCommands            import POD_Commands
 from Setup_8206HR           import Setup_8206HR
 
+import threading 
+
 # # get port list 
 # portList = COM_io.GetCOMportsList()
 # print('Ports:\t',portList)
@@ -144,10 +146,35 @@ param2 = {1: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Baud Rate': 9600, 'Sample Ra
 
 path = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
 
-go = Setup_8206HR(saveFile=path, podParametersDict=param1)
-# go = Setup_8206HR(saveFile=path, podParametersDict=param2)
+# go = Setup_8206HR(saveFile=path, podParametersDict=param1)
+go = Setup_8206HR(saveFile=path, podParametersDict=param2)
 # go = Setup_8206HR()
 
 go.Run()
+
+# b = [False]
+
+# def ask(b):
+#     print('t1 started...')
+#     inp = input('Press Enter to stop streaming:')
+#     b[0]=True 
+#     print('t1 finished...')
+
+
+# def count(b):
+#     print('t2 started...')
+#     n=0
+#     while(b[0]==False):
+#         n +=1
+#     print('Counted to ', n)
+#     print('t2 finished...')
+#     return(n)
+
+
+# t1 = threading.Thread(target=ask, args=(b,))
+# t2 = threading.Thread(target=count, args=(b,))
+
+# t2.start()
+# t1.start()
 
 # print('\n\n')

@@ -2,6 +2,7 @@
 import os
 import sys
 import texttable
+import threading 
 # local 
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -92,18 +93,18 @@ class Setup_8206HR :
     # ------------ STREAM ------------ TODO move this 
 
 
-    def _Stream(self) : 
-        print('\nStreaming data from all POD devices...')
-        # open file
-        self._OpenSaveFile()
-        self._WriteHeaderToFile()
-        # read from POD 
-        self._StartStream()
-        for i in range (100) : 
-            self._ReadAll()
-        # stop streaming 
-        self._StopStream()
-        self._CloseSaveFile()
+    # def _Stream(self) : 
+    #     print('\nStreaming data from all POD devices...')
+        # # open file
+        # self._OpenSaveFile()
+        # self._WriteHeaderToFile()
+        # # read from POD 
+        # self._StartStream()
+        # for i in range (100) : 
+        #     self._ReadAll()
+        # # stop streaming 
+        # self._StopStream()
+        # self._CloseSaveFile()
 
         # TODO use multithreading to handle streaming!
         # - make a thread for each POD device. 
@@ -121,11 +122,11 @@ class Setup_8206HR :
 
 
     
-    def _StartStream(self):
-        for pod in self._podDevices.values() : 
-            # write then read once 
-            r = pod.WriteRead(cmd='STREAM', payload=1) 
-        return(r)   # all read packes should be same 
+    # def _StartStream(self):
+    #     for pod in self._podDevices.values() : 
+    #         # write then read once 
+    #         r = pod.WriteRead(cmd='STREAM', payload=1) 
+    #     return(r)   # all read packes should be same 
 
     def _StopStream(self):
         for pod in self._podDevices.values() : 
@@ -133,13 +134,50 @@ class Setup_8206HR :
             w = pod.WritePacket(cmd='STREAM', payload=0)
         return(w)   # all write packets should be same 
 
-    def _ReadAll(self) : 
-        # read binary packet from each POD device 
-        for devNum,pod in self._podDevices.items() :
-            r = pod.TranslatePODpacket(pod.ReadPODpacket())
-            # TODO convert to volts 
-            self._WriteDataToFile(devNum, r)
+    # def _ReadAll(self) : 
+    #     # read binary packet from each POD device 
+    #     for devNum,pod in self._podDevices.items() :
+    #         r = pod.TranslatePODpacket(pod.ReadPODpacket())
+    #         # TODO convert to volts 
+    #         self._WriteDataToFile(devNum, r)
 
+    @staticmethod
+    def _StreamUntilStop(pod, num, readDict):
+        # write start streaming command to pod device 
+        startAt = pod.WriteRead(cmd='STREAM', payload=1)
+        # get packet to mark stop streaming 
+        stopAt  = pod.GetPODpacket(cmd='STREAM', payload=0)
+        # start reading 
+        reading = True
+        while(reading) : 
+            r = pod.ReadPODpacket()
+            print(r)
+            # check what was read
+            if(r == stopAt) : 
+                reading = False
+            elif(r != startAt) : 
+                # write what is read to a dict
+                pkt = pod.TranslatePODpacket(r) # TODO convert to volts 
+                readDict[num].append(pkt)
+
+
+    def _Stream(self) : 
+        # create dict for pod device readouts
+        podReadouts = {key: [] for key in self._podDevices.keys()}
+        # make threads for each device 
+        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,devNum,podReadouts)) for devNum,pod in self._podDevices.items()}
+        for t in readThreads.values() : t.start()
+        # ask for user input 
+        userThread = threading.Thread(target=self._AskToStopStream)
+        userThread.start()
+        # join all threads 
+        userThread.join()
+        for t in readThreads.values() : t.join()
+
+    def _AskToStopStream(self):
+        input('\nPress Enter to stop streaming:')
+        self._StopStream()
+        print('Finishing up...')
 
     # ------------ DEVICES ------------
 
