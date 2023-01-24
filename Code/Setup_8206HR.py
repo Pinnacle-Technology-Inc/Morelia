@@ -21,6 +21,9 @@ from PodDevice_8206HR       import POD_8206HR
 # N/A  - make plot using data
 # DONE - save data to file 
 
+# NOTE
+# baudrate is irrelevant for this pod device 
+
 class Setup_8206HR : 
 
 
@@ -503,11 +506,6 @@ class Setup_8206HR :
         for file in podFiles.values() : file.close()
         print('Save complete!')
 
-    
-    def _Stream(self) :
-        # start stream
-        self._TimeFunc(self._StreamThreading)
-
 
     # ------------ OPTIONS ------------
 
@@ -560,7 +558,7 @@ class Setup_8206HR :
             self._PrintSaveFile()
         # Start Streaming.
         elif(choice == 7): 
-            self._Stream()
+            self._TimeFunc(self._StreamThreading)
         # Quit.
         else:               
             print('\nQuitting...\n')
