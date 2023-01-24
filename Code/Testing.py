@@ -144,8 +144,8 @@ param2 = {1: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Baud Rate': 9600, 'Sample Ra
 
 path = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
 
-# go = Setup_8206HR(saveFile=path, podParametersDict=param1)
-go = Setup_8206HR(saveFile=path, podParametersDict=param2)
+go = Setup_8206HR(saveFile=path, podParametersDict=param1)
+# go = Setup_8206HR(saveFile=path, podParametersDict=param2)
 # go = Setup_8206HR()
 
 go.Run()

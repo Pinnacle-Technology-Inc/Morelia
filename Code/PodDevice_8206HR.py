@@ -38,6 +38,9 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True    )     # see _Read_Binary()
 
 
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+    
+
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -82,9 +85,9 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt(msgDict['Packet #'])
         msgDictTrans['TTL']             = POD_Packets.BinaryBytesToInt(msgDict['TTL'])
-        msgDictTrans['Ch0']             = POD_Packets.BinaryBytesToInt(msgDict['Ch0'],byteorder='little')
-        msgDictTrans['Ch1']             = POD_Packets.BinaryBytesToInt(msgDict['Ch1'],byteorder='little')
-        msgDictTrans['Ch2']             = POD_Packets.BinaryBytesToInt(msgDict['Ch2'],byteorder='little')
+        msgDictTrans['Ch0']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch0'])
+        msgDictTrans['Ch1']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch1'])
+        msgDictTrans['Ch2']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch2'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -103,7 +106,6 @@ class POD_8206HR(POD_Basics) :
         else :
             return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
 
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
 
     def TranslatePODpacket(self, msg):
         # determine what type of pod packet using length of msg
@@ -114,6 +116,21 @@ class POD_8206HR(POD_Basics) :
         # message may be standard (length checked within unpacking function )
         else :
             return( POD_8206HR.TranslatePODpacket_Standard(self,msg) )
+
+
+    # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+    
+
+    @staticmethod
+    def BinaryBytesToVoltage(value, preampGain=10, systemGain=50):
+        # convert binary message from POD to integer
+        value_int = POD_Packets.BinaryBytesToInt(value,byteorder='little')
+        # calculate voltage 
+        voltageADC = ( value_int / 65535 ) * 4.096 #V
+        totalGain = preampGain * systemGain
+        realValue = ( voltageADC - 2.048 ) / totalGain
+        # return the real value at input to preamplifier 
+        return(realValue) #V 
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================

@@ -116,7 +116,7 @@ class Setup_8206HR :
                 reading = False
             elif(r != startAt) : 
                 # write what is read to file 
-                data = pod.TranslatePODpacket(r)                # TODO convert to volts ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                data = pod.TranslatePODpacket(r)
                 Setup_8206HR._WriteDataToFile(data, file)
 
 
