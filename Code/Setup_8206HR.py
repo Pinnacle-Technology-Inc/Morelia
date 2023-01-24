@@ -12,6 +12,7 @@ from PodDevice_8206HR       import POD_8206HR
 # DONE - get port from comport list
 # DONE - create pod device and connect to comport 
 # DONE - setup sample rate, LP1, LP2, LP3
+# - set preamp gain 
 # - setup TTL stuff ???
 # DONE - setup file to save to
 # DONE - start streaming
@@ -120,7 +121,7 @@ class Setup_8206HR :
                 Setup_8206HR._WriteDataToFile(data, file)
 
 
-    def _StreamThreading(self) : 
+    def _StreamThreading(self) :
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
         # make threads
@@ -183,7 +184,7 @@ class Setup_8206HR :
             # get port name 
             port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            self._podDevices[deviceNum] = POD_8206HR(port, deviceParams['Baud Rate'])
+            self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'], baudrate=deviceParams['Baud Rate'])
             # write setup parameters
             self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
             self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
@@ -227,10 +228,11 @@ class Setup_8206HR :
     @staticmethod
     def _GetParam_onePODdevice(forbiddenNames) : 
         return({
-                'Port'          : Setup_8206HR._ChoosePort(forbiddenNames),
-                'Baud Rate'     : Setup_8206HR._ChooseBaudrate(),
-                'Sample Rate'   : Setup_8206HR._ChooseSampleRate(),
-                'Low Pass'      : Setup_8206HR._ChooseLowpass()
+                'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
+                'Baud Rate'         : Setup_8206HR._ChooseBaudrate(),
+                'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
+                'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
+                'Low Pass'          : Setup_8206HR._ChooseLowpass()
             })
         
     
@@ -312,6 +314,24 @@ class Setup_8206HR :
         # return sample rate
         return(sampleRate)
        
+
+    @staticmethod
+    def _ChoosePreampGain():
+        try:
+            # get gain from user 
+            gain = int(input('Set preamplifier gain: '))
+        except : 
+            # if bad input, start over 
+            print('[!] Please enter an integer number.')
+            return(Setup_8206HR._ChoosePreampGain())
+        # check for valid input 
+        if(gain != 10 and gain != 100):
+            # prompt again 
+            print('[!] Preamplifier gain must be 10 or 100.')
+            return(Setup_8206HR._ChoosePreampGain())
+        # return preamplifier gain 
+        return(gain)
+
 
     @staticmethod
     def _ChooseLowpass():
@@ -409,10 +429,10 @@ class Setup_8206HR :
         # setup table 
         tab = texttable.Texttable()
         # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)','EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
         

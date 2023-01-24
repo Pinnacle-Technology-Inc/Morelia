@@ -14,13 +14,13 @@ class POD_8206HR(POD_Basics) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port, baudrate=9600) :
+    def __init__(self, port, preampGain, baudrate=9600) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
-        B4  = POD_8206HR.__B4LENGTH -1 -4 -2 -1 # length minus STX, command number, checksum, ETX = 16 - 8 = 8
+        B4  = POD_8206HR.__B4LENGTH -1 -4 -2 -1 # length minus STX, command number, checksum, ETX || 16 - 8 = 8
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
@@ -36,6 +36,10 @@ class POD_8206HR(POD_Basics) :
         self._commands.AddCommand(106, 'GET TTL PORT',         (0,),       (U8,),     False   )
         self._commands.AddCommand(107, 'GET FILTER CONFIG',    (0,),       (U8,),     False   )
         self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True    )     # see _Read_Binary()
+        # preamplifier gain (should be 10x or 100x)
+        if(preampGain != 10 and preampGain != 100):
+            raise Exception('[!] Preamplifier gain must be 10 or 100.')
+        self._preampGain = preampGain 
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -75,8 +79,7 @@ class POD_8206HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    @staticmethod
-    def TranslatePODpacket_Binary(msg): 
+    def TranslatePODpacket_Binary(self, msg): 
         # unpack parts of POD packet into dict
         msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
         # initialize dictionary for translated values 
@@ -85,9 +88,9 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt(msgDict['Packet #'])
         msgDictTrans['TTL']             = POD_Packets.BinaryBytesToInt(msgDict['TTL'])
-        msgDictTrans['Ch0']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch0'])
-        msgDictTrans['Ch1']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch1'])
-        msgDictTrans['Ch2']             = POD_8206HR.BinaryBytesToVoltage(msgDict['Ch2'])
+        msgDictTrans['Ch0']             = self.BinaryBytesToVoltage(msgDict['Ch0'])
+        msgDictTrans['Ch1']             = self.BinaryBytesToVoltage(msgDict['Ch1'])
+        msgDictTrans['Ch2']             = self.BinaryBytesToVoltage(msgDict['Ch2'])
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -108,26 +111,23 @@ class POD_8206HR(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg):
-        # determine what type of pod packet using length of msg
-        length = len(msg)
         # message is binary 
-        if(length == POD_8206HR.__B4LENGTH) : 
-            return( POD_8206HR.TranslatePODpacket_Binary(msg) ) 
+        if(len(msg) == POD_8206HR.__B4LENGTH) : 
+            return( self.TranslatePODpacket_Binary(msg) ) 
         # message may be standard (length checked within unpacking function )
         else :
-            return( POD_8206HR.TranslatePODpacket_Standard(self,msg) )
+            return( self.TranslatePODpacket_Standard(msg) )
 
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
-    @staticmethod
-    def BinaryBytesToVoltage(value, preampGain=10, systemGain=50):
+    def BinaryBytesToVoltage(self, value):
         # convert binary message from POD to integer
-        value_int = POD_Packets.BinaryBytesToInt(value,byteorder='little')
+        value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
         voltageADC = ( value_int / 65535 ) * 4.096 #V
-        totalGain = preampGain * systemGain
+        totalGain = self._preampGain * 50.2918
         realValue = ( voltageADC - 2.048 ) / totalGain
         # return the real value at input to preamplifier 
         return(realValue) #V 
