@@ -1,4 +1,4 @@
-# venv 
+# enviornment 
 import os
 import sys
 import texttable
@@ -12,7 +12,7 @@ from PodDevice_8206HR       import POD_8206HR
 # DONE - get port from comport list
 # DONE - create pod device and connect to comport 
 # DONE - setup sample rate, LP1, LP2, LP3
-# - set preamp gain 
+# DONE - set preamp gain 
 # - setup TTL stuff ???
 # DONE - setup file to save to
 # DONE - start streaming
@@ -87,60 +87,6 @@ class Setup_8206HR :
 
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
-    
-
-    # ------------ STREAM ------------ 
-
-
-    def _AskToStopStream(self):
-        # get any input from user 
-        input('\nPress Enter to stop streaming:')
-        # tell devices to stop streaming 
-        for pod in self._podDevices.values() : 
-            pod.WritePacket(cmd='STREAM', payload=0)
-        print('Finishing up...')
-
-
-    @staticmethod
-    def _StreamUntilStop(pod, file):
-        # write start streaming command to pod device 
-        startAt = pod.WriteRead(cmd='STREAM', payload=1)
-        # get packet to mark stop streaming 
-        stopAt  = pod.GetPODpacket(cmd='STREAM', payload=0)
-        # start reading 
-        reading = True
-        while(reading) : 
-            # read POD device 
-            r = pod.ReadPODpacket()
-            # check what was read
-            if(r == stopAt) : 
-                reading = False
-            elif(r != startAt) : 
-                # write what is read to file 
-                data = pod.TranslatePODpacket(r)
-                Setup_8206HR._WriteDataToFile(data, file)
-
-
-    def _StreamThreading(self) :
-        # create save files for pod devices
-        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
-        # make threads
-        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,podFiles[devNum])) for devNum,pod in self._podDevices.items()}
-        userThread  = threading.Thread(target=self._AskToStopStream)
-        # start streaming 
-        for t in readThreads.values() : t.start()
-        userThread.start()
-        # join all threads - wait until all threads are finished before continuing 
-        userThread.join()
-        for t in readThreads.values() : t.join()
-        # close all files 
-        for file in podFiles.values() : file.close()
-        print('Save complete!')
-
-    
-    def _Stream(self) :
-        # start stream
-        self._TimeFunc(self._StreamThreading)
 
    
     # ------------ DEVICES ------------
@@ -507,6 +453,60 @@ class Setup_8206HR :
         line = ','.join(str(x) for x in data) + '\n'
         # write data to file 
         file.write(line)
+
+
+    # ------------ STREAM ------------ 
+
+
+    def _AskToStopStream(self):
+        # get any input from user 
+        input('\nPress Enter to stop streaming:')
+        # tell devices to stop streaming 
+        for pod in self._podDevices.values() : 
+            pod.WritePacket(cmd='STREAM', payload=0)
+        print('Finishing up...')
+
+
+    @staticmethod
+    def _StreamUntilStop(pod, file):
+        # write start streaming command to pod device 
+        startAt = pod.WriteRead(cmd='STREAM', payload=1)
+        # get packet to mark stop streaming 
+        stopAt  = pod.GetPODpacket(cmd='STREAM', payload=0)
+        # start reading 
+        reading = True
+        while(reading) : 
+            # read POD device 
+            r = pod.ReadPODpacket()
+            # check what was read
+            if(r == stopAt) : 
+                reading = False
+            elif(r != startAt) : 
+                # write what is read to file 
+                data = pod.TranslatePODpacket(r)
+                Setup_8206HR._WriteDataToFile(data, file)
+
+
+    def _StreamThreading(self) :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads
+        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,podFiles[devNum])) for devNum,pod in self._podDevices.items()}
+        userThread  = threading.Thread(target=self._AskToStopStream)
+        # start streaming 
+        for t in readThreads.values() : t.start()
+        userThread.start()
+        # join all threads - wait until all threads are finished before continuing 
+        userThread.join()
+        for t in readThreads.values() : t.join()
+        # close all files 
+        for file in podFiles.values() : file.close()
+        print('Save complete!')
+
+    
+    def _Stream(self) :
+        # start stream
+        self._TimeFunc(self._StreamThreading)
 
 
     # ------------ OPTIONS ------------

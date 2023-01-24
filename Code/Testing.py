@@ -1,7 +1,7 @@
-from SerialCommunication    import COM_io
-from BasicPodProtocol       import POD_Basics
-from PodDevice_8206HR       import POD_8206HR
-from PodCommands            import POD_Commands
+# from SerialCommunication    import COM_io
+# from BasicPodProtocol       import POD_Basics
+# from PodDevice_8206HR       import POD_8206HR
+# from PodCommands            import POD_Commands
 from Setup_8206HR           import Setup_8206HR
 
 # # get port list 
@@ -139,14 +139,14 @@ from Setup_8206HR           import Setup_8206HR
 
 param1 = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 9600, 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
 
-param2 = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 9600, 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}},
-          2: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 9600, 'Sample Rate': 100, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
+param2 = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Baud Rate': 9600, 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
+          2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Baud Rate': 9600, 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
 
 path = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
 
-# go = Setup_8206HR(saveFile=path, podParametersDict=param1)
+go = Setup_8206HR(saveFile=path, podParametersDict=param1)
 # go = Setup_8206HR(saveFile=path, podParametersDict=param2)
-go = Setup_8206HR()
+# go = Setup_8206HR()
 
 go.Run()
 
