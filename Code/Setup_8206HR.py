@@ -55,7 +55,7 @@ class Setup_8206HR :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
-    def SetupPODparameters(self, podParametersDict):
+    def SetupPODparameters(self, podParametersDict=None):
         # get dictionary of POD device parameters
         if(podParametersDict==None):
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
@@ -67,7 +67,7 @@ class Setup_8206HR :
         self._ConnectAllPODdevices()
 
 
-    def SetupSaveFile(self, saveFile):
+    def SetupSaveFile(self, saveFile=None):
         # initialize file name and path 
         if(saveFile == None) :
             self._saveFileName = self._GetFilePath()
@@ -261,9 +261,9 @@ class Setup_8206HR :
     def _ChooseLowpass():
         # get lowpass for all EEG
         return({
-            'EEG1'      : Setup_8206HR._ChooseLowpassForEEG(0),
-            'EEG2'      : Setup_8206HR._ChooseLowpassForEEG(1),
-            'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG(2),
+            'EEG1'      : Setup_8206HR._ChooseLowpassForEEG('EEG1'),
+            'EEG2'      : Setup_8206HR._ChooseLowpassForEEG('EEG2'),
+            'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG('EEG3/EMG'),
         })
 
 
@@ -271,7 +271,7 @@ class Setup_8206HR :
     def _ChooseLowpassForEEG(eeg):
         try : 
             # get lowpass from user 
-            lowpass = int(input('Set lowpass (Hz) for EEG'+str(eeg)+': '))
+            lowpass = int(input('Set lowpass (Hz) for '+str(eeg)+': '))
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
@@ -544,10 +544,10 @@ class Setup_8206HR :
 
     @staticmethod
     def _AskYN(question) : 
-        response = input(str(question)+' (y/n): ')
-        if(response=='y' or response=='Y' or response=='yes' or response=='Yes'):
+        response = input(str(question)+' (y/n): ').upper() 
+        if(response=='Y' or response=='YES'):
             return(True)
-        elif(response=='n' or response=='N' or response=='no' or response=='No'):
+        elif(response=='N' or response=='NO'):
             return(False)
         else:
             print('[!] Please enter \'y\' or \'n\'.')
@@ -558,8 +558,12 @@ class Setup_8206HR :
     def _TimeFunc(func) : 
         # start time 
         ti = time.time()
-        # function 
+        # run function 
         func()
         # stop time
         tf = time.time()
-        print('\nExecution time:', str(round(tf-ti,3)), 'sec')
+        # calculate time difference
+        dt = round(tf-ti,3)
+        # print and return execultion time 
+        print('\nExecution time:', str(dt), 'sec')
+        return(dt)

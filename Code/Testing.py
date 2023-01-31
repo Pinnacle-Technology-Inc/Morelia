@@ -145,9 +145,9 @@ param2 = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preampli
 
 path = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
 
-# go = Setup_8206HR(saveFile=path, podParametersDict=param1)
+go = Setup_8206HR(saveFile=path, podParametersDict=param1)
 # go = Setup_8206HR(saveFile=path, podParametersDict=param2)
-go = Setup_8206HR()
+# go = Setup_8206HR()
 
 go.Run()
 
