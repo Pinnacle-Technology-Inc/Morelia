@@ -21,9 +21,6 @@ from PodDevice_8206HR       import POD_8206HR
 # N/A  - make plot using data
 # DONE - save data to file 
 
-# NOTE
-# baudrate is irrelevant for this pod device 
-
 class Setup_8206HR : 
 
 
@@ -99,7 +96,7 @@ class Setup_8206HR :
     def _SetNumberOfDevices() : 
         try : 
             # request user imput
-            n = int(input('How many POD devices do you want to use?: '))
+            n = int(input('\nHow many POD devices do you want to use?: '))
             # number must be positive
             if(n<=0):
                 print('[!] Number must be greater than zero.')
@@ -133,7 +130,7 @@ class Setup_8206HR :
             # get port name 
             port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'], baudrate=deviceParams['Baud Rate'])
+            self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
             # write setup parameters
             self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
             self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
@@ -178,7 +175,6 @@ class Setup_8206HR :
     def _GetParam_onePODdevice(forbiddenNames) : 
         return({
                 'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
-                'Baud Rate'         : Setup_8206HR._ChooseBaudrate(),
                 'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
                 'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
                 'Low Pass'          : Setup_8206HR._ChooseLowpass()
@@ -224,28 +220,7 @@ class Setup_8206HR :
                 portList = [x for x in portListAll if x not in forbidden]
         # return port
         return(portList)
-        
-
-    @staticmethod
-    def _ChooseBaudrate(useDefault=False, defaultValue=9600):
-        # return default
-        if(useDefault):
-            return(defaultValue)
-        # else use user input 
-        try : 
-            # request user imput
-            n = int(input('Set baud rate: '))
-            # number must be positive
-            if(n<=0):
-                print('[!] Number must be greater than zero.')
-                return(Setup_8206HR._ChooseBaudrate(useDefault,defaultValue))
-            # return baudrate
-            return(n)
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseBaudrate(useDefault,defaultValue))
-            
+    
 
     @staticmethod
     def _ChooseSampleRate():
@@ -378,10 +353,10 @@ class Setup_8206HR :
         # setup table 
         tab = texttable.Texttable()
         # write column names
-        tab.header(['Device #','Port','Baud Rate','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        tab.header(['Device #','Port','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val['Port'], val['Baud Rate'], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key, val['Port'], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
         
