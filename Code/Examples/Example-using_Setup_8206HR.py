@@ -1,7 +1,7 @@
 """
 Example that demonstrates how to run Setup_8206HR. 
 """
-# set path to Code/Modules
+# set path to <path>\Python-POD-API\Code\Modules
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
 
@@ -55,7 +55,7 @@ elif(runExample == '2'):
 
     # create object to setup 8206HR POD devices
     """
-    Setting the saveFile and podParametersDict method parameters will satisfy the initialization steps. 
+    Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """
     go = Setup_8206HR(saveFile=path, podParametersDict=params)
 
