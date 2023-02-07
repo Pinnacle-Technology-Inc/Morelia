@@ -469,11 +469,6 @@ class Setup_8206HR :
         for file in podFiles.values() : file.close()
         print('Save complete!')
 
-        # TODO write execution time to file
-        # - split _StreamThreading into two functions. 
-        # - Toplevel function should create files, run secondary function (make threads then start and join them) and get execution time, 
-        #   then write time to end of each file ("# Excecution time, dt, sec"), then print execution time and "save complete!"
-
 
     # ------------ OPTIONS ------------
 
