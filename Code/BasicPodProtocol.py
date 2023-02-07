@@ -1,6 +1,18 @@
+"""
+POD_Basics handles basic communication with a POD device, including reading and writing packets and packet interpretation.
+"""
+
+# local imports
 from SerialCommunication    import COM_io
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
+
+# authorship
+__author__      = "Thresa Kelly"
+__email__       = "sales@pinnaclet.com"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__maintainer__  = "Thresa Kelly"
+__date__        = "02/07/2023"
 
 class POD_Basics : 
 

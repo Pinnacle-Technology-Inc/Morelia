@@ -1,5 +1,16 @@
-# imports
+"""
+Example that demonstrates how to run Setup_8206HR. 
+"""
+
+# local imports
 from Setup_8206HR import Setup_8206HR
+
+# authorship
+__author__      = "Thresa Kelly"
+__email__       = "sales@pinnaclet.com"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__maintainer__  = "Thresa Kelly"
+__date__        = "01/31/2023"
 
 # choose which example to run 
 runExample = input('\nWhat example do you want to run?: ')

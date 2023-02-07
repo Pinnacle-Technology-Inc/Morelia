@@ -1,13 +1,23 @@
-# enviornment 
+"""
+Setup_8206HR allows a user to set up and stream from any number of 8206HR POD devices. The streamed data is saved to a file. 
+"""
+
+# enviornment imports
 import os
 import sys
 import texttable
 import threading 
 import time 
-# local 
+# local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
 
+# authorship
+__author__      = "Thresa Kelly"
+__email__       = "sales@pinnaclet.com"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__maintainer__  = "Thresa Kelly"
+__date__        = "02/07/2023"
 
 class Setup_8206HR : 
 

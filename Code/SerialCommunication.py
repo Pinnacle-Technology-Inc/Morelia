@@ -1,6 +1,17 @@
+"""
+COM_io handles serial communication (read/write) using COM ports. 
+"""
+
+# enviornment imports 
 import serial.tools.list_ports
 
-# read and write to serial COM ports 
+# authorship
+__author__      = "Thresa Kelly"
+__email__       = "sales@pinnaclet.com"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__maintainer__  = "Thresa Kelly"
+__date__        = "12/19/2022"
+
 class COM_io : 
 
     # ====== STATIC METHODS ======

@@ -1,6 +1,18 @@
+"""
+POD_8206HR handles communication using an 8206HR POD device. 
+"""
+
+# local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
+
+# authorship
+__author__      = "Thresa Kelly"
+__email__       = "sales@pinnaclet.com"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__maintainer__  = "Thresa Kelly"
+__date__        = "02/07/2023"
 
 class POD_8206HR(POD_Basics) : 
 
