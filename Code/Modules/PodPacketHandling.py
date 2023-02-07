@@ -4,9 +4,9 @@ POD_Packets is a collection of methods for creating and interpreting POD packets
 
 # authorship
 __author__      = "Thresa Kelly"
-__email__       = "sales@pinnaclet.com"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __maintainer__  = "Thresa Kelly"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__email__       = "sales@pinnaclet.com"
 __date__        = "01/24/2023"
 
 class POD_Packets() : 

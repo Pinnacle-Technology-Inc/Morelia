@@ -4,9 +4,9 @@ POD_Commands manages a dictionary containing available commands for a POD device
 
 # authorship
 __author__      = "Thresa Kelly"
-__email__       = "sales@pinnaclet.com"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __maintainer__  = "Thresa Kelly"
+__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__email__       = "sales@pinnaclet.com"
 __date__        = "12/16/2022"
 
 class POD_Commands : 
