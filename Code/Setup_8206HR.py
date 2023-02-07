@@ -8,18 +8,6 @@ import time
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
 
-# TODO
-# DONE - get port from comport list
-# DONE - create pod device and connect to comport 
-# DONE - setup sample rate, LP1, LP2, LP3
-# DONE - set preamp gain 
-# - setup TTL stuff ???
-# DONE - setup file to save to
-# DONE - start streaming
-# DONE - continually get data
-# DONE - stop streaming 
-# N/A  - make plot using data
-# DONE - save data to file 
 
 class Setup_8206HR : 
 
