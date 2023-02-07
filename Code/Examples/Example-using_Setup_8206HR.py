@@ -1,6 +1,9 @@
 """
 Example that demonstrates how to run Setup_8206HR. 
 """
+# set path to Code/Modules
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
 
 # local imports
 from Setup_8206HR import Setup_8206HR
