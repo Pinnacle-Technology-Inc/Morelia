@@ -528,17 +528,6 @@ class Setup_8206HR :
         return(choice)
 
 
-# self._options = { # NOTE if you change this, be sure to update _DoOption()
-#             1 : 'Start Streaming.',
-#             2 : 'Show current settings.',
-#             3 : 'Edit POD device parameters.',
-#             4 : 'Edit save file path',
-#             5 : 'Connect a new POD device.',
-#             6 : 'Reconnect current POD devices.',
-#             7 : 'Generate initialization code.', 
-#             8 : 'Quit.'
-#         }
-
     def _DoOption(self, choice) : 
         # Start Streaming.
         if  (choice == 1):  
@@ -550,7 +539,7 @@ class Setup_8206HR :
         # Edit save file path.
         elif(choice == 3):  
             self._saveFileName = self._GetFilePath()
-        # Edit POD device parameters
+        # Edit POD device parameters.
         elif(choice == 4):  
             self._DisplayPODdeviceParameters()
             self._EditParams()
@@ -589,16 +578,10 @@ class Setup_8206HR :
 
     @staticmethod
     def _TimeFunc(func) : 
-        # start time 
-        ti = time.time()
-        # run function 
-        func()
-        # stop time
-        tf = time.time()
-        # calculate time difference
-        dt = round(tf-ti,3)
-        # print and return execultion time 
-        print('\nExecution time:', str(dt), 'sec')
+        ti = time.time() # start time 
+        func() # run function 
+        dt = round(time.time()-ti,3) # calculate time difference
+        print('\nExecution time:', str(dt), 'sec') # print and return execultion time 
         return(dt)
 
     @staticmethod
