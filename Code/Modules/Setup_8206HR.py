@@ -31,15 +31,14 @@ class Setup_8206HR :
         self._podParametersDict = {}
         self._saveFileName = ''
         self._options = { # NOTE if you change this, be sure to update _DoOption()
-            1 : 'Print dictionary of POD devices.',
-            2 : 'Show table of POD devices.',
-            3 : 'Edit POD device settings.',
-            4 : 'Connect a new POD device.',
-            5 : 'Reconnect current POD devices.',
-            6 : 'Setup save file for streaming.',
-            7 : 'Print save file name and path.',
-            8 : 'Start Streaming.',
-            9 : 'Quit.'
+            1 : 'Start Streaming.',
+            2 : 'Show current settings.',
+            3 : 'Edit POD device parameters.',
+            4 : 'Edit save file path.',
+            5 : 'Connect a new POD device.',
+            6 : 'Reconnect current POD devices.',
+            7 : 'Generate initialization code.', 
+            8 : 'Quit.'
         }
         # setup 
         self.SetupPODparameters(podParametersDict)
@@ -530,36 +529,45 @@ class Setup_8206HR :
         return(choice)
 
 
+# self._options = { # NOTE if you change this, be sure to update _DoOption()
+#             1 : 'Start Streaming.',
+#             2 : 'Show current settings.',
+#             3 : 'Edit POD device parameters.',
+#             4 : 'Edit save file path',
+#             5 : 'Connect a new POD device.',
+#             6 : 'Reconnect current POD devices.',
+#             7 : 'Generate initialization code.', 
+#             8 : 'Quit.'
+#         }
+
     def _DoOption(self, choice) : 
-        # Print dictionary of POD devices.
-        if  (choice == 1):
-            self._PrintPODdeviceParamDict()
-        # Show Current POD devices.
+        # Start Streaming.
+        if  (choice == 1):  
+            self._Stream()
+        # Show current settings.
         elif(choice == 2):  
             self._DisplayPODdeviceParameters()
-        # Edit POD device settings.
+            self._PrintSaveFile()
+        # Edit save file path.
         elif(choice == 3):  
             self._DisplayPODdeviceParameters()
             self._EditParams()
             self._ValidateParams()
             self._ConnectAllPODdevices()
-        # Add a POD device.
+        # Edit save file path.
         elif(choice == 4):  
+            self._saveFileName = self._GetFilePath()
+        # Connect a new POD device.
+        elif(choice == 5):  
             self._AddPODdevice()
             self._ValidateParams()
             self._ConnectAllPODdevices()
-        # Reconnect current POD devices
-        elif(choice == 5):
+        # Reconnect current POD devices.
+        elif(choice == 6):  
             self._ConnectAllPODdevices()
-        # Setup save file for streaming.
-        elif(choice == 6): 
-            self._saveFileName = self._GetFilePath()
-        # Print save file name and path.
-        elif(choice == 7): 
-            self._PrintSaveFile()
-        # Start Streaming.
-        elif(choice == 8): 
-            self._Stream()
+        # Generate initialization code.
+        elif(choice == 7):  
+            pass
         # Quit.
         else:               
             print('\nQuitting...\n')
