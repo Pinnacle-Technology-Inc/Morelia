@@ -555,7 +555,7 @@ class Setup_8206HR :
             self._ConnectAllPODdevices()
         # Generate initialization code.
         elif(choice == 7):  
-            pass
+            self.PrintInitCode()
         # Quit.
         else:               
             print('\nQuitting...\n')
@@ -584,6 +584,7 @@ class Setup_8206HR :
         print('\nExecution time:', str(dt), 'sec') # print and return execultion time 
         return(dt)
 
+
     @staticmethod
     def TestDeviceConnection(pod):
         # returns True when connection is successful, false otherwise
@@ -594,6 +595,7 @@ class Setup_8206HR :
         # check that read matches ping write
         if(w==r):   return(True)
         else:       return(False)
+
 
     def TestDeviceConnection_All(self) :
         allGood = True
@@ -608,3 +610,13 @@ class Setup_8206HR :
                 allGood = False 
         # return True when all connections are successful, false otherwise
         return(allGood)
+
+
+    def PrintInitCode(self):
+        print(
+            '\n' + 
+            'saveFile = \'' + str(self._saveFileName) + '\'\n' + 
+            'podParametersDict = ' + str(self._podParametersDict)  + '\n' + 
+            'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
+            'go.Run()'
+        )

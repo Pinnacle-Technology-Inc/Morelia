@@ -47,17 +47,17 @@ elif(runExample == '2'):
     print('~~ Example 2: using initialization options ~~')
 
     # example dictionary of 8206HR POD device setup parameters
-    params = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
-              2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
+    podParametersDict = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
+                        2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
     
     # example path and file name to save streaming data to. Note that the POD device number will be appended to the end of the filename.
-    path = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
+    saveFile = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
 
     # create object to setup 8206HR POD devices
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """
-    go = Setup_8206HR(saveFile=path, podParametersDict=params)
+    go = Setup_8206HR(saveFile, podParametersDict)
 
     # start the program 
     go.Run()
