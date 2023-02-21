@@ -130,7 +130,7 @@ class Setup_8206HR :
             # create POD device 
             self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
             # test if connection is successful
-            if(self.TestDeviceConnection(self._podDevices[deviceNum])):
+            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
                 # write setup parameters
                 self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
@@ -144,7 +144,8 @@ class Setup_8206HR :
             print('Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
         else :
             print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
-
+        # return True when connection successful, false otherwise
+        return(not failed)
 
     def _AddPODdevice(self):
         nextNum = max(self._podParametersDict.keys())+1
@@ -496,7 +497,7 @@ class Setup_8206HR :
 
     def _Stream(self) : 
         # check for good connection 
-        if(not self.TestDeviceConnection_All): 
+        if(not self._TestDeviceConnection_All): 
             print('Could not stream.')
         # start streaming from all devices 
         else:
@@ -555,7 +556,7 @@ class Setup_8206HR :
             self._ConnectAllPODdevices()
         # Generate initialization code.
         elif(choice == 7):  
-            self.PrintInitCode()
+            self._PrintInitCode()
         # Quit.
         else:               
             print('\nQuitting...\n')
@@ -586,7 +587,7 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def TestDeviceConnection(pod):
+    def _TestDeviceConnection(pod):
         # returns True when connection is successful, false otherwise
         try:
             w = pod.WritePacket(cmd='PING')
@@ -597,11 +598,11 @@ class Setup_8206HR :
         else:       return(False)
 
 
-    def TestDeviceConnection_All(self) :
+    def _TestDeviceConnection_All(self) :
         allGood = True
         for key,val in self._podParametersDict.items():
             # test connection of each pod device
-            if(not self.TestDeviceConnection(val)) : 
+            if(not self._TestDeviceConnection(val)) : 
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
@@ -612,7 +613,7 @@ class Setup_8206HR :
         return(allGood)
 
 
-    def PrintInitCode(self):
+    def _PrintInitCode(self):
         print(
             '\n' + 
             'saveFile = \'' + str(self._saveFileName) + '\'\n' + 
