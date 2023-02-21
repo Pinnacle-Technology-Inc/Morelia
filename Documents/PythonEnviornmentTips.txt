@@ -47,7 +47,7 @@ Install python packages while in env:
 Install all required packages while in env:
 
     >> cd <path>\Python-POD-API\Documents
-    >> pip install -r PyEnvRequirements.txt.txt
+    >> pip install -r PyEnvRequirements.txt
 
 
 Get list of packages in env:
