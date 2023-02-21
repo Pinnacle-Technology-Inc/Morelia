@@ -423,15 +423,15 @@ class Setup_8206HR :
         # open file to write to 
         f = open(fname, 'w')
         # write column names to header
-        f.write('Packet #,TTL,ch0,ch1,ch2\n')
+        f.write('time,TTL,ch0,ch1,ch2\n')
         # return file 
         return(f)
 
 
     @staticmethod
-    def _WriteDataToFile(data, file):
+    def _WriteDataToFile(t, data, file):
         # get useful data in list 
-        data = [data['Packet #'], data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
+        data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
         # convert data into comma separated string
         line = ','.join(str(x) for x in data) + '\n'
         # write data to file 
@@ -451,54 +451,58 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _StreamUntilStop(pod, file):
-        # write start streaming command to pod device 
-        startAt = pod.WriteRead(cmd='STREAM', payload=1)
-        # get packet to mark stop streaming 
-        stopAt  = pod.GetPODpacket(cmd='STREAM', payload=0)
-        # start reading 
-        reading = True
-        while(reading) : 
-            # read POD device 
-            r = pod.ReadPODpacket()
-            # check what was read
-            if(r == stopAt) : 
-                reading = False
-            elif(r != startAt) : 
-                # write what is read to file 
-                data = pod.TranslatePODpacket(r)
-                Setup_8206HR._WriteDataToFile(data, file)
+    def _StreamUntilStop(pod, file, sampleRate):
+        # initialization
+        t = 0   # current time 
+        dt = 1.0 / sampleRate   # time to take each sample 
+        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  # packet to mark stop streaming 
+        # start streaming from device  
+        pod.WriteRead(cmd='STREAM', payload=1)
+        while(True) : 
+            r = pod.ReadPODpacket() # read from POD device 
+            if(r == stopAt) : break # stop looping when stop stream command is read 
+            Setup_8206HR._WriteDataToFile(t, pod.TranslatePODpacket(r), file)   # write what is read to file 
+            t = round(t+dt, 6)  # increment time, rounding to 6 decimal places
 
 
     def _StreamThreading(self) :
-        # test connections before streaming
-        fail = False
-        for key,val in self._podParametersDict.items():
-            if(not self.TestDeviceConnection(val)) : 
-                # write newline for first bad connection 
-                if(fail==False) : print('') 
-                # print error message
-                print('Failed to connect POD device #'+str(key)+'.')
-                fail = True 
-        # stop function if connection failed 
-        if(fail) : 
-            print('Could not stream.')
-            return
-
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
-        # make threads
-        readThreads = {devNum: threading.Thread(target=self._StreamUntilStop, args=(pod,podFiles[devNum])) for devNum,pod in self._podDevices.items()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : threading.Thread(
+                    target = Setup_8206HR._StreamUntilStop, 
+                    args = ( pod, file, params['Sample Rate'] )
+                )
+            # for each device 
+            for devNum,params,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podParametersDict.values(),   # params
+                    self._podDevices.values(),          # pod
+                    podFiles.values()                   # file
+                ) 
+        }
+        # make thread for user input 
         userThread  = threading.Thread(target=self._AskToStopStream)
         # start streaming 
         for t in readThreads.values() : t.start()
         userThread.start()
-        # join all threads - wait until all threads are finished before continuing 
+        # join all threads --> waits until all threads are finished before continuing 
         userThread.join()
         for t in readThreads.values() : t.join()
         # close all files 
         for file in podFiles.values() : file.close()
         print('Save complete!')
+
+    def _Stream(self) : 
+        # check for good connection 
+        if(not self.TestDeviceConnection_All): 
+            print('Could not stream.')
+        # start streaming from all devices 
+        else:
+            self._TimeFunc(self._StreamThreading)
 
 
     # ------------ OPTIONS ------------
@@ -555,7 +559,7 @@ class Setup_8206HR :
             self._PrintSaveFile()
         # Start Streaming.
         elif(choice == 8): 
-            self._TimeFunc(self._StreamThreading)
+            self._Stream()
         # Quit.
         else:               
             print('\nQuitting...\n')
@@ -592,12 +596,25 @@ class Setup_8206HR :
 
     @staticmethod
     def TestDeviceConnection(pod):
+        # returns True when connection is successful, false otherwise
         try:
             w = pod.WritePacket(cmd='PING')
             r = pod.ReadPODpacket()
-        except:
-            return(False)
-        if(w==r):
-            return(True)
-        else:
-            return(False)
+        except:     return(False)
+        # check that read matches ping write
+        if(w==r):   return(True)
+        else:       return(False)
+
+    def TestDeviceConnection_All(self) :
+        allGood = True
+        for key,val in self._podParametersDict.items():
+            # test connection of each pod device
+            if(not self.TestDeviceConnection(val)) : 
+                # write newline for first bad connection 
+                if(allGood==True) : print('') 
+                # print error message
+                print('Connection issue with POD device #'+str(key)+'.')
+                # flag that a connection failed
+                allGood = False 
+        # return True when all connections are successful, false otherwise
+        return(allGood)
