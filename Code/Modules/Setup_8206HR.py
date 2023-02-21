@@ -4,7 +4,6 @@ Setup_8206HR allows a user to set up and stream from any number of 8206HR POD de
 
 # enviornment imports
 import os
-import sys
 import texttable
 import threading 
 import time 
@@ -146,6 +145,7 @@ class Setup_8206HR :
             print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
         return(not failed)
+
 
     def _AddPODdevice(self):
         nextNum = max(self._podParametersDict.keys())+1

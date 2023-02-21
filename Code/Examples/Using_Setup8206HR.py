@@ -1,7 +1,7 @@
 """
 Example that demonstrates how to run Setup_8206HR. 
 """
-# set path to <path>\Python-POD-API\Code\Modules
+# set path to <local path>\Python-POD-API\Code\Modules
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
 
@@ -20,7 +20,7 @@ runExample = input('\nWhat example do you want to run?: ')
 
 # ===== EXAMPLE 1: FIRST TIME SETUP =====
 if(runExample == '1'): 
-    print('~~ Example 1: first time setup ~~')
+    print('~~ Example 1: First Time Setup ~~')
 
     # create object to setup 8206HR POD devices.
     """
@@ -44,15 +44,15 @@ elif(runExample == '2'):
     NOTE: the params and path variables are for reference only. These will likely not work 
     on your computer. Follow Example 1 to get params and path that work for you. 
     """
-    print('~~ Example 2: using initialization options ~~')
+    print('~~ Example 2: Using Initialization Options ~~')
 
-    # example dictionary of 8206HR POD device setup parameters
-    podParametersDict = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
-                        2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
-    
     # example path and file name to save streaming data to. Note that the POD device number will be appended to the end of the filename.
     saveFile = 'C:\\Users\\tkelly\\Desktop\\TEST\\test.csv'
-
+    
+    # example dictionary of 8206HR POD device setup parameters
+    podParametersDict = {1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
+                         2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}
+    
     # create object to setup 8206HR POD devices
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
@@ -62,5 +62,6 @@ elif(runExample == '2'):
     # start the program 
     go.Run()
 
+# ===== BAD INPUT =====
 else:
     print('[!] There is no example', runExample)
