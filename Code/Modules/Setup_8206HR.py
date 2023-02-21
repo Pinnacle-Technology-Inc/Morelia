@@ -35,10 +35,11 @@ class Setup_8206HR :
             2 : 'Show table of POD devices.',
             3 : 'Edit POD device settings.',
             4 : 'Connect a new POD device.',
-            5 : 'Setup save file for streaming.',
-            6 : 'Print save file name and path.',
-            7 : 'Start Streaming.',
-            8 : 'Quit.'
+            5 : 'Reconnect current POD devices.',
+            6 : 'Setup save file for streaming.',
+            7 : 'Print save file name and path.',
+            8 : 'Start Streaming.',
+            9 : 'Quit.'
         }
         # setup 
         self.SetupPODparameters(podParametersDict)
@@ -124,21 +125,27 @@ class Setup_8206HR :
                 
 
     def _ConnectPODdevice(self, deviceNum, deviceParams) : 
+        failed = True 
         try : 
             # get port name 
             port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
             # create POD device 
             self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
-            # write setup parameters
-            self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
-            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
-            self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))
-            # done 
-            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
-        except : 
+            # test if connection is successful
+            if(self.TestDeviceConnection(self._podDevices[deviceNum])):
+                # write setup parameters
+                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
+                failed = False
+        except : pass
+
+        # check if connection failed 
+        if(failed) :
             print('Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-            sys.exit('[!] Fatal error... ending program.')  # TODO find a better way to address error instead of crashing 
+        else :
+            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
 
 
     def _AddPODdevice(self):
@@ -464,6 +471,20 @@ class Setup_8206HR :
 
 
     def _StreamThreading(self) :
+        # test connections before streaming
+        fail = False
+        for key,val in self._podParametersDict.items():
+            if(not self.TestDeviceConnection(val)) : 
+                # write newline for first bad connection 
+                if(fail==False) : print('') 
+                # print error message
+                print('Failed to connect POD device #'+str(key)+'.')
+                fail = True 
+        # stop function if connection failed 
+        if(fail) : 
+            print('Could not stream.')
+            return
+
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
         # make threads
@@ -523,14 +544,17 @@ class Setup_8206HR :
             self._AddPODdevice()
             self._ValidateParams()
             self._ConnectAllPODdevices()
+        # Reconnect current POD devices
+        elif(choice == 5):
+            self._ConnectAllPODdevices()
         # Setup save file for streaming.
-        elif(choice == 5): 
+        elif(choice == 6): 
             self._saveFileName = self._GetFilePath()
         # Print save file name and path.
-        elif(choice == 6): 
+        elif(choice == 7): 
             self._PrintSaveFile()
         # Start Streaming.
-        elif(choice == 7): 
+        elif(choice == 8): 
             self._TimeFunc(self._StreamThreading)
         # Quit.
         else:               
@@ -565,3 +589,15 @@ class Setup_8206HR :
         # print and return execultion time 
         print('\nExecution time:', str(dt), 'sec')
         return(dt)
+
+    @staticmethod
+    def TestDeviceConnection(pod):
+        try:
+            w = pod.WritePacket(cmd='PING')
+            r = pod.ReadPODpacket()
+        except:
+            return(False)
+        if(w==r):
+            return(True)
+        else:
+            return(False)
