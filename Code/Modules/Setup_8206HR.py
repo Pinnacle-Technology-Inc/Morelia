@@ -33,8 +33,8 @@ class Setup_8206HR :
         self._options = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start Streaming.',
             2 : 'Show current settings.',
-            3 : 'Edit POD device parameters.',
-            4 : 'Edit save file path.',
+            3 : 'Edit save file path.',
+            4 : 'Edit POD device parameters.',
             5 : 'Connect a new POD device.',
             6 : 'Reconnect current POD devices.',
             7 : 'Generate initialization code.', 
@@ -60,7 +60,6 @@ class Setup_8206HR :
             self._ValidateParams()          # display parameters and allow user to edit them
         else:
             self._podParametersDict = podParametersDict
-            self._DisplayPODdeviceParameters()  # display table of all POD devies and parameters
         # connect and initialize all POD devices
         self._ConnectAllPODdevices()
 
@@ -550,13 +549,13 @@ class Setup_8206HR :
             self._PrintSaveFile()
         # Edit save file path.
         elif(choice == 3):  
+            self._saveFileName = self._GetFilePath()
+        # Edit POD device parameters
+        elif(choice == 4):  
             self._DisplayPODdeviceParameters()
             self._EditParams()
             self._ValidateParams()
             self._ConnectAllPODdevices()
-        # Edit save file path.
-        elif(choice == 4):  
-            self._saveFileName = self._GetFilePath()
         # Connect a new POD device.
         elif(choice == 5):  
             self._AddPODdevice()
