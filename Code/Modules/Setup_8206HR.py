@@ -497,7 +497,7 @@ class Setup_8206HR :
 
     def _Stream(self) : 
         # check for good connection 
-        if(not self._TestDeviceConnection_All): 
+        if(not self._TestDeviceConnection_All()): 
             print('Could not stream.')
         # start streaming from all devices 
         else:
