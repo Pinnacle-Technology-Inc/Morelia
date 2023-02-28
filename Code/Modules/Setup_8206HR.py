@@ -600,9 +600,9 @@ class Setup_8206HR :
 
     def _TestDeviceConnection_All(self) :
         allGood = True
-        for key,val in self._podParametersDict.items():
+        for key,pod in self._podDevices.items(): 
             # test connection of each pod device
-            if(not self._TestDeviceConnection(val)) : 
+            if(not self._TestDeviceConnection(pod)) : 
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
