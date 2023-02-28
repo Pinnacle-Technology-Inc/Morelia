@@ -616,7 +616,7 @@ class Setup_8206HR :
     def _PrintInitCode(self):
         print(
             '\n' + 
-            'saveFile = \'' + str(self._saveFileName) + '\'\n' + 
+            'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
             'podParametersDict = ' + str(self._podParametersDict)  + '\n' + 
             'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
