@@ -30,7 +30,7 @@ class Setup_8206HR :
         self._podParametersDict = {}
         self._saveFileName = ''
         self._options = { # NOTE if you change this, be sure to update _DoOption()
-            1 : 'Start Streaming.',
+            1 : 'Start streaming.',
             2 : 'Show current settings.',
             3 : 'Edit save file path.',
             4 : 'Edit POD device parameters.',
