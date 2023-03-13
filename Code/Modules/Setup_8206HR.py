@@ -379,7 +379,7 @@ class Setup_8206HR :
     def _BuildFileName(fileName, devNum) : 
         # build file name --> path\filename_<DEVICE#>.ext
         name, ext = osp.splitext(fileName)
-        fname = name+'_<deviceNumberHere>'+ext   
+        fname = name+'_'+str(devNum)+ext   
         return(fname)
 
     def _PrintSaveFile(self):
@@ -445,7 +445,7 @@ class Setup_8206HR :
 
     def _OpenSaveFile(self, devNum) : 
         # get file name and extension 
-        fname = Setup_8206HR._BuildFileName(self._saveFileName)
+        fname = Setup_8206HR._BuildFileName(self._saveFileName, devNum)
         p, ext = osp.splitext(fname)
         # open file based on extension type 
         f = None
@@ -504,7 +504,7 @@ class Setup_8206HR :
 
     @staticmethod
     def _WriteDataToFile_EDF(data, file) : 
-        data = np.array([data['Ch0'], data['Ch1'], data['Ch2']])
+        data = Setup_8206HR.uV( np.array([data['Ch0'], data['Ch1'], data['Ch2']]) ) 
         file.writePhysicalSamples(data)
         # TODO  i dont think this works. I think you need to save in sets of n=int(sample rate) or if file duration is known
         #       may have to save file at end and not continually...
