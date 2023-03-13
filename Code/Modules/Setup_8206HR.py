@@ -6,6 +6,7 @@ Setup_8206HR allows a user to set up and stream from any number of 8206HR POD de
 import texttable
 import threading 
 import time 
+import numpy                     as np
 from   os       import path      as osp
 from   pyedflib import EdfWriter as edfw
 
@@ -374,9 +375,17 @@ class Setup_8206HR :
     
     # ------------ FILE HANDLING ------------
 
+    @staticmethod
+    def _BuildFileName(fileName, devNum) : 
+        # build file name --> path\filename_<DEVICE#>.ext
+        name, ext = osp.splitext(fileName)
+        fname = name+'_<deviceNumberHere>'+ext   
+        return(fname)
 
     def _PrintSaveFile(self):
-        print('\nStreaming data will be saved to '+self._saveFileName)
+        # print name  
+        fname = Setup_8206HR._BuildFileName(self._saveFileName)
+        print('\nStreaming data will be saved to '+fname)
  
 
     @staticmethod
@@ -396,12 +405,10 @@ class Setup_8206HR :
         path = input('\nWhere would you like to save streaming data to?\nPath: ')
         # split into path/name and extension 
         name, ext = osp.splitext(path)
-
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
             # ask user for file name 
             fileName = Setup_8206HR._GetFileName()
-
             # add slash if path is given 
             if(name != ''): 
                 # check for slash 
@@ -409,13 +416,10 @@ class Setup_8206HR :
                     name = name+'/'
                 elif(not name.endswith('\\')) : 
                     name = name+'\\'
-
             # return complete path and filename 
             return(name+fileName)
-
         # prompt again if bad extension is given 
         elif( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFilePath())
-
         # path is correct
         else :
             return(path)
@@ -440,21 +444,43 @@ class Setup_8206HR :
 
 
     def _OpenSaveFile(self, devNum) : 
-        # build file name --> path\filename_<DEVICE#>.ext
-        name, ext = osp.splitext(self._saveFileName)
-        fname = name+'_'+str(devNum)+ext    
-
+        # get file name and extension 
+        fname = Setup_8206HR._BuildFileName(self._saveFileName)
+        p, ext = osp.splitext(fname)
+        # open file based on extension type 
         f = None
-        if(ext=='.csv' or ext=='.txt') :
-            # open file to write to 
-            f = open(fname, 'w')
-            # write column names to header
-            f.write('time,TTL,ch0,ch1,ch2\n')
-        
-        elif(ext=='.edf') : 
-            f = edfw(fname, 3) 
-            for i in range(3) :
-                f.setSamplefrequency(i, self._podParametersDict[devNum]['Sample Rate'])
+        if(ext=='.csv' or ext=='.txt') :    f = Setup_8206HR._OpenSaveFile_TXT(fname)
+        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
+        return(f)
+    
+
+    @staticmethod
+    def _OpenSaveFile_TXT(fname) : 
+        # open file and write column names 
+        f = open(fname, 'w')
+        f.write('time,TTL,ch0,ch1,ch2\n')
+        return(f)
+
+
+    def _OpenSaveFile_EDF(self,fname, devNum):
+        # create file
+        f = edfw(fname, 3) 
+        # get info for each channel
+        channel_info = []
+        for lable in ['EEG1', 'EEG2', 'EEG3/EMG']:
+            channel_info.append( {
+                'label' : lable,
+                'dimension' : 'uV',
+                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'physical_max': Setup_8206HR.uV(0.004069),
+                'physical_min': Setup_8206HR.uV(-0.004069), 
+                'digital_max': 8388607, 
+                'digital_min': -8388608, 
+                'transducer': '', 
+                'prefilter': ''            
+            } )
+        # write channel info to file 
+        f.setSignalHeader(channel_info)
         return(f)
 
 
@@ -462,17 +488,27 @@ class Setup_8206HR :
         # get file type
         name, ext = osp.splitext(self._saveFileName)
         # for text file 
-        if(ext=='.csv' or ext=='.txt') :
-            # get useful data in list 
-            data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
-            # convert data into comma separated string
-            line = ','.join(str(x) for x in data) + '\n'
-            # write data to file 
-            file.write(line)
+        if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(t, data, file)
         # for edf
-        if(ext=='.edf') :
-            data = [data['Ch0'], data['Ch1'], data['Ch2']]
-            file.writeSamples(data)
+        if(ext=='.edf') : Setup_8206HR._WriteDataToFile_EDF(data, file)
+            
+
+    @staticmethod
+    def _WriteDataToFile_TXT(t, data, file) : 
+        # get useful data in list 
+        data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
+        # convert data into comma separated string
+        line = ','.join(str(x) for x in data) + '\n'
+        # write data to file 
+        file.write(line)
+
+    @staticmethod
+    def _WriteDataToFile_EDF(data, file) : 
+        data = np.array([data['Ch0'], data['Ch1'], data['Ch2']])
+        file.writePhysicalSamples(data)
+        # TODO  i dont think this works. I think you need to save in sets of n=int(sample rate) or if file duration is known
+        #       may have to save file at end and not continually...
+
 
     # ------------ STREAM ------------ 
 
@@ -658,3 +694,7 @@ class Setup_8206HR :
             'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
+
+    @staticmethod
+    def uV(voltage):
+        return (voltage * 1E-6)
