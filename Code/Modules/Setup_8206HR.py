@@ -7,6 +7,7 @@ import os
 import texttable
 import threading 
 import time 
+import pyedflib  
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -67,6 +68,8 @@ class Setup_8206HR :
         # initialize file name and path 
         if(saveFile == None) :
             self._saveFileName = self._GetFilePath()
+            self._PrintSaveFile()
+
         else:
             self._saveFileName = saveFile
 
@@ -373,6 +376,17 @@ class Setup_8206HR :
  
 
     @staticmethod
+    def _CheckFileExt(f, fIsExt=True, goodExt=['.csv','.txt','.edf'], printErr=True) : 
+        # get extension 
+        if(not fIsExt) : name, ext = os.path.splitext(f)
+        else :  ext = f
+        # check if extension is allowed
+        if(ext not in goodExt) : 
+            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
+            return(False) # bad extension 
+        return(True)      # good extension 
+
+    @staticmethod
     def _GetFilePath() : 
         # ask user for path 
         path = input('\nWhere would you like to save streaming data to?\nPath: ')
@@ -383,18 +397,20 @@ class Setup_8206HR :
         if(ext == '') : 
             # ask user for file name 
             fileName = Setup_8206HR._GetFileName()
-            # check for slash 
-            if( ('/' in name) and (not name.endswith('/')) )  :
-                name = name+'/'
-            elif(not name.endswith('\\')) : 
-                name = name+'\\'
+
+            # add slash if path is given 
+            if(name != ''): 
+                # check for slash 
+                if( ('/' in name) and (not name.endswith('/')) )  :
+                    name = name+'/'
+                elif(not name.endswith('\\')) : 
+                    name = name+'\\'
+
             # return complete path and filename 
             return(name+fileName)
 
         # prompt again if bad extension is given 
-        elif(ext!='.csv' and ext!='.txt') : 
-            print('[!] Filename must end in .csv or .txt.')
-            return(Setup_8206HR._GetFilePath())
+        elif( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFilePath())
 
         # path is correct
         else :
@@ -404,13 +420,17 @@ class Setup_8206HR :
     @staticmethod
     def _GetFileName():
         # ask user for file name 
-        name, ext = os.path.splitext(input('File name: '))
+        inp = input('File name: ')
+        # prompt again if no name given
+        if(inp=='') : 
+            print('[!] No filename given.')
+            return(Setup_8206HR._GetFileName())
+        # get parts 
+        name, ext = os.path.splitext(inp)
         # default to csv if no extension is given
         if(ext=='') : ext='.csv'
         # check if extension is correct 
-        if(ext!='.csv' and ext!='.txt') : 
-            print('[!] Filename must end in .csv or .txt.')
-            return(Setup_8206HR._GetFileName())
+        if( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFileName())
         # return file name with extension 
         return(name+ext)
 
@@ -419,11 +439,17 @@ class Setup_8206HR :
         # build file name --> path\filename_<DEVICE#>.ext
         name, ext = os.path.splitext(self._saveFileName)
         fname = name+'_'+str(devNum)+ext    
-        # open file to write to 
-        f = open(fname, 'w')
-        # write column names to header
-        f.write('time,TTL,ch0,ch1,ch2\n')
-        # return file 
+
+        f = None
+        if(ext=='.csv' or ext=='.txt') :
+            # open file to write to 
+            f = open(fname, 'w')
+            # write column names to header
+            f.write('time,TTL,ch0,ch1,ch2\n')
+        
+        elif(ext=='.edf') : 
+            pass
+
         return(f)
 
 
@@ -540,6 +566,7 @@ class Setup_8206HR :
         # Edit save file path.
         elif(choice == 3):  
             self._saveFileName = self._GetFilePath()
+            self._PrintSaveFile()
         # Edit POD device parameters.
         elif(choice == 4):  
             self._DisplayPODdeviceParameters()
