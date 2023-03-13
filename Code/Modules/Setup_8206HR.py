@@ -507,7 +507,7 @@ class Setup_8206HR :
         readThreads = {
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : threading.Thread(
-                    target = Setup_8206HR._StreamUntilStop, 
+                    target = self._StreamUntilStop, 
                     args = ( pod, file, params['Sample Rate'] )
                 )
             # for each device 
@@ -636,9 +636,7 @@ class Setup_8206HR :
 
 
     def _TestDeviceConnection_All(self) :
-        print(str(self._podDevices))
         allGood = True
-
         for key,pod in self._podDevices.items(): 
             # test connection of each pod device
             if(not self._TestDeviceConnection(pod)) : 
