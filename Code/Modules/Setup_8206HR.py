@@ -3,11 +3,11 @@ Setup_8206HR allows a user to set up and stream from any number of 8206HR POD de
 """
 
 # enviornment imports
-import os
 import texttable
 import threading 
 import time 
-import pyedflib  
+from   os       import path      as osp
+from   pyedflib import EdfWriter as edfw
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -17,7 +17,7 @@ __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __email__       = "sales@pinnaclet.com"
-__date__        = "02/21/2023"
+__date__        = "03/13/2023"
 
 class Setup_8206HR : 
 
@@ -378,7 +378,7 @@ class Setup_8206HR :
     @staticmethod
     def _CheckFileExt(f, fIsExt=True, goodExt=['.csv','.txt','.edf'], printErr=True) : 
         # get extension 
-        if(not fIsExt) : name, ext = os.path.splitext(f)
+        if(not fIsExt) : name, ext = osp.splitext(f)
         else :  ext = f
         # check if extension is allowed
         if(ext not in goodExt) : 
@@ -391,7 +391,7 @@ class Setup_8206HR :
         # ask user for path 
         path = input('\nWhere would you like to save streaming data to?\nPath: ')
         # split into path/name and extension 
-        name, ext = os.path.splitext(path)
+        name, ext = osp.splitext(path)
 
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
@@ -426,7 +426,7 @@ class Setup_8206HR :
             print('[!] No filename given.')
             return(Setup_8206HR._GetFileName())
         # get parts 
-        name, ext = os.path.splitext(inp)
+        name, ext = osp.splitext(inp)
         # default to csv if no extension is given
         if(ext=='') : ext='.csv'
         # check if extension is correct 
@@ -437,7 +437,7 @@ class Setup_8206HR :
 
     def _OpenSaveFile(self, devNum) : 
         # build file name --> path\filename_<DEVICE#>.ext
-        name, ext = os.path.splitext(self._saveFileName)
+        name, ext = osp.splitext(self._saveFileName)
         fname = name+'_'+str(devNum)+ext    
 
         f = None
