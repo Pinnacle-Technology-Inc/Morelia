@@ -8,6 +8,7 @@ import threading
 import time 
 from   os       import path      as osp
 from   pyedflib import EdfWriter as edfw
+
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -18,6 +19,7 @@ __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __email__       = "sales@pinnaclet.com"
 __date__        = "03/13/2023"
+
 
 class Setup_8206HR : 
 
@@ -139,7 +141,9 @@ class Setup_8206HR :
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
                 failed = False
-        except : pass
+        except : 
+            # fill entry 
+            self._podDevices[deviceNum] = None
 
         # check if connection failed 
         if(failed) :
@@ -448,20 +452,27 @@ class Setup_8206HR :
             f.write('time,TTL,ch0,ch1,ch2\n')
         
         elif(ext=='.edf') : 
-            pass
-
+            f = edfw(fname, 3) 
+            for i in range(3) :
+                f.setSamplefrequency(i, self._podParametersDict[devNum]['Sample Rate'])
         return(f)
 
 
-    @staticmethod
-    def _WriteDataToFile(t, data, file):
-        # get useful data in list 
-        data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
-        # convert data into comma separated string
-        line = ','.join(str(x) for x in data) + '\n'
-        # write data to file 
-        file.write(line)
-
+    def _WriteDataToFile(self, t, data, file):
+        # get file type
+        name, ext = osp.splitext(self._saveFileName)
+        # for text file 
+        if(ext=='.csv' or ext=='.txt') :
+            # get useful data in list 
+            data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in data) + '\n'
+            # write data to file 
+            file.write(line)
+        # for edf
+        if(ext=='.edf') :
+            data = [data['Ch0'], data['Ch1'], data['Ch2']]
+            file.writeSamples(data)
 
     # ------------ STREAM ------------ 
 
@@ -475,8 +486,7 @@ class Setup_8206HR :
         print('Finishing up...')
 
 
-    @staticmethod
-    def _StreamUntilStop(pod, file, sampleRate):
+    def _StreamUntilStop(self, pod, file, sampleRate):
         # initialization
         t = 0   # current time 
         dt = 1.0 / sampleRate   # time to take each sample 
@@ -486,7 +496,7 @@ class Setup_8206HR :
         while(True) : 
             r = pod.ReadPODpacket() # read from POD device 
             if(r == stopAt) : break # stop looping when stop stream command is read 
-            Setup_8206HR._WriteDataToFile(t, pod.TranslatePODpacket(r), file)   # write what is read to file 
+            self._WriteDataToFile(t, pod.TranslatePODpacket(r), file)   # write what is read to file 
             t = round(t+dt, 6)  # increment time, rounding to 6 decimal places
 
 
@@ -626,7 +636,9 @@ class Setup_8206HR :
 
 
     def _TestDeviceConnection_All(self) :
+        print(str(self._podDevices))
         allGood = True
+
         for key,pod in self._podDevices.items(): 
             # test connection of each pod device
             if(not self._TestDeviceConnection(pod)) : 
