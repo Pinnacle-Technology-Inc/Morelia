@@ -737,4 +737,5 @@ class Setup_8206HR :
 
     @staticmethod
     def uV(voltage):
-        return ( int(voltage * 1E-6))
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
