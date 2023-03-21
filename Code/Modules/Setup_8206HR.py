@@ -465,7 +465,7 @@ class Setup_8206HR :
         return(f)
 
 
-    def _OpenSaveFile_EDF(self,fname, devNum):
+    def _OpenSaveFile_EDF(self, fname, devNum):
         # create file
         f = edfw(fname, 3) 
         # get info for each channel
@@ -483,16 +483,7 @@ class Setup_8206HR :
                 'prefilter': ''            
             } )
         return(f)
-
-
-    def _WriteDataToFile(self, t, data, file):
-        # get file type
-        name, ext = osp.splitext(self._saveFileName)
-        # for text file 
-        if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(t, data, file)
-        # for edf
-        if(ext=='.edf') : Setup_8206HR._WriteDataToFile_EDF(data, file)
-            
+    
 
     @staticmethod
     def _WriteDataToFile_TXT(file, data, sampleRate, t) : 
@@ -562,9 +553,12 @@ class Setup_8206HR :
             # save to file 
             if(ext=='.csv' or ext=='.txt') : 
                 Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t)
-                t+=1
             elif(ext=='.edf') :              
                 Setup_8206HR._WriteDataToFile_EDF(file, data, sampleRate)
+                file.writeAnnotation(t, -1, "Timestamp Test") # TODO this is for testing only, remove when done 
+
+            # increment by second 
+            t+=1
 
 
     def _AskToStopStream(self):
