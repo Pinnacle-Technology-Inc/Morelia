@@ -23,6 +23,10 @@ __date__        = "03/13/2023"
 
 
 class Setup_8206HR : 
+    
+    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
+
+    PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -384,8 +388,7 @@ class Setup_8206HR :
 
     def _PrintSaveFile(self):
         # print name  
-        fname = Setup_8206HR._BuildFileName(self._saveFileName)
-        print('\nStreaming data will be saved to '+fname)
+        print('\nStreaming data will be saved to '+ str(self._saveFileName))
  
 
     @staticmethod
@@ -458,7 +461,7 @@ class Setup_8206HR :
     def _OpenSaveFile_TXT(fname) : 
         # open file and write column names 
         f = open(fname, 'w')
-        f.write('time,TTL,ch0,ch1,ch2\n')
+        f.write('time,ch0,ch1,ch2\n')
         return(f)
 
 
@@ -466,21 +469,19 @@ class Setup_8206HR :
         # create file
         f = edfw(fname, 3) 
         # get info for each channel
-        channel_info = []
-        for lable in ['EEG1', 'EEG2', 'EEG3/EMG']:
-            channel_info.append( {
-                'label' : lable,
+        label = ['EEG1', 'EEG2', 'EEG3/EMG']
+        for i in range(3):
+            f.setSignalHeader( i, {
+                'label' : label[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
-                'physical_max': Setup_8206HR.uV(0.004069),
-                'physical_min': Setup_8206HR.uV(-0.004069), 
-                'digital_max': 8388607, 
-                'digital_min': -8388608, 
+                'physical_max': self.PHYSICAL_BOUND_uV,
+                'physical_min': -self.PHYSICAL_BOUND_uV, 
+                'digital_max': 32767, 
+                'digital_min': -32768, 
                 'transducer': '', 
                 'prefilter': ''            
             } )
-        # write channel info to file 
-        f.setSignalHeader(channel_info)
         return(f)
 
 
@@ -494,23 +495,76 @@ class Setup_8206HR :
             
 
     @staticmethod
-    def _WriteDataToFile_TXT(t, data, file) : 
-        # get useful data in list 
-        data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
-        # convert data into comma separated string
-        line = ','.join(str(x) for x in data) + '\n'
-        # write data to file 
-        file.write(line)
+    def _WriteDataToFile_TXT(file, data, sampleRate, t) : 
+        # check that data is correctly formatted 
+        if(sampleRate*3 != len(data)) : 
+            # data must have n physical samples where n is the sample frequency 
+            # data order is important, signals are [0,1,2,0,1,2,0....]. So length should be n*3
+            raise Exception('Data could not be written to file.')
+
+        # initialize times
+        dt = 1.0 / sampleRate
+        ti = t
+        # save data for each timestamp
+        for i in range(sampleRate) : 
+            # increment time, rounding to 6 decimal places
+            ti = round(ti+dt, 6)  
+            # build line to write 
+            line = [ ti, data[i*3], data[i*3+1], data[i*3+2] ]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(line)
+
 
     @staticmethod
-    def _WriteDataToFile_EDF(data, file) : 
-        data = Setup_8206HR.uV( np.array([data['Ch0'], data['Ch1'], data['Ch2']]) ) 
-        file.writePhysicalSamples(data)
-        # TODO  i dont think this works. I think you need to save in sets of n=int(sample rate) or if file duration is known
-        #       may have to save file at end and not continually...
+    def _WriteDataToFile_EDF(file, data, sampleRate) : 
+        if( sampleRate*3 != len(data) ) : 
+            # data must have n physical samples where n is the sample frequency 
+            # data order is important, signals are [0,1,2,0,1,2,0....]. So length should be n*3
+            raise Exception('Data could not be written to file.')
+        
+        file.writePhysicalSamples(np.array(data))
 
 
     # ------------ STREAM ------------ 
+
+
+    def _StreamUntilStop(self, pod, file, sampleRate):
+
+        # get file type
+        name, ext = osp.splitext(self._saveFileName)
+
+        # packet to mark stop streaming 
+        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
+        # start streaming from device  
+        pod.WriteRead(cmd='STREAM', payload=1)
+
+        t = 0
+        while(True):
+            # initialize data array 
+            data = [0] * sampleRate * 3 # 0,1,2,...
+
+            # read for one second
+            for i in range(sampleRate):
+                # read once 
+                r = pod.ReadPODpacket()
+                # stop looping when stop stream command is read 
+                if(r == stopAt) : 
+                    return  
+                # translate 
+                rt = pod.TranslatePODpacket(r)
+                # save data as uV
+                data[i*3  ] = Setup_8206HR.uV(rt['Ch0'])
+                data[i*3+1] = Setup_8206HR.uV(rt['Ch1'])
+                data[i*3+2] = Setup_8206HR.uV(rt['Ch2'])
+            
+            # save to file 
+            if(ext=='.csv' or ext=='.txt') : 
+                Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t)
+                t+=1
+            elif(ext=='.edf') :              
+                Setup_8206HR._WriteDataToFile_EDF(file, data, sampleRate)
 
 
     def _AskToStopStream(self):
@@ -520,20 +574,6 @@ class Setup_8206HR :
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
         print('Finishing up...')
-
-
-    def _StreamUntilStop(self, pod, file, sampleRate):
-        # initialization
-        t = 0   # current time 
-        dt = 1.0 / sampleRate   # time to take each sample 
-        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  # packet to mark stop streaming 
-        # start streaming from device  
-        pod.WriteRead(cmd='STREAM', payload=1)
-        while(True) : 
-            r = pod.ReadPODpacket() # read from POD device 
-            if(r == stopAt) : break # stop looping when stop stream command is read 
-            self._WriteDataToFile(t, pod.TranslatePODpacket(r), file)   # write what is read to file 
-            t = round(t+dt, 6)  # increment time, rounding to 6 decimal places
 
 
     def _StreamThreading(self) :
@@ -697,4 +737,4 @@ class Setup_8206HR :
 
     @staticmethod
     def uV(voltage):
-        return (voltage * 1E-6)
+        return ( int(voltage * 1E-6))
