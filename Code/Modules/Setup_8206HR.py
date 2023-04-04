@@ -3,10 +3,14 @@ Setup_8206HR allows a user to set up and stream from any number of 8206HR POD de
 """
 
 # enviornment imports
-import os
 import texttable
 import threading 
 import time 
+import math 
+import numpy                     as np
+from   os       import path      as osp
+from   pyedflib import EdfWriter as edfw
+
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
@@ -16,9 +20,15 @@ __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __email__       = "sales@pinnaclet.com"
-__date__        = "02/21/2023"
+__date__        = "04/04/2023"
+
 
 class Setup_8206HR : 
+    
+    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
+
+
+    _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -67,6 +77,8 @@ class Setup_8206HR :
         # initialize file name and path 
         if(saveFile == None) :
             self._saveFileName = self._GetFilePath()
+            self._PrintSaveFile()
+
         else:
             self._saveFileName = saveFile
 
@@ -136,7 +148,9 @@ class Setup_8206HR :
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
                 failed = False
-        except : pass
+        except : 
+            # fill entry 
+            self._podDevices[deviceNum] = None
 
         # check if connection failed 
         if(failed) :
@@ -368,34 +382,52 @@ class Setup_8206HR :
     # ------------ FILE HANDLING ------------
 
 
+    @staticmethod
+    def _BuildFileName(fileName, devNum) : 
+        # build file name --> path\filename_<DEVICE#>.ext
+        name, ext = osp.splitext(fileName)
+        fname = name+'_'+str(devNum)+ext   
+        return(fname)
+
+
     def _PrintSaveFile(self):
-        print('\nStreaming data will be saved to '+self._saveFileName)
+        # print name  
+        print('\nStreaming data will be saved to '+ str(self._saveFileName))
  
+
+    @staticmethod
+    def _CheckFileExt(f, fIsExt=True, goodExt=['.csv','.txt','.edf'], printErr=True) : 
+        # get extension 
+        if(not fIsExt) : name, ext = osp.splitext(f)
+        else :  ext = f
+        # check if extension is allowed
+        if(ext not in goodExt) : 
+            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
+            return(False) # bad extension 
+        return(True)      # good extension 
+
 
     @staticmethod
     def _GetFilePath() : 
         # ask user for path 
         path = input('\nWhere would you like to save streaming data to?\nPath: ')
         # split into path/name and extension 
-        name, ext = os.path.splitext(path)
-
+        name, ext = osp.splitext(path)
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
             # ask user for file name 
             fileName = Setup_8206HR._GetFileName()
-            # check for slash 
-            if( ('/' in name) and (not name.endswith('/')) )  :
-                name = name+'/'
-            elif(not name.endswith('\\')) : 
-                name = name+'\\'
+            # add slash if path is given 
+            if(name != ''): 
+                # check for slash 
+                if( ('/' in name) and (not name.endswith('/')) )  :
+                    name = name+'/'
+                elif(not name.endswith('\\')) : 
+                    name = name+'\\'
             # return complete path and filename 
             return(name+fileName)
-
         # prompt again if bad extension is given 
-        elif(ext!='.csv' and ext!='.txt') : 
-            print('[!] Filename must end in .csv or .txt.')
-            return(Setup_8206HR._GetFilePath())
-
+        elif( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFilePath())
         # path is correct
         else :
             return(path)
@@ -404,40 +436,120 @@ class Setup_8206HR :
     @staticmethod
     def _GetFileName():
         # ask user for file name 
-        name, ext = os.path.splitext(input('File name: '))
+        inp = input('File name: ')
+        # prompt again if no name given
+        if(inp=='') : 
+            print('[!] No filename given.')
+            return(Setup_8206HR._GetFileName())
+        # get parts 
+        name, ext = osp.splitext(inp)
         # default to csv if no extension is given
         if(ext=='') : ext='.csv'
         # check if extension is correct 
-        if(ext!='.csv' and ext!='.txt') : 
-            print('[!] Filename must end in .csv or .txt.')
-            return(Setup_8206HR._GetFileName())
+        if( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFileName())
         # return file name with extension 
         return(name+ext)
 
 
     def _OpenSaveFile(self, devNum) : 
-        # build file name --> path\filename_<DEVICE#>.ext
-        name, ext = os.path.splitext(self._saveFileName)
-        fname = name+'_'+str(devNum)+ext    
-        # open file to write to 
+        # get file name and extension 
+        fname = Setup_8206HR._BuildFileName(self._saveFileName, devNum)
+        p, ext = osp.splitext(fname)
+        # open file based on extension type 
+        f = None
+        if(ext=='.csv' or ext=='.txt') :    f = Setup_8206HR._OpenSaveFile_TXT(fname)
+        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
+        return(f)
+    
+
+    @staticmethod
+    def _OpenSaveFile_TXT(fname) : 
+        # open file and write column names 
         f = open(fname, 'w')
-        # write column names to header
-        f.write('time,TTL,ch0,ch1,ch2\n')
-        # return file 
+        f.write('time,ch0,ch1,ch2\n')
         return(f)
 
 
+    def _OpenSaveFile_EDF(self, fname, devNum):
+        # create file
+        f = edfw(fname, 3) 
+        # get info for each channel
+        label = ['EEG1', 'EEG2', 'EEG3/EMG']
+        for i in range(3):
+            f.setSignalHeader( i, {
+                'label' : label[i],
+                'dimension' : 'uV',
+                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'physical_max': self._PHYSICAL_BOUND_uV,
+                'physical_min': -self._PHYSICAL_BOUND_uV, 
+                'digital_max': 32767, 
+                'digital_min': -32768, 
+                'transducer': '', 
+                'prefilter': ''            
+            } )
+        return(f)
+    
+
     @staticmethod
-    def _WriteDataToFile(t, data, file):
-        # get useful data in list 
-        data = [t, data['TTL'], data['Ch0'], data['Ch1'], data['Ch2']]
-        # convert data into comma separated string
-        line = ','.join(str(x) for x in data) + '\n'
-        # write data to file 
-        file.write(line)
+    def _WriteDataToFile_TXT(file, data, sampleRate, t) : 
+        # initialize times
+        dt = 1.0 / sampleRate
+        ti = t
+        # save data for each timestamp
+        for i in range(len(data[0])) : 
+            # increment time, rounding to 6 decimal places
+            ti = round(ti+dt, 6)  
+            # build line to write 
+            line = [ ti, data[0][i], data[1][i], data[2][i] ]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(line)
+
+
+    @staticmethod
+    def _WriteDataToFile_EDF(file, data) : 
+        # write data to EDF file 
+        file.writeSamples(data)
 
 
     # ------------ STREAM ------------ 
+
+
+    def _StreamUntilStop(self, pod, file, sampleRate):
+        # get file type
+        name, ext = osp.splitext(self._saveFileName)
+        # packet to mark stop streaming 
+        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
+        # start streaming from device  
+        pod.WriteRead(cmd='STREAM', payload=1)
+        # track time (second)
+        t = 0
+        if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
+        while(True):
+            # initialize data array 
+            data0 = np.zeros(sampleRate)
+            data1 = np.zeros(sampleRate)
+            data2 = np.zeros(sampleRate)
+            # read data for one second
+            for i in range(sampleRate):
+                # read once 
+                r = pod.ReadPODpacket()
+                # stop looping when stop stream command is read 
+                if(r == stopAt) : 
+                    if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
+                    return  
+                # translate 
+                rt = pod.TranslatePODpacket(r)
+                # save data as uV
+                data0[i] = Setup_8206HR._uV(rt['Ch0'])
+                data1[i] = Setup_8206HR._uV(rt['Ch1'])
+                data2[i] = Setup_8206HR._uV(rt['Ch2'])\
+            # save to file 
+            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, [data0,data1,data2])
+            # increment by second 
+            t+=1
 
 
     def _AskToStopStream(self):
@@ -449,21 +561,6 @@ class Setup_8206HR :
         print('Finishing up...')
 
 
-    @staticmethod
-    def _StreamUntilStop(pod, file, sampleRate):
-        # initialization
-        t = 0   # current time 
-        dt = 1.0 / sampleRate   # time to take each sample 
-        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  # packet to mark stop streaming 
-        # start streaming from device  
-        pod.WriteRead(cmd='STREAM', payload=1)
-        while(True) : 
-            r = pod.ReadPODpacket() # read from POD device 
-            if(r == stopAt) : break # stop looping when stop stream command is read 
-            Setup_8206HR._WriteDataToFile(t, pod.TranslatePODpacket(r), file)   # write what is read to file 
-            t = round(t+dt, 6)  # increment time, rounding to 6 decimal places
-
-
     def _StreamThreading(self) :
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
@@ -471,7 +568,7 @@ class Setup_8206HR :
         readThreads = {
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : threading.Thread(
-                    target = Setup_8206HR._StreamUntilStop, 
+                    target = self._StreamUntilStop, 
                     args = ( pod, file, params['Sample Rate'] )
                 )
             # for each device 
@@ -495,13 +592,16 @@ class Setup_8206HR :
         for file in podFiles.values() : file.close()
         print('Save complete!')
 
+
     def _Stream(self) : 
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 
             print('Could not stream.')
         # start streaming from all devices 
         else:
-            self._TimeFunc(self._StreamThreading)
+            dt = self._TimeFunc(self._StreamThreading)
+            # print execution time 
+            print('\nExecution time:', str(math.floor(dt)), 'sec') 
 
 
     # ------------ OPTIONS ------------
@@ -540,6 +640,7 @@ class Setup_8206HR :
         # Edit save file path.
         elif(choice == 3):  
             self._saveFileName = self._GetFilePath()
+            self._PrintSaveFile()
         # Edit POD device parameters.
         elif(choice == 4):  
             self._DisplayPODdeviceParameters()
@@ -582,7 +683,6 @@ class Setup_8206HR :
         ti = time.time() # start time 
         func() # run function 
         dt = round(time.time()-ti,3) # calculate time difference
-        print('\nExecution time:', str(dt), 'sec') # print and return execultion time 
         return(dt)
 
 
@@ -621,3 +721,8 @@ class Setup_8206HR :
             'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
+
+    @staticmethod
+    def _uV(voltage):
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
