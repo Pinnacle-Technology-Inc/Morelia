@@ -6,6 +6,7 @@ Setup_8206HR allows a user to set up and stream from any number of 8206HR POD de
 import texttable
 import threading 
 import time 
+import math 
 import numpy                     as np
 from   os       import path      as osp
 from   pyedflib import EdfWriter as edfw
@@ -600,7 +601,7 @@ class Setup_8206HR :
         else:
             dt = self._TimeFunc(self._StreamThreading)
             # print execution time 
-            print('\nExecution time:', str(int(dt)), 'sec') 
+            print('\nExecution time:', str(math.floor(dt)), 'sec') 
 
 
     # ------------ OPTIONS ------------
