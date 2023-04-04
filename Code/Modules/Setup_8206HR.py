@@ -512,7 +512,6 @@ class Setup_8206HR :
         if( len(data) != 3) : 
             # data must be a list with 3 items, one for each channel 
             raise Exception('Data could not be written to file.')
-        print('writing to file...')
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -529,8 +528,9 @@ class Setup_8206HR :
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
         pod.WriteRead(cmd='STREAM', payload=1)
-
+        # track time (second)
         t = 0
+        if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
         while(True):
             # initialize data array 
             data0 = np.zeros(sampleRate)
@@ -543,6 +543,7 @@ class Setup_8206HR :
                 r = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
+                    if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
                     return  
                 # translate 
                 rt = pod.TranslatePODpacket(r)
@@ -558,8 +559,6 @@ class Setup_8206HR :
                 pass
             elif(ext=='.edf') :              
                 Setup_8206HR._WriteDataToFile_EDF(file, data, sampleRate)
-                file.writeAnnotation(t, -1, "Timestamp Test") # TODO this is for testing only, remove when done 
-
             # increment by second 
             t+=1
 
