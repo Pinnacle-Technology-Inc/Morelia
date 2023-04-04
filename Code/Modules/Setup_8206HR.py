@@ -597,7 +597,8 @@ class Setup_8206HR :
             print('Could not stream.')
         # start streaming from all devices 
         else:
-            self._TimeFunc(self._StreamThreading)
+            dt = self._TimeFunc(self._StreamThreading)
+            print('\nExecution time:', str(int(dt)), 'sec') # print and return execution time 
 
 
     # ------------ OPTIONS ------------
@@ -679,7 +680,6 @@ class Setup_8206HR :
         ti = time.time() # start time 
         func() # run function 
         dt = round(time.time()-ti,3) # calculate time difference
-        print('\nExecution time:', str(dt), 'sec') # print and return execultion time 
         return(dt)
 
 
