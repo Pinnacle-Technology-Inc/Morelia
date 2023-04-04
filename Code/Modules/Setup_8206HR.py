@@ -28,7 +28,6 @@ class Setup_8206HR :
 
     PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
 
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -510,12 +509,12 @@ class Setup_8206HR :
 
     @staticmethod
     def _WriteDataToFile_EDF(file, data, sampleRate) : 
-        if( sampleRate*3 != len(data) ) : 
-            # data must have n physical samples where n is the sample frequency 
-            # data order is important, signals are [0,1,2,0,1,2,0....]. So length should be n*3
+        if( len(data) != 3) : 
+            # data must be a list with 3 items, one for each channel 
             raise Exception('Data could not be written to file.')
-        
-        file.writePhysicalSamples(np.array(data))
+        print('writing to file...')
+        # write data to EDF file 
+        file.writeSamples(data)
 
 
     # ------------ STREAM ------------ 
@@ -534,7 +533,9 @@ class Setup_8206HR :
         t = 0
         while(True):
             # initialize data array 
-            data = [0] * sampleRate * 3 # 0,1,2,...
+            data0 = np.zeros(sampleRate)
+            data1 = np.zeros(sampleRate)
+            data2 = np.zeros(sampleRate)
 
             # read for one second
             for i in range(sampleRate):
@@ -546,13 +547,15 @@ class Setup_8206HR :
                 # translate 
                 rt = pod.TranslatePODpacket(r)
                 # save data as uV
-                data[i*3  ] = Setup_8206HR.uV(rt['Ch0'])
-                data[i*3+1] = Setup_8206HR.uV(rt['Ch1'])
-                data[i*3+2] = Setup_8206HR.uV(rt['Ch2'])
-            
+                data0[i] = Setup_8206HR.uV(rt['Ch0'])
+                data1[i] = Setup_8206HR.uV(rt['Ch1'])
+                data2[i] = Setup_8206HR.uV(rt['Ch2'])
+            # get list of each data signal 
+            data = [data0,data1,data2]
             # save to file 
             if(ext=='.csv' or ext=='.txt') : 
-                Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t)
+                # Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t) # update this
+                pass
             elif(ext=='.edf') :              
                 Setup_8206HR._WriteDataToFile_EDF(file, data, sampleRate)
                 file.writeAnnotation(t, -1, "Timestamp Test") # TODO this is for testing only, remove when done 
