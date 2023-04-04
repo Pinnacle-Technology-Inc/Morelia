@@ -26,7 +26,9 @@ class Setup_8206HR :
     
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
-    PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
+
+    _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -378,12 +380,14 @@ class Setup_8206HR :
     
     # ------------ FILE HANDLING ------------
 
+
     @staticmethod
     def _BuildFileName(fileName, devNum) : 
         # build file name --> path\filename_<DEVICE#>.ext
         name, ext = osp.splitext(fileName)
         fname = name+'_'+str(devNum)+ext   
         return(fname)
+
 
     def _PrintSaveFile(self):
         # print name  
@@ -400,6 +404,7 @@ class Setup_8206HR :
             if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
             return(False) # bad extension 
         return(True)      # good extension 
+
 
     @staticmethod
     def _GetFilePath() : 
@@ -474,8 +479,8 @@ class Setup_8206HR :
                 'label' : label[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
-                'physical_max': self.PHYSICAL_BOUND_uV,
-                'physical_min': -self.PHYSICAL_BOUND_uV, 
+                'physical_max': self._PHYSICAL_BOUND_uV,
+                'physical_min': -self._PHYSICAL_BOUND_uV, 
                 'digital_max': 32767, 
                 'digital_min': -32768, 
                 'transducer': '', 
@@ -511,10 +516,8 @@ class Setup_8206HR :
 
 
     def _StreamUntilStop(self, pod, file, sampleRate):
-
         # get file type
         name, ext = osp.splitext(self._saveFileName)
-
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
@@ -527,8 +530,7 @@ class Setup_8206HR :
             data0 = np.zeros(sampleRate)
             data1 = np.zeros(sampleRate)
             data2 = np.zeros(sampleRate)
-
-            # read for one second
+            # read data for one second
             for i in range(sampleRate):
                 # read once 
                 r = pod.ReadPODpacket()
@@ -539,14 +541,12 @@ class Setup_8206HR :
                 # translate 
                 rt = pod.TranslatePODpacket(r)
                 # save data as uV
-                data0[i] = Setup_8206HR.uV(rt['Ch0'])
-                data1[i] = Setup_8206HR.uV(rt['Ch1'])
-                data2[i] = Setup_8206HR.uV(rt['Ch2'])
-            # get list of each data signal 
-            data = [data0,data1,data2]
+                data0[i] = Setup_8206HR._uV(rt['Ch0'])
+                data1[i] = Setup_8206HR._uV(rt['Ch1'])
+                data2[i] = Setup_8206HR._uV(rt['Ch2'])\
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t)
-            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, data)
+            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, [data0,data1,data2])
             # increment by second 
             t+=1
 
@@ -591,6 +591,7 @@ class Setup_8206HR :
         for file in podFiles.values() : file.close()
         print('Save complete!')
 
+
     def _Stream(self) : 
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 
@@ -598,7 +599,8 @@ class Setup_8206HR :
         # start streaming from all devices 
         else:
             dt = self._TimeFunc(self._StreamThreading)
-            print('\nExecution time:', str(int(dt)), 'sec') # print and return execution time 
+            # print execution time 
+            print('\nExecution time:', str(int(dt)), 'sec') 
 
 
     # ------------ OPTIONS ------------
@@ -720,6 +722,6 @@ class Setup_8206HR :
         )
 
     @staticmethod
-    def uV(voltage):
+    def _uV(voltage):
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
