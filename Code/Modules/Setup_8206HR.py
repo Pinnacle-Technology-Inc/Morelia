@@ -486,21 +486,15 @@ class Setup_8206HR :
 
     @staticmethod
     def _WriteDataToFile_TXT(file, data, sampleRate, t) : 
-        # check that data is correctly formatted 
-        if(sampleRate*3 != len(data)) : 
-            # data must have n physical samples where n is the sample frequency 
-            # data order is important, signals are [0,1,2,0,1,2,0....]. So length should be n*3
-            raise Exception('Data could not be written to file.')
-
         # initialize times
         dt = 1.0 / sampleRate
         ti = t
         # save data for each timestamp
-        for i in range(sampleRate) : 
+        for i in range(len(data[0])) : 
             # increment time, rounding to 6 decimal places
             ti = round(ti+dt, 6)  
             # build line to write 
-            line = [ ti, data[i*3], data[i*3+1], data[i*3+2] ]
+            line = [ ti, data[0][i], data[1][i], data[2][i] ]
             # convert data into comma separated string
             line = ','.join(str(x) for x in line) + '\n'
             # write data to file 
@@ -508,10 +502,7 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _WriteDataToFile_EDF(file, data, sampleRate) : 
-        if( len(data) != 3) : 
-            # data must be a list with 3 items, one for each channel 
-            raise Exception('Data could not be written to file.')
+    def _WriteDataToFile_EDF(file, data) : 
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -554,11 +545,8 @@ class Setup_8206HR :
             # get list of each data signal 
             data = [data0,data1,data2]
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : 
-                # Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t) # update this
-                pass
-            elif(ext=='.edf') :              
-                Setup_8206HR._WriteDataToFile_EDF(file, data, sampleRate)
+            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, data, sampleRate, t)
+            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, data)
             # increment by second 
             t+=1
 
