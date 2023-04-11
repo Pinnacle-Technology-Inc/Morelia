@@ -6,6 +6,7 @@ POD_Packets is a collection of methods for creating and interpreting POD packets
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__license__     = "New BSD License"
 __email__       = "sales@pinnaclet.com"
 __date__        = "01/24/2023"
 
