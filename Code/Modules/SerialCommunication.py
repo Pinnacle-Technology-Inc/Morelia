@@ -11,7 +11,6 @@ __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
 __email__       = "sales@pinnaclet.com"
-__date__        = "12/19/2022"
 
 class COM_io : 
 

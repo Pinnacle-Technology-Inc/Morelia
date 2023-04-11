@@ -21,8 +21,6 @@ __maintainer__  = "Thresa Kelly"
 __credits__     = ["Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
 __email__       = "sales@pinnaclet.com"
-__date__        = "04/04/2023"
-
 
 class Setup_8206HR : 
     
