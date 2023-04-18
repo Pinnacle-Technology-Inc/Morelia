@@ -21,7 +21,9 @@ class POD_8206HR(POD_Basics) :
 
 
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH = 16
+    __B4LENGTH       = 16
+    # number of binary bytes for a Binary 4 packet 
+    __B4BINARYLENGTH = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -33,7 +35,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
-        B4  = POD_8206HR.__B4LENGTH -1 -4 -2 -1 # length minus STX, command number, checksum, ETX || 16 - 8 = 8
+        B4  = POD_8206HR.__B4BINARYLENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
@@ -177,7 +179,7 @@ class POD_8206HR(POD_Basics) :
         ------------------------------------------------------------
         """
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(self.__B4BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :

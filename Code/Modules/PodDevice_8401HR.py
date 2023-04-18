@@ -21,6 +21,8 @@ class POD_8401HR(POD_Basics) :
 
     # number of bytes for a Binary 5 packet 
     __B5LENGTH = 31
+    # number of binary bytes for a Binary 5 packet 
+    __B5BINARYLENGTH = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
@@ -30,6 +32,7 @@ class POD_8401HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
+        B5  = POD_8401HR.__B5BINARYLENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(10) # SAMPLE RATE
@@ -62,7 +65,7 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 132,	'SET MUX MODE',	        (U8,),	    (0,),       False  )
         self._commands.AddCommand( 133,	'GET MUX MODE',	        (0,),	    (U8,),      False  )
         self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  )
-        # self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (???,),     False  )
+        self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   )
     
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
@@ -112,7 +115,7 @@ class POD_8401HR(POD_Basics) :
         -----------------------------------------------------------------------------
         """
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(23) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(self.__B5BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
