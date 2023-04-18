@@ -156,7 +156,7 @@ class POD_8206HR(POD_Basics) :
         """
         Binary 4 Data Format
         ------------------------------------------------------------		
-        Byte    Index	        Value	
+        Byte    Value	        Format      Description 
         ------------------------------------------------------------		
         0	    0x02	        Binary		STX
         1	    0	            ASCII		Command Number Byte 0
