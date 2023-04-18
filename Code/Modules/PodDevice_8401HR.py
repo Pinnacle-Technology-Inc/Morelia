@@ -69,6 +69,41 @@ class POD_8401HR(POD_Basics) :
     
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
+    
+    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
+    
+    
+    @staticmethod
+    def UnpackPODpacket_Binary(msg) :
+        pass
+
+
+    def TranslatePODpacket_Binary(self, msg): 
+        pass
+
+    # ------------ SIMPLE ------------           ------------------------------------------------------------------------------------------------------------------------
+
+
+    @staticmethod
+    def UnpackPODpacket(msg):
+        # determine what type of pod packet using length of msg
+        length = len(msg)
+        # message is binary 
+        if(length == POD_8401HR.__B5LENGTH) : 
+            return( POD_8401HR.UnpackPODpacket_Binary(msg) ) 
+        # message may be standard (length checked within unpacking function )
+        else :
+            return( POD_8401HR.UnpackPODpacket_Standard(msg) ) 
+
+
+    def TranslatePODpacket(self, msg):
+        # message is binary 
+        if(len(msg) == POD_8401HR.__B5LENGTH) : 
+            return( self.TranslatePODpacket_Binary(msg) ) 
+        # message may be standard (length checked within unpacking function )
+        else :
+            return( self.TranslatePODpacket_Standard(msg) )
+
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
