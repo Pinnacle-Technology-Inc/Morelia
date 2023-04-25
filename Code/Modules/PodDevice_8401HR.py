@@ -26,7 +26,7 @@ class POD_8401HR(POD_Basics) :
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
-    def __init__(self, port, preampGain, baudrate=9600) :
+    def __init__(self, port, baudrate=9600) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
