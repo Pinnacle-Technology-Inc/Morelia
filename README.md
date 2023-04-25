@@ -8,15 +8,28 @@ The [Setup_8206HR Python module](https://github.com/Pinnacle-Technology-Inc/Pyth
 
 In the future, we will offer support to other Pinnacle devices. 
 
+## Collaboration 
+
+This project is open-source software (OSS); all code is freely and publically accessable for anyone to use. We welcome anyone who wishes to contribute to this project. If you are interested in collaborating, here are some steps to get started: 
+
+1. Fork this repository. This will create a repo on your own GitHub account.
+2. Clone your forked project to your local machine. The clone link can be found under the "Code" icon on the GitHub repo.
+3. Create a new branch where you can develop your code. Stage, commit, and push any changes to your fork.
+4. Create a pull request and write comments describing the code changes and reason for the pull request. This targets the original repository.
+5. The repository maintainers will review your pull request. If approved, your code will be merged into this repo. 
+
 ## Setup
 
-Tips for installing your Python enviornment [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PythonEnviornmentTips.txt).
+Here are some useful documents for setting up your coding environment to use the Python modules in this project:
 
-Python libraries required for this project [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PyEnvRequirements.txt).
+* Tips for installing your Python environment: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PythonEnviornmentTips.txt)
+
+* Python libraries required for this project: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PyEnvRequirements.txt)
+
 
 ## Usage 
 
-The Setup_8206HR Python module usage description [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_8206HR%20Usage.pdf).
+The Setup_8206HR Python module usage description: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_8206HR%20Usage.pdf)
 
 | Module                             | Description                                                   |
 |------------------------------------|---------------------------------------------------------------|
@@ -25,7 +38,7 @@ The Setup_8206HR Python module usage description [here](https://github.com/Pinna
 
 ## Modules 
 
-Detailed instructions of all Python modules and methods [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf).
+Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf)
 
 | Module                 | Class        | Description                                                                                                     |
 |------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
