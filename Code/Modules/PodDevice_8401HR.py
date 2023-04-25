@@ -75,7 +75,40 @@ class POD_8401HR(POD_Basics) :
     
     @staticmethod
     def UnpackPODpacket_Binary(msg) :
-        pass
+        # Binary 5 format = 
+        # STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+        MINBYTES = POD_8401HR.__B5LENGTH
+
+        # get number of bytes in message
+        packetBytes = len(msg)
+
+        # message must have enough bytes, start with STX, or end with ETX
+        if(    (packetBytes != MINBYTES)
+            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
+        ) : 
+            raise Exception('Cannot unpack an invalid POD packet.')
+        
+        # create dict and separate message parts
+        msg_unpacked = {
+            'Command Number'    : msg[1:5],
+            'Packet #'          : msg[5].to_bytes(1,'big'),
+            'Status'            : msg[6].to_bytes(1,'big'),
+            'Channels'          : msg[7:16], # TODO split into CH3/2/1/0
+            # 'CH3'               : msg[:],
+            # 'CH2'               : msg[:],
+            # 'CH1'               : msg[:],
+            # 'CH0'               : msg[:],
+            'Analog EXT0'       : msg[16:18],
+            'Analog EXT1'       : msg[18:20],
+            'Analog TTL1'       : msg[20:22],
+            'Analog TTL2'       : msg[22:24],
+            'Analog TTL3'       : msg[24:26],
+            'Analog TTL4'       : msg[26:28]
+        }
+
+        # return unpacked POD command
+        return(msg_unpacked)
 
 
     def TranslatePODpacket_Binary(self, msg): 
@@ -112,7 +145,7 @@ class POD_8401HR(POD_Basics) :
 
     def _Read_Binary(self, prePacket, validateChecksum=True):
         """
-        Binary 4 Data Format
+        Binary 5 Data Format
         -----------------------------------------------------------------------------		
         Byte    Value	                        Format      Description 
         -----------------------------------------------------------------------------		
