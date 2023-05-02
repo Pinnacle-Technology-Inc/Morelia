@@ -76,7 +76,7 @@ class POD_8401HR(POD_Basics) :
     @staticmethod
     def UnpackPODpacket_Binary(msg) :
         # Binary 5 format = 
-        # STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+        #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
         MINBYTES = POD_8401HR.__B5LENGTH
 
         # get number of bytes in message
@@ -94,11 +94,7 @@ class POD_8401HR(POD_Basics) :
             'Command Number'    : msg[1:5],
             'Packet #'          : msg[5].to_bytes(1,'big'),
             'Status'            : msg[6].to_bytes(1,'big'),
-            'Channels'          : msg[7:16], # TODO split into CH3/2/1/0
-            # 'CH3'               : msg[:],
-            # 'CH2'               : msg[:],
-            # 'CH1'               : msg[:],
-            # 'CH0'               : msg[:],
+            'Channels'          : msg[7:16], 
             'Analog EXT0'       : msg[16:18],
             'Analog EXT1'       : msg[18:20],
             'Analog TTL1'       : msg[20:22],
@@ -112,7 +108,25 @@ class POD_8401HR(POD_Basics) :
 
 
     def TranslatePODpacket_Binary(self, msg): 
-        pass
+        # unpack parts of POD packet into dict
+        msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
+         # translate the binary ascii encoding into a readable integer
+        msgDictTrans = {
+            'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
+            'Packet #'          : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
+            'Status'            : POD_Packets.BinaryBytesToInt(msgDict['Status']),
+            'CH3'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits 
+            'CH2'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+            'CH1'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11 CH2 3~0, CH1 17~14  | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+            'CH0'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6: ], 20, 2), # | 13 CH1 5~0, CH0 17~16  | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
+            'Analog EXT0'       : POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']), 
+            'Analog EXT1'       : POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']),
+            'Analog TTL1'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']),
+            'Analog TTL2'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']),
+            'Analog TTL3'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']),
+            'Analog TTL4'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']),
+        }
+
 
     # ------------ SIMPLE ------------           ------------------------------------------------------------------------------------------------------------------------
 
@@ -190,3 +204,5 @@ class POD_8401HR(POD_Basics) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return(packet)
+    
+    

@@ -96,6 +96,12 @@ class POD_Packets() :
         # convert a binary message represented by bytes into an integer
         return(int.from_bytes(msg,byteorder=byteorder,signed=signed))
 
+    
+    @staticmethod
+    def BinaryBytesToInt_Split(msg, keepTopBits, cutBottomBits, byteorder='big', signed=False) : 
+        # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
+        return( ( POD_Packets.BinaryBytesToInt(msg,byteorder,signed) & (2**keepTopBits - 1) ) >> cutBottomBits)
+
 
     # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
  
