@@ -97,15 +97,15 @@ class POD_8206HR(POD_Basics) :
     def TranslatePODpacket_Binary(self, msg): 
         # unpack parts of POD packet into dict
         msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
-        # initialize dictionary for translated values 
-        msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
-        msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt(msgDict['Packet #'])
-        msgDictTrans['TTL']             = POD_Packets.BinaryBytesToInt(msgDict['TTL'])
-        msgDictTrans['Ch0']             = self.BinaryBytesToVoltage(msgDict['Ch0'])
-        msgDictTrans['Ch1']             = self.BinaryBytesToVoltage(msgDict['Ch1'])
-        msgDictTrans['Ch2']             = self.BinaryBytesToVoltage(msgDict['Ch2'])
+        msgDictTrans = {
+            'Command Number'  : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
+            'Packet #'        : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
+            'TTL'             : POD_Packets.BinaryBytesToInt(msgDict['TTL']),
+            'Ch0'             : self.BinaryBytesToVoltage(msgDict['Ch0']),
+            'Ch1'             : self.BinaryBytesToVoltage(msgDict['Ch1']),
+            'Ch2'             : self.BinaryBytesToVoltage(msgDict['Ch2'])
+        }
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
