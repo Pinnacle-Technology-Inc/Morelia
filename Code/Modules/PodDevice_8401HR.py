@@ -79,19 +79,19 @@ class POD_8401HR(POD_Basics) :
         if(preampGain.keys().sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
-        # device name 
+        # device/sensor (EEG/EMG, biosensor, or no connect) 
         self._channelMap = POD_8401HR._GetChannelMapping(deviceName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
-        # SSGain must be 1 or 5 
+        # second stage gain 
         for value in ssGain.values() :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
         self._ssGain = ssGain 
 
-        # Preamplifier gain must be 
+        # preamplifier gain
         for value in preampGain.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
