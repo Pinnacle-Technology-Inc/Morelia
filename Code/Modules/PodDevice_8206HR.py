@@ -102,18 +102,20 @@ class POD_8206HR(POD_Basics) :
             'Command Number'  : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
             'Packet #'        : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
             'TTL'             : POD_Packets.BinaryBytesToInt(msgDict['TTL']),
-            'Ch0'             : self.BinaryBytesToVoltage(msgDict['Ch0']),
-            'Ch1'             : self.BinaryBytesToVoltage(msgDict['Ch1']),
-            'Ch2'             : self.BinaryBytesToVoltage(msgDict['Ch2'])
+            'Ch0'             : self._BinaryBytesToVoltage(msgDict['Ch0']),
+            'Ch1'             : self._BinaryBytesToVoltage(msgDict['Ch1']),
+            'Ch2'             : self._BinaryBytesToVoltage(msgDict['Ch2'])
         }
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
+    # ============ PROTECTED METHODS ============      ========================================================================================================================
 
+    
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
-    def BinaryBytesToVoltage(self, value):
+    def _BinaryBytesToVoltage(self, value):
         # convert binary message from POD to integer
         value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
@@ -122,9 +124,6 @@ class POD_8206HR(POD_Basics) :
         realValue = ( voltageADC - 2.048 ) / totalGain
         # return the real value at input to preamplifier 
         return(realValue) #V 
-
-
-    # ============ PROTECTED METHODS ============      ========================================================================================================================
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------

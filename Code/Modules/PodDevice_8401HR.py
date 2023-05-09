@@ -137,6 +137,8 @@ class POD_8401HR(POD_Basics) :
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
+    # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
@@ -189,3 +191,80 @@ class POD_8401HR(POD_Basics) :
         return(packet)
     
     
+ 
+
+"""
+CHANNEL MAPPING 
+
+8407-SE and 8407-SL:
+A) Bio
+B) EEG1
+C) EMG
+D) EEG2
+
+8407-SE3:
+A) Bio
+B) EEG1
+C) EEG3
+D) EEG2
+
+8407-SE4:
+A) EEG4
+B) EEG1
+C) EEG3
+D) EEG2
+
+8407-SE31M:
+A) EEG3
+B) EEG1
+C) EMG
+D) EEG2
+
+8407-SE-2BIO or -SL-2BIO
+A) Bio1
+B) Bio2
+C) EMG
+D) EEG2
+
+8406-SE31M:
+A) EMG
+B) EEG1
+C) EEG3
+D) EEG2
+
+8406-BIO:
+A) Bio
+B) NC
+C) NC
+D) NC
+
+8406-2BIO:
+A) Bio1
+B) Bio2
+C) NC
+D) NC
+
+8406-EEG2BIO:
+A) Bio1
+B) EEG1
+C) EMG
+D) Bio2
+
+8406-SE and 8406-SL:
+A) Bio
+B) EEG1
+C) EMG
+D) EEG2
+
+8406-SE3:
+A) Bio
+B) EEG1
+C) EEG3
+D) EEG2
+
+8406-SE4:
+A) EEG4
+B) EEG1
+C) EEG3
+D) EEG2
+"""
