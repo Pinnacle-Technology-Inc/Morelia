@@ -126,6 +126,8 @@ class POD_8401HR(POD_Basics) :
             'Analog TTL3'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']),
             'Analog TTL4'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']),
         }
+        # return translated unpacked POD packet 
+        return(msgDictTrans)
 
 
     # ------------ SIMPLE ------------           ------------------------------------------------------------------------------------------------------------------------
