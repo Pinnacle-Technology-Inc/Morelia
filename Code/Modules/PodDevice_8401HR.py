@@ -89,7 +89,7 @@ class POD_8401HR(POD_Basics) :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssgain = ssGain 
+        self._ssGain = ssGain 
 
         # Preamplifier gain must be 
         for value in preampGain.values() :
