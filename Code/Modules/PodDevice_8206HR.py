@@ -110,30 +110,6 @@ class POD_8206HR(POD_Basics) :
         return(msgDictTrans)
 
 
-    # ------------ SIMPLE ------------           ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def UnpackPODpacket(msg):
-        # determine what type of pod packet using length of msg
-        length = len(msg)
-        # message is binary 
-        if(length == POD_8206HR.__B4LENGTH) : 
-            return( POD_8206HR.UnpackPODpacket_Binary(msg) ) 
-        # message may be standard (length checked within unpacking function )
-        else :
-            return( POD_8206HR.UnpackPODpacket_Standard(msg) ) 
-
-
-    def TranslatePODpacket(self, msg):
-        # message is binary 
-        if(len(msg) == POD_8206HR.__B4LENGTH) : 
-            return( self.TranslatePODpacket_Binary(msg) ) 
-        # message may be standard (length checked within unpacking function )
-        else :
-            return( self.TranslatePODpacket_Standard(msg) )
-
-
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
     
 

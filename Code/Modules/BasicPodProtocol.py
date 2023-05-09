@@ -21,8 +21,12 @@ class POD_Basics :
 
 
     # number of active POD devices, maintained by __init__ and __del__ 
-    __NUMPOD = 0
+    __numPod = 0
 
+    # minimum packet lengths 
+    __MINSTANDARDLENGTH = 8     # STX (1 byte) + command number (4 bytes) + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+    __MINBINARYLENGTH = 15      # STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
+                                #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                               <-- BINARY DATA
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -33,12 +37,12 @@ class POD_Basics :
         # create object to handle commands 
         self._commands = POD_Commands()
         # increment number of POD device counter
-        POD_Basics.__NUMPOD += 1
+        POD_Basics.__numPod += 1
 
 
     def __del__(self):
         # decrement number of POD device counter
-        POD_Basics.__NUMPOD -= 1
+        POD_Basics.__numPod -= 1
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
@@ -50,7 +54,7 @@ class POD_Basics :
     @staticmethod
     def GetNumberOfPODDevices() :
         # returns the counter tracking the number of active pod devices
-        return(POD_Basics.__NUMPOD)
+        return(POD_Basics.__numPod)
 
 
     # ------------ POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
@@ -60,7 +64,7 @@ class POD_Basics :
     def UnpackPODpacket_Standard(msg) : 
         # standard POD packet with optional payload = 
         #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-        MINBYTES=8
+        MINBYTES = POD_Basics.__MINSTANDARDLENGTH
 
         # get number of bytes in message
         packetBytes = len(msg)
@@ -87,7 +91,7 @@ class POD_Basics :
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
-        MINBYTES = 15
+        MINBYTES = POD_Basics.__MINBINARYLENGTH
 
         # get number of bytes in message
         packetBytes = len(msg)
@@ -109,7 +113,7 @@ class POD_Basics :
 
         # return unpacked POD command with variable length binary packet 
         return(msg_unpacked)
-
+        
     
     def TranslatePODpacket_Standard(self, msg) : 
         # unpack parts of POD packet into dict
@@ -201,6 +205,30 @@ class POD_Basics :
     def SetBaudrateOfDevice(self, baudrate) : 
         # set baudrate of the open COM port. Returns true if successful.
         return(self._port.SetBaudrate(baudrate))
+
+
+    # ------------ SIMPLE POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
+    
+
+    def UnpackPODpacket(self, msg) : 
+        # get command number 
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
+        if(self._commands.IsCommandBinary(cmd)):
+            # message is binary 
+            return(self.UnpackPODpacket_Binary(msg))
+        else:
+            return(self.UnpackPODpacket_Standard(msg))
+
+
+    def TranslatePODpacket(self, msg) : 
+        # get command number 
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
+        if(self._commands.IsCommandBinary(cmd)):
+            # message is binary 
+            return(self.TranslatePODpacket_Binary(msg))
+        else:
+            return(self.TranslatePODpacket_Standard(msg))
+    
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 

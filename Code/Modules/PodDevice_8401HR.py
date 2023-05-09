@@ -17,15 +17,19 @@ __email__       = "sales@pinnaclet.com"
 
 class POD_8401HR(POD_Basics) : 
 
+
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
+
 
     # number of bytes for a Binary 5 packet 
     __B5LENGTH = 31
     # number of binary bytes for a Binary 5 packet 
     __B5BINARYLENGTH = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
+
     def __init__(self, port, baudrate=9600) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
@@ -67,6 +71,7 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  )
         self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   )
     
+
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
     
@@ -128,30 +133,6 @@ class POD_8401HR(POD_Basics) :
         }
         # return translated unpacked POD packet 
         return(msgDictTrans)
-
-
-    # ------------ SIMPLE ------------           ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def UnpackPODpacket(msg):
-        # determine what type of pod packet using length of msg
-        length = len(msg)
-        # message is binary 
-        if(length == POD_8401HR.__B5LENGTH) : 
-            return( POD_8401HR.UnpackPODpacket_Binary(msg) ) 
-        # message may be standard (length checked within unpacking function )
-        else :
-            return( POD_8401HR.UnpackPODpacket_Standard(msg) ) 
-
-
-    def TranslatePODpacket(self, msg):
-        # message is binary 
-        if(len(msg) == POD_8401HR.__B5LENGTH) : 
-            return( self.TranslatePODpacket_Binary(msg) ) 
-        # message may be standard (length checked within unpacking function )
-        else :
-            return( self.TranslatePODpacket_Standard(msg) )
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
