@@ -119,11 +119,11 @@ class POD_8206HR(POD_Basics) :
         # convert binary message from POD to integer
         value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
-        voltageADC = ( value_int / 65535 ) * 4.096 #V
+        voltageADC = ( value_int / 65535.0 ) * 4.096 # V
         totalGain = self._preampGain * 50.2918
         realValue = ( voltageADC - 2.048 ) / totalGain
         # return the real value at input to preamplifier 
-        return(realValue) #V 
+        return(realValue) # V 
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------

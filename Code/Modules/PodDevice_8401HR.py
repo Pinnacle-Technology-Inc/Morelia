@@ -30,9 +30,10 @@ class POD_8401HR(POD_Basics) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port, baudrate=9600) :
+    def __init__(self, port, deviceName, ssGain={'A':None,'B':None,'C':None,'D':None}, preampGain={'A':None,'B':None,'C':None,'D':None}, baudrate=9600) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
+
         # get constants for adding commands 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
@@ -70,10 +71,37 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 133,	'GET MUX MODE',	        (0,),	    (U8,),      False  )
         self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  )
         self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   )
+
+        # verify that dictionaries are correct structure
+        goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
+        if(ssGain.keys().sort() != goodKeys) : 
+            raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
+        if(preampGain.keys().sort() != goodKeys) : 
+            raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
+        
+        # device name 
+        self._channelMap = POD_8401HR._GetChannelMapping(deviceName)
+        if(self._channelMap == None) :
+            raise Exception('[!] Device does not exits.')
+
+        # SSGain must be 1 or 5 
+        for value in ssGain.values() :
+            # both biosensors and EEG/EMG have ssGain. None when no connect 
+            if(value != 1 and value != 5 and value != None): 
+                raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
+        self._ssgain = ssGain 
+
+        # Preamplifier gain must be 
+        for value in preampGain.values() :
+            # None when biosensor or no connect 
+            if(value != 10 and value != 100 and value != None): 
+                raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
+        self._preampGain = preampGain
     
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
+
     
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
     
@@ -115,29 +143,103 @@ class POD_8401HR(POD_Basics) :
     def TranslatePODpacket_Binary(self, msg): 
         # unpack parts of POD packet into dict
         msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
-         # translate the binary ascii encoding into a readable integer
-        msgDictTrans = {
-            'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
-            'Packet #'          : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
-            'Status'            : POD_Packets.BinaryBytesToInt(msgDict['Status']),
-            'CH3'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits 
-            'CH2'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
-            'CH1'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11 CH2 3~0, CH1 17~14  | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
-            'CH0'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), # | 13 CH1 5~0, CH0 17~16  | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
-            'Analog EXT0'       : POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']), 
-            'Analog EXT1'       : POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']),
-            'Analog TTL1'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']),
-            'Analog TTL2'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']),
-            'Analog TTL3'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']),
-            'Analog TTL4'       : POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']),
-        }
+        # translate the binary ascii encoding into a readable integer
+        msgDictTrans = {}
+        # basics 
+        msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(  msgDict['Command Number'] )
+        msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt( msgDict['Packet #'] )
+        msgDictTrans['Status']          = POD_Packets.BinaryBytesToInt( msgDict['Status'] )
+        # dont add channel if no connect (NC)
+        if(self._ssGain['D'] != None) :
+            msgDictTrans[self._channelMap['D']] = POD_8401HR._Voltage_PrimaryChannels( 
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
+                                                    self._ssGain['D'], self._preampGain['D'] )
+        if(self._ssGain['C'] != None) :
+            msgDictTrans[self._channelMap['C']] = POD_8401HR._Voltage_PrimaryChannels( 
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+                                                    self._ssGain['C'], self._preampGain['C'] )
+        if(self._ssGain['B'] != None) :
+            msgDictTrans[self._channelMap['B']] = POD_8401HR._Voltage_PrimaryChannels( 
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+                                                    self._ssGain['B'], self._preampGain['B'] )
+        if(self._ssGain['A'] != None) :
+            msgDictTrans[self._channelMap['A']] = POD_8401HR._Voltage_PrimaryChannels( 
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), # | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
+                                                    self._ssGain['A'], self._preampGain['A'] )
+        # add analogs 
+        msgDictTrans['Analog EXT0']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']) ), 
+        msgDictTrans['Analog EXT1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']) ),
+        msgDictTrans['Analog TTL1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']) ),
+        msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) ),
+        msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) ),
+        msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) ),
+        
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
+
+    # ------------ DEVICE HANDLING ------------           ------------------------------------------------------------------------------------------------------------------------
+       
+    
+    @staticmethod
+    def _GetChannelMapping(device):
+        match device : 
+            case '8407-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
+            case '8407-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
+            case '8407-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
+            case '8407-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
+            case '8407-SE31M'   : return({'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
+            case '8407-SE-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
+            case '8407-SL-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
+            case '8406-SE31M'   : return({'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
+            case '8406-BIO'     : return({'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  })
+            case '8406-2BIO'    : return({'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  })
+            case '8406-EEG2BIO' : return({'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'})
+            case '8406-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
+            case '8406-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
+            case '8406-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
+            case '8406-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
+            case _              : return(None) # no device matched
+    
+
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
+
+    @staticmethod
+    def _Voltage_PrimaryChannels(value, ssGain, PreampGain=None):
+        if(ssGain != None and PreampGain == None) : 
+            return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
+        elif(ssGain != None):
+            return(POD_8401HR._Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain))
+        else: 
+            return(value) # no connect! this is noise 
+
+
+    @staticmethod
+    def _Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain): 
+        # Channels configured as EEG/EMG channels (0.4/1/10 Hz highpass filter, second stage 0.5Hz Highpass, second stage 5x)
+        voltageAtADC = (value / 262144.0) * 4.096 # V
+        totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
+        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
+        return(realVoltage)
+    
+
+    @staticmethod
+    def _Voltage_PrimaryChannels_Biosensor(value, ssGain): 
+        # Channels configured as biosensor channels (DC highpass filter, second stage DC mode, second stage 1x)
+        voltageAtADC = (value / 262144.0) * 4.096 # V
+        totalGain    = 1.557 * ssGain * 1E7 # SSGain = 1 or 5
+        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
+        return(realVoltage)
+
+
+    @staticmethod
+    def _Voltage_SecondaryChannels(value):
+        # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
+        return( (value / 4096.0) ) * 3.3 # V
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
@@ -189,82 +291,4 @@ class POD_8401HR(POD_Basics) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return(packet)
-    
-    
  
-
-"""
-CHANNEL MAPPING 
-
-8407-SE and 8407-SL:
-A) Bio
-B) EEG1
-C) EMG
-D) EEG2
-
-8407-SE3:
-A) Bio
-B) EEG1
-C) EEG3
-D) EEG2
-
-8407-SE4:
-A) EEG4
-B) EEG1
-C) EEG3
-D) EEG2
-
-8407-SE31M:
-A) EEG3
-B) EEG1
-C) EMG
-D) EEG2
-
-8407-SE-2BIO or -SL-2BIO
-A) Bio1
-B) Bio2
-C) EMG
-D) EEG2
-
-8406-SE31M:
-A) EMG
-B) EEG1
-C) EEG3
-D) EEG2
-
-8406-BIO:
-A) Bio
-B) NC
-C) NC
-D) NC
-
-8406-2BIO:
-A) Bio1
-B) Bio2
-C) NC
-D) NC
-
-8406-EEG2BIO:
-A) Bio1
-B) EEG1
-C) EMG
-D) Bio2
-
-8406-SE and 8406-SL:
-A) Bio
-B) EEG1
-C) EMG
-D) EEG2
-
-8406-SE3:
-A) Bio
-B) EEG1
-C) EEG3
-D) EEG2
-
-8406-SE4:
-A) EEG4
-B) EEG1
-C) EEG3
-D) EEG2
-"""
