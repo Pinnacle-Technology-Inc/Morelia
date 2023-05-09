@@ -115,7 +115,7 @@ class POD_8401HR(POD_Basics) :
             'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
             'Packet #'          : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
             'Status'            : POD_Packets.BinaryBytesToInt(msgDict['Status']),
-            'CH3'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits 
+            'CH3'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][ :3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits 
             'CH2'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
             'CH1'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11 CH2 3~0, CH1 17~14  | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
             'CH0'               : POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6: ], 20, 2), # | 13 CH1 5~0, CH0 17~16  | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
