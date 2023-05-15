@@ -141,6 +141,7 @@ class POD_8206HR(POD_Basics) :
             POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)
         ) )   
     
+    
     @staticmethod
     def _TranslateTTLbyte_Binary(ttlByte) : 
         return( (
