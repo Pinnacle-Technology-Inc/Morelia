@@ -101,7 +101,7 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans = {
             'Command Number'  : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
             'Packet #'        : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
-            'TTL'             : self._TranslateTTLbyte(msgDict['TTL']),
+            'TTL'             : self._TranslateTTLbyte_Binary(msgDict['TTL']),
             'Ch0'             : self._BinaryBytesToVoltage(msgDict['Ch0']),
             'Ch1'             : self._BinaryBytesToVoltage(msgDict['Ch1']),
             'Ch2'             : self._BinaryBytesToVoltage(msgDict['Ch2'])
@@ -119,7 +119,7 @@ class POD_8206HR(POD_Basics) :
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             return( {
                 'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
-                'Payload'           : self._TranslateTTLbyte(msgDict['Payload'])
+                'Payload'           : self._TranslateTTLbyte_ASCII(msgDict['Payload'])
             } )
         else: # standard packet 
             return(self.TranslatePODpacket_Standard(msg))
@@ -133,12 +133,21 @@ class POD_8206HR(POD_Basics) :
 
 
     @staticmethod
-    def _TranslateTTLbyte(ttlByte) : 
+    def _TranslateTTLbyte_ASCII(ttlByte) : 
         return( (
             POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
             POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
             POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5),
             POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)
+        ) )   
+    
+    @staticmethod
+    def _TranslateTTLbyte_Binary(ttlByte) : 
+        return( (
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7),
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6),
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5),
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)
         ) )   
 
 
