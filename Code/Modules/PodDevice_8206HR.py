@@ -101,7 +101,7 @@ class POD_8206HR(POD_Basics) :
         msgDictTrans = {
             'Command Number'  : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
             'Packet #'        : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
-            'TTL'             : POD_Packets.BinaryBytesToInt(msgDict['TTL']),
+            'TTL'             : self._TranslateTTLbyte_Binary(msgDict['TTL']),
             'Ch0'             : self._BinaryBytesToVoltage(msgDict['Ch0']),
             'Ch1'             : self._BinaryBytesToVoltage(msgDict['Ch1']),
             'Ch2'             : self._BinaryBytesToVoltage(msgDict['Ch2'])
@@ -109,11 +109,50 @@ class POD_8206HR(POD_Basics) :
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
+
+    def TranslatePODpacket(self, msg) : 
+        # get command number (same for standard and binary packets)
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
+        if(self._commands.IsCommandBinary(cmd)): # message is binary 
+            return(self.TranslatePODpacket_Binary(msg))
+        elif(cmd == 106) : # 106, 'GET TTL PORT'
+            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+            return( {
+                'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
+                'Payload'           : self._TranslateTTLbyte_ASCII(msgDict['Payload']) # TranslatePODpacket_Standard does not handle TTL well
+            } )
+        else: # standard packet 
+            return(self.TranslatePODpacket_Standard(msg))
+            
+
+
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
     
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
+
+    @staticmethod
+    def _TranslateTTLbyte_ASCII(ttlByte) : 
+        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
+        return( (
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        ) )   
     
+
+    @staticmethod
+    def _TranslateTTLbyte_Binary(ttlByte) : 
+        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
+        return( (
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        ) )   
+
 
     def _BinaryBytesToVoltage(self, value):
         # convert binary message from POD to integer
