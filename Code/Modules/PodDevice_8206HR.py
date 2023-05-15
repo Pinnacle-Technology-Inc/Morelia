@@ -119,7 +119,7 @@ class POD_8206HR(POD_Basics) :
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             return( {
                 'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
-                'Payload'           : self._TranslateTTLbyte_ASCII(msgDict['Payload'])
+                'Payload'           : self._TranslateTTLbyte_ASCII(msgDict['Payload']) # TranslatePODpacket_Standard does not handle TTL well
             } )
         else: # standard packet 
             return(self.TranslatePODpacket_Standard(msg))
@@ -134,21 +134,23 @@ class POD_8206HR(POD_Basics) :
 
     @staticmethod
     def _TranslateTTLbyte_ASCII(ttlByte) : 
+        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( (
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5),
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
         ) )   
     
-    
+
     @staticmethod
     def _TranslateTTLbyte_Binary(ttlByte) : 
+        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( (
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7),
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6),
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5),
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
         ) )   
 
 
