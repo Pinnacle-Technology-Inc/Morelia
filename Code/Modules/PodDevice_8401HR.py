@@ -178,14 +178,11 @@ class POD_8401HR(POD_Basics) :
         return(msgDictTrans)
 
 
-    # ============ PROTECTED METHODS ============      ========================================================================================================================
-
-
     # ------------ DEVICE HANDLING ------------           ------------------------------------------------------------------------------------------------------------------------
-       
     
+
     @staticmethod
-    def _GetChannelMapping(device):
+    def GetChannelMapping(device):
         match device : 
             case '8407-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
             case '8407-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
@@ -203,13 +200,16 @@ class POD_8401HR(POD_Basics) :
             case '8406-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
             case '8406-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
             case _              : return(None) # no device matched
+
+
+    # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
     @staticmethod
-    def _Voltage_PrimaryChannels(value, ssGain, PreampGain=None):
+    def _Voltage_PrimaryChannels(value, ssGain=None, PreampGain=None):
         if(ssGain != None and PreampGain == None) : 
             return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
         elif(ssGain != None):
