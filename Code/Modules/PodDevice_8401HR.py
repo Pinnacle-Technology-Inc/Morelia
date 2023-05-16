@@ -207,6 +207,18 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
+    def _TranslateTTLByte(ttlByte) : 
+        return({
+            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+        })
+    
+
+    @staticmethod
     def _Voltage_PrimaryChannels(value, ssGain=None, PreampGain=None):
         if(ssGain != None and PreampGain == None) : 
             return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
