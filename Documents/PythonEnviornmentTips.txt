@@ -17,6 +17,12 @@ Verify python installation:
     >> py -3 --version
 
 
+Create python enviornment (VS Code): 
+
+    Command Palette >> Python: Create Environment >> Venv
+    Command Palette >> Python: Select Interpreter >> .venv
+
+
 Enter the python enviornment: 
 
     # Windows 
