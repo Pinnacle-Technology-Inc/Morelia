@@ -72,13 +72,13 @@ class POD_8401HR(POD_Basics) :
 
         # verify that dictionaries are correct structure
         goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
-        if(ssGain.keys().sort() != goodKeys) : 
+        if(list(ssGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        if(preampGain.keys().sort() != goodKeys) : 
+        if(list(preampGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
         # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap = POD_8401HR._GetChannelMapping(deviceName)
+        self._channelMap = POD_8401HR.GetChannelMapping(deviceName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
