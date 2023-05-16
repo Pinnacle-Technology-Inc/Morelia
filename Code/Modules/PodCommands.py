@@ -24,9 +24,9 @@ class POD_Commands :
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE = -1
 
-    # number of bytes for a given payload value (U=unsigned, #=bit)
+    # number of hex characters for a given payload value (U=unsigned, #=bit)
     __U8  = 2
-    __U16 = 4
+    __U16 = 2*__U8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -61,7 +61,7 @@ class POD_Commands :
         U8 = POD_Commands.U8()
         NOVALUE = POD_Commands.NoValue()
         # basic standard POD commands 
-        basics = { # key(command number) : value([command name, (number of argument ascii bytes), (number of return bytes), binary flag ]), 
+        basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag ]), 
             0   : [ 'ACK',                  (0,),      (0,),          False   ],
             1   : [ 'NACK',                 (0,),      (0,),          False   ],
             2   : [ 'PING',                 (0,),      (0,),          False   ],
@@ -130,21 +130,21 @@ class POD_Commands :
         return(None)
 
 
-    def ArgumentBytes(self, cmd) : 
+    def ArgumentHexChar(self, cmd) : 
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
-                # return the number of bytes in the command argument 
+                # return the number of hex characters (4 bits each) in the command argument 
                 return(val[self.__ARGUMENTS])
         # no match
         return(None) 
 
 
-    def ReturnBytes(self,cmd) : 
+    def ReturnHexChar(self,cmd) : 
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
-                # return the number of bytes in the command return 
+                # return the number of hex characters (4 bits each) in the command return 
                 return(val[self.__RETURNS])
         # no match
         return(None) 
