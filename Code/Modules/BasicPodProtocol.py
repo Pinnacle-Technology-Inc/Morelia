@@ -127,8 +127,8 @@ class POD_Basics :
             pldBytes = msgDict['Payload']
             # get sizes 
             pldSizes = (len(pldBytes),)
-            argSizes = self._commands.ArgumentBytes(msgDictTrans['Command Number'])
-            retSizes = self._commands.ReturnBytes(msgDictTrans['Command Number'])
+            argSizes = self._commands.ArgumentHexChar(msgDictTrans['Command Number'])
+            retSizes = self._commands.ReturnHexChar(msgDictTrans['Command Number'])
             # determine which size tuple to use
             if( sum(pldSizes) == sum(argSizes)):
                 useSizes = argSizes
@@ -249,7 +249,7 @@ class POD_Basics :
         else: 
             cmdNum = cmd
         # get length of expected paylaod 
-        argSizes = self._commands.ArgumentBytes(cmdNum)
+        argSizes = self._commands.ArgumentHexChar(cmdNum)
         # check if command requires a payload. 
         if( sum(argSizes) > 0 ):
             # check to see if a payload was given 

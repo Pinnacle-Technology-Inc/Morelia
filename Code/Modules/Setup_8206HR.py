@@ -544,7 +544,7 @@ class Setup_8206HR :
                 # save data as uV
                 data0[i] = Setup_8206HR._uV(rt['Ch0'])
                 data1[i] = Setup_8206HR._uV(rt['Ch1'])
-                data2[i] = Setup_8206HR._uV(rt['Ch2'])\
+                data2[i] = Setup_8206HR._uV(rt['Ch2'])
             # save to file 
             if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
             elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, [data0,data1,data2])
