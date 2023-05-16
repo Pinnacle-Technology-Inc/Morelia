@@ -135,23 +135,23 @@ class POD_8206HR(POD_Basics) :
     @staticmethod
     def _TranslateTTLbyte_ASCII(ttlByte) : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( (
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        ) )   
+        return( {
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        } )   
     
 
     @staticmethod
     def _TranslateTTLbyte_Binary(ttlByte) : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( (
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        ) )   
+        return( {
+            'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        } )   
 
 
     def _BinaryBytesToVoltage(self, value):
