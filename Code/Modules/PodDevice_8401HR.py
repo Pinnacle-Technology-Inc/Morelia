@@ -57,8 +57,6 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 115,	'GET EXT1 VALUE',	    (0,),	    (U16,),     False  )
         self._commands.AddCommand( 116,	'SET EXT0',	            (U8,),	    (0,),       False  )
         self._commands.AddCommand( 117,	'SET EXT1',	            (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 118,	'MEASURE OFFSETS',	    (0,),	    (0,),       False  )
-        self._commands.AddCommand( 119,	'GET OFFSETS',	        (0,),	    (0,),       False  )
         self._commands.AddCommand( 120,	'GET OFFSETS',	        (U8, U8),	(U16,),     False  )
         self._commands.AddCommand( 121,	'SET INPUT GROUND',	    (U8,),	    (0,),       False  )
         self._commands.AddCommand( 122,	'GET INPUT GROUND',	    (0,),	    (U8,),      False  )
