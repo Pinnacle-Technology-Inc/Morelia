@@ -57,8 +57,6 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 115,	'GET EXT1 VALUE',	    (0,),	    (U16,),     False  )
         self._commands.AddCommand( 116,	'SET EXT0',	            (U8,),	    (0,),       False  )
         self._commands.AddCommand( 117,	'SET EXT1',	            (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 118,	'MEASURE OFFSETS',	    (0,),	    (0,),       False  )
-        self._commands.AddCommand( 119,	'GET OFFSETS',	        (0,),	    (0,),       False  )
         self._commands.AddCommand( 120,	'GET OFFSETS',	        (U8, U8),	(U16,),     False  )
         self._commands.AddCommand( 121,	'SET INPUT GROUND',	    (U8,),	    (0,),       False  )
         self._commands.AddCommand( 122,	'GET INPUT GROUND',	    (0,),	    (U8,),      False  )
@@ -74,13 +72,13 @@ class POD_8401HR(POD_Basics) :
 
         # verify that dictionaries are correct structure
         goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
-        if(ssGain.keys().sort() != goodKeys) : 
+        if(list(ssGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        if(preampGain.keys().sort() != goodKeys) : 
+        if(list(preampGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
         # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap = POD_8401HR._GetChannelMapping(deviceName)
+        self._channelMap = POD_8401HR.GetChannelMapping(deviceName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
