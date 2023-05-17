@@ -154,6 +154,7 @@ class SetupPodDevices :
         # return file name with extension 
         return(name+ext)
     
+    
     # ------------ OPTIONS ------------
 
     
@@ -197,16 +198,6 @@ class SetupPodDevices :
         # Quit.
         else:              print('\nQuitting...\n')
 
-
-    ###############################################
-    # WORKING 
-    ###############################################
-    
-    def _StreamAllDevices(self) : # TODO
-        pass
-        # for podType in self._setupPodDevices.values() :
-            # podType._Stream()
-
     def _ShowCurrentSettings(self) :
         for podType in self._setupPodDevices.values() :
             podType._DisplayPODdeviceParameters()
@@ -232,3 +223,15 @@ class SetupPodDevices :
     def _Reconnect(self):
         for podType in self._setupPodDevices.values() :
             podType._ConnectAllPODdevices()
+
+
+    ###############################################
+    # WORKING 
+    ###############################################
+    
+    def _StreamAllDevices(self) : # TODO
+        pass
+        # for podType in self._setupPodDevices.values() :
+            # podType._Stream()
+
+    

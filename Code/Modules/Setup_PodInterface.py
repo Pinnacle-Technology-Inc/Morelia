@@ -20,13 +20,10 @@ class Setup_Interface :
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
-
     _NAME = ''
     _PORTKEY = ''
 
-
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
-
 
     def _GetParam_onePODdevice(self, forbiddenNames) : 
         pass
@@ -34,12 +31,8 @@ class Setup_Interface :
     def _DisplayPODdeviceParameters(self) : 
         pass
 
-    def _DisplayPODdeviceParameters(self) : 
-        pass
-
     def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
         pass
-
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
