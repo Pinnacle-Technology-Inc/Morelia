@@ -18,11 +18,13 @@ __email__       = "sales@pinnaclet.com"
 
 class SetupPodDevices :     
     
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
-    def __init__(self, saveFile=None, podParametersDict={'8206HR':None}) :
+
+    def __init__(self, saveFile=None, podParametersDict={'8206-HR':None}) :
         # initialize class instance variables
-        self._setupPodDevices = { '8206HR' : Setup_8206HR() } # NOTE add supporded devices here 
+        self._setupPodDevices = { '8206-HR' : Setup_8206HR() } # NOTE add supporded devices here 
         self._saveFileName = ''
         self._options = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
@@ -38,19 +40,19 @@ class SetupPodDevices :
         self.SetupPODparameters(podParametersDict)
         self.SetupSaveFile(saveFile)
 
+
     def __del__(self):
         # for each type of POD device 
         for value in self._setupPodDevices.values() : 
             if(value != None) : 
                 del value
                 value = None
- 
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
-    def SetupPODparameters(self, podParametersDict={'8206HR':None}):
+    def SetupPODparameters(self, podParametersDict={'8206-HR':None}):
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
             self._setupPodDevices[key].SetupPODparameters(value)
@@ -64,6 +66,17 @@ class SetupPodDevices :
 
             else:
                 self._saveFileName = saveFile
+    
+
+    def Run(self) :
+        # init looping condition 
+        choice = 0
+        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # abstracted way to get dict key for 'Quit.'
+        # keep prompting user until user wants to quit
+        while(choice != quit) :
+            self._PrintOptions()
+            choice = self._AskOption()
+            self._DoOption(choice)
     
     
     # ============ PRIVATE METHODS ============      ========================================================================================================================
@@ -141,10 +154,82 @@ class SetupPodDevices :
         # return file name with extension 
         return(name+ext)
     
+    # ------------ OPTIONS ------------
 
     
+    def _PrintOptions(self):
+            print('\nOptions:')
+            for key,val in self._options.items() : 
+                print(str(key)+'. '+val)
+
+
+    def _AskOption(self):
+        try:
+            # get option number from user 
+            choice = int(input('\nWhat would you like to do?: '))
+        except : 
+            # print error and ask again
+            print('[!] Please enter an integer number.')
+            return(self._AskOption())
+        # choice must be an available option 
+        if(not choice in self._options.keys()):
+            print('[!] Invalid Selection. Please choose an available option.')
+            return(self._AskOption())
+        # return valid choice
+        return(choice)
+
+
+    def _DoOption(self, choice) : 
+        # Start Streaming.
+        if  (choice == 1): self._StreamAllDevices()
+        # Show current settings.
+        elif(choice == 2): self._ShowCurrentSettings()
+        # Edit save file path.
+        elif(choice == 3): self._EditSaveFilePath()
+        # Edit POD device parameters.
+        elif(choice == 4): self._EditCheckConnect()
+        # Connect a new POD device.
+        elif(choice == 5): self._ConnectNewDevice()
+        # Reconnect current POD devices.
+        elif(choice == 6): self._Reconnect()
+        # Generate initialization code.
+        # elif(choice == 7): self._PrintInitCode()
+        # Quit.
+        else:              print('\nQuitting...\n')
+
+
     ###############################################
     # WORKING 
     ###############################################
+    
+    def _StreamAllDevices(self) : # TODO
+        pass
+        # for podType in self._setupPodDevices.values() :
+            # podType._Stream()
 
-   
+    def _ShowCurrentSettings(self) :
+        for podType in self._setupPodDevices.values() :
+            podType._DisplayPODdeviceParameters()
+        self._PrintSaveFile()
+    
+    def _EditSaveFilePath(self) : 
+        self._saveFileName = self._GetFilePath()
+        self._PrintSaveFile()
+
+    def _EditCheckConnect(self):
+        for podType in self._setupPodDevices.values() :
+            podType._DisplayPODdeviceParameters()
+            podType._EditParams()
+            podType._ValidateParams()
+            podType._ConnectAllPODdevices()
+        
+    def _ConnectNewDevice(self):
+        pass
+        # for podType in self._setupPodDevices.values() :
+            # podType._AddPODdevice()
+            # podType._ValidateParams()
+            # podType._ConnectAllPODdevices()
+    
+    def _Reconnect(self):
+        for podType in self._setupPodDevices.values() :
+            podType._ConnectAllPODdevices()

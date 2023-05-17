@@ -143,7 +143,7 @@ class Setup_8206HR(Setup_Interface) :
 
     def _DisplayPODdeviceParameters(self) : 
         # print title 
-        print('\nParameters for all POD Devices:')
+        print('\nParameters for all '+str(self._NAME)+' Devices:')
         # setup table 
         tab = texttable.Texttable()
         # write column names
