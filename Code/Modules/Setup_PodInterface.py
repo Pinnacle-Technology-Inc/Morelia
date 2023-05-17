@@ -44,10 +44,15 @@ class Setup_Interface :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, podParametersDict=None) :
+    def __init__(self) :
         # initialize class instance variables
         self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
         self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...}
+
+
+    def __del__(self):
+        # delete all POD objects 
+        self._DisconnectAllPODdevices
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -78,13 +83,13 @@ class Setup_Interface :
             # number must be positive
             if(n<=0):
                 print('[!] Number must be greater than zero.')
-                return(Setup_Interface._SetNumberOfDevices())
+                return(Setup_Interface._SetNumberOfDevices(name))
             # return number of POD devices 
             return(n)
         except : 
             # print error and start over
             print('[!] Please enter an integer number.')
-            return(Setup_Interface._SetNumberOfDevices())
+            return(Setup_Interface._SetNumberOfDevices(name))
         
 
     def _ConnectAllPODdevices(self) : 

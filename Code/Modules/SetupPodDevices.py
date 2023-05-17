@@ -38,6 +38,14 @@ class SetupPodDevices :
         self.SetupPODparameters(podParametersDict)
         self.SetupSaveFile(saveFile)
 
+    def __del__(self):
+        # for each type of POD device 
+        for value in self._setupPodDevices.values() : 
+            if(value != None) : 
+                del value
+                value = None
+ 
+
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
