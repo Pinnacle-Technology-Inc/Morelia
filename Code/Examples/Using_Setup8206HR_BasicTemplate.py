@@ -6,7 +6,7 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
 
 # local imports
-from Setup_8206HR import Setup_8206HR
+from Setup_8206HR_OLD import Setup_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
