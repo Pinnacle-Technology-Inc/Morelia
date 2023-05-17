@@ -17,6 +17,8 @@ __email__       = "sales@pinnaclet.com"
 
 class SetupPodDevices :     
     
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
     def __init__(self, saveFile=None, podParametersDict={'8206HR':None}) :
         # initialize class instance variables
         self._setupPodDevices = { '8206HR' : Setup_8206HR() } # NOTE add supporded devices here 
@@ -36,8 +38,18 @@ class SetupPodDevices :
         # self.SetupSaveFile(saveFile)
 
 
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+
+
     def SetupPODparameters(self, podParametersDict={'8206HR':None}):
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
             self._setupPodDevices[key].SetupPODparameters(value)
 
+
+    # ============ PRIVATE METHODS ============      ========================================================================================================================
+
+        
+    ###############################################
+    # WORKING 
+    ###############################################

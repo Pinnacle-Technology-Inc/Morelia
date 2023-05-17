@@ -17,10 +17,16 @@ __email__       = "sales@pinnaclet.com"
 
 class Setup_Interface : 
 
+
+    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
+
+
     _NAME = ''
     _PORTKEY = ''
 
-    ##################################################
+
+    # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
+
 
     def _GetParam_onePODdevice(self, forbiddenNames) : 
         pass
@@ -34,14 +40,18 @@ class Setup_Interface :
     def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
         pass
 
-    ##################################################
+
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
 
     def __init__(self, podParametersDict=None) :
         # initialize class instance variables
         self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
         self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...}
 
-    ##################################################
+
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+
 
     def SetupPODparameters(self, podParametersDict=None):
         # get dictionary of POD device parameters
@@ -52,6 +62,49 @@ class Setup_Interface :
             self._podParametersDict = podParametersDict
         # connect and initialize all POD devices
         self._ConnectAllPODdevices()
+
+
+    # ============ PRIVATE METHODS ============      ========================================================================================================================
+
+
+    # ------------ DEVICES ------------
+
+
+    @staticmethod
+    def _SetNumberOfDevices(name : str) : 
+        try : 
+            # request user imput
+            n = int(input('\nHow many '+str(name)+' devices do you want to use?: '))
+            # number must be positive
+            if(n<=0):
+                print('[!] Number must be greater than zero.')
+                return(Setup_Interface._SetNumberOfDevices())
+            # return number of POD devices 
+            return(n)
+        except : 
+            # print error and start over
+            print('[!] Please enter an integer number.')
+            return(Setup_Interface._SetNumberOfDevices())
+        
+
+    def _ConnectAllPODdevices(self) : 
+        # delete existing 
+        self._DisconnectAllPODdevices()
+        # connect new devices
+        print('\nConnecting POD devices...')
+        # setup each POD device
+        for key,val in self._podParametersDict.items():
+           self._ConnectPODdevice(key,val)
+
+
+    def _DisconnectAllPODdevices(self) :
+        for k in list(self._podDevices.keys()) : 
+            pod = self._podDevices.pop(k)
+            del pod # port closed on delete in COM_io
+
+
+    # ------------ SETUP POD PARAMETERS ------------
+
 
     def _SetParam_allPODdevices(self) :
         # get the number of devices 
@@ -71,26 +124,6 @@ class Setup_Interface :
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
 
-    @staticmethod
-    def _SetNumberOfDevices(name : str) : 
-        try : 
-            # request user imput
-            n = int(input('\nHow many '+str(name)+' devices do you want to use?: '))
-            # number must be positive
-            if(n<=0):
-                print('[!] Number must be greater than zero.')
-                return(Setup_Interface._SetNumberOfDevices())
-            # return number of POD devices 
-            return(n)
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(Setup_Interface._SetNumberOfDevices())
-    
-    
-    @staticmethod
-    def _PrintDeviceNumber(num):
-        print('\n-- Device #'+str(num)+' --\n')
 
     @staticmethod
     def _ChoosePort(forbidden=[]) : 
@@ -132,6 +165,10 @@ class Setup_Interface :
         # return port
         return(portList)
     
+
+    # ------------ EDIT POD PARAMETERS ------------
+
+
     def _ValidateParams(self) : 
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
@@ -170,12 +207,22 @@ class Setup_Interface :
             # return the pod device number
             return(podKey)
         
+
     def _GetForbiddenNames(self, key='Port', exclude=None):
         if(exclude == None) : 
             portNames = [x[key] for x in self._podParametersDict.values()]
         else :
             portNames = [x[key] for x in self._podParametersDict.values() if exclude != x[key]]
         return(portNames)
+    
+
+    # ------------ DISPLAY POD PARAMETERS ------------
+       
+
+    @staticmethod
+    def _PrintDeviceNumber(num):
+        print('\n-- Device #'+str(num)+' --\n')
+
 
     @staticmethod
     def _AskYN(question) : 
@@ -188,19 +235,9 @@ class Setup_Interface :
             print('[!] Please enter \'y\' or \'n\'.')
             return(Setup_Interface._AskYN(question))
         
-    def _ConnectAllPODdevices(self) : 
-        # delete existing 
-        self._DisconnectAllPODdevices()
-        # connect new devices
-        print('\nConnecting POD devices...')
-        # setup each POD device
-        for key,val in self._podParametersDict.items():
-           self._ConnectPODdevice(key,val)
 
-    def _DisconnectAllPODdevices(self) :
-        for k in list(self._podDevices.keys()) : 
-            pod = self._podDevices.pop(k)
-            del pod # port closed on delete in COM_io
+    # ------------ HELPER ------------
+
 
     @staticmethod
     def _TestDeviceConnection(pod):
@@ -215,3 +252,7 @@ class Setup_Interface :
             return(True)
         else:       
             return(False)
+        
+    ###############################################
+    # WORKING 
+    ###############################################
