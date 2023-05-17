@@ -6,7 +6,7 @@ import sys, os
 sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
 
 # local imports
-from Setup_8206HR_OLD import Setup_8206HR
+from Setup_8206HR_OLD import Setup_8206HR_OLD
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -29,7 +29,7 @@ if(runExample == '1'):
     to define the setup parameters for each POD device. Then, it will ask you for a path and 
     filename to save POD streaming data to. 
     """
-    go = Setup_8206HR()
+    go = Setup_8206HR_OLD()
 
     # start the program 
     """
@@ -58,7 +58,7 @@ elif(runExample == '2'):
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """
-    go = Setup_8206HR(saveFile, podParametersDict)
+    go = Setup_8206HR_OLD(saveFile, podParametersDict)
 
     # start the program 
     go.Run()

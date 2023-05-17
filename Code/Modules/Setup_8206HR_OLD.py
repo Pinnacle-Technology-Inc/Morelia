@@ -23,7 +23,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8206HR : 
+class Setup_8206HR_OLD : 
     
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
@@ -108,13 +108,13 @@ class Setup_8206HR :
             # number must be positive
             if(n<=0):
                 print('[!] Number must be greater than zero.')
-                return(Setup_8206HR._SetNumberOfDevices())
+                return(Setup_8206HR_OLD._SetNumberOfDevices())
             # return number of POD devices 
             return(n)
         except : 
             # print error and start over
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._SetNumberOfDevices())
+            return(Setup_8206HR_OLD._SetNumberOfDevices())
     
 
     def _DisconnectAllPODdevices(self) :
@@ -181,7 +181,7 @@ class Setup_8206HR :
             # current index 
             self._PrintDeviceNumber(i+1)
             # get parameters
-            onePodDict = Setup_8206HR._GetParam_onePODdevice(portNames)
+            onePodDict = Setup_8206HR_OLD._GetParam_onePODdevice(portNames)
             # update lists 
             portNames[i] = onePodDict['Port']
             podDict[i+1] = onePodDict
@@ -192,24 +192,24 @@ class Setup_8206HR :
     @staticmethod
     def _GetParam_onePODdevice(forbiddenNames) : 
         return({
-                'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
-                'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
-                'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
-                'Low Pass'          : Setup_8206HR._ChooseLowpass()
+                'Port'              : Setup_8206HR_OLD._ChoosePort(forbiddenNames),
+                'Sample Rate'       : Setup_8206HR_OLD._ChooseSampleRate(),
+                'Preamplifier Gain' : Setup_8206HR_OLD._ChoosePreampGain(),
+                'Low Pass'          : Setup_8206HR_OLD._ChooseLowpass()
             })
         
     
     @staticmethod
     def _ChoosePort(forbidden=[]) : 
         # get ports
-        portList = Setup_8206HR._GetPortsList(forbidden)
+        portList = Setup_8206HR_OLD._GetPortsList(forbidden)
         print('Available COM Ports:', portList)
         # request port from user
         choice = input('Select port: COM')
         # choice cannot be an empty string
         if(choice == ''):
             print('[!] Please choose a COM port.')
-            return(Setup_8206HR._ChoosePort(forbidden))
+            return(Setup_8206HR_OLD._ChoosePort(forbidden))
         else:
             # search for port in list
             for port in portList:
@@ -217,7 +217,7 @@ class Setup_8206HR :
                     return(port)
             # if return condition not reached...
             print('[!] COM'+choice+' does not exist. Try again.')
-            return(Setup_8206HR._ChoosePort(forbidden))
+            return(Setup_8206HR_OLD._ChoosePort(forbidden))
 
 
     @staticmethod
@@ -248,11 +248,11 @@ class Setup_8206HR :
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseSampleRate())
+            return(Setup_8206HR_OLD._ChooseSampleRate())
         # check for valid input
         if(sampleRate<100 or sampleRate>2000) : 
             print('[!] Sample rate must be between 100-2000.')
-            return(Setup_8206HR._ChooseSampleRate())
+            return(Setup_8206HR_OLD._ChooseSampleRate())
         # return sample rate
         return(sampleRate)
        
@@ -265,12 +265,12 @@ class Setup_8206HR :
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChoosePreampGain())
+            return(Setup_8206HR_OLD._ChoosePreampGain())
         # check for valid input 
         if(gain != 10 and gain != 100):
             # prompt again 
             print('[!] Preamplifier gain must be 10 or 100.')
-            return(Setup_8206HR._ChoosePreampGain())
+            return(Setup_8206HR_OLD._ChoosePreampGain())
         # return preamplifier gain 
         return(gain)
 
@@ -279,9 +279,9 @@ class Setup_8206HR :
     def _ChooseLowpass():
         # get lowpass for all EEG
         return({
-            'EEG1'      : Setup_8206HR._ChooseLowpassForEEG('EEG1'),
-            'EEG2'      : Setup_8206HR._ChooseLowpassForEEG('EEG2'),
-            'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG('EEG3/EMG'),
+            'EEG1'      : Setup_8206HR_OLD._ChooseLowpassForEEG('EEG1'),
+            'EEG2'      : Setup_8206HR_OLD._ChooseLowpassForEEG('EEG2'),
+            'EEG3/EMG'  : Setup_8206HR_OLD._ChooseLowpassForEEG('EEG3/EMG'),
         })
 
 
@@ -293,11 +293,11 @@ class Setup_8206HR :
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
+            return(Setup_8206HR_OLD._ChooseLowpassForEEG(eeg))
         # check for valid input
         if(lowpass<11 or lowpass>500) : 
             print('[!] Sample rate must be between 11-500 Hz.')
-            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
+            return(Setup_8206HR_OLD._ChooseLowpassForEEG(eeg))
         # return lowpass
         return(lowpass)
 
@@ -309,7 +309,7 @@ class Setup_8206HR :
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
         # ask if params are good or not
-        validParams = Setup_8206HR._AskYN(question='Are the POD device parameters correct?')
+        validParams = Setup_8206HR_OLD._AskYN(question='Are the POD device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
@@ -323,7 +323,7 @@ class Setup_8206HR :
         forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis]['Port'])
         # edit device
         self._PrintDeviceNumber(editThis)
-        self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
+        self._podParametersDict[editThis] = Setup_8206HR_OLD._GetParam_onePODdevice(forbiddenNames)
 
 
     def _SelectPODdeviceFromDictToEdit(self):
@@ -416,7 +416,7 @@ class Setup_8206HR :
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
             # ask user for file name 
-            fileName = Setup_8206HR._GetFileName()
+            fileName = Setup_8206HR_OLD._GetFileName()
             # add slash if path is given 
             if(name != ''): 
                 # check for slash 
@@ -427,7 +427,7 @@ class Setup_8206HR :
             # return complete path and filename 
             return(name+fileName)
         # prompt again if bad extension is given 
-        elif( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFilePath())
+        elif( not Setup_8206HR_OLD._CheckFileExt(ext)) : return(Setup_8206HR_OLD._GetFilePath())
         # path is correct
         else :
             return(path)
@@ -440,24 +440,24 @@ class Setup_8206HR :
         # prompt again if no name given
         if(inp=='') : 
             print('[!] No filename given.')
-            return(Setup_8206HR._GetFileName())
+            return(Setup_8206HR_OLD._GetFileName())
         # get parts 
         name, ext = osp.splitext(inp)
         # default to csv if no extension is given
         if(ext=='') : ext='.csv'
         # check if extension is correct 
-        if( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFileName())
+        if( not Setup_8206HR_OLD._CheckFileExt(ext)) : return(Setup_8206HR_OLD._GetFileName())
         # return file name with extension 
         return(name+ext)
 
 
     def _OpenSaveFile(self, devNum) : 
         # get file name and extension 
-        fname = Setup_8206HR._BuildFileName(self._saveFileName, devNum)
+        fname = Setup_8206HR_OLD._BuildFileName(self._saveFileName, devNum)
         p, ext = osp.splitext(fname)
         # open file based on extension type 
         f = None
-        if(ext=='.csv' or ext=='.txt') :    f = Setup_8206HR._OpenSaveFile_TXT(fname)
+        if(ext=='.csv' or ext=='.txt') :    f = Setup_8206HR_OLD._OpenSaveFile_TXT(fname)
         elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
         return(f)
     
@@ -542,12 +542,12 @@ class Setup_8206HR :
                 # translate 
                 rt = pod.TranslatePODpacket(r)
                 # save data as uV
-                data0[i] = Setup_8206HR._uV(rt['Ch0'])
-                data1[i] = Setup_8206HR._uV(rt['Ch1'])
-                data2[i] = Setup_8206HR._uV(rt['Ch2'])
+                data0[i] = Setup_8206HR_OLD._uV(rt['Ch0'])
+                data1[i] = Setup_8206HR_OLD._uV(rt['Ch1'])
+                data2[i] = Setup_8206HR_OLD._uV(rt['Ch2'])
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
-            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, [data0,data1,data2])
+            if(ext=='.csv' or ext=='.txt') : Setup_8206HR_OLD._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            elif(ext=='.edf') :              Setup_8206HR_OLD._WriteDataToFile_EDF(file, [data0,data1,data2])
             # increment by second 
             t+=1
 
@@ -675,7 +675,7 @@ class Setup_8206HR :
             return(False)
         else:
             print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_8206HR._AskYN(question))
+            return(Setup_8206HR_OLD._AskYN(question))
 
 
     @staticmethod
