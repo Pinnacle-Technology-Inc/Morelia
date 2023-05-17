@@ -33,7 +33,7 @@ class Setup_8206HR(Setup_Interface) :
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
-    # ------------ DEVICES ------------
+    # ------------ DEVICE CONNECTION ------------
 
 
     def _ConnectPODdevice(self, deviceNum, deviceParams) : 

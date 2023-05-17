@@ -72,7 +72,7 @@ class Setup_Interface :
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
-    # ------------ DEVICES ------------
+    # ------------ DEVICE CONNECTION ------------
 
 
     @staticmethod
@@ -106,6 +106,12 @@ class Setup_Interface :
         for k in list(self._podDevices.keys()) : 
             pod = self._podDevices.pop(k)
             del pod # port closed on delete in COM_io
+
+
+    def _AddPODdevice(self):
+        nextNum = max(self._podParametersDict.keys())+1
+        self._PrintDeviceNumber(nextNum)
+        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
 
 
     # ------------ SETUP POD PARAMETERS ------------

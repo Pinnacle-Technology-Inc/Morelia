@@ -224,11 +224,10 @@ class SetupPodDevices :
             podType._ConnectAllPODdevices()
         
     def _ConnectNewDevice(self):
-        pass
-        # for podType in self._setupPodDevices.values() :
-            # podType._AddPODdevice()
-            # podType._ValidateParams()
-            # podType._ConnectAllPODdevices()
+        for podType in self._setupPodDevices.values() :
+            podType._AddPODdevice()
+            podType._ValidateParams()
+            podType._ConnectAllPODdevices()
     
     def _Reconnect(self):
         for podType in self._setupPodDevices.values() :
