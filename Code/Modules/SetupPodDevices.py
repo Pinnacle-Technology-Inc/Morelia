@@ -1,5 +1,5 @@
 """
-Setup_Interface provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children.
+SetupPodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file
 """
 
 # enviornment imports
@@ -14,5 +14,5 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_Interface : 
+class SetupPodDevices : 
     pass
