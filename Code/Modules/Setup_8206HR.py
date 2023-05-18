@@ -25,16 +25,19 @@ __email__       = "sales@pinnaclet.com"
 
 class Setup_8206HR(Setup_Interface) : 
 
+
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
+    
+    # deviceParams keys for reference 
+    _PARAMKEYS   = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low Pass']
+    _LOWPASSKEYS = ['EEG1','EEG2','EEG3/EMG']
 
-    _PARAMKEYS = ['Port','Sample Rate','Preamplifier Gain','Low Pass'] # TODO reference this 
-    _LOWPASSKEYS = ['EEG1','EEG2','EEG3/EMG'] # TODO reference this 
-
+    # for EDF file writing 
     _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
 
+    # overwrite from parent
     _NAME = '8206-HR'
-    _PORTKEY = _PARAMKEYS[0] # 'Port'
 
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
@@ -295,3 +298,11 @@ class Setup_8206HR(Setup_Interface) :
     def _uV(voltage: float|int ):
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    
+
+    def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
+        if(exclude == None) : 
+            portNames = [x[key] for x in self._podParametersDict.values()]
+        else :
+            portNames = [x[key] for x in self._podParametersDict.values() if exclude != x[key]]
+        return(portNames)

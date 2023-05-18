@@ -26,8 +26,8 @@ class Setup_Interface :
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
-    _NAME = ''
-    _PORTKEY = ''
+    _NAME = 'GENERIC' # overwrite this in child classes 
+    _PORTKEY = 'Port'
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
@@ -72,8 +72,8 @@ class Setup_Interface :
     def __init__(self) -> None :
         # initialize class instance variables
         self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
-        self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...}
-        self._saveFileName = ''         # string filename: <path>/file_<DEVICE#>.ext # the device number will be appended to the filename 
+        self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...other values...}
+        self._saveFileName = ''         # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
     def __del__(self) -> None :
@@ -255,6 +255,7 @@ class Setup_Interface :
 
     def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
         if(exclude == None) : 
+            # get port name for each POD device 
             portNames = [x[key] for x in self._podParametersDict.values()]
         else :
             portNames = [x[key] for x in self._podParametersDict.values() if exclude != x[key]]
