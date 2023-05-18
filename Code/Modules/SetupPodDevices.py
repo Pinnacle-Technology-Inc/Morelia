@@ -173,7 +173,46 @@ class SetupPodDevices :
         # return file name with extension 
         return(name+ext)
     
-    
+
+    # ------------ STREAM ------------ 
+
+
+    def _StreamAllDevices(self) : # TODO
+        # start streaming from all devices 
+        allThreads = {}
+        for key, podType in self._setupPodDevices.items() :
+            try : 
+                allThreads[key] = podType._Stream()
+            except Exception as e :
+                print('[!]',e)
+        # verify that there are open threads 
+        if(len(allThreads) != 0) :
+            # make thread for user input 
+            userThread = threading.Thread(target=self._AskToStopStream)
+            userThread.start()
+            # wait for threads to finish 
+            userThread.join()
+            for threadDict in allThreads.values() : # for each device type...
+                for thread in threadDict.values() : # for each POD device...
+                    thread.join()
+            print('Save complete!')
+        
+
+    def _SetFilenameToDevices(self) :
+        # give filename to devices
+        for podType in self._setupPodDevices.values() : 
+            podType.SetFileName(self._saveFileName)
+
+
+    def _AskToStopStream(self):
+        # get any input from user 
+        input('\nPress Enter to stop streaming:')
+        # tell devices to stop streaming 
+        for podType in self._setupPodDevices.values() : 
+            podType._StopStream()
+        print('Finishing up...')
+
+
     # ------------ OPTIONS ------------
 
     
@@ -258,44 +297,3 @@ class SetupPodDevices :
             'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
-
-
-    ###############################################
-    # WORKING 
-    ###############################################
-    
-    def _StreamAllDevices(self) : # TODO
-        # start streaming from all devices 
-        allThreads = {}
-        for key, podType in self._setupPodDevices.items() :
-            try : 
-                allThreads[key] = podType._Stream()
-            except Exception as e :
-                print('[!]',e)
-        # verify that there are open threads 
-        if(len(allThreads) != 0) :
-            # make thread for user input 
-            userThread = threading.Thread(target=self._AskToStopStream)
-            userThread.start()
-            # wait for threads to finish 
-            userThread.join()
-            for threadDict in allThreads.values() : # for each device type...
-                for thread in threadDict.values() : # for each POD device...
-                    thread.join()
-            print('Save complete!')
-        
-
-    
-    def _SetFilenameToDevices(self) :
-        # give filename to devices
-        for podType in self._setupPodDevices.values() : 
-            podType.SetFileName(self._saveFileName)
-
-
-    def _AskToStopStream(self):
-        # get any input from user 
-        input('\nPress Enter to stop streaming:')
-        # tell devices to stop streaming 
-        for podType in self._setupPodDevices.values() : 
-            podType._StopStream()
-        print('Finishing up...')

@@ -160,36 +160,9 @@ class Setup_8206HR(Setup_Interface) :
         # show table 
         print(tab.draw())
 
-            
-    ###############################################
-    # WORKING 
-    ###############################################
 
-    def _StreamThreading(self) :
-        # create save files for pod devices
-        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
-        # make threads for reading 
-        readThreads = {
-            # create thread to _StreamUntilStop() to dictionary entry devNum
-            devNum : threading.Thread(
-                    target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] )
-                )
-            # for each device 
-            for devNum,params,pod,file in 
-                zip(
-                    self._podParametersDict.keys(),     # devNum
-                    self._podParametersDict.values(),   # params
-                    self._podDevices.values(),          # pod
-                    podFiles.values()                   # file
-                ) 
-        }
-        print('Starting')
-        # start streaming (program will continue until .join() )
-        for t in readThreads.values() : t.start()
-        print('returning')
-        print(readThreads)
-        return(readThreads)
+    # ------------ FILE HANDLING ------------
+
 
     @staticmethod
     def _OpenSaveFile_TXT(fname) : 
@@ -215,6 +188,58 @@ class Setup_8206HR(Setup_Interface) :
                 'prefilter': ''            
             } )
         return(f)
+
+
+    @staticmethod
+    def _WriteDataToFile_TXT(file, data : list, sampleRate : int, t : int) : 
+        # initialize times
+        dt = 1.0 / sampleRate
+        ti = t
+        # save data for each timestamp
+        for i in range(len(data[0])) : 
+            # increment time, rounding to 6 decimal places
+            ti = round(ti+dt, 6)  
+            # build line to write 
+            line = [ ti, data[0][i], data[1][i], data[2][i] ]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(line)
+
+
+    @staticmethod
+    def _WriteDataToFile_EDF(file, data) : 
+        # write data to EDF file 
+        file.writeSamples(data)
+
+
+    # ------------ STREAM ------------ 
+
+
+    def _StreamThreading(self) :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : threading.Thread(
+                    target = self._StreamUntilStop, 
+                    args = ( pod, file, params['Sample Rate'] )
+                )
+            # for each device 
+            for devNum,params,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podParametersDict.values(),   # params
+                    self._podDevices.values(),          # pod
+                    podFiles.values()                   # file
+                ) 
+        }
+        for t in readThreads.values() : 
+            # start streaming (program will continue until .join() or streaming ends)
+            t.start()
+        return(readThreads)
+    
     
     def _StreamUntilStop(self, pod : POD_8206HR, file, sampleRate : int):
         # get file type
@@ -253,36 +278,16 @@ class Setup_8206HR(Setup_Interface) :
             t+=1
 
             
-    @staticmethod
-    def _uV(voltage):
-        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
-        return ( round(voltage * 1E-6, 6 ) + 0.0 )
-    
-
-    @staticmethod
-    def _WriteDataToFile_TXT(file, data : list, sampleRate : int, t : int) : 
-        # initialize times
-        dt = 1.0 / sampleRate
-        ti = t
-        # save data for each timestamp
-        for i in range(len(data[0])) : 
-            # increment time, rounding to 6 decimal places
-            ti = round(ti+dt, 6)  
-            # build line to write 
-            line = [ ti, data[0][i], data[1][i], data[2][i] ]
-            # convert data into comma separated string
-            line = ','.join(str(x) for x in line) + '\n'
-            # write data to file 
-            file.write(line)
-
-
-    @staticmethod
-    def _WriteDataToFile_EDF(file, data) : 
-        # write data to EDF file 
-        file.writeSamples(data)
-
-
     def _StopStream(self):
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
+
+
+    # ------------ HELPER ------------
+
+
+    @staticmethod
+    def _uV(voltage):
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )

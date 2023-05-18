@@ -266,6 +266,39 @@ class Setup_Interface :
             return(Setup_Interface._AskYN(question))
         
 
+    # ------------ FILE HANDLING ------------
+
+
+    def _OpenSaveFile(self, devNum) : 
+        # get file name and extension 
+        fname = self._BuildFileName(devNum)
+        p, ext = osp.splitext(fname)
+        # open file based on extension type 
+        f = None
+        if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
+        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
+        return(f)
+    
+
+    def _BuildFileName(self, devNum : int) : 
+        # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
+        #    ex: text.txt --> test_8206-HR_1.txt
+        name, ext = osp.splitext(self._saveFileName)
+        fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
+        return(fname)
+
+    # ------------ STREAM ------------ 
+
+
+    def _Stream(self) : 
+        # check for good connection 
+        if(not self._TestDeviceConnection_All()): 
+            raise Exception('Could not stream from '+self._NAME+'.')
+        # start streaming from all devices 
+        else:
+            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
+    
+
     # ------------ HELPER ------------
 
 
@@ -298,43 +331,3 @@ class Setup_Interface :
         # return True when all connections are successful, false otherwise
         return(allGood)
     
-    
-    ###############################################
-    # WORKING 
-    ###############################################
-
-
-    def _Stream(self) : 
-        # check for good connection 
-        if(not self._TestDeviceConnection_All()): 
-            raise Exception('Could not stream from '+self._NAME+'.')
-        # start streaming from all devices 
-        else:
-            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
-    
-
-    # @staticmethod
-    # def _TimeFunc(func) : 
-    #     ti = time.time() # start time 
-    #     func() # run function 
-    #     dt = round(time.time()-ti,3) # calculate time difference
-    #     return(dt)
-    
-
-    def _OpenSaveFile(self, devNum) : 
-        # get file name and extension 
-        fname = self._BuildFileName(devNum)
-        p, ext = osp.splitext(fname)
-        # open file based on extension type 
-        f = None
-        if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
-        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
-        return(f)
-    
-
-    def _BuildFileName(self, devNum : int) : 
-        # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
-        #    ex: text.txt --> test_8206-HR_1.txt
-        name, ext = osp.splitext(self._saveFileName)
-        fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
-        return(fname)
