@@ -265,10 +265,15 @@ class SetupPodDevices :
     ###############################################
     
     def _StreamAllDevices(self) : # TODO
-        try : 
-            allThreads = {}
-            for key, podType in self._setupPodDevices.items() :
+        # start streaming from all devices 
+        allThreads = {}
+        for key, podType in self._setupPodDevices.items() :
+            try : 
                 allThreads[key] = podType._Stream()
+            except Exception as e :
+                print('[!]',e)
+        # verify that there are open threads 
+        if(len(allThreads) != 0) :
             # make thread for user input 
             userThread = threading.Thread(target=self._AskToStopStream)
             userThread.start()
@@ -278,8 +283,7 @@ class SetupPodDevices :
                 for thread in threadDict.values() : # for each POD device...
                     thread.join()
             print('Save complete!')
-        except Exception as e :
-            print('[!]',e)
+        
 
     
     def _SetFilenameToDevices(self) :
