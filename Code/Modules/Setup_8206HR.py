@@ -171,6 +171,7 @@ class Setup_8206HR(Setup_Interface) :
         f.write('time,ch0,ch1,ch2\n')
         return(f)
     
+    
     def _OpenSaveFile_EDF(self, fname, devNum):
         # number of channels 
         n = len(self._LOWPASSKEYS)
