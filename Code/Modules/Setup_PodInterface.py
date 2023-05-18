@@ -3,8 +3,6 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 """
 
 # enviornment imports
-import math 
-import time 
 from   os       import path      as osp
 
 # local imports

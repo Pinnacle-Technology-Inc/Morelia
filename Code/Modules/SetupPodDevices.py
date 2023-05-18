@@ -4,7 +4,9 @@ SetupPodDevices allows a user to set up and stream from any number of POD device
 
 # enviornment imports
 from   os           import path      as osp
+from   math         import floor 
 import threading 
+import time 
 
 # local imports
 from Setup_8206HR   import Setup_8206HR
@@ -177,7 +179,7 @@ class SetupPodDevices :
     # ------------ STREAM ------------ 
 
 
-    def _StreamAllDevices(self) : # TODO
+    def _StreamAllDevices(self) : 
         # start streaming from all devices 
         allThreads = {}
         for key, podType in self._setupPodDevices.items() :
@@ -240,7 +242,7 @@ class SetupPodDevices :
 
     def _DoOption(self, choice : int) : 
         # Start Streaming.
-        if  (choice == 1): self._StreamAllDevices()
+        if  (choice == 1): self._Stream()
         # Show current settings.
         elif(choice == 2): self._ShowCurrentSettings()
         # Edit save file path.
@@ -255,6 +257,11 @@ class SetupPodDevices :
         elif(choice == 7): self._PrintInitCode()
         # Quit.
         else:              print('\nQuitting...\n')
+
+
+    def _Stream(self) :
+        dt = self._TimeFunc(self._StreamAllDevices)
+        print('Execution time:', str(floor(dt)), 'sec') 
 
 
     def _ShowCurrentSettings(self) :
@@ -297,3 +304,14 @@ class SetupPodDevices :
             'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
+
+
+    # ------------ HELPER ------------
+
+
+    @staticmethod
+    def _TimeFunc(func) : 
+        ti = time.time() # start time 
+        func() # run function 
+        dt = round(time.time()-ti,3) # calculate time difference
+        return(dt)

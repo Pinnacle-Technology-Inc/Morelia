@@ -5,9 +5,9 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 # enviornment imports
 import texttable
 import threading 
+import numpy                     as np
 from   pyedflib import EdfWriter as edfw
 from   os       import path      as osp
-import numpy                     as np
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -63,7 +63,7 @@ class Setup_8206HR(Setup_Interface) :
 
         # check if connection failed 
         if(failed) :
-            print('Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
         else :
             print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
