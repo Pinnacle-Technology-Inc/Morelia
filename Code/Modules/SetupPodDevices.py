@@ -52,6 +52,28 @@ class SetupPodDevices :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
+    # ------------ GETTERS ------------
+
+
+    def GetPODparametersDict(self) : 
+        allParamDict = {}
+        # fir each type of device
+        for key,value in self._setupPodDevices.items() : 
+            allParamDict[key] = value.GetPODparametersDict()
+        return(allParamDict)
+
+
+    def GetSaveFileName(self):
+        return(self._saveFileName)
+    
+
+    def GetOptions(self) :
+        return(self._options)
+    
+
+    # ------------ CLASS SETUP ------------
+
+
     def SetupPODparameters(self, podParametersDict={'8206-HR':None}):
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
@@ -67,6 +89,9 @@ class SetupPodDevices :
             else:
                 self._saveFileName = saveFile
     
+
+    # ------------ EXECUTION ------------
+
 
     def Run(self) :
         # init looping condition 
@@ -194,18 +219,21 @@ class SetupPodDevices :
         # Reconnect current POD devices.
         elif(choice == 6): self._Reconnect()
         # Generate initialization code.
-        # elif(choice == 7): self._PrintInitCode()
+        elif(choice == 7): self._PrintInitCode()
         # Quit.
         else:              print('\nQuitting...\n')
+
 
     def _ShowCurrentSettings(self) :
         for podType in self._setupPodDevices.values() :
             podType._DisplayPODdeviceParameters()
         self._PrintSaveFile()
     
+
     def _EditSaveFilePath(self) : 
         self._saveFileName = self._GetFilePath()
         self._PrintSaveFile()
+
 
     def _EditCheckConnect(self):
         for podType in self._setupPodDevices.values() :
@@ -214,15 +242,27 @@ class SetupPodDevices :
             podType._ValidateParams()
             podType._ConnectAllPODdevices()
         
+
     def _ConnectNewDevice(self):
         for podType in self._setupPodDevices.values() :
             podType._AddPODdevice()
             podType._ValidateParams()
             podType._ConnectAllPODdevices()
     
+
     def _Reconnect(self):
         for podType in self._setupPodDevices.values() :
             podType._ConnectAllPODdevices()
+
+
+    def _PrintInitCode(self):
+        print(
+            '\n' + 
+            'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
+            'podParametersDict = ' + str(self.GetPODparametersDict())  + '\n' + 
+            'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
+            'go.Run()'
+        )
 
 
     ###############################################
@@ -234,4 +274,5 @@ class SetupPodDevices :
         # for podType in self._setupPodDevices.values() :
             # podType._Stream()
 
+    
     

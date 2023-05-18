@@ -52,6 +52,10 @@ class Setup_Interface :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
+    def GetPODparametersDict(self) :
+        return(self._podParametersDict)
+    
+
     def SetupPODparameters(self, podParametersDict=None):
         # get dictionary of POD device parameters
         if(podParametersDict==None):
@@ -258,6 +262,25 @@ class Setup_Interface :
         else:       
             return(False)
         
+
+    def _TestDeviceConnection_All(self) :
+        allGood = True
+        for key,pod in self._podDevices.items(): 
+            # test connection of each pod device
+            if(not self._TestDeviceConnection(pod)) : 
+                # write newline for first bad connection 
+                if(allGood==True) : print('') 
+                # print error message
+                print('Connection issue with POD device #'+str(key)+'.')
+                # flag that a connection failed
+                allGood = False 
+        # return True when all connections are successful, false otherwise
+        return(allGood)
+    
+    
     ###############################################
     # WORKING 
     ###############################################
+
+
+    
