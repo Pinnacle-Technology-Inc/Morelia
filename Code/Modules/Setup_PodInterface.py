@@ -3,7 +3,7 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 """
 
 # enviornment imports
-from   os       import path      as osp
+from os import path
 
 # local imports
 from SerialCommunication    import COM_io
@@ -270,7 +270,7 @@ class Setup_Interface :
     def _OpenSaveFile(self, devNum) : 
         # get file name and extension 
         fname = self._BuildFileName(devNum)
-        p, ext = osp.splitext(fname)
+        p, ext = path.splitext(fname)
         # open file based on extension type 
         f = None
         if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
@@ -281,7 +281,7 @@ class Setup_Interface :
     def _BuildFileName(self, devNum : int) : 
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
         #    ex: text.txt --> test_8206-HR_1.txt
-        name, ext = osp.splitext(self._saveFileName)
+        name, ext = path.splitext(self._saveFileName)
         fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
         return(fname)
 

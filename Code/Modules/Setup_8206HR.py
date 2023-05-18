@@ -6,8 +6,8 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 import texttable
 import threading 
 import numpy                     as np
-from   pyedflib import EdfWriter as edfw
-from   os       import path      as osp
+from   pyedflib import EdfWriter
+from   os       import path
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -172,10 +172,12 @@ class Setup_8206HR(Setup_Interface) :
         return(f)
     
     def _OpenSaveFile_EDF(self, fname, devNum):
+        # number of channels 
+        n = len(self._LOWPASSKEYS)
         # create file
-        f = edfw(fname, 3) 
+        f = EdfWriter(fname, n) 
         # get info for each channel
-        for i in range(len(self._LOWPASSKEYS)):
+        for i in range(n):
             f.setSignalHeader( i, {
                 'label' : self._LOWPASSKEYS[i],
                 'dimension' : 'uV',
@@ -243,7 +245,7 @@ class Setup_8206HR(Setup_Interface) :
     
     def _StreamUntilStop(self, pod : POD_8206HR, file, sampleRate : int):
         # get file type
-        name, ext = osp.splitext(self._saveFileName)
+        name, ext = path.splitext(self._saveFileName)
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
