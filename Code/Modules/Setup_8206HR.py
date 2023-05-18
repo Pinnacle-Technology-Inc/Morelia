@@ -14,7 +14,6 @@ from   io          import IOBase
 from Setup_PodInterface  import Setup_Interface
 from PodDevice_8206HR    import POD_8206HR 
 
-
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"

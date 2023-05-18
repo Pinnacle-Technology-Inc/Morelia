@@ -8,7 +8,6 @@ from   pyedflib   import EdfWriter
 from   threading  import Thread
 from   io         import IOBase
 
-
 # local imports
 from SerialCommunication    import COM_io
 from BasicPodProtocol       import POD_Basics
