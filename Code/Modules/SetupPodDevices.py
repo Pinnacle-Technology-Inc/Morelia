@@ -86,7 +86,7 @@ class SetupPodDevices :
 
 
     @staticmethod
-    def _BuildFileName(fileName, devName, devNum) : 
+    def _BuildFileName(fileName, devName : str, devNum : int) : 
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
         #    ex: text.txt --> test_8206-HR_1.txt
         name, ext = osp.splitext(fileName)
@@ -180,7 +180,7 @@ class SetupPodDevices :
         return(choice)
 
 
-    def _DoOption(self, choice) : 
+    def _DoOption(self, choice : int) : 
         # Start Streaming.
         if  (choice == 1): self._StreamAllDevices()
         # Show current settings.

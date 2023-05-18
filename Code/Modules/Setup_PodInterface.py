@@ -6,6 +6,7 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 
 # local imports
 from SerialCommunication    import COM_io
+from BasicPodProtocol       import POD_Basics
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -224,12 +225,12 @@ class Setup_Interface :
        
 
     @staticmethod
-    def _PrintDeviceNumber(num):
+    def _PrintDeviceNumber(num : int):
         print('\n-- Device #'+str(num)+' --\n')
 
 
     @staticmethod
-    def _AskYN(question) : 
+    def _AskYN(question : str) : 
         response = input(str(question)+' (y/n): ').upper() 
         if(response=='Y' or response=='YES'):
             return(True)
@@ -244,7 +245,7 @@ class Setup_Interface :
 
 
     @staticmethod
-    def _TestDeviceConnection(pod):
+    def _TestDeviceConnection(pod : POD_Basics):
         # returns True when connection is successful, false otherwise
         try:
             w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses

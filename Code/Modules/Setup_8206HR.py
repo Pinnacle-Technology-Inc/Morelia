@@ -36,7 +36,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum, deviceParams) : 
+    def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
         failed = True 
         try : 
             # get port name 
@@ -67,7 +67,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames) : 
+    def _GetParam_onePODdevice(self, forbiddenNames : list) : 
         return({
             'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
             'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
@@ -122,7 +122,7 @@ class Setup_8206HR(Setup_Interface) :
     
     
     @staticmethod
-    def _ChooseLowpassForEEG(eeg):
+    def _ChooseLowpassForEEG(eeg : str):
         try : 
             # get lowpass from user 
             lowpass = int(input('Set lowpass (Hz) for '+str(eeg)+': '))
