@@ -3,11 +3,12 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 """
 
 # enviornment imports
-import texttable
-import threading 
-import numpy                     as np
-from   pyedflib import EdfWriter
-from   os       import path
+import texttable 
+import os 
+import numpy       as     np
+from   threading   import Thread
+from   pyedflib    import EdfWriter
+from   io          import IOBase
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -42,7 +43,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
         failed = True 
         try : 
             # get port name 
@@ -52,9 +53,9 @@ class Setup_8206HR(Setup_Interface) :
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
                 # write setup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
+                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate']          )
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']    ))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']    ))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
                 failed = False
         except : 
@@ -73,7 +74,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames : list) : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
             'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
             'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
@@ -83,7 +84,7 @@ class Setup_8206HR(Setup_Interface) :
     
 
     @staticmethod
-    def _ChooseSampleRate():
+    def _ChooseSampleRate() -> int :
         try : 
             # get sample rate from user 
             sampleRate = int(input('Set sample rate (Hz): '))
@@ -100,7 +101,7 @@ class Setup_8206HR(Setup_Interface) :
     
 
     @staticmethod
-    def _ChoosePreampGain():
+    def _ChoosePreampGain() -> int :
         try:
             # get gain from user 
             gain = int(input('Set preamplifier gain: '))
@@ -118,7 +119,7 @@ class Setup_8206HR(Setup_Interface) :
     
 
     @staticmethod
-    def _ChooseLowpass():
+    def _ChooseLowpass() -> dict[str,int] :
         # get lowpass for all EEG
         return({
             'EEG1'      : Setup_8206HR._ChooseLowpassForEEG('EEG1'),
@@ -128,7 +129,7 @@ class Setup_8206HR(Setup_Interface) :
     
     
     @staticmethod
-    def _ChooseLowpassForEEG(eeg : str):
+    def _ChooseLowpassForEEG(eeg: str) -> int :
         try : 
             # get lowpass from user 
             lowpass = int(input('Set lowpass (Hz) for '+str(eeg)+': '))
@@ -147,7 +148,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
-    def _DisplayPODdeviceParameters(self) : 
+    def _DisplayPODdeviceParameters(self) -> None : 
         # print title 
         print('\nParameters for all '+str(self._NAME)+' Devices:')
         # setup table 
@@ -165,14 +166,14 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _OpenSaveFile_TXT(fname) : 
+    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
         # open file and write column names 
         f = open(fname, 'w')
         f.write('time,ch0,ch1,ch2\n')
         return(f)
     
-    
-    def _OpenSaveFile_EDF(self, fname, devNum):
+
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
         # number of channels 
         n = len(self._LOWPASSKEYS)
         # create file
@@ -194,7 +195,7 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _WriteDataToFile_TXT(file, data : list, sampleRate : int, t : int) : 
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray], sampleRate: int, t: float) : 
         # initialize times
         dt = 1.0 / sampleRate
         ti = t
@@ -211,7 +212,7 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _WriteDataToFile_EDF(file, data) : 
+    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -219,13 +220,13 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ STREAM ------------ 
 
 
-    def _StreamThreading(self) :
+    def _StreamThreading(self) -> dict[int,Thread] :
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
         # make threads for reading 
         readThreads = {
             # create thread to _StreamUntilStop() to dictionary entry devNum
-            devNum : threading.Thread(
+            devNum : Thread(
                     target = self._StreamUntilStop, 
                     args = ( pod, file, params['Sample Rate'] )
                 )
@@ -244,9 +245,9 @@ class Setup_8206HR(Setup_Interface) :
         return(readThreads)
     
     
-    def _StreamUntilStop(self, pod : POD_8206HR, file, sampleRate : int):
+    def _StreamUntilStop(self, pod: POD_8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
         # get file type
-        name, ext = path.splitext(self._saveFileName)
+        name, ext = os.path.splitext(self._saveFileName)
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
@@ -281,7 +282,7 @@ class Setup_8206HR(Setup_Interface) :
             t+=1
 
             
-    def _StopStream(self):
+    def _StopStream(self) -> None:
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
@@ -291,6 +292,6 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _uV(voltage):
+    def _uV(voltage: float|int ):
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )

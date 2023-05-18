@@ -3,7 +3,11 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 """
 
 # enviornment imports
-from os import path
+import os
+from   pyedflib   import EdfWriter
+from   threading  import Thread
+from   io         import IOBase
+
 
 # local imports
 from SerialCommunication    import COM_io
@@ -27,39 +31,52 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-    def _GetParam_onePODdevice(self, forbiddenNames) : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])] :
+        # Prompts the user to input all device setup parameters
+        # should return a dictionary of the device parameters
         pass
 
-    def _DisplayPODdeviceParameters(self) : 
+    def _DisplayPODdeviceParameters(self) -> None : 
+        # display all the pod device parameters in a texttable 
         pass
 
-    def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict) -> bool : 
+        # write setup commands to initialize the POD device with the user's parameters
+        # return true for successful connection, false otherwise
         pass
 
-    def _StreamThreading(self) :
+    def _StreamThreading(self) -> dict[int,Thread] :
+        # stream data and save data to a file
+        # each POD device has its own thread 
+        # returns a dictionary with the key as the device# and value as the thread object 
         pass
 
-    def _StopStream(self) : 
+    def _StopStream(self) -> None: 
+        # tell devices to stop streaming 
         pass
 
     @staticmethod
-    def _OpenSaveFile_TXT(fname) : 
+    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+        # open a text file and write column names 
+        # return opened file object
         pass
 
-    def _OpenSaveFile_EDF(self, fname, devNum):
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        # create an EDF file and write all channel information
+        # returns the EdfWriter file object 
         pass
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self) :
+    def __init__(self) -> None :
         # initialize class instance variables
         self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
         self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...}
         self._saveFileName = ''         # string filename: <path>/file_<DEVICE#>.ext # the device number will be appended to the filename 
 
 
-    def __del__(self):
+    def __del__(self) -> None :
         # delete all POD objects 
         self._DisconnectAllPODdevices
 
@@ -67,15 +84,15 @@ class Setup_Interface :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
-    def SetFileName(self, fileName : str) :
+    def SetFileName(self, fileName: str) -> None :
         self._saveFileName = str(fileName)
 
 
-    def GetPODparametersDict(self) :
+    def GetPODparametersDict(self) -> dict[int,dict] :
         return(self._podParametersDict)
     
 
-    def SetupPODparameters(self, podParametersDict=None):
+    def SetupPODparameters(self, podParametersDict: None|dict = None ) -> None :
         # get dictionary of POD device parameters
         if(podParametersDict==None):
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
@@ -93,7 +110,7 @@ class Setup_Interface :
 
 
     @staticmethod
-    def _SetNumberOfDevices(name : str) : 
+    def _SetNumberOfDevices(name: str) -> int : 
         try : 
             # request user imput
             n = int(input('\nHow many '+str(name)+' devices do you want to use?: '))
@@ -109,7 +126,7 @@ class Setup_Interface :
             return(Setup_Interface._SetNumberOfDevices(name))
         
 
-    def _ConnectAllPODdevices(self) : 
+    def _ConnectAllPODdevices(self) -> None : 
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
@@ -119,13 +136,13 @@ class Setup_Interface :
            self._ConnectPODdevice(key,val)
 
 
-    def _DisconnectAllPODdevices(self) :
+    def _DisconnectAllPODdevices(self) -> None :
         for k in list(self._podDevices.keys()) : 
             pod = self._podDevices.pop(k)
             del pod # port closed on delete in COM_io
 
 
-    def _AddPODdevice(self):
+    def _AddPODdevice(self) -> None :
         nextNum = max(self._podParametersDict.keys())+1
         self._PrintDeviceNumber(nextNum)
         self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
@@ -134,7 +151,7 @@ class Setup_Interface :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _SetParam_allPODdevices(self) :
+    def _SetParam_allPODdevices(self) -> None :
         # get the number of devices 
         numDevices = self._SetNumberOfDevices(self._NAME)
         # initialize 
@@ -154,7 +171,7 @@ class Setup_Interface :
 
 
     @staticmethod
-    def _ChoosePort(forbidden=[]) : 
+    def _ChoosePort(forbidden:list[str]=[]) -> str : 
         # get ports
         portList = Setup_Interface._GetPortsList(forbidden)
         print('Available COM Ports:', portList)
@@ -175,7 +192,7 @@ class Setup_Interface :
 
         
     @staticmethod
-    def _GetPortsList(forbidden=[]) : 
+    def _GetPortsList(forbidden:list[str]=[]) -> list[str] : 
         # get port list 
         portListAll = COM_io.GetCOMportsList()
         if(forbidden):
@@ -197,7 +214,7 @@ class Setup_Interface :
     # ------------ EDIT POD PARAMETERS ------------
 
 
-    def _ValidateParams(self) : 
+    def _ValidateParams(self) -> None : 
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
         # ask if params are good or not
@@ -207,7 +224,7 @@ class Setup_Interface :
             self._EditParams()
             self._ValidateParams()
 
-    def _EditParams(self) :
+    def _EditParams(self) -> None :
         # chose device # to edit
         editThis = self._SelectPODdeviceFromDictToEdit()
         # get all port names except for device# to be edited
@@ -217,7 +234,7 @@ class Setup_Interface :
         self._podParametersDict[editThis] = self._GetParam_onePODdevice(forbiddenNames)
 
 
-    def _SelectPODdeviceFromDictToEdit(self):
+    def _SelectPODdeviceFromDictToEdit(self) -> int :
         try:
             # get pod device number from user 
             podKey = int(input('Edit '+self._NAME+' device #: '))
@@ -236,7 +253,7 @@ class Setup_Interface :
             return(podKey)
         
 
-    def _GetForbiddenNames(self, key='Port', exclude=None):
+    def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
         if(exclude == None) : 
             portNames = [x[key] for x in self._podParametersDict.values()]
         else :
@@ -248,12 +265,12 @@ class Setup_Interface :
        
 
     @staticmethod
-    def _PrintDeviceNumber(num : int):
+    def _PrintDeviceNumber(num: int) -> None :
         print('\n-- Device #'+str(num)+' --\n')
 
 
     @staticmethod
-    def _AskYN(question : str) : 
+    def _AskYN(question: str) -> bool : 
         response = input(str(question)+' (y/n): ').upper() 
         if(response=='Y' or response=='YES'):
             return(True)
@@ -267,10 +284,10 @@ class Setup_Interface :
     # ------------ FILE HANDLING ------------
 
 
-    def _OpenSaveFile(self, devNum) : 
+    def _OpenSaveFile(self, devNum: int) -> IOBase | EdfWriter : 
         # get file name and extension 
         fname = self._BuildFileName(devNum)
-        p, ext = path.splitext(fname)
+        p, ext = os.path.splitext(fname)
         # open file based on extension type 
         f = None
         if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
@@ -278,17 +295,17 @@ class Setup_Interface :
         return(f)
     
 
-    def _BuildFileName(self, devNum : int) : 
+    def _BuildFileName(self, devNum: int) -> str : 
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
         #    ex: text.txt --> test_8206-HR_1.txt
-        name, ext = path.splitext(self._saveFileName)
+        name, ext = os.path.splitext(self._saveFileName)
         fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
         return(fname)
 
     # ------------ STREAM ------------ 
 
 
-    def _Stream(self) : 
+    def _Stream(self) -> dict[int,Thread] : 
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 
             raise Exception('Could not stream from '+self._NAME+'.')
@@ -301,7 +318,7 @@ class Setup_Interface :
 
 
     @staticmethod
-    def _TestDeviceConnection(pod : POD_Basics):
+    def _TestDeviceConnection(pod: POD_Basics) -> bool :
         # returns True when connection is successful, false otherwise
         try:
             w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
@@ -315,7 +332,7 @@ class Setup_Interface :
             return(False)
         
 
-    def _TestDeviceConnection_All(self) :
+    def _TestDeviceConnection_All(self) -> bool:
         allGood = True
         for key,pod in self._podDevices.items(): 
             # test connection of each pod device
