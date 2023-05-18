@@ -4,6 +4,7 @@ SetupPodDevices allows a user to set up and stream from any number of POD device
 
 # enviornment imports
 from   os           import path      as osp
+import threading 
 
 # local imports
 from Setup_8206HR   import Setup_8206HR
@@ -81,13 +82,15 @@ class SetupPodDevices :
 
 
     def SetupSaveFile(self, saveFile=None):
-            # initialize file name and path 
-            if(saveFile == None) :
-                self._saveFileName = self._GetFilePath()
-                self._PrintSaveFile()
+        # initialize file name and path 
+        if(saveFile == None) :
+            self._saveFileName = self._GetFilePath()
+            self._PrintSaveFile()
+        else:
+            self._saveFileName = saveFile
+        # setup devices 
+        self._SetFilenameToDevices()
 
-            else:
-                self._saveFileName = saveFile
     
 
     # ------------ EXECUTION ------------
@@ -108,15 +111,6 @@ class SetupPodDevices :
 
 
     # ------------ FILE HANDLING ------------
-
-
-    @staticmethod
-    def _BuildFileName(fileName, devName : str, devNum : int) : 
-        # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
-        #    ex: text.txt --> test_8206-HR_1.txt
-        name, ext = osp.splitext(fileName)
-        fname = name+'_'+str(devName)+'_'+str(devNum)+ext   
-        return(fname)
 
 
     def _PrintSaveFile(self):
@@ -232,6 +226,7 @@ class SetupPodDevices :
 
     def _EditSaveFilePath(self) : 
         self._saveFileName = self._GetFilePath()
+        self._SetFilenameToDevices()
         self._PrintSaveFile()
 
 
@@ -270,9 +265,33 @@ class SetupPodDevices :
     ###############################################
     
     def _StreamAllDevices(self) : # TODO
-        pass
-        # for podType in self._setupPodDevices.values() :
-            # podType._Stream()
+        try : 
+            allThreads = {}
+            for key, podType in self._setupPodDevices.items() :
+                allThreads[key] = podType._Stream()
+            # make thread for user input 
+            userThread = threading.Thread(target=self._AskToStopStream)
+            userThread.start()
+            # wait for threads to finish 
+            userThread.join()
+            for threadDict in allThreads.values() : # for each device type...
+                for thread in threadDict.values() : # for each POD device...
+                    thread.join()
+            print('Save complete!')
+        except Exception as e :
+            print('[!]',e)
 
     
-    
+    def _SetFilenameToDevices(self) :
+        # give filename to devices
+        for podType in self._setupPodDevices.values() : 
+            podType.SetFileName(self._saveFileName)
+
+
+    def _AskToStopStream(self):
+        # get any input from user 
+        input('\nPress Enter to stop streaming:')
+        # tell devices to stop streaming 
+        for podType in self._setupPodDevices.values() : 
+            podType._StopStream()
+        print('Finishing up...')

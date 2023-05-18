@@ -3,6 +3,9 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 """
 
 # enviornment imports
+import math 
+import time 
+from   os       import path      as osp
 
 # local imports
 from SerialCommunication    import COM_io
@@ -35,6 +38,19 @@ class Setup_Interface :
     def _ConnectPODdevice(self, deviceNum : int, deviceParams : dict) : 
         pass
 
+    def _StreamThreading(self) :
+        pass
+
+    def _StopStream(self) : 
+        pass
+
+    @staticmethod
+    def _OpenSaveFile_TXT(fname) : 
+        pass
+
+    def _OpenSaveFile_EDF(self, fname, devNum):
+        pass
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -42,6 +58,7 @@ class Setup_Interface :
         # initialize class instance variables
         self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
         self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...}
+        self._saveFileName = ''         # string filename: <path>/file_<DEVICE#>.ext # the device number will be appended to the filename 
 
 
     def __del__(self):
@@ -50,6 +67,10 @@ class Setup_Interface :
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
+
+
+    def SetFileName(self, fileName : str) :
+        self._saveFileName = str(fileName)
 
 
     def GetPODparametersDict(self) :
@@ -283,4 +304,37 @@ class Setup_Interface :
     ###############################################
 
 
+    def _Stream(self) : 
+        # check for good connection 
+        if(not self._TestDeviceConnection_All()): 
+            raise Exception('Could not stream from '+self._NAME+'.')
+        # start streaming from all devices 
+        else:
+            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
     
+
+    # @staticmethod
+    # def _TimeFunc(func) : 
+    #     ti = time.time() # start time 
+    #     func() # run function 
+    #     dt = round(time.time()-ti,3) # calculate time difference
+    #     return(dt)
+    
+
+    def _OpenSaveFile(self, devNum) : 
+        # get file name and extension 
+        fname = self._BuildFileName(devNum)
+        p, ext = osp.splitext(fname)
+        # open file based on extension type 
+        f = None
+        if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
+        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
+        return(f)
+    
+
+    def _BuildFileName(self, devNum : int) : 
+        # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
+        #    ex: text.txt --> test_8206-HR_1.txt
+        name, ext = osp.splitext(self._saveFileName)
+        fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
+        return(fname)

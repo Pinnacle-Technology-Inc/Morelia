@@ -4,6 +4,10 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 
 # enviornment imports
 import texttable
+import threading 
+from   pyedflib import EdfWriter as edfw
+from   os       import path      as osp
+import numpy                     as np
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -24,7 +28,9 @@ class Setup_8206HR(Setup_Interface) :
     
 
     _PARAMKEYS = ['Port','Sample Rate','Preamplifier Gain','Low Pass'] # TODO reference this 
-    _EEGKEYS = ['EEG1','EEG2','EEG3/EMG'] # TODO reference this 
+    _LOWPASSKEYS = ['EEG1','EEG2','EEG3/EMG'] # TODO reference this 
+
+    _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
 
     _NAME = '8206-HR'
     _PORTKEY = _PARAMKEYS[0] # 'Port'
@@ -158,3 +164,125 @@ class Setup_8206HR(Setup_Interface) :
     ###############################################
     # WORKING 
     ###############################################
+
+    def _StreamThreading(self) :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : threading.Thread(
+                    target = self._StreamUntilStop, 
+                    args = ( pod, file, params['Sample Rate'] )
+                )
+            # for each device 
+            for devNum,params,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podParametersDict.values(),   # params
+                    self._podDevices.values(),          # pod
+                    podFiles.values()                   # file
+                ) 
+        }
+        print('Starting')
+        # start streaming (program will continue until .join() )
+        for t in readThreads.values() : t.start()
+        print('returning')
+        print(readThreads)
+        return(readThreads)
+
+    @staticmethod
+    def _OpenSaveFile_TXT(fname) : 
+        # open file and write column names 
+        f = open(fname, 'w')
+        f.write('time,ch0,ch1,ch2\n')
+        return(f)
+    
+    def _OpenSaveFile_EDF(self, fname, devNum):
+        # create file
+        f = edfw(fname, 3) 
+        # get info for each channel
+        for i in range(len(self._LOWPASSKEYS)):
+            f.setSignalHeader( i, {
+                'label' : self._LOWPASSKEYS[i],
+                'dimension' : 'uV',
+                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'physical_max': self._PHYSICAL_BOUND_uV,
+                'physical_min': -self._PHYSICAL_BOUND_uV, 
+                'digital_max': 32767, 
+                'digital_min': -32768, 
+                'transducer': '', 
+                'prefilter': ''            
+            } )
+        return(f)
+    
+    def _StreamUntilStop(self, pod : POD_8206HR, file, sampleRate : int):
+        # get file type
+        name, ext = osp.splitext(self._saveFileName)
+        # packet to mark stop streaming 
+        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
+        # start streaming from device  
+        pod.WriteRead(cmd='STREAM', payload=1)
+        # track time (second)
+        t = 0
+        if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
+        while(True):
+            # initialize data array 
+            data0 = np.zeros(sampleRate)
+            data1 = np.zeros(sampleRate)
+            data2 = np.zeros(sampleRate)
+            # read data for one second
+            for i in range(sampleRate):
+                # read once 
+                r = pod.ReadPODpacket()
+                # stop looping when stop stream command is read 
+                if(r == stopAt) : 
+                    if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
+                    file.close()
+                    return  ##### END #####
+                # translate 
+                rt = pod.TranslatePODpacket(r)
+                # save data as uV
+                data0[i] = self._uV(rt['Ch0'])
+                data1[i] = self._uV(rt['Ch1'])
+                data2[i] = self._uV(rt['Ch2'])
+            # save to file 
+            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
+            # increment by second 
+            t+=1
+
+            
+    @staticmethod
+    def _uV(voltage):
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    
+
+    @staticmethod
+    def _WriteDataToFile_TXT(file, data : list, sampleRate : int, t : int) : 
+        # initialize times
+        dt = 1.0 / sampleRate
+        ti = t
+        # save data for each timestamp
+        for i in range(len(data[0])) : 
+            # increment time, rounding to 6 decimal places
+            ti = round(ti+dt, 6)  
+            # build line to write 
+            line = [ ti, data[0][i], data[1][i], data[2][i] ]
+            # convert data into comma separated string
+            line = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(line)
+
+
+    @staticmethod
+    def _WriteDataToFile_EDF(file, data) : 
+        # write data to EDF file 
+        file.writeSamples(data)
+
+
+    def _StopStream(self):
+        # tell devices to stop streaming 
+        for pod in self._podDevices.values() : 
+            pod.WritePacket(cmd='STREAM', payload=0)
