@@ -125,14 +125,17 @@ class Setup_Interface :
             return(Setup_Interface._SetNumberOfDevices(name))
         
 
-    def _ConnectAllPODdevices(self) -> None : 
+    def _ConnectAllPODdevices(self) -> bool : 
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
         print('\nConnecting POD devices...')
         # setup each POD device
+        areAllGood = True
         for key,val in self._podParametersDict.items():
-           self._ConnectPODdevice(key,val)
+           # areAllGood is false if any device fails
+           areAllGood = areAllGood and self._ConnectPODdevice(key,val)
+        return(areAllGood)
 
 
     def _DisconnectAllPODdevices(self) -> None :

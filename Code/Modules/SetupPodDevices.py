@@ -25,7 +25,7 @@ class SetupPodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str=None, podParametersDict:dict[str,dict|None]={'8206-HR':None}) -> None :
+    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
         # initialize class instance variables
         self._setupPodDevices = { '8206-HR' : Setup_8206HR() } # NOTE add supporded devices here 
         self._saveFileName = ''
@@ -60,7 +60,7 @@ class SetupPodDevices :
 
     def GetPODparametersDict(self) -> dict[str, dict[int, dict] ]: 
         allParamDict = {}
-        # fir each type of device
+        # for each type of device
         for key,value in self._setupPodDevices.items() : 
             allParamDict[key] = value.GetPODparametersDict()
         return(allParamDict)
@@ -83,7 +83,7 @@ class SetupPodDevices :
             self._setupPodDevices[key].SetupPODparameters(value)
 
 
-    def SetupSaveFile(self, saveFile : None|str = None) -> None :
+    def SetupSaveFile(self, saveFile:str|None=None) -> None :
         # initialize file name and path 
         if(saveFile == None) :
             self._saveFileName = self._GetFilePath()
@@ -156,9 +156,10 @@ class SetupPodDevices :
         else:              print('\nQuitting...\n')
 
 
-    def _Stream(self) -> None :
+    def _Stream(self) -> float :
         dt = self._TimeFunc(self._StreamAllDevices)
         print('Execution time:', str(floor(dt)), 'sec') 
+        return(dt)
 
 
     def _ShowCurrentSettings(self) -> None :
@@ -182,15 +183,29 @@ class SetupPodDevices :
         
 
     def _ConnectNewDevice(self) -> None :
-        for podType in self._setupPodDevices.values() :
-            podType._AddPODdevice()
-            podType._ValidateParams()
-            podType._ConnectAllPODdevices()
+        # get available devices 
+        devices = list(self._setupPodDevices.keys())
+        # ask user for choice if there are more than 1 device type
+        if(len(devices) == 1 ) : 
+            deviceName = devices[0]
+        else:
+            print('\nDevice types: '+str(devices))
+            deviceName = input('What type of POD device do you want to add?: ')
+        # add device if available 
+        if(deviceName in devices) : 
+            self._setupPodDevices[deviceName]._AddPODdevice()
+            self._setupPodDevices[deviceName]._ValidateParams()
+            self._setupPodDevices[deviceName]._ConnectAllPODdevices()
+        else : 
+            print('[!] '+deviceName+' is not available.')
     
 
-    def _Reconnect(self) -> None :
+    def _Reconnect(self) -> bool :
+        areAllGood = True
         for podType in self._setupPodDevices.values() :
-            podType._ConnectAllPODdevices()
+            # areAllGood is false if any device fails
+            areAllGood = areAllGood and podType._ConnectAllPODdevices()
+        return(areAllGood)
 
 
     def _PrintInitCode(self) -> None :
@@ -267,6 +282,12 @@ class SetupPodDevices :
         return(name+ext)
     
 
+    def _SetFilenameToDevices(self) -> None :
+        # give filename to devices
+        for podType in self._setupPodDevices.values() : 
+            podType.SetFileName(self._saveFileName)
+
+
     # ------------ STREAM ------------ 
 
 
@@ -290,12 +311,6 @@ class SetupPodDevices :
                     thread.join()
             print('Save complete!')
         
-
-    def _SetFilenameToDevices(self) -> None :
-        # give filename to devices
-        for podType in self._setupPodDevices.values() : 
-            podType.SetFileName(self._saveFileName)
-
 
     def _AskToStopStream(self) -> None :
         # get any input from user 
