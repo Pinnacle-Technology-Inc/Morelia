@@ -49,7 +49,7 @@ The Setup_PodDevices Python module usage description: [here](https://github.com/
 
 ## Modules 
 
-Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf)
+Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/CodeDocumentation.pdf)
 
 | Module                 | Class        | Description                                                                                                     |
 |------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
