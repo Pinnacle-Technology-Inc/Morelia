@@ -30,16 +30,16 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])] :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
         # Prompts the user to input all device setup parameters
         # should return a dictionary of the device parameters
         pass
 
     def _DisplayPODdeviceParameters(self) -> None : 
-        # display all the pod device parameters in a texttable 
+        # display all the pod device parameters in a table 
         pass
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
         # write setup commands to initialize the POD device with the user's parameters
         # return true for successful connection, false otherwise
         pass
@@ -91,7 +91,7 @@ class Setup_Interface :
         return(self._podParametersDict)
     
 
-    def SetupPODparameters(self, podParametersDict: None|dict = None ) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[int,dict]|None=None) -> None :
         # get dictionary of POD device parameters
         if(podParametersDict==None):
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
@@ -147,7 +147,7 @@ class Setup_Interface :
     def _AddPODdevice(self) -> None :
         nextNum = max(self._podParametersDict.keys())+1
         self._PrintDeviceNumber(nextNum)
-        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
+        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames(key=self._PORTKEY))
 
 
     # ------------ SETUP POD PARAMETERS ------------
@@ -166,7 +166,7 @@ class Setup_Interface :
             # get parameters
             onePodDict = self._GetParam_onePODdevice(portNames)
             # update lists 
-            portNames[i] = onePodDict['Port']
+            portNames[i] = onePodDict[self._PORTKEY]
             podDict[i+1] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
@@ -270,18 +270,6 @@ class Setup_Interface :
     @staticmethod
     def _PrintDeviceNumber(num: int) -> None :
         print('\n-- Device #'+str(num)+' --\n')
-
-
-    @staticmethod
-    def _AskYN(question: str) -> bool : 
-        response = input(str(question)+' (y/n): ').upper() 
-        if(response=='Y' or response=='YES'):
-            return(True)
-        elif(response=='N' or response=='NO'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_Interface._AskYN(question))
         
 
     # ------------ FILE HANDLING ------------
@@ -349,3 +337,14 @@ class Setup_Interface :
         # return True when all connections are successful, false otherwise
         return(allGood)
     
+    
+    @staticmethod
+    def _AskYN(question: str) -> bool : 
+        response = input(str(question)+' (y/n): ').upper() 
+        if(response=='Y' or response=='YES'):
+            return(True)
+        elif(response=='N' or response=='NO'):
+            return(False)
+        else:
+            print('[!] Please enter \'y\' or \'n\'.')
+            return(Setup_Interface._AskYN(question))
