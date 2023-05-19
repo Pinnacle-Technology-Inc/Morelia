@@ -39,7 +39,7 @@ Here are some useful documents for setting up your coding environment to use the
 
 ## Examples & Usage 
 
-The Setup_PodDevices Python module usage description: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/PA-16-Abstract-POD-device-setup/Documents/Setup_PodDevices-Usage.pdf)
+* The Setup_PodDevices Python module usage description: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/PA-16-Abstract-POD-device-setup/Documents/Setup_PodDevices-Usage.pdf)
 
 | Module                             | Description                                                   |
 |------------------------------------|---------------------------------------------------------------|
@@ -49,7 +49,8 @@ The Setup_PodDevices Python module usage description: [here](https://github.com/
 
 ## Modules 
 
-Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf)
+* Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf)
+* Class digram for all modules: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/PA-16-Abstract-POD-device-setup/Documents/UML-class-diagram.png)
 
 | Module                 | Class        | Description                                                                                                     |
 |------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
