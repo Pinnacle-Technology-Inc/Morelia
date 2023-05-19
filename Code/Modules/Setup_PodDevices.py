@@ -1,5 +1,5 @@
 """
-SetupPodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file
+Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file
 """
 
 # enviornment imports
@@ -19,7 +19,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class SetupPodDevices :     
+class Setup_PodDevices :     
     
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -27,7 +27,7 @@ class SetupPodDevices :
 
     def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
         # initialize class instance variables
-        self._setupPodDevices = { '8206-HR' : Setup_8206HR() } # NOTE add supporded devices here 
+        self._Setup_PodDevices = { '8206-HR' : Setup_8206HR() } # NOTE add supporded devices here 
         self._saveFileName = ''
         self._options = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
@@ -46,7 +46,7 @@ class SetupPodDevices :
 
     def __del__(self) -> None :
         # for each type of POD device 
-        for value in self._setupPodDevices.values() : 
+        for value in self._Setup_PodDevices.values() : 
             if(value != None) : 
                 del value
                 value = None
@@ -61,7 +61,7 @@ class SetupPodDevices :
     def GetPODparametersDict(self) -> dict[str, dict[int, dict] ]: 
         allParamDict = {}
         # for each type of device
-        for key,value in self._setupPodDevices.items() : 
+        for key,value in self._Setup_PodDevices.items() : 
             allParamDict[key] = value.GetPODparametersDict()
         return(allParamDict)
 
@@ -80,7 +80,7 @@ class SetupPodDevices :
     def SetupPODparameters(self, podParametersDict:dict[str,dict|None]={'8206-HR':None}) -> None :
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
-            self._setupPodDevices[key].SetupPODparameters(value)
+            self._Setup_PodDevices[key].SetupPODparameters(value)
 
 
     def SetupSaveFile(self, saveFile:str|None=None) -> None :
@@ -163,7 +163,7 @@ class SetupPodDevices :
 
 
     def _ShowCurrentSettings(self) -> None :
-        for podType in self._setupPodDevices.values() :
+        for podType in self._Setup_PodDevices.values() :
             podType._DisplayPODdeviceParameters()
         self._PrintSaveFile()
     
@@ -175,7 +175,7 @@ class SetupPodDevices :
 
 
     def _EditCheckConnect(self) -> None :
-        for podType in self._setupPodDevices.values() :
+        for podType in self._Setup_PodDevices.values() :
             podType._DisplayPODdeviceParameters()
             podType._EditParams()
             podType._ValidateParams()
@@ -184,7 +184,7 @@ class SetupPodDevices :
 
     def _ConnectNewDevice(self) -> None :
         # get available devices 
-        devices = list(self._setupPodDevices.keys())
+        devices = list(self._Setup_PodDevices.keys())
         # ask user for choice if there are more than 1 device type
         if(len(devices) == 1 ) : 
             deviceName = devices[0]
@@ -193,16 +193,16 @@ class SetupPodDevices :
             deviceName = input('What type of POD device do you want to add?: ')
         # add device if available 
         if(deviceName in devices) : 
-            self._setupPodDevices[deviceName]._AddPODdevice()
-            self._setupPodDevices[deviceName]._ValidateParams()
-            self._setupPodDevices[deviceName]._ConnectAllPODdevices()
+            self._Setup_PodDevices[deviceName]._AddPODdevice()
+            self._Setup_PodDevices[deviceName]._ValidateParams()
+            self._Setup_PodDevices[deviceName]._ConnectAllPODdevices()
         else : 
             print('[!] '+deviceName+' is not available.')
     
 
     def _Reconnect(self) -> bool :
         areAllGood = True
-        for podType in self._setupPodDevices.values() :
+        for podType in self._Setup_PodDevices.values() :
             # areAllGood is false if any device fails
             areAllGood = areAllGood and podType._ConnectAllPODdevices()
         return(areAllGood)
@@ -247,7 +247,7 @@ class SetupPodDevices :
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
             # ask user for file name 
-            fileName = SetupPodDevices._GetFileName()
+            fileName = Setup_PodDevices._GetFileName()
             # add slash if path is given 
             if(name != ''): 
                 # check for slash 
@@ -258,7 +258,7 @@ class SetupPodDevices :
             # return complete path and filename 
             return(name+fileName)
         # prompt again if bad extension is given 
-        elif( not SetupPodDevices._CheckFileExt(ext)) : return(SetupPodDevices._GetFilePath())
+        elif( not Setup_PodDevices._CheckFileExt(ext)) : return(Setup_PodDevices._GetFilePath())
         # path is correct
         else :
             return(path)
@@ -271,20 +271,20 @@ class SetupPodDevices :
         # prompt again if no name given
         if(inp=='') : 
             print('[!] No filename given.')
-            return(SetupPodDevices._GetFileName())
+            return(Setup_PodDevices._GetFileName())
         # get parts 
         name, ext = os.path.splitext(inp)
         # default to csv if no extension is given
         if(ext=='') : ext='.csv'
         # check if extension is correct 
-        if( not SetupPodDevices._CheckFileExt(ext)) : return(SetupPodDevices._GetFileName())
+        if( not Setup_PodDevices._CheckFileExt(ext)) : return(Setup_PodDevices._GetFileName())
         # return file name with extension 
         return(name+ext)
     
 
     def _SetFilenameToDevices(self) -> None :
         # give filename to devices
-        for podType in self._setupPodDevices.values() : 
+        for podType in self._Setup_PodDevices.values() : 
             podType.SetFileName(self._saveFileName)
 
 
@@ -294,7 +294,7 @@ class SetupPodDevices :
     def _StreamAllDevices(self) -> None : 
         # start streaming from all devices 
         allThreads = {}
-        for key, podType in self._setupPodDevices.items() :
+        for key, podType in self._Setup_PodDevices.items() :
             try : 
                 allThreads[key] = podType._Stream()
             except Exception as e :
@@ -316,7 +316,7 @@ class SetupPodDevices :
         # get any input from user 
         input('\nPress Enter to stop streaming:')
         # tell devices to stop streaming 
-        for podType in self._setupPodDevices.values() : 
+        for podType in self._Setup_PodDevices.values() : 
             podType._StopStream()
         print('Finishing up...')
 

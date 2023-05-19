@@ -49,7 +49,7 @@ class Setup_8206HR(Setup_Interface) :
         failed = True 
         try : 
             # get port name 
-            port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
+            port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string
             # create POD device 
             self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
             # test if connection is successful
@@ -78,7 +78,7 @@ class Setup_8206HR(Setup_Interface) :
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
-            'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
+            self._PORTKEY       : Setup_8206HR._ChoosePort(forbiddenNames),
             'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
             'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
             'Low Pass'          : Setup_8206HR._ChooseLowpass()
@@ -156,10 +156,10 @@ class Setup_8206HR(Setup_Interface) :
         # setup table 
         tab = texttable.Texttable()
         # write column names
-        tab.header(['Device #','Port','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val['Port'], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
 
@@ -294,14 +294,7 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _uV(voltage: float|int ):
+    def _uV(voltage: float|int) :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
-
-    def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
-        if(exclude == None) : 
-            portNames = [x[key] for x in self._podParametersDict.values()]
-        else :
-            portNames = [x[key] for x in self._podParametersDict.values() if exclude != x[key]]
-        return(portNames)
