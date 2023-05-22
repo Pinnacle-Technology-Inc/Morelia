@@ -32,7 +32,7 @@ class COM_io :
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None:
         # initialize port 
-        self.__serialInst = serial.Serial()
+        self.__serialInst : serial.Serial = serial.Serial()
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 

@@ -33,9 +33,9 @@ class POD_Basics :
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None : 
         # initialize serial port 
-        self._port = COM_io(port, baudrate)
+        self._port : COM_io = COM_io(port, baudrate)
         # create object to handle commands 
-        self._commands = POD_Commands()
+        self._commands : POD_Commands = POD_Commands()
         # increment number of POD device counter
         POD_Basics.__numPod += 1
 

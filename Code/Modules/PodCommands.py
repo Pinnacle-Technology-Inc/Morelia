@@ -34,7 +34,7 @@ class POD_Commands :
 
     def __init__(self) -> None : 
         # contains allowed POD commands (basic set)
-        self.__commands = POD_Commands.GetBasicCommands()
+        self.__commands : dict[int,list[str|tuple[int]|bool]] = POD_Commands.GetBasicCommands()
 
 
     # ============ STATIC METHODS ============  ========================================================================================================================
