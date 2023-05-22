@@ -62,5 +62,3 @@ Detailed instructions of all Python modules and methods: [here](https://github.c
 | [Setup_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_8206HR.py) | Setup_8206HR | Provides the setup functions for an 8206-HR POD device. |
 | [Setup_PodDevices.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodDevices.py) | Setup_PodDevices | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. |
 | [Setup_PodInterface.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodInterface.py) | Setup_PodInterface | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. |
-
-![UML Class Digram](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/UML-class-diagram.png?raw=true)
