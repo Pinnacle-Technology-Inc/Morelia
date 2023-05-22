@@ -216,7 +216,7 @@ class Setup_PodDevices :
             '\n' + 
             'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
             'podParametersDict = ' + str(self.GetPODparametersDict())  + '\n' + 
-            'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
+            'go = Setup_PodDevices(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
 
