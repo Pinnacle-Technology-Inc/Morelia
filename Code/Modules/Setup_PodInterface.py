@@ -25,8 +25,8 @@ class Setup_Interface :
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
-    _NAME = 'GENERIC' # overwrite this in child classes 
-    _PORTKEY = 'Port'
+    _NAME    : str = 'GENERIC'  # overwrite this in child classes 
+    _PORTKEY : str = 'Port'     # dictionary key for the device's port name 
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 

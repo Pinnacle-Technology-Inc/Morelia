@@ -16,17 +16,17 @@ class POD_Commands :
 
 
     # index keys for self.__commands dict values 
-    __NAME      = 0
-    __ARGUMENTS = 1
-    __RETURNS   = 2
-    __BINARY    = 3
+    __NAME      : int = 0
+    __ARGUMENTS : int = 1
+    __RETURNS   : int = 2
+    __BINARY    : int = 3
 
     # flag used to mark if self.__commands dict value has no real value 
-    __NOVALUE = -1
+    __NOVALUE : int = -1
 
     # number of hex characters for a given payload value (U=unsigned, #=bit)
-    __U8  = 2
-    __U16 = 2*__U8
+    __U8  : int = 2
+    __U16 : int = 2*__U8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

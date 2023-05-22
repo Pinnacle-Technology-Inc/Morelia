@@ -29,14 +29,14 @@ class Setup_8206HR(Setup_Interface) :
     
     
     # deviceParams keys for reference 
-    _PARAMKEYS   = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low Pass']
-    _LOWPASSKEYS = ['EEG1','EEG2','EEG3/EMG']
+    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low Pass']
+    _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
 
     # for EDF file writing 
-    _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
+    _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
 
     # overwrite from parent
-    _NAME = '8206-HR'
+    _NAME : str = '8206-HR'
 
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================

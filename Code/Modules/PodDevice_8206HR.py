@@ -21,9 +21,9 @@ class POD_8206HR(POD_Basics) :
 
 
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH = 16
+    __B4LENGTH : int = 16
     # number of binary bytes for a Binary 4 packet 
-    __B4BINARYLENGTH = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+    __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

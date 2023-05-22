@@ -22,9 +22,9 @@ class POD_8401HR(POD_Basics) :
 
 
     # number of bytes for a Binary 5 packet 
-    __B5LENGTH = 31
+    __B5LENGTH : int = 31
     # number of binary bytes for a Binary 5 packet 
-    __B5BINARYLENGTH = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+    __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

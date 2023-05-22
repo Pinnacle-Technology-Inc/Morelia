@@ -21,12 +21,12 @@ class POD_Basics :
 
 
     # number of active POD devices, maintained by __init__ and __del__ 
-    __numPod = 0
+    __numPod : int = 0
 
     # minimum packet lengths 
-    __MINSTANDARDLENGTH = 8     # STX (1 byte) + command number (4 bytes) + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-    __MINBINARYLENGTH = 15      # STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
-                                #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                               <-- BINARY DATA
+    __MINSTANDARDLENGTH : int = 8       # STX (1 byte) + command number (4 bytes) + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+    __MINBINARYLENGTH   : int = 15      # STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
+                                        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                               <-- BINARY DATA
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
