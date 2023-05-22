@@ -32,7 +32,7 @@ class POD_Commands :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self) : 
+    def __init__(self) -> None : 
         # contains allowed POD commands (basic set)
         self.__commands = POD_Commands.GetBasicCommands()
 
@@ -41,22 +41,22 @@ class POD_Commands :
 
 
     @staticmethod
-    def NoValue() : 
+    def NoValue() -> int : 
         # returns the no value marker for commands dict 
         return(POD_Commands.__NOVALUE)
 
     @staticmethod
-    def U8() : 
+    def U8() -> int : 
         # returns the no value marker for commands dict 
         return(POD_Commands.__U8)
 
     @staticmethod
-    def U16() : 
+    def U16() -> int : 
         # returns the no value marker for commands dict 
         return(POD_Commands.__U16)
 
     @staticmethod
-    def GetBasicCommands() : 
+    def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool]] : 
         # constants 
         U8 = POD_Commands.U8()
         NOVALUE = POD_Commands.NoValue()
@@ -83,17 +83,17 @@ class POD_Commands :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
-    def GetCommands(self):
+    def GetCommands(self) -> dict[int, list[str|tuple[int]|bool]] :
         # returns dict containing commands 
         return(self.__commands)
 
 
-    def RestoreBasicCommands(self) : 
+    def RestoreBasicCommands(self) -> None : 
         # set commands to the basic command set 
         self.__commands = POD_Commands.GetBasicCommands()
 
 
-    def AddCommand(self,commandNumber,commandName,argumentBytes,returnBytes,isBinary):
+    def AddCommand(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool) -> bool:
         # command number and name must not already exist 
         if(    self.DoesCommandExist(commandNumber)
             or self.DoesCommandExist(commandName)
@@ -106,7 +106,7 @@ class POD_Commands :
         return(True)
 
 
-    def RemoveCommand(self,cmd) :
+    def RemoveCommand(self, cmd: int|str) -> bool :
         # return false if command is not in dict 
         if(not self.DoesCommandExist(cmd)): 
             return(False)
@@ -121,7 +121,7 @@ class POD_Commands :
         return(True)
 
 
-    def CommandNumberFromName(self, name) : 
+    def CommandNumberFromName(self, name: str) -> int|None : 
         # search through dict to find key 
         for key,val in self.__commands.items() :
             if(name == val[self.__NAME]) : 
@@ -130,7 +130,7 @@ class POD_Commands :
         return(None)
 
 
-    def ArgumentHexChar(self, cmd) : 
+    def ArgumentHexChar(self, cmd: int|str) -> tuple[int]|None : 
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -140,7 +140,7 @@ class POD_Commands :
         return(None) 
 
 
-    def ReturnHexChar(self,cmd) : 
+    def ReturnHexChar(self, cmd: int|str) -> tuple[int]|None : 
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -150,7 +150,7 @@ class POD_Commands :
         return(None) 
 
 
-    def IsCommandBinary(self, cmd):
+    def IsCommandBinary(self, cmd: int|str) -> bool|None :
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -160,13 +160,11 @@ class POD_Commands :
         return(None) 
 
 
-    def DoesCommandExist(self, cmd) : 
-        # initialize to false
-        isValidCmd = False
+    def DoesCommandExist(self, cmd: int|str) -> bool : 
         # check each command number and name to try to find match 
         for key,val in self.__commands.items() : 
             if(cmd==key or cmd==val[self.__NAME]):
                 # set to true if match found 
-                isValidCmd = True
+                return(True)
         # return true if the command is in the command dict, false otherwise
-        return(isValidCmd)
+        return(False)
