@@ -19,13 +19,13 @@ class POD_Packets() :
 
 
     @staticmethod
-    def STX():
+    def STX() -> bytes :
         # return STX character used to indicate start of a packet 
         return(bytes.fromhex('02'))
 
 
     @staticmethod
-    def ETX():
+    def ETX() -> bytes :
         # return ETX character used to indicate end of a packet 
         return(bytes.fromhex('03'))
 
@@ -34,7 +34,7 @@ class POD_Packets() :
 
 
     @staticmethod
-    def IntToAsciiBytes(value, numBytes) : 
+    def IntToAsciiBytes(value: int, numBytes: int) -> bytes : 
         # convert number into a hex string and remove the '0x' prefix
         num_hexStr = hex(value).replace('0x','')
 
@@ -82,7 +82,7 @@ class POD_Packets() :
 
 
     @staticmethod
-    def AsciiBytesToInt(msg_b):
+    def AsciiBytesToInt(msg_b: bytes) -> int :
         # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
         msg_str = str(msg_b) [2 : len(str(msg_b))-1]
         # convert string into base 16 int (reads string as hex number, returns decimal int)
@@ -92,19 +92,19 @@ class POD_Packets() :
     
 
     @staticmethod
-    def BinaryBytesToInt(msg, byteorder='big', signed=False) :
+    def BinaryBytesToInt(msg: bytes, byteorder:str='big', signed:bool=False) -> int :
         # convert a binary message represented by bytes into an integer
         return(int.from_bytes(msg,byteorder=byteorder,signed=signed))
 
     
     @staticmethod
-    def ASCIIbytesToInt_Split(msg, keepTopBits, cutBottomBits) : 
+    def ASCIIbytesToInt_Split(msg: bytes, keepTopBits: int, cutBottomBits: int) -> int : 
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
         return( ( POD_Packets.AsciiBytesToInt(msg) & (2**keepTopBits - 1) ) >> cutBottomBits)
     
     
     @staticmethod
-    def BinaryBytesToInt_Split(msg, keepTopBits, cutBottomBits, byteorder='big', signed=False) : 
+    def BinaryBytesToInt_Split(msg: bytes, keepTopBits: int, cutBottomBits: int, byteorder:str='big', signed:bool=False) -> int : 
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
         return( ( POD_Packets.BinaryBytesToInt(msg,byteorder,signed) & (2**keepTopBits - 1) ) >> cutBottomBits)
 
@@ -113,7 +113,7 @@ class POD_Packets() :
  
 
     @staticmethod
-    def Checksum(bytesIn):
+    def Checksum(bytesIn: bytes) -> bytes:
         # sum together all bytes in byteArr
         sum = 0
         for b in bytesIn : 
@@ -127,7 +127,7 @@ class POD_Packets() :
 
 
     @staticmethod
-    def BuildPODpacket_Standard(commandNumber, payload=None) : 
+    def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
         # prepare components of packet
         stx = POD_Packets.STX()                              # STX indicating start of packet (1 byte)
         cmd = POD_Packets.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
@@ -145,7 +145,7 @@ class POD_Packets() :
 
     
     @staticmethod
-    def PayloadToBytes(payload, argSizes) :             
+    def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :             
         # if integer payload is given ... 
         if(isinstance(payload,int)):
             # check that command only uses one argument 
