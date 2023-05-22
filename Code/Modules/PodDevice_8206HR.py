@@ -94,7 +94,7 @@ class POD_8206HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] : 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float|dict[str,int]] : 
         # unpack parts of POD packet into dict
         msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -110,7 +110,7 @@ class POD_8206HR(POD_Basics) :
         return(msgDictTrans)
 
 
-    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|float] : 
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
         if(self._commands.IsCommandBinary(cmd)): # message is binary 
@@ -133,7 +133,7 @@ class POD_8206HR(POD_Basics) :
 
 
     @staticmethod
-    def _TranslateTTLbyte_ASCII(ttlByte: bytes) -> tuple[int,int,int,int] : 
+    def _TranslateTTLbyte_ASCII(ttlByte: bytes) -> dict[str,int] : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( {
             'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
@@ -144,7 +144,7 @@ class POD_8206HR(POD_Basics) :
     
 
     @staticmethod
-    def _TranslateTTLbyte_Binary(ttlByte: bytes) -> tuple[int,int,int,int] : 
+    def _TranslateTTLbyte_Binary(ttlByte: bytes) -> dict[str,int] : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( {
             'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
