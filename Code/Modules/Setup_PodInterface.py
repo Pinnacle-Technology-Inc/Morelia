@@ -70,9 +70,9 @@ class Setup_Interface :
 
     def __init__(self) -> None :
         # initialize class instance variables
-        self._podDevices = {}           # dict of pod device objects. MUST have keys as device#
-        self._podParametersDict = {}    # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...other values...}
-        self._saveFileName = ''         # string filename: <path>/file.ext # the device name and number will be appended to the filename 
+        self._podDevices : dict[int,POD_Basics]  = {}   # dict of pod device objects. MUST have keys as device#
+        self._podParametersDict : dict[int,dict] = {}   # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...other values...}
+        self._saveFileName : str = ''                   # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
     def __del__(self) -> None :

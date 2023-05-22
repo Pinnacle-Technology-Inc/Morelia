@@ -78,7 +78,7 @@ class POD_8401HR(POD_Basics) :
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
         # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap = POD_8401HR.GetChannelMapping(deviceName)
+        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapping(deviceName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
@@ -87,14 +87,14 @@ class POD_8401HR(POD_Basics) :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssGain = ssGain 
+        self._ssGain : dict[str,int|None] = ssGain 
 
         # preamplifier gain
         for value in preampGain.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
                 raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
-        self._preampGain = preampGain
+        self._preampGain : dict[str,int|None] = preampGain
     
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
