@@ -31,7 +31,7 @@ class POD_Basics :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port, baudrate=9600) : 
+    def __init__(self, port: str|int, baudrate:int=9600) -> None : 
         # initialize serial port 
         self._port = COM_io(port, baudrate)
         # create object to handle commands 
@@ -40,7 +40,7 @@ class POD_Basics :
         POD_Basics.__numPod += 1
 
 
-    def __del__(self):
+    def __del__(self) -> None :
         # decrement number of POD device counter
         POD_Basics.__numPod -= 1
 
@@ -52,7 +52,7 @@ class POD_Basics :
 
 
     @staticmethod
-    def GetNumberOfPODDevices() :
+    def GetNumberOfPODDevices() -> int :
         # returns the counter tracking the number of active pod devices
         return(POD_Basics.__numPod)
 
@@ -61,7 +61,7 @@ class POD_Basics :
 
 
     @staticmethod
-    def UnpackPODpacket_Standard(msg) : 
+    def UnpackPODpacket_Standard(msg: bytes) -> dict[str,bytes] : 
         # standard POD packet with optional payload = 
         #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         MINBYTES = POD_Basics.__MINSTANDARDLENGTH
@@ -87,7 +87,7 @@ class POD_Basics :
 
 
     @staticmethod
-    def UnpackPODpacket_Binary(msg) : 
+    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes]: 
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
@@ -115,7 +115,7 @@ class POD_Basics :
         return(msg_unpacked)
         
     
-    def TranslatePODpacket_Standard(self, msg) : 
+    def TranslatePODpacket_Standard(self, msg: bytes) -> dict[str,int] : 
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
         # initialize dictionary for translated values 
@@ -153,7 +153,7 @@ class POD_Basics :
 
    
     @staticmethod
-    def TranslatePODpacket_Binary(msg) : 
+    def TranslatePODpacket_Binary(msg: bytes) -> dict[str,int|bytes] : 
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
         # initialize dictionary for translated values 
@@ -170,7 +170,7 @@ class POD_Basics :
 
 
     @staticmethod
-    def _ValidateChecksum(msg):
+    def _ValidateChecksum(msg: bytes) -> bool :
         # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all pod packets except variable length binary packet
         # get length of POD packet 
         packetBytes = len(msg)
@@ -197,12 +197,12 @@ class POD_Basics :
     # ------------ COMMAND DICT ACCESS ------------ ------------------------------------------------------------------------------------------------------------------------
         
 
-    def GetDeviceCommands(self):
+    def GetDeviceCommands(self) -> dict[int, list[str|tuple[int]|bool]]:
         # Get commands from this instance's command dict object 
         return(self._commands.GetCommands())
 
 
-    def SetBaudrateOfDevice(self, baudrate) : 
+    def SetBaudrateOfDevice(self, baudrate: int) -> bool : 
         # set baudrate of the open COM port. Returns true if successful.
         return(self._port.SetBaudrate(baudrate))
 
@@ -210,7 +210,7 @@ class POD_Basics :
     # ------------ SIMPLE POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
     
 
-    def UnpackPODpacket(self, msg) : 
+    def UnpackPODpacket(self, msg: bytes) -> dict[str,bytes] : 
         # get command number 
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
@@ -220,7 +220,7 @@ class POD_Basics :
             return(self.UnpackPODpacket_Standard(msg))
 
 
-    def TranslatePODpacket(self, msg) : 
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|bytes] : 
         # get command number 
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
@@ -233,13 +233,13 @@ class POD_Basics :
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
-    def WriteRead(self, cmd, payload=None, validateChecksum=True)  :
-        w = self.WritePacket(cmd, payload)
+    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> bytes :
+        self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum)
         return(r)
 
 
-    def GetPODpacket(self, cmd, payload=None) :
+    def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not Exist.')
@@ -265,7 +265,7 @@ class POD_Basics :
         return(packet)
     
 
-    def WritePacket(self, cmd, payload=None) :                     
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :                     
         # POD packet 
         packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
@@ -274,7 +274,7 @@ class POD_Basics :
         return(packet)
 
 
-    def ReadPODpacket(self, validateChecksum=True):
+    def ReadPODpacket(self, validateChecksum:bool=True) -> bytes :
         # read until STX is found
         b = None
         while(b != POD_Packets.STX()) :
@@ -290,7 +290,7 @@ class POD_Basics :
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
-    def _ReadPODpacket_Recursive(self, validateChecksum=True) : 
+    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> bytes : 
         # start packet with STX
         packet = POD_Packets.STX()
 
@@ -322,7 +322,7 @@ class POD_Basics :
         return(packet)
 
 
-    def _Read_GetCommand(self, validateChecksum=True) : 
+    def _Read_GetCommand(self, validateChecksum:bool=True) -> bytes : 
         # initialize 
         cmd = None
         cmdCounter = 0
@@ -347,7 +347,7 @@ class POD_Basics :
         # return complete 4 byte long command packet
         return(cmd)
 
-    def _Read_ToETX(self, validateChecksum=True) : 
+    def _Read_ToETX(self, validateChecksum:bool=True) -> bytes : 
         # initialize 
         packet = None
         b = None
@@ -367,7 +367,7 @@ class POD_Basics :
         return(packet)
 
 
-    def _Read_Standard(self, prePacket, validateChecksum=True):
+    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> bytes:
         # read until ETX 
         packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
         # check for valid  
@@ -378,7 +378,7 @@ class POD_Basics :
         return(packet)
 
 
-    def _Read_Binary(self, prePacket, validateChecksum=True):
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> bytes :
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
