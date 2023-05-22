@@ -18,7 +18,7 @@ class COM_io :
     # ====== STATIC METHODS ======
 
     @staticmethod
-    def GetCOMportsList() : 
+    def GetCOMportsList() -> list[str] : 
         # get all COM ports in use
         allPorts = serial.tools.list_ports.comports()
         # convert COM ports to string list 
@@ -30,19 +30,19 @@ class COM_io :
 
     # ====== DUNDER METHODS ======
 
-    def __init__(self, port, baudrate=9600) :
+    def __init__(self, port: str|int, baudrate:int=9600) -> None:
         # initialize port 
         self.__serialInst = serial.Serial()
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 
-    def __del__(self):
+    def __del__(self) -> None :
         # close port 
         self.CloseSerialPort()
 
     # ====== PRIVATE METHODS ======
 
-    def __BuildPortName(self, port) :   # private 
+    def __BuildPortName(self, port: str|int) -> str :   # private 
         name = None
         # is 'port' the port number? 
         if (isinstance(port, int)) : 
@@ -63,22 +63,22 @@ class COM_io :
 
     # ----- BOOL CHECKS -----
 
-    def IsSerialOpen(self) : 
+    def IsSerialOpen(self) -> bool : 
         # true if serial port is open, false otherwise 
         return(self.__serialInst.isOpen())
 
-    def IsSerialClosed(self) :
+    def IsSerialClosed(self) -> bool :
         # true if serial port is closed, false otherwise 
         return(not self.IsSerialOpen())
 
     # ----- SERIAL MANAGEMENT -----
 
-    def CloseSerialPort(self):
+    def CloseSerialPort(self) -> None :
         # close port if open 
         if(self.IsSerialOpen()) :
             self.__serialInst.close()
 
-    def OpenSerialPort(self, port, baudrate=9600) : 
+    def OpenSerialPort(self, port: str|int, baudrate:int=9600) -> None : 
         # close current port if it is open
         if(self.IsSerialOpen()) : 
             self.CloseSerialPort()
@@ -94,7 +94,7 @@ class COM_io :
             # throw an error 
             raise Exception('Port does not exist.')
 
-    def SetBaudrate(self, baudrate) :
+    def SetBaudrate(self, baudrate: int) -> bool :
         # port must be open 
         if(self.IsSerialOpen) : 
             # set baudrate 
@@ -105,7 +105,7 @@ class COM_io :
 
     # ----- GETTERS -----
 
-    def GetPortName(self) : 
+    def GetPortName(self) -> str : 
         # return the port name if a port is open
         if(self.IsSerialOpen()) : 
             return(self.__serialInst.name) 
@@ -115,7 +115,7 @@ class COM_io :
 
     # ----- INPUT/OUTPUT -----
 
-    def Read(self, numBytes):
+    def Read(self, numBytes: int) -> bytes :
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
             return(None)
@@ -125,7 +125,7 @@ class COM_io :
                 # read packet
                 return(self.__serialInst.read(numBytes) )
 
-    def ReadLine(self):
+    def ReadLine(self) -> bytes :
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
             return(None)
@@ -135,7 +135,7 @@ class COM_io :
                 # read packet up to  and including newline ('\n')
                 return(self.__serialInst.readline())
     
-    def ReadUntil(self, eol) :
+    def ReadUntil(self, eol: bytes) -> bytes:
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
             return(None)
@@ -145,7 +145,7 @@ class COM_io :
                 # read packet until end of line (eol) character 
                 return(self.__serialInst.read_until(eol) )
 
-    def Write(self, message) : 
+    def Write(self, message: bytes) -> None : 
         # write message to open port 
         if(self.IsSerialOpen()) : 
             self.__serialInst.write(message)
