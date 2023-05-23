@@ -179,7 +179,7 @@ class POD_8401HR(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128] # 127	SET TTL CONFIG # 128	GET TTL CONFIG
+        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : msgDict['Command Number'] } 
