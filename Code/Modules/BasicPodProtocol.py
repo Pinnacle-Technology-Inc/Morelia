@@ -44,8 +44,7 @@ class POD_Basics :
         # decrement number of POD device counter
         POD_Basics.__numPod -= 1
         # close port
-        if(self._port.IsSerialOpen()) :
-            self._port.CloseSerialPort()
+        self._port.CloseSerialPort()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
