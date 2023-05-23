@@ -8,7 +8,7 @@
 
 The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
 
-The [Setup_8206HR Python module](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_8206HR.py) Python module is designed to be a simple and user-friendly method to setup and stream data from 8206-HR Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware, including the EEG low pass filters and sample rate. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_8206HR uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
+The [Setup_PodDevices Python module](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodDevices.py) Python module is designed to be a simple and user-friendly method to setup and stream data from 8206-HR Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware, including the EEG low pass filters and sample rate. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
 In the future, we will offer support to other Pinnacle devices. 
 
@@ -39,25 +39,26 @@ Here are some useful documents for setting up your coding environment to use the
 
 ## Examples & Usage 
 
-The Setup_8206HR Python module usage description: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_8206HR%20Usage.pdf)
+The Setup_PodDevices Python module usage description: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_PodDevices-Usage.pdf)
 
 | Module                             | Description                                                   |
 |------------------------------------|---------------------------------------------------------------|
-| [Using_Setup8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_Setup8206HR.py)               | A detailed example that demonstrates how to run Setup_8206HR. |
-| [Using_Setup8206HR_BasicTemplate.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_Setup8206HR_BasicTemplate.py) | A simple example template that runs Setup_8206HR.             |
+| [Using_SetupPod_WithDescription.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_SetupPod_WithDescription.py)               | A detailed example that demonstrates how to run Setup_PodDevices. |
+| [Using_SetupPod_BasicTemplate.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_SetupPod_BasicTemplate.py) | A simple example template that runs Setup_PodDevices.             |
 
 
 ## Modules 
 
-Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Python-POD-API_Documentation.pdf)
+Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/CodeDocumentation.pdf)
 
 | Module                 | Class        | Description                                                                                                     |
 |------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
 | [BasicPodProtocol.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/BasicPodProtocol.py)    | POD_Basics   | Handle basic communication with a POD device, including reading and writing packets and packet interpretation.  |
-| [PodCommands.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodCommands.py)         | POD_Commands | Manages a dictionary containing available commands for a POD device.                                            |
-| [PodDevice_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodDevice_8206HR.py)    | POD_8206HR   | Handles communication using an 8206-HR POD device.           
-| [PodDevice_8401HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/PA-11-POD-Device-8401HR/Code/Modules/PodDevice_8401HR.py) | POD_8401HR | Handles communication using an 8401-HR POD device.                                                      |
-| [PodPacketHandling.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodPacketHandling.py)   | POD_Packets  | Collection of methods for creating and interpreting POD packets.                                                |
-| [SerialCommunication.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/SerialCommunication.py) | COM_io       | Handle serial communication (read/write) using COM ports.                                                       |
-| [Setup_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_8206HR.py)        | Setup_8206HR | Allows a user to set up and stream from any number of 8206HR POD devices. The streamed data is saved to a file. |
-
+| [PodCommands.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodCommands.py)         | POD_Commands | Manages a dictionary containing available commands for a POD device. |
+| [PodDevice_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodDevice_8206HR.py)    | POD_8206HR   | Handles communication using an 8206-HR POD device. |
+| [PodDevice_8401HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodDevice_8401HR.py) | POD_8401HR | Handles communication using an 8401-HR POD device. |
+| [PodPacketHandling.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodPacketHandling.py)   | POD_Packets  | Collection of methods for creating and interpreting POD packets. |
+| [SerialCommunication.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/SerialCommunication.py) | COM_io       | Handle serial communication (read/write) using COM ports. |
+| [Setup_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_8206HR.py) | Setup_8206HR | Provides the setup functions for an 8206-HR POD device. |
+| [Setup_PodDevices.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodDevices.py) | Setup_PodDevices | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. |
+| [Setup_PodInterface.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodInterface.py) | Setup_PodInterface | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. |

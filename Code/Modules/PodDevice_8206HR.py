@@ -21,15 +21,15 @@ class POD_8206HR(POD_Basics) :
 
 
     # number of bytes for a Binary 4 packet 
-    __B4LENGTH       = 16
+    __B4LENGTH : int = 16
     # number of binary bytes for a Binary 4 packet 
-    __B4BINARYLENGTH = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+    __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port, preampGain, baudrate=9600) :
+    def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
@@ -54,7 +54,7 @@ class POD_8206HR(POD_Basics) :
         # preamplifier gain (should be 10x or 100x)
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
-        self._preampGain = preampGain 
+        self._preampGain : int = preampGain 
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -64,7 +64,7 @@ class POD_8206HR(POD_Basics) :
 
 
     @staticmethod
-    def UnpackPODpacket_Binary(msg) :
+    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes] :
         # Binary 4 format = 
         #   STX (1 byte) + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) 
         #   + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
@@ -94,7 +94,7 @@ class POD_8206HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg): 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float|dict[str,int]] : 
         # unpack parts of POD packet into dict
         msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -110,7 +110,7 @@ class POD_8206HR(POD_Basics) :
         return(msgDictTrans)
 
 
-    def TranslatePODpacket(self, msg) : 
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
         if(self._commands.IsCommandBinary(cmd)): # message is binary 
@@ -133,28 +133,28 @@ class POD_8206HR(POD_Basics) :
 
 
     @staticmethod
-    def _TranslateTTLbyte_ASCII(ttlByte) : 
+    def _TranslateTTLbyte_ASCII(ttlByte: bytes) -> dict[str,int] : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( (
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        ) )   
+        return( {
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        } )   
     
 
     @staticmethod
-    def _TranslateTTLbyte_Binary(ttlByte) : 
+    def _TranslateTTLbyte_Binary(ttlByte: bytes) -> dict[str,int] : 
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( (
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        ) )   
+        return( {
+            'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        } )   
 
 
-    def _BinaryBytesToVoltage(self, value):
+    def _BinaryBytesToVoltage(self, value: bytes) -> float :
         # convert binary message from POD to integer
         value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
@@ -168,7 +168,7 @@ class POD_8206HR(POD_Basics) :
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
-    def _Read_Binary(self, prePacket, validateChecksum=True):
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> bytes :
         """
         Binary 4 Data Format
         ------------------------------------------------------------		

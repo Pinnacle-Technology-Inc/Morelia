@@ -1,19 +1,18 @@
 """
-Setup_8206HR allows a user to set up and stream from any number of 8206HR POD devices. The streamed data is saved to a file. 
+Setup_8206HR provides the setup functions for an 8206-HR POD device.
 """
 
 # enviornment imports
-import texttable
-import threading 
-import time 
-import math 
-import numpy                     as np
-from   os       import path      as osp
-from   pyedflib import EdfWriter as edfw
+import texttable 
+import os 
+import numpy       as     np
+from   threading   import Thread
+from   pyedflib    import EdfWriter
+from   io          import IOBase
 
 # local imports
-from SerialCommunication    import COM_io
-from PodDevice_8206HR       import POD_8206HR
+from Setup_PodInterface  import Setup_Interface
+from PodDevice_8206HR    import POD_8206HR 
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -23,129 +22,42 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8206HR : 
-    
+class Setup_8206HR(Setup_Interface) : 
+
+
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
+    
+    
+    # deviceParams keys for reference 
+    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low Pass']
+    _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
 
+    # for EDF file writing 
+    _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
 
-    _PHYSICAL_BOUND_uV = 4069 # max/-min stream value in uV
-
-
-    # ============ DUNDER METHODS ============      ========================================================================================================================
-
-
-    def __init__(self, saveFile=None, podParametersDict=None) :
-        # initialize class instance variables
-        self._podDevices = {}
-        self._podParametersDict = {}
-        self._saveFileName = ''
-        self._options = { # NOTE if you change this, be sure to update _DoOption()
-            1 : 'Start streaming.',
-            2 : 'Show current settings.',
-            3 : 'Edit save file path.',
-            4 : 'Edit POD device parameters.',
-            5 : 'Connect a new POD device.',
-            6 : 'Reconnect current POD devices.',
-            7 : 'Generate initialization code.', 
-            8 : 'Quit.'
-        }
-        # setup 
-        self.SetupPODparameters(podParametersDict)
-        self.SetupSaveFile(saveFile)
-
-
-    def __del__(self):
-        # delete all POD objects 
-        self._DisconnectAllPODdevices
-
-
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    def SetupPODparameters(self, podParametersDict=None):
-        # get dictionary of POD device parameters
-        if(podParametersDict==None):
-            self._SetParam_allPODdevices()  # get setup parameters for all POD devices
-            self._ValidateParams()          # display parameters and allow user to edit them
-        else:
-            self._podParametersDict = podParametersDict
-        # connect and initialize all POD devices
-        self._ConnectAllPODdevices()
-
-
-    def SetupSaveFile(self, saveFile=None):
-        # initialize file name and path 
-        if(saveFile == None) :
-            self._saveFileName = self._GetFilePath()
-            self._PrintSaveFile()
-
-        else:
-            self._saveFileName = saveFile
-
-
-    def Run(self) :
-        # init looping condition 
-        choice = 0
-        quit = list(self._options.keys())[list(self._options.values()).index('Quit.')] # abstracted way to get dict key for 'Quit.'
-        # keep prompting user until user wants to quit
-        while(choice != quit) :
-            self._PrintOptions()
-            choice = self._AskOption()
-            self._DoOption(choice)
+    # overwrite from parent
+    _NAME : str = '8206-HR'
 
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
-   
-    # ------------ DEVICES ------------
+
+    # ------------ DEVICE CONNECTION ------------
 
 
-    @staticmethod
-    def _SetNumberOfDevices() : 
-        try : 
-            # request user imput
-            n = int(input('\nHow many POD devices do you want to use?: '))
-            # number must be positive
-            if(n<=0):
-                print('[!] Number must be greater than zero.')
-                return(Setup_8206HR._SetNumberOfDevices())
-            # return number of POD devices 
-            return(n)
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._SetNumberOfDevices())
-    
-
-    def _DisconnectAllPODdevices(self) :
-        for k in list(self._podDevices.keys()) : 
-            pod = self._podDevices.pop(k)
-            del pod 
-
-
-    def _ConnectAllPODdevices(self) : 
-        # delete existing 
-        self._DisconnectAllPODdevices()
-        # connect new devices
-        print('\nConnecting POD devices...')
-        # setup each POD device
-        for key,val in self._podParametersDict.items():
-           self._ConnectPODdevice(key,val)
-                
-
-    def _ConnectPODdevice(self, deviceNum, deviceParams) : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
         failed = True 
         try : 
             # get port name 
-            port = deviceParams['Port'].split(' ')[0] # isolate COM# from rest of string
+            port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string
             # create POD device 
             self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
                 # write setup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']))
+                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate']          )
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']    ))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']    ))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
                 failed = False
         except : 
@@ -154,94 +66,27 @@ class Setup_8206HR :
 
         # check if connection failed 
         if(failed) :
-            print('Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
         else :
             print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
         return(not failed)
 
 
-    def _AddPODdevice(self):
-        nextNum = max(self._podParametersDict.keys())+1
-        self._PrintDeviceNumber(nextNum)
-        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
-
-
     # ------------ SETUP POD PARAMETERS ------------
-    
-
-    def _SetParam_allPODdevices(self) :
-        # get the number of devices 
-        numDevices = self._SetNumberOfDevices()
-        # initialize 
-        portNames = [None] * numDevices
-        podDict = {}
-        # get information for each POD device 
-        for i in range(numDevices) : 
-            # current index 
-            self._PrintDeviceNumber(i+1)
-            # get parameters
-            onePodDict = Setup_8206HR._GetParam_onePODdevice(portNames)
-            # update lists 
-            portNames[i] = onePodDict['Port']
-            podDict[i+1] = onePodDict
-        # save dict containing information to setup all POD devices
-        self._podParametersDict = podDict
 
 
-    @staticmethod
-    def _GetParam_onePODdevice(forbiddenNames) : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
-                'Port'              : Setup_8206HR._ChoosePort(forbiddenNames),
-                'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
-                'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
-                'Low Pass'          : Setup_8206HR._ChooseLowpass()
-            })
-        
-    
-    @staticmethod
-    def _ChoosePort(forbidden=[]) : 
-        # get ports
-        portList = Setup_8206HR._GetPortsList(forbidden)
-        print('Available COM Ports:', portList)
-        # request port from user
-        choice = input('Select port: COM')
-        # choice cannot be an empty string
-        if(choice == ''):
-            print('[!] Please choose a COM port.')
-            return(Setup_8206HR._ChoosePort(forbidden))
-        else:
-            # search for port in list
-            for port in portList:
-                if port.startswith('COM'+choice):
-                    return(port)
-            # if return condition not reached...
-            print('[!] COM'+choice+' does not exist. Try again.')
-            return(Setup_8206HR._ChoosePort(forbidden))
-
-
-    @staticmethod
-    def _GetPortsList(forbidden=[]) : 
-        # get port list 
-        portListAll = COM_io.GetCOMportsList()
-        if(forbidden):
-            # remove forbidden ports
-            portList = [x for x in portListAll if x not in forbidden]
-        else:
-            portList = portListAll
-        # check if the list is empty 
-        if (len(portList) == 0):
-            # print error and keep trying to get ports
-            print('[!] No COM ports in use. Please plug in POD device.')
-            while(len(portList) == 0) : 
-                portListAll = COM_io.GetCOMportsList()
-                portList = [x for x in portListAll if x not in forbidden]
-        # return port
-        return(portList)
+            self._PORTKEY       : Setup_8206HR._ChoosePort(forbiddenNames),
+            'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
+            'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
+            'Low Pass'          : Setup_8206HR._ChooseLowpass()
+        })
     
 
     @staticmethod
-    def _ChooseSampleRate():
+    def _ChooseSampleRate() -> int :
         try : 
             # get sample rate from user 
             sampleRate = int(input('Set sample rate (Hz): '))
@@ -255,10 +100,10 @@ class Setup_8206HR :
             return(Setup_8206HR._ChooseSampleRate())
         # return sample rate
         return(sampleRate)
-       
+    
 
     @staticmethod
-    def _ChoosePreampGain():
+    def _ChoosePreampGain() -> int :
         try:
             # get gain from user 
             gain = int(input('Set preamplifier gain: '))
@@ -273,20 +118,20 @@ class Setup_8206HR :
             return(Setup_8206HR._ChoosePreampGain())
         # return preamplifier gain 
         return(gain)
-
+    
 
     @staticmethod
-    def _ChooseLowpass():
+    def _ChooseLowpass() -> dict[str,int] :
         # get lowpass for all EEG
         return({
             'EEG1'      : Setup_8206HR._ChooseLowpassForEEG('EEG1'),
             'EEG2'      : Setup_8206HR._ChooseLowpassForEEG('EEG2'),
             'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG('EEG3/EMG'),
         })
-
-
+    
+    
     @staticmethod
-    def _ChooseLowpassForEEG(eeg):
+    def _ChooseLowpassForEEG(eeg: str) -> int :
         try : 
             # get lowpass from user 
             lowpass = int(input('Set lowpass (Hz) for '+str(eeg)+': '))
@@ -302,182 +147,43 @@ class Setup_8206HR :
         return(lowpass)
 
 
-    # ------------ EDIT POD PARAMETERS ------------
-    
-
-    def _ValidateParams(self) : 
-        # display all pod devices and parameters
-        self._DisplayPODdeviceParameters()
-        # ask if params are good or not
-        validParams = Setup_8206HR._AskYN(question='Are the POD device parameters correct?')
-        # edit if the parameters are not correct 
-        if(not validParams) : 
-            self._EditParams()
-            self._ValidateParams()
-
-
-    def _EditParams(self) :
-        # chose device # to edit
-        editThis = self._SelectPODdeviceFromDictToEdit()
-        # get all port names except for device# to be edited
-        forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis]['Port'])
-        # edit device
-        self._PrintDeviceNumber(editThis)
-        self._podParametersDict[editThis] = Setup_8206HR._GetParam_onePODdevice(forbiddenNames)
-
-
-    def _SelectPODdeviceFromDictToEdit(self):
-        try:
-            # get pod device number from user 
-            podKey = int(input('Edit POD Device #: '))
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(self._SelectPODdeviceFromDictToEdit())
-
-        # check is pod device exists
-        keys = self._podParametersDict.keys()
-        if(podKey not in keys) : 
-            print('[!] Invalid POD device number. Please try again.')
-            return(self._SelectPODdeviceFromDictToEdit())
-        else:
-            # return the pod device number
-            return(podKey)
-
-
-    def _GetForbiddenNames(self, exclude=None):
-        if(exclude == None) : 
-            portNames = [x['Port'] for x in self._podParametersDict.values()]
-        else :
-            portNames = [x['Port'] for x in self._podParametersDict.values() if exclude != x['Port']]
-        return(portNames)
-
-
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
-    @staticmethod
-    def _PrintDeviceNumber(num):
-        print('\n-- Device #'+str(num)+' --\n')
-
-
-    def _PrintPODdeviceParamDict(self):
-        print('\nDictionary of current POD parameter set:\n'+str(self._podParametersDict))
-
-
-    def _DisplayPODdeviceParameters(self) : 
+    def _DisplayPODdeviceParameters(self) -> None : 
         # print title 
-        print('\nParameters for all POD Devices:')
+        print('\nParameters for all '+str(self._NAME)+' Devices:')
         # setup table 
         tab = texttable.Texttable()
         # write column names
-        tab.header(['Device #','Port','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val['Port'], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
+            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
         # show table 
         print(tab.draw())
-        
-    
+
+
     # ------------ FILE HANDLING ------------
 
 
     @staticmethod
-    def _BuildFileName(fileName, devNum) : 
-        # build file name --> path\filename_<DEVICE#>.ext
-        name, ext = osp.splitext(fileName)
-        fname = name+'_'+str(devNum)+ext   
-        return(fname)
-
-
-    def _PrintSaveFile(self):
-        # print name  
-        print('\nStreaming data will be saved to '+ str(self._saveFileName))
- 
-
-    @staticmethod
-    def _CheckFileExt(f, fIsExt=True, goodExt=['.csv','.txt','.edf'], printErr=True) : 
-        # get extension 
-        if(not fIsExt) : name, ext = osp.splitext(f)
-        else :  ext = f
-        # check if extension is allowed
-        if(ext not in goodExt) : 
-            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
-            return(False) # bad extension 
-        return(True)      # good extension 
-
-
-    @staticmethod
-    def _GetFilePath() : 
-        # ask user for path 
-        path = input('\nWhere would you like to save streaming data to?\nPath: ')
-        # split into path/name and extension 
-        name, ext = osp.splitext(path)
-        # if there is no extension , assume that a file name was not given and path ends with a directory 
-        if(ext == '') : 
-            # ask user for file name 
-            fileName = Setup_8206HR._GetFileName()
-            # add slash if path is given 
-            if(name != ''): 
-                # check for slash 
-                if( ('/' in name) and (not name.endswith('/')) )  :
-                    name = name+'/'
-                elif(not name.endswith('\\')) : 
-                    name = name+'\\'
-            # return complete path and filename 
-            return(name+fileName)
-        # prompt again if bad extension is given 
-        elif( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFilePath())
-        # path is correct
-        else :
-            return(path)
-
-
-    @staticmethod
-    def _GetFileName():
-        # ask user for file name 
-        inp = input('File name: ')
-        # prompt again if no name given
-        if(inp=='') : 
-            print('[!] No filename given.')
-            return(Setup_8206HR._GetFileName())
-        # get parts 
-        name, ext = osp.splitext(inp)
-        # default to csv if no extension is given
-        if(ext=='') : ext='.csv'
-        # check if extension is correct 
-        if( not Setup_8206HR._CheckFileExt(ext)) : return(Setup_8206HR._GetFileName())
-        # return file name with extension 
-        return(name+ext)
-
-
-    def _OpenSaveFile(self, devNum) : 
-        # get file name and extension 
-        fname = Setup_8206HR._BuildFileName(self._saveFileName, devNum)
-        p, ext = osp.splitext(fname)
-        # open file based on extension type 
-        f = None
-        if(ext=='.csv' or ext=='.txt') :    f = Setup_8206HR._OpenSaveFile_TXT(fname)
-        elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
-        return(f)
-    
-
-    @staticmethod
-    def _OpenSaveFile_TXT(fname) : 
+    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
         # open file and write column names 
         f = open(fname, 'w')
         f.write('time,ch0,ch1,ch2\n')
         return(f)
+    
 
-
-    def _OpenSaveFile_EDF(self, fname, devNum):
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        # number of channels 
+        n = len(self._LOWPASSKEYS)
         # create file
-        f = edfw(fname, 3) 
+        f = EdfWriter(fname, n) 
         # get info for each channel
-        label = ['EEG1', 'EEG2', 'EEG3/EMG']
-        for i in range(3):
+        for i in range(n):
             f.setSignalHeader( i, {
-                'label' : label[i],
+                'label' : self._LOWPASSKEYS[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
                 'physical_max': self._PHYSICAL_BOUND_uV,
@@ -488,10 +194,10 @@ class Setup_8206HR :
                 'prefilter': ''            
             } )
         return(f)
-    
+
 
     @staticmethod
-    def _WriteDataToFile_TXT(file, data, sampleRate, t) : 
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray], sampleRate: int, t: float) : 
         # initialize times
         dt = 1.0 / sampleRate
         ti = t
@@ -508,7 +214,7 @@ class Setup_8206HR :
 
 
     @staticmethod
-    def _WriteDataToFile_EDF(file, data) : 
+    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -516,9 +222,34 @@ class Setup_8206HR :
     # ------------ STREAM ------------ 
 
 
-    def _StreamUntilStop(self, pod, file, sampleRate):
+    def _StreamThreading(self) -> dict[int,Thread] :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : Thread(
+                    target = self._StreamUntilStop, 
+                    args = ( pod, file, params['Sample Rate'] )
+                )
+            # for each device 
+            for devNum,params,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podParametersDict.values(),   # params
+                    self._podDevices.values(),          # pod
+                    podFiles.values()                   # file
+                ) 
+        }
+        for t in readThreads.values() : 
+            # start streaming (program will continue until .join() or streaming ends)
+            t.start()
+        return(readThreads)
+    
+    
+    def _StreamUntilStop(self, pod: POD_8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
         # get file type
-        name, ext = osp.splitext(self._saveFileName)
+        name, ext = os.path.splitext(self._saveFileName)
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
@@ -538,191 +269,32 @@ class Setup_8206HR :
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
                     if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
-                    return  
+                    file.close()
+                    return  ##### END #####
                 # translate 
                 rt = pod.TranslatePODpacket(r)
                 # save data as uV
-                data0[i] = Setup_8206HR._uV(rt['Ch0'])
-                data1[i] = Setup_8206HR._uV(rt['Ch1'])
-                data2[i] = Setup_8206HR._uV(rt['Ch2'])
+                data0[i] = self._uV(rt['Ch0'])
+                data1[i] = self._uV(rt['Ch1'])
+                data2[i] = self._uV(rt['Ch2'])
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : Setup_8206HR._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
-            elif(ext=='.edf') :              Setup_8206HR._WriteDataToFile_EDF(file, [data0,data1,data2])
+            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
             # increment by second 
             t+=1
 
-
-    def _AskToStopStream(self):
-        # get any input from user 
-        input('\nPress Enter to stop streaming:')
+            
+    def _StopStream(self) -> None:
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
-        print('Finishing up...')
-
-
-    def _StreamThreading(self) :
-        # create save files for pod devices
-        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
-        # make threads for reading 
-        readThreads = {
-            # create thread to _StreamUntilStop() to dictionary entry devNum
-            devNum : threading.Thread(
-                    target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] )
-                )
-            # for each device 
-            for devNum,params,pod,file in 
-                zip(
-                    self._podParametersDict.keys(),     # devNum
-                    self._podParametersDict.values(),   # params
-                    self._podDevices.values(),          # pod
-                    podFiles.values()                   # file
-                ) 
-        }
-        # make thread for user input 
-        userThread  = threading.Thread(target=self._AskToStopStream)
-        # start streaming 
-        for t in readThreads.values() : t.start()
-        userThread.start()
-        # join all threads --> waits until all threads are finished before continuing 
-        userThread.join()
-        for t in readThreads.values() : t.join()
-        # close all files 
-        for file in podFiles.values() : file.close()
-        print('Save complete!')
-
-
-    def _Stream(self) : 
-        # check for good connection 
-        if(not self._TestDeviceConnection_All()): 
-            print('Could not stream.')
-        # start streaming from all devices 
-        else:
-            dt = self._TimeFunc(self._StreamThreading)
-            # print execution time 
-            print('\nExecution time:', str(math.floor(dt)), 'sec') 
-
-
-    # ------------ OPTIONS ------------
-
-
-    def _PrintOptions(self):
-        print('\nOptions:')
-        for key,val in self._options.items() : 
-            print(str(key)+'. '+val)
-    
-
-    def _AskOption(self):
-        try:
-            # get option number from user 
-            choice = int(input('\nWhat would you like to do?: '))
-        except : 
-            # print error and ask again
-            print('[!] Please enter an integer number.')
-            return(self._AskOption())
-        # choice must be an available option 
-        if(not choice in self._options.keys()):
-            print('[!] Invalid Selection. Please choose an available option.')
-            return(self._AskOption())
-        # return valid choice
-        return(choice)
-
-
-    def _DoOption(self, choice) : 
-        # Start Streaming.
-        if  (choice == 1):  
-            self._Stream()
-        # Show current settings.
-        elif(choice == 2):  
-            self._DisplayPODdeviceParameters()
-            self._PrintSaveFile()
-        # Edit save file path.
-        elif(choice == 3):  
-            self._saveFileName = self._GetFilePath()
-            self._PrintSaveFile()
-        # Edit POD device parameters.
-        elif(choice == 4):  
-            self._DisplayPODdeviceParameters()
-            self._EditParams()
-            self._ValidateParams()
-            self._ConnectAllPODdevices()
-        # Connect a new POD device.
-        elif(choice == 5):  
-            self._AddPODdevice()
-            self._ValidateParams()
-            self._ConnectAllPODdevices()
-        # Reconnect current POD devices.
-        elif(choice == 6):  
-            self._ConnectAllPODdevices()
-        # Generate initialization code.
-        elif(choice == 7):  
-            self._PrintInitCode()
-        # Quit.
-        else:               
-            print('\nQuitting...\n')
 
 
     # ------------ HELPER ------------
 
 
     @staticmethod
-    def _AskYN(question) : 
-        response = input(str(question)+' (y/n): ').upper() 
-        if(response=='Y' or response=='YES'):
-            return(True)
-        elif(response=='N' or response=='NO'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_8206HR._AskYN(question))
-
-
-    @staticmethod
-    def _TimeFunc(func) : 
-        ti = time.time() # start time 
-        func() # run function 
-        dt = round(time.time()-ti,3) # calculate time difference
-        return(dt)
-
-
-    @staticmethod
-    def _TestDeviceConnection(pod):
-        # returns True when connection is successful, false otherwise
-        try:
-            w = pod.WritePacket(cmd='PING')
-            r = pod.ReadPODpacket()
-        except:     return(False)
-        # check that read matches ping write
-        if(w==r):   return(True)
-        else:       return(False)
-
-
-    def _TestDeviceConnection_All(self) :
-        allGood = True
-        for key,pod in self._podDevices.items(): 
-            # test connection of each pod device
-            if(not self._TestDeviceConnection(pod)) : 
-                # write newline for first bad connection 
-                if(allGood==True) : print('') 
-                # print error message
-                print('Connection issue with POD device #'+str(key)+'.')
-                # flag that a connection failed
-                allGood = False 
-        # return True when all connections are successful, false otherwise
-        return(allGood)
-
-
-    def _PrintInitCode(self):
-        print(
-            '\n' + 
-            'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
-            'podParametersDict = ' + str(self._podParametersDict)  + '\n' + 
-            'go = Setup_8206HR(saveFile, podParametersDict)'  + '\n' + 
-            'go.Run()'
-        )
-
-    @staticmethod
-    def _uV(voltage):
+    def _uV(voltage: float|int) :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    

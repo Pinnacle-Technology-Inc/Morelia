@@ -22,15 +22,15 @@ class POD_8401HR(POD_Basics) :
 
 
     # number of bytes for a Binary 5 packet 
-    __B5LENGTH = 31
+    __B5LENGTH : int = 31
     # number of binary bytes for a Binary 5 packet 
-    __B5BINARYLENGTH = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+    __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port, deviceName, ssGain={'A':None,'B':None,'C':None,'D':None}, preampGain={'A':None,'B':None,'C':None,'D':None}, baudrate=9600) :
+    def __init__(self, port: str|int, deviceName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
 
@@ -78,7 +78,7 @@ class POD_8401HR(POD_Basics) :
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
         # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap = POD_8401HR.GetChannelMapping(deviceName)
+        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapping(deviceName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
@@ -87,14 +87,14 @@ class POD_8401HR(POD_Basics) :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssGain = ssGain 
+        self._ssGain : dict[str,int|None] = ssGain 
 
         # preamplifier gain
         for value in preampGain.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
                 raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
-        self._preampGain = preampGain
+        self._preampGain : dict[str,int|None] = preampGain
     
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -105,7 +105,7 @@ class POD_8401HR(POD_Basics) :
     
     
     @staticmethod
-    def UnpackPODpacket_Binary(msg) :
+    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes] :
         # Binary 5 format = 
         #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
         MINBYTES = POD_8401HR.__B5LENGTH
@@ -138,7 +138,7 @@ class POD_8401HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg): 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] : 
         # unpack parts of POD packet into dict
         msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -180,7 +180,7 @@ class POD_8401HR(POD_Basics) :
     
 
     @staticmethod
-    def GetChannelMapping(device):
+    def GetChannelMapping(device: str) -> dict[str,str]|None :
         match device : 
             case '8407-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
             case '8407-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
@@ -219,7 +219,7 @@ class POD_8401HR(POD_Basics) :
     
 
     @staticmethod
-    def _Voltage_PrimaryChannels(value, ssGain=None, PreampGain=None):
+    def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :
         if(ssGain != None and PreampGain == None) : 
             return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
         elif(ssGain != None):
@@ -229,7 +229,7 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def _Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain): 
+    def _Voltage_PrimaryChannels_EEGEMG(value: int, ssGain: int, PreampGain: int) -> float : 
         # Channels configured as EEG/EMG channels (0.4/1/10 Hz highpass filter, second stage 0.5Hz Highpass, second stage 5x)
         voltageAtADC = (value / 262144.0) * 4.096 # V
         totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
@@ -238,7 +238,7 @@ class POD_8401HR(POD_Basics) :
     
 
     @staticmethod
-    def _Voltage_PrimaryChannels_Biosensor(value, ssGain): 
+    def _Voltage_PrimaryChannels_Biosensor(value: int, ssGain: int) -> float : 
         # Channels configured as biosensor channels (DC highpass filter, second stage DC mode, second stage 1x)
         voltageAtADC = (value / 262144.0) * 4.096 # V
         totalGain    = 1.557 * ssGain * 1E7 # SSGain = 1 or 5
@@ -247,14 +247,14 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def _Voltage_SecondaryChannels(value):
+    def _Voltage_SecondaryChannels(value: int) -> float :
         # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
         return( (value / 4096.0) ) * 3.3 # V
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def _Read_Binary(self, prePacket, validateChecksum=True):
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True):
         """
         Binary 5 Data Format
         -----------------------------------------------------------------------------		
