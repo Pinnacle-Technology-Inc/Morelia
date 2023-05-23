@@ -179,17 +179,12 @@ class POD_8401HR(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128]
+        specialCommands = [127, 128] # 127	SET TTL CONFIG # 128	GET TTL CONFIG
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : msgDict['Command Number'] } 
             if('Payload' in msgDict) : 
-                # 127	SET TTL CONFIG
-                if(cmd == 127) : 
-                    transdict['Payload'] = ( POD_Packets.AsciiBytesToInt(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
-                # 128	GET TTL CONFIG
-                elif(cmd == 128) : 
-                    transdict['Payload'] = self._TranslateTTLByte(msgDict['Payload']) 
+                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
             return(transdict)
         # message is binary 
         elif(self._commands.IsCommandBinary(cmd)): 
@@ -197,6 +192,7 @@ class POD_8401HR(POD_Basics) :
         # standard packet 
         else: 
             return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
+
 
     # ------------ DEVICE HANDLING ------------           ------------------------------------------------------------------------------------------------------------------------
     
@@ -220,6 +216,13 @@ class POD_8401HR(POD_Basics) :
             case '8406-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
             case '8406-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
             case _              : return(None) # no device matched
+
+
+    @staticmethod
+    def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+        # use this for the argument/return for TTL-specific commands 
+        # Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins
+        return( 0 | (ext0 << 7) | (ext1 << 6) | (ttl4 << 3) | (ttl3 << 2) | (ttl2 << 1) | ttl1 )
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
