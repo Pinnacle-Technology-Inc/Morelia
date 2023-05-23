@@ -175,6 +175,29 @@ class POD_8401HR(POD_Basics) :
         return(msgDictTrans)
 
 
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        # get command number (same for standard and binary packets)
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
+        # these commands have some specific formatting 
+        specialCommands = [127, 128]
+        if(cmd in specialCommands):
+            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+            transdict = { 'Command Number' : msgDict['Command Number'] } 
+            if('Payload' in msgDict) : 
+                # 127	SET TTL CONFIG
+                if(cmd == 127) : 
+                    transdict['Payload'] = ( POD_Packets.AsciiBytesToInt(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
+                # 128	GET TTL CONFIG
+                elif(cmd == 128) : 
+                    transdict['Payload'] = self._TranslateTTLByte(msgDict['Payload']) 
+            return(transdict)
+        # message is binary 
+        elif(self._commands.IsCommandBinary(cmd)): 
+            return(self.TranslatePODpacket_Binary(msg))
+        # standard packet 
+        else: 
+            return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
+
     # ------------ DEVICE HANDLING ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
