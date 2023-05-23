@@ -207,7 +207,7 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def _TranslateTTLByte(ttlByte) : 
+    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
         return({
             'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
             'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
