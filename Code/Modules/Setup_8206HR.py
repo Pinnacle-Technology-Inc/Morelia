@@ -9,6 +9,7 @@ import numpy       as     np
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
+from   datetime    import datetime
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -171,6 +172,13 @@ class Setup_8206HR(Setup_Interface) :
     def _OpenSaveFile_TXT(fname: str) -> IOBase : 
         # open file and write column names 
         f = open(fname, 'w')
+        f.write("hi")
+        #dt = datetime.now()
+        #f.write("Date and time is:", dt)
+        now = datetime.now()
+
+        current_time = now.strftime("%H:%M:%S")
+        f.write("Current Time =", current_time)
         f.write('time,ch0,ch1,ch2\n')
         return(f)
     
