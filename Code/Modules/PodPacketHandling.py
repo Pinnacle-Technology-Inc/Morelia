@@ -157,7 +157,7 @@ class POD_Packets() :
         # if bytes payload is given...
         elif(isinstance(payload, bytes)):
             # throw error if payload is the wrong size  
-            if( len(payload)*2 != sum(argSizes)) : # each byte is 2 hex characters
+            if( len(payload) != sum(argSizes)) : # each byte is 2 hex characters
                 raise Exception('Payload is the wrong size.')
             # otherwise, accept payload as given. 
             else:
@@ -174,7 +174,7 @@ class POD_Packets() :
                 if(isinstance(payload[i], int)) :
                     # convert to bytes of the expected length 
                     tempPld[i] = POD_Packets.IntToAsciiBytes(payload[i],argSizes[i])
-                elif(isinstance(payload[i], bytes) and len(payload[i])*2==argSizes[i]): # each byte is 2 hex characters
+                elif(isinstance(payload[i], bytes) and len(payload[i])==argSizes[i]): # each byte is 2 hex characters
                     # accept bytes payload as given
                     tempPld[i] = payload[i]
                 else:
