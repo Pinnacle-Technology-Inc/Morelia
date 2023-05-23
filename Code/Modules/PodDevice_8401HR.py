@@ -43,32 +43,31 @@ class POD_8401HR(POD_Basics) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand( 100, 'GET SAMPLE RATE',      (0,),       (U16,),     False  )
-        self._commands.AddCommand( 101, 'SET SAMPLE RATE',      (U16,),     (0,),       False  )
-        self._commands.AddCommand( 102,	'GET HIGHPASS',	        (U8,),	    (U8,),      False  )
-        self._commands.AddCommand( 103,	'SET HIGHPASS',	        (U8, U8),	(0,),       False  )
-        self._commands.AddCommand( 104,	'GET LOWPASS',	        (U8,),	    (U16,),     False  )
-        self._commands.AddCommand( 105,	'SET LOWPASS',	        (U8, U16),	(0,),       False  )
-        self._commands.AddCommand( 106,	'GET DC MODE',	        (U8,),	    (U8,),      False  )
-        self._commands.AddCommand( 107,	'SET DC MODE',	        (U8, U8),	(0,),       False  )
-        self._commands.AddCommand( 112,	'GET BIAS',	            (U8,),	    (U16,),     False  )
-        self._commands.AddCommand( 113,	'SET BIAS',	            (U8, U16),	(0,),       False  )
-        self._commands.AddCommand( 114,	'GET EXT0 VALUE',	    (0,),	    (U16,),     False  )
-        self._commands.AddCommand( 115,	'GET EXT1 VALUE',	    (0,),	    (U16,),     False  )
-        self._commands.AddCommand( 116,	'SET EXT0',	            (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 117,	'SET EXT1',	            (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 120,	'GET OFFSETS',	        (U8, U8),	(U16,),     False  )
-        self._commands.AddCommand( 121,	'SET INPUT GROUND',	    (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 122,	'GET INPUT GROUND',	    (0,),	    (U8,),      False  )
-        self._commands.AddCommand( 127,	'SET TTL CONFIG',	    (U8, U8),	(0,),       False  )
-        self._commands.AddCommand( 128,	'GET TTL CONFIG',	    (0,),	    (U8, U8),   False  )
-        self._commands.AddCommand( 129,	'SET TTL OUTS',	        (U8, U8),	(0,),       False  )
-        self._commands.AddCommand( 130,	'GET SS CONFIG',	    (U8,),	    (U8,),      False  )
-        self._commands.AddCommand( 131,	'SET SS CONFIG',	    (U8, U8),	(0,),       False  )
-        self._commands.AddCommand( 132,	'SET MUX MODE',	        (U8,),	    (0,),       False  )
-        self._commands.AddCommand( 133,	'GET MUX MODE',	        (0,),	    (U8,),      False  )
-        self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  )
-        self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   )
+        self._commands.AddCommand( 100, 'GET SAMPLE RATE',      (0,),       (U16,),     False  ) # Gets the current sample rate of the system, in Hz
+        self._commands.AddCommand( 101, 'SET SAMPLE RATE',      (U16,),     (0,),       False  ) # Sets the sample rate of the system, in Hz.  Valid values are 2000 - 20000 currently
+        self._commands.AddCommand( 102,	'GET HIGHPASS',	        (U8,),	    (U8,),      False  ) # Reads the highpass filter value for a channel.  Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass 
+        self._commands.AddCommand( 103,	'SET HIGHPASS',	        (U8, U8),	(0,),       False  ) # Sets the highpass filter for a channel. Requires channel to set, and filter value.  Values are the same as returned in GET HIGHPASS
+        self._commands.AddCommand( 104,	'GET LOWPASS',	        (U8,),	    (U16,),     False  ) # Gets the lowpass filter for the desired channel.  Requires the channel to read, Returns the value in Hz
+        self._commands.AddCommand( 105,	'SET LOWPASS',	        (U8, U16),	(0,),       False  ) # Sets the lowpass filter for the desired channel to the desired value (21 - 15000) in Hz.   Requires the channel to read, and value in Hz.
+        self._commands.AddCommand( 106,	'GET DC MODE',	        (U8,),	    (U8,),      False  ) # Gets the DC mode for the channel.   Requires the channel to read, returns the value 0 = Subtract VBias, 1 = Subtract AGND.  Typically 0 for Biosensors, and 1 for EEG/EMG
+        self._commands.AddCommand( 107,	'SET DC MODE',	        (U8, U8),	(0,),       False  ) # Sets the DC mode for the selected channel.   Requires the channel to read, and value to set.  Values are the same as in GET DC MODE
+        self._commands.AddCommand( 112,	'GET BIAS',	            (U8,),	    (U16,),     False  ) # Gets the bias on a given channel.  Returns the DAC value as a 16-bit 2's complement value, representing a value from +/- 2.048V
+        self._commands.AddCommand( 113,	'SET BIAS',	            (U8, U16),	(0,),       False  ) # Sets the bias on a given channel.  Requires the channel and DAC value as specified in GET BIAS.  Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio chanenls
+        self._commands.AddCommand( 114,	'GET EXT0 VALUE',	    (0,),	    (U16,),     False  ) # Reads the analog value on the EXT0 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify preamps.  Note that this function takes some time and blocks, so it should not be called during data acquisition if possible
+        self._commands.AddCommand( 115,	'GET EXT1 VALUE',	    (0,),	    (U16,),     False  ) # Reads the analog value on the EXT1 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify if an 8480 is present.  Similar caveat re blocking as GET EXT0 VALUE
+        self._commands.AddCommand( 116,	'SET EXT0',	            (U8,),	    (0,),       False  ) # Sets the digital value of EXT0, 0 or 1
+        self._commands.AddCommand( 117,	'SET EXT1',	            (U8,),	    (0,),       False  ) # Sets the digital value of EXT1, 0 or 1
+        self._commands.AddCommand( 121,	'SET INPUT GROUND',	    (U8,),	    (0,),       False  ) # Sets whether channel inputs are grounded or connected to the preamp.  Bitfield, bits 0-3, high nibble should be 0s.  0=Grounded, 1=Connected to Preamp
+        self._commands.AddCommand( 122,	'GET INPUT GROUND',	    (0,),	    (U8,),      False  ) # Returns the bitmask value from SET INPUT GROUND
+        self._commands.AddCommand( 127,	'SET TTL CONFIG',	    (U8, U8),	(0,),       False  ) # Configures the TTL pins.  First argument is output setup, 0 is open collector and 1 is push-pull.  Second argument is input setup, 0 is analog and 1 is digital.  Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins
+        self._commands.AddCommand( 128,	'GET TTL CONFIG',	    (0,),	    (U8, U8),   False  ) # Gets the TTL config byte, values are as per SET TTL CONFIG
+        self._commands.AddCommand( 129,	'SET TTL OUTS',	        (U8, U8),	(0,),       False  ) # Sets the TTL pins.  First byte is a bitmask, 0 = do not modify, 1=modify.  Second byte is bit field, 0 = low, 1 = high
+        self._commands.AddCommand( 130,	'GET SS CONFIG',	    (U8,),	    (U8,),      False  ) # Gets the second stage gain config.  Requires the channel and returins a bitfield. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass.  Bit 1 = 0 for 5x gain, 1 for 1x gain
+        self._commands.AddCommand( 131,	'SET SS CONFIG',	    (U8, U8),	(0,),       False  ) # Sets the second stage gain config.  Requires the channel and a config bitfield as per GET SS CONFIG
+        self._commands.AddCommand( 132,	'SET MUX MODE',	        (U8,),	    (0,),       False  ) # Sets mux mode on or off.  This causes EXT1 to toggle periodically to control 2BIO 3EEG preamps.  0 = off, 1 = on
+        self._commands.AddCommand( 133,	'GET MUX MODE',	        (0,),	    (U8,),      False  ) # Gets the state of mux mode.  See SET MUX MODE
+        self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  ) # Reads a TTL input as an analog signal.  Requires a channel to read, returns a 10-bit analog value.  Same caveats and restrictions as GET EXTX VALUE commands.  Normally you would just enable an extra channel in Sirenia for this.
+        self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   ) # Binary data packets, enabled by using the STREAM command with a '1' argument. 
 
         # verify that dictionaries are correct structure
         goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
