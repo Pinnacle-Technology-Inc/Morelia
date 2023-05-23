@@ -194,7 +194,7 @@ class POD_8401HR(POD_Basics) :
             return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
 
 
-    # ------------ DEVICE HANDLING ------------           ------------------------------------------------------------------------------------------------------------------------
+    # ------------ HELPER ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
     @staticmethod
