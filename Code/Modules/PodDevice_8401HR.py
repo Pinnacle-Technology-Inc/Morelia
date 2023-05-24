@@ -26,6 +26,23 @@ class POD_8401HR(POD_Basics) :
     # number of binary bytes for a Binary 5 packet 
     __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
+    __CHANNELMAP : dict = {
+        '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8407-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8407-SE31M'   : {'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SE-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SL-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SE31M'   : {'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8406-BIO'     : {'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  },
+        '8406-2BIO'    : {'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  },
+        '8406-EEG2BIO' : {'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'},
+        '8406-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8406-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
+    }
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
@@ -199,23 +216,15 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def GetChannelMapping(device: str) -> dict[str,str]|None :
-        match device : 
-            case '8407-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8407-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8407-SE31M'   : return({'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SE-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SL-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SE31M'   : return({'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8406-BIO'     : return({'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  })
-            case '8406-2BIO'    : return({'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  })
-            case '8406-EEG2BIO' : return({'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'})
-            case '8406-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8406-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case _              : return(None) # no device matched
+        if(device in POD_8401HR.__CHANNELMAP) : 
+            return(POD_8401HR.__CHANNELMAP[device])
+        else : 
+            return(None) # no device matched
+
+
+    @staticmethod
+    def GetSupportedDevices() : 
+        return(list(POD_8401HR.__CHANNELMAP.keys()))
 
 
     @staticmethod
