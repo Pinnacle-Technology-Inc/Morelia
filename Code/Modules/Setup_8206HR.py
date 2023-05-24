@@ -88,42 +88,25 @@ class Setup_8206HR(Setup_Interface) :
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
             self._PORTKEY       : self._ChoosePort(forbiddenNames),
-            'Sample Rate'       : self._ChooseSampleRate(),
+            'Sample Rate'       : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 100, 2000),
             'Preamplifier Gain' : self._ChoosePreampGain(),
-            'Low Pass'          : self._ChooseLowpass()
+            'Low Pass'          : {
+                    'EEG1'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
+                    'EEG2'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
+                    'EEG3/EMG'  : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)
+                }
         })
     
-
-    @staticmethod
-    def _ChooseSampleRate() -> int :
-        return(Setup_Interface._AskForIntInRange('Set sample rate (Hz)',100,2000))
-    
-
     @staticmethod
     def _ChoosePreampGain() -> int :
         gain = Setup_Interface._AskForInt('Set preamplifier gain')
         # check for valid input 
         if(gain != 10 and gain != 100):
             # prompt again 
-            print('[!] Preamplifier gain must be 10 or 100.')
+            print('[!] Input must be 10 or 100.')
             return(Setup_8206HR._ChoosePreampGain())
         # return preamplifier gain 
         return(gain)
-    
-
-    @staticmethod
-    def _ChooseLowpass() -> dict[str,int] :
-        # get lowpass for all EEG
-        return({
-            'EEG1'      : Setup_8206HR._ChooseLowpassForEEG('EEG1'),
-            'EEG2'      : Setup_8206HR._ChooseLowpassForEEG('EEG2'),
-            'EEG3/EMG'  : Setup_8206HR._ChooseLowpassForEEG('EEG3/EMG'),
-        })
-    
-    
-    @staticmethod
-    def _ChooseLowpassForEEG(eeg: str) -> int :
-        return(Setup_Interface._AskForIntInRange('Set lowpass (Hz) for '+str(eeg),11,500))
     
 
     # ------------ DISPLAY POD PARAMETERS ------------
@@ -264,13 +247,4 @@ class Setup_8206HR(Setup_Interface) :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
-
-
-    # ------------ HELPER ------------
-
-
-    @staticmethod
-    def _uV(voltage: float|int) :
-        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
-        return ( round(voltage * 1E-6, 6 ) + 0.0 )
     

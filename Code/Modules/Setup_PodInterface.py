@@ -370,7 +370,7 @@ class Setup_Interface :
             print('[!] Please enter an integer number.')
             return(Setup_Interface._AskForInt(prompt))
         
-        
+
     @staticmethod
     def _AskForIntInRange(prompt: str, minimum: int, maximum: int) -> int :
         n = Setup_Interface._AskForInt(prompt)
@@ -381,3 +381,7 @@ class Setup_Interface :
         # return sample rate
         return(n)
     
+    @staticmethod
+    def _uV(voltage: float|int) :
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
