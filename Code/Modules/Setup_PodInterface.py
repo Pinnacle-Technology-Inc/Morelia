@@ -369,3 +369,15 @@ class Setup_Interface :
             # if bad input, start over 
             print('[!] Please enter an integer number.')
             return(Setup_Interface._AskForInt(prompt))
+        
+        
+    @staticmethod
+    def _AskForIntInRange(prompt: str, minimum: int, maximum: int) -> int :
+        n = Setup_Interface._AskForInt(prompt)
+        # check for valid input
+        if(n<minimum or n>maximum) : 
+            print('[!] Input must be between '+str(minimum)+'-'+str(maximum)+'.')
+            return(Setup_Interface._AskForIntInRange(prompt, minimum, maximum))
+        # return sample rate
+        return(n)
+    

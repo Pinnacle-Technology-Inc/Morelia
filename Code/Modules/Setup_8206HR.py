@@ -96,13 +96,7 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _ChooseSampleRate() -> int :
-        sampleRate = Setup_Interface._AskForInt('Set sample rate (Hz)')
-        # check for valid input
-        if(sampleRate<100 or sampleRate>2000) : 
-            print('[!] Sample rate must be between 100-2000.')
-            return(Setup_8206HR._ChooseSampleRate())
-        # return sample rate
-        return(sampleRate)
+        return(Setup_Interface._AskForIntInRange('Set sample rate (Hz)',100,2000))
     
 
     @staticmethod
@@ -129,14 +123,8 @@ class Setup_8206HR(Setup_Interface) :
     
     @staticmethod
     def _ChooseLowpassForEEG(eeg: str) -> int :
-        lowpass = Setup_Interface._AskForInt('Set lowpass (Hz) for '+str(eeg))
-        # check for valid input
-        if(lowpass<11 or lowpass>500) : 
-            print('[!] Sample rate must be between 11-500 Hz.')
-            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
-        # return lowpass
-        return(lowpass)
-
+        return(Setup_Interface._AskForIntInRange('Set lowpass (Hz) for '+str(eeg),11,500))
+    
 
     # ------------ DISPLAY POD PARAMETERS ------------
 
