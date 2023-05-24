@@ -244,14 +244,7 @@ class Setup_Interface :
 
 
     def _SelectPODdeviceFromDictToEdit(self) -> int :
-        try:
-            # get pod device number from user 
-            podKey = int(input('Edit '+self._NAME+' device #: '))
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(self._SelectPODdeviceFromDictToEdit())
-
+        podKey = Setup_Interface._AskForInt('Edit '+self._NAME+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
@@ -365,3 +358,14 @@ class Setup_Interface :
         else:
             print('[!] Please enter \'y\' or \'n\'.')
             return(Setup_Interface._AskYN(question))
+        
+    
+    @staticmethod
+    def _AskForInt(prompt: str) -> int :
+        try : 
+            # get sample rate from user 
+            return(int(input(str(prompt)+': ')))
+        except : 
+            # if bad input, start over 
+            print('[!] Please enter an integer number.')
+            return(Setup_Interface._AskForInt(prompt))

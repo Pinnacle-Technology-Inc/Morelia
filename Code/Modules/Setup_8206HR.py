@@ -96,13 +96,7 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _ChooseSampleRate() -> int :
-        try : 
-            # get sample rate from user 
-            sampleRate = int(input('Set sample rate (Hz): '))
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseSampleRate())
+        sampleRate = Setup_Interface._AskForInt('Set sample rate (Hz)')
         # check for valid input
         if(sampleRate<100 or sampleRate>2000) : 
             print('[!] Sample rate must be between 100-2000.')
@@ -113,13 +107,7 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _ChoosePreampGain() -> int :
-        try:
-            # get gain from user 
-            gain = int(input('Set preamplifier gain: '))
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChoosePreampGain())
+        gain = Setup_Interface._AskForInt('Set preamplifier gain')
         # check for valid input 
         if(gain != 10 and gain != 100):
             # prompt again 
@@ -141,13 +129,7 @@ class Setup_8206HR(Setup_Interface) :
     
     @staticmethod
     def _ChooseLowpassForEEG(eeg: str) -> int :
-        try : 
-            # get lowpass from user 
-            lowpass = int(input('Set lowpass (Hz) for '+str(eeg)+': '))
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_8206HR._ChooseLowpassForEEG(eeg))
+        lowpass = Setup_Interface._AskForInt('Set lowpass (Hz) for '+str(eeg))
         # check for valid input
         if(lowpass<11 or lowpass>500) : 
             print('[!] Sample rate must be between 11-500 Hz.')

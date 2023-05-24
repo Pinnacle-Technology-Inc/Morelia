@@ -34,7 +34,11 @@ class Setup_8401HR(Setup_Interface) :
         return(Setup_8401HR._NAME)
     
 
+    # ============ PRIVATE METHODS ============      ========================================================================================================================
+
+
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
-         return({
-            self._PORTKEY : self._ChoosePort(forbiddenNames)
+        return({
+            self._PORTKEY : self._ChoosePort(forbiddenNames),
+            # 'Sample Rate' : 
         })
