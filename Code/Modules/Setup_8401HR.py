@@ -39,6 +39,22 @@ class Setup_8401HR(Setup_Interface) :
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
         return({
-            self._PORTKEY : self._ChoosePort(forbiddenNames),
-            # 'Sample Rate' : 
+            self._PORTKEY   : self._ChoosePort(forbiddenNames),
+            'Sample Rate'   : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
+            'Preamplifier Device'  : self._GetPreampDeviceName(),
+            # 'Preamplifier Gain' : # {ABCD}
+            # 'Second Stage Gain' : 
+            # 'High-pass'     : 
+            # 'Low-pass'      :
+            # 'Bias'          :
         })
+
+    def _GetPreampDeviceName(self) -> str : 
+        # ask user for name of the preamp device 
+        device = input('Set mouse/rat preamplifier: ')
+        # check that a valid device name was given...
+        if(not POD_8401HR.IsPreampDeviceSupported(device)) :
+            # ...if not, print error and prompt again 
+            print('[!] Please input a valid mouse/rat preamplifier '+str(tuple(POD_8401HR.GetSupportedPreampDevices()))+'.')
+            return(self._GetPreampDeviceName())
+        return(device)
