@@ -29,7 +29,7 @@ class Setup_8206HR(Setup_Interface) :
     
     
     # deviceParams keys for reference 
-    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low Pass']
+    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low-pass']
     _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
 
     # for EDF file writing 
@@ -65,9 +65,9 @@ class Setup_8206HR(Setup_Interface) :
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
                 # write setup parameters
                 self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate']          )
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low Pass']['EEG1']    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low Pass']['EEG2']    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low Pass']['EEG3/EMG']))   
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low-pass']['EEG1']    ))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low-pass']['EEG2']    ))
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low-pass']['EEG3/EMG']))   
                 failed = False
         except : 
             # fill entry 
@@ -90,7 +90,7 @@ class Setup_8206HR(Setup_Interface) :
             self._PORTKEY       : self._ChoosePort(forbiddenNames),
             'Sample Rate'       : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 100, 2000),
             'Preamplifier Gain' : self._ChoosePreampGain(),
-            'Low Pass'          : {
+            'Low-pass'          : {
                     'EEG1'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
                     'EEG2'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
                     'EEG3/EMG'  : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)
@@ -116,10 +116,10 @@ class Setup_8206HR(Setup_Interface) :
         # setup table 
         tab = Texttable()
         # write column names
-        tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
+        tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])       
+            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low-pass']['EEG1'], val['Low-pass']['EEG2'], val['Low-pass']['EEG3/EMG'],])       
         return(tab)
     
 
