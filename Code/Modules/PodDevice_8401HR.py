@@ -26,7 +26,7 @@ class POD_8401HR(POD_Basics) :
     # number of binary bytes for a Binary 5 packet 
     __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
-    __CHANNELMAP : dict = {
+    __CHANNELMAPALL : dict = {
         '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         '8407-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
@@ -92,11 +92,6 @@ class POD_8401HR(POD_Basics) :
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         if(list(preampGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        
-        # preamp device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapForPreampDevice(preampName)
-        if(self._channelMap == None) :
-            raise Exception('[!] Device does not exits.')
 
         # second stage gain 
         for value in ssGain.values() :
@@ -165,19 +160,19 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Status']          = POD_Packets.BinaryBytesToInt( msgDict['Status'] )
         # dont add channel if no connect (NC)
         if(self._ssGain['D'] != None) :
-            msgDictTrans[self._channelMap['D']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['D'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
                                                     self._ssGain['D'], self._preampGain['D'] )
         if(self._ssGain['C'] != None) :
-            msgDictTrans[self._channelMap['C']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['C'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
                                                     self._ssGain['C'], self._preampGain['C'] )
         if(self._ssGain['B'] != None) :
-            msgDictTrans[self._channelMap['B']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['B'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
                                                     self._ssGain['B'], self._preampGain['B'] )
         if(self._ssGain['A'] != None) :
-            msgDictTrans[self._channelMap['A']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['A'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), # | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
                                                     self._ssGain['A'], self._preampGain['A'] )
         # add analogs 
@@ -216,15 +211,20 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def GetChannelMapForPreampDevice(preampName: str) -> dict[str,str]|None :
-        if(preampName in POD_8401HR.__CHANNELMAP) : 
-            return(POD_8401HR.__CHANNELMAP[preampName])
+        if(preampName in POD_8401HR.__CHANNELMAPALL) : 
+            return(POD_8401HR.__CHANNELMAPALL[preampName])
         else : 
             return(None) # no device matched
 
 
     @staticmethod
-    def GetSupportedPreampDevices() : 
-        return(list(POD_8401HR.__CHANNELMAP.keys()))
+    def GetSupportedPreampDevices() -> list[str]: 
+        return(list(POD_8401HR.__CHANNELMAPALL.keys()))
+
+
+    @staticmethod
+    def IsPreampDeviceSupported(name: str) -> bool : 
+        return(name in POD_8401HR.__CHANNELMAPALL)    
 
 
     @staticmethod
