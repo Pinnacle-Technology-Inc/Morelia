@@ -3,9 +3,9 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 """
 
 # enviornment imports
-import texttable 
 import os 
 import numpy       as     np
+from   texttable   import Texttable
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
@@ -159,19 +159,16 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
-    def _DisplayPODdeviceParameters(self) -> None : 
-        # print title 
-        print('\nParameters for all '+str(self._NAME)+' Devices:')
+    def _GetPODdeviceParameterTable(self) -> Texttable :
         # setup table 
-        tab = texttable.Texttable()
+        tab = Texttable()
         # write column names
         tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low Pass (Hz)','EEG2 Low Pass (Hz)','EEG3/EMG Low Pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])
-        # show table 
-        print(tab.draw())
-
+            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low Pass']['EEG1'], val['Low Pass']['EEG2'], val['Low Pass']['EEG3/EMG'],])       
+        return(tab)
+    
 
     # ------------ FILE HANDLING ------------
 

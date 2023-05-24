@@ -4,6 +4,7 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 
 # enviornment imports
 import os
+from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
 from   io         import IOBase
@@ -40,8 +41,8 @@ class Setup_Interface :
         # should return a dictionary of the device parameters
         pass
 
-    def _DisplayPODdeviceParameters(self) -> None : 
-        # display all the pod device parameters in a table 
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        # get a table that has the parameters for all POD devices 
         pass
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
@@ -277,6 +278,16 @@ class Setup_Interface :
     def _PrintDeviceNumber(num: int) -> None :
         print('\n-- Device #'+str(num)+' --\n')
         
+    
+    def _DisplayPODdeviceParameters(self) -> None : 
+        # get table
+        tab : Texttable|None = self._GetPODdeviceParameterTable()
+        if(tab != None) : 
+            # print title 
+            print('\nParameters for all '+str(self._NAME)+' Devices:')
+            # show table 
+            print(tab.draw())
+
 
     # ------------ FILE HANDLING ------------
 
