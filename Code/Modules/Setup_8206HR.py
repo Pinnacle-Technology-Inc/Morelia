@@ -37,7 +37,7 @@ class Setup_8206HR(Setup_Interface) :
 
     # overwrite from parent
     _NAME : str = '8206-HR'
-    
+
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
@@ -87,10 +87,10 @@ class Setup_8206HR(Setup_Interface) :
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
-            self._PORTKEY       : Setup_8206HR._ChoosePort(forbiddenNames),
-            'Sample Rate'       : Setup_8206HR._ChooseSampleRate(),
-            'Preamplifier Gain' : Setup_8206HR._ChoosePreampGain(),
-            'Low Pass'          : Setup_8206HR._ChooseLowpass()
+            self._PORTKEY       : self._ChoosePort(forbiddenNames),
+            'Sample Rate'       : self._ChooseSampleRate(),
+            'Preamplifier Gain' : self._ChoosePreampGain(),
+            'Low Pass'          : self._ChooseLowpass()
         })
     
 

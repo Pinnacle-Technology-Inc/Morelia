@@ -9,8 +9,9 @@ from   threading  import Thread
 from   math       import floor 
 
 # local imports
-from Setup_8206HR       import Setup_8206HR
 from Setup_PodInterface import Setup_Interface
+from Setup_8206HR       import Setup_8206HR
+from Setup_8401HR       import Setup_8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -29,7 +30,8 @@ class Setup_PodDevices :
     def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {  # NOTE add supported devices here 
-            Setup_8206HR.GetDeviceName() : Setup_8206HR() 
+            Setup_8206HR.GetDeviceName() : Setup_8206HR(),
+            Setup_8401HR.GetDeviceName() : Setup_8401HR()
         }
         self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
