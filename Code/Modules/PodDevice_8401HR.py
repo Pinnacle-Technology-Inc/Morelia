@@ -47,7 +47,7 @@ class POD_8401HR(POD_Basics) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port: str|int, deviceName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
+    def __init__(self, port: str|int, preampName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
 
@@ -93,8 +93,8 @@ class POD_8401HR(POD_Basics) :
         if(list(preampGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         
-        # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapping(deviceName)
+        # preamp device/sensor (EEG/EMG, biosensor, or no connect) 
+        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapForPreampDevice(preampName)
         if(self._channelMap == None) :
             raise Exception('[!] Device does not exits.')
 
@@ -215,15 +215,15 @@ class POD_8401HR(POD_Basics) :
     
 
     @staticmethod
-    def GetChannelMapping(device: str) -> dict[str,str]|None :
-        if(device in POD_8401HR.__CHANNELMAP) : 
-            return(POD_8401HR.__CHANNELMAP[device])
+    def GetChannelMapForPreampDevice(preampName: str) -> dict[str,str]|None :
+        if(preampName in POD_8401HR.__CHANNELMAP) : 
+            return(POD_8401HR.__CHANNELMAP[preampName])
         else : 
             return(None) # no device matched
 
 
     @staticmethod
-    def GetSupportedDevices() : 
+    def GetSupportedPreampDevices() : 
         return(list(POD_8401HR.__CHANNELMAP.keys()))
 
 
