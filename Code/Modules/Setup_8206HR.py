@@ -37,7 +37,16 @@ class Setup_8206HR(Setup_Interface) :
 
     # overwrite from parent
     _NAME : str = '8206-HR'
+    
 
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+
+
+    @staticmethod
+    def GetDeviceName() -> str : 
+        # returns the name of the POD device 
+        return(Setup_8206HR._NAME)
+    
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 

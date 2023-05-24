@@ -29,7 +29,7 @@ class Setup_PodDevices :
     def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {  # NOTE add supported devices here 
-            '8206-HR' : Setup_8206HR() 
+            Setup_8206HR.GetDeviceName() : Setup_8206HR() 
         }
         self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()

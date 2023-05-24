@@ -30,6 +30,11 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
+    @staticmethod
+    def GetDeviceName() -> str : 
+        # returns the name of the POD device 
+        pass
+    
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
         # Prompts the user to input all device setup parameters
         # should return a dictionary of the device parameters
