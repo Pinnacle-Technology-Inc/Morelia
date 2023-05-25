@@ -349,11 +349,11 @@ class Setup_Interface :
     
     
     @staticmethod
-    def _AskYN(question: str) -> bool : 
-        response = input(str(question)+' (y/n): ').upper() 
-        if(response=='Y' or response=='YES'):
+    def _AskYN(question: str, append:str=' (y/n): ') -> bool : 
+        response = input(str(question)+str(append)).upper() 
+        if(response=='Y' or response=='YES' or response=='1'):
             return(True)
-        elif(response=='N' or response=='NO'):
+        elif(response=='N' or response=='NO' or response=='0'):
             return(False)
         else:
             print('[!] Please enter \'y\' or \'n\'.')
