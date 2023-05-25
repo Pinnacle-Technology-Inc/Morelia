@@ -45,8 +45,8 @@ class Setup_8401HR(Setup_Interface) :
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
         params = {
             self._PORTKEY           : self._ChoosePort(forbiddenNames),
+            'Preamplifier Device'   : self._GetPreampDeviceName(),
             'Sample Rate'           : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
-            'Preamplifier Device'   : self._GetPreampDeviceName()
         }
         # get channel map for the user's preamplifier 
         chmap = POD_8401HR.GetChannelMapForPreampDevice(params['Preamplifier Device'])
@@ -152,9 +152,11 @@ class Setup_8401HR(Setup_Interface) :
     #               WORKING
     ########################################
 
-    # def _GetPODdeviceParameterTable(self) -> Texttable : 
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
         # setup table 
-        # tab = Texttable()
+        tab = Texttable()
+        # write column names
+        tab.header(['Device #',self._PORTKEY,])
 
 
 
