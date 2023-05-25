@@ -361,6 +361,16 @@ class Setup_Interface :
         
     
     @staticmethod
+    def _AskForFloat(prompt: str) -> float :
+        try : 
+            # get sample rate from user 
+            return(float(input(str(prompt)+': ')))
+        except : 
+            # if bad input, start over 
+            print('[!] Please enter a number.')
+            return(Setup_Interface._AskForFloat(prompt))
+        
+    @staticmethod
     def _AskForInt(prompt: str) -> int :
         try : 
             # get sample rate from user 
@@ -372,15 +382,16 @@ class Setup_Interface :
         
 
     @staticmethod
-    def _AskForIntInRange(prompt: str, minimum: int, maximum: int) -> int :
+    def _AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
         n = Setup_Interface._AskForInt(prompt)
         # check for valid input
         if(n<minimum or n>maximum) : 
-            print('[!] Input must be between '+str(minimum)+'-'+str(maximum)+'.')
+            print('[!] '+str(thisIs)+' must be between '+str(minimum)+'-'+str(maximum)+str(unit)+'.')
             return(Setup_Interface._AskForIntInRange(prompt, minimum, maximum))
         # return sample rate
         return(n)
     
+
     @staticmethod
     def _uV(voltage: float|int) :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
