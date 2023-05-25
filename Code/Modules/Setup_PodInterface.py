@@ -347,7 +347,16 @@ class Setup_Interface :
         # return True when all connections are successful, false otherwise
         return(allGood)
     
+
+    @staticmethod
+    def _uV(voltage: float|int) :
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
+
+    # ------------ USER INPUT ------------
+
+
     @staticmethod
     def _AskYN(question: str, append:str=' (y/n): ') -> bool : 
         response = input(str(question)+str(append)).upper() 
@@ -358,28 +367,48 @@ class Setup_Interface :
         else:
             print('[!] Please enter \'y\' or \'n\'.')
             return(Setup_Interface._AskYN(question))
-        
+
+    @staticmethod
+    def _AskForInput(prompt: str) : 
+        return(input(str(prompt)+': '))
+    
+    @staticmethod
+    def _AskForType(typecast: 'function', prompt: str) :
+        try : 
+            # get sample rate from user 
+            inp = Setup_Interface._AskForInput(prompt)
+            castedInp = typecast(inp)
+            return(castedInp)
+        except : 
+            # print bad input message
+            if(typecast == Setup_Interface._CastInt) : 
+                print('[!] Please enter an integer number.')
+            elif(typecast == Setup_Interface._CastFloat) : 
+                print('[!] Please enter a number.')
+            elif(typecast == Setup_Interface._CastStr) : 
+                print('[!] Please enter string.')
+            # ask again 
+            return(Setup_Interface._AskForType(typecast, prompt))
+
+    @staticmethod
+    def _CastInt(value) -> int :
+        return(int(value))
+
+    @staticmethod
+    def _CastFloat(value) -> float :
+        return(float(value))
+    
+    @staticmethod
+    def _CastStr(value) -> str :
+        return(str(value))
     
     @staticmethod
     def _AskForFloat(prompt: str) -> float :
-        try : 
-            # get sample rate from user 
-            return(float(input(str(prompt)+': ')))
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter a number.')
-            return(Setup_Interface._AskForFloat(prompt))
-        
+        return(Setup_Interface._AskForType(typecast=Setup_Interface._CastFloat, prompt=prompt))
+
     @staticmethod
     def _AskForInt(prompt: str) -> int :
-        try : 
-            # get sample rate from user 
-            return(int(input(str(prompt)+': ')))
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_Interface._AskForInt(prompt))
-        
+        return(Setup_Interface._AskForType(typecast=Setup_Interface._CastInt, prompt=prompt))
 
     @staticmethod
     def _AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
@@ -390,9 +419,31 @@ class Setup_Interface :
             return(Setup_Interface._AskForIntInRange(prompt, minimum, maximum))
         # return sample rate
         return(n)
-    
+   
+    @staticmethod
+    def _AskForTypeInList(typecast: 'function', prompt: str, goodInputs:list, badInputMessage:str|None=None) : 
+        # get message if bad input 
+        if(badInputMessage == None) : 
+            message = '[!] Invalid input. Please enter one of the following: '+str(goodInputs)
+        else : 
+            message = badInputMessage
+        # prompt user 
+        inp = Setup_Interface._AskForType(typecast, prompt)
+        # ask again if inp is not an option in goodInputs
+        if(inp not in goodInputs) : 
+            print(message)
+            return(Setup_Interface._AskForTypeInList(typecast,prompt,goodInputs,badInputMessage))
+        # return user input
+        return(inp)
 
     @staticmethod
-    def _uV(voltage: float|int) :
-        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
-        return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    def _AskForIntInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
+        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastInt, prompt, goodInputs, badInputMessage))
+    
+    @staticmethod
+    def _AskForFloatInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
+        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastFloat, prompt, goodInputs, badInputMessage))
+
+    @staticmethod
+    def _AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
+        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastStr, prompt, goodInputs, badInputMessage))
