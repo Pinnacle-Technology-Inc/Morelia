@@ -3,6 +3,7 @@ Setup_8401HR provides the setup functions for an 8206-HR POD device.
 """
 
 # enviornment imports
+from texttable import Texttable
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -36,6 +37,9 @@ class Setup_8401HR(Setup_Interface) :
     
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
+
+
+    # ------------ SETUP POD PARAMETERS ------------
 
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
@@ -76,6 +80,7 @@ class Setup_8401HR(Setup_Interface) :
             if(label == 'NC') : preampDict[abcd] = None
             # otherwise, ask for input 
             else: preampDict[abcd] = func(label)
+        return(preampDict)
     
 
     @staticmethod
@@ -139,3 +144,25 @@ class Setup_8401HR(Setup_Interface) :
     def _SetMuxMode(channelName: str) -> str :
         return(Setup_8401HR._AskYN('\t'+str(channelName), append=': '))
     
+    # ------------ DISPLAY POD PARAMETERS ------------
+    # ------------ FILE HANDLING ------------
+    # ------------ STREAM ------------ 
+
+    ########################################
+    #               WORKING
+    ########################################
+
+    # def _GetPODdeviceParameterTable(self) -> Texttable : 
+        # setup table 
+        # tab = Texttable()
+
+
+
+        # # setup table 
+        # tab = Texttable()
+        # # write column names
+        # tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
+        # # write rows
+        # for key,val in self._podParametersDict.items() :
+        #     tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low-pass']['EEG1'], val['Low-pass']['EEG2'], val['Low-pass']['EEG3/EMG'],])       
+        # return(tab)
