@@ -319,18 +319,11 @@ class Setup_8206HR(Setup_Interface) :
             # times.append(0)
             for i in range(sampleRate):
                 #times.append(average_td)
-                times[i] = currentTime
+                times[i] = (round(currentTime, 9))
+                # times[i] = (currentTime)
                 currentTime += average_td
                 # times.append(times[i-1] + average_td)
-                # sum_td = (average_td) + (time.time())
-                # times.append(sum_td)
-                # print(time.time())
-            # sum = average_td + time.time()
-            # print(time.time())
-            # times.append(sum)
                 
-            #sum = (int(average_td) + time.time())
-            #times.append(sum)
 
             # save to file 
             if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], times)
