@@ -22,7 +22,7 @@ from PodDevice_8206HR    import POD_8206HR
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -315,21 +315,19 @@ class Setup_8206HR(Setup_Interface) :
             tf = round(time.time(),9) # final time
             td = tf - ti # time difference 
             average_td = (round((td/sampleRate), 9)) # time between samples
-            #sum = average_td + time.time()
-            # times.append(0)
+            
+            
             for i in range(sampleRate):
-                #times.append(average_td)
                 times[i] = (round(currentTime, 9))
-                # times[i] = (currentTime)
-                currentTime += average_td
-                # times.append(times[i-1] + average_td)
+                currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+                
                 
 
             # save to file 
             if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], times)
             elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
-            # increment by second 
-            #t+=1
+            
+            
 
             
     def _StopStream(self) -> None:
