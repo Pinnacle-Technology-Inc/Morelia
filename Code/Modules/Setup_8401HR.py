@@ -56,8 +56,8 @@ class Setup_8401HR(Setup_Interface) :
         params['High-pass']         = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    )
         params['Low-pass']          = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     )
         params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )     
-        # params['Bias']              = self._SetForMappedChannels('Set Bias for...', chmap, self.XXX)
         params['MUX Mode']          = self._SetForMappedChannels('Use Mux mode (y/n) for...',                  chmap, self._SetMuxMode      )     
+        # params['Bias']              = self._SetForMappedChannels('Set Bias for...', chmap, self.XXX)
         return(params)
 
 
@@ -144,27 +144,47 @@ class Setup_8401HR(Setup_Interface) :
     def _SetMuxMode(channelName: str) -> str :
         return(Setup_8401HR._AskYN('\t'+str(channelName), append=': '))
     
+
     # ------------ DISPLAY POD PARAMETERS ------------
+
+
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        # setup table 
+        tab = Texttable(150)
+        # write column names
+        tab.header(['Device #',self._PORTKEY,'Preamplifier Device',
+                    'Sample Rate (Hz)','Preamplifier Gain','Second Stage Gain',
+                    'High-pass (Hz)','Low-pass (Hz)','DC Mode','MUX Mode'])
+        # for each device 
+        for key,val in self._podParametersDict.items() :
+            # get channel mapping for device 
+            chmap = POD_8401HR.GetChannelMapForPreampDevice(val['Preamplifier Device'])
+            # write row to table 
+            tab.add_row([
+                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],
+                self._NiceABCDtableText(val['Preamplifier Gain'],   chmap),
+                self._NiceABCDtableText(val['Second Stage Gain'],   chmap),
+                self._NiceABCDtableText(val['High-pass'],           chmap),
+                self._NiceABCDtableText(val['Low-pass'],            chmap),
+                self._NiceABCDtableText(val['DC Mode'],             chmap),
+                self._NiceABCDtableText(val['MUX Mode'],            chmap)])
+        # return table object 
+        return(tab)
+    
+
+    def _NiceABCDtableText(self, abcdValueDict: dict[str,int|str|None], channelMap: dict[str,str]) -> str:
+        # build nicely formatted text
+        text = ''
+        for key,val in channelMap.items() : 
+            # <channel label>: <user's input> \n
+            text += (str(val) +': ' + str(abcdValueDict[key]) + '\n')
+        # cut off the last newline then return string 
+        return(text[:-1])
+
+
     # ------------ FILE HANDLING ------------
     # ------------ STREAM ------------ 
 
     ########################################
     #               WORKING
     ########################################
-
-    def _GetPODdeviceParameterTable(self) -> Texttable : 
-        # setup table 
-        tab = Texttable()
-        # write column names
-        tab.header(['Device #',self._PORTKEY,])
-
-
-
-        # # setup table 
-        # tab = Texttable()
-        # # write column names
-        # tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
-        # # write rows
-        # for key,val in self._podParametersDict.items() :
-        #     tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low-pass']['EEG1'], val['Low-pass']['EEG2'], val['Low-pass']['EEG3/EMG'],])       
-        # return(tab)
