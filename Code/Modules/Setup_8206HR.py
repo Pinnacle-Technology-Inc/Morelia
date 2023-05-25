@@ -11,8 +11,9 @@ from   pyedflib    import EdfWriter
 from   io          import IOBase
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
-from PodDevice_8206HR    import POD_8206HR 
+from Setup_PodInterface import Setup_Interface
+from PodDevice_8206HR   import POD_8206HR 
+from GetUserInput       import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -88,18 +89,18 @@ class Setup_8206HR(Setup_Interface) :
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
             self._PORTKEY       : self._ChoosePort(forbiddenNames),
-            'Sample Rate'       : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 100, 2000),
+            'Sample Rate'       : UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
             'Preamplifier Gain' : self._ChoosePreampGain(),
             'Low-pass'          : {
-                    'EEG1'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
-                    'EEG2'      : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
-                    'EEG3/EMG'  : Setup_Interface._AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)
+                    'EEG1'      : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
+                    'EEG2'      : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
+                    'EEG3/EMG'  : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)
                 }
         })
     
     @staticmethod
     def _ChoosePreampGain() -> int :
-        gain = Setup_Interface._AskForInt('Set preamplifier gain')
+        gain = UserInput.AskForInt('Set preamplifier gain')
         # check for valid input 
         if(gain != 10 and gain != 100):
             # prompt again 

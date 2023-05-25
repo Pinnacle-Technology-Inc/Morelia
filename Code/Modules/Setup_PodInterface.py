@@ -12,6 +12,7 @@ from   io         import IOBase
 # local imports
 from SerialCommunication    import COM_io
 from BasicPodProtocol       import POD_Basics
+from GetUserInput           import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -226,7 +227,7 @@ class Setup_Interface :
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
         # ask if params are good or not
-        validParams = Setup_Interface._AskYN(question='Are the '+self._NAME+' device parameters correct?')
+        validParams = UserInput.AskYN(question='Are the '+self._NAME+' device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
@@ -244,7 +245,7 @@ class Setup_Interface :
 
 
     def _SelectPODdeviceFromDictToEdit(self) -> int :
-        podKey = Setup_Interface._AskForInt('Edit '+self._NAME+' device #')
+        podKey = UserInput.AskForInt('Edit '+self._NAME+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
@@ -353,97 +354,3 @@ class Setup_Interface :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
-
-    # ------------ USER INPUT ------------
-
-
-    @staticmethod
-    def _AskYN(question: str, append:str=' (y/n): ') -> bool : 
-        response = input(str(question)+str(append)).upper() 
-        if(response=='Y' or response=='YES' or response=='1'):
-            return(True)
-        elif(response=='N' or response=='NO' or response=='0'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_Interface._AskYN(question))
-
-    @staticmethod
-    def _AskForInput(prompt: str) : 
-        return(input(str(prompt)+': '))
-    
-    @staticmethod
-    def _AskForType(typecast: 'function', prompt: str) :
-        try : 
-            # get sample rate from user 
-            inp = Setup_Interface._AskForInput(prompt)
-            castedInp = typecast(inp)
-            return(castedInp)
-        except : 
-            # print bad input message
-            if(typecast == Setup_Interface._CastInt) : 
-                print('[!] Please enter an integer number.')
-            elif(typecast == Setup_Interface._CastFloat) : 
-                print('[!] Please enter a number.')
-            elif(typecast == Setup_Interface._CastStr) : 
-                print('[!] Please enter string.')
-            # ask again 
-            return(Setup_Interface._AskForType(typecast, prompt))
-
-    @staticmethod
-    def _CastInt(value) -> int :
-        return(int(value))
-
-    @staticmethod
-    def _CastFloat(value) -> float :
-        return(float(value))
-    
-    @staticmethod
-    def _CastStr(value) -> str :
-        return(str(value))
-    
-    @staticmethod
-    def _AskForFloat(prompt: str) -> float :
-        return(Setup_Interface._AskForType(typecast=Setup_Interface._CastFloat, prompt=prompt))
-
-    @staticmethod
-    def _AskForInt(prompt: str) -> int :
-        return(Setup_Interface._AskForType(typecast=Setup_Interface._CastInt, prompt=prompt))
-
-    @staticmethod
-    def _AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
-        n = Setup_Interface._AskForInt(prompt)
-        # check for valid input
-        if(n<minimum or n>maximum) : 
-            print('[!] '+str(thisIs)+' must be between '+str(minimum)+'-'+str(maximum)+str(unit)+'.')
-            return(Setup_Interface._AskForIntInRange(prompt, minimum, maximum))
-        # return sample rate
-        return(n)
-   
-    @staticmethod
-    def _AskForTypeInList(typecast: 'function', prompt: str, goodInputs:list, badInputMessage:str|None=None) : 
-        # get message if bad input 
-        if(badInputMessage == None) : 
-            message = '[!] Invalid input. Please enter one of the following: '+str(goodInputs)
-        else : 
-            message = badInputMessage
-        # prompt user 
-        inp = Setup_Interface._AskForType(typecast, prompt)
-        # ask again if inp is not an option in goodInputs
-        if(inp not in goodInputs) : 
-            print(message)
-            return(Setup_Interface._AskForTypeInList(typecast,prompt,goodInputs,badInputMessage))
-        # return user input
-        return(inp)
-
-    @staticmethod
-    def _AskForIntInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
-        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastInt, prompt, goodInputs, badInputMessage))
-    
-    @staticmethod
-    def _AskForFloatInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
-        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastFloat, prompt, goodInputs, badInputMessage))
-
-    @staticmethod
-    def _AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
-        return(Setup_Interface._AskForTypeInList(Setup_Interface._CastStr, prompt, goodInputs, badInputMessage))

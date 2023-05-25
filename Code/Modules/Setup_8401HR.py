@@ -6,8 +6,9 @@ Setup_8401HR provides the setup functions for an 8206-HR POD device.
 from texttable import Texttable
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
-from PodDevice_8401HR    import POD_8401HR 
+from Setup_PodInterface import Setup_Interface
+from PodDevice_8401HR   import POD_8401HR 
+from GetUserInput       import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -46,7 +47,7 @@ class Setup_8401HR(Setup_Interface) :
         params = {
             self._PORTKEY           : self._ChoosePort(forbiddenNames),
             'Preamplifier Device'   : self._GetPreampDeviceName(),
-            'Sample Rate'           : Setup_Interface._AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
+            'Sample Rate'           : UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
         }
         # get channel map for the user's preamplifier 
         chmap = POD_8401HR.GetChannelMapForPreampDevice(params['Preamplifier Device'])
@@ -63,7 +64,7 @@ class Setup_8401HR(Setup_Interface) :
 
     def _GetPreampDeviceName(self) -> str : 
         deviceList = POD_8401HR.GetSupportedPreampDevices()
-        return( Setup_Interface._AskForStrInList(
+        return( UserInput.AskForStrInList(
             prompt='Set mouse/rat preamplifier',
             goodInputs=deviceList,
             badInputMessage='[!] Please input a valid mouse/rat preamplifier '+str(tuple(deviceList))+'.'))
@@ -84,7 +85,7 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetPreampGain(channelName: str) -> int|None: 
-        gain = Setup_Interface._AskForIntInList(
+        gain = UserInput.AskForIntInList(
             prompt='\t'+str(channelName), 
             goodInputs=[1,10,100], 
             badInputMessage='[!] For EEG/EMG, the gain must be 10 or 100. For biosensors, the gain is 1 (None).')
@@ -95,7 +96,7 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetSSGain(channelName: str) -> int|None : 
-        return( Setup_8401HR._AskForIntInList(
+        return( UserInput.AskForIntInList(
             prompt='\t'+str(channelName), 
             goodInputs=[1,5], 
             badInputMessage='[!] The gain must be 1 or 5.') )
@@ -107,7 +108,7 @@ class Setup_8401HR(Setup_Interface) :
         #       Requires channel to set, and filter value (0-3): 
         #       0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass 
         # NOTE  be sure to convert the input value to a number key usable by the device!
-        hp = Setup_Interface._AskForFloatInList(
+        hp = UserInput.AskForFloatInList(
             prompt='\t'+str(channelName),
             goodInputs=[0,0.5,1,10],
             badInputMessage='[!] The high-pass filter must be 0.5, 1, or 10 Hz. If the channel is DC, input 0.' )
@@ -118,7 +119,7 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetLowpass(channelName: str) -> int|None : 
-        return(Setup_Interface._AskForIntInRange(
+        return(UserInput.AskForIntInRange(
             prompt='\t'+str(channelName), 
             minimum=21, maximum=15000, 
             thisIs='The low-pass filter', unit=' Hz' ))
@@ -131,7 +132,7 @@ class Setup_8401HR(Setup_Interface) :
         #       0 = Subtract VBias, 1 = Subtract AGND.  
         #       Typically 0 for Biosensors, and 1 for EEG/EMG
         # NOTE  be sure to convert the input value to a number key usable by the device!
-        return( Setup_Interface._AskForStrInList(
+        return( UserInput.AskForStrInList(
             prompt='\t'+str(channelName),
             goodInputs=['VBIAS','AGND'],
             badInputMessage='[!] The DC mode must subtract VBias or AGND. Typically, Biosensors are VBIAS and EEG/EMG are AGND.' ))
@@ -139,7 +140,7 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetMuxMode(channelName: str) -> str :
-        return(Setup_8401HR._AskYN('\t'+str(channelName), append=': '))
+        return(UserInput.AskYN('\t'+str(channelName), append=': '))
     
 
     # ------------ DISPLAY POD PARAMETERS ------------
