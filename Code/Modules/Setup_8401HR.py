@@ -53,10 +53,9 @@ class Setup_8401HR(Setup_Interface) :
         params['Low-pass']          = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     )
         params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )     
         # params['Bias']              = self._SetForMappedChannels('Set Bias for...', chmap, self.XXX)
-
+        params['MUX Mode']          = self._SetForMappedChannels('Use Mux mode (y/n) for...',                  chmap, self._SetMuxMode      )     
         return(params)
 
-        
 
     def _GetPreampDeviceName(self) -> str : 
         # ask user for name of the preamp device 
@@ -105,7 +104,7 @@ class Setup_8401HR(Setup_Interface) :
         #       Requires channel to set, and filter value (0-3): 
         #       0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass 
         # NOTE  be sure to convert the input value to a number key usable by the device!
-        hp = Setup_Interface._AskForFloat('\t'+str(channelName)+': ')
+        hp = Setup_Interface._AskForFloat('\t'+str(channelName))
         if(hp == 0) :
             return(None)
         elif( hp != 0.5 and hp != 1 and hp != 10 ) :
@@ -116,15 +115,12 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetLowpass(channelName: str) -> int|None : 
-        return(
-            Setup_Interface._AskForIntInRange(
-                prompt='\t'+str(channelName), 
-                minimum=21, 
-                maximum=15000, 
-                thisIs='The low-pass filter', 
-                unit=' Hz'
-        ))
+        return(Setup_Interface._AskForIntInRange(
+            prompt='\t'+str(channelName), 
+            minimum=21, maximum=15000, 
+            thisIs='The low-pass filter', unit=' Hz' ))
     
+
     @staticmethod
     def _SetDCMode(channelName: str) -> str : 
         # NOTE  SET DC MODE Sets the DC mode for the selected channel. 
@@ -132,9 +128,14 @@ class Setup_8401HR(Setup_Interface) :
         #       0 = Subtract VBias, 1 = Subtract AGND.  
         #       Typically 0 for Biosensors, and 1 for EEG/EMG
         # NOTE  be sure to convert the input value to a number key usable by the device!
-        mode = input('\t'+str(channelName)).upper()
+        mode = input('\t'+str(channelName)+': ').upper()
         if(mode != 'VBIAS' and mode != 'AGND') : 
             print('[!] The DC mode must subtract VBias or AGND. Typically, Biosensors are VBIAS and EEG/EMG are AGND.')
             return(Setup_8401HR._SetDCMode(channelName))
         return(mode)
+    
+
+    @staticmethod
+    def _SetMuxMode(channelName: str) -> str :
+        return(Setup_8401HR._AskYN('\t'+str(channelName), append=': '))
     
