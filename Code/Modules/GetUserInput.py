@@ -17,7 +17,7 @@ class UserInput :
 
 
     @staticmethod
-    def AskForInput(prompt: str, append:str=': ') : 
+    def AskForInput(prompt: str, append:str=': ') -> str : 
         return(input(str(prompt)+str(append)))
     
     @staticmethod
@@ -85,11 +85,11 @@ class UserInput :
         return(UserInput.AskForTypeInList(UserInput._CastInt, prompt, goodInputs, badInputMessage))
     
     @staticmethod
-    def AskForFloatInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
+    def AskForFloatInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> float : 
         return(UserInput.AskForTypeInList(UserInput._CastFloat, prompt, goodInputs, badInputMessage))
 
     @staticmethod
-    def AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
+    def AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> str : 
         return(UserInput.AskForTypeInList(UserInput._CastStr, prompt, goodInputs, badInputMessage))
     
 
