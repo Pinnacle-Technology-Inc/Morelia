@@ -228,32 +228,35 @@ class Setup_PodDevices :
 
 
     @staticmethod
-    def _GetParams(podParametersDict: None | dict[str,None]) -> None|dict[str|None,None]: 
+    def _GetParams(podParametersDict: None | dict[str,None]) -> dict[str,dict|None]: 
         # setup parameters
         if(podParametersDict == None) : 
             print() # newline 
             useParams = {}
+            # NOTE add all supported devices here 
             name = Setup_8206HR.GetDeviceName()
             if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
                 useParams[name] = None
             name = Setup_8401HR.GetDeviceName()
             if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
                 useParams[name] = None
-            # NOTE add all supported devices here 
+            # ask again if user responds No to all 
+            if(len(useParams) == 0 ) : 
+                print('[!] No POD devices selected. Please choose at least one device.')
+                return(Setup_PodDevices._GetParams(podParametersDict))
         else:
             useParams = podParametersDict
         return(useParams)
     
 
     def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: 
-        # use select devices
+        # use select devices         # NOTE add all supported devices here 
         name = Setup_8206HR.GetDeviceName()
         if(name in podParametersDict ) : 
             self._Setup_PodDevices[name] = Setup_8206HR()
         name = Setup_8401HR.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8401HR()
-        # NOTE add all supported devices here 
 
 
     # ------------ FILE HANDLING ------------
