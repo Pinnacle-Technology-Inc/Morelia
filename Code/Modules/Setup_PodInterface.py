@@ -112,7 +112,28 @@ class Setup_Interface :
         # connect and initialize all POD devices
         self._ConnectAllPODdevices()
 
-
+    # ------------ VALIDATION ------------
+    
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
+        if(paramDict == None) : 
+            return(True)
+        # is params a dict?
+        if(not isinstance(paramDict, dict)) :
+            raise Exception('[!] Invalid value type in parameter dictionary.')
+        # are keys int and value dict
+        allGood = True 
+        for key,value in paramDict.items() : 
+            if(not isinstance(key,int)) : 
+                raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
+            if(not isinstance(value,dict)) : 
+                raise Exception('[!] Device parameters must be dictionary type for '+str(self._NAME)+'.')
+            if(len(value)==0) : 
+                raise Exception('[!] Device parameters dictionary is empty for '+str(self._NAME)+'.')
+            # check values 
+            allGood = allGood and self._IsOneDeviceValid(value)
+        # no exceptions raised
+        return(allGood)
+    
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
@@ -319,25 +340,9 @@ class Setup_Interface :
         else:
             return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
     
-    # ------------ VALIDATION ------------
-    
-    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
-        if(paramDict == None) : 
-            return(True)
-        # is params a dict?
-        if(not isinstance(paramDict, dict)) :
-            raise Exception('[!] Invalid value type in parameter dictionary.')
-        # are keys int and value dict
-        allGood = True 
-        for key,value in paramDict.items() : 
-            if(not isinstance(key,int)) : 
-                raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
-            if(not isinstance(value,dict)) : 
-                raise Exception('[!] Device parameters must be dictionary type for '+str(self._NAME)+'.')
-            # check values 
-            allGood = allGood and self._IsOneDeviceValid(value)
-        # no exceptions raised
-        return(allGood)
+
+  
+
 
     # ------------ HELPER ------------
 

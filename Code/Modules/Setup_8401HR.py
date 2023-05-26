@@ -180,14 +180,10 @@ class Setup_8401HR(Setup_Interface) :
             text += (str(val) +': ' + str(abcdValueDict[key]) + '\n')
         # cut off the last newline then return string 
         return(text[:-1])
+    
 
+    # ------------ VALIDATION ------------
 
-    # ------------ FILE HANDLING ------------
-    # ------------ STREAM ------------ 
-
-    ########################################
-    #               WORKING
-    ########################################
 
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
         # check that all params exist 
@@ -220,10 +216,24 @@ class Setup_8401HR(Setup_Interface) :
         # no exception raised 
         return(True)
 
+
     def _IsChannelTypeValid(self, chdict: dict, isType) -> bool :
+        # is dict empty?
+        if(len(chdict)==0) : 
+            raise Exception('[!] Channel dictionary is empty for '+str(self._NAME)+'.')
         # check that keys are ABCD
         if(list(chdict.keys()).sort() != copy.copy(self._CHANNELKEYS).sort() ) :
             raise Exception('[!] Invalid channel keys for '+str(self._NAME)+'.')
         for value in chdict.values() :
             if( value != None and not isinstance(value, isType) ) :
                 raise Exception('[!] Invalid channel value type for '+str(self._NAME)+'.')
+
+
+    # ------------ FILE HANDLING ------------
+    # ------------ STREAM ------------ 
+
+    ########################################
+    #               WORKING
+    ########################################
+
+    
