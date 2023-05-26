@@ -13,6 +13,7 @@ from   pyedflib    import EdfWriter
 from   io          import IOBase
 from   datetime    import datetime
 from   datetime    import date
+from   time        import gmtime, strftime
 
 
 # local imports
@@ -174,17 +175,31 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+        
         # open file and write column names 
         f = open(fname, 'w')
-        # get current time
+        
+        #shows time
         now = datetime.now()
         current_time = str(now.time().strftime('%H:%M:%S'))
-        # shows date
-        today = str(date.today())
-        f.write("#Today's date: "+ today)
-        # shows time
+        
+        obj = time.gmtime(0) 
+        time_sec = str(time.time()) 
+
+        #shows date
+        f.write("#Today's date: "+ now.strftime("%d-%B-%Y"))
+    
+        #shows time
         f.write('\n#Time now: '+ current_time)
+
+        #shows GMT time
+        f.write('\n#GMT: '+ time.strftime("%I:%M:%S %p %Z", time.gmtime()) + '\n')
+
+        #columns names
         f.write('\ntime,ch0,ch1,ch2\n')
+        
+        
+
         return(f)
     
 
@@ -210,7 +225,8 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) :
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: list) : #sampleRate: int,
+      
         for i in range(len(t)) : 
             line = [t[i], data[0][i], data[1][i], data[2][i] ]
             # convert data into comma separated string
@@ -236,14 +252,16 @@ class Setup_8206HR(Setup_Interface) :
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : Thread(
                     target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] ) )
+                    args = ( pod, file, params['Sample Rate'] )
+                )
             # for each device 
             for devNum,params,pod,file in 
                 zip(
                     self._podParametersDict.keys(),     # devNum
                     self._podParametersDict.values(),   # params
                     self._podDevices.values(),          # pod
-                    podFiles.values() )                 # file 
+                    podFiles.values()                   # file
+                ) 
         }
         for t in readThreads.values() : 
             # start streaming (program will continue until .join() or streaming ends)
@@ -258,27 +276,28 @@ class Setup_8206HR(Setup_Interface) :
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
         pod.WriteRead(cmd='STREAM', payload=1)
-        # initialize times 
-        t_forEDF: int = 0
-        currentTime: float = 0.0
+ 
+        # if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
+
+        currentTime = 0.0
         times = np.zeros(sampleRate)
-        # annotate start
-        if(ext=='.edf'): file.writeAnnotation(t_forEDF, -1, "Start")
-        # start reading
+
         while(True):
             # initialize data array 
             data0 = np.zeros(sampleRate)
             data1 = np.zeros(sampleRate)
             data2 = np.zeros(sampleRate)
+
             # track time (second)
             ti = (round(time.time(),9)) # initial time 
+
             # read data for one second
             for i in range(sampleRate):
                 # read once 
                 r = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
-                    if(ext=='.edf'): file.writeAnnotation(t_forEDF, -1, "Stop")
+                    # if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
                     file.close()
                     return  ##### END #####
                 # translate 
@@ -287,20 +306,24 @@ class Setup_8206HR(Setup_Interface) :
                 data0[i] = self._uV(rt['Ch0'])
                 data1[i] = self._uV(rt['Ch1'])
                 data2[i] = self._uV(rt['Ch2'])
-                # increment edf time by 1 sec 
-                t_forEDF += 1
-            # get average sample period 
+
             tf = round(time.time(),9) # final time
             td = tf - ti # time difference 
             average_td = (round((td/sampleRate), 9)) # time between samples
-            # increment time for each sample 
+            
+            
             for i in range(sampleRate):
                 times[i] = (round(currentTime, 9))
-                currentTime += average_td  # adding avg time differences + CurrentTime = CurrentTime
+                currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+                
+                
+
             # save to file 
             if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], times)
             elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
             
+            
+
             
     def _StopStream(self) -> None:
         # tell devices to stop streaming 
