@@ -231,27 +231,50 @@ class Setup_PodDevices :
     def _GetParams(podParametersDict: None | dict[str,None]) -> dict[str,dict|None]: 
         # setup parameters
         if(podParametersDict == None) : 
-            print() # newline 
-            useParams = {}
-            # NOTE add all supported devices here 
-            name = Setup_8206HR.GetDeviceName()
-            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
-                useParams[name] = None
-            name = Setup_8401HR.GetDeviceName()
-            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
-                useParams[name] = None
-            # ask again if user responds No to all 
-            if(len(useParams) == 0 ) : 
-                print('[!] No POD devices selected. Please choose at least one device.')
-                return(Setup_PodDevices._GetParams(podParametersDict))
             # return dictionary with POD device names as keys and None as values 
-            return(useParams)
+            return(Setup_PodDevices._AskUserForDevices())
         else:
+            Setup_PodDevices._CheckForValidParams(podParametersDict)
+            # return valid dict 
             return(podParametersDict)
     
 
-    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: 
-        # use select devices         # NOTE add all supported devices here 
+    @staticmethod
+    def _AskUserForDevices() :  # NOTE add all supported devices here 
+        print() # newline 
+        useParams = {}
+        name = Setup_8206HR.GetDeviceName()
+        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+            useParams[name] = None
+        name = Setup_8401HR.GetDeviceName()
+        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+            useParams[name] = None
+        # ask again if user responds No to all 
+        if(len(useParams) == 0 ) : 
+            print('[!] No POD devices selected. Please choose at least one device.')
+            return(Setup_PodDevices._AskUserForDevices())
+        # return dictionary with POD device names as keys and None as values 
+        return(useParams)
+    
+        
+    @staticmethod
+    def _CheckForValidParams(podParametersDict: dict[str,None]) -> bool :
+        # check that dict is valid
+        if(not isinstance(podParametersDict,dict)) : # not a dict
+            raise Exception('[!] Parameters must be dictionary type.')
+        if(len(podParametersDict) == 0) : # empty dict
+            raise Exception('[!] Parameters dictionary is empty.')
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName())
+        for key,value in podParametersDict.items()  :
+            if(key not in goodKeys) : # device not supported
+                raise Exception('[!] Invalid device name in paramater dictionary: '+str(key)+'.')
+            if(value != None and not isinstance(value, dict)) : # invalid value 
+                raise Exception('[!] Invalid value type in parameter dictionary.')
+        return(True)
+
+
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: # NOTE add all supported devices here 
+        # use select devices        
         name = Setup_8206HR.GetDeviceName()
         if(name in podParametersDict ) : 
             self._Setup_PodDevices[name] = Setup_8206HR()
