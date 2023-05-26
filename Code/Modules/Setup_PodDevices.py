@@ -275,7 +275,7 @@ class Setup_PodDevices :
             if(key not in goodKeys) : # device not supported
                 raise Exception('[!] Invalid device name in paramater dictionary: '+str(key)+'.')
             # is the value correct for the device?
-            thisGood = self._Setup_PodDevices[key].AreDeviceParamsValid()
+            thisGood = self._Setup_PodDevices[key].AreDeviceParamsValid(value)
             allGood = allGood and thisGood # becomes false if any device is invalid 
         # should return true if no exceptions raised  
         return(allGood)

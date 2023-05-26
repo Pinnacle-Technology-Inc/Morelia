@@ -189,23 +189,41 @@ class Setup_8401HR(Setup_Interface) :
     #               WORKING
     ########################################
 
-    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
-        # is params a dict or None?
-        if(paramDict != None and not isinstance(paramDict, dict)) :
-            raise Exception('[!] Invalid value type in parameter dictionary.')
-        # 
+    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        # check that all params exist 
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
             raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
-        
+        # check type of each specific command 
+        if( not(
+                    isinstance( paramDict['Port'],                   str  ) 
+                and isinstance( paramDict['Preamplifier Device'],    str  ) 
+                and isinstance( paramDict['Sample Rate'],            int  ) 
+                and isinstance( paramDict['Preamplifier Gain'],      dict ) 
+                and isinstance( paramDict['Second Stage Gain'],      dict ) 
+                and isinstance( paramDict['High-pass'],              dict ) 
+                and isinstance( paramDict['Low-pass'],               dict ) 
+                and isinstance( paramDict['DC Mode'],                dict ) 
+                and isinstance( paramDict['MUX Mode'],               dict ) 
+            )
+        ) : 
+            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
+        # check preamp 
+        if(not POD_8401HR.IsPreampDeviceSupported(paramDict['Preamplifier Device'])) :
+            raise Exception('[!] Preamplifier '+str(paramDict['Preamplifier Device'])+' is not supported for '+str(self._NAME)+'.')
+        # check ABCD channel value types
+        self._IsChannelTypeValid( paramDict['Preamplifier Gain'],    int   ) 
+        self._IsChannelTypeValid( paramDict['Second Stage Gain'],    int   )
+        self._IsChannelTypeValid( paramDict['High-pass'],            float )
+        self._IsChannelTypeValid( paramDict['Low-pass'],             int   )
+        self._IsChannelTypeValid( paramDict['DC Mode'],              str   )
+        self._IsChannelTypeValid( paramDict['MUX Mode'],             bool  )
+        # no exception raised 
+        return(True)
 
-# params = {1: {
-#     'Port': 'COM3 - High Speed 8401 (COM3)', 
-#     'Preamplifier Device': '8407-SE', 
-#     'Sample Rate': 12345, 
-#     'Preamplifier Gain': {'A': None, 'B': 10, 'C': 100, 'D': None}, 
-#     'Second Stage Gain': {'A': 1, 'B': 5, 'C': 1, 'D': 5}, 
-#     'High-pass': {'A': None, 'B': 0.5, 'C': 1.0, 'D': 10.0}, 
-#     'Low-pass': {'A': 21, 'B': 22, 'C': 23, 'D': 24}, 
-#     'DC Mode': {'A': 'VBIAS', 'B': 'VBIAS', 'C': 'AGND', 'D': 'AGND'}, 
-#     'MUX Mode': {'A': True, 'B': False, 'C': False, 'D': True}
-# }}
+    def _IsChannelTypeValid(self, chdict: dict, isType) -> bool :
+        # check that keys are ABCD
+        if(list(chdict.keys()).sort() != copy.copy(self._CHANNELKEYS).sort() ) :
+            raise Exception('[!] Invalid channel keys for '+str(self._NAME)+'.')
+        for value in chdict.values() :
+            if( value != None and not isinstance(value, isType) ) :
+                raise Exception('[!] Invalid channel value type for '+str(self._NAME)+'.')
