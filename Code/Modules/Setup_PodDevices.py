@@ -12,7 +12,7 @@ from   math       import floor
 from Setup_PodInterface import Setup_Interface
 from Setup_8206HR       import Setup_8206HR
 from Setup_8401HR       import Setup_8401HR
-
+from GetUserInput       import UserInput
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -27,12 +27,9 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
+    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None=None) -> None :
         # initialize class instance variables
-        self._Setup_PodDevices : dict[str,Setup_Interface] = {  # NOTE add supported devices here 
-            Setup_8206HR.GetDeviceName() : Setup_8206HR(),
-            Setup_8401HR.GetDeviceName() : Setup_8401HR()
-        }
+        self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
         self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
@@ -44,9 +41,13 @@ class Setup_PodDevices :
             7 : 'Generate initialization code.', 
             8 : 'Quit.'
         }
-        # setup 
-        self.SetupPODparameters(podParametersDict)
-        self.SetupSaveFile(saveFile)
+        # choose devices to use 
+        params = Setup_PodDevices._GetParams(podParametersDict)
+        self._Set_Setup_PodDevices(params)
+        # setup devices  
+        if(params != {}) :
+            self.SetupPODparameters(params)
+            self.SetupSaveFile(saveFile)
 
 
     def __del__(self) -> None :
@@ -82,7 +83,7 @@ class Setup_PodDevices :
     # ------------ CLASS SETUP ------------
 
 
-    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]={'8206-HR':None}) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]) -> None :
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
             self._Setup_PodDevices[key].SetupPODparameters(value)
@@ -221,6 +222,38 @@ class Setup_PodDevices :
             'go = Setup_PodDevices(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
+
+
+    # ------------ INIT ------------    
+
+
+    @staticmethod
+    def _GetParams(podParametersDict: None | dict[str,None]) -> None|dict[str|None,None]: 
+        # setup parameters
+        if(podParametersDict == None) : 
+            print() # newline 
+            useParams = {}
+            name = Setup_8206HR.GetDeviceName()
+            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+                useParams[name] = None
+            name = Setup_8401HR.GetDeviceName()
+            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+                useParams[name] = None
+            # NOTE add all supported devices here 
+        else:
+            useParams = podParametersDict
+        return(useParams)
+    
+
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: 
+        # use select devices
+        name = Setup_8206HR.GetDeviceName()
+        if(name in podParametersDict ) : 
+            self._Setup_PodDevices[name] = Setup_8206HR()
+        name = Setup_8401HR.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8401HR()
+        # NOTE add all supported devices here 
 
 
     # ------------ FILE HANDLING ------------
