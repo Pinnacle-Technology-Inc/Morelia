@@ -5,10 +5,16 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 # enviornment imports
 import texttable 
 import os 
+import time
+
 import numpy       as     np
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
+from   datetime    import datetime
+from   datetime    import date
+from   time        import gmtime, strftime
+
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -17,7 +23,7 @@ from PodDevice_8206HR    import POD_8206HR
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -169,9 +175,31 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+        
         # open file and write column names 
         f = open(fname, 'w')
-        f.write('time,ch0,ch1,ch2\n')
+        
+        #shows time
+        now = datetime.now()
+        current_time = str(now.time().strftime('%H:%M:%S'))
+        
+        obj = time.gmtime(0) 
+        time_sec = str(time.time()) 
+
+        #shows date
+        f.write("#Today's date: "+ now.strftime("%d-%B-%Y"))
+    
+        #shows time
+        f.write('\n#Time now: '+ current_time)
+
+        #shows GMT time
+        f.write('\n#GMT: '+ time.strftime("%I:%M:%S %p %Z", time.gmtime()) + '\n')
+
+        #columns names
+        f.write('\ntime,ch0,ch1,ch2\n')
+        
+        
+
         return(f)
     
 
@@ -197,16 +225,10 @@ class Setup_8206HR(Setup_Interface) :
 
 
     @staticmethod
-    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray], sampleRate: int, t: float) : 
-        # initialize times
-        dt = 1.0 / sampleRate
-        ti = t
-        # save data for each timestamp
-        for i in range(len(data[0])) : 
-            # increment time, rounding to 6 decimal places
-            ti = round(ti+dt, 6)  
-            # build line to write 
-            line = [ ti, data[0][i], data[1][i], data[2][i] ]
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: list) : #sampleRate: int,
+      
+        for i in range(len(t)) : 
+            line = [t[i], data[0][i], data[1][i], data[2][i] ]
             # convert data into comma separated string
             line = ','.join(str(x) for x in line) + '\n'
             # write data to file 
@@ -254,21 +276,28 @@ class Setup_8206HR(Setup_Interface) :
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
         pod.WriteRead(cmd='STREAM', payload=1)
-        # track time (second)
-        t = 0
-        if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
+ 
+        # if(ext=='.edf'): file.writeAnnotation(t, -1, "Start")
+
+        currentTime = 0.0
+        times = np.zeros(sampleRate)
+
         while(True):
             # initialize data array 
             data0 = np.zeros(sampleRate)
             data1 = np.zeros(sampleRate)
             data2 = np.zeros(sampleRate)
+
+            # track time (second)
+            ti = (round(time.time(),9)) # initial time 
+
             # read data for one second
             for i in range(sampleRate):
                 # read once 
                 r = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
-                    if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
+                    # if(ext=='.edf'): file.writeAnnotation(t, -1, "Stop")
                     file.close()
                     return  ##### END #####
                 # translate 
@@ -277,11 +306,23 @@ class Setup_8206HR(Setup_Interface) :
                 data0[i] = self._uV(rt['Ch0'])
                 data1[i] = self._uV(rt['Ch1'])
                 data2[i] = self._uV(rt['Ch2'])
+
+            tf = round(time.time(),9) # final time
+            td = tf - ti # time difference 
+            average_td = (round((td/sampleRate), 9)) # time between samples
+            
+            
+            for i in range(sampleRate):
+                times[i] = (round(currentTime, 9))
+                currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+                
+                
+
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], sampleRate, t)
+            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], times)
             elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
-            # increment by second 
-            t+=1
+            
+            
 
             
     def _StopStream(self) -> None:
