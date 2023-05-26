@@ -4,6 +4,7 @@ Setup_8401HR provides the setup functions for an 8206-HR POD device.
 
 # enviornment imports
 from texttable import Texttable
+import copy
 
 # local imports
 from Setup_PodInterface import Setup_Interface
@@ -188,11 +189,13 @@ class Setup_8401HR(Setup_Interface) :
     #               WORKING
     ########################################
 
-    @staticmethod
-    def AreDeviceParamsValid(paramDict: None|dict[int,dict]) :
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
         # is params a dict or None?
         if(paramDict != None and not isinstance(paramDict, dict)) :
             raise Exception('[!] Invalid value type in parameter dictionary.')
+        # 
+        if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
+            raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
         
 
 # params = {1: {

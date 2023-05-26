@@ -32,8 +32,7 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-    @staticmethod
-    def AreDeviceParamsValid(paramDict: dict[int,dict]) -> bool : 
+    def AreDeviceParamsValid(self, paramDict: dict[int,dict]) -> bool : 
         # returns true if the podParameterDict is properly formatted 
         # (device number keys and device dict values)
         pass
