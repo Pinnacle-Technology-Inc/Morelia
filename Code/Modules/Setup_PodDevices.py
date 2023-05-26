@@ -42,12 +42,10 @@ class Setup_PodDevices :
             8 : 'Quit.'
         }
         # choose devices to use 
-        params = Setup_PodDevices._GetParams(podParametersDict)
-        self._Set_Setup_PodDevices(params)
+        params = self._GetParams(podParametersDict)
         # setup devices  
-        if(params != {}) :
-            self.SetupPODparameters(params)
-            self.SetupSaveFile(saveFile)
+        self.SetupPODparameters(params)
+        self.SetupSaveFile(saveFile)
 
 
     def __del__(self) -> None :
@@ -227,16 +225,21 @@ class Setup_PodDevices :
     # ------------ INIT ------------    
 
 
-    @staticmethod
-    def _GetParams(podParametersDict: None | dict[str,None]) -> dict[str,dict|None]: 
+    def _GetParams(self, podParametersDict: None | dict[str,None]) -> dict[str,dict|None]: 
         # setup parameters
         if(podParametersDict == None) : 
             # return dictionary with POD device names as keys and None as values 
-            return(Setup_PodDevices._AskUserForDevices())
+            params = Setup_PodDevices._AskUserForDevices()
         else:
-            Setup_PodDevices._CheckForValidParams(podParametersDict)
-            # return valid dict 
-            return(podParametersDict)
+            params = podParametersDict
+
+        self._Set_Setup_PodDevices(params)
+        self._CheckForValidParams(podParametersDict)
+
+        # return valid dict 
+        return(params)
+        
+
     
 
     @staticmethod
@@ -257,23 +260,28 @@ class Setup_PodDevices :
         return(useParams)
     
         
-    @staticmethod
-    def _CheckForValidParams(podParametersDict: dict[str,None]) -> bool :
-        # check that dict is valid
-        if(not isinstance(podParametersDict,dict)) : # not a dict
+    def _CheckForValidParams(self, podParametersDict: dict[str,None]) -> bool :
+        # is params a dictionary?
+        if(not isinstance(podParametersDict,dict)) : 
             raise Exception('[!] Parameters must be dictionary type.')
+        # if so, is the dictionary empty?
         if(len(podParametersDict) == 0) : # empty dict
             raise Exception('[!] Parameters dictionary is empty.')
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName())
+        # for each dict entry...
+        allGood = True 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
+            # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
                 raise Exception('[!] Invalid device name in paramater dictionary: '+str(key)+'.')
-            if(value != None and not isinstance(value, dict)) : # invalid value 
-                raise Exception('[!] Invalid value type in parameter dictionary.')
-        return(True)
+            # is the value correct for the device?
+            thisGood = self._Setup_PodDevices[key].AreDeviceParamsValid()
+            allGood = allGood and thisGood # becomes false if any device is invalid 
+        # should return true if no exceptions raised  
+        return(allGood)
 
 
-    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: # NOTE add all supported devices here 
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : # NOTE add all supported devices here 
         # use select devices        
         name = Setup_8206HR.GetDeviceName()
         if(name in podParametersDict ) : 
@@ -390,7 +398,7 @@ class Setup_PodDevices :
 
 
     @staticmethod
-    def _TimeFunc(func: 'function') -> float: 
+    def _TimeFunc(func: 'function') -> float : 
         ti = time.time() # start time 
         func() # run function 
         dt = round(time.time()-ti,3) # calculate time difference

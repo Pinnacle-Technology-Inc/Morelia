@@ -22,6 +22,7 @@ class Setup_8401HR(Setup_Interface) :
     
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
+    _PARAMKEYS = ['Device #',Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode','MUX Mode']
     _CHANNELKEYS = ['A','B','C','D']
 
     # overwrite from parent
@@ -186,3 +187,22 @@ class Setup_8401HR(Setup_Interface) :
     ########################################
     #               WORKING
     ########################################
+
+    @staticmethod
+    def AreDeviceParamsValid(paramDict: None|dict[int,dict]) :
+        # is params a dict or None?
+        if(paramDict != None and not isinstance(paramDict, dict)) :
+            raise Exception('[!] Invalid value type in parameter dictionary.')
+        
+
+# params = {1: {
+#     'Port': 'COM3 - High Speed 8401 (COM3)', 
+#     'Preamplifier Device': '8407-SE', 
+#     'Sample Rate': 12345, 
+#     'Preamplifier Gain': {'A': None, 'B': 10, 'C': 100, 'D': None}, 
+#     'Second Stage Gain': {'A': 1, 'B': 5, 'C': 1, 'D': 5}, 
+#     'High-pass': {'A': None, 'B': 0.5, 'C': 1.0, 'D': 10.0}, 
+#     'Low-pass': {'A': 21, 'B': 22, 'C': 23, 'D': 24}, 
+#     'DC Mode': {'A': 'VBIAS', 'B': 'VBIAS', 'C': 'AGND', 'D': 'AGND'}, 
+#     'MUX Mode': {'A': True, 'B': False, 'C': False, 'D': True}
+# }}
