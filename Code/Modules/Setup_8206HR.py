@@ -221,18 +221,7 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: list) : #sampleRate: int,
-        # initialize times
-        #dt = 1.0 / sampleRate
-        #ti = t
-        #file.write(str(t))
-        # save data for each timestamp
         for i in range(len(t)) : 
-            # increment time, rounding to 6 decimal places
-            #ti = round(ti+dt, 6)  
-            # build line to write 
-            #obj = time.gmtime(0) 
-            #time_sec = t
-            #time_sec = str(time.time())
             line = [t[i], data[0][i], data[1][i], data[2][i] ]
             # convert data into comma separated string
             line = ','.join(str(x) for x in line) + '\n'
