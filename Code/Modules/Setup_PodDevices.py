@@ -244,9 +244,10 @@ class Setup_PodDevices :
             if(len(useParams) == 0 ) : 
                 print('[!] No POD devices selected. Please choose at least one device.')
                 return(Setup_PodDevices._GetParams(podParametersDict))
+            # return dictionary with POD device names as keys and None as values 
+            return(useParams)
         else:
-            useParams = podParametersDict
-        return(useParams)
+            return(podParametersDict)
     
 
     def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None: 
