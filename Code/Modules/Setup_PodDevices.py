@@ -10,6 +10,7 @@ from   math       import floor
 
 # local imports
 from Setup_8206HR       import Setup_8206HR
+from Setup_8480HR       import Setup_8480HR
 from Setup_PodInterface import Setup_Interface
 
 # authorship
@@ -26,10 +27,11 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
+    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8480-HR':None}) -> None :
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {  # NOTE add supported devices here 
-            '8206-HR' : Setup_8206HR() 
+            '8480-HR' : Setup_8480HR()
+            # '8480-HR' : Setup_8480HR()
         }
         self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
@@ -80,7 +82,7 @@ class Setup_PodDevices :
     # ------------ CLASS SETUP ------------
 
 
-    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]={'8206-HR':None}) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]={'8480-HR':None}) -> None :
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
             self._Setup_PodDevices[key].SetupPODparameters(value)

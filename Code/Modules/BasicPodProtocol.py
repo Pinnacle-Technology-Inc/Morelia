@@ -33,8 +33,10 @@ class POD_Basics :
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None : 
         # initialize serial port 
+        print("com_io testing")
         self._port : COM_io = COM_io(port, baudrate)
         # create object to handle commands 
+        #print(port)
         self._commands : POD_Commands = POD_Commands()
         # increment number of POD device counter
         POD_Basics.__numPod += 1
@@ -243,6 +245,8 @@ class POD_Basics :
 
     def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         # return False if command is not valid
+        print(cmd)
+        print(payload)
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not Exist.')
         # get command number 
@@ -252,24 +256,36 @@ class POD_Basics :
             cmdNum = cmd
         # get length of expected paylaod 
         argSizes = self._commands.ArgumentHexChar(cmdNum)
-        # check if command requires a payload. 
-        if( sum(argSizes) > 0 ):
+        # check if command requires a payload.
+        #   
+
+        if( sum(argSizes) > 0 ): 
             # check to see if a payload was given 
             if(payload == None):
                 raise Exception('POD command requires a payload.')
             # get payload in bytes
             pld = POD_Packets.PayloadToBytes(payload, argSizes)
+            #pld = '11'
+            print(pld)
+            print(type(pld))
+            print(argSizes)
+            print(type(argSizes))
         else :
             pld = None
         # build POD packet 
+        
         packet = POD_Packets.BuildPODpacket_Standard(cmdNum, payload=pld)
+        print(packet)
         # return complete packet 
         return(packet)
     
 
     def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :                     
         # POD packet 
+        # print("enter write")
         packet = self.GetPODpacket(cmd, payload)
+        #print("write packet testing")
+        # print("packet")
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
@@ -278,6 +294,7 @@ class POD_Basics :
 
     def ReadPODpacket(self, validateChecksum:bool=True) -> bytes :
         # read until STX is found
+        # print("readpod")
         b = None
         while(b != POD_Packets.STX()) :
             b = self._port.Read(1)     # read next byte  

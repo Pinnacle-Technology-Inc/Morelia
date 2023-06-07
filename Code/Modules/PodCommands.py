@@ -27,6 +27,7 @@ class POD_Commands :
     # number of hex characters for a given payload value (U=unsigned, #=bit)
     __U8  : int = 2
     __U16 : int = 2*__U8
+    __U32 : int = 4*__U8
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -34,7 +35,11 @@ class POD_Commands :
 
     def __init__(self) -> None : 
         # contains allowed POD commands (basic set)
-        self.__commands : dict[int,list[str|tuple[int]|bool]] = POD_Commands.GetBasicCommands()
+        print("commands before")
+        self.__commands : dict[int,list[str|tuple[int]|bool]] = POD_Commands.GetBasicCommands() 
+        print(self.__commands)
+        print("commands after")
+
 
 
     # ============ STATIC METHODS ============  ========================================================================================================================
@@ -54,12 +59,19 @@ class POD_Commands :
     def U16() -> int : 
         # returns the no value marker for commands dict 
         return(POD_Commands.__U16)
+    
+    @staticmethod
+    def U32() -> int :
+        return(POD_Commands.__U32)
 
     @staticmethod
     def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool]] : 
         # constants 
         U8 = POD_Commands.U8()
+        U16 = POD_Commands.U16()
+        U32 = POD_Commands.U32() #new added 
         NOVALUE = POD_Commands.NoValue()
+        # print("commands")
         # basic standard POD commands 
         basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag ]), 
             0   : [ 'ACK',                  (0,),      (0,),          False   ],
@@ -162,9 +174,15 @@ class POD_Commands :
 
     def DoesCommandExist(self, cmd: int|str) -> bool : 
         # check each command number and name to try to find match 
+        #print("does command", self.__commands.items)
+        #print("first", val[self.__NAME])
         for key,val in self.__commands.items() : 
+            # print("key does", key)
+            # print("value does", val)
+            # print("first",val[self.__NAME])
             if(cmd==key or cmd==val[self.__NAME]):
                 # set to true if match found 
                 return(True)
+            
         # return true if the command is in the command dict, false otherwise
-        return(False)
+        # return(False)

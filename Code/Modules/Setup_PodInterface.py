@@ -132,8 +132,12 @@ class Setup_Interface :
         print('\nConnecting POD devices...')
         # setup each POD device
         areAllGood = True
+        print("connected")
         for key,val in self._podParametersDict.items():
            # areAllGood is false if any device fails
+           print("param", self._podParametersDict)
+           print("key", key)
+           print("value", val)
            areAllGood = areAllGood and self._ConnectPODdevice(key,val)
         return(areAllGood)
 
@@ -284,7 +288,7 @@ class Setup_Interface :
         if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
         elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
         return(f)
-    
+        
 
     def _BuildFileName(self, devNum: int) -> str : 
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
@@ -311,16 +315,20 @@ class Setup_Interface :
     @staticmethod
     def _TestDeviceConnection(pod: POD_Basics) -> bool :
         # returns True when connection is successful, false otherwise
-        try:
-            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
-            r = pod.ReadPODpacket()
-        except:     
-            return(False)
+        # try:
+        # print("hi")
+        # pod = POD_Basics('') #new added 
+        w = pod.WritePacket(cmd = 'PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
+        # print("write")
+        r = pod.ReadPODpacket()
+        # except:
+        #     return(False)
         # check that read matches ping write
         if(w==r):   
             return(True)
         else:       
             return(False)
+            
         
 
     def _TestDeviceConnection_All(self) -> bool:
