@@ -332,6 +332,48 @@ class Setup_8401HR(Setup_Interface) :
         return(f)
     
 
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        # get all channel names for ABCD, exclusing no-connects (NC)
+        lables = [x for x 
+                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
+                  if x != 'NC']
+        # number of channels 
+        n = len(lables)
+        # create file
+        f = EdfWriter(fname, n) 
+        # get info for each channel
+        for i in range(n):
+            f.setSignalHeader( i, {
+                'label' : lables[i],
+                'dimension' : 'uV',
+                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'physical_max': self._PHYSICAL_BOUND_uV,
+                'physical_min': -self._PHYSICAL_BOUND_uV, 
+                'digital_max': 32767, 
+                'digital_min': -32768, 
+                'transducer': '', 
+                'prefilter': ''            
+            } )
+        return(f)
+    
+
+    @staticmethod
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
+        for i in range(len(t)) : 
+            line = [t[i]]
+            for arr in data : line.append(arr[i])
+            # convert data into comma separated string
+            lineToWrite = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(lineToWrite)
+
+
+    @staticmethod
+    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
+        # write data to EDF file 
+        file.writeSamples(data)
+
+
     # ------------ STREAM ------------ 
 
 
@@ -339,11 +381,6 @@ class Setup_8401HR(Setup_Interface) :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
-
-
-    ########################################
-    #               WORKING
-    ########################################
 
 
     def _StreamThreading(self) -> dict[int,Thread] :
@@ -426,42 +463,11 @@ class Setup_8401HR(Setup_Interface) :
             t_forEDF += 1
         # end while 
 
-    @staticmethod
-    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
-        for i in range(len(t)) : 
-            line = [t[i]]
-            for arr in data : line.append(arr[i])
-            # convert data into comma separated string
-            lineToWrite = ','.join(str(x) for x in line) + '\n'
-            # write data to file 
-            file.write(lineToWrite)
 
-    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
-        # get all channel names for ABCD, exclusing no-connects (NC)
-        lables = [x for x 
-                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
-                  if x != 'NC']
-        # number of channels 
-        n = len(lables)
-        # create file
-        f = EdfWriter(fname, n) 
-        # get info for each channel
-        for i in range(n):
-            f.setSignalHeader( i, {
-                'label' : lables[i],
-                'dimension' : 'uV',
-                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
-                'physical_max': self._PHYSICAL_BOUND_uV,
-                'physical_min': -self._PHYSICAL_BOUND_uV, 
-                'digital_max': 32767, 
-                'digital_min': -32768, 
-                'transducer': '', 
-                'prefilter': ''            
-            } )
-        return(f)
+    ########################################
+    #               WORKING
+    ########################################
+
+
+
     
-    
-    @staticmethod
-    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
-        # write data to EDF file 
-        file.writeSamples(data)
