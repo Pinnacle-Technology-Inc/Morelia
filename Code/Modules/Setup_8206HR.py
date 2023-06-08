@@ -195,7 +195,7 @@ class Setup_8206HR(Setup_Interface) :
                     self._podParametersDict.keys(),     # devNum
                     self._podParametersDict.values(),   # params
                     self._podDevices.values(),          # pod
-                    podFiles.values() )                  # file
+                    podFiles.values() )                 # file
         }
         for t in readThreads.values() : 
             # start streaming (program will continue until .join() or streaming ends)
@@ -259,16 +259,7 @@ class Setup_8206HR(Setup_Interface) :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
-
-
-    # ------------ HELPER ------------
-
-
-    @staticmethod
-    def _uV(voltage: float|int) -> float :
-        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
-        return ( round(voltage * 1E-6, 6 ) + 0.0 )
-    
+            
 
     # ------------ VALIDATION ------------
 
