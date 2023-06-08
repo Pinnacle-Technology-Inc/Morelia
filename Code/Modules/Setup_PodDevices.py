@@ -1,5 +1,6 @@
 """
-Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file
+Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file.
+REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 """
 
 # enviornment imports

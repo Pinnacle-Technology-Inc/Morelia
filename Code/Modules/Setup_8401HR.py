@@ -1,14 +1,17 @@
 """
 Setup_8401HR provides the setup functions for an 8206-HR POD device.
+REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 """
 
 # enviornment imports
 import copy
+import os 
+import time 
+import numpy       as     np
 from   texttable    import Texttable
 from   threading    import Thread
 from   io           import IOBase
-from   datetime    import datetime
-from   time        import gmtime, strftime
+from   pyedflib     import EdfWriter
 
 # local imports
 from Setup_PodInterface import Setup_Interface
@@ -307,20 +310,6 @@ class Setup_8401HR(Setup_Interface) :
 
 
     # ------------ FILE HANDLING ------------
-    # ------------ STREAM ------------ 
-
-    def _StopStream(self) -> None :
-        # tell devices to stop streaming 
-        for pod in self._podDevices.values() : 
-            pod.WritePacket(cmd='STREAM', payload=0)
-
-    ########################################
-    #               WORKING
-    ########################################
-
-    def _StreamThreading(self) -> dict[int,Thread] :
-        # create save files for pod devices
-        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
 
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
@@ -337,3 +326,108 @@ class Setup_8401HR(Setup_Interface) :
         cols = cols[:-1] + '\n'
         f.write(cols)
         return(f)
+    
+
+    # ------------ STREAM ------------ 
+
+
+    def _StopStream(self) -> None :
+        # tell devices to stop streaming 
+        for pod in self._podDevices.values() : 
+            pod.WritePacket(cmd='STREAM', payload=0)
+
+
+    ########################################
+    #               WORKING
+    ########################################
+
+
+    def _StreamThreading(self) -> dict[int,Thread] :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : Thread(
+                    target = self._StreamUntilStop, 
+                    args = ( pod, file, params['Sample Rate'] ))
+            # for each device 
+            for devNum,params,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podParametersDict.values(),   # params
+                    self._podDevices.values(),          # pod
+                    podFiles.values() )                 # file
+        }
+        for t in readThreads.values() : 
+            # start streaming (program will continue until .join() or streaming ends)
+            t.start()
+        return(readThreads)
+    
+
+    def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
+        # get file type
+        name, ext = os.path.splitext(self._saveFileName)
+        # packet to mark stop streaming 
+        stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
+        # start streaming from device  
+        startAt = pod.WritePacket(cmd='STREAM', payload=1)
+        # initialize times
+        t_forEDF: int = 0
+        currentTime :float = 0.0 
+        # annotate start
+        # if(ext == '.edf') : file.writeAnnotation(t_forEDF, -1, "Start")
+        # start reading
+        while(True):
+            # initialize data array 
+            times = np.zeros(sampleRate)
+            dataA = np.zeros(sampleRate)
+            dataB = np.zeros(sampleRate)
+            dataC = np.zeros(sampleRate)
+            dataD = np.zeros(sampleRate)
+            # track time (second)
+            ti = (round(time.time(),9)) # initial time 
+            # read data for one second
+            for i in range(sampleRate):
+                # read once 
+                r = pod.ReadPODpacket()
+                # stop looping when stop stream command is read 
+                if(r == stopAt) : 
+                    # if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
+                    file.close()
+                    return  ##### END #####
+                # skip if start stream command is read 
+                elif(r == startAt) :
+                    i = i-1
+                    continue
+                # translate 
+                rt = pod.TranslatePODpacket(r)
+                # save data as uV
+                dataA[i] = self._uV(rt['A'])
+                dataB[i] = self._uV(rt['B'])
+                dataC[i] = self._uV(rt['C'])
+                dataD[i] = self._uV(rt['D'])
+            # get average sample period
+            tf = round(time.time(),9) # final time
+            td = tf - ti # time difference 
+            average_td = (round((td/sampleRate), 9)) # time between samples
+            # increment time for each sample
+            for i in range(sampleRate):
+                times[i] = (round(currentTime, 9))
+                currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+            # save to file 
+            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [dataA,dataB,dataC,dataD], times)
+            # elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [dataA,dataB,dataC,dataD])
+            # increment edf time by 1 sec
+            t_forEDF += 1
+        # end while 
+
+    @staticmethod
+    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
+        for i in range(len(t)) : 
+            line = [t[i]]
+            for arr in data : line.append(arr[i])
+            # convert data into comma separated string
+            lineToWrite = ','.join(str(x) for x in line) + '\n'
+            # write data to file 
+            file.write(lineToWrite)
