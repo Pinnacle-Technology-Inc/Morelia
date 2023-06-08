@@ -30,8 +30,12 @@ class Setup_8401HR(Setup_Interface) :
     
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
+
     _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode','MUX Mode']
     _CHANNELKEYS = ['A','B','C','D']
+
+    # for EDF file writing 
+    _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV # TODO is this same as 8206HR???
 
     # overwrite from parent
     _NAME : str = '8401-HR'
@@ -376,7 +380,7 @@ class Setup_8401HR(Setup_Interface) :
         t_forEDF: int = 0
         currentTime :float = 0.0 
         # annotate start
-        # if(ext == '.edf') : file.writeAnnotation(t_forEDF, -1, "Start")
+        if(ext == '.edf') : file.writeAnnotation(t_forEDF, -1, "Start")
         # start reading
         while(True):
             # initialize data array 
@@ -393,7 +397,7 @@ class Setup_8401HR(Setup_Interface) :
                 r = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
-                    # if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
+                    if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
                     file.close()
                     return  ##### END #####
                 # skip if start stream command is read 
@@ -417,7 +421,7 @@ class Setup_8401HR(Setup_Interface) :
                 currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
             # save to file 
             if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [dataA,dataB,dataC,dataD], times)
-            # elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [dataA,dataB,dataC,dataD])
+            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [dataA,dataB,dataC,dataD])
             # increment edf time by 1 sec
             t_forEDF += 1
         # end while 
@@ -431,3 +435,33 @@ class Setup_8401HR(Setup_Interface) :
             lineToWrite = ','.join(str(x) for x in line) + '\n'
             # write data to file 
             file.write(lineToWrite)
+
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        # get all channel names for ABCD, exclusing no-connects (NC)
+        lables = [x for x 
+                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
+                  if x != 'NC']
+        # number of channels 
+        n = len(lables)
+        # create file
+        f = EdfWriter(fname, n) 
+        # get info for each channel
+        for i in range(n):
+            f.setSignalHeader( i, {
+                'label' : lables[i],
+                'dimension' : 'uV',
+                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'physical_max': self._PHYSICAL_BOUND_uV,
+                'physical_min': -self._PHYSICAL_BOUND_uV, 
+                'digital_max': 32767, 
+                'digital_min': -32768, 
+                'transducer': '', 
+                'prefilter': ''            
+            } )
+        return(f)
+    
+    
+    @staticmethod
+    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
+        # write data to EDF file 
+        file.writeSamples(data)
