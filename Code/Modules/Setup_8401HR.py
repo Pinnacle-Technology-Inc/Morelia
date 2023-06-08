@@ -23,7 +23,7 @@ class Setup_8401HR(Setup_Interface) :
     
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
-    _PARAMKEYS = ['Device #',Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode','MUX Mode']
+    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode','MUX Mode']
     _CHANNELKEYS = ['A','B','C','D']
 
     # overwrite from parent
@@ -191,15 +191,15 @@ class Setup_8401HR(Setup_Interface) :
             raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
         # check type of each specific command 
         if( not(
-                    isinstance( paramDict['Port'],                   str  ) 
-                and isinstance( paramDict['Preamplifier Device'],    str  ) 
-                and isinstance( paramDict['Sample Rate'],            int  ) 
-                and isinstance( paramDict['Preamplifier Gain'],      dict ) 
-                and isinstance( paramDict['Second Stage Gain'],      dict ) 
-                and isinstance( paramDict['High-pass'],              dict ) 
-                and isinstance( paramDict['Low-pass'],               dict ) 
-                and isinstance( paramDict['DC Mode'],                dict ) 
-                and isinstance( paramDict['MUX Mode'],               dict ) 
+                    isinstance( paramDict[Setup_Interface._PORTKEY],str  ) 
+                and isinstance( paramDict['Preamplifier Device'],   str  ) 
+                and isinstance( paramDict['Sample Rate'],           int  ) 
+                and isinstance( paramDict['Preamplifier Gain'],     dict ) 
+                and isinstance( paramDict['Second Stage Gain'],     dict ) 
+                and isinstance( paramDict['High-pass'],             dict ) 
+                and isinstance( paramDict['Low-pass'],              dict ) 
+                and isinstance( paramDict['DC Mode'],               dict ) 
+                and isinstance( paramDict['MUX Mode'],              dict ) 
             )
         ) : 
             raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')

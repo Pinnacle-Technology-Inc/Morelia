@@ -112,8 +112,10 @@ class Setup_Interface :
         # connect and initialize all POD devices
         self._ConnectAllPODdevices()
 
+
     # ------------ VALIDATION ------------
     
+
     def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
         if(paramDict == None) : 
             return(True)
@@ -133,6 +135,7 @@ class Setup_Interface :
             allGood = allGood and self._IsOneDeviceValid(value)
         # no exceptions raised
         return(allGood)
+    
     
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 

@@ -5,14 +5,13 @@ Setup_8206HR provides the setup functions for an 8206-HR POD device.
 # enviornment imports
 import os 
 import time
-
+import copy
 import numpy       as     np
 from   texttable   import Texttable
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
 from   datetime    import datetime
-from   datetime    import date
 from   time        import gmtime, strftime
 
 
@@ -280,3 +279,28 @@ class Setup_8206HR(Setup_Interface) :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
+
+    # ------------ VALIDATION ------------
+
+    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        # check that all params exist 
+        if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
+            raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
+        # check type of each specific command 
+        if( not(
+                    isinstance( paramDict[Setup_Interface._PORTKEY], str  ) 
+                and isinstance( paramDict['Sample Rate'],            int  ) 
+                and isinstance( paramDict['Preamplifier Gain'],      int  ) 
+                and isinstance( paramDict['Low-pass'],               dict ) 
+            )
+        ) : 
+            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
+        # check that low-pass is correct
+        if( list(paramDict['Low-pass'].keys()).sort() != copy.copy(self._LOWPASSKEYS).sort() ) : 
+            raise Exception('[!] Invalid low-pass parameters for '+str(self._NAME)+'.')
+        # check type of low-pass
+        for lowPassVal in paramDict['Low-pass'].values() : 
+            if( not isinstance(lowPassVal, int) ) : 
+                raise Exception('[!] Invalid low-pass value types for '+str(self._NAME)+'.')
+        # no exception raised 
+        return(True)

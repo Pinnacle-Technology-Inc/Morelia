@@ -232,15 +232,12 @@ class Setup_PodDevices :
             params = Setup_PodDevices._AskUserForDevices()
         else:
             params = podParametersDict
-
+        # validation 
         self._Set_Setup_PodDevices(params)
         self._CheckForValidParams(podParametersDict)
-
         # return valid dict 
         return(params)
         
-
-    
 
     @staticmethod
     def _AskUserForDevices() :  # NOTE add all supported devices here 
