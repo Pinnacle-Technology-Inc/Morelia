@@ -29,18 +29,21 @@ class Setup_Interface :
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
+
     _NAME    : str = 'GENERIC'  # overwrite this in child classes 
     _PORTKEY : str = 'Port'     # dictionary key for the device's port name 
 
+
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        # returns true if the parameters for one POD device is valid, raise Exception otherwise
-        pass
 
     @staticmethod
     def GetDeviceName() -> str : 
         # returns the name of the POD device 
+        pass
+    
+    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        # returns true if the parameters for one POD device is valid, raise Exception otherwise
         pass
     
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
@@ -52,7 +55,7 @@ class Setup_Interface :
         # get a table that has the parameters for all POD devices 
         pass
 
-    def saveFile(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
         # write setup commands to initialize the POD device with the user's parameters
         # return true for successful connection, false otherwise
         pass
@@ -76,6 +79,7 @@ class Setup_Interface :
         # create an EDF file and write all channel information
         # returns the EdfWriter file object 
         pass
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
