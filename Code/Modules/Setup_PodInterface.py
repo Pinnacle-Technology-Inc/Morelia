@@ -8,6 +8,8 @@ from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
 from   io         import IOBase
+from   datetime   import datetime
+from   time       import gmtime, strftime
 
 # local imports
 from SerialCommunication    import COM_io
@@ -50,7 +52,7 @@ class Setup_Interface :
         # get a table that has the parameters for all POD devices 
         pass
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+    def saveFile(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
         # write setup commands to initialize the POD device with the user's parameters
         # return true for successful connection, false otherwise
         pass
@@ -65,8 +67,7 @@ class Setup_Interface :
         # tell devices to stop streaming 
         pass
 
-    @staticmethod
-    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
         # open a text file and write column names 
         # return opened file object
         pass
@@ -136,7 +137,7 @@ class Setup_Interface :
         # no exceptions raised
         return(allGood)
     
-    
+
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
@@ -332,6 +333,19 @@ class Setup_Interface :
         fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
         return(fname)
 
+
+    @staticmethod
+    def _GetTimeHeader_forTXT() -> str : 
+        # get time 
+        now = datetime.now()
+        current_time = str(now.time().strftime('%H:%M:%S'))
+        # build string 
+        header  = (  '#Today\'s date,'+ now.strftime("%d-%B-%Y")) # shows date
+        header += ('\n#Time now,'+ current_time) # shows time
+        header += ('\n#GMT,'+ strftime("%I:%M:%S %p %Z", gmtime()) + '\n') # shows GMT time
+        return(header)
+    
+
     # ------------ STREAM ------------ 
 
 
@@ -341,10 +355,7 @@ class Setup_Interface :
             raise Exception('Could not stream from '+self._NAME+'.')
         # start streaming from all devices 
         else:
-            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
-    
-
-  
+            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys  
 
 
     # ------------ HELPER ------------

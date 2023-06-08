@@ -11,8 +11,6 @@ from   texttable   import Texttable
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
-from   datetime    import datetime
-from   time        import gmtime, strftime
 
 
 # local imports
@@ -132,21 +130,13 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ FILE HANDLING ------------
 
 
-    @staticmethod
-    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
         # open file and write column names 
         f = open(fname, 'w')
-        #shows time
-        now = datetime.now()
-        current_time = str(now.time().strftime('%H:%M:%S'))
-        #shows date
-        f.write("#Today's date: "+ now.strftime("%d-%B-%Y"))
-        #shows time
-        f.write('\n#Time now: '+ current_time)
-        #shows GMT time
-        f.write('\n#GMT: '+ time.strftime("%I:%M:%S %p %Z", time.gmtime()) + '\n')
-        #columns names
-        f.write('\ntime,ch0,ch1,ch2\n')
+        # write time
+        f.write( self._GetTimeHeader_forTXT() ) 
+        # columns names
+        f.write('\nTime,CH0,CH1,CH2\n')
         return(f)
     
 

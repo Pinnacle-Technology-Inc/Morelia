@@ -3,8 +3,12 @@ Setup_8401HR provides the setup functions for an 8206-HR POD device.
 """
 
 # enviornment imports
-from texttable import Texttable
 import copy
+from   texttable    import Texttable
+from   threading    import Thread
+from   io           import IOBase
+from   datetime    import datetime
+from   time        import gmtime, strftime
 
 # local imports
 from Setup_PodInterface import Setup_Interface
@@ -305,8 +309,31 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ FILE HANDLING ------------
     # ------------ STREAM ------------ 
 
+    def _StopStream(self) -> None :
+        # tell devices to stop streaming 
+        for pod in self._podDevices.values() : 
+            pod.WritePacket(cmd='STREAM', payload=0)
+
     ########################################
     #               WORKING
     ########################################
 
-    
+    def _StreamThreading(self) -> dict[int,Thread] :
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+
+
+    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+        # open file and write column names 
+        f = open(fname, 'w')
+        # write time
+        f.write( self._GetTimeHeader_forTXT() ) 
+        # columns names
+        cols = 'Time,'
+        devnum = int((fname.split('.')[0]).split('_')[-1]) # get device number from filename
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum]['Preamplifier Device'])
+        for label in chmap.values() : 
+            cols = cols + str(label) + ','
+        cols = cols[:-1] + '\n'
+        f.write(cols)
+        return(f)
