@@ -282,6 +282,7 @@ class Setup_8206HR(Setup_Interface) :
 
     # ------------ VALIDATION ------------
 
+
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
         # check that all params exist 
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :

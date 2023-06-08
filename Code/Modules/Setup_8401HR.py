@@ -42,6 +42,79 @@ class Setup_8401HR(Setup_Interface) :
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
+    # ------------ DEVICE CONNECTION ------------
+
+
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+        failed = True 
+        try : 
+            # get port name 
+            port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string
+            # create POD device 
+            self._podDevices[deviceNum] = POD_8401HR(
+                port        = port, 
+                preampName  = deviceParams['Preamplifier Device'], 
+                ssGain      = deviceParams['Second Stage Gain'],
+                preampGain  = deviceParams['Preamplifier Gain'],
+            )
+            # test if connection is successful
+            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+
+                # write setup parameters
+                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
+
+                if(deviceParams['High-pass']['A'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, self._CodeHighpass(deviceParams['High-pass']['A'])))
+                if(deviceParams['High-pass']['B'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, self._CodeHighpass(deviceParams['High-pass']['B'])))
+                if(deviceParams['High-pass']['C'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, self._CodeHighpass(deviceParams['High-pass']['C'])))
+                if(deviceParams['High-pass']['D'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, self._CodeHighpass(deviceParams['High-pass']['D'])))
+
+                if(deviceParams['Low-pass']['A'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, deviceParams['Low-pass']['A']))
+                if(deviceParams['Low-pass']['B'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, deviceParams['Low-pass']['B']))
+                if(deviceParams['Low-pass']['C'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, deviceParams['Low-pass']['C']))
+                if(deviceParams['Low-pass']['D'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, deviceParams['Low-pass']['D']))
+
+                if(deviceParams['DC Mode']['A'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, self._CodeDCmode(deviceParams['DC Mode']['A'])))
+                if(deviceParams['DC Mode']['B'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, self._CodeDCmode(deviceParams['DC Mode']['B'])))
+                if(deviceParams['DC Mode']['C'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, self._CodeDCmode(deviceParams['DC Mode']['C'])))
+                if(deviceParams['DC Mode']['D'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, self._CodeDCmode(deviceParams['DC Mode']['D'])))
+                
+                if(deviceParams['MUX Mode']['A'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, int(deviceParams['MUX Mode']['A']))) # bool to int 
+                if(deviceParams['MUX Mode']['B'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, int(deviceParams['MUX Mode']['B'])))
+                if(deviceParams['MUX Mode']['C'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, int(deviceParams['MUX Mode']['C'])))
+                if(deviceParams['MUX Mode']['D'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, int(deviceParams['MUX Mode']['D'])))
+
+                failed = False
+        except : 
+            # fill entry 
+            self._podDevices[deviceNum] = None
+
+        # check if connection failed 
+        if(failed) :
+            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+        else :
+            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+        # return True when connection successful, false otherwise
+        return(not failed)
+    
+
+    @staticmethod
+    def _CodeHighpass(highpass) : 
+        match highpass : 
+            case  0.5  : return(0)
+            case  1.0  : return(1)
+            case 10.0  : return(2)
+            case  0.0  : return(3)
+            case _ : raise Exception('[!] High-pass of '+str(highpass)+' Hz is not supported.')
+
+
+    @staticmethod
+    def _CodeDCmode(dcMode) : 
+        match dcMode : 
+            case 'VBIAS' : return(0)
+            case 'AGND'  : return(1)
+            case _ : raise Exception('[!] DC Mode \''+str(dcMode)+'\' is not supported.')
+
+
     # ------------ SETUP POD PARAMETERS ------------
 
 
