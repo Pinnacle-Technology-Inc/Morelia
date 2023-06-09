@@ -51,15 +51,22 @@ class UserInput :
 
 
     @staticmethod
-    def AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
-        n = UserInput.AskForInt(prompt)
+    def AskForTypeInRange(typecast: 'function', prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
+        n = UserInput.AskForType(typecast, prompt)
         # check for valid input
         if(n<minimum or n>maximum) : 
             print('[!] '+str(thisIs)+' must be between '+str(minimum)+'-'+str(maximum)+str(unit)+'.')
             return(UserInput.AskForIntInRange(prompt, minimum, maximum))
         # return sample rate
         return(n)
-   
+
+    @staticmethod
+    def AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
+        UserInput.AskForTypeInRange(UserInput._CastInt, prompt,minimum,maximum,thisIs,unit)
+
+    @staticmethod
+    def AskForFloatInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
+        UserInput.AskForTypeInRange(UserInput._CastFloat, prompt,minimum,maximum,thisIs,unit)
 
     # ------------ OPTION IN LIST ------------
 
