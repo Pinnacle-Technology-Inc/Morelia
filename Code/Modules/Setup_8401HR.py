@@ -327,16 +327,22 @@ class Setup_8401HR(Setup_Interface) :
         chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum]['Preamplifier Device'])
         for label in chmap.values() : 
             cols = cols + str(label) + ','
-        cols = cols[:-1] + '\n'
+        cols = cols + 'Analog EXT0,Analog EXT1,Analog TTL1,Analog TTL2,Analog TTL3,Analog TTL4\n'
         f.write(cols)
         return(f)
     
 
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
-        # get all channel names for ABCD, exclusing no-connects (NC)
+        # get all channel names for ABCD, excluding no-connects (NC)
         lables = [x for x 
                   in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
                   if x != 'NC']
+        lables.append('Analog EXT0')
+        lables.append('Analog EXT1')
+        lables.append('Analog TTL1')
+        lables.append('Analog TTL2')
+        lables.append('Analog TTL3')
+        lables.append('Analog TTL4')
         # number of channels 
         n = len(lables)
         # create file
@@ -352,7 +358,7 @@ class Setup_8401HR(Setup_Interface) :
                 'digital_max': 32767, 
                 'digital_min': -32768, 
                 'transducer': '', 
-                'prefilter': ''            
+                'prefilter': ''
             } )
         return(f)
     
@@ -421,11 +427,17 @@ class Setup_8401HR(Setup_Interface) :
         # start reading
         while(True):
             # initialize data array 
-            times = np.zeros(sampleRate)
-            dataA = np.zeros(sampleRate)
-            dataB = np.zeros(sampleRate)
-            dataC = np.zeros(sampleRate)
-            dataD = np.zeros(sampleRate)
+            times  = np.zeros(sampleRate)
+            dataA  = np.zeros(sampleRate)
+            dataB  = np.zeros(sampleRate)
+            dataC  = np.zeros(sampleRate)
+            dataD  = np.zeros(sampleRate)
+            dataE0 = np.zeros(sampleRate)
+            dataE1 = np.zeros(sampleRate)
+            dataT1 = np.zeros(sampleRate)
+            dataT2 = np.zeros(sampleRate)
+            dataT3 = np.zeros(sampleRate)
+            dataT4 = np.zeros(sampleRate)
             # track time (second)
             ti = (round(time.time(),9)) # initial time 
             # read data for one second
@@ -444,10 +456,16 @@ class Setup_8401HR(Setup_Interface) :
                 # translate 
                 rt = pod.TranslatePODpacket(r)
                 # save data as uV
-                dataA[i] = self._uV(rt['A'])
-                dataB[i] = self._uV(rt['B'])
-                dataC[i] = self._uV(rt['C'])
-                dataD[i] = self._uV(rt['D'])
+                dataA[i]  = self._uV(rt['A'])
+                dataB[i]  = self._uV(rt['B'])
+                dataC[i]  = self._uV(rt['C'])
+                dataD[i]  = self._uV(rt['D'])
+                dataE0[i] = self._uV(rt['Analog EXT0'])
+                dataE1[i] = self._uV(rt['Analog EXT1'])
+                dataT1[i] = self._uV(rt['Analog TTL1'])
+                dataT2[i] = self._uV(rt['Analog TTL2'])
+                dataT3[i] = self._uV(rt['Analog TTL3'])
+                dataT4[i] = self._uV(rt['Analog TTL4'])
             # get average sample period
             tf = round(time.time(),9) # final time
             td = tf - ti # time difference 
@@ -457,8 +475,9 @@ class Setup_8401HR(Setup_Interface) :
                 times[i] = (round(currentTime, 9))
                 currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
             # save to file 
-            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [dataA,dataB,dataC,dataD], times)
-            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [dataA,dataB,dataC,dataD])
+            dataList = [dataA,dataB,dataC,dataD,dataE0,dataE1,dataT1,dataT2,dataT3,dataT4]
+            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, dataList, times)
+            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, dataList)
             # increment edf time by 1 sec
             t_forEDF += 1
         # end while 
