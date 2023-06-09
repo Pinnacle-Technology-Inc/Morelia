@@ -230,8 +230,20 @@ class POD_8401HR(POD_Basics) :
     @staticmethod
     def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
         # use this for the argument/return for TTL-specific commands 
-        # Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins
+        # (msb) Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins (lsb) 
         return( 0 | (ext0 << 7) | (ext1 << 6) | (ttl4 << 3) | (ttl3 << 2) | (ttl2 << 1) | ttl1 )
+
+
+    @staticmethod
+    def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+        # interpret highpass (lsb)
+        if(highpass == 0.0) :   bit0 = True  # DC highpass
+        else:                   bit0 = False # AC 0.5Hz highpass 
+        # interpret gain (msb)
+        if(gain == 1) : bit1 = True  # 1x gain 
+        else:           bit1 = False # 5x gain 
+        # bit shifting to get integer bitmask
+        return( 0 | (bit1 << 1) | bit0 ) 
 
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
