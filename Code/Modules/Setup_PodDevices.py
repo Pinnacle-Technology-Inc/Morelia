@@ -235,17 +235,16 @@ class Setup_PodDevices :
             params = podParametersDict
         # validation 
         self._Set_Setup_PodDevices(params)
-        self._CheckForValidParams(podParametersDict)
+        self._CheckForValidParams(params)
         # return valid dict 
         return(params)
         
 
     @staticmethod
     def _AskUserForDevices() :  # NOTE add all supported devices here 
-        print() # newline 
         useParams = {}
         name = Setup_8206HR.GetDeviceName()
-        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+        if(UserInput.AskYN('\nWill you be using any '+str(name)+' devices?')) :
             useParams[name] = None
         name = Setup_8401HR.GetDeviceName()
         if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
