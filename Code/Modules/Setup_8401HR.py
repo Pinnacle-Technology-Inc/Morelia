@@ -223,7 +223,7 @@ class Setup_8401HR(Setup_Interface) :
             chmap = POD_8401HR.GetChannelMapForPreampDevice(val['Preamplifier Device'])
             # write row to table 
             tab.add_row([
-                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],val['Mux Mode'],
+                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],str(val['Mux Mode']),
                 self._NiceABCDtableText(val['Preamplifier Gain'],   chmap),
                 self._NiceABCDtableText(val['Second Stage Gain'],   chmap),
                 self._NiceABCDtableText(val['High-pass'],           chmap),
@@ -238,8 +238,10 @@ class Setup_8401HR(Setup_Interface) :
         # build nicely formatted text
         text = ''
         for key,val in channelMap.items() : 
-            # <channel label>: <user's input> \n
-            text += (str(val) +': ' + str(abcdValueDict[key]) + '\n')
+            # esclude no-connects from table 
+            if(val!='NC') : 
+                # <channel label>: <user's input> \n
+                text += (str(val) +': ' + str(abcdValueDict[key]) + '\n')
         # cut off the last newline then return string 
         return(text[:-1])
     
