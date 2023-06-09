@@ -31,7 +31,7 @@ class Setup_8401HR(Setup_Interface) :
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
 
-    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode']
+    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode']
     _CHANNELKEYS = ['A','B','C','D']
 
     # for EDF file writing 
@@ -128,7 +128,8 @@ class Setup_8401HR(Setup_Interface) :
         params['Second Stage Gain'] = self._SetForMappedChannels('Set second stage gain (1 or 5) for...',               chmap, self._SetSSGain      )
         params['High-pass']         = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    )
         params['Low-pass']          = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     )
-        params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )     
+        params['Bias']              = self._SetForMappedChannels('Set bias (+/- 2.048 V) for...',                       chmap, self._SetBias        )
+        params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )
         return(params)
 
 
@@ -194,6 +195,16 @@ class Setup_8401HR(Setup_Interface) :
             minimum=21, maximum=15000, 
             thisIs='The low-pass filter', unit=' Hz' ))
     
+    
+    @staticmethod
+    def _SetBias(channelName: str) -> float : 
+        return( UserInput.AskForFloatInRange(
+            prompt='\t'+str(channelName),
+            minimum=-2.048,
+            maximum=2.048,
+            thisIs='The bias', unit=' V (default is 0.6 V)'
+        ))
+    
 
     @staticmethod
     def _SetDCMode(channelName: str) -> str : 
@@ -206,18 +217,19 @@ class Setup_8401HR(Setup_Interface) :
             prompt='\t'+str(channelName),
             goodInputs=['VBIAS','AGND'],
             badInputMessage='[!] The DC mode must subtract VBIAS or AGND. Typically, Biosensors are VBIAS and EEG/EMG are AGND.' ))
-    
+
+
 
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
     def _GetPODdeviceParameterTable(self) -> Texttable : 
         # setup table 
-        tab = Texttable(150)
+        tab = Texttable(160)
         # write column names
         tab.header(['Device #',self._PORTKEY,'Preamplifier Device',
                     'Sample Rate (Hz)','Mux Mode', 'Preamplifier Gain','Second Stage Gain',
-                    'High-pass (Hz)','Low-pass (Hz)','DC Mode'])
+                    'High-pass (Hz)','Low-pass (Hz)','Bias (V)','DC Mode'])
         # for each device 
         for key,val in self._podParametersDict.items() :
             # get channel mapping for device 
@@ -229,6 +241,7 @@ class Setup_8401HR(Setup_Interface) :
                 self._NiceABCDtableText(val['Second Stage Gain'],   chmap),
                 self._NiceABCDtableText(val['High-pass'],           chmap),
                 self._NiceABCDtableText(val['Low-pass'],            chmap),
+                self._NiceABCDtableText(val['Bias'],                chmap),
                 self._NiceABCDtableText(val['DC Mode'],             chmap)
             ])
         # return table object 
@@ -264,6 +277,7 @@ class Setup_8401HR(Setup_Interface) :
                 and isinstance( paramDict['Second Stage Gain'],     dict ) 
                 and isinstance( paramDict['High-pass'],             dict ) 
                 and isinstance( paramDict['Low-pass'],              dict ) 
+                and isinstance( paramDict['Bias'],                  dict ) 
                 and isinstance( paramDict['DC Mode'],               dict ) 
             )
         ) : 
@@ -276,6 +290,7 @@ class Setup_8401HR(Setup_Interface) :
         self._IsChannelTypeValid( paramDict['Second Stage Gain'],    int   )
         self._IsChannelTypeValid( paramDict['High-pass'],            float )
         self._IsChannelTypeValid( paramDict['Low-pass'],             int   )
+        self._IsChannelTypeValid( paramDict['Bias'],                 float )
         self._IsChannelTypeValid( paramDict['DC Mode'],              str   )
         # no exception raised 
         return(True)
