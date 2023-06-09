@@ -303,8 +303,9 @@ class Setup_8401HR(Setup_Interface) :
         devnum = int((fname.split('.')[0]).split('_')[-1]) # get device number from filename
         chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum]['Preamplifier Device'])
         for label in chmap.values() : 
-            cols = cols + str(label) + ','
-        cols = cols + 'Analog EXT0,Analog EXT1,Analog TTL1,Analog TTL2,Analog TTL3,Analog TTL4\n'
+            if(label!='NC') : # exclude no-connects 
+                cols += str(label) + ','
+        cols += 'Analog EXT0,Analog EXT1,Analog TTL1,Analog TTL2,Analog TTL3,Analog TTL4\n'
         f.write(cols)
         return(f)
     
@@ -314,12 +315,7 @@ class Setup_8401HR(Setup_Interface) :
         lables = [x for x 
                   in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
                   if x != 'NC']
-        lables.append('Analog EXT0')
-        lables.append('Analog EXT1')
-        lables.append('Analog TTL1')
-        lables.append('Analog TTL2')
-        lables.append('Analog TTL3')
-        lables.append('Analog TTL4')
+        lables.extend(['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4'])
         # number of channels 
         n = len(lables)
         # create file
@@ -344,7 +340,8 @@ class Setup_8401HR(Setup_Interface) :
     def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
         for i in range(len(t)) : 
             line = [t[i]]
-            for arr in data : line.append(arr[i])
+            for arr in data : 
+                line.append(arr[i])
             # convert data into comma separated string
             lineToWrite = ','.join(str(x) for x in line) + '\n'
             # write data to file 
@@ -374,7 +371,7 @@ class Setup_8401HR(Setup_Interface) :
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : Thread(
                     target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] ))
+                    args = ( pod, file, params['Sample Rate'], devNum))
             # for each device 
             for devNum,params,pod,file in 
                 zip(
@@ -389,74 +386,77 @@ class Setup_8401HR(Setup_Interface) :
         return(readThreads)
     
 
-    def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
+    def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int, devNum: int) -> None :
         # get file type
-        name, ext = os.path.splitext(self._saveFileName)
+        name, extension = os.path.splitext(self._saveFileName)
+
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
         startAt = pod.WritePacket(cmd='STREAM', payload=1)
+
         # initialize times
         t_forEDF: int = 0
-        currentTime :float = 0.0 
-        # annotate start
-        if(ext == '.edf') : file.writeAnnotation(t_forEDF, -1, "Start")
+        currentTime: float = 0.0 
+
+        # exclude no-connects 
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device'])
+        dataColumns = []
+        for key,val in chmap.items() : 
+            if(val!='NC') : dataColumns.append(key) # ABCD 
+        dataColumns.extend(['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4'])
+
+
         # start reading
+        if(extension == '.edf') : 
+            file.writeAnnotation(t_forEDF, -1, "Start")
         while(True):
-            # initialize data array 
-            times  = np.zeros(sampleRate)
-            dataA  = np.zeros(sampleRate)
-            dataB  = np.zeros(sampleRate)
-            dataC  = np.zeros(sampleRate)
-            dataD  = np.zeros(sampleRate)
-            dataE0 = np.zeros(sampleRate)
-            dataE1 = np.zeros(sampleRate)
-            dataT1 = np.zeros(sampleRate)
-            dataT2 = np.zeros(sampleRate)
-            dataT3 = np.zeros(sampleRate)
-            dataT4 = np.zeros(sampleRate)
-            # track time (second)
-            ti = (round(time.time(),9)) # initial time 
+            # initialize time
+            if(extension=='.csv' or extension=='.txt') :
+                ti = (round(time.time(),9)) # initial time (sec)
+
+            # initialize data list of arrays 
+            data = [np.zeros(sampleRate) for x in dataColumns] 
+
             # read data for one second
             for i in range(sampleRate):
                 # read once 
                 r = pod.ReadPODpacket()
+
                 # stop looping when stop stream command is read 
                 if(r == stopAt) : 
-                    if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
+                    if(extension=='.edf') : 
+                        file.writeAnnotation(t_forEDF, -1, "Stop")
                     file.close()
                     return  ##### END #####
                 # skip if start stream command is read 
                 elif(r == startAt) :
                     i = i-1
                     continue
-                # translate 
+
+                # interpret packet
                 rt = pod.TranslatePODpacket(r)
-                # save data as uV
-                dataA[i]  = self._uV(rt['A'])
-                dataB[i]  = self._uV(rt['B'])
-                dataC[i]  = self._uV(rt['C'])
-                dataD[i]  = self._uV(rt['D'])
-                dataE0[i] = self._uV(rt['Analog EXT0'])
-                dataE1[i] = self._uV(rt['Analog EXT1'])
-                dataT1[i] = self._uV(rt['Analog TTL1'])
-                dataT2[i] = self._uV(rt['Analog TTL2'])
-                dataT3[i] = self._uV(rt['Analog TTL3'])
-                dataT4[i] = self._uV(rt['Analog TTL4'])
-            # get average sample period
-            tf = round(time.time(),9) # final time
-            td = tf - ti # time difference 
-            average_td = (round((td/sampleRate), 9)) # time between samples
-            # increment time for each sample
-            for i in range(sampleRate):
-                times[i] = (round(currentTime, 9))
-                currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
-            # save to file 
-            dataList = [dataA,dataB,dataC,dataD,dataE0,dataE1,dataT1,dataT2,dataT3,dataT4]
-            if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, dataList, times)
-            elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, dataList)
-            # increment edf time by 1 sec
-            t_forEDF += 1
+                for d,ch in zip(data, dataColumns) : 
+                    d[i] = self._uV(rt[ch])
+
+            if(extension=='.csv' or extension=='.txt') :
+                # get average sample period
+                tf = round(time.time(),9) # final time
+                td = tf - ti # time difference 
+                average_td = (round((td/sampleRate), 9)) # time between samples 
+
+                # increment time for each sample
+                times = np.zeros(sampleRate)
+                for i in range(sampleRate):
+                    times[i] = (round(currentTime, 9))
+                    currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+
+                # write to file 
+                self._WriteDataToFile_TXT(file, data, times)
+
+            elif(extension=='.edf') :              
+                self._WriteDataToFile_EDF(file, data)
+                t_forEDF += 1
         # end while 
 
 
