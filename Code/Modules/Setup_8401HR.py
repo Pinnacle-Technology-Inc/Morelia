@@ -31,7 +31,7 @@ class Setup_8401HR(Setup_Interface) :
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
 
-    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode','MUX Mode']
+    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','DC Mode']
     _CHANNELKEYS = ['A','B','C','D']
 
     # for EDF file writing 
@@ -70,40 +70,23 @@ class Setup_8401HR(Setup_Interface) :
             )
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
-
-                # write setup parameters
+                # write devicesetup parameters
                 self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
-
-                if(deviceParams['High-pass']['A'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, self._CodeHighpass(deviceParams['High-pass']['A'])))
-                if(deviceParams['High-pass']['B'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, self._CodeHighpass(deviceParams['High-pass']['B'])))
-                if(deviceParams['High-pass']['C'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, self._CodeHighpass(deviceParams['High-pass']['C'])))
-                if(deviceParams['High-pass']['D'] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, self._CodeHighpass(deviceParams['High-pass']['D'])))
-
-                if(deviceParams['Low-pass']['A'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, deviceParams['Low-pass']['A']))
-                if(deviceParams['Low-pass']['B'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, deviceParams['Low-pass']['B']))
-                if(deviceParams['Low-pass']['C'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, deviceParams['Low-pass']['C']))
-                if(deviceParams['Low-pass']['D'] != None)  : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, deviceParams['Low-pass']['D']))
-
-                if(deviceParams['DC Mode']['A'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, self._CodeDCmode(deviceParams['DC Mode']['A'])))
-                if(deviceParams['DC Mode']['B'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, self._CodeDCmode(deviceParams['DC Mode']['B'])))
-                if(deviceParams['DC Mode']['C'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, self._CodeDCmode(deviceParams['DC Mode']['C'])))
-                if(deviceParams['DC Mode']['D'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, self._CodeDCmode(deviceParams['DC Mode']['D'])))
-                
-                if(deviceParams['MUX Mode']['A'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (0, int(deviceParams['MUX Mode']['A']))) # bool to int 
-                if(deviceParams['MUX Mode']['B'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (1, int(deviceParams['MUX Mode']['B'])))
-                if(deviceParams['MUX Mode']['C'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (2, int(deviceParams['MUX Mode']['C'])))
-                if(deviceParams['MUX Mode']['D'] != None)   : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (3, int(deviceParams['MUX Mode']['D'])))
-
+                self._podDevices[deviceNum].WriteRead('SET MUX MODE', int(deviceParams['Mux Mode'])) # bool to int 
+                # write channel specific setup parameters
+                channels = ['A','B','C','D']
+                for i, letter in enumerate(channels, start=0) : 
+                    if(deviceParams['High-pass'][letter] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (i, self._CodeHighpass(deviceParams['High-pass'][letter])))
+                    if(deviceParams['Low-pass' ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET LOWPASS',  (i, deviceParams['Low-pass'][letter]))
+                    if(deviceParams['DC Mode'  ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (i, self._CodeDCmode(deviceParams['DC Mode'][letter])))
+                # successful write if no exceptions raised 
                 failed = False
-        except : 
+        except : # except Exception as e : print('[!]', e)            
             # fill entry 
             self._podDevices[deviceNum] = None
-
         # check if connection failed 
-        if(failed) :
-            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-        else :
-            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+        if(failed) : print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+        else : print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
         return(not failed)
     
@@ -134,6 +117,7 @@ class Setup_8401HR(Setup_Interface) :
             self._PORTKEY           : self._ChoosePort(forbiddenNames),
             'Preamplifier Device'   : self._GetPreampDeviceName(),
             'Sample Rate'           : UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
+            'Mux Mode'              : UserInput.AskYN('Use mux mode?')
         }
         # get channel map for the user's preamplifier 
         chmap = POD_8401HR.GetChannelMapForPreampDevice(params['Preamplifier Device'])
@@ -143,7 +127,6 @@ class Setup_8401HR(Setup_Interface) :
         params['High-pass']         = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    )
         params['Low-pass']          = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     )
         params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )     
-        params['MUX Mode']          = self._SetForMappedChannels('Use Mux mode (y/n) for...',                  chmap, self._SetMuxMode      )     
         # params['Bias']              = self._SetForMappedChannels('Set Bias for...', chmap, self.XXX)
         return(params)
 
@@ -221,12 +204,7 @@ class Setup_8401HR(Setup_Interface) :
         return( UserInput.AskForStrInList(
             prompt='\t'+str(channelName),
             goodInputs=['VBIAS','AGND'],
-            badInputMessage='[!] The DC mode must subtract VBias or AGND. Typically, Biosensors are VBIAS and EEG/EMG are AGND.' ))
-    
-
-    @staticmethod
-    def _SetMuxMode(channelName: str) -> str :
-        return(UserInput.AskYN('\t'+str(channelName), append=': '))
+            badInputMessage='[!] The DC mode must subtract VBIAS or AGND. Typically, Biosensors are VBIAS and EEG/EMG are AGND.' ))
     
 
     # ------------ DISPLAY POD PARAMETERS ------------
@@ -237,21 +215,21 @@ class Setup_8401HR(Setup_Interface) :
         tab = Texttable(150)
         # write column names
         tab.header(['Device #',self._PORTKEY,'Preamplifier Device',
-                    'Sample Rate (Hz)','Preamplifier Gain','Second Stage Gain',
-                    'High-pass (Hz)','Low-pass (Hz)','DC Mode','MUX Mode'])
+                    'Sample Rate (Hz)','Mux Mode', 'Preamplifier Gain','Second Stage Gain',
+                    'High-pass (Hz)','Low-pass (Hz)','DC Mode'])
         # for each device 
         for key,val in self._podParametersDict.items() :
             # get channel mapping for device 
             chmap = POD_8401HR.GetChannelMapForPreampDevice(val['Preamplifier Device'])
             # write row to table 
             tab.add_row([
-                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],
+                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],val['Mux Mode'],
                 self._NiceABCDtableText(val['Preamplifier Gain'],   chmap),
                 self._NiceABCDtableText(val['Second Stage Gain'],   chmap),
                 self._NiceABCDtableText(val['High-pass'],           chmap),
                 self._NiceABCDtableText(val['Low-pass'],            chmap),
-                self._NiceABCDtableText(val['DC Mode'],             chmap),
-                self._NiceABCDtableText(val['MUX Mode'],            chmap)])
+                self._NiceABCDtableText(val['DC Mode'],             chmap)
+            ])
         # return table object 
         return(tab)
     
@@ -278,12 +256,12 @@ class Setup_8401HR(Setup_Interface) :
                     isinstance( paramDict[Setup_Interface._PORTKEY],str  ) 
                 and isinstance( paramDict['Preamplifier Device'],   str  ) 
                 and isinstance( paramDict['Sample Rate'],           int  ) 
+                and isinstance( paramDict['Mux Mode'],              bool ) 
                 and isinstance( paramDict['Preamplifier Gain'],     dict ) 
                 and isinstance( paramDict['Second Stage Gain'],     dict ) 
                 and isinstance( paramDict['High-pass'],             dict ) 
                 and isinstance( paramDict['Low-pass'],              dict ) 
                 and isinstance( paramDict['DC Mode'],               dict ) 
-                and isinstance( paramDict['MUX Mode'],              dict ) 
             )
         ) : 
             raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
@@ -296,7 +274,6 @@ class Setup_8401HR(Setup_Interface) :
         self._IsChannelTypeValid( paramDict['High-pass'],            float )
         self._IsChannelTypeValid( paramDict['Low-pass'],             int   )
         self._IsChannelTypeValid( paramDict['DC Mode'],              str   )
-        self._IsChannelTypeValid( paramDict['MUX Mode'],             bool  )
         # no exception raised 
         return(True)
 
