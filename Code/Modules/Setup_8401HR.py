@@ -35,7 +35,7 @@ class Setup_8401HR(Setup_Interface) :
     _CHANNELKEYS = ['A','B','C','D']
 
     # for EDF file writing 
-    _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV # TODO is this same as 8206HR???
+    _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV # TODO is this same as 8206HR???
 
     # overwrite from parent
     _NAME : str = '8401-HR'
@@ -474,12 +474,3 @@ class Setup_8401HR(Setup_Interface) :
                 self._WriteDataToFile_EDF(file, data)
                 t_forEDF += 1
         # end while 
-
-
-    ########################################
-    #               WORKING
-    ########################################
-
-
-
-    

@@ -37,7 +37,7 @@ class Setup_8206HR(Setup_Interface) :
     _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
 
     # for EDF file writing 
-    _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
+    _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV
 
     # overwrite from parent
     _NAME : str = '8206-HR'
