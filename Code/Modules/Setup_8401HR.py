@@ -82,7 +82,6 @@ class Setup_8401HR(Setup_Interface) :
                     if(deviceParams['DC Mode'  ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (i, self._CodeDCmode(deviceParams['DC Mode'][letter])))
                     if(deviceParams['Second Stage Gain'][letter] != None and 
                        deviceParams['High-pass'][letter]!= None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask_int(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
-
                 # successful write if no exceptions raised 
                 failed = False
         except : # except Exception as e : print('[!]', e)            
@@ -426,7 +425,6 @@ class Setup_8401HR(Setup_Interface) :
             if(val!='NC') : dataColumns.append(key) # ABCD 
         dataColumns.extend(['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4'])
 
-
         # start reading
         if(extension == '.edf') : 
             file.writeAnnotation(t_forEDF, -1, "Start")
@@ -464,17 +462,15 @@ class Setup_8401HR(Setup_Interface) :
                 tf = round(time.time(),9) # final time
                 td = tf - ti # time difference 
                 average_td = (round((td/sampleRate), 9)) # time between samples 
-
                 # increment time for each sample
                 times = np.zeros(sampleRate)
                 for i in range(sampleRate):
                     times[i] = (round(currentTime, 9))
                     currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
-
                 # write to file 
                 self._WriteDataToFile_TXT(file, data, times)
 
-            elif(extension=='.edf') :              
+            elif(extension=='.edf') :           
                 self._WriteDataToFile_EDF(file, data)
                 t_forEDF += 1
         # end while 
