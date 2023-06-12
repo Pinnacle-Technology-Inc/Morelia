@@ -78,8 +78,10 @@ class Setup_8401HR(Setup_Interface) :
                 for i, letter in enumerate(channels, start=0) : 
                     if(deviceParams['High-pass'][letter] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (i, self._CodeHighpass(deviceParams['High-pass'][letter])))
                     if(deviceParams['Low-pass' ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET LOWPASS',  (i, deviceParams['Low-pass'][letter]))
+                    if(deviceParams['Bias'     ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (i, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams['Bias'][letter])))
                     if(deviceParams['DC Mode'  ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (i, self._CodeDCmode(deviceParams['DC Mode'][letter])))
-                    self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask_int(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
+                    if(deviceParams['Second Stage Gain'][letter] != None and 
+                       deviceParams['High-pass'][letter]!= None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask_int(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
 
                 # successful write if no exceptions raised 
                 failed = False
