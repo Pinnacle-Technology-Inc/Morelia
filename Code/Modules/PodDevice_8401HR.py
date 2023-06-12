@@ -245,6 +245,20 @@ class POD_8401HR(POD_Basics) :
         # bit shifting to get integer bitmask
         return( 0 | (bit1 << 1) | bit0 ) 
 
+    
+    @staticmethod
+    def CalculateBiasDAC_GetVout(value) -> float :
+        # Use this method for GET/SET BIAS commands 
+        # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
+        return( (value / 32768) * 2.048 )
+
+
+    @staticmethod
+    def CalculateBiasDAC_GetDACValue(vout) -> int :
+        # Use this method for GET/SET BIAS commands 
+        # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
+        return(int( (vout / 2.048) * 32768 ))
+    
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
