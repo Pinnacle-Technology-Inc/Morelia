@@ -35,7 +35,7 @@ class Setup_8401HR(Setup_Interface) :
     _CHANNELKEYS = ['A','B','C','D']
 
     # for EDF file writing 
-    _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV # TODO is this same as 8206HR???
+    _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV 
 
     # overwrite from parent
     _NAME : str = '8401-HR'
@@ -95,7 +95,7 @@ class Setup_8401HR(Setup_Interface) :
     
 
     @staticmethod
-    def _CodeHighpass(highpass) : 
+    def _CodeHighpass(highpass: float) -> int : 
         match highpass : 
             case  0.5  : return(0)
             case  1.0  : return(1)
@@ -105,7 +105,7 @@ class Setup_8401HR(Setup_Interface) :
 
 
     @staticmethod
-    def _CodeDCmode(dcMode) : 
+    def _CodeDCmode(dcMode: str) -> int : 
         match dcMode : 
             case 'VBIAS' : return(0)
             case 'AGND'  : return(1)
@@ -136,10 +136,11 @@ class Setup_8401HR(Setup_Interface) :
 
     def _GetPreampDeviceName(self) -> str : 
         deviceList = POD_8401HR.GetSupportedPreampDevices()
+        print('Available preamplifiers: '+', '.join(deviceList))
         return( UserInput.AskForStrInList(
             prompt='Set mouse/rat preamplifier',
             goodInputs=deviceList,
-            badInputMessage='[!] Please input a valid mouse/rat preamplifier '+str(tuple(deviceList))+'.'))
+            badInputMessage='[!] Please input a valid mouse/rat preamplifier.'))
 
         
     def _SetForMappedChannels(self, message: str, channelMap: dict[str,str], func: 'function') -> dict[str,int|None]: # func MUST take one argument, which is the channel map value 
@@ -167,7 +168,7 @@ class Setup_8401HR(Setup_Interface) :
         
 
     @staticmethod
-    def _SetSSGain(channelName: str) -> int|None : 
+    def _SetSSGain(channelName: str) -> int : 
         return( UserInput.AskForIntInList(
             prompt='\t'+str(channelName), 
             goodInputs=[1,5], 
@@ -307,6 +308,7 @@ class Setup_8401HR(Setup_Interface) :
         for value in chdict.values() :
             if( value != None and not isinstance(value, isType) ) :
                 raise Exception('[!] Invalid channel value type for '+str(self._NAME)+'.')
+        return(True)
 
 
     # ------------ FILE HANDLING ------------

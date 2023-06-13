@@ -36,11 +36,6 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-
-    @staticmethod
-    def GetDeviceName() -> str : 
-        # returns the name of the POD device 
-        pass
     
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
         # returns true if the parameters for one POD device is valid, raise Exception otherwise
@@ -118,6 +113,12 @@ class Setup_Interface :
         self._ConnectAllPODdevices()
 
 
+    @staticmethod
+    def GetDeviceName() -> str : 
+        # returns the name of the POD device 
+        return(Setup_Interface._NAME)
+
+
     # ------------ VALIDATION ------------
     
 
@@ -126,7 +127,7 @@ class Setup_Interface :
             return(True)
         # is params a dict?
         if(not isinstance(paramDict, dict)) :
-            raise Exception('[!] Invalid value type in parameter dictionary.')
+            raise Exception('[!] Parameters must be contained in a dictionary.')
         # are keys int and value dict
         allGood = True 
         for key,value in paramDict.items() : 
@@ -216,7 +217,7 @@ class Setup_Interface :
     def _ChoosePort(forbidden:list[str]=[]) -> str : 
         # get ports
         portList = Setup_Interface._GetPortsList(forbidden)
-        print('Available COM Ports:', portList)
+        print('Available COM Ports: '+', '.join(portList))
         # request port from user
         choice = input('Select port: COM')
         # choice cannot be an empty string

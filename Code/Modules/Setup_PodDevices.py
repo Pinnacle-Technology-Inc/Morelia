@@ -14,6 +14,7 @@ from Setup_PodInterface import Setup_Interface
 from Setup_8206HR       import Setup_8206HR
 from Setup_8401HR       import Setup_8401HR
 from GetUserInput       import UserInput
+
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -226,7 +227,7 @@ class Setup_PodDevices :
     # ------------ INIT ------------    
 
 
-    def _GetParams(self, podParametersDict: None | dict[str,None]) -> dict[str,dict|None]: 
+    def _GetParams(self, podParametersDict: None|dict[str,None]) -> dict[str,dict|None]: 
         # setup parameters
         if(podParametersDict == None) : 
             # return dictionary with POD device names as keys and None as values 
@@ -257,7 +258,7 @@ class Setup_PodDevices :
         return(useParams)
     
         
-    def _CheckForValidParams(self, podParametersDict: dict[str,None]) -> bool :
+    def _CheckForValidParams(self, podParametersDict: dict[str,None|dict]) -> bool :
         # is params a dictionary?
         if(not isinstance(podParametersDict,dict)) : 
             raise Exception('[!] Parameters must be dictionary type.')
