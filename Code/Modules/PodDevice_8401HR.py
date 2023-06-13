@@ -243,21 +243,21 @@ class POD_8401HR(POD_Basics) :
         if(gain == 1) : bit1 = True  # 1x gain 
         else:           bit1 = False # 5x gain 
         # bit shifting to get integer bitmask
-        return( 0 | (bit1 << 1) | bit0 ) 
+        return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
 
     
     @staticmethod
-    def CalculateBiasDAC_GetVout(value) -> float :
+    def CalculateBiasDAC_GetVout(value: int|float) -> float :
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
-        return( (value / 32768) * 2.048 )
+        return( (value / 32768.) * 2.048 )
 
 
     @staticmethod
-    def CalculateBiasDAC_GetDACValue(vout) -> int :
+    def CalculateBiasDAC_GetDACValue(vout: int|float) -> int :
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
-        return(int( (vout / 2.048) * 32768 ))
+        return(int( (vout / 2.048) * 32768. ))
     
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
