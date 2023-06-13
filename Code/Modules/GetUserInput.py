@@ -47,11 +47,29 @@ class UserInput :
         return(UserInput.AskForType(typecast=UserInput.CastInt, prompt=prompt))
 
 
+    # ------------ QUESTION ------------
+
+
+    @staticmethod
+    def AskYN(question: str, append:str=' (y/n): ') -> bool : 
+        # prompt user 
+        response = UserInput.AskForInput(question, append).upper() 
+        # check input 
+        if(response=='Y' or response=='YES' or response=='1'):
+            return(True)
+        elif(response=='N' or response=='NO' or response=='0'):
+            return(False)
+        else:
+            # prompt again 
+            print('[!] Please enter \'y\' or \'n\'.')
+            return(UserInput.AskYN(question))
+        
+        
     # ------------ OPTION IN RANGE ------------
 
 
     @staticmethod
-    def AskForTypeInRange(typecast: 'function', prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
+    def AskForTypeInRange(typecast: 'function', prompt: str, minimum: int|float, maximum: int|float, thisIs:str='Input', unit:str='') -> int :
         n = UserInput.AskForType(typecast, prompt)
         # check for valid input
         if(n<minimum or n>maximum) : 
@@ -65,14 +83,14 @@ class UserInput :
         UserInput.AskForTypeInRange(UserInput.CastInt, prompt,minimum,maximum,thisIs,unit)
 
     @staticmethod
-    def AskForFloatInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
+    def AskForFloatInRange(prompt: str, minimum: float, maximum: float, thisIs:str='Input', unit:str='') -> int :
         UserInput.AskForTypeInRange(UserInput.CastFloat, prompt,minimum,maximum,thisIs,unit)
 
     # ------------ OPTION IN LIST ------------
 
 
     @staticmethod
-    def AskForTypeInList(typecast: 'function', prompt: str, goodInputs:list, badInputMessage:str|None=None) : 
+    def AskForTypeInList(typecast: 'function', prompt: str, goodInputs: list, badInputMessage:str|None=None) : 
         # get message if bad input 
         if(badInputMessage == None) : 
             message = '[!] Invalid input. Please enter one of the following: '+str(goodInputs)
@@ -98,24 +116,6 @@ class UserInput :
     @staticmethod
     def AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> str : 
         return(UserInput.AskForTypeInList(UserInput.CastStr, prompt, goodInputs, badInputMessage))
-    
-
-    # ------------ QUESTION ------------
-
-
-    @staticmethod
-    def AskYN(question: str, append:str=' (y/n): ') -> bool : 
-        # prompt user 
-        response = UserInput.AskForInput(question, append).upper() 
-        # check input 
-        if(response=='Y' or response=='YES' or response=='1'):
-            return(True)
-        elif(response=='N' or response=='NO' or response=='0'):
-            return(False)
-        else:
-            # prompt again 
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(UserInput.AskYN(question))
         
         
     # ------------ TYPE CASTING ------------
