@@ -122,13 +122,13 @@ class UserInput :
 
 
     @staticmethod
-    def _CastInt(value) -> int :
+    def CastInt(value) -> int :
         return(int(value))
 
     @staticmethod
-    def _CastFloat(value) -> float :
+    def CastFloat(value) -> float :
         return(float(value))
     
     @staticmethod
-    def _CastStr(value) -> str :
+    def CastStr(value) -> str :
         return(str(value))
