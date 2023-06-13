@@ -29,22 +29,22 @@ class UserInput :
             return(castedInp)
         except : 
             # print bad input message
-            if(typecast == UserInput._CastInt) : 
+            if(typecast == UserInput.CastInt) : 
                 print('[!] Please enter an integer number.')
-            elif(typecast == UserInput._CastFloat) : 
+            elif(typecast == UserInput.CastFloat) : 
                 print('[!] Please enter a number.')
-            elif(typecast == UserInput._CastStr) : 
+            elif(typecast == UserInput.CastStr) : 
                 print('[!] Please enter string.')
             # ask again 
             return(UserInput.AskForType(typecast, prompt))
     
     @staticmethod
     def AskForFloat(prompt: str) -> float :
-        return(UserInput.AskForType(typecast=UserInput._CastFloat, prompt=prompt))
+        return(UserInput.AskForType(typecast=UserInput.CastFloat, prompt=prompt))
 
     @staticmethod
     def AskForInt(prompt: str) -> int :
-        return(UserInput.AskForType(typecast=UserInput._CastInt, prompt=prompt))
+        return(UserInput.AskForType(typecast=UserInput.CastInt, prompt=prompt))
 
 
     # ------------ OPTION IN RANGE ------------
@@ -62,11 +62,11 @@ class UserInput :
 
     @staticmethod
     def AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
-        UserInput.AskForTypeInRange(UserInput._CastInt, prompt,minimum,maximum,thisIs,unit)
+        UserInput.AskForTypeInRange(UserInput.CastInt, prompt,minimum,maximum,thisIs,unit)
 
     @staticmethod
     def AskForFloatInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
-        UserInput.AskForTypeInRange(UserInput._CastFloat, prompt,minimum,maximum,thisIs,unit)
+        UserInput.AskForTypeInRange(UserInput.CastFloat, prompt,minimum,maximum,thisIs,unit)
 
     # ------------ OPTION IN LIST ------------
 
@@ -89,15 +89,15 @@ class UserInput :
 
     @staticmethod
     def AskForIntInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> int : 
-        return(UserInput.AskForTypeInList(UserInput._CastInt, prompt, goodInputs, badInputMessage))
+        return(UserInput.AskForTypeInList(UserInput.CastInt, prompt, goodInputs, badInputMessage))
     
     @staticmethod
     def AskForFloatInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> float : 
-        return(UserInput.AskForTypeInList(UserInput._CastFloat, prompt, goodInputs, badInputMessage))
+        return(UserInput.AskForTypeInList(UserInput.CastFloat, prompt, goodInputs, badInputMessage))
 
     @staticmethod
     def AskForStrInList(prompt: str, goodInputs:list, badInputMessage:str|None=None) -> str : 
-        return(UserInput.AskForTypeInList(UserInput._CastStr, prompt, goodInputs, badInputMessage))
+        return(UserInput.AskForTypeInList(UserInput.CastStr, prompt, goodInputs, badInputMessage))
     
 
     # ------------ QUESTION ------------
