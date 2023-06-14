@@ -38,8 +38,8 @@ class Setup_PodDevices :
             2 : 'Show current settings.',
             3 : 'Edit save file path.',
             4 : 'Edit POD device parameters.',
-            5 : 'Connect a new POD device.',
-            6 : 'Remove POD device.',
+            5 : 'Remove POD device.',
+            6 : 'Connect a new POD device.',
             7 : 'Reconnect current POD devices.',
             8 : 'Generate initialization code.', 
             9 : 'Quit.'
@@ -150,8 +150,8 @@ class Setup_PodDevices :
             case 2 : self._ShowCurrentSettings()    # Show current settings.
             case 3 : self._EditSaveFilePath()       # Edit save file path.
             case 4 : self._EditCheckConnect()       # Edit POD device parameters.
-            case 5 : self._ConnectNewDevice()       # Connect a new POD device.
-            case 6 : pass   # Remove POD device.
+            case 5 : self._RemoveDevice()           # Remove POD device.
+            case 6 : self._ConnectNewDevice()       # Connect a new POD device.
             case 7 : self._Reconnect()              # Reconnect current POD devices.
             case 8 : self._PrintInitCode()          # Generate initialization code.
             case _ : print('\nQuitting...\n')       # Quit.
@@ -186,7 +186,17 @@ class Setup_PodDevices :
         else : 
             print('[!] '+deviceName+' is not available.')
 
-    
+
+    def _RemoveDevice(self) -> None : 
+        deviceName = self._GetChosenDeviceType('What type of POD device do you want to remove?')
+        # remove device if available 
+        if(deviceName in self._Setup_PodDevices) :
+            self._Setup_PodDevices[deviceName]._DisplayPODdeviceParameters()
+            self._Setup_PodDevices[deviceName]._RemoveDevice()
+        else : 
+            print('[!] '+deviceName+' is not available.')
+
+
     def _ConnectNewDevice(self) -> None :
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to add?')
         # add device if available 
