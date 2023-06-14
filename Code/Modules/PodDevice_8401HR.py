@@ -194,7 +194,7 @@ class POD_8401HR(POD_Basics) :
         specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transdict = { 'Command Number' : msgDict['Command Number'] } 
+            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
             if('Payload' in msgDict) : 
                 transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
             return(transdict)
