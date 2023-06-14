@@ -26,11 +26,28 @@ class POD_8401HR(POD_Basics) :
     # number of binary bytes for a Binary 5 packet 
     __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
 
+    __CHANNELMAPALL : dict = {
+        '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8407-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8407-SE31M'   : {'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SE-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        '8407-SL-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SE31M'   : {'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8406-BIO'     : {'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  },
+        '8406-2BIO'    : {'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  },
+        '8406-EEG2BIO' : {'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'},
+        '8406-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        '8406-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        '8406-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
+    }
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port: str|int, deviceName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
+    def __init__(self, port: str|int, preampName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
 
@@ -75,11 +92,6 @@ class POD_8401HR(POD_Basics) :
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
         if(list(preampGain.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        
-        # device/sensor (EEG/EMG, biosensor, or no connect) 
-        self._channelMap : dict[str,str]|None = POD_8401HR.GetChannelMapping(deviceName)
-        if(self._channelMap == None) :
-            raise Exception('[!] Device does not exits.')
 
         # second stage gain 
         for value in ssGain.values() :
@@ -148,28 +160,28 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Status']          = POD_Packets.BinaryBytesToInt( msgDict['Status'] )
         # dont add channel if no connect (NC)
         if(self._ssGain['D'] != None) :
-            msgDictTrans[self._channelMap['D']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['D'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
                                                     self._ssGain['D'], self._preampGain['D'] )
         if(self._ssGain['C'] != None) :
-            msgDictTrans[self._channelMap['C']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['C'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
                                                     self._ssGain['C'], self._preampGain['C'] )
         if(self._ssGain['B'] != None) :
-            msgDictTrans[self._channelMap['B']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['B'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
                                                     self._ssGain['B'], self._preampGain['B'] )
         if(self._ssGain['A'] != None) :
-            msgDictTrans[self._channelMap['A']] = POD_8401HR._Voltage_PrimaryChannels( 
+            msgDictTrans['A'] = POD_8401HR._Voltage_PrimaryChannels( 
                                                     POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), # | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
                                                     self._ssGain['A'], self._preampGain['A'] )
         # add analogs 
-        msgDictTrans['Analog EXT0']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']) ), 
-        msgDictTrans['Analog EXT1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']) ),
-        msgDictTrans['Analog TTL1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']) ),
-        msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) ),
-        msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) ),
-        msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) ),
+        msgDictTrans['Analog EXT0']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']) ) 
+        msgDictTrans['Analog EXT1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']) )
+        msgDictTrans['Analog TTL1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']) )
+        msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) )
+        msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) )
+        msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) )
         
         # return translated unpacked POD packet 
         return(msgDictTrans)
@@ -182,7 +194,7 @@ class POD_8401HR(POD_Basics) :
         specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transdict = { 'Command Number' : msgDict['Command Number'] } 
+            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
             if('Payload' in msgDict) : 
                 transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
             return(transdict)
@@ -198,32 +210,55 @@ class POD_8401HR(POD_Basics) :
     
 
     @staticmethod
-    def GetChannelMapping(device: str) -> dict[str,str]|None :
-        match device : 
-            case '8407-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8407-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8407-SE31M'   : return({'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SE-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
-            case '8407-SL-2BIO' : return({'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SE31M'   : return({'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8406-BIO'     : return({'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  })
-            case '8406-2BIO'    : return({'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  })
-            case '8406-EEG2BIO' : return({'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'})
-            case '8406-SE'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SL'      : return({'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'})
-            case '8406-SE3'     : return({'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case '8406-SE4'     : return({'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'})
-            case _              : return(None) # no device matched
+    def GetChannelMapForPreampDevice(preampName: str) -> dict[str,str]|None :
+        if(preampName in POD_8401HR.__CHANNELMAPALL) : 
+            return(POD_8401HR.__CHANNELMAPALL[preampName])
+        else : 
+            return(None) # no device matched
+
+
+    @staticmethod
+    def GetSupportedPreampDevices() -> list[str]: 
+        return(list(POD_8401HR.__CHANNELMAPALL.keys()))
+
+
+    @staticmethod
+    def IsPreampDeviceSupported(name: str) -> bool : 
+        return(name in POD_8401HR.__CHANNELMAPALL)    
 
 
     @staticmethod
     def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
         # use this for the argument/return for TTL-specific commands 
-        # Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins
+        # (msb) Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins (lsb) 
         return( 0 | (ext0 << 7) | (ext1 << 6) | (ttl4 << 3) | (ttl3 << 2) | (ttl2 << 1) | ttl1 )
 
+
+    @staticmethod
+    def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+        # interpret highpass (lsb)
+        if(highpass == 0.0) :   bit0 = True  # DC highpass
+        else:                   bit0 = False # AC 0.5Hz highpass 
+        # interpret gain (msb)
+        if(gain == 1) : bit1 = True  # 1x gain 
+        else:           bit1 = False # 5x gain 
+        # bit shifting to get integer bitmask
+        return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
+
+    
+    @staticmethod
+    def CalculateBiasDAC_GetVout(value: int|float) -> float :
+        # Use this method for GET/SET BIAS commands 
+        # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
+        return( (value / 32768.) * 2.048 )
+
+
+    @staticmethod
+    def CalculateBiasDAC_GetDACValue(vout: int|float) -> int :
+        # Use this method for GET/SET BIAS commands 
+        # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
+        return(int( (vout / 2.048) * 32768. ))
+    
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
@@ -274,7 +309,7 @@ class POD_8401HR(POD_Basics) :
     @staticmethod
     def _Voltage_SecondaryChannels(value: int) -> float :
         # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
-        return( (value / 4096.0) ) * 3.3 # V
+        return( (value / 4096.0) * 3.3 ) # V
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------

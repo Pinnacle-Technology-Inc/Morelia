@@ -1,5 +1,6 @@
 """
-Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file
+Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file.
+REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 """
 
 # enviornment imports
@@ -9,8 +10,10 @@ from   threading  import Thread
 from   math       import floor 
 
 # local imports
-from Setup_8206HR       import Setup_8206HR
 from Setup_PodInterface import Setup_Interface
+from Setup_8206HR       import Setup_8206HR
+from Setup_8401HR       import Setup_8401HR
+from GetUserInput       import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -26,11 +29,9 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None={'8206-HR':None}) -> None :
+    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None=None) -> None :
         # initialize class instance variables
-        self._Setup_PodDevices : dict[str,Setup_Interface] = {  # NOTE add supported devices here 
-            '8206-HR' : Setup_8206HR() 
-        }
+        self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
         self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
@@ -42,8 +43,10 @@ class Setup_PodDevices :
             7 : 'Generate initialization code.', 
             8 : 'Quit.'
         }
-        # setup 
-        self.SetupPODparameters(podParametersDict)
+        # choose devices to use 
+        params = self._GetParams(podParametersDict)
+        # setup devices  
+        self.SetupPODparameters(params)
         self.SetupSaveFile(saveFile)
 
 
@@ -80,7 +83,7 @@ class Setup_PodDevices :
     # ------------ CLASS SETUP ------------
 
 
-    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]={'8206-HR':None}) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]) -> None :
         # for each type of POD device 
         for key, value in podParametersDict.items() : 
             self._Setup_PodDevices[key].SetupPODparameters(value)
@@ -221,6 +224,71 @@ class Setup_PodDevices :
         )
 
 
+    # ------------ INIT ------------    
+
+
+    def _GetParams(self, podParametersDict: None|dict[str,None]) -> dict[str,dict|None]: 
+        # setup parameters
+        if(podParametersDict == None) : 
+            # return dictionary with POD device names as keys and None as values 
+            params = Setup_PodDevices._AskUserForDevices()
+        else:
+            params = podParametersDict
+        # validation 
+        self._Set_Setup_PodDevices(params)
+        self._CheckForValidParams(params)
+        # return valid dict 
+        return(params)
+        
+
+    @staticmethod
+    def _AskUserForDevices() :  # NOTE add all supported devices here 
+        useParams = {}
+        name = Setup_8206HR.GetDeviceName()
+        if(UserInput.AskYN('\nWill you be using any '+str(name)+' devices?')) :
+            useParams[name] = None
+        name = Setup_8401HR.GetDeviceName()
+        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+            useParams[name] = None
+        # ask again if user responds No to all 
+        if(len(useParams) == 0 ) : 
+            print('[!] No POD devices selected. Please choose at least one device.')
+            return(Setup_PodDevices._AskUserForDevices())
+        # return dictionary with POD device names as keys and None as values 
+        return(useParams)
+    
+        
+    def _CheckForValidParams(self, podParametersDict: dict[str,None|dict]) -> bool :
+        # is params a dictionary?
+        if(not isinstance(podParametersDict,dict)) : 
+            raise Exception('[!] Parameters must be dictionary type.')
+        # if so, is the dictionary empty?
+        if(len(podParametersDict) == 0) : # empty dict
+            raise Exception('[!] Parameters dictionary is empty.')
+        # for each dict entry...
+        allGood = True 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName()) # NOTE add all supported devices here 
+        for key,value in podParametersDict.items()  :
+            # is the key a POD device name?
+            if(key not in goodKeys) : # device not supported
+                raise Exception('[!] Invalid device name in paramater dictionary: '+str(key)+'.')
+            # is the value correct for the device?
+            thisGood = self._Setup_PodDevices[key].AreDeviceParamsValid(value)
+            allGood = allGood and thisGood # becomes false if any device is invalid 
+        # should return true if no exceptions raised  
+        return(allGood)
+
+
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : # NOTE add all supported devices here 
+        # use select devices        
+        name = Setup_8206HR.GetDeviceName()
+        if(name in podParametersDict ) : 
+            self._Setup_PodDevices[name] = Setup_8206HR()
+        name = Setup_8401HR.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8401HR()
+
+
     # ------------ FILE HANDLING ------------
 
 
@@ -328,7 +396,7 @@ class Setup_PodDevices :
 
 
     @staticmethod
-    def _TimeFunc(func: 'function') -> float: 
+    def _TimeFunc(func: 'function') -> float : 
         ti = time.time() # start time 
         func() # run function 
         dt = round(time.time()-ti,3) # calculate time difference
