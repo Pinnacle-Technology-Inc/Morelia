@@ -38,7 +38,7 @@ class Setup_PodDevices :
             2 : 'Show current settings.',
             3 : 'Edit save file path.',
             4 : 'Edit POD device parameters.',
-            5 : 'Remove POD device.',
+            5 : 'Remove a POD device.',
             6 : 'Connect a new POD device.',
             7 : 'Reconnect current POD devices.',
             8 : 'Generate initialization code.', 
