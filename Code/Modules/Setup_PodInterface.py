@@ -268,9 +268,23 @@ class Setup_Interface :
             self._ValidateParams()
 
 
+    def _RemoveDevice(self) -> None : 
+        # check that there is a device to delete
+        if(len(self._podParametersDict) <= 1 ) : 
+            print('[!] Cannot remove the last device.')
+            return
+        # chose device # to remove 
+        removeThis = self._SelectDeviceFromDict('Remove')
+        # remove from dicts
+        self._podParametersDict.pop(removeThis)
+        self._podDevices.pop(removeThis)
+        # print feedback
+        print('Device #'+str(removeThis)+' removed.')
+
+
     def _EditParams(self) -> None :
         # chose device # to edit
-        editThis = self._SelectPODdeviceFromDictToEdit()
+        editThis = self._SelectDeviceFromDict('Edit')
         # get all port names except for device# to be edited
         forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis][self._PORTKEY], key=self._PORTKEY)
         # edit device
@@ -278,13 +292,13 @@ class Setup_Interface :
         self._podParametersDict[editThis] = self._GetParam_onePODdevice(forbiddenNames)
 
 
-    def _SelectPODdeviceFromDictToEdit(self) -> int :
-        podKey = UserInput.AskForInt('Edit '+self._NAME+' device #')
+    def _SelectDeviceFromDict(self, action: str) -> int :
+        podKey = UserInput.AskForInt(str(action)+' '+self._NAME+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
-            print('[!] Invalid POD device number. Please try again.')
-            return(self._SelectPODdeviceFromDictToEdit())
+            print('[!] Invalid device number. Please try again.')
+            return(self._SelectDeviceFromDict())
         else:
             # return the pod device number
             return(podKey)
