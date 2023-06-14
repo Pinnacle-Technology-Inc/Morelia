@@ -73,7 +73,7 @@ class Setup_8206HR(Setup_Interface) :
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low-pass']['EEG2']    ))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low-pass']['EEG3/EMG']))   
                 failed = False
-        except : 
+        except : # except Exception as e : print('[!]', e) # use this for testing 
             # fill entry 
             self._podDevices[deviceNum] = None
 

@@ -80,11 +80,11 @@ class UserInput :
 
     @staticmethod
     def AskForIntInRange(prompt: str, minimum: int, maximum: int, thisIs:str='Input', unit:str='') -> int :
-        UserInput.AskForTypeInRange(UserInput.CastInt, prompt,minimum,maximum,thisIs,unit)
+        return(UserInput.AskForTypeInRange(UserInput.CastInt, prompt,minimum,maximum,thisIs,unit))
 
     @staticmethod
     def AskForFloatInRange(prompt: str, minimum: float, maximum: float, thisIs:str='Input', unit:str='') -> int :
-        UserInput.AskForTypeInRange(UserInput.CastFloat, prompt,minimum,maximum,thisIs,unit)
+        return(UserInput.AskForTypeInRange(UserInput.CastFloat, prompt,minimum,maximum,thisIs,unit))
 
     # ------------ OPTION IN LIST ------------
 
