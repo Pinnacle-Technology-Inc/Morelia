@@ -45,8 +45,6 @@ class POD_Basics :
     def __del__(self) -> None :
         # decrement number of POD device counter
         POD_Basics.__numPod -= 1
-        # close port
-        self._port.CloseSerialPort()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
