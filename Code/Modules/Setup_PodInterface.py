@@ -324,6 +324,8 @@ class Setup_Interface :
         # except:
         #     return(False)
         # check that read matches ping write
+        print("w:", w)
+        print("r:", r)
         if(w==r):   
             return(True)
         else:       

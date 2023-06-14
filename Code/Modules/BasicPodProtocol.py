@@ -301,6 +301,7 @@ class POD_Basics :
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return final packet
+        print("read packet",packet)
         return(packet)
 
 

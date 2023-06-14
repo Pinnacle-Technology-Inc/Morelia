@@ -56,7 +56,7 @@ class POD_8206HR(POD_Basics) :
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
 
-
+        
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
 
