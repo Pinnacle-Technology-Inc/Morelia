@@ -183,9 +183,11 @@ class Setup_PodDevices :
     def _EditCheckConnect(self) -> None :
         for podType in self._Setup_PodDevices.values() :
             podType._DisplayPODdeviceParameters()
-            podType._EditParams()
-            podType._ValidateParams()
-            podType._ConnectAllPODdevices()
+            yesEdit = UserInput.AskYN('Edit an '+podType.GetDeviceName()+' device?')
+            if(yesEdit) : 
+                podType._EditParams()
+                podType._ValidateParams()
+                podType._ConnectAllPODdevices()
         
 
     def _ConnectNewDevice(self) -> None :
@@ -210,7 +212,8 @@ class Setup_PodDevices :
         areAllGood = True
         for podType in self._Setup_PodDevices.values() :
             # areAllGood is false if any device fails
-            areAllGood = areAllGood and podType._ConnectAllPODdevices()
+            thisGood = podType._ConnectAllPODdevices()
+            areAllGood = areAllGood and thisGood
         return(areAllGood)
 
 

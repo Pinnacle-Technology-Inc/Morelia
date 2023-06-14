@@ -170,7 +170,7 @@ class Setup_Interface :
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
-        print('\nConnecting POD devices...')
+        print('\nConnecting '+self._NAME+' devices...')
         # setup each POD device
         areAllGood = True
         for key,val in self._podParametersDict.items():

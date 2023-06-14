@@ -79,9 +79,9 @@ class Setup_8206HR(Setup_Interface) :
 
         # check if connection failed 
         if(failed) :
-            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
         else :
-            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
         return(not failed)
 
