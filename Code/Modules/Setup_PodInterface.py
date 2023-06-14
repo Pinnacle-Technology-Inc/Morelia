@@ -170,7 +170,7 @@ class Setup_Interface :
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
-        print('\nConnecting POD devices...')
+        print('\nConnecting '+self._NAME+' devices...')
         # setup each POD device
         areAllGood = True
         for key,val in self._podParametersDict.items():
@@ -389,7 +389,7 @@ class Setup_Interface :
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
-                print('Connection issue with POD device #'+str(key)+'.')
+                print('[!] Connection issue with '+self._NAME+' device #'+str(key)+'.')
                 # flag that a connection failed
                 allGood = False 
         # return True when all connections are successful, false otherwise

@@ -88,8 +88,8 @@ class Setup_8401HR(Setup_Interface) :
             # fill entry 
             self._podDevices[deviceNum] = None
         # check if connection failed 
-        if(failed) : print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-        else : print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+        if(failed) : print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
+        else : print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         # return True when connection successful, false otherwise
         return(not failed)
     
