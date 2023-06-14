@@ -8,7 +8,7 @@
 
 The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
 
-The [Setup_PodDevices](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_PodDevices.py) Python module is designed to be a simple and user-friendly method to setup and stream data from 8206-HR and 8401-HR Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
+The [Setup_PodDevices](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_PodDevices-Usage.pdf) Python module is designed to be a simple and user-friendly method to setup and stream data from 8206-HR and 8401-HR Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
 In the future, we will offer support to other Pinnacle devices. 
 
