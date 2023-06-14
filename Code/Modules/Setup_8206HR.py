@@ -258,7 +258,7 @@ class Setup_8206HR(Setup_Interface) :
     def _StopStream(self) -> None :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
-            pod.WritePacket(cmd='STREAM', payload=0)
+            if(pod != None) : pod.WritePacket(cmd='STREAM', payload=0)
             
 
     # ------------ VALIDATION ------------
