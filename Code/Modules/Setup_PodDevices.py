@@ -39,10 +39,11 @@ class Setup_PodDevices :
             2 : 'Show current settings.',
             3 : 'Edit save file path.',
             4 : 'Edit POD device parameters.',
-            5 : 'Connect a new POD device.',
-            6 : 'Reconnect current POD devices.',
-            7 : 'Generate initialization code.', 
-            8 : 'Quit.'
+            5 : 'Remove a POD device.',
+            6 : 'Connect a new POD device.',
+            7 : 'Reconnect current POD devices.',
+            8 : 'Generate initialization code.', 
+            9 : 'Quit.'
         }
         # choose devices to use 
         params = self._GetParams(podParametersDict)
@@ -145,22 +146,16 @@ class Setup_PodDevices :
 
 
     def _DoOption(self, choice: int) -> None : 
-        # Start Streaming.
-        if  (choice == 1): self._Stream()
-        # Show current settings.
-        elif(choice == 2): self._ShowCurrentSettings()
-        # Edit save file path.
-        elif(choice == 3): self._EditSaveFilePath()
-        # Edit POD device parameters.
-        elif(choice == 4): self._EditCheckConnect()
-        # Connect a new POD device.
-        elif(choice == 5): self._ConnectNewDevice()
-        # Reconnect current POD devices.
-        elif(choice == 6): self._Reconnect()
-        # Generate initialization code.
-        elif(choice == 7): self._PrintInitCode()
-        # Quit.
-        else:              print('\nQuitting...\n')
+        match choice : 
+            case 1 : self._Stream()                 # Start Streaming.
+            case 2 : self._ShowCurrentSettings()    # Show current settings.
+            case 3 : self._EditSaveFilePath()       # Edit save file path.
+            case 4 : self._EditCheckConnect()       # Edit POD device parameters.
+            case 5 : self._RemoveDevice()           # Remove POD device.
+            case 6 : self._ConnectNewDevice()       # Connect a new POD device.
+            case 7 : self._Reconnect()              # Reconnect current POD devices.
+            case 8 : self._PrintInitCode()          # Generate initialization code.
+            case _ : print('\nQuitting...\n')       # Quit.
 
 
     def _Stream(self) -> float :
@@ -182,26 +177,31 @@ class Setup_PodDevices :
 
 
     def _EditCheckConnect(self) -> None :
-        for podType in self._Setup_PodDevices.values() :
-            podType._DisplayPODdeviceParameters()
-            yesEdit = UserInput.AskYN('Edit an '+podType.GetDeviceName()+' device?')
-            if(yesEdit) : 
-                podType._EditParams()
-                podType._ValidateParams()
-                podType._ConnectAllPODdevices()
-        
+        deviceName = self._GetChosenDeviceType('What type of POD device do you want to edit?')
+        # edit device if available 
+        if(deviceName in self._Setup_PodDevices) :
+            self._Setup_PodDevices[deviceName]._DisplayPODdeviceParameters()
+            self._Setup_PodDevices[deviceName]._EditParams()
+            self._Setup_PodDevices[deviceName]._ValidateParams()
+            self._Setup_PodDevices[deviceName]._ConnectAllPODdevices()
+        else : 
+            print('[!] '+deviceName+' is not available.')
+
+
+    def _RemoveDevice(self) -> None : 
+        deviceName = self._GetChosenDeviceType('What type of POD device do you want to remove?')
+        # remove device if available 
+        if(deviceName in self._Setup_PodDevices) :
+            self._Setup_PodDevices[deviceName]._DisplayPODdeviceParameters()
+            self._Setup_PodDevices[deviceName]._RemoveDevice()
+        else : 
+            print('[!] '+deviceName+' is not available.')
+
 
     def _ConnectNewDevice(self) -> None :
-        # get available devices 
-        devices = list(self._Setup_PodDevices.keys())
-        # ask user for choice if there are more than 1 device type
-        if(len(devices) == 1 ) : 
-            deviceName = devices[0]
-        else:
-            print('\nDevice types: '+str(devices))
-            deviceName = input('What type of POD device do you want to add?: ')
+        deviceName = self._GetChosenDeviceType('What type of POD device do you want to add?')
         # add device if available 
-        if(deviceName in devices) : 
+        if(deviceName in self._Setup_PodDevices) : 
             self._Setup_PodDevices[deviceName]._AddPODdevice()
             self._Setup_PodDevices[deviceName]._ValidateParams()
             self._Setup_PodDevices[deviceName]._ConnectAllPODdevices()
@@ -413,3 +413,15 @@ class Setup_PodDevices :
         func() # run function 
         dt = round(time.time()-ti,3) # calculate time difference
         return(dt)
+    
+
+    def _GetChosenDeviceType(self, question: str) -> str : 
+        # get available devices 
+        devices = list(self._Setup_PodDevices.keys())
+        # ask user for choice if there are more than 1 device type
+        if(len(devices) == 1 ) : 
+            deviceName = devices[0]
+        else:
+            print('\nPOD devices: '+', '.join(devices))
+            deviceName = input(question+': ')
+        return(deviceName)
