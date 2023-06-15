@@ -44,7 +44,7 @@ The Setup_PodDevices Python module usage description: [here](https://github.com/
 | Module                             | Description                                                   |
 |------------------------------------|---------------------------------------------------------------|
 | [Using_SetupPod_WithDescription.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_SetupPod_WithDescription.py)               | A detailed example that demonstrates how to run Setup_PodDevices. |
-| [Using_SetupPod_BasicTemplate.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_SetupPod_BasicTemplate.py) | A simple example template that runs Setup_PodDevices.             |
+| [Using_SetupPod_BasicTemplate.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Examples/Using_SetupPod_BasicTemplate.py) | A simple example template that runs Setup_PodDevices. |
 
 
 ## Modules 
@@ -57,6 +57,7 @@ Detailed instructions of all Python modules and methods: [here](https://github.c
 | [GetUserInput.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/GetUserInput.py) | UserInput | Contains several methods for getting user input for POD device setup. |
 | [PodCommands.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodCommands.py)         | POD_Commands | Manages a dictionary containing available commands for a POD device. |
 | [PodDevice_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodDevice_8206HR.py)    | POD_8206HR   | Handles communication using an 8206-HR POD device. |
+| [PodDevice_8401HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodDevice_8401HR.py) | POD_8401HR | Handles communication using an 8401-HR POD device. |
 | [PodPacketHandling.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/PodPacketHandling.py)   | POD_Packets  | Collection of methods for creating and interpreting POD packets. |
 | [SerialCommunication.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/SerialCommunication.py) | COM_io       | Handle serial communication (read/write) using COM ports. |
 | [Setup_8206HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/Modules/Setup_8206HR.py) | Setup_8206HR | Provides the setup functions for an 8206-HR POD device. |
