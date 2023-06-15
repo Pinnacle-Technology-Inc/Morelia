@@ -13,6 +13,7 @@ from   math       import floor
 from Setup_PodInterface import Setup_Interface
 from Setup_8206HR       import Setup_8206HR
 from Setup_8401HR       import Setup_8401HR
+from Setup_8480HR       import Setup_8480HR
 from GetUserInput       import UserInput
 
 # authorship
@@ -253,6 +254,9 @@ class Setup_PodDevices :
         name = Setup_8401HR.GetDeviceName()
         if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
             useParams[name] = None
+        name = Setup_8480HR.GetDeviceName()
+        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
+            useParams[name] = None
         # ask again if user responds No to all 
         if(len(useParams) == 0 ) : 
             print('[!] No POD devices selected. Please choose at least one device.')
@@ -270,7 +274,7 @@ class Setup_PodDevices :
             raise Exception('[!] Parameters dictionary is empty.')
         # for each dict entry...
         allGood = True 
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName()) # NOTE add all supported devices here 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8480HR.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
             # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
@@ -290,6 +294,11 @@ class Setup_PodDevices :
         name = Setup_8401HR.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8401HR()
+        name = Setup_8480HR.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8480HR()
+        
+        
 
 
     # ------------ FILE HANDLING ------------

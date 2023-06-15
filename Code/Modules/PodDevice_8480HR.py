@@ -39,7 +39,7 @@ class POD_8480HR(POD_Basics) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         
         # add device specific commands
-        self._commands.AddCommand( 10, 'STRATE',                (0,),                               (0,),                                False  ) # Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes
+        self._commands.AddCommand(  10, 'STRATE',               (0,),                               (0,),                                False  ) # Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes
         self._commands.AddCommand( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  ) # Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes
         self._commands.AddCommand( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  ) # Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. 
         self._commands.AddCommand( 102,	'SET STIMULUS',	        (U8, U16, U16, U16, U16, U32, U8),	(0,),                                False  ) # Sets the stimulus configuration on the selected channel.  See format below. 
@@ -60,9 +60,14 @@ class POD_8480HR(POD_Basics) :
         self._commands.AddCommand( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ) # Indicates the end of a stimulus. Returns U8 channel
         self._commands.AddCommand( 135,	'EVENT LOW CURRENT',	(0,),	                            (U8,),                               False  ) # Indicates a low current status on one or more of the LED channels.  U8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1
 
-
-        # self._preampGain : int = preampGain
-        # preampGain = 200 
-
+    @staticmethod
+    def StimulusConfigBits(optoElec:bool, monoBiphasic:bool, Simul:bool) -> int :
+        return (0 | (optoElec << 2) | (monoBiphasic << 1) | (Simul))
         
-  
+    # TODO make a method to build a payload for SET STIMULUS given each of the bits as parameters. 
+    # @staticmethod
+    # def StimulusCommandFormat(channel,period,width,repeat,config: int) -> tuple(int) : 
+
+    # TODO make a method to build the config flags 
+    # @staticmethod
+    # def StimulusConfigBits(optoElec, monoBiphasic, Simul) -> int : 

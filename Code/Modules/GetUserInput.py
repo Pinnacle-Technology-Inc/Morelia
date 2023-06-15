@@ -45,6 +45,10 @@ class UserInput :
     @staticmethod
     def AskForInt(prompt: str) -> int :
         return(UserInput.AskForType(typecast=UserInput.CastInt, prompt=prompt))
+    
+    @staticmethod
+    def AskForBool(prompt: bool) -> bool :
+        return(UserInput.AskForType(typecast=UserInput.CastBool, prompt=prompt))
 
 
     # ------------ QUESTION ------------
@@ -132,3 +136,7 @@ class UserInput :
     @staticmethod
     def CastStr(value) -> str :
         return(str(value))
+    
+    @staticmethod
+    def CastBool(value) -> bool :
+        return(bool(value))

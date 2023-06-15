@@ -19,6 +19,7 @@ from   time        import gmtime, strftime
 # local imports
 from Setup_PodInterface  import Setup_Interface
 from PodDevice_8480HR    import POD_8480HR
+from GetUserInput       import UserInput
 
 # authorship
 __author__      = "Sree Kondi"
@@ -28,6 +29,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Sree Kondi"
 __email__       = "sales@pinnaclet.com"
 
+# TODO replace user inputs with methods in GetUserInput 
 
 class Setup_8480HR(Setup_Interface) : 
 
@@ -47,11 +49,17 @@ class Setup_8480HR(Setup_Interface) :
     _NAME : str = '8480-HR'
 
 
-    # ============ PRIVATE METHODS ============      ========================================================================================================================
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+    @staticmethod
+    def GetDeviceName() -> str : 
+        # returns the name of the POD device 
+        return(Setup_8480HR._NAME)
 
-
+    # ============ PRIVATE METHODS ============ 
+    
+    
+    
     # ------------ DEVICE CONNECTION ------------
-
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
         failed = True 
@@ -66,11 +74,7 @@ class Setup_8480HR(Setup_Interface) :
         print("testingafter")
         if(self._TestDeviceConnection(self._podDevices[deviceNum])): 
             # write setup parameters
-           
-            self._podDevices[deviceNum].WriteRead('SET STIMULUS', (0, deviceParams['stimulus']['period_ms'],['period_us'],['width_ms'],['width_us'],['repeat'],['config']  ))
-           
-            #self._podDevices[deviceNum].WriteRead('SET STIMULUS', (1, deviceParams['period_ms'],['period_us'],['width_ms'],['width_us'],['repeat'],['config']  ))
-
+            self._podDevices[deviceNum].WriteRead('SET STIMULUS', (deviceParams['stimulus']['channel'], *deviceParams['stimulus']['period_ms'], *deviceParams['stimulus']['width_ms'], deviceParams['stimulus']['repeat'], deviceParams['stimulus']['config']))
             self._podDevices[deviceNum].WriteRead('RUN STIMULUS', (0))
 
             #self._podDevices[deviceNum].WriteRead('SET STIMULUS', (0, deviceParams['Stimulus']['Ch0']           ))
@@ -79,9 +83,6 @@ class Setup_8480HR(Setup_Interface) :
             # self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0, deviceParams['Estim Current']['EEG1']))   
             # self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (1, deviceParams['Estim Current']['EEG2']))   
             failed = False
-            # except : 
-                # fill entry 
-                # self._podDevices[deviceNum] = None
         
 
         # check if connection failed 
@@ -98,80 +99,52 @@ class Setup_8480HR(Setup_Interface) :
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
-            self._PORTKEY         :   Setup_8480HR._ChoosePort(forbiddenNames),
-            'Stimulus'            :   Setup_8480HR._ChooseStimulus(),
+            self._PORTKEY        : Setup_8480HR._ChoosePort(forbiddenNames),
+            'stimulus' : {
+                    'channel'    : Setup_8480HR._ChooseStimulusTypes('channel'),
+                    'period_ms'  : Setup_8480HR._ChooseStimulusTypes('period_ms'),
+                    'width_ms'   : Setup_8480HR._ChooseStimulusTypes('width_ms'),
+                    'repeat'     : Setup_8480HR._ChooseStimulusTypes('repeat'),
+                    'config'     : Setup_8480HR._ChooseStimulusTypes('config')
+                }
             # 'Led Current'       :   Setup_8480HR._ChooseLedCurrent(),
             # 'Estim Current'     :   Setup_8480HR._ChooseEstimCurrent(),
             # 'Preamp Type'       :   Setup_8480HR._ChoosePreampType(),
             # 'Sync Config'       :   Setup_8480HR._ChooseSyncConfig()
         })
 
+    
+
+
         
-    @staticmethod
-    def _ChooseStimulus() -> dict[str,int] :
-        # get ledcurrent for all EEG
-        return({
-            # 'ch0'         : Setup_8480HR._ChooseStimulusTypes('EEG1'),
-            #'ch1'         : Setup_8480HR._ChooseStimulusTypes('ch1'),
-            # 'period_ms'     : Setup_8480HR._ChooseStimulusTypes('period_ms'),
-            # 'period_us'     : Setup_8480HR._ChooseStimulusTypes('period_us'),
-            # 'width_ms'      : Setup_8480HR._ChooseStimulusTypes('width_ms'),
-            # 'width_us'      : Setup_8480HR._ChooseStimulusTypes('width_us'),
-            # 'repeat'        : Setup_8480HR._ChooseStimulusTypes('repeat'),
-            'config'        : Setup_8480HR._ChooseStimulusTypes('config'),
-        })
-
-
-
     @staticmethod
     def _ChooseStimulusTypes(eeg: str) -> int :
         try : 
-            # get ledcurrent from user 
-            #stimulus = int(input('Set Stimulus '+str(eeg)+': '))
-            #if (eeg) == 'period_ms':  
-            
+            if(eeg) == 'channel':
+                user_channel = int(input("Enter a value to choose channel (0 or 1): "))
+                return(user_channel)        
             if (eeg) == 'period_ms':
-                user_period = float(input("Enter a Stimulus period value(milliseconds): "))
+                user_period = float(input("Enter a Stimulus period value (ms): "))
                 period = str(user_period).split(".")
                 period_ms = int(period[0])
                 period_us = int(period[1])
-                print(period_ms)
-                return(period_ms)
-                
-            if (eeg) == 'period_us':
-                user_period = float(input("Enter a Stimulus period value(milliseconds): "))
-                period = str(user_period).split(".")
-                period_ms = int(period[0])
-                period_us = int(period[1])
-                print(period_us)
-                return(period_us)
+                return(period_ms, period_us)
             if(eeg) == 'width_ms':
-                user_width = float(input("Enter a Stimulus width value(milliseconds): "))
+                user_width = float(input("Enter a Stimulus width value (ms): "))
                 width = str(user_width).split(".")
                 width_ms = int(width[0])
                 width_us = int(width[1])
-                print(width_ms)
-                return(width_ms)
-            if(eeg) == 'width_us':
-                user_width = float(input("Enter a Stimulus width value(milliseconds): "))
-                width = str(user_width).split(".")
-                width_ms = int(width[0])
-                width_us = int(width[1])
-                print(width_us)
-                return(width_us)
+                return(width_ms, width_us)
             if(eeg) == 'repeat':
                 rep = int(input("Enter a value for Stimulus Repeat Count: "))
                 return(rep)
             if(eeg) == 'config':
-                list = []
-                bit_2 = int(input("Enter a value(0 for standard, 1 for simultaneous):  "))
-                bit_1 = int(input("Enter a value(0 for Monophasic, 1 for Biphasic): "))
-                bit_0 = int(input("Enter a value(0 for Electrical stimulus, 1 for Optical Stimulus): "))
+                bit_0 = bool(int(input("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus): ")))
+                bit_1 = bool(int(input("Enter a value (0 for Monophasic, 1 for Biphasic): ")))
+                bit_2 = bool(int(input("Enter a value (0 for standard, 1 for simultaneous):  ")))
+                value = POD_8480HR.StimulusConfigBits(bit_2, bit_1, bit_0)
+                return(value)
                 
-                
-
-
-
         except : 
             # if bad input, start over 
             print('[!] Please enter a valid number.')
@@ -186,7 +159,6 @@ class Setup_8480HR(Setup_Interface) :
         # get ledcurrent for all EEG
         return({
             'CH0'      : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
-            #'CH1'      : Setup_8480HR._ChooseLedCurrentforChannel('CH1'),
         })
     
 
