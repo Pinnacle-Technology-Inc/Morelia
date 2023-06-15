@@ -4,13 +4,17 @@ Setup_Interface provides the basic interface of required methods for subclasses 
 
 # enviornment imports
 import os
+from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
 from   io         import IOBase
+from   datetime   import datetime
+from   time       import gmtime, strftime
 
 # local imports
 from SerialCommunication    import COM_io
 from BasicPodProtocol       import POD_Basics
+from GetUserInput           import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -25,18 +29,25 @@ class Setup_Interface :
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
+
     _NAME    : str = 'GENERIC'  # overwrite this in child classes 
     _PORTKEY : str = 'Port'     # dictionary key for the device's port name 
 
+
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
+    
+    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        # returns true if the parameters for one POD device is valid, raise Exception otherwise
+        pass
+    
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
         # Prompts the user to input all device setup parameters
         # should return a dictionary of the device parameters
         pass
 
-    def _DisplayPODdeviceParameters(self) -> None : 
-        # display all the pod device parameters in a table 
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        # get a table that has the parameters for all POD devices 
         pass
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
@@ -54,8 +65,7 @@ class Setup_Interface :
         # tell devices to stop streaming 
         pass
 
-    @staticmethod
-    def _OpenSaveFile_TXT(fname: str) -> IOBase : 
+    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
         # open a text file and write column names 
         # return opened file object
         pass
@@ -64,6 +74,7 @@ class Setup_Interface :
         # create an EDF file and write all channel information
         # returns the EdfWriter file object 
         pass
+
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -102,6 +113,36 @@ class Setup_Interface :
         self._ConnectAllPODdevices()
 
 
+    @staticmethod
+    def GetDeviceName() -> str : 
+        # returns the name of the POD device 
+        return(Setup_Interface._NAME)
+
+
+    # ------------ VALIDATION ------------
+    
+
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
+        if(paramDict == None) : 
+            return(True)
+        # is params a dict?
+        if(not isinstance(paramDict, dict)) :
+            raise Exception('[!] Parameters must be contained in a dictionary.')
+        # are keys int and value dict
+        allGood = True 
+        for key,value in paramDict.items() : 
+            if(not isinstance(key,int)) : 
+                raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
+            if(not isinstance(value,dict)) : 
+                raise Exception('[!] Device parameters must be dictionary type for '+str(self._NAME)+'.')
+            if(len(value)==0) : 
+                raise Exception('[!] Device parameters dictionary is empty for '+str(self._NAME)+'.')
+            # check values 
+            allGood = allGood and self._IsOneDeviceValid(value)
+        # no exceptions raised
+        return(allGood)
+    
+
     # ============ PRIVATE METHODS ============      ========================================================================================================================
 
 
@@ -129,7 +170,7 @@ class Setup_Interface :
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
-        print('\nConnecting POD devices...')
+        print('\nConnecting '+self._NAME+' devices...')
         # setup each POD device
         areAllGood = True
         for key,val in self._podParametersDict.items():
@@ -176,7 +217,7 @@ class Setup_Interface :
     def _ChoosePort(forbidden:list[str]=[]) -> str : 
         # get ports
         portList = Setup_Interface._GetPortsList(forbidden)
-        print('Available COM Ports:', portList)
+        print('Available COM Ports: '+', '.join(portList))
         # request port from user
         choice = input('Select port: COM')
         # choice cannot be an empty string
@@ -220,15 +261,30 @@ class Setup_Interface :
         # display all pod devices and parameters
         self._DisplayPODdeviceParameters()
         # ask if params are good or not
-        validParams = Setup_Interface._AskYN(question='Are the '+self._NAME+' device parameters correct?')
+        validParams = UserInput.AskYN(question='Are the '+self._NAME+' device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
             self._ValidateParams()
 
+
+    def _RemoveDevice(self) -> None : 
+        # check that there is a device to delete
+        if(len(self._podParametersDict) <= 1 ) : 
+            print('[!] Cannot remove the last device.')
+            return
+        # chose device # to remove 
+        removeThis = self._SelectDeviceFromDict('Remove')
+        # remove from dicts
+        self._podParametersDict.pop(removeThis)
+        self._podDevices.pop(removeThis)
+        # print feedback
+        print('Device #'+str(removeThis)+' removed.')
+
+
     def _EditParams(self) -> None :
         # chose device # to edit
-        editThis = self._SelectPODdeviceFromDictToEdit()
+        editThis = self._SelectDeviceFromDict('Edit')
         # get all port names except for device# to be edited
         forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis][self._PORTKEY], key=self._PORTKEY)
         # edit device
@@ -236,20 +292,13 @@ class Setup_Interface :
         self._podParametersDict[editThis] = self._GetParam_onePODdevice(forbiddenNames)
 
 
-    def _SelectPODdeviceFromDictToEdit(self) -> int :
-        try:
-            # get pod device number from user 
-            podKey = int(input('Edit '+self._NAME+' device #: '))
-        except : 
-            # print error and start over
-            print('[!] Please enter an integer number.')
-            return(self._SelectPODdeviceFromDictToEdit())
-
+    def _SelectDeviceFromDict(self, action: str) -> int :
+        podKey = UserInput.AskForInt(str(action)+' '+self._NAME+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
-            print('[!] Invalid POD device number. Please try again.')
-            return(self._SelectPODdeviceFromDictToEdit())
+            print('[!] Invalid device number. Please try again.')
+            return(self._SelectDeviceFromDict())
         else:
             # return the pod device number
             return(podKey)
@@ -271,6 +320,16 @@ class Setup_Interface :
     def _PrintDeviceNumber(num: int) -> None :
         print('\n-- Device #'+str(num)+' --\n')
         
+    
+    def _DisplayPODdeviceParameters(self) -> None : 
+        # get table
+        tab : Texttable|None = self._GetPODdeviceParameterTable()
+        if(tab != None) : 
+            # print title 
+            print('\nParameters for all '+str(self._NAME)+' Devices:')
+            # show table 
+            print(tab.draw())
+
 
     # ------------ FILE HANDLING ------------
 
@@ -293,6 +352,19 @@ class Setup_Interface :
         fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
         return(fname)
 
+
+    @staticmethod
+    def _GetTimeHeader_forTXT() -> str : 
+        # get time 
+        now = datetime.now()
+        current_time = str(now.time().strftime('%H:%M:%S'))
+        # build string 
+        header  = (  '#Today\'s date,'+ now.strftime("%d-%B-%Y")) # shows date
+        header += ('\n#Time now,'+ current_time) # shows time
+        header += ('\n#GMT,'+ strftime("%I:%M:%S %p %Z", gmtime()) + '\n') # shows GMT time
+        return(header)
+    
+
     # ------------ STREAM ------------ 
 
 
@@ -302,8 +374,8 @@ class Setup_Interface :
             raise Exception('Could not stream from '+self._NAME+'.')
         # start streaming from all devices 
         else:
-            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys
-    
+            return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys  
+
 
     # ------------ HELPER ------------
 
@@ -331,20 +403,15 @@ class Setup_Interface :
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
-                print('Connection issue with POD device #'+str(key)+'.')
+                print('[!] Connection issue with '+self._NAME+' device #'+str(key)+'.')
                 # flag that a connection failed
                 allGood = False 
         # return True when all connections are successful, false otherwise
         return(allGood)
     
-    
+
     @staticmethod
-    def _AskYN(question: str) -> bool : 
-        response = input(str(question)+' (y/n): ').upper() 
-        if(response=='Y' or response=='YES'):
-            return(True)
-        elif(response=='N' or response=='NO'):
-            return(False)
-        else:
-            print('[!] Please enter \'y\' or \'n\'.')
-            return(Setup_Interface._AskYN(question))
+    def _uV(voltage: float|int) :
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    

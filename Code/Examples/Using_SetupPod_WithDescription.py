@@ -53,8 +53,8 @@ elif(runExample == '2'):
     saveFile = r'C:\Users\tkelly\Desktop\TEST\test.csv'
     # example dictionary with 8206HR POD device setup parameters
     podParametersDict = { '8206-HR' : {
-        1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
-        2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low Pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}}
+        1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low-pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
+        2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low-pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}}
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """

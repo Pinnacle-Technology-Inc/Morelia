@@ -34,9 +34,28 @@ class POD_Packets() :
 
 
     @staticmethod
-    def IntToAsciiBytes(value: int, numBytes: int) -> bytes : 
+    def TwosComplement(val: int, nbits: int) -> int :
+        # value is negative 
+        if (val < 0) :
+            val = (1 << nbits) + val
+        # value is positive 
+        else:
+            # If sign bit is set.  compute negative value.
+            if ( (val & (1 << (nbits - 1))) != 0 ):
+                val = val - (1 << nbits)
+        return val
+
+
+    @staticmethod
+    def IntToAsciiBytes(value: int, numChars: int) -> bytes : 
+        # get 2C if signed 
+        if(value < 0) : 
+            val = POD_Packets.TwosComplement(value, numChars*4)
+        else : 
+            val = value
+
         # convert number into a hex string and remove the '0x' prefix
-        num_hexStr = hex(value).replace('0x','')
+        num_hexStr = hex(val).replace('0x','')
 
         # split into list to access each digit, and make each hex character digit uppercase 
         num_hexStr_list = [x.upper() for x in num_hexStr]
@@ -54,17 +73,17 @@ class POD_Packets() :
             blist.append(bytes([ascii]))
         
         # if the number of bytes is smaller that requested, add zeros to beginning of the bytes to get desired size
-        if (len(blist) < numBytes): 
+        if (len(blist) < numChars): 
             # ascii code for zero
             zero = bytes([ord('0')])
             # create list of zeros with size (NumberOfBytesWanted - LengthOfCurrentBytes))
-            pre = [zero] * (numBytes - len(blist))
+            pre = [zero] * (numChars - len(blist))
             # concatenate zeros list to remaining bytes
             post = pre + blist
         # if the number of bytes is greater that requested, keep the lowest bytes, remove the overflow 
-        elif (len(blist) > numBytes) : 
+        elif (len(blist) > numChars) : 
             # get minimum index of bytes to keep
-            min = len(blist) - numBytes
+            min = len(blist) - numChars
             # get indeces from min to end of list 
             post = blist[min:]
         # if the number of bytes is equal to that requested, keep the all the bytes, change nothing
@@ -73,7 +92,7 @@ class POD_Packets() :
 
         # initialize message to first byte in 'post'
         msg = post[0]
-        for i in range(numBytes-1) : 
+        for i in range(numChars-1) : 
             # concatenate next byte to end of the message 
             msg = msg + post[i+1]
 
@@ -82,11 +101,17 @@ class POD_Packets() :
 
 
     @staticmethod
-    def AsciiBytesToInt(msg_b: bytes) -> int :
+    def AsciiBytesToInt(msg_b: bytes, signed:bool=False) -> int :
         # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
         msg_str = str(msg_b) [2 : len(str(msg_b))-1]
         # convert string into base 16 int (reads string as hex number, returns decimal int)
         msg_int = int(msg_str,16)
+        # get 2C if signed and msb is '1' 
+        if(signed) : 
+            nbits = len(msg_str) * 4 
+            msb = msg_int >> (nbits-1) # shift out all bits except msb
+            if(msb != 0) : 
+                msg_int = POD_Packets.TwosComplement(msg_int,nbits)
         # return int
         return(msg_int)
     
