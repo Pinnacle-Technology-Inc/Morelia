@@ -29,10 +29,12 @@ class Setup_8206HR(Setup_Interface) :
     Setup_8206HR provides the setup functions for an 8206-HR POD device.
 
     Attributes:
-        _PARAMKEYS (list[str]): class-level list containing the device parameter dict keys.
-        _LOWPASSKEYS (list[str]): class-level list containing the keys of the 'Low-pass' parameter dict value.
-        _PHYSICAL_BOUND_uV (int): class-level integer representing the max/-min physical value in uV. Used for EDF files. 
-        _NAME (str): class-level string containing the POD device name.
+        _PARAMKEYS (list[str]): Class-level list containing the device parameter dict keys.
+        _LOWPASSKEYS (list[str]): Class-level list containing the keys of the 'Low-pass' parameter \
+            dict value.
+        _PHYSICAL_BOUND_uV (int): Class-level integer representing the max/-min physical value in uV. \
+            Used for EDF files. 
+        _NAME (str): Class-level string containing the POD device name.
     """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
@@ -54,7 +56,7 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def GetDeviceName() -> str : 
-        """returns the name of the POD device.
+        """Returns the name of the POD device.
 
         Returns:
             str: String of _NAME.
@@ -170,7 +172,8 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        """Opens a text file and writes the column names. Writes the current date/time at the top of the txt file.
+        """Opens a text file and writes the column names. Writes the current date/time at the top of \
+        the txt file.
 
         Args:
             fname (str): String filename.
@@ -224,7 +227,7 @@ class Setup_8206HR(Setup_Interface) :
         Args:
             file (IOBase): opened write file.
             data (list[np.ndarray]): List of 3 items, one for each channel.
-            t (np.ndarray): list with the time stamps (in seconds)
+            t (np.ndarray): list with the time stamps (in seconds).
         """
         for i in range(len(t)) : 
             line = [t[i], data[0][i], data[1][i], data[2][i] ]
@@ -278,8 +281,9 @@ class Setup_8206HR(Setup_Interface) :
     
     
     def _StreamUntilStop(self, pod: POD_8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
-        """Streams data from a POD device and saves data to file. Stops looking when a stop stream command is read. 
-        Calculates average time difference across multiple packets to collect a continuous time series data. 
+        """Streams data from a POD device and saves data to file. Stops looking when a stop stream \
+        command is read. Calculates average time difference across multiple packets to collect a \
+        continuous time series data. 
 
         Args:
             pod (POD_8206HR): POD device to read from.
@@ -348,7 +352,7 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """raises an exception if the parameters dictionary is incorrectly formatted.
+        """Raises an exception if the parameters dictionary is incorrectly formatted.
 
         Args:
             paramDict (dict): Dictionary of the parameters for one device.
