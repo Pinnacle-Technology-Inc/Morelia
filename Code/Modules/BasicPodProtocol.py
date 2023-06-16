@@ -13,14 +13,18 @@ __email__       = "sales@pinnaclet.com"
 
 class POD_Basics : 
     """
-    POD_Basics handles basic communication with a generic POD device, including reading and writing packets and packet interpretation.
+    POD_Basics handles basic communication with a generic POD device, including reading and writing 
+    packets and packet interpretation.
 
     Attributes: 
-        __numPod (int): class-level integer counting the number of POD_Basics instances
-        __MINSTANDARDLENGTH (int): class-level integer representing the minimum length of a standard POD command packet.
-        __MINBINARYLENGTH (int): class-level integer representing the minimum length of a binary POD command packet. 
-        _port (COM_io): instance-level COM_io object, which handles the COM port 
-        _commands (POD_Commands): instance-level POD_Commands object, which stores information about the commands available to this POD device.
+        __numPod (int): Class-level integer counting the number of POD_Basics instances
+        __MINSTANDARDLENGTH (int): Class-level integer representing the minimum length of a standard \
+            POD command packet.
+        __MINBINARYLENGTH (int): Class-level integer representing the minimum length of a binary POD \
+            command packet. 
+        _port (COM_io): Instance-level COM_io object, which handles the COM port 
+        _commands (POD_Commands): Instance-level POD_Commands object, which stores information about \
+            the commands available to this POD device.
     """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
@@ -30,7 +34,7 @@ class POD_Basics :
     __numPod : int = 0
 
     # minimum packet lengths 
-    __MINSTANDARDLENGTH : int = 8      # STX (1 byte) + command number (4 bytes) + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+    __MINSTANDARDLENGTH : int = 8       # STX (1 byte) + command number (4 bytes) + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     __MINBINARYLENGTH   : int = 15      # STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
                                         #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                               <-- BINARY DATA
 
@@ -38,12 +42,14 @@ class POD_Basics :
 
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None : 
-        """Runs when an instance of POD_Basics is constructed. It initializes the instance variable for the COM port communication (_port) 
-        and for the command handler (_commands). It also increments the POD device counter (__NUMPOD).
+        """Runs when an instance of POD_Basics is constructed. It initializes the instance variable for 
+        the COM port communication (_port) and for the command handler (_commands). It also increments \
+        the POD device counter (__NUMPOD).
 
         Args:
             port (str|int): Serial port to be opened. Used when initializing the COM_io instance.
-            baudrate (int): Baud rate of the opened serial port. Used when initializing the COM_io instance. Default value is 9600.
+            baudrate (int): Baud rate of the opened serial port. Used when initializing the COM_io \
+                instance. Default value is 9600.
         """
         # initialize serial port 
         self._port : COM_io = COM_io(port, baudrate)
@@ -70,7 +76,7 @@ class POD_Basics :
         """Gets the POD device counter (__numPod).
 
         Returns: 
-            int: number of POD_Basics instances 
+            int: Number of POD_Basics instances.
         """
         # returns the counter tracking the number of active pod devices
         return(POD_Basics.__numPod)
@@ -81,16 +87,18 @@ class POD_Basics :
 
     @staticmethod
     def UnpackPODpacket_Standard(msg: bytes) -> dict[str,bytes] : 
-        """Converts a standard POD packet into a dictionary containing the command number and payload (if applicable) in bytes.
+        """Converts a standard POD packet into a dictionary containing the command number and payload 
+        (if applicable) in bytes.
 
         Args:
             msg (bytes): Bytes message containing a standard POD packet.
 
         Returns:
-            dict[str,bytes]: A dictionary containing the POD packet's 'Command Number' and 'Payload' (if applicable) in bytes.
+            dict[str,bytes]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
+                (if applicable) in bytes.
 
         Raises: 
-            Exception: (1) the msg does not have the minimum number of bytes in a standard pod packet, 
+            Exception: (1) The msg does not have the minimum number of bytes in a standard pod packet, \
                 (2) does not begin with STX, and (3) does not end with ETX. 
         """
         # standard POD packet with optional payload = 
@@ -119,17 +127,20 @@ class POD_Basics :
 
     @staticmethod
     def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes]: 
-        """Converts a variable-length binary packet into a dictionary containing the command number, binary packet length, and binary data in bytes. 
+        """Converts a variable-length binary packet into a dictionary containing the command 
+        number, binary packet length, and binary data in bytes. 
 
         Args: 
             msg (bytes): Bytes message containing a variable-length POD packet
 
         Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Binary Packet Length', and 'Binary Data' keys with bytes values.
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Binary Packet Length', \
+                and 'Binary Data' keys with bytes values.
 
         Raises:
-            Exception: (1) the msg does not have the minimum number of bytes in a standard pod packet, 
-                (2) does not begin with STX, (3) does not end with ETX, and (4) does not have an ETX after standard packet. 
+            Exception: (1) The msg does not have the minimum number of bytes in a standard pod \
+                packet,(2) does not begin with STX, (3) does not end with ETX, and (4) does \
+                not have an ETX after standard packet. 
         """
         # variable binary POD packet = 
         #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
@@ -165,7 +176,8 @@ class POD_Basics :
             msg (bytes): Bytes message containing a standard POD packet
 
         Returns:
-            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' (if applicable) in integers.
+            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
+                (if applicable) in integers.
         """
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
@@ -205,13 +217,15 @@ class POD_Basics :
    
     @staticmethod
     def TranslatePODpacket_Binary(msg: bytes) -> dict[str,int|bytes] : 
-        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded bytes into integer values and leaves the binary-encoded bytes as is. 
+        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded 
+        bytes into integer values and leaves the binary-encoded bytes as is. 
 
         Args: 
             msg (bytes): Bytes message containing a variable-length POD packet.
 
         Returns:
-            dict[str,int|bytes]: A dictionary containing the 'Command Number' and 'Binary Packet Length' in integers, and 'Binary Data' in bytes.
+            dict[str,int|bytes]: A dictionary containing the 'Command Number' and 'Binary Packet Length' \
+                in integers, and 'Binary Data' in bytes.
         """
         # unpack parts of POD packet into dict
         msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
@@ -230,10 +244,12 @@ class POD_Basics :
 
     @staticmethod
     def _ValidateChecksum(msg: bytes) -> bool :
-        """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum from the data matches the checksum written in the packet. 
+        """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
+        from the data matches the checksum written in the packet. 
 
         Args: 
-            msg (bytes): Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum (2 bytes) + ETX (1 byte). 
+            msg (bytes): Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum \
+                (2 bytes) + ETX (1 byte). 
 
         Returns: 
             bool: True if the checksum is correct, false otherwise.
@@ -241,7 +257,8 @@ class POD_Basics :
         Raises:
             Exception: msg does not begin with STX or end with ETX. 
         """
-        # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all pod packets except variable length binary packet
+        # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all 
+        #     pod packets except variable length binary packet
         # get length of POD packet 
         packetBytes = len(msg)
         # check that packet begins with STX and ends with ETX
@@ -271,8 +288,9 @@ class POD_Basics :
         """Gets the dictionary containing the class instance's available POD commands.
 
         Returns:
-            dict[int, list[str|tuple[int]|bool]]: Dictionary containing the available commands and their information. 
-                Formatted as key(command number) : value([command name, number of argument ASCII bytes, number of return bytes, binary flag ])
+            dict[int, list[str|tuple[int]|bool]]: Dictionary containing the available commands and their \
+                information.Formatted as key(command number) : value([command name, number of argument \
+                ASCII bytes, number of return bytes, binary flag ])
         """
         # Get commands from this instance's command dict object 
         return(self._commands.GetCommands())
@@ -337,15 +355,15 @@ class POD_Basics :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
         Args:
-            cmd (str | int): command number. 
-            payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there is a payload, 
-                set to an integer value or a bytes string. Defaults to None.
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. 
-                Defaults to True.
+            cmd (str | int): Command number. 
+            payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value or a bytes string. Defaults to None.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+                    validation. Defaults to True.
 
         Returns:
-            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may be a 
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may \
+                be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum)
@@ -353,14 +371,14 @@ class POD_Basics :
 
 
     def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
-        """Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give, the method will convert it 
-        into a bytes string of the length expected by the command. If a bytes payload is given, it must be the correct length. 
-
+        """Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give, \
+        the method will convert it into a bytes string of the length expected by the command. If a bytes \
+        payload is given, it must be the correct length. 
 
         Args:
-            cmd (str | int): command number. 
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there is a payload, set to an 
-                integer value, bytes string, or tuple. Defaults to None.
+            cmd (str | int): Command number. 
+            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
         Raises:
             Exception: POD command does not exist.
@@ -398,9 +416,9 @@ class POD_Basics :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
-            cmd (str | int): command number.
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there is a payload, 
-                set to an integer value, bytes string, or tuple. Defaults to None.
+            cmd (str | int): Command number.
+            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
         Returns:
             bytes: Bytes string that was written to the POD device.
@@ -414,15 +432,16 @@ class POD_Basics :
 
 
     def ReadPODpacket(self, validateChecksum:bool=True) -> bytes :
-        """Reads a complete POD packet, either in standard or binary format, beginning with STX and ending with ETX. 
-        Reads first STX and then starts recursion. 
+        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+        ending with ETX. Reads first STX and then starts recursion. 
 
         Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
 
         Returns:
-            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may be a standard packet, binary 
-                packet, or an unformatted packet (STX+something+ETX). 
+            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This \
+                may be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
         b = None
@@ -440,18 +459,20 @@ class POD_Basics :
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
     def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> bytes : 
-        """Reads the command number. If the command number ends in ETX, the packet is returned. Next, it checks if the command 
-        is allowed. Then, it checks if the command is standard or binary and reads accordingly, then returns the packet.
+        """Reads the command number. If the command number ends in ETX, the packet is returned. \
+        Next, it checks if the command is allowed. Then, it checks if the command is standard or \
+        binary and reads accordingly, then returns the packet.
 
         Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
 
         Raises:
             Exception: Cannot read an invalid command.
 
         Returns:
-            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may be a standard packet, binary 
-                packet, or an unformatted packet (STX+something+ETX). 
+            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may \
+                be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         # start packet with STX
         packet = POD_Packets.STX()
@@ -485,11 +506,13 @@ class POD_Basics :
 
 
     def _Read_GetCommand(self, validateChecksum:bool=True) -> bytes : 
-        """Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each byte read, it can 
-        (1) start the recursion over if an STX is found, (2) returns if ETX is found, or (3) continue building the command number. 
+        """Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each \
+        byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or \
+        (3) continue building the command number. 
 
         Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+                validation. Defaults to True.
 
         Returns:
             bytes: 4 byte long string containing the ASCII-encoded command number.
@@ -519,10 +542,12 @@ class POD_Basics :
         return(cmd)
 
     def _Read_ToETX(self, validateChecksum:bool=True) -> bytes : 
-        """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX is found anywhere. 
+        """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
+        is found anywhere. 
 
         Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+                validation. Defaults to True.
 
         Returns:
             bytes: Bytes string ending with ETX.
@@ -550,11 +575,13 @@ class POD_Basics :
         """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
 
         Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+                + command number (4 bytes).
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
 
         Raises:
-            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True)
+            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
 
         Returns:
             bytes: Bytes string for a complete standard POD packet.
@@ -571,19 +598,22 @@ class POD_Basics :
 
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> bytes :
-        """Reads the remaining part of the variable-length binary packet. It first reads the standard packet 
-        (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the payload of 
-        the standard POD packet and reads that many bytes. It then reads to ETX to get the checksum+ETX. 
+        """Reads the remaining part of the variable-length binary packet. It first reads the standard \
+        packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
+        payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
+        checksum+ETX. 
 
         Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes)
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+                + command number (4 bytes)
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
 
         Raises:
-            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True)
+            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
 
         Returns:
-            bytes: Bytes string for a variable-length binary POD packet
+            bytes: Bytes string for a variable-length binary POD packet.
         """
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
