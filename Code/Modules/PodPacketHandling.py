@@ -70,11 +70,12 @@ class POD_Packets() :
     def IntToAsciiBytes(value: int, numChars: int) -> bytes : 
         """Converts an integer value into ASCII-encoded bytes. 
         
-        First, it converts the integer value into a usable uppercase hexadecimal string. Then it converts the 
-        ASCII code for each character into bytes. Lastly, it ensures that the final message is the desired length.  
+        First, it converts the integer value into a usable uppercase hexadecimal string. Then it converts \
+        the ASCII code for each character into bytes. Lastly, it ensures that the final message is the \
+        desired length.  
 
-        Example: if value=2 and numBytes=4, the returned ASCII will show b'0002', which is '0x30 0x30 0x30 0x32' 
-        in bytes. Uses the 2's complement if the val is negative. 
+        Example: if value=2 and numBytes=4, the returned ASCII will show b'0002', which is \
+        '0x30 0x30 0x30 0x32' in bytes. Uses the 2's complement if the val is negative. 
 
         Args:
             value (int): Integer value to be converted into ASCII-encoded bytes.
@@ -137,10 +138,13 @@ class POD_Packets() :
 
     @staticmethod
     def AsciiBytesToInt(msg_b: bytes, signed:bool=False) -> int :
-        """Converts a ASCII-encoded bytes message into an integer.  It does this using a base-16 conversion. If the message is signed and the msb is '1', the integer will be converted to it's negative 2's complement. 
+        """Converts a ASCII-encoded bytes message into an integer.  It does this using a base-16 \
+        conversion. If the message is signed and the msb is '1', the integer will be converted to \
+        it's negative 2's complement. 
 
         Args:
-            msg_b (bytes): Bytes message to be converted to an integer. The bytes must be base-16 or the conversion will fail. 
+            msg_b (bytes): Bytes message to be converted to an integer. The bytes must be base-16 or \
+                the conversion will fail. 
             signed (bool, optional): True if the message is signed, false if unsigned. Defaults to False.
 
         Returns:
@@ -166,8 +170,10 @@ class POD_Packets() :
 
         Args:
             msg (bytes): Bytes message holding binary information to be converted into an integer.
-            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little endian. Defaults to 'big'.
-            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). Defaults to False.
+            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little \
+                endian. Defaults to 'big'.
+            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \
+                Defaults to False.
 
         Returns:
             int: Integer result from the binary-encoded bytes message.
@@ -200,8 +206,10 @@ class POD_Packets() :
             msg (bytes): Bytes message holding binary information to be converted into an integer.
             keepTopBits (int): Integer position of the msb of desired bit range.
             cutBottomBits (int): Integer number of lsb to remove.
-            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little endian. Defaults to 'big'.
-            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). Defaults to False.
+            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little \
+                endian. Defaults to 'big'.
+            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \
+                Defaults to False.
 
         Returns:
             int: Integer result from the binary-encoded bytes message in a given bit range.
@@ -215,8 +223,8 @@ class POD_Packets() :
 
     @staticmethod
     def Checksum(bytesIn: bytes) -> bytes:
-        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the message, 
-        inverting, and taking the last byte.
+        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the \
+        message, inverting, and taking the last byte.
 
         Args:
             bytesIn (bytes): Bytes message containing POD packet data.
@@ -238,11 +246,12 @@ class POD_Packets() :
 
     @staticmethod
     def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
-        """Builds a standard POD packet as bytes: 
-        STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
+        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
 
         Args:
-            commandNumber (int): Integer representing the command number. This will be converted into a 4 byte long ASCII-encoded bytes string.
+            commandNumber (int): Integer representing the command number. This will be converted into \
+                a 4 byte long ASCII-encoded bytes string.
             payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
 
         Returns:
@@ -280,7 +289,7 @@ class POD_Packets() :
             Exception: Payload is an invalid type.
 
         Returns:
-            bytes: _description_
+            bytes: Bytes string of the payload.
         """
         # if integer payload is given ... 
         if(isinstance(payload,int)):
