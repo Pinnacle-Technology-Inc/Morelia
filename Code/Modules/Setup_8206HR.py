@@ -1,6 +1,4 @@
-"""
-Setup_8206HR provides the setup functions for an 8206-HR POD device.
-"""
+
 
 # enviornment imports
 import os 
@@ -27,7 +25,15 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Setup_8206HR(Setup_Interface) : 
+    """
+    Setup_8206HR provides the setup functions for an 8206-HR POD device.
 
+    Attributes:
+        _PARAMKEYS (list[str]): class-level list containing the device parameter dict keys.
+        _LOWPASSKEYS (list[str]): class-level list containing the keys of the 'Low-pass' parameter dict value.
+        _PHYSICAL_BOUND_uV (int): class-level integer representing the max/-min physical value in uV. Used for EDF files. 
+        _NAME (str): class-level string containing the POD device name.
+    """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
@@ -48,6 +54,11 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def GetDeviceName() -> str : 
+        """returns the name of the POD device.
+
+        Returns:
+            str: String of _NAME.
+        """
         # returns the name of the POD device 
         return(Setup_8206HR._NAME)
     
@@ -59,6 +70,15 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
+        """Creates a POD_8206HR object and write the setup parameters to it. 
+
+        Args:
+            deviceNum (int): Integer of the device's number.
+            deviceParams (dict[str,): Dictionary of the device's parameters
+
+        Returns:
+            bool: True if connection was successful, false otherwise.
+        """
         failed = True 
         try : 
             # get port name 
@@ -89,7 +109,16 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])] : 
+        """Asks the user to input all the device parameters. 
+
+        Args:
+            forbiddenNames (list[str]): List of port names already used by other devices.
+
+        Returns:
+            dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
+        """
+         
         return({
             self._PORTKEY       : self._ChoosePort(forbiddenNames),
             'Sample Rate'       : UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
@@ -103,6 +132,11 @@ class Setup_8206HR(Setup_Interface) :
     
     @staticmethod
     def _ChoosePreampGain() -> int :
+        """Asks user for the preamplifier gain of their POD device.
+
+        Returns:
+            int: Integer 10 or 100 for the preamplifier gain.
+        """
         gain = UserInput.AskForInt('Set preamplifier gain')
         # check for valid input 
         if(gain != 10 and gain != 100):
@@ -117,6 +151,11 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _GetPODdeviceParameterTable(self) -> Texttable :
+        """Builds a table containing the parameters for all POD devices.
+
+        Returns:
+            Texttable: Texttable containing all parameters.
+        """
         # setup table 
         tab = Texttable()
         # write column names
@@ -131,6 +170,14 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+        """Opens a text file and writes the column names. Writes the current date/time at the top of the txt file.
+
+        Args:
+            fname (str): String filename.
+
+        Returns:
+            IOBase: Opened file.
+        """
         # open file and write column names 
         f = open(fname, 'w')
         # write time
@@ -141,6 +188,15 @@ class Setup_8206HR(Setup_Interface) :
     
 
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        """Opens EDF file and write header.
+
+        Args:
+            fname (str): String filename.
+            devNum (int): Integer device number.
+
+        Returns:
+            EdfWriter: Opened file.
+        """
         # number of channels 
         n = len(self._LOWPASSKEYS)
         # create file
@@ -163,6 +219,13 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
+        """Writes data to an open text file.
+
+        Args:
+            file (IOBase): opened write file.
+            data (list[np.ndarray]): List of 3 items, one for each channel.
+            t (np.ndarray): list with the time stamps (in seconds)
+        """
         for i in range(len(t)) : 
             line = [t[i], data[0][i], data[1][i], data[2][i] ]
             # convert data into comma separated string
@@ -173,6 +236,12 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
+        """Writes data to an open EDF file.
+
+        Args:
+            file (EdfWriter): opened EDF file.
+            data (list[np.ndarray]): List of 3 items, one for each channel.
+        """
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -181,6 +250,11 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _StreamThreading(self) -> dict[int,Thread] :
+        """Opens a save file, then creates a thread for each device to stream and write data from. 
+
+        Returns:
+            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+        """
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
         # make threads for reading 
@@ -204,6 +278,14 @@ class Setup_8206HR(Setup_Interface) :
     
     
     def _StreamUntilStop(self, pod: POD_8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
+        """Streams data from a POD device and saves data to file. Stops looking when a stop stream command is read. 
+        Calculates average time difference across multiple packets to collect a continuous time series data. 
+
+        Args:
+            pod (POD_8206HR): POD device to read from.
+            file (IOBase | EdfWriter): open file.
+            sampleRate (int): Integer sample rate in Hz.
+        """
         # get file type
         name, ext = os.path.splitext(self._saveFileName)
         # packet to mark stop streaming 
@@ -256,6 +338,7 @@ class Setup_8206HR(Setup_Interface) :
             
             
     def _StopStream(self) -> None :
+        """Write a command to stop streaming data to all POD devices."""
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             if(pod != None) : pod.WritePacket(cmd='STREAM', payload=0)
@@ -265,6 +348,20 @@ class Setup_8206HR(Setup_Interface) :
 
 
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        """raises an exception if the parameters dictionary is incorrectly formatted.
+
+        Args:
+            paramDict (dict): Dictionary of the parameters for one device.
+
+        Raises:
+            Exception: Invalid parameters.
+            Exception: Invalid parameter value types.
+            Exception: Invalid low-pass parameters.
+            Exception: Invalid low-pass value types.
+
+        Returns:
+            bool: True if no exceptions are raised.
+        """
         # check that all params exist 
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
             raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
