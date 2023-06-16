@@ -126,7 +126,7 @@ class Setup_8401HR(Setup_Interface) :
             Exception: High-pass value is not supported.
 
         Returns:
-            int: Integer code representing the highpass value
+            int: Integer code representing the highpass value.
         """
         match highpass : 
             case  0.5  : return(0)
@@ -206,7 +206,8 @@ class Setup_8401HR(Setup_Interface) :
         Args:
             message (str): Message to ask the user.
             channelMap (dict[str,str]): Maps the ABCD channels to the sensor's channel name. 
-            func (function): a function that asks the user for an input. takes one string parameter and returns one value.  
+            func (function): a function that asks the user for an input. takes one string parameter \
+                and returns one value.  
 
         Returns:
             dict[str,int|None]: Dictionary with ABCD keys and user inputs for values.
@@ -378,7 +379,7 @@ class Setup_8401HR(Setup_Interface) :
             channelMap (dict[str,str]): Maps the ABCD channels to the sensor's channel name. 
 
         Returns:
-            str: String with "channel name: value \n ..." for each channel.
+            str: String with "channel name: value newline..." for each channel.
         """
         # build nicely formatted text
         text = ''
