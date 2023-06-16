@@ -22,14 +22,17 @@ __email__       = "sales@pinnaclet.com"
 
 class Setup_PodDevices :     
     """
-    Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file.
+    Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed \
+    data is saved to a file.
     
     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 
     Attributes:
-        _Setup_PodDevices (dict[str,Setup_Interface]): Dictionary containing the Setup_Interface subclasses for each POD device.
-        _saveFileName (str): String containing the path, filename, and file extension to a file to save streaming data to. The 
-            filename will be extended with "_<DEVICE NAME>_<DEVICE NUMBER>" for each device. 
+        _Setup_PodDevices (dict[str,Setup_Interface]): Dictionary containing the Setup_Interface \
+            subclasses for each POD device.
+        _saveFileName (str): String containing the path, filename, and file extension to a file to \
+            save streaming data to. The filename will be extended with "_<DEVICE NAME>_<DEVICE NUMBER>" \
+            for each device. 
         _options (dict[int,str]): Dictionary listing the different options for the user to complete.
     """
 
@@ -37,12 +40,14 @@ class Setup_PodDevices :
 
 
     def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None=None) -> None :
-        """Initializes the class. Sets the default values of the class instance variables. Calls functions to complete the class setup.
+        """Initializes the class. Sets the default values of the class instance variables. Calls \
+        functions to complete the class setup.
 
         Args:
-            saveFile (str | None, optional): String describing the directory path and filename with an extension. Defaults to None.
-            podParametersDict (dict[str,dict | None] | None, optional): Dictionary of POD devices and their respective initialization
-                dictionaries. Defaults to None.
+            saveFile (str | None, optional): String describing the directory path and filename with an \
+                extension. Defaults to None.
+            podParametersDict (dict[str,dict | None] | None, optional): Dictionary of POD devices and \
+                their respective initialization dictionaries. Defaults to None.
         """
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
@@ -84,8 +89,8 @@ class Setup_PodDevices :
         """Sets up each POD device type. Used in initialization.
 
         Returns:
-            dict[str, dict[int, dict] ]: Dictionary of all POD devices initialization. The keys are the device 
-                name and the entries are the initialization dictionaries. 
+            dict[str, dict[int, dict] ]: Dictionary of all POD devices initialization. The keys are the \
+                device name and the entries are the initialization dictionaries. 
         """
         allParamDict = {}
         # for each type of device
@@ -119,7 +124,7 @@ class Setup_PodDevices :
         """Sets up each POD device type. Used in initialization.
 
         Args:
-            podParametersDict (dict[str,dict | None]): Dictionary of all POD devices initialization.
+            podParametersDict (dict[str,dict | None]): Dictionary of all POD devices initialization. \
                 The keys are the device name and the entries are the initialization dictionaries. 
         """
         # for each type of POD device 
@@ -131,7 +136,7 @@ class Setup_PodDevices :
         """Gets the path/file name from the user and stores it. Used in initialization.
 
         Args:
-            saveFile (str | None, optional): String of the save file, which includes the directory path, 
+            saveFile (str | None, optional): String of the save file, which includes the directory path, \
                 filename, and file extension. Defaults to None.
         """
         # initialize file name and path 
@@ -231,7 +236,7 @@ class Setup_PodDevices :
     
 
     def _EditSaveFilePath(self) -> None : 
-        """Asks the user for the POD device type, then asks the user for a new file name and path, 
+        """Asks the user for the POD device type, then asks the user for a new file name and path, \
         then sets the value to the POD devices.
         """
         self._saveFileName = self._GetFilePath()
@@ -240,7 +245,7 @@ class Setup_PodDevices :
 
 
     def _EditCheckConnect(self) -> None :
-        """Displays the POD devices parameters, asks the user to edit the device, and then reconnects 
+        """Displays the POD devices parameters, asks the user to edit the device, and then reconnects \
         the device for each POD device type. 
         """
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to edit?')
@@ -255,7 +260,7 @@ class Setup_PodDevices :
 
 
     def _RemoveDevice(self) -> None : 
-        """Displays the POD devices parameters, asks the user which device ro remove, and then 
+        """Displays the POD devices parameters, asks the user which device ro remove, and then \
         deletes that POD device.
         """
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to remove?')
@@ -294,7 +299,9 @@ class Setup_PodDevices :
 
 
     def _PrintInitCode(self) -> None :
-        """Prints code that can be used to initialize and run SetupPodDevices with the current parameters."""
+        """Prints code that can be used to initialize and run SetupPodDevices with the \
+        current parameters.
+        """
         print(
             '\n' + 
             'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
@@ -308,15 +315,16 @@ class Setup_PodDevices :
 
 
     def _GetParams(self, podParametersDict: None|dict[str,None]) -> dict[str,dict|None]: 
-        """If no parameters are give, this asks user which types of POD devices they want to use. 
+        """If no parameters are give, this asks user which types of POD devices they want to use. \
         Then it checks if the parameters are valid. 
 
         Args:
-            podParametersDict (None | dict[str,None]): Dictionary of all POD devices initialization. 
+            podParametersDict (None | dict[str,None]): Dictionary of all POD devices initialization. \
                 The keys are the device name and the entries are the initialization dictionaries. 
 
         Returns:
-            dict[str,dict|None]: Dictionary whose keys are the POD device name, and value the setup dictionary. 
+            dict[str,dict|None]: Dictionary whose keys are the POD device name, and value the setup \
+                dictionary. 
         """
         # setup parameters
         if(podParametersDict == None) : 
@@ -353,7 +361,7 @@ class Setup_PodDevices :
         """Checks if the parameters are correctly formatted.
 
         Args:
-            podParametersDict (dict[str,None | dict]): Dictionary with keys as the device names and 
+            podParametersDict (dict[str,None | dict]): Dictionary with keys as the device names and \
                 values as None or the respective parameter dictionary.
 
         Raises:
@@ -385,11 +393,12 @@ class Setup_PodDevices :
 
 
     def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : # NOTE add all supported devices here 
-        """Sets the _Setup_PodDevices varaible to have keys as the POD device name and values as the setup class.
+        """Sets the _Setup_PodDevices varaible to have keys as the POD device name and values \
+        as the setup class.
 
         Args:
-            podParametersDict (dict[str,dict | None]): Dictionary with keys as the device names and values as
-                None or the respective parameter dictionary.
+            podParametersDict (dict[str,dict | None]): Dictionary with keys as the device names \
+                and values as None or the respective parameter dictionary.
         """
         # use select devices        
         name = Setup_8206HR.GetDeviceName()
@@ -404,7 +413,7 @@ class Setup_PodDevices :
 
 
     def _PrintSaveFile(self) -> None :
-        """Prints the file path and name that data is saved to. Note that the device name and number 
+        """Prints the file path and name that data is saved to. Note that the device name and number \
         will be appended to the end of the filename,
         """
         # print name  
@@ -417,9 +426,12 @@ class Setup_PodDevices :
 
         Args:
             f (str): file name or extension
-            fIsExt (bool, optional): Boolean flag that is true if f is an extension, false otherwise. Defaults to True.
-            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.csv','.txt','.edf'].
-            printErr (bool, optional): Boolean flag that, when true, will print an error statement. Defaults to True.
+            fIsExt (bool, optional): Boolean flag that is true if f is an extension, false \
+                otherwise. Defaults to True.
+            goodExt (list[str], optional): List of valid file extensions. Defaults to \
+                ['.csv','.txt','.edf'].
+            printErr (bool, optional): Boolean flag that, when true, will print an error \
+                statement. Defaults to True.
 
         Returns:
             bool: True if extension is in goodExt list, False otherwise.
@@ -499,7 +511,7 @@ class Setup_PodDevices :
 
 
     def _StreamAllDevices(self) -> None : 
-        """Streams data from all the devices. User is asked to click enter to stop streaming. 
+        """Streams data from all the devices. User is asked to click enter to stop streaming. \
         Data is saved to file. Uses threading.
         """
         # start streaming from all devices 
@@ -523,7 +535,7 @@ class Setup_PodDevices :
         
 
     def _AskToStopStream(self) -> None :
-        """Asks user to press enter to stop streaming. The program will then prompt all POD
+        """Asks user to press enter to stop streaming. The program will then prompt all POD \
         devices to end stream.
         """
         # get any input from user 
@@ -539,7 +551,7 @@ class Setup_PodDevices :
 
     @staticmethod
     def _TimeFunc(func: 'function') -> float : 
-        """Runs a function and gets the calculated execultion time
+        """Runs a function and gets the calculated execultion time.
 
         Args:
             func (function): Function/method name.
