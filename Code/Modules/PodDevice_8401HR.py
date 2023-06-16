@@ -1,6 +1,4 @@
-"""
-POD_8401HR handles communication using an 8401-HR POD device. 
-"""
+
 
 # local imports 
 from BasicPodProtocol       import POD_Basics
@@ -16,7 +14,16 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_8401HR(POD_Basics) : 
+    """
+    POD_8401HR handles communication using an 8401-HR POD device. 
 
+    Attributes:
+        __B5LENGTH (int): class-level integer representing the number of bytes for a Binary 5 packet.
+        __B5BINARYLENGTH (int): class-level integer representing the number of binary bytes for a Binary 4 packet.
+        __CHANNELMAPALL (dict[str,dict[str,str]]): class-level dictionary containing the channel map for all preamplifier devices.
+        _ssGain (dict[str,int|None]): instance-level dictionary storing the second-stage gain for all four channels. 
+        _preampGain (dict[str,int|None]): instance-level dictionary storing the pramplifier gain for all four channels. 
+    """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
@@ -47,7 +54,31 @@ class POD_8401HR(POD_Basics) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port: str|int, preampName: str, ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, baudrate:int=9600) -> None :
+    def __init__(self, 
+                 port: str|int, 
+                 ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 baudrate:int=9600
+                ) -> None :
+        """Runs when an instance is constructed. It runs the parent's initialization. Then it updates the _commands to 
+        contain the appropriate commands for an 8401HR POD device. Sets the _ssGain and _preampGain.
+
+        Args:
+            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
+            preampName (str): String of the corresponding device/sensor name.
+            ssGain (dict[str,int|None], optional): dictionary storing the second-stage gain for all four channels. 
+                Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            preampGain (dict[str,int|None], optional): dictionary storing the pramplifier gain for all four channels. 
+                Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing the COM_io 
+                instance. Defaults to 9600.
+
+        Raises:
+            Exception: The ssGain dictionary has improper keys; keys must be ['A','B','C','D'].
+            Exception: The preampGain dictionary has improper keys; keys must be ['A','B','C','D'].
+            Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
+            Exception: EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.
+        """
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
 
@@ -117,6 +148,19 @@ class POD_8401HR(POD_Basics) :
     
     @staticmethod
     def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes] :
+        """Overwrites the parent's method. Separates the components of a binary5 packet into a dictionary.
+
+        Args:
+            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) + command (4) + packet number (1) 
+                + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+
+        Raises:
+            Exception: (1) the packet does not have the minimum number of bytes, (2) does not begin with STX, or (3) does not end with ETX.
+
+        Returns:
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'Channels', 'Analog EXT0', 'Analog EXT1', 
+                'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', in bytes.
+        """
         # Binary 5 format = 
         #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
         MINBYTES = POD_8401HR.__B5LENGTH
@@ -158,22 +202,27 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(  msgDict['Command Number'] )
         msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt( msgDict['Packet #'] )
         msgDictTrans['Status']          = POD_Packets.BinaryBytesToInt( msgDict['Status'] )
+        # BinaryBytesToInt_Split:
+            #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
+            #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+            #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+            #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
         # dont add channel if no connect (NC)
-        if(self._ssGain['D'] != None) :
+        if(self._ssGain['D'] != None) : 
             msgDictTrans['D'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), # |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), 
                                                     self._ssGain['D'], self._preampGain['D'] )
         if(self._ssGain['C'] != None) :
             msgDictTrans['C'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), # |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), 
                                                     self._ssGain['C'], self._preampGain['C'] )
         if(self._ssGain['B'] != None) :
             msgDictTrans['B'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), # | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), 
                                                     self._ssGain['B'], self._preampGain['B'] )
         if(self._ssGain['A'] != None) :
             msgDictTrans['A'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), # | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
+                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), 
                                                     self._ssGain['A'], self._preampGain['A'] )
         # add analogs 
         msgDictTrans['Analog EXT0']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']) ) 
@@ -188,6 +237,17 @@ class POD_8401HR(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the ASCII-encoded bytes into 
+        integer values and the values of binary-encoded bytes into integers. The channels and analogs are converted to volts (V).
+
+        Args:
+            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) + command (4) + packet number (1) 
+                + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'D', 'C', 'B', 'A', 
+                'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', as numbers.
+        """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
@@ -211,6 +271,14 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def GetChannelMapForPreampDevice(preampName: str) -> dict[str,str]|None :
+        """Get the channel mapping (channel labels for A,B,C,D) for a given device.
+
+        Args:
+            preampName (str): String for the device/sensor name.
+
+        Returns:
+            dict[str,str]|None: Dictionary with keys A,B,C,D with values of the channel names. Returns None if the device name does not exist.
+        """
         if(preampName in POD_8401HR.__CHANNELMAPALL) : 
             return(POD_8401HR.__CHANNELMAPALL[preampName])
         else : 
@@ -219,16 +287,42 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def GetSupportedPreampDevices() -> list[str]: 
+        """Gets a list of device/sensor names used for channel mapping. 
+
+        Returns:
+            list[str]: List of string names of all supported sensors. 
+        """
         return(list(POD_8401HR.__CHANNELMAPALL.keys()))
 
 
     @staticmethod
     def IsPreampDeviceSupported(name: str) -> bool : 
+        """Checks if the argument exists in channel map for all preamp sensors. 
+
+        Args:
+            name (str): name of the device
+
+        Returns:
+            bool: True if the name exists in __CHANNELMAPALL, false otherwise.
+        """
         return(name in POD_8401HR.__CHANNELMAPALL)    
 
 
     @staticmethod
     def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+        """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
+
+        Args:
+            ext0 (bool, optional): boolean bit for ext0. Defaults to 0.
+            ext1 (bool, optional): boolean bit for ext1. Defaults to 0.
+            ttl4 (bool, optional): boolean bit for ttl4. Defaults to 0.
+            ttl3 (bool, optional): boolean bit for ttl3. Defaults to 0.
+            ttl2 (bool, optional): boolean bit for ttl2. Defaults to 0.
+            ttl1 (bool, optional): boolean bit for ttl1. Defaults to 0.
+
+        Returns:
+            int: Integer number to be used as a bit mask.
+        """
         # use this for the argument/return for TTL-specific commands 
         # (msb) Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins (lsb) 
         return( 0 | (ext0 << 7) | (ext1 << 6) | (ttl4 << 3) | (ttl3 << 2) | (ttl2 << 1) | ttl1 )
@@ -236,6 +330,15 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+        """Gets a bitmask, represented by an unsigned integer, used for 'SET SS CONFIG' command. 
+
+        Args:
+            gain (int): 1 for 1x gain. else for 5x gain.
+            highpass (float): 0 for DC highpass, else for 0.5Hz highpass.
+
+        Returns:
+            int: Integer representing a bitmask.
+        """
         # interpret highpass (lsb)
         if(highpass == 0.0) :   bit0 = True  # DC highpass
         else:                   bit0 = False # AC 0.5Hz highpass 
@@ -247,7 +350,15 @@ class POD_8401HR(POD_Basics) :
 
     
     @staticmethod
-    def CalculateBiasDAC_GetVout(value: int|float) -> float :
+    def CalculateBiasDAC_GetVout(value: int) -> float :
+        """Calculates the output voltage given the DAC value. Used for 'GET/SET BIAS' commands. 
+
+        Args:
+            value (int): DAC value (16 bit 2's complement).
+
+        Returns:
+            float: Float of the output bias voltage [V].
+        """
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return( (value / 32768.) * 2.048 )
@@ -255,6 +366,14 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def CalculateBiasDAC_GetDACValue(vout: int|float) -> int :
+        """Calculates the DAC value given the output voltage. Used for 'GET/SET BIAS' commands. 
+
+        Args:
+            vout (int | float): Output voltage (+/- 2.048 V).
+
+        Returns:
+            int: Integer of the DAC value (16 bit 2's complement).
+        """
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return(int( (vout / 2.048) * 32768. ))
@@ -268,6 +387,14 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
+        """Converts the TTL bytes argument into a dictionary of integer TTL values.
+
+        Args:
+            ttlByte (bytes): One byte containing the TTL bitmask. 
+
+        Returns:
+            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
+        """
         return({
             'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
             'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
@@ -280,6 +407,16 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :
+        """Converts a value to a voltage for a primary channel. 
+
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int | None, optional): Second stage gain. Defaults to None.
+            PreampGain (int | None, optional): Preamplifier gain. Defaults to None.
+
+        Returns:
+            float: Number of the voltage in volts [V]. Returns value if no gain is given (no-connect).
+        """
         if(ssGain != None and PreampGain == None) : 
             return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
         elif(ssGain != None):
@@ -290,6 +427,16 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def _Voltage_PrimaryChannels_EEGEMG(value: int, ssGain: int, PreampGain: int) -> float : 
+        """Converts a value to a voltage for an EEG/EMG primary channel. 
+
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int): Second stage gain.
+            PreampGain (int): Preamplifier gain.
+
+        Returns:
+            float: Number of the voltage in volts [V].
+        """
         # Channels configured as EEG/EMG channels (0.4/1/10 Hz highpass filter, second stage 0.5Hz Highpass, second stage 5x)
         voltageAtADC = (value / 262144.0) * 4.096 # V
         totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
@@ -299,6 +446,15 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def _Voltage_PrimaryChannels_Biosensor(value: int, ssGain: int) -> float : 
+        """Converts a value to a voltage for a biosensor primary channel. 
+
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int): Second stage gain.
+
+        Returns:
+            float: Number of the voltage in volts [V]. 
+        """
         # Channels configured as biosensor channels (DC highpass filter, second stage DC mode, second stage 1x)
         voltageAtADC = (value / 262144.0) * 4.096 # V
         totalGain    = 1.557 * ssGain * 1E7 # SSGain = 1 or 5
@@ -308,51 +464,67 @@ class POD_8401HR(POD_Basics) :
 
     @staticmethod
     def _Voltage_SecondaryChannels(value: int) -> float :
+        """Converts a value to a voltage for a secondary channel.
+
+        Args:
+            value (int): Value to be converted to voltage.
+
+        Returns:
+            float: Number of the voltage in volts [V].
+        """
         # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
         return( (value / 4096.0) * 3.3 ) # V
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True):
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) :
+        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX (checksum+ETX). 
+
+        Args:
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+
+        Raises:
+            Exception: Bad checksum for binary POD packet read.
         """
-        Binary 5 Data Format
-        -----------------------------------------------------------------------------		
-        Byte    Value	                        Format      Description 
-        -----------------------------------------------------------------------------		
-        0	    0x02	                        Binary		STX
-        1	    0	                            ASCII		Command Number Byte 0
-        2	    0	                            ASCII		Command Number Byte 1
-        3	    B	                            ASCII		Command Number Byte 2
-        4	    5	                            ASCII		Command Number Byte 3
-        5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
-        6	    Status	                        Binary		Status byte, currently unused
-        7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
-        8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
-        9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
-        10	    CH2 11~4	                    Binary		Middle 8 bits of Ch2
-        11	    CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
-        12	    CH1 13~6	                    Binary		Middle 8 bits of CH1
-        13	    CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
-        14	    CH0 15~8	                    Binary		Middle 8 bits of Ch0
-        15	    CH0 7~0	                        Binary		Bottom 8 bits of CH0
-        16	    EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
-        17	    EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
-        18	    EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
-        19	    EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
-        20	    TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        21	    TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        22	    TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        23	    TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        24	    TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
-        25	    TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
-        26	    TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
-        27	    TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
-        28	    Checksum MSB	                ASCII		Checksum
-        29	    Checksum LSB	                ASCII		Checksum 
-        30	    0x03	                        Binary		ETX
-        -----------------------------------------------------------------------------
-        """
+        # -----------------------------------------------------------------------------
+        # Binary 5 Data Format
+        # -----------------------------------------------------------------------------		
+        # Byte    Value	                        Format      Description 
+        # -----------------------------------------------------------------------------		
+        # 0	    0x02	                        Binary		STX
+        # 1	    0	                            ASCII		Command Number Byte 0
+        # 2	    0	                            ASCII		Command Number Byte 1
+        # 3	    B	                            ASCII		Command Number Byte 2
+        # 4	    5	                            ASCII		Command Number Byte 3
+        # 5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
+        # 6	    Status	                        Binary		Status byte, currently unused
+        # 7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
+        # 8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
+        # 9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
+        # 10	CH2 11~4	                    Binary		Middle 8 bits of Ch2
+        # 11	CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
+        # 12	CH1 13~6	                    Binary		Middle 8 bits of CH1
+        # 13	CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
+        # 14	CH0 15~8	                    Binary		Middle 8 bits of Ch0
+        # 15	CH0 7~0	                        Binary		Bottom 8 bits of CH0
+        # 16	EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
+        # 17	EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
+        # 18	EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
+        # 19	EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
+        # 20	TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+        # 21	TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+        # 22	TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+        # 23	TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+        # 24	TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
+        # 25	TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
+        # 26	TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
+        # 27	TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
+        # 28	Checksum MSB	                ASCII		Checksum
+        # 29	Checksum LSB	                ASCII		Checksum 
+        # 30	0x03	                        Binary		ETX
+        # -----------------------------------------------------------------------------
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = prePacket + self._port.Read(self.__B5BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
