@@ -1,6 +1,4 @@
-"""
-POD_8206HR handles communication using an 8206HR POD device. 
-"""
+
 
 # local imports 
 from BasicPodProtocol       import POD_Basics
@@ -16,6 +14,14 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_8206HR(POD_Basics) : 
+    """
+    POD_8206HR handles communication using an 8206HR POD device. 
+    
+    Attributes:
+        __B4LENGTH (int): class-level integer representing the number of bytes for a Binary 4 packet.
+        __B4BINARYLENGTH (int): class-level integer representing the number of binary bytes for a Binary 4 packet.
+        _preampGain (int): instance-level integer (10 or 100) preamplifier gain.
+    """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
@@ -30,6 +36,17 @@ class POD_8206HR(POD_Basics) :
 
 
     def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
+        """Runs when an instance is constructed. It runs the parent's initialization. Then it updates the _commands to contain 
+        the appropriate commands for an 8206-HR POD device. 
+
+        Args:
+            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
+            preampGain (int): _description_
+            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing the COM_io instance. Defaults to 9600.
+
+        Raises:
+            Exception: Preamplifier gain must be 10 or 100.
+        """
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
@@ -65,6 +82,18 @@ class POD_8206HR(POD_Basics) :
 
     @staticmethod
     def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes] :
+        """Overwrites the parent's method. Separates the components of a binary4 packet into a dictionary.
+
+        Args:
+            msg (bytes): Bytes string containing a complete binary4 Pod packet:  STX (1 byte) + command (4 bytes) + packet number (1 bytes) 
+                + TTL (1 byte) + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
+
+        Raises:
+            Exception: (1) the packet does not have the minimum number of bytes, (2) does not begin with STX, or (3) does not end with ETX.
+
+        Returns:
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'TTL', 'Ch0', 'Ch1', and 'Ch2' in bytes.
+        """
         # Binary 4 format = 
         #   STX (1 byte) + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) 
         #   + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
@@ -95,6 +124,16 @@ class POD_8206HR(POD_Basics) :
 
 
     def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float|dict[str,int]] : 
+        """Overwrites the parent's method. Unpacks the binary4 POD packet and converts the values of the ASCII-encoded bytes into 
+        integer values and the values of binary-encoded bytes into integers. Channel values are given in Volts.
+
+        Args:
+            msg (bytes): Bytes string containing a complete binary4 Pod packet:  STX (1 byte) + command (4 bytes) + packet number (1 bytes) 
+                + TTL (1 byte) + ch0 (2 bytes) + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte)
+
+        Returns:
+            dict[str,int|float|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'TTL', 'Ch0', 'Ch1', and 'Ch2' as numbers.
+        """
         # unpack parts of POD packet into dict
         msgDict = POD_8206HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -111,6 +150,15 @@ class POD_8206HR(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        """Overwrites the parent's method. Determines if the packet is standard or binary, and translates accordingly.  
+        Adds a check for the 'GET TTL PORT' command.
+
+        Args:
+            msg (bytes): Bytes string containing either a standard or binary packet.
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
+        """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
         if(self._commands.IsCommandBinary(cmd)): # message is binary 
@@ -134,6 +182,14 @@ class POD_8206HR(POD_Basics) :
 
     @staticmethod
     def _TranslateTTLbyte_ASCII(ttlByte: bytes) -> dict[str,int] : 
+        """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
+
+        Args:
+            ttlByte (bytes): One byte string for the TTL (ASCII encoded).
+
+        Returns:
+            dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
+        """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( {
             'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
@@ -145,6 +201,14 @@ class POD_8206HR(POD_Basics) :
 
     @staticmethod
     def _TranslateTTLbyte_Binary(ttlByte: bytes) -> dict[str,int] : 
+        """Separates the bits of each TTL (0-3) from a binary encoded byte.
+
+        Args:
+            ttlByte (bytes): One byte string for the TTL (binary encoded).
+
+        Returns:
+            dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
+        """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( {
             'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
@@ -155,6 +219,14 @@ class POD_8206HR(POD_Basics) :
 
 
     def _BinaryBytesToVoltage(self, value: bytes) -> float :
+        """Converts a binary bytes value read from POD device and converts it to the real voltage value at the preamplifier input.
+
+        Args:
+            value (bytes): Bytes string containing voltage measurement.
+
+        Returns:
+            float: A number containing the voltage in Volts [V].
+        """
         # convert binary message from POD to integer
         value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
@@ -169,29 +241,41 @@ class POD_8206HR(POD_Basics) :
 
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> bytes :
+        """After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX (checksum+ETX). 
+
+        Args:
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+
+        Raises:
+            Exception: Bad checksum for binary POD packet read.
+
+        Returns:
+            bytes: Byte string for a binary4 POD packet.
         """
-        Binary 4 Data Format
-        ------------------------------------------------------------		
-        Byte    Value	        Format      Description 
-        ------------------------------------------------------------		
-        0	    0x02	        Binary		STX
-        1	    0	            ASCII		Command Number Byte 0
-        2	    0	            ASCII		Command Number Byte 1
-        3	    B	            ASCII		Command Number Byte 2
-        4	    4	            ASCII		Command Number Byte 3
-        5	    Packet Number 	Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
-        6	    TTL	            Binary		The byte value of the TTL port.  Value would be equivalent to the command 106 GET TTL PORT above
-        7	    Ch0 LSB	        Binary		Least significant byte of the Channel 0 (EEG1) value
-        8	    Ch0 MSB	        Binary		Most significant byte of the Channel 0 (EEG1) value
-        9	    Ch1 LSB	        Binary		Channel 1 / EEG2 LSB
-        10	    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
-        11	    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
-        12	    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
-        13	    Checksum MSB	ASCII		MSB of checksum
-        14	    Checksum LSB	ASCII		LSB of checkxum
-        15	    0x03	        Binary		ETX
-        ------------------------------------------------------------
-        """
+
+        # ------------------------------------------------------------		
+        # Binary 4 Data Format
+        # ------------------------------------------------------------		
+        # Byte    Value	        Format      Description 
+        # ------------------------------------------------------------		
+        # 0	    0x02	        Binary		STX
+        # 1	    0	            ASCII		Command Number Byte 0
+        # 2	    0	            ASCII		Command Number Byte 1
+        # 3	    B	            ASCII		Command Number Byte 2
+        # 4	    4	            ASCII		Command Number Byte 3
+        # 5	    Packet Number 	Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
+        # 6	    TTL	            Binary		The byte value of the TTL port.  Value would be equivalent to the command 106 GET TTL PORT above
+        # 7	    Ch0 LSB	        Binary		Least significant byte of the Channel 0 (EEG1) value
+        # 8	    Ch0 MSB	        Binary		Most significant byte of the Channel 0 (EEG1) value
+        # 9	    Ch1 LSB	        Binary		Channel 1 / EEG2 LSB
+        # 10	    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
+        # 11	    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
+        # 12	    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
+        # 13	    Checksum MSB	ASCII		MSB of checksum
+        # 14	    Checksum LSB	ASCII		LSB of checkxum
+        # 15	    0x03	        Binary		ETX
+        # ------------------------------------------------------------
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = prePacket + self._port.Read(self.__B4BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
