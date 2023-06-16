@@ -18,11 +18,15 @@ class POD_8401HR(POD_Basics) :
     POD_8401HR handles communication using an 8401-HR POD device. 
 
     Attributes:
-        __B5LENGTH (int): class-level integer representing the number of bytes for a Binary 5 packet.
-        __B5BINARYLENGTH (int): class-level integer representing the number of binary bytes for a Binary 4 packet.
-        __CHANNELMAPALL (dict[str,dict[str,str]]): class-level dictionary containing the channel map for all preamplifier devices.
-        _ssGain (dict[str,int|None]): instance-level dictionary storing the second-stage gain for all four channels. 
-        _preampGain (dict[str,int|None]): instance-level dictionary storing the pramplifier gain for all four channels. 
+        __B5LENGTH (int): Class-level integer representing the number of bytes for a Binary 5 packet.
+        __B5BINARYLENGTH (int): Class-level integer representing the number of binary bytes for a \
+            Binary 5 packet.
+        __CHANNELMAPALL (dict[str,dict[str,str]]): Class-level dictionary containing the channel map for \
+            all preamplifier devices.
+        _ssGain (dict[str,int|None]): Instance-level dictionary storing the second-stage gain for all \
+            four channels. 
+        _preampGain (dict[str,int|None]): Instance-level dictionary storing the pramplifier gain for \
+            all four channels. 
     """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
@@ -60,18 +64,19 @@ class POD_8401HR(POD_Basics) :
                  preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  baudrate:int=9600
                 ) -> None :
-        """Runs when an instance is constructed. It runs the parent's initialization. Then it updates the _commands to 
-        contain the appropriate commands for an 8401HR POD device. Sets the _ssGain and _preampGain.
+        """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
+        the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ssGain \
+        and _preampGain.
 
         Args:
             port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
             preampName (str): String of the corresponding device/sensor name.
-            ssGain (dict[str,int|None], optional): dictionary storing the second-stage gain for all four channels. 
-                Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            preampGain (dict[str,int|None], optional): dictionary storing the pramplifier gain for all four channels. 
-                Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing the COM_io 
-                instance. Defaults to 9600.
+            ssGain (dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
+                channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            preampGain (dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
+                four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
+                the COM_io instance. Defaults to 9600.
 
         Raises:
             Exception: The ssGain dictionary has improper keys; keys must be ['A','B','C','D'].
@@ -151,18 +156,22 @@ class POD_8401HR(POD_Basics) :
         """Overwrites the parent's method. Separates the components of a binary5 packet into a dictionary.
 
         Args:
-            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) + command (4) + packet number (1) 
-                + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) \
+                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
+                + checksum (2) + ETX (1)
 
         Raises:
-            Exception: (1) the packet does not have the minimum number of bytes, (2) does not begin with STX, or (3) does not end with ETX.
+            Exception: (1) The packet does not have the minimum number of bytes, (2) does not begin \
+                with STX, or (3) does not end with ETX.
 
         Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'Channels', 'Analog EXT0', 'Analog EXT1', 
-                'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', in bytes.
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'Channels', \
+                'Analog EXT0', 'Analog EXT1', 'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', \
+                in bytes.
         """
         # Binary 5 format = 
-        #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+        #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) 
+        #   + checksum (2) + ETX (1)
         MINBYTES = POD_8401HR.__B5LENGTH
 
         # get number of bytes in message
@@ -237,16 +246,19 @@ class POD_8401HR(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the ASCII-encoded bytes into 
-        integer values and the values of binary-encoded bytes into integers. The channels and analogs are converted to volts (V).
+        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
+        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
+        channels and analogs are converted to volts (V).
 
         Args:
-            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) + command (4) + packet number (1) 
-                + status (1) + channels (9) + analog inputs (12) + checksum (2) + ETX (1)
+            msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
+                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
+                + checksum (2) + ETX (1).
 
         Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'D', 'C', 'B', 'A', 
-                'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', as numbers.
+            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
+                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
+                'Analog TTL3', 'Analog TTL4', as numbers.
         """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
@@ -277,7 +289,8 @@ class POD_8401HR(POD_Basics) :
             preampName (str): String for the device/sensor name.
 
         Returns:
-            dict[str,str]|None: Dictionary with keys A,B,C,D with values of the channel names. Returns None if the device name does not exist.
+            dict[str,str]|None: Dictionary with keys A,B,C,D with values of the channel names. Returns \
+                None if the device name does not exist.
         """
         if(preampName in POD_8401HR.__CHANNELMAPALL) : 
             return(POD_8401HR.__CHANNELMAPALL[preampName])
@@ -479,11 +492,13 @@ class POD_8401HR(POD_Basics) :
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) :
-        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX (checksum+ETX). 
+        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. 
 
         Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+                + command number (4 bytes).
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
 
         Raises:
             Exception: Bad checksum for binary POD packet read.
