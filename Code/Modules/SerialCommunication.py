@@ -16,14 +16,15 @@ class COM_io :
     COM_io handles serial communication (read/write) using COM ports. 
 
     Attributes:
-        __serialInst (Serial): serial COM port.
+        __serialInst (Serial): Instance-level serial COM port.
     """
 
     # ====== STATIC METHODS ======
 
     @staticmethod
     def GetCOMportsList() -> list[str] : 
-        """Finds all the available COM ports on the user's computer and appends them to an accessible list. 
+        """Finds all the available COM ports on the user's computer and appends them to an \
+        accessible list. 
 
         Returns:
             list[str]: List containing the names of available COM ports.
@@ -40,7 +41,8 @@ class COM_io :
     # ====== DUNDER METHODS ======
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None :
-        """Runs when the object is constructed. It initialized the __serialInst to a given COM port with a set baudrate.
+        """Runs when the object is constructed. It initialized the __serialInst to a given COM port with \
+        a set baudrate.
 
         Args:
             port (str | int): String of the serial port to be opened. 
@@ -97,7 +99,7 @@ class COM_io :
         return(self.__serialInst.isOpen())
 
     def IsSerialClosed(self) -> bool :
-        """Returns False if the serial instance port is open, True otherwise
+        """Returns False if the serial instance port is open, True otherwise.
 
         Returns:
             bool:True if the COM port is closed, False otherwise. 
@@ -114,7 +116,8 @@ class COM_io :
             self.__serialInst.close()
 
     def OpenSerialPort(self, port: str|int, baudrate:int=9600) -> None : 
-        """First, it closes the serial port if it is open. Then, it opens a serial port with a set baud rate. 
+        """First, it closes the serial port if it is open. Then, it opens a serial port with a set \
+        baud rate. 
 
         Args:
             port (str | int): String of the serial port to be opened. 
@@ -153,7 +156,8 @@ class COM_io :
         """Gets the name of the open port.
 
         Returns:
-            str|None: If the serial port is open, it will return a string of the port's name. If the port is closed, it will return None.
+            str|None: If the serial port is open, it will return a string of the port's name. \
+                If the port is closed, it will return None.
         """
         # return the port name if a port is open
         if(self.IsSerialOpen()) : 
@@ -171,7 +175,8 @@ class COM_io :
             numBytes (int): Integer number of bytes to read.
 
         Returns:
-            bytes|None: If the serial port is open, it will return a set number of read bytes. If it is closed, it will return None.
+            bytes|None: If the serial port is open, it will return a set number of read bytes. \
+                If it is closed, it will return None.
         """
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
@@ -186,7 +191,8 @@ class COM_io :
         """Reads until a new line is read from the open serial port.
 
         Returns:
-            bytes|None: If the serial port is open, it will return a complete read line. If closed, it will return None.
+            bytes|None: If the serial port is open, it will return a complete read line. \
+                If closed, it will return None.
         """
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
@@ -204,7 +210,8 @@ class COM_io :
             eol (bytes): end-of-line character.
 
         Returns:
-            bytes|None: If the serial port is open, it will return a read line ending in eol. If closed, it will return None.
+            bytes|None: If the serial port is open, it will return a read line ending in eol. \
+                If closed, it will return None.
         """
         # do not continue of serial is not open 
         if(self.IsSerialClosed()) :
