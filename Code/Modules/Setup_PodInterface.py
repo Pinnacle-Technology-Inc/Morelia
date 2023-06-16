@@ -1,7 +1,3 @@
-"""
-Setup_Interface provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children.
-"""
-
 # enviornment imports
 import os
 from   texttable  import Texttable
@@ -25,7 +21,21 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Setup_Interface : 
+    """
+    Setup_Interface provides the basic interface of required methods for subclasses to implement. \
+    SetupPodDevices.py is designed to handle any of these children.
 
+    Attributes:
+        _NAME (str): Class-level string for the Device name. This hould be overwritten by child \
+            subclasses.
+        _PORTKEY (str): Class-level string that is the parameter's dictionary key for the COM port.
+        _podDevices (dict[int,POD_Basics]): Instance-level dictionary of pod device objects. MUST have \
+            keys as device number.
+        _podParametersDict (dict[int,dict]): Instance-level dictionary of device information. MUST have \
+            keys as device number, and each value must have {'_PORTKEY': str, ...other values...}.
+        _saveFileName (str): Instance-level string filename: <path>/file.ext. The device name and number \
+            will be appended to the filename.
+    """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
@@ -41,7 +51,7 @@ class Setup_Interface :
         """Checks if the parameters for one device are valid.
 
         Args:
-            paramDict (dict): Dictionary of the parameters for one device 
+            paramDict (dict): Dictionary of the parameters for one device.
 
         Raises:
             Exception: Invalid parameters.
@@ -99,7 +109,8 @@ class Setup_Interface :
         pass
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        """Opens a text file and writes the column names. Writes the current date/time at the top of the txt file.
+        """Opens a text file and writes the column names. Writes the current date/time at the top of \
+        the txt file.
 
         Args:
             fname (str): String filename.
@@ -154,7 +165,8 @@ class Setup_Interface :
 
 
     def SetFileName(self, fileName: str) -> None :
-        """Sets the filename to save data to. Note that the device name and number will be appended to the end. 
+        """Sets the filename to save data to. Note that the device name and number will be appended \
+        to the end. 
 
         Args:
             fileName (str): String file name.
@@ -175,8 +187,8 @@ class Setup_Interface :
         """Sets the parameters for the POD devices.
 
         Args:
-            podParametersDict (dict[int,dict] | None, optional): dictionary of the device parameters for 
-                all devices. Defaults to None.
+            podParametersDict (dict[int,dict] | None, optional): dictionary of the device parameters \
+                for all devices. Defaults to None.
         """
         # get dictionary of POD device parameters
         if(podParametersDict==None):
@@ -280,7 +292,7 @@ class Setup_Interface :
 
 
     def _AddPODdevice(self) -> None :
-        """Asks the user for the parameters for the new device. A new device number 
+        """Asks the user for the parameters for the new device. A new device number \
         is generated.
         """
         nextNum = max(self._podParametersDict.keys())+1
@@ -292,7 +304,7 @@ class Setup_Interface :
 
 
     def _SetParam_allPODdevices(self) -> None :
-        """First gets the number of POD devices, then asks the user for the information 
+        """First gets the number of POD devices, then asks the user for the information \
         for each device.
         """
         # get the number of devices 
@@ -374,7 +386,7 @@ class Setup_Interface :
 
 
     def _ValidateParams(self) -> None : 
-        """Displays a table of the parameters of all devices, then asks the user if everything 
+        """Displays a table of the parameters of all devices, then asks the user if everything \
         is correct. The user can then edit the parameters of a device. 
         """
         # display all pod devices and parameters
@@ -388,7 +400,7 @@ class Setup_Interface :
 
 
     def _RemoveDevice(self) -> None : 
-        """Asks the user for a device number to remove, then deletes that device. This will 
+        """Asks the user for a device number to remove, then deletes that device. This will \
         only remove a device if there are more than one options. 
         """
         # check that there is a device to delete
@@ -416,7 +428,7 @@ class Setup_Interface :
 
 
     def _SelectDeviceFromDict(self, action: str) -> int :
-        """Asks the user to select a valid device number. The input must be an integer number 
+        """Asks the user to select a valid device number. The input must be an integer number \
         of an existing device. 
 
         Args:
@@ -437,15 +449,16 @@ class Setup_Interface :
         
 
     def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
-        """Generates a list of port names used by the active pod devices. There is an option to 
+        """Generates a list of port names used by the active pod devices. There is an option to \
         exclude an additional name from the list.
 
         Args:
             key (str, optional): String key to access the _podParametersDict. Defaults to 'Port'.
-            exclude (str | None, optional): String port name to exclude from the returned list. Defaults to None.
+            exclude (str | None, optional): String port name to exclude from the returned list. \
+                Defaults to None.
 
         Returns:
-            list[str]: list of string names of ports in use.
+            list[str]: List of string names of ports in use.
         """
         if(exclude == None) : 
             # get port name for each POD device 
