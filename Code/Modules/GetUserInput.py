@@ -29,7 +29,8 @@ class UserInput :
     
     @staticmethod
     def AskForType(typecast: 'function', prompt: str) -> int|float|str :
-        """Ask user for input of a specific data type. If invalid input is given, an error message will print and the user will be prompted again. 
+        """Ask user for input of a specific data type. If invalid input is given, an error message will \
+        print and the user will be prompted again. 
 
         Args:
             typecast (function): Datatype to cast the user input (ex. _CastInt, _CastFloat, _CastStr)
@@ -84,7 +85,8 @@ class UserInput :
 
     @staticmethod
     def AskYN(question: str, append:str=' (y/n): ') -> bool : 
-        """Asks the user a yes or no question. If invalid input is given, an error message will print and the user will be prompted again. 
+        """Asks the user a yes or no question. If invalid input is given, an error message will print and \
+        the user will be prompted again. 
 
         Args:
             question (str): Statement requesting input from the user.
@@ -111,15 +113,18 @@ class UserInput :
 
     @staticmethod
     def AskForTypeInRange(typecast: 'function', prompt: str, minimum: int|float, maximum: int|float, thisIs:str='Input', unit:str='') -> int|float :
-        """Asks user for a numerical value that falls between two numbers. If invalid input is given, an error message will print and the user will be prompted again. 
+        """Asks user for a numerical value that falls between two numbers. If invalid input is given, an \
+        error message will print and the user will be prompted again. 
 
         Args:
             typecast (function): Datatype to cast the user input (ex. _CastInt, _CastFloat, _CastStr).
             prompt (str): Statement requesting input from the user.
             minimum (int | float): Minimum value of range.
             maximum (int | float): Maximum value of range.
-            thisIs (str, optional): Description of the input/what is being asked for. Used when printing the error message. Defaults to 'Input'.
-            unit (str, optional): Unit of the requested value. Use when printing the error message. Defaults to ''.
+            thisIs (str, optional): Description of the input/what is being asked for. Used when printing \
+                the error message. Defaults to 'Input'.
+            unit (str, optional): Unit of the requested value. Use when printing the error message. \
+                Defaults to ''.
 
         Returns:
             int|float: Numerical value given by the user that falls in the given range. 
@@ -140,8 +145,10 @@ class UserInput :
             prompt (str): Statement requesting input from the user.
             minimum (int): Minimum value of range.
             maximum (int): Maximum value of range.
-            thisIs (str, optional): Description of the input/what is being asked for. Used when printing the error message. Defaults to 'Input'.
-            unit (str, optional): Unit of the requested value. Use when printing the error message. Defaults to ''.
+            thisIs (str, optional): Description of the input/what is being asked for. Used when printing \
+                the error message. Defaults to 'Input'.
+            unit (str, optional): Unit of the requested value. Use when printing the error message. \
+                Defaults to ''.
 
         Returns:
             int: Integer value given by the user that falls in the given range. 
@@ -156,8 +163,10 @@ class UserInput :
             prompt (str): Statement requesting input from the user.
             minimum (float): Minimum value of range.
             maximum (float): Maximum value of range.
-            thisIs (str, optional): Description of the input/what is being asked for. Used when printing the error message. Defaults to 'Input'.
-            unit (str, optional): Unit of the requested value. Use when printing the error message. Defaults to ''.
+            thisIs (str, optional): Description of the input/what is being asked for. Used when printing \
+                the error message. Defaults to 'Input'.
+            unit (str, optional): Unit of the requested value. Use when printing the error message. \
+                Defaults to ''.
 
         Returns:
             float: Float value given by the user that falls in the given range. 
@@ -169,17 +178,18 @@ class UserInput :
 
     @staticmethod
     def AskForTypeInList(typecast: 'function', prompt: str, goodInputs: list, badInputMessage:str|None=None) -> int|float|str : 
-        """Asks the user for a value of a given type that exists in the list of valid options.  If invalid input is given, 
-        an error message will print and the user will be prompted again. 
+        """Asks the user for a value of a given type that exists in the list of valid options.  If invalid \
+        input is given, an error message will print and the user will be prompted again. 
 
         Args:
             typecast (function): Datatype to cast the user input (ex. _CastInt, _CastFloat, _CastStr).
             prompt (str): Statement requesting input from the user.
             goodInputs (list): List of valid input options.
-            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. Defaults to None.
+            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. \
+                Defaults to None.
 
         Returns:
-            int|float|str: User's choice from the goodInputs list as the given datatype
+            int|float|str: User's choice from the goodInputs list as the given datatype.
         """
         # get message if bad input 
         if(badInputMessage == None) : 
@@ -202,7 +212,8 @@ class UserInput :
         Args:
             prompt (str): Statement requesting input from the user
             goodInputs (list): List of valid input options.
-            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. Defaults to None.
+            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. \
+                Defaults to None.
 
         Returns:
             int: User's choice from the options list as an integer.
@@ -216,7 +227,8 @@ class UserInput :
         Args:
             prompt (str): Statement requesting input from the user.
             goodInputs (list): List of valid input options.
-            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. Defaults to None.
+            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. \
+                Defaults to None.
 
         Returns:
             float: User's choice from the options list as a float.
@@ -230,10 +242,11 @@ class UserInput :
         Args:
             prompt (str): Statement requesting input from the user.
             goodInputs (list): List of valid input options
-            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. Defaults to None.
+            badInputMessage (str | None, optional): Error message to be printed if invalid input is given. \
+                Defaults to None.
 
         Returns:
-            str: User's choice from the options list as a string
+            str: User's choice from the options list as a string.
         """
         return(UserInput.AskForTypeInList(UserInput.CastStr, prompt, goodInputs, badInputMessage))
         
