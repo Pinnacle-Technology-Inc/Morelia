@@ -1,6 +1,4 @@
-"""
-POD_Packets is a collection of methods for creating and interpreting POD packets. 
-"""
+
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -11,6 +9,9 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_Packets() : 
+    """
+    POD_Packets is a collection of methods for creating and interpreting POD packets. 
+    """
 
     # ============ STATIC METHODS ============      ========================================================================================================================
 
@@ -20,12 +21,22 @@ class POD_Packets() :
 
     @staticmethod
     def STX() -> bytes :
+        """Get start-of-transmission (STX) character in bytes. STX marks the starting byte of a POD Packet.
+
+        Returns:
+            bytes: Bytes for STX (0x02).
+        """
         # return STX character used to indicate start of a packet 
         return(bytes.fromhex('02'))
 
 
     @staticmethod
     def ETX() -> bytes :
+        """Get end-of-transmission (ETX) character in bytes. ETX marks the end byte of a POD Packet.
+
+        Returns:
+            bytes: Bytes for ETX(0x03).
+        """
         # return ETX character used to indicate end of a packet 
         return(bytes.fromhex('03'))
 
@@ -35,6 +46,15 @@ class POD_Packets() :
 
     @staticmethod
     def TwosComplement(val: int, nbits: int) -> int :
+        """Gets the 2's complement of the argument value.
+
+        Args:
+            val (int): Value to be complemented.
+            nbits (int): Number of bits in the value.
+
+        Returns:
+            int: Integer of the 2's complement for the val.
+        """
         # value is negative 
         if (val < 0) :
             val = (1 << nbits) + val
@@ -48,6 +68,22 @@ class POD_Packets() :
 
     @staticmethod
     def IntToAsciiBytes(value: int, numChars: int) -> bytes : 
+        """Converts an integer value into ASCII-encoded bytes. 
+        
+        First, it converts the integer value into a usable uppercase hexadecimal string. Then it converts \
+        the ASCII code for each character into bytes. Lastly, it ensures that the final message is the \
+        desired length.  
+
+        Example: if value=2 and numBytes=4, the returned ASCII will show b'0002', which is \
+        '0x30 0x30 0x30 0x32' in bytes. Uses the 2's complement if the val is negative. 
+
+        Args:
+            value (int): Integer value to be converted into ASCII-encoded bytes.
+            numChars (int): Number characters to be the length of the ASCII-encoded message.
+
+        Returns:
+            bytes: Bytes that are ASCII-encoded conversions of the value parameter.
+        """
         # get 2C if signed 
         if(value < 0) : 
             val = POD_Packets.TwosComplement(value, numChars*4)
@@ -102,6 +138,18 @@ class POD_Packets() :
 
     @staticmethod
     def AsciiBytesToInt(msg_b: bytes, signed:bool=False) -> int :
+        """Converts a ASCII-encoded bytes message into an integer.  It does this using a base-16 \
+        conversion. If the message is signed and the msb is '1', the integer will be converted to \
+        it's negative 2's complement. 
+
+        Args:
+            msg_b (bytes): Bytes message to be converted to an integer. The bytes must be base-16 or \
+                the conversion will fail. 
+            signed (bool, optional): True if the message is signed, false if unsigned. Defaults to False.
+
+        Returns:
+            int: Integer result from the ASCII-encoded byte conversion.
+        """
         # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
         msg_str = str(msg_b) [2 : len(str(msg_b))-1]
         # convert string into base 16 int (reads string as hex number, returns decimal int)
@@ -118,18 +166,54 @@ class POD_Packets() :
 
     @staticmethod
     def BinaryBytesToInt(msg: bytes, byteorder:str='big', signed:bool=False) -> int :
+        """Converts binary-encoded bytes into an integer.
+
+        Args:
+            msg (bytes): Bytes message holding binary information to be converted into an integer.
+            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little \
+                endian. Defaults to 'big'.
+            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \
+                Defaults to False.
+
+        Returns:
+            int: Integer result from the binary-encoded bytes message.
+        """
         # convert a binary message represented by bytes into an integer
         return(int.from_bytes(msg,byteorder=byteorder,signed=signed))
 
     
     @staticmethod
     def ASCIIbytesToInt_Split(msg: bytes, keepTopBits: int, cutBottomBits: int) -> int : 
+        """Converts a specific bit range in an ASCII-encoded bytes object to an integer.
+
+        Args:
+            msg (bytes): Bytes message holding binary information to be converted into an integer.
+            keepTopBits (int): Integer position of the msb of desired bit range.
+            cutBottomBits (int): Integer number of lsb to remove.
+
+        Returns:
+            int: Integer result from the ASCII-encoded bytes message in a given bit range.
+        """
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
         return( ( POD_Packets.AsciiBytesToInt(msg) & (2**keepTopBits - 1) ) >> cutBottomBits)
     
     
     @staticmethod
     def BinaryBytesToInt_Split(msg: bytes, keepTopBits: int, cutBottomBits: int, byteorder:str='big', signed:bool=False) -> int : 
+        """Converts a specific bit range in a binary-encoded bytes object to an integer.
+
+        Args:
+            msg (bytes): Bytes message holding binary information to be converted into an integer.
+            keepTopBits (int): Integer position of the msb of desired bit range.
+            cutBottomBits (int): Integer number of lsb to remove.
+            byteorder (str, optional): Ordering of bytes. 'big' for big endian and 'little' for little \
+                endian. Defaults to 'big'.
+            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \
+                Defaults to False.
+
+        Returns:
+            int: Integer result from the binary-encoded bytes message in a given bit range.
+        """
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
         return( ( POD_Packets.BinaryBytesToInt(msg,byteorder,signed) & (2**keepTopBits - 1) ) >> cutBottomBits)
 
@@ -139,6 +223,15 @@ class POD_Packets() :
 
     @staticmethod
     def Checksum(bytesIn: bytes) -> bytes:
+        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the \
+        message, inverting, and taking the last byte.
+
+        Args:
+            bytesIn (bytes): Bytes message containing POD packet data.
+
+        Returns:
+            bytes: Two ASCII-encoded bytes containing the checksum for bytesIn.
+        """
         # sum together all bytes in byteArr
         sum = 0
         for b in bytesIn : 
@@ -153,6 +246,17 @@ class POD_Packets() :
 
     @staticmethod
     def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
+        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
+        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
+
+        Args:
+            commandNumber (int): Integer representing the command number. This will be converted into \
+                a 4 byte long ASCII-encoded bytes string.
+            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
+
+        Returns:
+            bytes: Bytes string of a complete standard POD packet.
+        """
         # prepare components of packet
         stx = POD_Packets.STX()                              # STX indicating start of packet (1 byte)
         cmd = POD_Packets.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
@@ -170,7 +274,23 @@ class POD_Packets() :
 
     
     @staticmethod
-    def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :             
+    def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
+        """Converts a payload into a bytes string.
+
+        Args:
+            payload (int | bytes | tuple[int | bytes]): Integer, bytes, or tuple containing the payload.
+            argSizes (tuple[int]): Tuple of the argument sizes.
+
+        Raises:
+            Exception: Payload requires multiple arguments, use a tuple.
+            Exception: Payload is the wrong size.
+            Exception: Payload has an incorrect number of items.
+            Exception: Payload has invalid values.
+            Exception: Payload is an invalid type.
+
+        Returns:
+            bytes: Bytes string of the payload.
+        """
         # if integer payload is given ... 
         if(isinstance(payload,int)):
             # check that command only uses one argument 
@@ -211,7 +331,7 @@ class POD_Packets() :
 
         # bad type given 
         else :
-            raise Exception('Payload is an invalid type')
+            raise Exception('Payload is an invalid type.')
 
         # return payload as bytes
         return(pld)

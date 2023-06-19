@@ -1,7 +1,4 @@
-"""
-Setup_8401HR provides the setup functions for an 8206-HR POD device.
-REQUIRES FIRMWARE 1.0.2 OR HIGHER.
-"""
+
 
 # enviornment imports
 import copy
@@ -27,7 +24,17 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Setup_8401HR(Setup_Interface) : 
-    
+    """
+    Setup_8401HR provides the setup functions for an 8206-HR POD device.
+
+    REQUIRES FIRMWARE 1.0.2 OR HIGHER.
+
+    Attributes:
+        _PARAMKEYS (list[str]): class-level list containing the device parameter dict keys.
+        _CHANNELKEYS (list[str]): class-level list containing the keys of 'Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode' parameters.
+        _PHYSICAL_BOUND_uV (int): class-level integer representing the max/-min physical value in uV. Used for EDF files. 
+        _NAME (str): class-level string containing the POD device name.
+    """
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
 
@@ -46,6 +53,11 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def GetDeviceName() -> str : 
+        """returns the name of the POD device.
+
+        Returns:
+            str: String of _NAME.
+        """
         # returns the name of the POD device 
         return(Setup_8401HR._NAME)
     
@@ -57,6 +69,15 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+        """Creates a POD_8206HR object and write the setup parameters to it. 
+
+        Args:
+            deviceNum (int): Integer of the device's number.
+            deviceParams (dict[str,): Dictionary of the device's parameters
+
+        Returns:
+            bool: True if connection was successful, false otherwise.
+        """
         failed = True 
         try : 
             # get port name 
@@ -96,6 +117,17 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _CodeHighpass(highpass: float) -> int : 
+        """Gets the integer payload to use for 'SET HIGHPASS' given a highpass value.
+
+        Args:
+            highpass (float): Highpass value in Hz.
+
+        Raises:
+            Exception: High-pass value is not supported.
+
+        Returns:
+            int: Integer code representing the highpass value.
+        """
         match highpass : 
             case  0.5  : return(0)
             case  1.0  : return(1)
@@ -106,6 +138,17 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _CodeDCmode(dcMode: str) -> int : 
+        """gets the integer payload to use for 'SET DC MODE' commands given the mode.
+
+        Args:
+            dcMode (str): DC mode VBIAS or AGND.
+
+        Raises:
+            Exception: DC Mode value is not supported.
+
+        Returns:
+            int: Integer code representing the DC mode.
+        """
         match dcMode : 
             case 'VBIAS' : return(0)
             case 'AGND'  : return(1)
@@ -116,6 +159,14 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
+        """Asks the user to input all the device parameters. 
+
+        Args:
+            forbiddenNames (list[str]): List of port names already used by other devices.
+
+        Returns:
+            dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
+        """
         params = {
             self._PORTKEY           : self._ChoosePort(forbiddenNames),
             'Preamplifier Device'   : self._GetPreampDeviceName(),
@@ -135,6 +186,11 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _GetPreampDeviceName(self) -> str : 
+        """Asks the user to select a mouse/rat preamplifier.
+
+        Returns:
+            str: String of the chosen preamplifier.
+        """
         deviceList = POD_8401HR.GetSupportedPreampDevices()
         print('Available preamplifiers: '+', '.join(deviceList))
         return( UserInput.AskForStrInList(
@@ -143,7 +199,19 @@ class Setup_8401HR(Setup_Interface) :
             badInputMessage='[!] Please input a valid mouse/rat preamplifier.'))
 
         
-    def _SetForMappedChannels(self, message: str, channelMap: dict[str,str], func: 'function') -> dict[str,int|None]: # func MUST take one argument, which is the channel map value 
+    # func MUST take one argument, which is the channel map value 
+    def _SetForMappedChannels(self, message: str, channelMap: dict[str,str], func: 'function') -> dict[str,int|None]: 
+        """Asks the user to input values for all channels (excluding no-connects). 
+
+        Args:
+            message (str): Message to ask the user.
+            channelMap (dict[str,str]): Maps the ABCD channels to the sensor's channel name. 
+            func (function): a function that asks the user for an input. takes one string parameter \
+                and returns one value.  
+
+        Returns:
+            dict[str,int|None]: Dictionary with ABCD keys and user inputs for values.
+        """
         print(message)
         preampDict = {}
         for abcd, label in channelMap.items() : 
@@ -157,7 +225,15 @@ class Setup_8401HR(Setup_Interface) :
     
 
     @staticmethod
-    def _SetPreampGain(channelName: str) -> int|None: 
+    def _SetPreampGain(channelName: str) -> int|None : 
+        """Asks the user for the preamplifier gain.
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            int|None: An integer for the gain, or None if no gain.
+        """
         gain = UserInput.AskForIntInList(
             prompt='\t'+str(channelName), 
             goodInputs=[1,10,100], 
@@ -169,6 +245,14 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetSSGain(channelName: str) -> int : 
+        """Asks the user for the second stage gain.
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            int: An integer for the gain.
+        """
         return( UserInput.AskForIntInList(
             prompt='\t'+str(channelName), 
             goodInputs=[1,5], 
@@ -176,7 +260,15 @@ class Setup_8401HR(Setup_Interface) :
 
 
     @staticmethod
-    def _SetHighpass(channelName: str) -> int|None : 
+    def _SetHighpass(channelName: str) -> float|None : 
+        """Asks the user for the high-pass in Hz (0.5,1,10Hz, or DC).
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            float|None: A float for the high-pass frequency in Hz, or None if DC.
+        """
         # NOTE  SET HIGHPASS Sets the highpass filter for a channel (0-3). 
         #       Requires channel to set, and filter value (0-3): 
         #       0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass 
@@ -192,6 +284,14 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetLowpass(channelName: str) -> int|None : 
+        """Asks the user for the low-pass in Hz (21-15000Hz).
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            int|None: An integer for the low-pass frequency in Hz.
+        """
         return(UserInput.AskForIntInRange(
             prompt='\t'+str(channelName), 
             minimum=21, maximum=15000, 
@@ -200,6 +300,14 @@ class Setup_8401HR(Setup_Interface) :
     
     @staticmethod
     def _SetBias(channelName: str) -> float : 
+        """Asks the user for the bias voltage in V (+/-2.048V).
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            float: A float for thebias voltage in V.
+        """
         return( UserInput.AskForFloatInRange(
             prompt='\t'+str(channelName),
             minimum=-2.048,
@@ -210,6 +318,14 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _SetDCMode(channelName: str) -> str : 
+        """Asks the user for the DC mode (VBIAS or AGND).
+
+        Args:
+            channelName (str): Name of the channel.
+
+        Returns:
+            str: String for the DC mode.
+        """
         # NOTE  SET DC MODE Sets the DC mode for the selected channel. 
         #       Requires the channel to read, and value to set: 
         #       0 = Subtract VBias, 1 = Subtract AGND.  
@@ -226,6 +342,11 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _GetPODdeviceParameterTable(self) -> Texttable : 
+        """Builds a table containing the parameters for all POD devices.
+
+        Returns:
+            Texttable: Texttable containing all parameters.
+        """
         # setup table 
         tab = Texttable(160)
         # write column names
@@ -251,6 +372,15 @@ class Setup_8401HR(Setup_Interface) :
     
 
     def _NiceABCDtableText(self, abcdValueDict: dict[str,int|str|None], channelMap: dict[str,str]) -> str:
+        """Builds a string that formats the channel values to be input into the parameter table.
+
+        Args:
+            abcdValueDict (dict[str,int | str | None]): Dictionary with ABCD keys.
+            channelMap (dict[str,str]): Maps the ABCD channels to the sensor's channel name. 
+
+        Returns:
+            str: String with "channel name: value newline..." for each channel.
+        """
         # build nicely formatted text
         text = ''
         for key,val in channelMap.items() : 
@@ -266,6 +396,19 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        """Checks if the parameters for one device are valid.
+
+        Args:
+            paramDict (dict): Dictionary of the parameters for one device 
+
+        Raises:
+            Exception: Invalid parameters.
+            Exception: Invalid parameter value types.
+            Exception: Preamplifier is not supported.
+
+        Returns:
+            bool: True for valid parameters.
+        """
         # check that all params exist 
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
             raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
@@ -299,6 +442,20 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _IsChannelTypeValid(self, chdict: dict, isType) -> bool :
+        """Checks that the keys and values for a given channel are valid.
+
+        Args:
+            chdict (dict): dictionary with ABCD keys and isType type values.
+            isType (bool): data type.
+
+        Raises:
+            Exception: Channel dictionary is empty.
+            Exception: Invalid channel keys.
+            Exception: Invalid channel value.
+
+        Returns:
+            bool: True for valid parameters.
+        """
         # is dict empty?
         if(len(chdict)==0) : 
             raise Exception('[!] Channel dictionary is empty for '+str(self._NAME)+'.')
@@ -315,6 +472,14 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+        """Opens a text file and writes the column names. Writes the current date/time at the top of the txt file.
+
+        Args:
+            fname (str): String filename.
+
+        Returns:
+            IOBase: Opened file.
+        """
         # open file and write column names 
         f = open(fname, 'w')
         # write time
@@ -332,6 +497,15 @@ class Setup_8401HR(Setup_Interface) :
     
 
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
+        """Opens EDF file and write header.
+
+        Args:
+            fname (str): String filename.
+            devNum (int): Integer device number.
+
+        Returns:
+            EdfWriter: Opened file.
+        """
         # get all channel names for ABCD, excluding no-connects (NC)
         lables = [x for x 
                   in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
@@ -359,6 +533,13 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
+        """Writes data to an open text file.
+
+        Args:
+            file (IOBase): opened write file.
+            data (list[np.ndarray]): List with one item for each channel.
+            t (np.ndarray): list with the time stamps (in seconds).
+        """
         for i in range(len(t)) : 
             line = [t[i]]
             for arr in data : 
@@ -371,6 +552,12 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
+        """Writes data to an open EDF file.
+
+        Args:
+            file (EdfWriter): opened EDF file.
+            data (list[np.ndarray]): List with one item for each channel.
+        """
         # write data to EDF file 
         file.writeSamples(data)
 
@@ -379,12 +566,18 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _StopStream(self) -> None :
+        """Write a command to stop streaming data to all POD devices."""
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             pod.WritePacket(cmd='STREAM', payload=0)
 
 
     def _StreamThreading(self) -> dict[int,Thread] :
+        """Opens a save file, then creates a thread for each device to stream and write data from. 
+
+        Returns:
+            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+        """
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
         # make threads for reading 
@@ -408,6 +601,14 @@ class Setup_8401HR(Setup_Interface) :
     
 
     def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int, devNum: int) -> None :
+        """Streams data from a POD device and saves data to file. Stops looking when a stop stream command is read. 
+        Calculates average time difference across multiple packets to collect a continuous time series data. 
+
+        Args:
+            pod (POD_8206HR): POD device to read from.
+            file (IOBase | EdfWriter): open file.
+            sampleRate (int): Integer sample rate in Hz.
+        """
         # get file type
         name, extension = os.path.splitext(self._saveFileName)
 

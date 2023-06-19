@@ -1,7 +1,3 @@
-"""
-POD_Commands manages a dictionary containing available commands for a POD device.
-"""
-
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -11,6 +7,28 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_Commands : 
+    """
+    POD_Commands manages a dictionary containing available commands for a POD device.
+
+    Attributes:
+        __NAME (int): Class-level integer representing the index key for the command name for __commands \
+            list values.
+        __ARGUMENTS (int): Class-level integer representing the index key for the number of bytes in an \
+            argument for __commands list values.
+        __RETURNS (int): Class-level integer representing the index key for the number of bytes in the \
+            return for __commands list values.
+        __BINARY (int): Class-level integer representing the index key for the binary flag for __commands \
+            list values.
+        __NOVALUE (int): Class-level integer used to mark when a list item in __commands means 'no value' \
+            or is undefined. 
+        __U8 (int): Class-level integer representing the number of hexadecimal characters for an unsigned \
+            8-bit value.
+        __U16 (int): Class-level integer representing the number of hexadecimal characters for an unsigned \
+            16-bit value.
+        __commands (dict[int,list[str|tuple[int]|bool]]): Dictionary containing the available commands for \
+            a POD device. Each entry is formatted as { key(command number) : value([command name, number \
+            of argument ASCII bytes, number of return bytes, binary flag ) }.
+    """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
@@ -33,6 +51,9 @@ class POD_Commands :
 
 
     def __init__(self) -> None : 
+        """Runs whan an instance is constructed. It sents the commands dictionary to the basic \
+        command set.
+        """
         # contains allowed POD commands (basic set)
         self.__commands : dict[int,list[str|tuple[int]|bool]] = POD_Commands.GetBasicCommands()
 
@@ -42,21 +63,43 @@ class POD_Commands :
 
     @staticmethod
     def NoValue() -> int : 
+        """Gets value of __NOVALUE.
+
+        Returns:
+            int: Value of __NOVALUE.
+        """
         # returns the no value marker for commands dict 
         return(POD_Commands.__NOVALUE)
 
     @staticmethod
     def U8() -> int : 
+        """Gets value of __U8.
+
+        Returns:
+            int: Value of __U8.
+        """
         # returns the no value marker for commands dict 
         return(POD_Commands.__U8)
 
     @staticmethod
     def U16() -> int : 
+        """Gets value of __U16.
+
+        Returns:
+            int: Value of __U16.
+        """
         # returns the no value marker for commands dict 
         return(POD_Commands.__U16)
 
     @staticmethod
     def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool]] : 
+        """Creates a dictionary containing the basic POD command set (0,1,2,3,4,5,6,7,8,9,10,11,12).
+
+        Returns:
+            dict[int,list[str|tuple[int]|bool]]: Dictionary containing the available commands for this POD \
+                device. Each entry is formatted as { key(command number) : value([command name, number of \
+                argument ASCII bytes, number of return bytes, binary flag ) }.
+        """
         # constants 
         U8 = POD_Commands.U8()
         NOVALUE = POD_Commands.NoValue()
@@ -84,16 +127,38 @@ class POD_Commands :
 
 
     def GetCommands(self) -> dict[int, list[str|tuple[int]|bool]] :
+        """Gets the contents of the current command dictionary (__commands).
+
+        Returns:
+            dict[int, list[str|tuple[int]|bool]]: Dictionary containing the available commands for a POD \
+                device. Each entry is formatted as { key(command number) : value([command name, number of \
+                argument ASCII bytes, number of return bytes, binary flag ) }.
+        """
         # returns dict containing commands 
         return(self.__commands)
 
 
     def RestoreBasicCommands(self) -> None : 
+        """Sets the current commands (__commands) to the basic POD command set."""
         # set commands to the basic command set 
         self.__commands = POD_Commands.GetBasicCommands()
 
 
     def AddCommand(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool) -> bool:
+        """Adds a command entry to the current commands dictionary (__commands) if the command does \
+        not exist.
+
+        Args:
+            commandNumber (int): Integer of the command number.
+            commandName (str): String of the command's name.
+            argumentBytes (tuple[int]): Integer of the number of bytes in the argument.
+            returnBytes (tuple[int]): Integer of the number of bytes in the return.
+            isBinary (bool): Boolean flag to mark if the command is binary (True) or standard (False). 
+
+        Returns:
+            bool: True if the command was successfully added, False if the command could not be added \
+                because it already exists.
+        """
         # command number and name must not already exist 
         if(    self.DoesCommandExist(commandNumber)
             or self.DoesCommandExist(commandName)
@@ -107,6 +172,14 @@ class POD_Commands :
 
 
     def RemoveCommand(self, cmd: int|str) -> bool :
+        """Removes the entry for a given command in __commands dictionary. 
+
+        Args:
+            cmd (int | str): integer command number or string command name. 
+
+        Returns:
+            bool: True if the command was successfully removed, False if the command does not exist. 
+        """
         # return false if command is not in dict 
         if(not self.DoesCommandExist(cmd)): 
             return(False)
@@ -122,6 +195,15 @@ class POD_Commands :
 
 
     def CommandNumberFromName(self, name: str) -> int|None : 
+        """Gets the command number from the command dictionary using the command's name.
+
+        Args:
+            name (str): string of the command's name.
+
+        Returns:
+            int|None: Integer representing the command number. If the command could not be found, \
+                return None.
+        """
         # search through dict to find key 
         for key,val in self.__commands.items() :
             if(name == val[self.__NAME]) : 
@@ -131,6 +213,15 @@ class POD_Commands :
 
 
     def ArgumentHexChar(self, cmd: int|str) -> tuple[int]|None : 
+        """Gets the tuple for the number of hex characters in the argument for a given command.
+
+        Args:
+            cmd (int | str): integer command number or string command name. 
+
+        Returns:
+            tuple[int]|None: Tuple representing the number of bytes in the argument for cmd. If the \
+                command could not be found, return None.
+        """
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -141,6 +232,15 @@ class POD_Commands :
 
 
     def ReturnHexChar(self, cmd: int|str) -> tuple[int]|None : 
+        """Gets the tuple for the number of hex characters in the return for a given command.
+
+        Args:
+            cmd (int | str): integer command number or string command name. 
+
+        Returns:
+            tuple[int]|None: Tuple representing the number of hex characters in the return for cmd. If the \
+                command could not be found, return None.
+        """
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -151,6 +251,15 @@ class POD_Commands :
 
 
     def IsCommandBinary(self, cmd: int|str) -> bool|None :
+        """Gets the binary flag for a given command.
+
+        Args:
+            cmd (int | str): integer command number or string command name. 
+
+        Returns:
+            bool|None: Boolean flag that is True if the command is binary and False if standard. If the \
+                command could not be found, return None.
+        """
         # search through dict to find matching entry  
         for key,val in self.__commands.items() :
             if(cmd == key or cmd == val[self.__NAME]) : 
@@ -161,6 +270,14 @@ class POD_Commands :
 
 
     def DoesCommandExist(self, cmd: int|str) -> bool : 
+        """Checks if a command exists in the __commands dictionary.
+
+        Args:
+            cmd (int | str): integer command number or string command name. 
+
+        Returns:
+            bool: True if the command exists, false otherwise.
+        """
         # check each command number and name to try to find match 
         for key,val in self.__commands.items() : 
             if(cmd==key or cmd==val[self.__NAME]):
