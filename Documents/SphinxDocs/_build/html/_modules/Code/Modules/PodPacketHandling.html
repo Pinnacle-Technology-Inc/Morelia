@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Code.Modules.PodPacketHandling &#8212; Python POD API v1.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/alabaster.css" />
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for Code.Modules.PodPacketHandling</h1><div class="highlight"><pre>
+<span></span>
+
+<span class="c1"># authorship</span>
+<span class="n">__author__</span>      <span class="o">=</span> <span class="s2">&quot;Thresa Kelly&quot;</span>
+<span class="n">__maintainer__</span>  <span class="o">=</span> <span class="s2">&quot;Thresa Kelly&quot;</span>
+<span class="n">__credits__</span>     <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Thresa Kelly&quot;</span><span class="p">,</span> <span class="s2">&quot;Seth Gabbert&quot;</span><span class="p">]</span>
+<span class="n">__license__</span>     <span class="o">=</span> <span class="s2">&quot;New BSD License&quot;</span>
+<span class="n">__copyright__</span>   <span class="o">=</span> <span class="s2">&quot;Copyright (c) 2023, Thresa Kelly&quot;</span>
+<span class="n">__email__</span>       <span class="o">=</span> <span class="s2">&quot;sales@pinnaclet.com&quot;</span>
+
+<div class="viewcode-block" id="POD_Packets"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets">[docs]</a><span class="k">class</span> <span class="nc">POD_Packets</span><span class="p">()</span> <span class="p">:</span> 
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    POD_Packets is a collection of methods for creating and interpreting POD packets. </span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># ============ STATIC METHODS ============      ========================================================================================================================</span>
+
+
+    <span class="c1"># ------------ USEFUL VALUES ------------   ------------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="POD_Packets.STX"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.STX">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">STX</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get start-of-transmission (STX) character in bytes. STX marks the starting byte of a POD Packet.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Bytes for STX (0x02).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># return STX character used to indicate start of a packet </span>
+        <span class="k">return</span><span class="p">(</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s1">&#39;02&#39;</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="POD_Packets.ETX"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.ETX">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ETX</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get end-of-transmission (ETX) character in bytes. ETX marks the end byte of a POD Packet.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Bytes for ETX(0x03).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># return ETX character used to indicate end of a packet </span>
+        <span class="k">return</span><span class="p">(</span><span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="s1">&#39;03&#39;</span><span class="p">))</span></div>
+
+
+    <span class="c1"># ------------ CONVERSIONS ------------     ------------------------------------------------------------------------------------------------------------------------</span>
+
+
+<div class="viewcode-block" id="POD_Packets.TwosComplement"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.TwosComplement">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">TwosComplement</span><span class="p">(</span><span class="n">val</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">nbits</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets the 2&#39;s complement of the argument value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            val (int): Value to be complemented.</span>
+<span class="sd">            nbits (int): Number of bits in the value.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Integer of the 2&#39;s complement for the val.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># value is negative </span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:</span>
+            <span class="n">val</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">nbits</span><span class="p">)</span> <span class="o">+</span> <span class="n">val</span>
+        <span class="c1"># value is positive </span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># If sign bit is set.  compute negative value.</span>
+            <span class="k">if</span> <span class="p">(</span> <span class="p">(</span><span class="n">val</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="p">(</span><span class="n">nbits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)))</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">):</span>
+                <span class="n">val</span> <span class="o">=</span> <span class="n">val</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">nbits</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">val</span></div>
+
+
+<div class="viewcode-block" id="POD_Packets.IntToAsciiBytes"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.IntToAsciiBytes">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">IntToAsciiBytes</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">numChars</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="p">:</span> 
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts an integer value into ASCII-encoded bytes. </span>
+<span class="sd">        </span>
+<span class="sd">        First, it converts the integer value into a usable uppercase hexadecimal string. Then it converts \</span>
+<span class="sd">        the ASCII code for each character into bytes. Lastly, it ensures that the final message is the \</span>
+<span class="sd">        desired length.  </span>
+
+<span class="sd">        Example: if value=2 and numBytes=4, the returned ASCII will show b&#39;0002&#39;, which is \</span>
+<span class="sd">        &#39;0x30 0x30 0x30 0x32&#39; in bytes. Uses the 2&#39;s complement if the val is negative. </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value (int): Integer value to be converted into ASCII-encoded bytes.</span>
+<span class="sd">            numChars (int): Number characters to be the length of the ASCII-encoded message.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Bytes that are ASCII-encoded conversions of the value parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get 2C if signed </span>
+        <span class="k">if</span><span class="p">(</span><span class="n">value</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:</span> 
+            <span class="n">val</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">TwosComplement</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">numChars</span><span class="o">*</span><span class="mi">4</span><span class="p">)</span>
+        <span class="k">else</span> <span class="p">:</span> 
+            <span class="n">val</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="c1"># convert number into a hex string and remove the &#39;0x&#39; prefix</span>
+        <span class="n">num_hexStr</span> <span class="o">=</span> <span class="nb">hex</span><span class="p">(</span><span class="n">val</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;0x&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+
+        <span class="c1"># split into list to access each digit, and make each hex character digit uppercase </span>
+        <span class="n">num_hexStr_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">num_hexStr</span><span class="p">]</span>
+        
+        <span class="c1"># convert each digit to an ascii code</span>
+        <span class="n">asciilist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">character</span> <span class="ow">in</span> <span class="n">num_hexStr_list</span><span class="p">:</span> 
+            <span class="c1"># convert character to its ascii code and append to list  </span>
+            <span class="n">asciilist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">character</span><span class="p">))</span>
+
+        <span class="c1"># get bytes for the ascii number </span>
+        <span class="n">blist</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">ascii</span> <span class="ow">in</span> <span class="n">asciilist</span> <span class="p">:</span>
+            <span class="c1"># convert ascii code to bytes and add to list </span>
+            <span class="n">blist</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">bytes</span><span class="p">([</span><span class="n">ascii</span><span class="p">]))</span>
+        
+        <span class="c1"># if the number of bytes is smaller that requested, add zeros to beginning of the bytes to get desired size</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">blist</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">numChars</span><span class="p">):</span> 
+            <span class="c1"># ascii code for zero</span>
+            <span class="n">zero</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="nb">ord</span><span class="p">(</span><span class="s1">&#39;0&#39;</span><span class="p">)])</span>
+            <span class="c1"># create list of zeros with size (NumberOfBytesWanted - LengthOfCurrentBytes))</span>
+            <span class="n">pre</span> <span class="o">=</span> <span class="p">[</span><span class="n">zero</span><span class="p">]</span> <span class="o">*</span> <span class="p">(</span><span class="n">numChars</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">blist</span><span class="p">))</span>
+            <span class="c1"># concatenate zeros list to remaining bytes</span>
+            <span class="n">post</span> <span class="o">=</span> <span class="n">pre</span> <span class="o">+</span> <span class="n">blist</span>
+        <span class="c1"># if the number of bytes is greater that requested, keep the lowest bytes, remove the overflow </span>
+        <span class="k">elif</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">blist</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">numChars</span><span class="p">)</span> <span class="p">:</span> 
+            <span class="c1"># get minimum index of bytes to keep</span>
+            <span class="nb">min</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">blist</span><span class="p">)</span> <span class="o">-</span> <span class="n">numChars</span>
+            <span class="c1"># get indeces from min to end of list </span>
+            <span class="n">post</span> <span class="o">=</span> <span class="n">blist</span><span class="p">[</span><span class="nb">min</span><span class="p">:]</span>
+        <span class="c1"># if the number of bytes is equal to that requested, keep the all the bytes, change nothing</span>
+        <span class="k">else</span> <span class="p">:</span> 
+            <span class="n">post</span> <span class="o">=</span> <span class="n">blist</span>
+
+        <span class="c1"># initialize message to first byte in &#39;post&#39;</span>
+        <span class="n">msg</span> <span class="o">=</span> <span class="n">post</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">numChars</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> 
+            <span class="c1"># concatenate next byte to end of the message </span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="n">msg</span> <span class="o">+</span> <span class="n">post</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># return a byte message of a desired size </span>
+        <span class="k">return</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="POD_Packets.AsciiBytesToInt"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.AsciiBytesToInt">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">AsciiBytesToInt</span><span class="p">(</span><span class="n">msg_b</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">signed</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a ASCII-encoded bytes message into an integer.  It does this using a base-16 \</span>
+<span class="sd">        conversion. If the message is signed and the msb is &#39;1&#39;, the integer will be converted to \</span>
+<span class="sd">        it&#39;s negative 2&#39;s complement. </span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg_b (bytes): Bytes message to be converted to an integer. The bytes must be base-16 or \</span>
+<span class="sd">                the conversion will fail. </span>
+<span class="sd">            signed (bool, optional): True if the message is signed, false if unsigned. Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Integer result from the ASCII-encoded byte conversion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># convert bytes to str and remove byte wrap (b&#39;XXXX&#39; --&gt; XXXX)</span>
+        <span class="n">msg_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">msg_b</span><span class="p">)</span> <span class="p">[</span><span class="mi">2</span> <span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">msg_b</span><span class="p">))</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="c1"># convert string into base 16 int (reads string as hex number, returns decimal int)</span>
+        <span class="n">msg_int</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">msg_str</span><span class="p">,</span><span class="mi">16</span><span class="p">)</span>
+        <span class="c1"># get 2C if signed and msb is &#39;1&#39; </span>
+        <span class="k">if</span><span class="p">(</span><span class="n">signed</span><span class="p">)</span> <span class="p">:</span> 
+            <span class="n">nbits</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg_str</span><span class="p">)</span> <span class="o">*</span> <span class="mi">4</span> 
+            <span class="n">msb</span> <span class="o">=</span> <span class="n">msg_int</span> <span class="o">&gt;&gt;</span> <span class="p">(</span><span class="n">nbits</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="c1"># shift out all bits except msb</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">msb</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">:</span> 
+                <span class="n">msg_int</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">TwosComplement</span><span class="p">(</span><span class="n">msg_int</span><span class="p">,</span><span class="n">nbits</span><span class="p">)</span>
+        <span class="c1"># return int</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">msg_int</span><span class="p">)</span></div>
+    
+
+<div class="viewcode-block" id="POD_Packets.BinaryBytesToInt"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.BinaryBytesToInt">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">BinaryBytesToInt</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">byteorder</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="s1">&#39;big&#39;</span><span class="p">,</span> <span class="n">signed</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts binary-encoded bytes into an integer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (bytes): Bytes message holding binary information to be converted into an integer.</span>
+<span class="sd">            byteorder (str, optional): Ordering of bytes. &#39;big&#39; for big endian and &#39;little&#39; for little \</span>
+<span class="sd">                endian. Defaults to &#39;big&#39;.</span>
+<span class="sd">            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \</span>
+<span class="sd">                Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Integer result from the binary-encoded bytes message.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># convert a binary message represented by bytes into an integer</span>
+        <span class="k">return</span><span class="p">(</span><span class="nb">int</span><span class="o">.</span><span class="n">from_bytes</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span><span class="n">byteorder</span><span class="o">=</span><span class="n">byteorder</span><span class="p">,</span><span class="n">signed</span><span class="o">=</span><span class="n">signed</span><span class="p">))</span></div>
+
+    
+<div class="viewcode-block" id="POD_Packets.ASCIIbytesToInt_Split"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.ASCIIbytesToInt_Split">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">ASCIIbytesToInt_Split</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">keepTopBits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cutBottomBits</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="p">:</span> 
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a specific bit range in an ASCII-encoded bytes object to an integer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (bytes): Bytes message holding binary information to be converted into an integer.</span>
+<span class="sd">            keepTopBits (int): Integer position of the msb of desired bit range.</span>
+<span class="sd">            cutBottomBits (int): Integer number of lsb to remove.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Integer result from the ASCII-encoded bytes message in a given bit range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits</span>
+        <span class="k">return</span><span class="p">(</span> <span class="p">(</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">AsciiBytesToInt</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">keepTopBits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">cutBottomBits</span><span class="p">)</span></div>
+    
+    
+<div class="viewcode-block" id="POD_Packets.BinaryBytesToInt_Split"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.BinaryBytesToInt_Split">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">BinaryBytesToInt_Split</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span> <span class="n">keepTopBits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">cutBottomBits</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">byteorder</span><span class="p">:</span><span class="nb">str</span><span class="o">=</span><span class="s1">&#39;big&#39;</span><span class="p">,</span> <span class="n">signed</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span> <span class="p">:</span> 
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a specific bit range in a binary-encoded bytes object to an integer.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            msg (bytes): Bytes message holding binary information to be converted into an integer.</span>
+<span class="sd">            keepTopBits (int): Integer position of the msb of desired bit range.</span>
+<span class="sd">            cutBottomBits (int): Integer number of lsb to remove.</span>
+<span class="sd">            byteorder (str, optional): Ordering of bytes. &#39;big&#39; for big endian and &#39;little&#39; for little \</span>
+<span class="sd">                endian. Defaults to &#39;big&#39;.</span>
+<span class="sd">            signed (bool, optional): Boolean flag to mark if the msg is signed (True) or unsigned (False). \</span>
+<span class="sd">                Defaults to False.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Integer result from the binary-encoded bytes message in a given bit range.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits</span>
+        <span class="k">return</span><span class="p">(</span> <span class="p">(</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">BinaryBytesToInt</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span><span class="n">byteorder</span><span class="p">,</span><span class="n">signed</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">keepTopBits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="n">cutBottomBits</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------</span>
+ 
+
+<div class="viewcode-block" id="POD_Packets.Checksum"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.Checksum">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">Checksum</span><span class="p">(</span><span class="n">bytesIn</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Calculates the checksum of a given bytes message. This is achieved by summing each byte in the \</span>
+<span class="sd">        message, inverting, and taking the last byte.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bytesIn (bytes): Bytes message containing POD packet data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Two ASCII-encoded bytes containing the checksum for bytesIn.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># sum together all bytes in byteArr</span>
+        <span class="nb">sum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">bytesIn</span> <span class="p">:</span> 
+            <span class="nb">sum</span> <span class="o">=</span> <span class="nb">sum</span> <span class="o">+</span> <span class="n">b</span>
+        <span class="c1"># invert and get last byte </span>
+        <span class="n">cs</span>  <span class="o">=</span> <span class="o">~</span><span class="nb">sum</span> <span class="o">&amp;</span> <span class="mh">0xFF</span>
+        <span class="c1"># convert int into bytes </span>
+        <span class="n">cs_bytes</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">IntToAsciiBytes</span><span class="p">(</span><span class="n">cs</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="c1"># return checksum bytes</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">cs_bytes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="POD_Packets.BuildPODpacket_Standard"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.BuildPODpacket_Standard">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">BuildPODpacket_Standard</span><span class="p">(</span><span class="n">commandNumber</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span><span class="nb">bytes</span><span class="o">|</span><span class="kc">None</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="p">:</span> 
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \</span>
+<span class="sd">        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            commandNumber (int): Integer representing the command number. This will be converted into \</span>
+<span class="sd">                a 4 byte long ASCII-encoded bytes string.</span>
+<span class="sd">            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Bytes string of a complete standard POD packet.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># prepare components of packet</span>
+        <span class="n">stx</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">STX</span><span class="p">()</span>                              <span class="c1"># STX indicating start of packet (1 byte)</span>
+        <span class="n">cmd</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">IntToAsciiBytes</span><span class="p">(</span><span class="n">commandNumber</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>  <span class="c1"># command number (4 bytes)</span>
+        <span class="n">etx</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">ETX</span><span class="p">()</span>                              <span class="c1"># ETX indicating end of packet (1 byte)</span>
+        <span class="c1"># build packet with payload </span>
+        <span class="k">if</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="p">:</span>
+            <span class="n">csm</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">Checksum</span><span class="p">(</span><span class="n">cmd</span><span class="o">+</span><span class="n">payload</span><span class="p">)</span>         <span class="c1"># checksum (2 bytes)</span>
+            <span class="n">packet</span> <span class="o">=</span> <span class="n">stx</span> <span class="o">+</span> <span class="n">cmd</span> <span class="o">+</span> <span class="n">payload</span> <span class="o">+</span> <span class="n">csm</span> <span class="o">+</span> <span class="n">etx</span>        <span class="c1"># pod packet with payload (8 + payload bytes)</span>
+        <span class="c1"># build packet with NO payload </span>
+        <span class="k">else</span> <span class="p">:</span>
+            <span class="n">csm</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">Checksum</span><span class="p">(</span><span class="n">cmd</span><span class="p">)</span>                 <span class="c1"># checksum (2 bytes)</span>
+            <span class="n">packet</span> <span class="o">=</span> <span class="n">stx</span> <span class="o">+</span> <span class="n">cmd</span> <span class="o">+</span> <span class="n">csm</span> <span class="o">+</span> <span class="n">etx</span>                  <span class="c1"># pod packet (8 bytes)</span>
+        <span class="c1"># return complete bytes packet</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span></div>
+
+    
+<div class="viewcode-block" id="POD_Packets.PayloadToBytes"><a class="viewcode-back" href="../../../Modules.html#Code.Modules.PodPacketHandling.POD_Packets.PayloadToBytes">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">PayloadToBytes</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">int</span><span class="o">|</span><span class="nb">bytes</span><span class="o">|</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="o">|</span><span class="nb">bytes</span><span class="p">],</span> <span class="n">argSizes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bytes</span> <span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Converts a payload into a bytes string.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            payload (int | bytes | tuple[int | bytes]): Integer, bytes, or tuple containing the payload.</span>
+<span class="sd">            argSizes (tuple[int]): Tuple of the argument sizes.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            Exception: Payload requires multiple arguments, use a tuple.</span>
+<span class="sd">            Exception: Payload is the wrong size.</span>
+<span class="sd">            Exception: Payload has an incorrect number of items.</span>
+<span class="sd">            Exception: Payload has invalid values.</span>
+<span class="sd">            Exception: Payload is an invalid type.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes: Bytes string of the payload.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if integer payload is given ... </span>
+        <span class="k">if</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span><span class="nb">int</span><span class="p">)):</span>
+            <span class="c1"># check that command only uses one argument </span>
+            <span class="k">if</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">argSizes</span><span class="p">)</span><span class="o">!=</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> 
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Payload requires multiple arguments, use a tuple.&#39;</span><span class="p">)</span>
+            <span class="c1"># convert to bytes of the expected length </span>
+            <span class="n">pld</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">IntToAsciiBytes</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span><span class="nb">sum</span><span class="p">(</span><span class="n">argSizes</span><span class="p">))</span>
+
+        <span class="c1"># if bytes payload is given...</span>
+        <span class="k">elif</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)):</span>
+            <span class="c1"># throw error if payload is the wrong size  </span>
+            <span class="k">if</span><span class="p">(</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">argSizes</span><span class="p">))</span> <span class="p">:</span> <span class="c1"># each byte is 2 hex characters</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Payload is the wrong size.&#39;</span><span class="p">)</span>
+            <span class="c1"># otherwise, accept payload as given. </span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">pld</span> <span class="o">=</span> <span class="n">payload</span>
+
+        <span class="c1"># if tuple payload is given...</span>
+        <span class="k">elif</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="c1"># check that there are the correct number of arguments</span>
+            <span class="k">if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">argSizes</span><span class="p">))</span> <span class="p">:</span> 
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Payload has an incorrect number of items.&#39;</span><span class="p">)</span>
+            <span class="c1"># build list of bytes payload parts </span>
+            <span class="n">tempPld</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">))</span> <span class="p">:</span> 
+                <span class="k">if</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">int</span><span class="p">))</span> <span class="p">:</span>
+                    <span class="c1"># convert to bytes of the expected length </span>
+                    <span class="n">tempPld</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">POD_Packets</span><span class="o">.</span><span class="n">IntToAsciiBytes</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="n">argSizes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">elif</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="nb">bytes</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">==</span><span class="n">argSizes</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span> <span class="c1"># each byte is 2 hex characters</span>
+                    <span class="c1"># accept bytes payload as given</span>
+                    <span class="n">tempPld</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">payload</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Payload has invalid values.&#39;</span><span class="p">)</span>
+            <span class="c1"># concatenate list items</span>
+            <span class="n">pld</span> <span class="o">=</span> <span class="n">tempPld</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">tempPld</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                <span class="n">pld</span> <span class="o">+=</span> <span class="n">tempPld</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># bad type given </span>
+        <span class="k">else</span> <span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s1">&#39;Payload is an invalid type.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># return payload as bytes</span>
+        <span class="k">return</span><span class="p">(</span><span class="n">pld</span><span class="p">)</span></div></div>
+            
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../index.html">Python POD API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Thresa Kelly.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
