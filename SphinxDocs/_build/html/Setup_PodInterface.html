@@ -112,6 +112,26 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.ConnectAllPODdevices">
+<span class="sig-name descname"><span class="pre">ConnectAllPODdevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.ConnectAllPODdevices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connects all setup POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if all devices are successfully connected, false otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters">
+<span class="sig-name descname"><span class="pre">DisplayPODdeviceParameters</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Display all the pod device parameters in a table.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.GetDeviceName">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.GetDeviceName" title="Permalink to this definition">¶</a></dt>
 <dd><p>returns the name of the POD device.</p>
@@ -157,6 +177,29 @@
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>int</em><em>,</em><em>dict</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – dictionary of the device parameters                 for all devices. Defaults to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.StopStream">
+<span class="sig-name descname"><span class="pre">StopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.StopStream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a command to stop streaming data to all POD devices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.Stream">
+<span class="sig-name descname"><span class="pre">Stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.Stream" title="Permalink to this definition">¶</a></dt>
+<dd><p>Tests that all devices are connected then starts streaming data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Test connection failed.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with integer device number keys and Thread values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,Thread]</p>
 </dd>
 </dl>
 </dd></dl>
