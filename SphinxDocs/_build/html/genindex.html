@@ -1,663 +1,824 @@
-<!DOCTYPE html>
+<!doctype html>
+<html class="no-js" lang="en">
+  <head><meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <meta name="color-scheme" content="light dark"><link rel="index" title="Index" href="#" /><link rel="search" title="Search" href="search.html" />
 
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Index &#8212; Python POD API v1.1.0 documentation</title>
-    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
-    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <link rel="index" title="Index" href="#" />
-    <link rel="search" title="Search" href="search.html" />
-   
-  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+    <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 --><title>Index - Python POD API v1.1.0 documentation</title>
+<link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
+    
+    
+
+
+<style>
+  body {
+    --color-code-background: #f8f8f8;
+  --color-code-foreground: black;
+  
+  }
+  @media not print {
+    body[data-theme="dark"] {
+      --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+    }
+    @media (prefers-color-scheme: dark) {
+      body:not([data-theme="light"]) {
+        --color-code-background: #202020;
+  --color-code-foreground: #d0d0d0;
+  
+      }
+    }
+  }
+</style></head>
+  <body>
+    
+    <script>
+      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
+    </script>
+    
+
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+  <symbol id="svg-toc" viewBox="0 0 24 24">
+    <title>Contents</title>
+    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
+      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
+    </svg>
+  </symbol>
+  <symbol id="svg-menu" viewBox="0 0 24 24">
+    <title>Menu</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
+      <line x1="3" y1="12" x2="21" y2="12"></line>
+      <line x1="3" y1="6" x2="21" y2="6"></line>
+      <line x1="3" y1="18" x2="21" y2="18"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
+    <title>Expand</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
+      <polyline points="9 18 15 12 9 6"></polyline>
+    </svg>
+  </symbol>
+  <symbol id="svg-sun" viewBox="0 0 24 24">
+    <title>Light mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
+      <circle cx="12" cy="12" r="5"></circle>
+      <line x1="12" y1="1" x2="12" y2="3"></line>
+      <line x1="12" y1="21" x2="12" y2="23"></line>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+      <line x1="1" y1="12" x2="3" y2="12"></line>
+      <line x1="21" y1="12" x2="23" y2="12"></line>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+    </svg>
+  </symbol>
+  <symbol id="svg-moon" viewBox="0 0 24 24">
+    <title>Dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
+    </svg>
+  </symbol>
+  <symbol id="svg-sun-half" viewBox="0 0 24 24">
+    <title>Auto light/dark mode</title>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
+      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M13 12h5" />
+      <path d="M13 15h4" />
+      <path d="M13 18h1" />
+      <path d="M13 9h4" />
+      <path d="M13 6h1" />
+    </svg>
+  </symbol>
+</svg>
+
+<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
+<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
+<label class="overlay sidebar-overlay" for="__navigation">
+  <div class="visually-hidden">Hide navigation sidebar</div>
+</label>
+<label class="overlay toc-overlay" for="__toc">
+  <div class="visually-hidden">Hide table of contents sidebar</div>
+</label>
+
+
+
+<div class="page">
+  <header class="mobile-header">
+    <div class="header-left">
+      <label class="nav-overlay-icon" for="__navigation">
+        <div class="visually-hidden">Toggle site navigation sidebar</div>
+        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
+      </label>
+    </div>
+    <div class="header-center">
+      <a href="index.html"><div class="brand">Python POD API v1.1.0 documentation</div></a>
+    </div>
+    <div class="header-right">
+      <div class="theme-toggle-container theme-toggle-header">
+        <button class="theme-toggle">
+          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+        </button>
+      </div>
+      <label class="toc-overlay-icon toc-header-icon no-toc" for="__toc">
+        <div class="visually-hidden">Toggle table of contents sidebar</div>
+        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+      </label>
+    </div>
+  </header>
+  <aside class="sidebar-drawer">
+    <div class="sidebar-container">
+      
+      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
-
-  </head><body>
+  <span class="sidebar-brand-text">Python POD API v1.1.0 documentation</span>
   
+</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
+  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
+  <input type="hidden" name="check_keywords" value="yes">
+  <input type="hidden" name="area" value="default">
+</form>
+<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
+  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1 has-children"><a class="reference internal" href="modules.html">API_Modules</a><input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API_Modules</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul>
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
 
-    <div class="document">
-      <div class="documentwrapper">
-        <div class="bodywrapper">
-          
-
-          <div class="body" role="main">
-            
-
-<h1 id="index">Index</h1>
-
-<div class="genindex-jumpbox">
- <a href="#_"><strong>_</strong></a>
- | <a href="#A"><strong>A</strong></a>
- | <a href="#B"><strong>B</strong></a>
- | <a href="#C"><strong>C</strong></a>
- | <a href="#D"><strong>D</strong></a>
- | <a href="#E"><strong>E</strong></a>
- | <a href="#G"><strong>G</strong></a>
- | <a href="#I"><strong>I</strong></a>
- | <a href="#M"><strong>M</strong></a>
- | <a href="#N"><strong>N</strong></a>
- | <a href="#O"><strong>O</strong></a>
- | <a href="#P"><strong>P</strong></a>
- | <a href="#R"><strong>R</strong></a>
- | <a href="#S"><strong>S</strong></a>
- | <a href="#T"><strong>T</strong></a>
- | <a href="#U"><strong>U</strong></a>
- | <a href="#W"><strong>W</strong></a>
- 
 </div>
-<h2 id="_">_</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__ARGUMENTS">__ARGUMENTS (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH">__B4BINARYLENGTH (PodDevice_8206HR.POD_8206HR attribute)</a>
-</li>
-      <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.__B4LENGTH">__B4LENGTH (PodDevice_8206HR.POD_8206HR attribute)</a>
-</li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5BINARYLENGTH">__B5BINARYLENGTH (PodDevice_8401HR.POD_8401HR attribute)</a>
-</li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5LENGTH">__B5LENGTH (PodDevice_8401HR.POD_8401HR attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__BINARY">__BINARY (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__CHANNELMAPALL">__CHANNELMAPALL (PodDevice_8401HR.POD_8401HR attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__commands">__commands (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">__MINBINARYLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
-</li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">__MINSTANDARDLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__NAME">__NAME (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__NOVALUE">__NOVALUE (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__numPod">__numPod (BasicPodProtocol.POD_Basics attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__RETURNS">__RETURNS (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.__serialInst">__serialInst (SerialCommunication.COM_io attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__U16">__U16 (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.__U8">__U8 (PodCommands.POD_Commands attribute)</a>
-</li>
-      <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._CHANNELKEYS">_CHANNELKEYS (Setup_8401HR.Setup_8401HR attribute)</a>
-</li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._commands">_commands (BasicPodProtocol.POD_Basics attribute)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._LOWPASSKEYS">_LOWPASSKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
-</li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._NAME">_NAME (Setup_8206HR.Setup_8206HR attribute)</a>
+</div>
 
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._NAME">(Setup_8401HR.Setup_8401HR attribute)</a>
+      </div>
+      
+    </div>
+  </aside>
+  <div class="main">
+    <div class="content">
+      <div class="article-container">
+        <a href="#" class="back-to-top muted-link">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
+          </svg>
+          <span>Back to top</span>
+        </a>
+        <div class="content-icon-container">
+          <div class="theme-toggle-container theme-toggle-content">
+            <button class="theme-toggle">
+              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
+              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
+              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
+              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
+            </button>
+          </div>
+          <label class="toc-overlay-icon toc-content-icon no-toc" for="__toc">
+            <div class="visually-hidden">Toggle table of contents sidebar</div>
+            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
+          </label>
+        </div>
+        <article role="main">
+          
+<section class="genindex-section">
+  <h1 id="index">Index</h1>
+  <div class="genindex-jumpbox"><a href="#_"><strong>_</strong></a> | <a href="#A"><strong>A</strong></a> | <a href="#B"><strong>B</strong></a> | <a href="#C"><strong>C</strong></a> | <a href="#D"><strong>D</strong></a> | <a href="#E"><strong>E</strong></a> | <a href="#G"><strong>G</strong></a> | <a href="#I"><strong>I</strong></a> | <a href="#M"><strong>M</strong></a> | <a href="#N"><strong>N</strong></a> | <a href="#O"><strong>O</strong></a> | <a href="#P"><strong>P</strong></a> | <a href="#R"><strong>R</strong></a> | <a href="#S"><strong>S</strong></a> | <a href="#T"><strong>T</strong></a> | <a href="#U"><strong>U</strong></a> | <a href="#W"><strong>W</strong></a></div>
+</section>
+<section id="_" class="genindex-section">
+  <h2>_</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__ARGUMENTS">__ARGUMENTS (PodCommands.POD_Commands attribute)</a>
 </li>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._NAME">(Setup_PodInterface.Setup_Interface attribute)</a>
+        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH">__B4BINARYLENGTH (PodDevice_8206HR.POD_8206HR attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._options">_options (Setup_PodDevices.Setup_PodDevices attribute)</a>
+        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.__B4LENGTH">__B4LENGTH (PodDevice_8206HR.POD_8206HR attribute)</a>
 </li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PARAMKEYS">_PARAMKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5BINARYLENGTH">__B5BINARYLENGTH (PodDevice_8401HR.POD_8401HR attribute)</a>
+</li>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5LENGTH">__B5LENGTH (PodDevice_8401HR.POD_8401HR attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__BINARY">__BINARY (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__CHANNELMAPALL">__CHANNELMAPALL (PodDevice_8401HR.POD_8401HR attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__commands">__commands (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">__MINBINARYLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
+</li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">__MINSTANDARDLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__NAME">__NAME (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__NOVALUE">__NOVALUE (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__numPod">__numPod (BasicPodProtocol.POD_Basics attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__RETURNS">__RETURNS (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.__serialInst">__serialInst (SerialCommunication.COM_io attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__U16">__U16 (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.__U8">__U8 (PodCommands.POD_Commands attribute)</a>
+</li>
+        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._CHANNELKEYS">_CHANNELKEYS (Setup_8401HR.Setup_8401HR attribute)</a>
+</li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._commands">_commands (BasicPodProtocol.POD_Basics attribute)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._LOWPASSKEYS">_LOWPASSKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
+</li>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._NAME">_NAME (Setup_8206HR.Setup_8206HR attribute)</a>
 
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._PARAMKEYS">(Setup_8401HR.Setup_8401HR attribute)</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._NAME">(Setup_8401HR.Setup_8401HR attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV">_PHYSICAL_BOUND_uV (Setup_8206HR.Setup_8206HR attribute)</a>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._NAME">(Setup_PodInterface.Setup_Interface attribute)</a>
+</li>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._options">_options (Setup_PodDevices.Setup_PodDevices attribute)</a>
+</li>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PARAMKEYS">_PARAMKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
 
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV">(Setup_8401HR.Setup_8401HR attribute)</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._PARAMKEYS">(Setup_8401HR.Setup_8401HR attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._podDevices">_podDevices (Setup_PodInterface.Setup_Interface attribute)</a>
-</li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._podParametersDict">_podParametersDict (Setup_PodInterface.Setup_Interface attribute)</a>
-</li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._port">_port (BasicPodProtocol.POD_Basics attribute)</a>
-</li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._PORTKEY">_PORTKEY (Setup_PodInterface.Setup_Interface attribute)</a>
-</li>
-      <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR._preampGain">_preampGain (PodDevice_8206HR.POD_8206HR attribute)</a>
+        </ul></li>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV">_PHYSICAL_BOUND_uV (Setup_8206HR.Setup_8206HR attribute)</a>
 
-      <ul>
-        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._preampGain">(PodDevice_8401HR.POD_8401HR attribute)</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV">(Setup_8401HR.Setup_8401HR attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._saveFileName">_saveFileName (Setup_PodDevices.Setup_PodDevices attribute)</a>
+        </ul></li>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._podDevices">_podDevices (Setup_PodInterface.Setup_Interface attribute)</a>
+</li>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._podParametersDict">_podParametersDict (Setup_PodInterface.Setup_Interface attribute)</a>
+</li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._port">_port (BasicPodProtocol.POD_Basics attribute)</a>
+</li>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._PORTKEY">_PORTKEY (Setup_PodInterface.Setup_Interface attribute)</a>
+</li>
+        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR._preampGain">_preampGain (PodDevice_8206HR.POD_8206HR attribute)</a>
 
-      <ul>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._saveFileName">(Setup_PodInterface.Setup_Interface attribute)</a>
+        <ul>
+          <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._preampGain">(PodDevice_8401HR.POD_8401HR attribute)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._Setup_PodDevices">_Setup_PodDevices (Setup_PodDevices.Setup_PodDevices attribute)</a>
-</li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._ssGain">_ssGain (PodDevice_8401HR.POD_8401HR attribute)</a>
-</li>
-  </ul></td>
-</tr></table>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._saveFileName">_saveFileName (Setup_PodDevices.Setup_PodDevices attribute)</a>
 
-<h2 id="A">A</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.AddCommand">AddCommand() (PodCommands.POD_Commands method)</a>
+        <ul>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._saveFileName">(Setup_PodInterface.Setup_Interface attribute)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.AreDeviceParamsValid">AreDeviceParamsValid() (Setup_PodInterface.Setup_Interface method)</a>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._Setup_PodDevices">_Setup_PodDevices (Setup_PodDevices.Setup_PodDevices attribute)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.ArgumentHexChar">ArgumentHexChar() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._ssGain">_ssGain (PodDevice_8401HR.POD_8401HR attribute)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.AsciiBytesToInt">AsciiBytesToInt() (PodPacketHandling.POD_Packets static method)</a>
-</li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.ASCIIbytesToInt_Split">ASCIIbytesToInt_Split() (PodPacketHandling.POD_Packets static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloat">AskForFloat() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInList">AskForFloatInList() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInRange">AskForFloatInRange() (GetUserInput.UserInput static method)</a>
-</li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForInput">AskForInput() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForInt">AskForInt() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForIntInList">AskForIntInList() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForIntInRange">AskForIntInRange() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForStrInList">AskForStrInList() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForType">AskForType() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForTypeInList">AskForTypeInList() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForTypeInRange">AskForTypeInRange() (GetUserInput.UserInput static method)</a>
-</li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.AskYN">AskYN() (GetUserInput.UserInput static method)</a>
-</li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="B">B</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
+<section id="A" class="genindex-section">
+  <h2>A</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.AddCommand">AddCommand() (PodCommands.POD_Commands method)</a>
+</li>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.AreDeviceParamsValid">AreDeviceParamsValid() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.ArgumentHexChar">ArgumentHexChar() (PodCommands.POD_Commands method)</a>
+</li>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.AsciiBytesToInt">AsciiBytesToInt() (PodPacketHandling.POD_Packets static method)</a>
+</li>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.ASCIIbytesToInt_Split">ASCIIbytesToInt_Split() (PodPacketHandling.POD_Packets static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloat">AskForFloat() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInList">AskForFloatInList() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInRange">AskForFloatInRange() (GetUserInput.UserInput static method)</a>
+</li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForInput">AskForInput() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForInt">AskForInt() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForIntInList">AskForIntInList() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForIntInRange">AskForIntInRange() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForStrInList">AskForStrInList() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForType">AskForType() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForTypeInList">AskForTypeInList() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskForTypeInRange">AskForTypeInRange() (GetUserInput.UserInput static method)</a>
+</li>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.AskYN">AskYN() (GetUserInput.UserInput static method)</a>
+</li>
+    </ul></td>
+  </tr></table>
+</section>
+
+<section id="B" class="genindex-section">
+  <h2>B</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
     BasicPodProtocol
 
-      <ul>
-        <li><a href="BasicPodProtocol.html#module-BasicPodProtocol">module</a>
+        <ul>
+          <li><a href="BasicPodProtocol.html#module-BasicPodProtocol">module</a>
 </li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt">BinaryBytesToInt() (PodPacketHandling.POD_Packets static method)</a>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt">BinaryBytesToInt() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt_Split">BinaryBytesToInt_Split() (PodPacketHandling.POD_Packets static method)</a>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt_Split">BinaryBytesToInt_Split() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BuildPODpacket_Standard">BuildPODpacket_Standard() (PodPacketHandling.POD_Packets static method)</a>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BuildPODpacket_Standard">BuildPODpacket_Standard() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="C">C</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetDACValue">CalculateBiasDAC_GetDACValue() (PodDevice_8401HR.POD_8401HR static method)</a>
+<section id="C" class="genindex-section">
+  <h2>C</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetDACValue">CalculateBiasDAC_GetDACValue() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetVout">CalculateBiasDAC_GetVout() (PodDevice_8401HR.POD_8401HR static method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetVout">CalculateBiasDAC_GetVout() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.CastFloat">CastFloat() (GetUserInput.UserInput static method)</a>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.CastFloat">CastFloat() (GetUserInput.UserInput static method)</a>
 </li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.CastInt">CastInt() (GetUserInput.UserInput static method)</a>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.CastInt">CastInt() (GetUserInput.UserInput static method)</a>
 </li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput.CastStr">CastStr() (GetUserInput.UserInput static method)</a>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput.CastStr">CastStr() (GetUserInput.UserInput static method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.Checksum">Checksum() (PodPacketHandling.POD_Packets static method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.Checksum">Checksum() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.CloseSerialPort">CloseSerialPort() (SerialCommunication.COM_io method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.CloseSerialPort">CloseSerialPort() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io">COM_io (class in SerialCommunication)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io">COM_io (class in SerialCommunication)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.CommandNumberFromName">CommandNumberFromName() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.CommandNumberFromName">CommandNumberFromName() (PodCommands.POD_Commands method)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.ConnectAllPODdevices">ConnectAllPODdevices() (Setup_PodInterface.Setup_Interface method)</a>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.ConnectAllPODdevices">ConnectAllPODdevices() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="D">D</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters">DisplayPODdeviceParameters() (Setup_PodInterface.Setup_Interface method)</a>
+<section id="D" class="genindex-section">
+  <h2>D</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters">DisplayPODdeviceParameters() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.DoesCommandExist">DoesCommandExist() (PodCommands.POD_Commands method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.DoesCommandExist">DoesCommandExist() (PodCommands.POD_Commands method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="E">E</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.ETX">ETX() (PodPacketHandling.POD_Packets static method)</a>
+<section id="E" class="genindex-section">
+  <h2>E</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.ETX">ETX() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="G">G</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.GetBasicCommands">GetBasicCommands() (PodCommands.POD_Commands static method)</a>
+<section id="G" class="genindex-section">
+  <h2>G</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.GetBasicCommands">GetBasicCommands() (PodCommands.POD_Commands static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice">GetChannelMapForPreampDevice() (PodDevice_8401HR.POD_8401HR static method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice">GetChannelMapForPreampDevice() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.GetCommands">GetCommands() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.GetCommands">GetCommands() (PodCommands.POD_Commands method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetCOMportsList">GetCOMportsList() (SerialCommunication.COM_io static method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetCOMportsList">GetCOMportsList() (SerialCommunication.COM_io static method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetDeviceCommands">GetDeviceCommands() (BasicPodProtocol.POD_Basics method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetDeviceCommands">GetDeviceCommands() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.GetDeviceName">GetDeviceName() (Setup_8206HR.Setup_8206HR static method)</a>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.GetDeviceName">GetDeviceName() (Setup_8206HR.Setup_8206HR static method)</a>
 
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.GetDeviceName">(Setup_8401HR.Setup_8401HR static method)</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.GetDeviceName">(Setup_8401HR.Setup_8401HR static method)</a>
 </li>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetDeviceName">(Setup_PodInterface.Setup_Interface static method)</a>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetDeviceName">(Setup_PodInterface.Setup_Interface static method)</a>
 </li>
-      </ul></li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices">GetNumberOfPODDevices() (BasicPodProtocol.POD_Basics static method)</a>
+        </ul></li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices">GetNumberOfPODDevices() (BasicPodProtocol.POD_Basics static method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetOptions">GetOptions() (Setup_PodDevices.Setup_PodDevices method)</a>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetOptions">GetOptions() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetPODpacket">GetPODpacket() (BasicPodProtocol.POD_Basics method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetPODpacket">GetPODpacket() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetPODparametersDict">GetPODparametersDict() (Setup_PodDevices.Setup_PodDevices method)</a>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetPODparametersDict">GetPODparametersDict() (Setup_PodDevices.Setup_PodDevices method)</a>
 
-      <ul>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetPODparametersDict">(Setup_PodInterface.Setup_Interface method)</a>
+        <ul>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetPODparametersDict">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      </ul></li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetPortName">GetPortName() (SerialCommunication.COM_io method)</a>
+        </ul></li>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetPortName">GetPortName() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetSaveFileName">GetSaveFileName() (Setup_PodDevices.Setup_PodDevices method)</a>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetSaveFileName">GetSaveFileName() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int">GetSSConfigBitmask_int() (PodDevice_8401HR.POD_8401HR static method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int">GetSSConfigBitmask_int() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSupportedPreampDevices">GetSupportedPreampDevices() (PodDevice_8401HR.POD_8401HR static method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSupportedPreampDevices">GetSupportedPreampDevices() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int">GetTTLbitmask_Int() (PodDevice_8401HR.POD_8401HR static method)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int">GetTTLbitmask_Int() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li>
+        <li>
     GetUserInput
 
-      <ul>
-        <li><a href="GetUserInput.html#module-GetUserInput">module</a>
+        <ul>
+          <li><a href="GetUserInput.html#module-GetUserInput">module</a>
 </li>
-      </ul></li>
-  </ul></td>
-</tr></table>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="I">I</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.IntToAsciiBytes">IntToAsciiBytes() (PodPacketHandling.POD_Packets static method)</a>
+<section id="I" class="genindex-section">
+  <h2>I</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.IntToAsciiBytes">IntToAsciiBytes() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.IsCommandBinary">IsCommandBinary() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.IsCommandBinary">IsCommandBinary() (PodCommands.POD_Commands method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.IsPreampDeviceSupported">IsPreampDeviceSupported() (PodDevice_8401HR.POD_8401HR static method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.IsPreampDeviceSupported">IsPreampDeviceSupported() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.IsSerialClosed">IsSerialClosed() (SerialCommunication.COM_io method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.IsSerialClosed">IsSerialClosed() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.IsSerialOpen">IsSerialOpen() (SerialCommunication.COM_io method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.IsSerialOpen">IsSerialOpen() (SerialCommunication.COM_io method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="M">M</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
+<section id="M" class="genindex-section">
+  <h2>M</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
     module
 
-      <ul>
-        <li><a href="BasicPodProtocol.html#module-BasicPodProtocol">BasicPodProtocol</a>
+        <ul>
+          <li><a href="BasicPodProtocol.html#module-BasicPodProtocol">BasicPodProtocol</a>
 </li>
-        <li><a href="GetUserInput.html#module-GetUserInput">GetUserInput</a>
+          <li><a href="GetUserInput.html#module-GetUserInput">GetUserInput</a>
 </li>
-        <li><a href="PodCommands.html#module-PodCommands">PodCommands</a>
+          <li><a href="PodCommands.html#module-PodCommands">PodCommands</a>
 </li>
-        <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">PodDevice_8206HR</a>
+          <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">PodDevice_8206HR</a>
 </li>
-        <li><a href="PodDevice_8401HR.html#module-PodDevice_8401HR">PodDevice_8401HR</a>
+          <li><a href="PodDevice_8401HR.html#module-PodDevice_8401HR">PodDevice_8401HR</a>
 </li>
-        <li><a href="PodPacketHandling.html#module-PodPacketHandling">PodPacketHandling</a>
+          <li><a href="PodPacketHandling.html#module-PodPacketHandling">PodPacketHandling</a>
 </li>
-        <li><a href="SerialCommunication.html#module-SerialCommunication">SerialCommunication</a>
+          <li><a href="SerialCommunication.html#module-SerialCommunication">SerialCommunication</a>
 </li>
-        <li><a href="Setup_8206HR.html#module-Setup_8206HR">Setup_8206HR</a>
+          <li><a href="Setup_8206HR.html#module-Setup_8206HR">Setup_8206HR</a>
 </li>
-        <li><a href="Setup_8401HR.html#module-Setup_8401HR">Setup_8401HR</a>
+          <li><a href="Setup_8401HR.html#module-Setup_8401HR">Setup_8401HR</a>
 </li>
-        <li><a href="Setup_PodDevices.html#module-Setup_PodDevices">Setup_PodDevices</a>
+          <li><a href="Setup_PodDevices.html#module-Setup_PodDevices">Setup_PodDevices</a>
 </li>
-        <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">Setup_PodInterface</a>
+          <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">Setup_PodInterface</a>
 </li>
-      </ul></li>
-  </ul></td>
-</tr></table>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="N">N</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.NoValue">NoValue() (PodCommands.POD_Commands static method)</a>
+<section id="N" class="genindex-section">
+  <h2>N</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.NoValue">NoValue() (PodCommands.POD_Commands static method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="O">O</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.OpenSerialPort">OpenSerialPort() (SerialCommunication.COM_io method)</a>
+<section id="O" class="genindex-section">
+  <h2>O</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.OpenSerialPort">OpenSerialPort() (SerialCommunication.COM_io method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="P">P</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.PayloadToBytes">PayloadToBytes() (PodPacketHandling.POD_Packets static method)</a>
+<section id="P" class="genindex-section">
+  <h2>P</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.PayloadToBytes">PayloadToBytes() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-      <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR">POD_8206HR (class in PodDevice_8206HR)</a>
+        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR">POD_8206HR (class in PodDevice_8206HR)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR">POD_8401HR (class in PodDevice_8401HR)</a>
+        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR">POD_8401HR (class in PodDevice_8401HR)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics">POD_Basics (class in BasicPodProtocol)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics">POD_Basics (class in BasicPodProtocol)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands">POD_Commands (class in PodCommands)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands">POD_Commands (class in PodCommands)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets">POD_Packets (class in PodPacketHandling)</a>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets">POD_Packets (class in PodPacketHandling)</a>
 </li>
-      <li>
+        <li>
     PodCommands
 
-      <ul>
-        <li><a href="PodCommands.html#module-PodCommands">module</a>
+        <ul>
+          <li><a href="PodCommands.html#module-PodCommands">module</a>
 </li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
     PodDevice_8206HR
 
-      <ul>
-        <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">module</a>
+        <ul>
+          <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">module</a>
 </li>
-      </ul></li>
-      <li>
+        </ul></li>
+        <li>
     PodDevice_8401HR
 
-      <ul>
-        <li><a href="PodDevice_8401HR.html#module-PodDevice_8401HR">module</a>
+        <ul>
+          <li><a href="PodDevice_8401HR.html#module-PodDevice_8401HR">module</a>
 </li>
-      </ul></li>
-      <li>
+        </ul></li>
+        <li>
     PodPacketHandling
 
-      <ul>
-        <li><a href="PodPacketHandling.html#module-PodPacketHandling">module</a>
+        <ul>
+          <li><a href="PodPacketHandling.html#module-PodPacketHandling">module</a>
 </li>
-      </ul></li>
-  </ul></td>
-</tr></table>
+        </ul></li>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="R">R</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Read">Read() (SerialCommunication.COM_io method)</a>
+<section id="R" class="genindex-section">
+  <h2>R</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Read">Read() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.ReadLine">ReadLine() (SerialCommunication.COM_io method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.ReadLine">ReadLine() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.ReadPODpacket">ReadPODpacket() (BasicPodProtocol.POD_Basics method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.ReadPODpacket">ReadPODpacket() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.ReadUntil">ReadUntil() (SerialCommunication.COM_io method)</a>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.ReadUntil">ReadUntil() (SerialCommunication.COM_io method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.RemoveCommand">RemoveCommand() (PodCommands.POD_Commands method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.RemoveCommand">RemoveCommand() (PodCommands.POD_Commands method)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.RestoreBasicCommands">RestoreBasicCommands() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.RestoreBasicCommands">RestoreBasicCommands() (PodCommands.POD_Commands method)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.ReturnHexChar">ReturnHexChar() (PodCommands.POD_Commands method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.ReturnHexChar">ReturnHexChar() (PodCommands.POD_Commands method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.Run">Run() (Setup_PodDevices.Setup_PodDevices method)</a>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.Run">Run() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="S">S</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
+<section id="S" class="genindex-section">
+  <h2>S</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
     SerialCommunication
 
-      <ul>
-        <li><a href="SerialCommunication.html#module-SerialCommunication">module</a>
+        <ul>
+          <li><a href="SerialCommunication.html#module-SerialCommunication">module</a>
 </li>
-      </ul></li>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.SetBaudrate">SetBaudrate() (SerialCommunication.COM_io method)</a>
+        </ul></li>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.SetBaudrate">SetBaudrate() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice">SetBaudrateOfDevice() (BasicPodProtocol.POD_Basics method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice">SetBaudrateOfDevice() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetFileName">SetFileName() (Setup_PodInterface.Setup_Interface method)</a>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetFileName">SetFileName() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      <li>
+        <li>
     Setup_8206HR
 
-      <ul>
-        <li><a href="Setup_8206HR.html#module-Setup_8206HR">module</a>
+        <ul>
+          <li><a href="Setup_8206HR.html#module-Setup_8206HR">module</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR">Setup_8206HR (class in Setup_8206HR)</a>
+        </ul></li>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR">Setup_8206HR (class in Setup_8206HR)</a>
 </li>
-      <li>
+        <li>
     Setup_8401HR
 
-      <ul>
-        <li><a href="Setup_8401HR.html#module-Setup_8401HR">module</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#module-Setup_8401HR">module</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR">Setup_8401HR (class in Setup_8401HR)</a>
+        </ul></li>
+        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR">Setup_8401HR (class in Setup_8401HR)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface">Setup_Interface (class in Setup_PodInterface)</a>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface">Setup_Interface (class in Setup_PodInterface)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li>
     Setup_PodDevices
 
-      <ul>
-        <li><a href="Setup_PodDevices.html#module-Setup_PodDevices">module</a>
+        <ul>
+          <li><a href="Setup_PodDevices.html#module-Setup_PodDevices">module</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices">Setup_PodDevices (class in Setup_PodDevices)</a>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices">Setup_PodDevices (class in Setup_PodDevices)</a>
 </li>
-      <li>
+        <li>
     Setup_PodInterface
 
-      <ul>
-        <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">module</a>
+        <ul>
+          <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">module</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupPODparameters">SetupPODparameters() (Setup_PodDevices.Setup_PodDevices method)</a>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupPODparameters">SetupPODparameters() (Setup_PodDevices.Setup_PodDevices method)</a>
 
-      <ul>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetupPODparameters">(Setup_PodInterface.Setup_Interface method)</a>
+        <ul>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetupPODparameters">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupSaveFile">SetupSaveFile() (Setup_PodDevices.Setup_PodDevices method)</a>
+        </ul></li>
+        <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupSaveFile">SetupSaveFile() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.StopStream">StopStream() (Setup_8206HR.Setup_8206HR method)</a>
+        <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.StopStream">StopStream() (Setup_8206HR.Setup_8206HR method)</a>
 
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.StopStream">(Setup_8401HR.Setup_8401HR method)</a>
+        <ul>
+          <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.StopStream">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.StopStream">(Setup_PodInterface.Setup_Interface method)</a>
+          <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.StopStream">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      </ul></li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.Stream">Stream() (Setup_PodInterface.Setup_Interface method)</a>
+        </ul></li>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.Stream">Stream() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.STX">STX() (PodPacketHandling.POD_Packets static method)</a>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.STX">STX() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="T">T</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket">TranslatePODpacket() (BasicPodProtocol.POD_Basics method)</a>
+<section id="T" class="genindex-section">
+  <h2>T</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket">TranslatePODpacket() (BasicPodProtocol.POD_Basics method)</a>
 
-      <ul>
-        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.TranslatePODpacket">(PodDevice_8206HR.POD_8206HR method)</a>
+        <ul>
+          <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.TranslatePODpacket">(PodDevice_8206HR.POD_8206HR method)</a>
 </li>
-        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket">(PodDevice_8401HR.POD_8401HR method)</a>
+          <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket">(PodDevice_8401HR.POD_8401HR method)</a>
 </li>
-      </ul></li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary">TranslatePODpacket_Binary() (BasicPodProtocol.POD_Basics static method)</a>
+        </ul></li>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary">TranslatePODpacket_Binary() (BasicPodProtocol.POD_Basics static method)</a>
 
-      <ul>
-        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary">(PodDevice_8206HR.POD_8206HR method)</a>
+        <ul>
+          <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary">(PodDevice_8206HR.POD_8206HR method)</a>
 </li>
-        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary">(PodDevice_8401HR.POD_8401HR method)</a>
+          <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary">(PodDevice_8401HR.POD_8401HR method)</a>
 </li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard">TranslatePODpacket_Standard() (BasicPodProtocol.POD_Basics method)</a>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard">TranslatePODpacket_Standard() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.TwosComplement">TwosComplement() (PodPacketHandling.POD_Packets static method)</a>
+        <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.TwosComplement">TwosComplement() (PodPacketHandling.POD_Packets static method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="U">U</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.U16">U16() (PodCommands.POD_Commands static method)</a>
+<section id="U" class="genindex-section">
+  <h2>U</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.U16">U16() (PodCommands.POD_Commands static method)</a>
 </li>
-      <li><a href="PodCommands.html#PodCommands.POD_Commands.U8">U8() (PodCommands.POD_Commands static method)</a>
+        <li><a href="PodCommands.html#PodCommands.POD_Commands.U8">U8() (PodCommands.POD_Commands static method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket">UnpackPODpacket() (BasicPodProtocol.POD_Basics method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket">UnpackPODpacket() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary">UnpackPODpacket_Binary() (BasicPodProtocol.POD_Basics static method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary">UnpackPODpacket_Binary() (BasicPodProtocol.POD_Basics static method)</a>
 
-      <ul>
-        <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary">(PodDevice_8206HR.POD_8206HR static method)</a>
+        <ul>
+          <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary">(PodDevice_8206HR.POD_8206HR static method)</a>
 </li>
-        <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.UnpackPODpacket_Binary">(PodDevice_8401HR.POD_8401HR static method)</a>
+          <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.UnpackPODpacket_Binary">(PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard">UnpackPODpacket_Standard() (BasicPodProtocol.POD_Basics static method)</a>
+        </ul></li>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard">UnpackPODpacket_Standard() (BasicPodProtocol.POD_Basics static method)</a>
 </li>
-      <li><a href="GetUserInput.html#GetUserInput.UserInput">UserInput (class in GetUserInput)</a>
+        <li><a href="GetUserInput.html#GetUserInput.UserInput">UserInput (class in GetUserInput)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
-<h2 id="W">W</h2>
-<table style="width: 100%" class="indextable genindextable"><tr>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Write">Write() (SerialCommunication.COM_io method)</a>
+<section id="W" class="genindex-section">
+  <h2>W</h2>
+  <table style="width: 100%" class="indextable genindextable"><tr>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Write">Write() (SerialCommunication.COM_io method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WritePacket">WritePacket() (BasicPodProtocol.POD_Basics method)</a>
+    </ul></td>
+    <td style="width: 33%; vertical-align: top;"><ul>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WritePacket">WritePacket() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WriteRead">WriteRead() (BasicPodProtocol.POD_Basics method)</a>
+        <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WriteRead">WriteRead() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-  </ul></td>
-</tr></table>
+    </ul></td>
+  </tr></table>
+</section>
 
 
-
-          </div>
+        </article>
+      </div>
+      <footer>
+        
+        <div class="related-pages">
+          
           
         </div>
-      </div>
-      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
-        <div class="sphinxsidebarwrapper">
-<h1 class="logo"><a href="index.html">Python POD API</a></h1>
-
-
-
-
-
-
-
-
-<h3>Navigation</h3>
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="modules.html">API_Modules</a></li>
-</ul>
-
-<div class="relations">
-<h3>Related Topics</h3>
-<ul>
-  <li><a href="index.html">Documentation overview</a><ul>
-  </ul></li>
-</ul>
-</div>
-<div id="searchbox" style="display: none" role="search">
-  <h3 id="searchlabel">Quick search</h3>
-    <div class="searchformwrapper">
-    <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
-      <input type="submit" value="Go" />
-    </form>
-    </div>
-</div>
-<script>document.getElementById('searchbox').style.display = "block"</script>
-
-
-
-
-
-
-
-
+        <div class="bottom-of-page">
+          <div class="left-details">
+            <div class="copyright">
+                Copyright &#169; 2023, Thresa Kelly
+            </div>
+            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
+            
+            <a href="https://github.com/pradyunsg/furo">Furo</a>
+            
+          </div>
+          <div class="right-details">
+            
+          </div>
         </div>
-      </div>
-      <div class="clearer"></div>
+        
+      </footer>
     </div>
-    <div class="footer">
-      &copy;2023, Thresa Kelly.
+    <aside class="toc-drawer no-toc">
       
-      |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
-    </div>
-
-    
-
-    
-  </body>
+      
+    </aside>
+  </div>
+</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/scripts/furo.js"></script>
+    </body>
 </html>
