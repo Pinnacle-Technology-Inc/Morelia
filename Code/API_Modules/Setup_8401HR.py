@@ -565,7 +565,7 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ STREAM ------------ 
 
 
-    def _StopStream(self) -> None :
+    def StopStream(self) -> None :
         """Write a command to stop streaming data to all POD devices."""
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 

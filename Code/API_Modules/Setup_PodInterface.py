@@ -104,7 +104,7 @@ class Setup_Interface :
         # each POD device has its own thread 
         pass
 
-    def _StopStream(self) -> None: 
+    def StopStream(self) -> None: 
         """Write a command to stop streaming data to all POD devices."""
         pass
 
@@ -197,7 +197,7 @@ class Setup_Interface :
         else:
             self._podParametersDict = podParametersDict
         # connect and initialize all POD devices
-        self._ConnectAllPODdevices()
+        self.ConnectAllPODdevices()
 
 
     # ------------ VALIDATION ------------
@@ -266,7 +266,7 @@ class Setup_Interface :
             return(Setup_Interface._SetNumberOfDevices(name))
         
 
-    def _ConnectAllPODdevices(self) -> bool : 
+    def ConnectAllPODdevices(self) -> bool : 
         """Connects all setup POD devices.
 
         Returns:
@@ -390,7 +390,7 @@ class Setup_Interface :
         is correct. The user can then edit the parameters of a device. 
         """
         # display all pod devices and parameters
-        self._DisplayPODdeviceParameters()
+        self.DisplayPODdeviceParameters()
         # ask if params are good or not
         validParams = UserInput.AskYN(question='Are the '+self._NAME+' device parameters correct?')
         # edit if the parameters are not correct 
@@ -481,7 +481,7 @@ class Setup_Interface :
         print('\n-- Device #'+str(num)+' --\n')
         
     
-    def _DisplayPODdeviceParameters(self) -> None : 
+    def DisplayPODdeviceParameters(self) -> None : 
         """Display all the pod device parameters in a table."""
         # get table
         tab : Texttable|None = self._GetPODdeviceParameterTable()
@@ -550,7 +550,7 @@ class Setup_Interface :
     # ------------ STREAM ------------ 
 
 
-    def _Stream(self) -> dict[int,Thread] : 
+    def Stream(self) -> dict[int,Thread] : 
         """Tests that all devices are connected then starts streaming data.
 
         Raises:

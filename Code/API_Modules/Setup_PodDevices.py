@@ -231,7 +231,7 @@ class Setup_PodDevices :
     def _ShowCurrentSettings(self) -> None :
         """Displays the POD device settings for all devices, and then prints the save file name."""
         for podType in self._Setup_PodDevices.values() :
-            podType._DisplayPODdeviceParameters()
+            podType.DisplayPODdeviceParameters()
         self._PrintSaveFile()
     
 
@@ -251,10 +251,10 @@ class Setup_PodDevices :
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to edit?')
         # edit device if available 
         if(deviceName in self._Setup_PodDevices) :
-            self._Setup_PodDevices[deviceName]._DisplayPODdeviceParameters()
+            self._Setup_PodDevices[deviceName].DisplayPODdeviceParameters()
             self._Setup_PodDevices[deviceName]._EditParams()
             self._Setup_PodDevices[deviceName]._ValidateParams()
-            self._Setup_PodDevices[deviceName]._ConnectAllPODdevices()
+            self._Setup_PodDevices[deviceName].ConnectAllPODdevices()
         else : 
             print('[!] '+deviceName+' is not available.')
 
@@ -266,7 +266,7 @@ class Setup_PodDevices :
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to remove?')
         # remove device if available 
         if(deviceName in self._Setup_PodDevices) :
-            self._Setup_PodDevices[deviceName]._DisplayPODdeviceParameters()
+            self._Setup_PodDevices[deviceName].DisplayPODdeviceParameters()
             self._Setup_PodDevices[deviceName]._RemoveDevice()
         else : 
             print('[!] '+deviceName+' is not available.')
@@ -279,7 +279,7 @@ class Setup_PodDevices :
         if(deviceName in self._Setup_PodDevices) : 
             self._Setup_PodDevices[deviceName]._AddPODdevice()
             self._Setup_PodDevices[deviceName]._ValidateParams()
-            self._Setup_PodDevices[deviceName]._ConnectAllPODdevices()
+            self._Setup_PodDevices[deviceName].ConnectAllPODdevices()
         else : 
             print('[!] '+deviceName+' is not available.')
     
@@ -293,7 +293,7 @@ class Setup_PodDevices :
         areAllGood = True
         for podType in self._Setup_PodDevices.values() :
             # areAllGood is false if any device fails
-            thisGood = podType._ConnectAllPODdevices()
+            thisGood = podType.ConnectAllPODdevices()
             areAllGood = areAllGood and thisGood
         return(areAllGood)
 
@@ -518,7 +518,7 @@ class Setup_PodDevices :
         allThreads = {}
         for key, podType in self._Setup_PodDevices.items() :
             try : 
-                allThreads[key] = podType._Stream()
+                allThreads[key] = podType.Stream()
             except Exception as e :
                 print('[!]',e)
         # verify that there are open threads 
@@ -542,7 +542,7 @@ class Setup_PodDevices :
         input('\nPress Enter to stop streaming:')
         # tell devices to stop streaming 
         for podType in self._Setup_PodDevices.values() : 
-            podType._StopStream()
+            podType.StopStream()
         print('Finishing up...')
 
 
