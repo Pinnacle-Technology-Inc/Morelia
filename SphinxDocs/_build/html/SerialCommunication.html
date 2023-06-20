@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>SerialCommunication module &#8212; Python POD API v1.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setup_8206HR module" href="Setup_8206HR.html" />
+    <link rel="prev" title="PodPacketHandling module" href="PodPacketHandling.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-SerialCommunication">
+<span id="serialcommunication-module"></span><h1>SerialCommunication module<a class="headerlink" href="#module-SerialCommunication" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">SerialCommunication.</span></span><span class="sig-name descname"><span class="pre">COM_io</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#SerialCommunication.COM_io" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>COM_io handles serial communication (read/write) using COM ports.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.__serialInst">
+<span class="sig-name descname"><span class="pre">__serialInst</span></span><a class="headerlink" href="#SerialCommunication.COM_io.__serialInst" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instance-level serial COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Serial</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.CloseSerialPort">
+<span class="sig-name descname"><span class="pre">CloseSerialPort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.CloseSerialPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>Closes the instance serial port if it is open.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.GetCOMportsList">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetCOMportsList</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.GetCOMportsList" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds all the available COM ports on the user’s computer and appends them to an         accessible list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List containing the names of available COM ports.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.GetPortName">
+<span class="sig-name descname"><span class="pre">GetPortName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.GetPortName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets the name of the open port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If the serial port is open, it will return a string of the port’s name.                 If the port is closed, it will return None.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.IsSerialClosed">
+<span class="sig-name descname"><span class="pre">IsSerialClosed</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.IsSerialClosed" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns False if the serial instance port is open, True otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the COM port is closed, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.IsSerialOpen">
+<span class="sig-name descname"><span class="pre">IsSerialOpen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.IsSerialOpen" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns True if the serial instance port is open, false otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the COM port is open, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.OpenSerialPort">
+<span class="sig-name descname"><span class="pre">OpenSerialPort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.OpenSerialPort" title="Permalink to this definition">¶</a></dt>
+<dd><p>First, it closes the serial port if it is open. Then, it opens a serial port with a set         baud rate.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>port</strong> (<em>str</em><em> | </em><em>int</em>) – String of the serial port to be opened.</p></li>
+<li><p><strong>baudrate</strong> (<em>int</em><em>, </em><em>optional</em>) – Integer baud rate of the opened serial port. Defaults to 9600.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Port does not exist.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.Read">
+<span class="sig-name descname"><span class="pre">Read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numBytes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.Read" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads a specified number of bytes from the open serial port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>numBytes</strong> (<em>int</em>) – Integer number of bytes to read.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>If the serial port is open, it will return a set number of read bytes.                 If it is closed, it will return None.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.ReadLine">
+<span class="sig-name descname"><span class="pre">ReadLine</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.ReadLine" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads until a new line is read from the open serial port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If the serial port is open, it will return a complete read line.                 If closed, it will return None.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.ReadUntil">
+<span class="sig-name descname"><span class="pre">ReadUntil</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">eol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.ReadUntil" title="Permalink to this definition">¶</a></dt>
+<dd><p>Reads until a set character from the open serial port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>eol</strong> (<em>bytes</em>) – end-of-line character.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>If the serial port is open, it will return a read line ending in eol.                 If closed, it will return None.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.SetBaudrate">
+<span class="sig-name descname"><span class="pre">SetBaudrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.SetBaudrate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.Write">
+<span class="sig-name descname"><span class="pre">Write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.Write" title="Permalink to this definition">¶</a></dt>
+<dd><p>Write a set message to the open serial port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>message</strong> (<em>bytes</em>) – byte string containing the message to write.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Python POD API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">API_Modules</a><ul>
+      <li>Previous: <a href="PodPacketHandling.html" title="previous chapter">PodPacketHandling module</a></li>
+      <li>Next: <a href="Setup_8206HR.html" title="next chapter">Setup_8206HR module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Thresa Kelly.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/SerialCommunication.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

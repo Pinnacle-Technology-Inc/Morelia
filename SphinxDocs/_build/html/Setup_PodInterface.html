@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Setup_PodInterface module &#8212; Python POD API v1.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Setup_PodDevices module" href="Setup_PodDevices.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-Setup_PodInterface">
+<span id="setup-podinterface-module"></span><h1>Setup_PodInterface module<a class="headerlink" href="#module-Setup_PodInterface" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_PodInterface.</span></span><span class="sig-name descname"><span class="pre">Setup_Interface</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Setup_Interface provides the basic interface of required methods for subclasses to implement.     SetupPodDevices.py is designed to handle any of these children.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._NAME">
+<span class="sig-name descname"><span class="pre">_NAME</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class-level string for the Device name. This hould be overwritten by child             subclasses.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._PORTKEY">
+<span class="sig-name descname"><span class="pre">_PORTKEY</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._PORTKEY" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class-level string that is the parameter’s dictionary key for the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._podDevices">
+<span class="sig-name descname"><span class="pre">_podDevices</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._podDevices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instance-level dictionary of pod device objects. MUST have             keys as device number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,<a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics">POD_Basics</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._podParametersDict">
+<span class="sig-name descname"><span class="pre">_podParametersDict</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._podParametersDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instance-level dictionary of device information. MUST have             keys as device number, and each value must have {‘_PORTKEY’: str, …other values…}.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._saveFileName">
+<span class="sig-name descname"><span class="pre">_saveFileName</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._saveFileName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Instance-level string filename: &lt;path&gt;/file.ext. The device name and number             will be appended to the filename.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.AreDeviceParamsValid">
+<span class="sig-name descname"><span class="pre">AreDeviceParamsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.AreDeviceParamsValid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Checks if the parameters dictionary is valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paramDict</strong> (<em>None</em><em> | </em><em>dict</em><em>[</em><em>int</em><em>,</em><em>dict</em><em>]</em>) – Dictionary of parameters for all POD devices.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Parameters must be contained in a dictionary.</p></li>
+<li><p><strong>Exception</strong> – Device keys must be integer type.</p></li>
+<li><p><strong>Exception</strong> – Device parameters must be dictionary type.</p></li>
+<li><p><strong>Exception</strong> – Device parameters dictionary is empty.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.GetDeviceName">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.GetDeviceName" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the name of the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String of _NAME.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.GetPODparametersDict">
+<span class="sig-name descname"><span class="pre">GetPODparametersDict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.GetPODparametersDict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Gets a dictionary whose keys are the device number and the value is the device parameters dict.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of POD device parameters. The keys are the device number.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int,dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.SetFileName">
+<span class="sig-name descname"><span class="pre">SetFileName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fileName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.SetFileName" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the filename to save data to. Note that the device name and number will be appended         to the end.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fileName</strong> (<em>str</em>) – String file name.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface.SetupPODparameters">
+<span class="sig-name descname"><span class="pre">SetupPODparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface.SetupPODparameters" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the parameters for the POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>int</em><em>,</em><em>dict</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – dictionary of the device parameters                 for all devices. Defaults to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Python POD API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">API_Modules</a><ul>
+      <li>Previous: <a href="Setup_PodDevices.html" title="previous chapter">Setup_PodDevices module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Thresa Kelly.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/Setup_PodInterface.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

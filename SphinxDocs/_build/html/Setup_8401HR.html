@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>Setup_8401HR module &#8212; Python POD API v1.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setup_PodDevices module" href="Setup_PodDevices.html" />
+    <link rel="prev" title="Setup_8206HR module" href="Setup_8206HR.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-Setup_8401HR">
+<span id="setup-8401hr-module"></span><h1>Setup_8401HR module<a class="headerlink" href="#module-Setup_8401HR" title="Permalink to this heading">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_8401HR.</span></span><span class="sig-name descname"><span class="pre">Setup_8401HR</span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface" title="Setup_PodInterface.Setup_Interface"><code class="xref py py-class docutils literal notranslate"><span class="pre">Setup_Interface</span></code></a></p>
+<p>Setup_8401HR provides the setup functions for an 8206-HR POD device.</p>
+<p>REQUIRES FIRMWARE 1.0.2 OR HIGHER.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR._PARAMKEYS">
+<span class="sig-name descname"><span class="pre">_PARAMKEYS</span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR._PARAMKEYS" title="Permalink to this definition">¶</a></dt>
+<dd><p>class-level list containing the device parameter dict keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR._CHANNELKEYS">
+<span class="sig-name descname"><span class="pre">_CHANNELKEYS</span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR._CHANNELKEYS" title="Permalink to this definition">¶</a></dt>
+<dd><p>class-level list containing the keys of ‘Preamplifier Gain’,’Second Stage Gain’,’High-pass’,’Low-pass’,’Bias’,’DC Mode’ parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV">
+<span class="sig-name descname"><span class="pre">_PHYSICAL_BOUND_uV</span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV" title="Permalink to this definition">¶</a></dt>
+<dd><p>class-level integer representing the max/-min physical value in uV. Used for EDF files.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR._NAME">
+<span class="sig-name descname"><span class="pre">_NAME</span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR._NAME" title="Permalink to this definition">¶</a></dt>
+<dd><p>class-level string containing the POD device name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8401HR.Setup_8401HR.GetDeviceName">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_8401HR.Setup_8401HR.GetDeviceName" title="Permalink to this definition">¶</a></dt>
+<dd><p>returns the name of the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String of _NAME.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Python POD API</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">API_Modules</a><ul>
+      <li>Previous: <a href="Setup_8206HR.html" title="previous chapter">Setup_8206HR module</a></li>
+      <li>Next: <a href="Setup_PodDevices.html" title="next chapter">Setup_PodDevices module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Thresa Kelly.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 7.0.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/Setup_8401HR.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
