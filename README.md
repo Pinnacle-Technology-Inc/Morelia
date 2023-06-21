@@ -50,7 +50,7 @@ The Setup_PodDevices Python module usage description: [here](https://github.com/
 ## Modules 
 
 Detailed instructions of all Python modules and methods: 
-* Read the Docs website: [here](python-pod-api.readthedocs.io)
+* Read the Docs website: [here](https://python-pod-api.readthedocs.io/en/latest/)
 * PDF Manual: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/API_Manuals/Python_POD_API_Manual.pdf)
 
 
