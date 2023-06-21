@@ -33,33 +33,21 @@ class Setup_8401HR(Setup_Interface) :
 
     _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode']
     """Class-level list containing the device parameter dict keys.
-
-    Type:
-        list[str]
     """
     
     _CHANNELKEYS = ['A','B','C','D']
     """Class-level list containing the keys of 'Preamplifier Gain','Second Stage Gain',\
     'High-pass','Low-pass','Bias','DC Mode' parameters.
-
-    Type:
-        list[str]
     """
 
     _PHYSICAL_BOUND_uV : int = 2046 
     """Class-level integer representing the max/-min physical value in uV. Used for \
     EDF files. 
-
-    Type:
-        int
     """
 
     # overwrite from parent
     _NAME : str = '8401-HR'
     """Class-level string containing the POD device name.
-
-    Type:
-        str
     """
 
 

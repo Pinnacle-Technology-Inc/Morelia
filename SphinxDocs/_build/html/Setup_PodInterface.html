@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="prev" title="Setup_PodDevices module" href="Setup_PodDevices.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>Setup_PodInterface module - Python POD API v1.1.0 documentation</title>
+        <title>Setup_PodInterface module - Python POD API v1.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">Python POD API v1.1.0 documentation</div></a>
+      <a href="index.html"><div class="brand">Python POD API v1.1.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -146,7 +146,7 @@
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <span class="sidebar-brand-text">Python POD API v1.1.0 documentation</span>
+  <span class="sidebar-brand-text">Python POD API v1.1.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -211,28 +211,6 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_PodInterface.</span></span><span class="sig-name descname"><span class="pre">Setup_Interface</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Setup_Interface provides the basic interface of required methods for subclasses to implement.     SetupPodDevices.py is designed to handle any of these children.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._NAME">
-<span class="sig-name descname"><span class="pre">_NAME</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._NAME" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level string for the Device name. This hould be overwritten by child             subclasses.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._PORTKEY">
-<span class="sig-name descname"><span class="pre">_PORTKEY</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._PORTKEY" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level string that is the parameter’s dictionary key for the COM port.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._podDevices">
 <span class="sig-name descname"><span class="pre">_podDevices</span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._podDevices" title="Permalink to this definition">#</a></dt>
@@ -378,6 +356,375 @@
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._AddPODdevice">
+<span class="sig-name descname"><span class="pre">_AddPODdevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._AddPODdevice" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user for the parameters for the new device. A new device number         is generated.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._BuildFileName">
+<span class="sig-name descname"><span class="pre">_BuildFileName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._BuildFileName" title="Permalink to this definition">#</a></dt>
+<dd><p>Appends the device name and number to the end of the file name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>devNum</strong> (<em>int</em>) – Integer of the device number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>String file name.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._ChoosePort">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ChoosePort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._ChoosePort" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user to select a COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbidden</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of port names that are already used. Defaults to [].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>String name of the port.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._ConnectPODdevice">
+<span class="sig-name descname"><span class="pre">_ConnectPODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviceNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._ConnectPODdevice" title="Permalink to this definition">#</a></dt>
+<dd><p>Creates a POD device object and write the setup parameters to it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deviceNum</strong> (<em>int</em>) – Integer of the device’s number.</p></li>
+<li><p><strong>deviceParams</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em>) – Dictionary of the device’s parameters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if connection was successful, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices">
+<span class="sig-name descname"><span class="pre">_DisconnectAllPODdevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices" title="Permalink to this definition">#</a></dt>
+<dd><p>Disconnects all POD devices by deleted all POD obejcts.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._EditParams">
+<span class="sig-name descname"><span class="pre">_EditParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._EditParams" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user which device to edit, and then asks them to re-input the device parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._GetForbiddenNames">
+<span class="sig-name descname"><span class="pre">_GetForbiddenNames</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Port'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">exclude</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._GetForbiddenNames" title="Permalink to this definition">#</a></dt>
+<dd><p>Generates a list of port names used by the active pod devices. There is an option to         exclude an additional name from the list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<em>str</em><em>, </em><em>optional</em>) – String key to access the _podParametersDict. Defaults to ‘Port’.</p></li>
+<li><p><strong>exclude</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – String port name to exclude from the returned list.                 Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of string names of ports in use.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable">
+<span class="sig-name descname"><span class="pre">_GetPODdeviceParameterTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Texttable</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable" title="Permalink to this definition">#</a></dt>
+<dd><p>Builds a table containing the parameters for all POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Texttable containing all parameters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Texttable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._GetParam_onePODdevice">
+<span class="sig-name descname"><span class="pre">_GetParam_onePODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbiddenNames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._GetParam_onePODdevice" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user to input all the device parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbiddenNames</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of port names already used by other devices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of device parameters.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,(str|int|dict[str,int])]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._GetPortsList">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_GetPortsList</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._GetPortsList" title="Permalink to this definition">#</a></dt>
+<dd><p>Gets the names of all available ports.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbidden</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of port names that are already used. Defaults to [].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of port names.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_GetTimeHeader_forTXT</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT" title="Permalink to this definition">#</a></dt>
+<dd><p>Builds a string containing the current date and time to be written to the text file header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String containing the date and time. Each line begins with ‘#’ and ends with a newline.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._IsOneDeviceValid">
+<span class="sig-name descname"><span class="pre">_IsOneDeviceValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._IsOneDeviceValid" title="Permalink to this definition">#</a></dt>
+<dd><p>Checks if the parameters for one device are valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paramDict</strong> (<em>dict</em>) – Dictionary of the parameters for one device.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Invalid parameters.</p></li>
+<li><p><strong>Exception</strong> – Invalid parameter value types.</p></li>
+<li><p><strong>Exception</strong> – Preamplifier is not supported.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True for valid parameters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._NAME">
+<span class="sig-name descname"><span class="pre">_NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'GENERIC'</span></em><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._NAME" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level string for the Device name. This should be overwritten by child     subclasses.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._OpenSaveFile">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">EdfWriter</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile" title="Permalink to this definition">#</a></dt>
+<dd><p>Opens a save file for a given device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>devNum</strong> (<em>int</em>) – Integer of the device number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file. IOBase for a text file, or EdfWriter for EDF file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>IOBase | EdfWriter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">EdfWriter</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF" title="Permalink to this definition">#</a></dt>
+<dd><p>Opens EDF file and write header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – String filename.</p></li>
+<li><p><strong>devNum</strong> (<em>int</em>) – Integer device number.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>EdfWriter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT" title="Permalink to this definition">#</a></dt>
+<dd><p>Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – String filename.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>IOBase</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._PORTKEY">
+<span class="sig-name descname"><span class="pre">_PORTKEY</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'Port'</span></em><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._PORTKEY" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level string that is the parameter’s dictionary key for the COM port.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._PrintDeviceNumber">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_PrintDeviceNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._PrintDeviceNumber" title="Permalink to this definition">#</a></dt>
+<dd><p>Prints a title with the device number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>num</strong> (<em>int</em>) – Integer of the device number.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._RemoveDevice">
+<span class="sig-name descname"><span class="pre">_RemoveDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._RemoveDevice" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user for a device number to remove, then deletes that device. This will         only remove a device if there are more than one options.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._SelectDeviceFromDict">
+<span class="sig-name descname"><span class="pre">_SelectDeviceFromDict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">action</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._SelectDeviceFromDict" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user to select a valid device number. The input must be an integer number         of an existing device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>action</strong> (<em>str</em>) – Description of the action to be performed on the device.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer for the device number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._SetNumberOfDevices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_SetNumberOfDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._SetNumberOfDevices" title="Permalink to this definition">#</a></dt>
+<dd><p>Asks the user for how many devices they want to setup.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – Name of the POD device type.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer number of POD devices desired by the user.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._SetParam_allPODdevices">
+<span class="sig-name descname"><span class="pre">_SetParam_allPODdevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._SetParam_allPODdevices" title="Permalink to this definition">#</a></dt>
+<dd><p>First gets the number of POD devices, then asks the user for the information         for each device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._StreamThreading">
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._StreamThreading" title="Permalink to this definition">#</a></dt>
+<dd><p>Opens a save file, then creates a thread for each device to stream and write data from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with keys as the device number and values as the started Thread.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int,Thread]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._TestDeviceConnection">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TestDeviceConnection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><span class="pre">POD_Basics</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._TestDeviceConnection" title="Permalink to this definition">#</a></dt>
+<dd><p>Tests if a POD device can be read from or written. Sends a PING command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pod</strong> (<a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><em>POD_Basics</em></a>) – POD device to read to and write from.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True for successful connection, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._TestDeviceConnection_All">
+<span class="sig-name descname"><span class="pre">_TestDeviceConnection_All</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._TestDeviceConnection_All" title="Permalink to this definition">#</a></dt>
+<dd><p>Tests the connection of all setup POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True when all devices are successfully connected, false otherwise</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._ValidateParams">
+<span class="sig-name descname"><span class="pre">_ValidateParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._ValidateParams" title="Permalink to this definition">#</a></dt>
+<dd><p>Displays a table of the parameters of all devices, then asks the user if everything         is correct. The user can then edit the parameters of a device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_PodInterface.Setup_Interface._uV">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_uV</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">voltage</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Setup_PodInterface.Setup_Interface._uV" title="Permalink to this definition">#</a></dt>
+<dd><p>Converts volts to microVolts, rounded to 6 decimal places.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>voltage</strong> (<em>float</em><em> | </em><em>int</em>) – number of volts.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>voltage in of uV.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -431,8 +778,6 @@
             <ul>
 <li><a class="reference internal" href="#">Setup_PodInterface module</a><ul>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface"><code class="docutils literal notranslate"><span class="pre">Setup_Interface</span></code></a><ul>
-<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._NAME"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._NAME</span></code></a></li>
-<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._PORTKEY"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._PORTKEY</span></code></a></li>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._podDevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._podDevices</span></code></a></li>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._podParametersDict"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._podParametersDict</span></code></a></li>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._saveFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._saveFileName</span></code></a></li>
@@ -445,6 +790,33 @@
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface.SetupPODparameters"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.SetupPODparameters()</span></code></a></li>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.StopStream()</span></code></a></li>
 <li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface.Stream"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.Stream()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._AddPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._AddPODdevice()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._BuildFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._BuildFileName()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._ChoosePort"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._ChoosePort()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._ConnectPODdevice()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._DisconnectAllPODdevices()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._EditParams"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._EditParams()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._GetForbiddenNames"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetForbiddenNames()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetPODdeviceParameterTable()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetParam_onePODdevice()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._GetPortsList"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetPortsList()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetTimeHeader_forTXT()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._IsOneDeviceValid"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._IsOneDeviceValid()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._NAME"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._NAME</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile_EDF()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile_TXT()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._PORTKEY"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._PORTKEY</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._PrintDeviceNumber"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._PrintDeviceNumber()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._RemoveDevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._RemoveDevice()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._SelectDeviceFromDict"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._SelectDeviceFromDict()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._SetNumberOfDevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._SetNumberOfDevices()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._SetParam_allPODdevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._SetParam_allPODdevices()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._StreamThreading()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._TestDeviceConnection"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._TestDeviceConnection()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._TestDeviceConnection_All"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._TestDeviceConnection_All()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._ValidateParams"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._ValidateParams()</span></code></a></li>
+<li><a class="reference internal" href="#Setup_PodInterface.Setup_Interface._uV"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._uV()</span></code></a></li>
 </ul>
 </li>
 </ul>

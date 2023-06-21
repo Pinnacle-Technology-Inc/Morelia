@@ -60,6 +60,8 @@ Update Sphinx configuration:
         extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
         html_theme = 'furo'
+        
+        autodoc_default_options = {'private-members': True}
 
 
 Adding modules to Sphinx project: 

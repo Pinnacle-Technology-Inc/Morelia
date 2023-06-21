@@ -28,28 +28,19 @@ class POD_Basics :
     __numPod : int = 0
     """Class-level integer counting the number of POD_Basics instances. \
     Maintained by __init__ and __del__.
-
-    Type: 
-        int
     """
 
     __MINSTANDARDLENGTH : int = 8       
     """Class-level integer representing the minimum length of a standard \
-    POD command packet: # STX (1 byte) + command number (4 bytes) \
+    POD command packet. Format is STX (1 byte) + command number (4 bytes) \
     + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-    
-    Type: 
-        int
     """ 
     
     __MINBINARYLENGTH   : int = 15 
     """Class-level integer representing the minimum length of a binary POD \
-    command packet: STX (1 byte) + command number (4 bytes) + length of \
-    binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH \
+    command packet. Format is STX (1 byte) + command number (4 bytes) + length \
+    of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH \
     bytes) + checksum (2 bytes) + ETX (1 bytes)
-    
-    Type: 
-        int
     """
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -63,8 +54,6 @@ class POD_Basics :
             port (str|int): Serial port to be opened. Used when initializing the COM_io instance.
             baudrate (int): Baud rate of the opened serial port. Used when initializing the COM_io \
                 instance. Default value is 9600.
-
-        Attributes: 
         """
         # initialize serial port 
         self._port : COM_io = COM_io(port, baudrate)

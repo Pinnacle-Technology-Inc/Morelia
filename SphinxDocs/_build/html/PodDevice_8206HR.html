@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="PodDevice_8401HR module" href="PodDevice_8401HR.html" /><link rel="prev" title="PodCommands module" href="PodCommands.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>PodDevice_8206HR module - Python POD API v1.1.0 documentation</title>
+        <title>PodDevice_8206HR module - Python POD API v1.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">Python POD API v1.1.0 documentation</div></a>
+      <a href="index.html"><div class="brand">Python POD API v1.1.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -146,7 +146,7 @@
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <span class="sidebar-brand-text">Python POD API v1.1.0 documentation</span>
+  <span class="sidebar-brand-text">Python POD API v1.1.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -211,28 +211,6 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodDevice_8206HR.</span></span><span class="sig-name descname"><span class="pre">POD_8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><code class="xref py py-class docutils literal notranslate"><span class="pre">POD_Basics</span></code></a></p>
 <p>POD_8206HR handles communication using an 8206HR POD device.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4LENGTH">
-<span class="sig-name descname"><span class="pre">__B4LENGTH</span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the number of bytes for a Binary 4 packet.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH">
-<span class="sig-name descname"><span class="pre">__B4BINARYLENGTH</span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the number of binary bytes for a             Binary 4 packet.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._preampGain">
 <span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._preampGain" title="Permalink to this definition">#</a></dt>
@@ -301,6 +279,92 @@
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage">
+<span class="sig-name descname"><span class="pre">_BinaryBytesToVoltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage" title="Permalink to this definition">#</a></dt>
+<dd><p>Converts a binary bytes value read from POD device and converts it to the real voltage value         at the preamplifier input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>bytes</em>) – Bytes string containing voltage measurement.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A number containing the voltage in Volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._Read_Binary" title="Permalink to this definition">#</a></dt>
+<dd><p>After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX         (checksum+ETX).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Bad checksum for binary POD packet read.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Byte string for a binary4 POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLbyte_ASCII</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII" title="Permalink to this definition">#</a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a ASCII encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (ASCII encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLbyte_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary" title="Permalink to this definition">#</a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a binary encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (binary encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH">
+<span class="sig-name descname"><span class="pre">__B4BINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the number of binary bytes for a     Binary 4 packet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4LENGTH">
+<span class="sig-name descname"><span class="pre">__B4LENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the number of bytes for a Binary 4 packet.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -362,12 +426,16 @@
             <ul>
 <li><a class="reference internal" href="#">PodDevice_8206HR module</a><ul>
 <li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR"><code class="docutils literal notranslate"><span class="pre">POD_8206HR</span></code></a><ul>
-<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4LENGTH</span></code></a></li>
-<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4BINARYLENGTH</span></code></a></li>
 <li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._preampGain"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._preampGain</span></code></a></li>
 <li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.TranslatePODpacket()</span></code></a></li>
 <li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.TranslatePODpacket_Binary()</span></code></a></li>
 <li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.UnpackPODpacket_Binary()</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._BinaryBytesToVoltage()</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._Read_Binary()</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._TranslateTTLbyte_ASCII()</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._TranslateTTLbyte_Binary()</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4BINARYLENGTH</span></code></a></li>
+<li><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4LENGTH</span></code></a></li>
 </ul>
 </li>
 </ul>

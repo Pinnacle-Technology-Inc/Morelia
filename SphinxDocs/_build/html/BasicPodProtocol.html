@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="GetUserInput module" href="GetUserInput.html" /><link rel="prev" title="API_Modules" href="modules.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>BasicPodProtocol module - Python POD API v1.1.0 documentation</title>
+        <title>BasicPodProtocol module - Python POD API v1.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">Python POD API v1.1.0 documentation</div></a>
+      <a href="index.html"><div class="brand">Python POD API v1.1.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -146,7 +146,7 @@
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <span class="sidebar-brand-text">Python POD API v1.1.0 documentation</span>
+  <span class="sidebar-brand-text">Python POD API v1.1.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -212,39 +212,6 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>POD_Basics handles basic communication with a generic POD device, including reading and writing
 packets and packet interpretation.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__numPod">
-<span class="sig-name descname"><span class="pre">__numPod</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__numPod" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer counting the number of POD_Basics instances</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">
-<span class="sig-name descname"><span class="pre">__MINSTANDARDLENGTH</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the minimum length of a standard             POD command packet.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">
-<span class="sig-name descname"><span class="pre">__MINBINARYLENGTH</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the minimum length of a binary POD             command packet.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._port">
 <span class="sig-name descname"><span class="pre">_port</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._port" title="Permalink to this definition">#</a></dt>
@@ -513,6 +480,145 @@ number, binary packet length, and binary data in bytes.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive">
+<span class="sig-name descname"><span class="pre">_ReadPODpacket_Recursive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive" title="Permalink to this definition">#</a></dt>
+<dd><p>Reads the command number. If the command number ends in ETX, the packet is returned.         Next, it checks if the command is allowed. Then, it checks if the command is standard or         binary and reads accordingly, then returns the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Cannot read an invalid command.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string containing a POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Binary" title="Permalink to this definition">#</a></dt>
+<dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a variable-length binary POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_GetCommand">
+<span class="sig-name descname"><span class="pre">_Read_GetCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_GetCommand" title="Permalink to this definition">#</a></dt>
+<dd><p>Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or         (3) continue building the command number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>4 byte long string containing the ASCII-encoded command number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Standard">
+<span class="sig-name descname"><span class="pre">_Read_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Standard" title="Permalink to this definition">#</a></dt>
+<dd><p>Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a complete standard POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_ToETX">
+<span class="sig-name descname"><span class="pre">_Read_ToETX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_ToETX" title="Permalink to this definition">#</a></dt>
+<dd><p>Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX         is found anywhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string ending with ETX.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ValidateChecksum">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateChecksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ValidateChecksum" title="Permalink to this definition">#</a></dt>
+<dd><p>Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum
+from the data matches the checksum written in the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum                 (2 bytes) + ETX (1 byte).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the checksum is correct, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – msg does not begin with STX or end with ETX.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">
+<span class="sig-name descname"><span class="pre">__MINBINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the minimum length of a binary POD     command packet. Format is STX (1 byte) + command number (4 bytes) + length     of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH     bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">
+<span class="sig-name descname"><span class="pre">__MINSTANDARDLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the minimum length of a standard     POD command packet. Format is STX (1 byte) + command number (4 bytes)     + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__numPod">
+<span class="sig-name descname"><span class="pre">__numPod</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__numPod" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer counting the number of POD_Basics instances.     Maintained by __init__ and __del__.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -574,9 +680,6 @@ number, binary packet length, and binary data in bytes.</p>
             <ul>
 <li><a class="reference internal" href="#">BasicPodProtocol module</a><ul>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics"><code class="docutils literal notranslate"><span class="pre">POD_Basics</span></code></a><ul>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__numPod"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__numPod</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINSTANDARDLENGTH</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINBINARYLENGTH</span></code></a></li>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._port"><code class="docutils literal notranslate"><span class="pre">POD_Basics._port</span></code></a></li>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._commands"><code class="docutils literal notranslate"><span class="pre">POD_Basics._commands</span></code></a></li>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
@@ -592,6 +695,15 @@ number, binary packet length, and binary data in bytes.</p>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Standard()</span></code></a></li>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WritePacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WritePacket()</span></code></a></li>
 <li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WriteRead"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WriteRead()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ReadPODpacket_Recursive()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Binary()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_GetCommand"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_GetCommand()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Standard()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_ToETX"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_ToETX()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ValidateChecksum"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ValidateChecksum()</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINBINARYLENGTH</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINSTANDARDLENGTH</span></code></a></li>
+<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__numPod"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__numPod</span></code></a></li>
 </ul>
 </li>
 </ul>

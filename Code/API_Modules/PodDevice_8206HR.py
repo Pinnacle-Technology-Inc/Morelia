@@ -26,17 +26,11 @@ class POD_8206HR(POD_Basics) :
 
     __B4LENGTH : int = 16
     """Class-level integer representing the number of bytes for a Binary 4 packet.
-    
-    Type: 
-        int
     """
 
     __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
     """Class-level integer representing the number of binary bytes for a \
     Binary 4 packet.
-    
-    Type: 
-        int
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

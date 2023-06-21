@@ -6,7 +6,7 @@
 <link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="PodDevice_8206HR module" href="PodDevice_8206HR.html" /><link rel="prev" title="GetUserInput module" href="GetUserInput.html" />
 
     <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>PodCommands module - Python POD API v1.1.0 documentation</title>
+        <title>PodCommands module - Python POD API v1.1.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
     <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
@@ -123,7 +123,7 @@
       </label>
     </div>
     <div class="header-center">
-      <a href="index.html"><div class="brand">Python POD API v1.1.0 documentation</div></a>
+      <a href="index.html"><div class="brand">Python POD API v1.1.1 documentation</div></a>
     </div>
     <div class="header-right">
       <div class="theme-toggle-container theme-toggle-header">
@@ -146,7 +146,7 @@
       <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
   
   
-  <span class="sidebar-brand-text">Python POD API v1.1.0 documentation</span>
+  <span class="sidebar-brand-text">Python POD API v1.1.1 documentation</span>
   
 </a><form class="sidebar-search-container" method="get" action="search.html" role="search">
   <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
@@ -211,83 +211,6 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodCommands.</span></span><span class="sig-name descname"><span class="pre">POD_Commands</span></span><a class="headerlink" href="#PodCommands.POD_Commands" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>POD_Commands manages a dictionary containing available commands for a POD device.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__NAME">
-<span class="sig-name descname"><span class="pre">__NAME</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__NAME" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the index key for the command name for __commands             list values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__ARGUMENTS">
-<span class="sig-name descname"><span class="pre">__ARGUMENTS</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__ARGUMENTS" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the index key for the number of bytes in an             argument for __commands list values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__RETURNS">
-<span class="sig-name descname"><span class="pre">__RETURNS</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__RETURNS" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the index key for the number of bytes in the             return for __commands list values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__BINARY">
-<span class="sig-name descname"><span class="pre">__BINARY</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__BINARY" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the index key for the binary flag for __commands             list values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__NOVALUE">
-<span class="sig-name descname"><span class="pre">__NOVALUE</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__NOVALUE" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer used to mark when a list item in __commands means ‘no value’             or is undefined.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__U8">
-<span class="sig-name descname"><span class="pre">__U8</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__U8" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the number of hexadecimal characters for an unsigned             8-bit value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="PodCommands.POD_Commands.__U16">
-<span class="sig-name descname"><span class="pre">__U16</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__U16" title="Permalink to this definition">#</a></dt>
-<dd><p>Class-level integer representing the number of hexadecimal characters for an unsigned             16-bit value.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="PodCommands.POD_Commands.__commands">
 <span class="sig-name descname"><span class="pre">__commands</span></span><a class="headerlink" href="#PodCommands.POD_Commands.__commands" title="Permalink to this definition">#</a></dt>
@@ -500,6 +423,48 @@
 </dl>
 </dd></dl>
 
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__ARGUMENTS">
+<span class="sig-name descname"><span class="pre">__ARGUMENTS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__ARGUMENTS" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the index key for the number of bytes in an     argument for __commands list values.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__BINARY">
+<span class="sig-name descname"><span class="pre">__BINARY</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__BINARY" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the index key for the binary flag for __commands     list values.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__NAME">
+<span class="sig-name descname"><span class="pre">__NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__NAME" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the index key for the command name for __commands     list values.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__NOVALUE">
+<span class="sig-name descname"><span class="pre">__NOVALUE</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">-1</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__NOVALUE" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer used to mark when a list item in __commands means ‘no value’     or is undefined.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__RETURNS">
+<span class="sig-name descname"><span class="pre">__RETURNS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__RETURNS" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the index key for the number of bytes in the     return for __commands list values.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__U16">
+<span class="sig-name descname"><span class="pre">__U16</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__U16" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the number of hexadecimal characters for an     unsigned 16-bit value.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodCommands.POD_Commands.__U8">
+<span class="sig-name descname"><span class="pre">__U8</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#PodCommands.POD_Commands.__U8" title="Permalink to this definition">#</a></dt>
+<dd><p>Class-level integer representing the number of hexadecimal characters for an     unsigned 8-bit value.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -561,13 +526,6 @@
             <ul>
 <li><a class="reference internal" href="#">PodCommands module</a><ul>
 <li><a class="reference internal" href="#PodCommands.POD_Commands"><code class="docutils literal notranslate"><span class="pre">POD_Commands</span></code></a><ul>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__NAME"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__NAME</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__ARGUMENTS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__ARGUMENTS</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__RETURNS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__RETURNS</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__BINARY"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__BINARY</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__NOVALUE"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__NOVALUE</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__U8"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U8</span></code></a></li>
-<li><a class="reference internal" href="#PodCommands.POD_Commands.__U16"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U16</span></code></a></li>
 <li><a class="reference internal" href="#PodCommands.POD_Commands.__commands"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__commands</span></code></a></li>
 <li><a class="reference internal" href="#PodCommands.POD_Commands.AddCommand"><code class="docutils literal notranslate"><span class="pre">POD_Commands.AddCommand()</span></code></a></li>
 <li><a class="reference internal" href="#PodCommands.POD_Commands.ArgumentHexChar"><code class="docutils literal notranslate"><span class="pre">POD_Commands.ArgumentHexChar()</span></code></a></li>
@@ -582,6 +540,13 @@
 <li><a class="reference internal" href="#PodCommands.POD_Commands.ReturnHexChar"><code class="docutils literal notranslate"><span class="pre">POD_Commands.ReturnHexChar()</span></code></a></li>
 <li><a class="reference internal" href="#PodCommands.POD_Commands.U16"><code class="docutils literal notranslate"><span class="pre">POD_Commands.U16()</span></code></a></li>
 <li><a class="reference internal" href="#PodCommands.POD_Commands.U8"><code class="docutils literal notranslate"><span class="pre">POD_Commands.U8()</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__ARGUMENTS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__ARGUMENTS</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__BINARY"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__BINARY</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__NAME"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__NAME</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__NOVALUE"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__NOVALUE</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__RETURNS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__RETURNS</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__U16"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U16</span></code></a></li>
+<li><a class="reference internal" href="#PodCommands.POD_Commands.__U8"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U8</span></code></a></li>
 </ul>
 </li>
 </ul>

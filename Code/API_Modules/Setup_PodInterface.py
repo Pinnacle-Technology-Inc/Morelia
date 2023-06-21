@@ -40,16 +40,10 @@ class Setup_Interface :
     _NAME    : str = 'GENERIC' 
     """Class-level string for the Device name. This should be overwritten by child \
     subclasses.
-
-    Type:
-        str
     """
 
     _PORTKEY : str = 'Port' 
     """Class-level string that is the parameter's dictionary key for the COM port.
-
-    Type:
-        str
     """
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================

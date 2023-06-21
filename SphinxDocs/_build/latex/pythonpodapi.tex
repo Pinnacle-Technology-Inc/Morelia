@@ -64,8 +64,8 @@
 
 
 \title{Python POD API}
-\date{Jun 20, 2023}
-\release{v1.1.0}
+\date{Jun 21, 2023}
+\release{v1.1.1}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -107,60 +107,6 @@ Bases: \sphinxcode{\sphinxupquote{object}}
 \sphinxAtStartPar
 POD\_Basics handles basic communication with a generic POD device, including reading and writing
 packets and packet interpretation.
-\index{\_\_numPod (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_numPod}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__numPod}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_numPod}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer counting the number of POD\_Basics instances
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_MINSTANDARDLENGTH (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_MINSTANDARDLENGTH}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_MINSTANDARDLENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the minimum length of a standard             POD command packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_MINBINARYLENGTH (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_MINBINARYLENGTH}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__MINBINARYLENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_MINBINARYLENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the minimum length of a binary POD             command packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_port (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_port}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
 
 \begin{fulllineitems}
@@ -585,6 +531,229 @@ Bytes string containing a POD packet beginning with STX and ending with ETX. Thi
 bytes
 
 \end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ReadPODpacket\_Recursive() (BasicPodProtocol.POD\_Basics method)@\spxentry{\_ReadPODpacket\_Recursive()}\spxextra{BasicPodProtocol.POD\_Basics method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ReadPODpacket\_Recursive}}}{\sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reads the command number. If the command number ends in ETX, the packet is returned.         Next, it checks if the command is allowed. Then, it checks if the command is standard or         binary and reads accordingly, then returns the packet.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Cannot read an invalid command.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Bytes string containing a POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_Binary() (BasicPodProtocol.POD\_Basics method)@\spxentry{\_Read\_Binary()}\spxextra{BasicPodProtocol.POD\_Basics method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._Read_Binary}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_Binary}}}{\sphinxparam{\DUrole{n,n}{prePacket}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}, \sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reads the remaining part of the variable\sphinxhyphen{}length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{prePacket}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} An exception is raised if the checksum is invalid (only if validateChecksum=True).
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Bytes string for a variable\sphinxhyphen{}length binary POD packet.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_GetCommand() (BasicPodProtocol.POD\_Basics method)@\spxentry{\_Read\_GetCommand()}\spxextra{BasicPodProtocol.POD\_Basics method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._Read_GetCommand}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_GetCommand}}}{\sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reads one byte at a time up to 4 bytes to get the ASCII\sphinxhyphen{}encoded bytes command number. For each         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or         (3) continue building the command number.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+4 byte long string containing the ASCII\sphinxhyphen{}encoded command number.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_Standard() (BasicPodProtocol.POD\_Basics method)@\spxentry{\_Read\_Standard()}\spxextra{BasicPodProtocol.POD\_Basics method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._Read_Standard}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_Standard}}}{\sphinxparam{\DUrole{n,n}{prePacket}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}, \sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{prePacket}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} An exception is raised if the checksum is invalid (only if validateChecksum=True).
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Bytes string for a complete standard POD packet.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_ToETX() (BasicPodProtocol.POD\_Basics method)@\spxentry{\_Read\_ToETX()}\spxextra{BasicPodProtocol.POD\_Basics method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._Read_ToETX}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_ToETX}}}{\sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX         is found anywhere.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Bytes string ending with ETX.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ValidateChecksum() (BasicPodProtocol.POD\_Basics static method)@\spxentry{\_ValidateChecksum()}\spxextra{BasicPodProtocol.POD\_Basics static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics._ValidateChecksum}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ValidateChecksum}}}{\sphinxparam{\DUrole{n,n}{msg}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum
+from the data matches the checksum written in the packet.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{msg}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum                 (2 bytes) + ETX (1 byte).
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if the checksum is correct, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} msg does not begin with STX or end with ETX.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_\_MINBINARYLENGTH (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_MINBINARYLENGTH}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__MINBINARYLENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_MINBINARYLENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }15}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the minimum length of a binary POD     command packet. Format is STX (1 byte) + command number (4 bytes) + length     of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH     bytes) + checksum (2 bytes) + ETX (1 bytes)
+
+\end{fulllineitems}
+
+\index{\_\_MINSTANDARDLENGTH (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_MINSTANDARDLENGTH}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_MINSTANDARDLENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }8}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the minimum length of a standard     POD command packet. Format is STX (1 byte) + command number (4 bytes)     + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+
+\end{fulllineitems}
+
+\index{\_\_numPod (BasicPodProtocol.POD\_Basics attribute)@\spxentry{\_\_numPod}\spxextra{BasicPodProtocol.POD\_Basics attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.__numPod}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_numPod}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }0}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer counting the number of POD\_Basics instances.     Maintained by \_\_init\_\_ and \_\_del\_\_.
 
 \end{fulllineitems}
 
@@ -1148,132 +1317,6 @@ Bases: \sphinxcode{\sphinxupquote{object}}
 
 \sphinxAtStartPar
 POD\_Commands manages a dictionary containing available commands for a POD device.
-\index{\_\_NAME (PodCommands.POD\_Commands attribute)@\spxentry{\_\_NAME}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__NAME}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_NAME}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the index key for the command name for \_\_commands             list values.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_ARGUMENTS (PodCommands.POD\_Commands attribute)@\spxentry{\_\_ARGUMENTS}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__ARGUMENTS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_ARGUMENTS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the index key for the number of bytes in an             argument for \_\_commands list values.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_RETURNS (PodCommands.POD\_Commands attribute)@\spxentry{\_\_RETURNS}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__RETURNS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_RETURNS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the index key for the number of bytes in the             return for \_\_commands list values.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_BINARY (PodCommands.POD\_Commands attribute)@\spxentry{\_\_BINARY}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__BINARY}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_BINARY}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the index key for the binary flag for \_\_commands             list values.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_NOVALUE (PodCommands.POD\_Commands attribute)@\spxentry{\_\_NOVALUE}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__NOVALUE}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_NOVALUE}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer used to mark when a list item in \_\_commands means ‘no value’             or is undefined.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_U8 (PodCommands.POD\_Commands attribute)@\spxentry{\_\_U8}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__U8}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_U8}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an unsigned             8\sphinxhyphen{}bit value.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_U16 (PodCommands.POD\_Commands attribute)@\spxentry{\_\_U16}\spxextra{PodCommands.POD\_Commands attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__U16}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_U16}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an unsigned             16\sphinxhyphen{}bit value.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_\_commands (PodCommands.POD\_Commands attribute)@\spxentry{\_\_commands}\spxextra{PodCommands.POD\_Commands attribute}}
 
 \begin{fulllineitems}
@@ -1615,6 +1658,90 @@ int
 
 \end{fulllineitems}
 
+\index{\_\_ARGUMENTS (PodCommands.POD\_Commands attribute)@\spxentry{\_\_ARGUMENTS}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__ARGUMENTS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_ARGUMENTS}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }1}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the index key for the number of bytes in an     argument for \_\_commands list values.
+
+\end{fulllineitems}
+
+\index{\_\_BINARY (PodCommands.POD\_Commands attribute)@\spxentry{\_\_BINARY}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__BINARY}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_BINARY}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }3}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the index key for the binary flag for \_\_commands     list values.
+
+\end{fulllineitems}
+
+\index{\_\_NAME (PodCommands.POD\_Commands attribute)@\spxentry{\_\_NAME}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__NAME}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_NAME}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }0}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the index key for the command name for \_\_commands     list values.
+
+\end{fulllineitems}
+
+\index{\_\_NOVALUE (PodCommands.POD\_Commands attribute)@\spxentry{\_\_NOVALUE}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__NOVALUE}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_NOVALUE}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\sphinxhyphen{}1}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer used to mark when a list item in \_\_commands means ‘no value’     or is undefined.
+
+\end{fulllineitems}
+
+\index{\_\_RETURNS (PodCommands.POD\_Commands attribute)@\spxentry{\_\_RETURNS}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__RETURNS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_RETURNS}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }2}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the index key for the number of bytes in the     return for \_\_commands list values.
+
+\end{fulllineitems}
+
+\index{\_\_U16 (PodCommands.POD\_Commands attribute)@\spxentry{\_\_U16}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__U16}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_U16}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }4}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an     unsigned 16\sphinxhyphen{}bit value.
+
+\end{fulllineitems}
+
+\index{\_\_U8 (PodCommands.POD\_Commands attribute)@\spxentry{\_\_U8}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__U8}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_U8}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }2}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an     unsigned 8\sphinxhyphen{}bit value.
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
@@ -1635,42 +1762,6 @@ Bases: {\hyperref[\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics}]{\sp
 
 \sphinxAtStartPar
 POD\_8206HR handles communication using an 8206HR POD device.
-\index{\_\_B4LENGTH (PodDevice\_8206HR.POD\_8206HR attribute)@\spxentry{\_\_B4LENGTH}\spxextra{PodDevice\_8206HR.POD\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR.__B4LENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B4LENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of bytes for a Binary 4 packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_B4BINARYLENGTH (PodDevice\_8206HR.POD\_8206HR attribute)@\spxentry{\_\_B4BINARYLENGTH}\spxextra{PodDevice\_8206HR.POD\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B4BINARYLENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of binary bytes for a             Binary 4 packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_preampGain (PodDevice\_8206HR.POD\_8206HR attribute)@\spxentry{\_preampGain}\spxextra{PodDevice\_8206HR.POD\_8206HR attribute}}
 
 \begin{fulllineitems}
@@ -1778,6 +1869,145 @@ dict{[}str,bytes{]}
 
 \end{fulllineitems}
 
+\index{\_BinaryBytesToVoltage() (PodDevice\_8206HR.POD\_8206HR method)@\spxentry{\_BinaryBytesToVoltage()}\spxextra{PodDevice\_8206HR.POD\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_BinaryBytesToVoltage}}}{\sphinxparam{\DUrole{n,n}{value}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts a binary bytes value read from POD device and converts it to the real voltage value         at the preamplifier input.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{value}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing voltage measurement.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+A number containing the voltage in Volts {[}V{]}.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_Binary() (PodDevice\_8206HR.POD\_8206HR method)@\spxentry{\_Read\_Binary()}\spxextra{PodDevice\_8206HR.POD\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR._Read_Binary}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_Binary}}}{\sphinxparam{\DUrole{n,n}{prePacket}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}, \sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bytes}}
+\pysigstopsignatures
+\sphinxAtStartPar
+After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX         (checksum+ETX).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{prePacket}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Bad checksum for binary POD packet read.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Byte string for a binary4 POD packet.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TranslateTTLbyte\_ASCII() (PodDevice\_8206HR.POD\_8206HR static method)@\spxentry{\_TranslateTTLbyte\_ASCII()}\spxextra{PodDevice\_8206HR.POD\_8206HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TranslateTTLbyte\_ASCII}}}{\sphinxparam{\DUrole{n,n}{ttlByte}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Separates the bits of each TTL (0\sphinxhyphen{}3) from a ASCII encoded byte.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ttlByte}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} One byte string for the TTL (ASCII encoded).
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of the TTLs. Values are 1 when input, 0 when output.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TranslateTTLbyte\_Binary() (PodDevice\_8206HR.POD\_8206HR static method)@\spxentry{\_TranslateTTLbyte\_Binary()}\spxextra{PodDevice\_8206HR.POD\_8206HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TranslateTTLbyte\_Binary}}}{\sphinxparam{\DUrole{n,n}{ttlByte}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Separates the bits of each TTL (0\sphinxhyphen{}3) from a binary encoded byte.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ttlByte}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} One byte string for the TTL (binary encoded).
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of the TTLs. Values are 1 when input, 0 when output.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_\_B4BINARYLENGTH (PodDevice\_8206HR.POD\_8206HR attribute)@\spxentry{\_\_B4BINARYLENGTH}\spxextra{PodDevice\_8206HR.POD\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B4BINARYLENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }8}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of binary bytes for a     Binary 4 packet.
+
+\end{fulllineitems}
+
+\index{\_\_B4LENGTH (PodDevice\_8206HR.POD\_8206HR attribute)@\spxentry{\_\_B4LENGTH}\spxextra{PodDevice\_8206HR.POD\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR.__B4LENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B4LENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }16}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of bytes for a Binary 4 packet.
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
@@ -1798,60 +2028,6 @@ Bases: {\hyperref[\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics}]{\sp
 
 \sphinxAtStartPar
 POD\_8401HR handles communication using an 8401\sphinxhyphen{}HR POD device.
-\index{\_\_B5LENGTH (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_B5LENGTH}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__B5LENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B5LENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of bytes for a Binary 5 packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_B5BINARYLENGTH (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_B5BINARYLENGTH}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__B5BINARYLENGTH}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B5BINARYLENGTH}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the number of binary bytes for a             Binary 5 packet.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_\_CHANNELMAPALL (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_CHANNELMAPALL}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__CHANNELMAPALL}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_\_CHANNELMAPALL}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level dictionary containing the channel map for             all preamplifier devices.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-dict{[}str,dict{[}str,str{]}{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_ssGain (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_ssGain}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
 
 \begin{fulllineitems}
@@ -2183,6 +2359,230 @@ A dictionary containing ‘Command Number’, ‘Packet \#’, ‘Status’, ‘
 dict{[}str,bytes{]}
 
 \end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Read\_Binary() (PodDevice\_8401HR.POD\_8401HR method)@\spxentry{\_Read\_Binary()}\spxextra{PodDevice\_8401HR.POD\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._Read_Binary}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_Binary}}}{\sphinxparam{\DUrole{n,n}{prePacket}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}, \sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{prePacket}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Bad checksum for binary POD packet read.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TranslateTTLByte() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{\_TranslateTTLByte()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._TranslateTTLByte}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TranslateTTLByte}}}{\sphinxparam{\DUrole{n,n}{ttlByte}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts the TTL bytes argument into a dictionary of integer TTL values.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ttlByte}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} One byte containing the TTL bitmask.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictinoary with TTL name keys and integer TTL values.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Voltage\_PrimaryChannels() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{\_Voltage\_PrimaryChannels()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_Voltage\_PrimaryChannels}}}{\sphinxparam{\DUrole{n,n}{value}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{ssGain}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{None}}, \sphinxparam{\DUrole{n,n}{PreampGain}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{None}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts a value to a voltage for a primary channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{value}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Value to be converted to voltage.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ssGain}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Second stage gain. Defaults to None.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{PreampGain}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Preamplifier gain. Defaults to None.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Number of the voltage in volts {[}V{]}. Returns value if no gain is given (no\sphinxhyphen{}connect).
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Voltage\_PrimaryChannels\_Biosensor() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{\_Voltage\_PrimaryChannels\_Biosensor()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels_Biosensor}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_Voltage\_PrimaryChannels\_Biosensor}}}{\sphinxparam{\DUrole{n,n}{value}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{ssGain}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts a value to a voltage for a biosensor primary channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{value}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Value to be converted to voltage.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ssGain}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Second stage gain.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Number of the voltage in volts {[}V{]}.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Voltage\_PrimaryChannels\_EEGEMG() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{\_Voltage\_PrimaryChannels\_EEGEMG()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels_EEGEMG}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_Voltage\_PrimaryChannels\_EEGEMG}}}{\sphinxparam{\DUrole{n,n}{value}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{ssGain}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{PreampGain}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts a value to a voltage for an EEG/EMG primary channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{value}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Value to be converted to voltage.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{ssGain}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Second stage gain.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{PreampGain}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Preamplifier gain.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Number of the voltage in volts {[}V{]}.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_Voltage\_SecondaryChannels() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{\_Voltage\_SecondaryChannels()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR._Voltage_SecondaryChannels}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_Voltage\_SecondaryChannels}}}{\sphinxparam{\DUrole{n,n}{value}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts a value to a voltage for a secondary channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{value}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Value to be converted to voltage.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Number of the voltage in volts {[}V{]}.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_\_B5BINARYLENGTH (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_B5BINARYLENGTH}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__B5BINARYLENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B5BINARYLENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }23}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of binary bytes for a     Binary 5 packet.
+
+\end{fulllineitems}
+
+\index{\_\_B5LENGTH (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_B5LENGTH}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__B5LENGTH}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_B5LENGTH}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }31}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of bytes for a Binary 5 packet.
+
+\end{fulllineitems}
+
+\index{\_\_CHANNELMAPALL (PodDevice\_8401HR.POD\_8401HR attribute)@\spxentry{\_\_CHANNELMAPALL}\spxextra{PodDevice\_8401HR.POD\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.__CHANNELMAPALL}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_CHANNELMAPALL}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\{\textquotesingle{}8406\sphinxhyphen{}2BIO\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio1\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}Bio2\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}NC\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}NC\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}BIO\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}NC\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}NC\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}NC\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}EEG2BIO\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio1\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}Bio2\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}SE\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}SE3\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}SE31M\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}SE4\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}EEG4\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8406\sphinxhyphen{}SL\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SE\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SE\sphinxhyphen{}2BIO\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio1\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}Bio2\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SE3\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SE31M\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SE4\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}EEG4\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EEG3\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SL\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}, \textquotesingle{}8407\sphinxhyphen{}SL\sphinxhyphen{}2BIO\textquotesingle{}: \{\textquotesingle{}A\textquotesingle{}: \textquotesingle{}Bio1\textquotesingle{}, \textquotesingle{}B\textquotesingle{}: \textquotesingle{}Bio2\textquotesingle{}, \textquotesingle{}C\textquotesingle{}: \textquotesingle{}EMG\textquotesingle{}, \textquotesingle{}D\textquotesingle{}: \textquotesingle{}EEG2\textquotesingle{}\}\}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level dictionary containing the channel map for     all preamplifier devices.
 
 \end{fulllineitems}
 
@@ -2857,6 +3257,32 @@ Write a set message to the open serial port.
 
 \end{fulllineitems}
 
+\index{\_\_BuildPortName() (SerialCommunication.COM\_io method)@\spxentry{\_\_BuildPortName()}\spxextra{SerialCommunication.COM\_io method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{SerialCommunication:SerialCommunication.COM_io.__BuildPortName}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_\_BuildPortName}}}{\sphinxparam{\DUrole{n,n}{port}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts the port parameter into the “COM”+\textless{}number\textgreater{} format.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{port}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Name of a COM port. Can be an integer or string.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Name of the COM port.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
@@ -2877,78 +3303,6 @@ Bases: {\hyperref[\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interf
 
 \sphinxAtStartPar
 Setup\_8206HR provides the setup functions for an 8206\sphinxhyphen{}HR POD device.
-\index{\_PARAMKEYS (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_PARAMKEYS}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._PARAMKEYS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_PARAMKEYS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level list containing the device parameter dict keys.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-list{[}str{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_LOWPASSKEYS (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_LOWPASSKEYS}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._LOWPASSKEYS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_LOWPASSKEYS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level list containing the keys of the ‘Low\sphinxhyphen{}pass’ parameter             dict value.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-list{[}str{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_PHYSICAL\_BOUND\_uV (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_PHYSICAL\_BOUND\_uV}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level integer representing the max/\sphinxhyphen{}min physical value in uV.             Used for EDF files.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_NAME (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_NAME}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._NAME}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level string containing the POD device name.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-str
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{GetDeviceName() (Setup\_8206HR.Setup\_8206HR static method)@\spxentry{GetDeviceName()}\spxextra{Setup\_8206HR.Setup\_8206HR static method}}
 
 \begin{fulllineitems}
@@ -2983,6 +3337,366 @@ Write a command to stop streaming data to all POD devices.
 
 \end{fulllineitems}
 
+\index{\_ChoosePreampGain() (Setup\_8206HR.Setup\_8206HR static method)@\spxentry{\_ChoosePreampGain()}\spxextra{Setup\_8206HR.Setup\_8206HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._ChoosePreampGain}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChoosePreampGain}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks user for the preamplifier gain of their POD device.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer 10 or 100 for the preamplifier gain.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ConnectPODdevice() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_ConnectPODdevice()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._ConnectPODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectPODdevice}}}{\sphinxparam{\DUrole{n,n}{deviceNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{deviceParams}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Creates a POD\_8206HR object and write the setup parameters to it.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device’s number.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceParams}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}) \textendash{} Dictionary of the device’s parameters
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if connection was successful, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPODdeviceParameterTable() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_GetPODdeviceParameterTable()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetPODdeviceParameterTable}}}{}{{ $\rightarrow$ Texttable}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a table containing the parameters for all POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Texttable containing all parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+Texttable
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetParam\_onePODdevice() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_GetParam\_onePODdevice()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._GetParam_onePODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetParam\_onePODdevice}}}{\sphinxparam{\DUrole{n,n}{forbiddenNames}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input all the device parameters.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbiddenNames}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of port names already used by other devices.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of device parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,(str|int|dict{[}str,int{]}){]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_IsOneDeviceValid() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_IsOneDeviceValid()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._IsOneDeviceValid}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_IsOneDeviceValid}}}{\sphinxparam{\DUrole{n,n}{paramDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Raises an exception if the parameters dictionary is incorrectly formatted.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{paramDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}) \textendash{} Dictionary of the parameters for one device.
+
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameters.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameter value types.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid low\sphinxhyphen{}pass parameters.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid low\sphinxhyphen{}pass value types.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if no exceptions are raised.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_LOWPASSKEYS (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_LOWPASSKEYS}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._LOWPASSKEYS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_LOWPASSKEYS}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }{[}\textquotesingle{}EEG1\textquotesingle{}, \textquotesingle{}EEG2\textquotesingle{}, \textquotesingle{}EEG3/EMG\textquotesingle{}{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level list containing the keys of the ‘Low\sphinxhyphen{}pass’ parameter     dict value.
+
+\end{fulllineitems}
+
+\index{\_NAME (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_NAME}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._NAME}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }str}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\textquotesingle{}8206\sphinxhyphen{}HR\textquotesingle{}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level string containing the POD device name.
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_EDF() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ EdfWriter}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens EDF file and write header.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+EdfWriter
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_TXT() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+IOBase
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_PARAMKEYS (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_PARAMKEYS}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._PARAMKEYS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_PARAMKEYS}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }{[}\textquotesingle{}Port\textquotesingle{}, \textquotesingle{}Sample Rate\textquotesingle{}, \textquotesingle{}Preamplifier Gain\textquotesingle{}, \textquotesingle{}Low\sphinxhyphen{}pass\textquotesingle{}{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level list containing the device parameter dict keys.
+
+\end{fulllineitems}
+
+\index{\_PHYSICAL\_BOUND\_uV (Setup\_8206HR.Setup\_8206HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup\_8206HR.Setup\_8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_PHYSICAL\_BOUND\_uV}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }2046}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the max/\sphinxhyphen{}min physical value in uV.     Used for EDF files.
+
+\end{fulllineitems}
+
+\index{\_StreamThreading() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_StreamThreading()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._StreamThreading}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a save file, then creates a thread for each device to stream and write data from.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with keys as the device number and values as the started Thread.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}int,Thread{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamUntilStop() (Setup\_8206HR.Setup\_8206HR method)@\spxentry{\_StreamUntilStop()}\spxextra{Setup\_8206HR.Setup\_8206HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._StreamUntilStop}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamUntilStop}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR}]{\sphinxcrossref{POD\_8206HR}}}}}, \sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }EdfWriter}}, \sphinxparam{\DUrole{n,n}{sampleRate}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Streams data from a POD device and saves data to file. Stops looking when a stop stream         command is read. Calculates average time difference across multiple packets to collect a         continuous time series data.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{pod}} ({\hyperref[\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR}]{\sphinxcrossref{\sphinxstyleliteralemphasis{\sphinxupquote{POD\_8206HR}}}}}) \textendash{} POD device to read from.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} open file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{sampleRate}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer sample rate in Hz.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_WriteDataToFile\_EDF() (Setup\_8206HR.Setup\_8206HR static method)@\spxentry{\_WriteDataToFile\_EDF()}\spxextra{Setup\_8206HR.Setup\_8206HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._WriteDataToFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{EdfWriter}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Writes data to an open EDF file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} opened EDF file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of 3 items, one for each channel.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_WriteDataToFile\_TXT() (Setup\_8206HR.Setup\_8206HR static method)@\spxentry{\_WriteDataToFile\_TXT()}\spxextra{Setup\_8206HR.Setup\_8206HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8206HR:Setup_8206HR.Setup_8206HR._WriteDataToFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{t}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{ndarray}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Writes data to an open text file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}) \textendash{} opened write file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of 3 items, one for each channel.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{t}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}) \textendash{} list with the time stamps (in seconds).
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
@@ -3002,82 +3716,7 @@ Write a command to stop streaming data to all POD devices.
 Bases: {\hyperref[\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{Setup\_Interface}}}}}
 
 \sphinxAtStartPar
-Setup\_8401HR provides the setup functions for an 8206\sphinxhyphen{}HR POD device.
-
-\sphinxAtStartPar
-REQUIRES FIRMWARE 1.0.2 OR HIGHER.
-\index{\_PARAMKEYS (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_PARAMKEYS}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._PARAMKEYS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_PARAMKEYS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-class\sphinxhyphen{}level list containing the device parameter dict keys.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-list{[}str{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_CHANNELKEYS (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_CHANNELKEYS}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._CHANNELKEYS}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_CHANNELKEYS}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-class\sphinxhyphen{}level list containing the keys of ‘Preamplifier Gain’,’Second Stage Gain’,’High\sphinxhyphen{}pass’,’Low\sphinxhyphen{}pass’,’Bias’,’DC Mode’ parameters.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-list{[}str{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_PHYSICAL\_BOUND\_uV (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_PHYSICAL\_BOUND\_uV}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-class\sphinxhyphen{}level integer representing the max/\sphinxhyphen{}min physical value in uV. Used for EDF files.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-int
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_NAME (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_NAME}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._NAME}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-class\sphinxhyphen{}level string containing the POD device name.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-str
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
+Setup\_8401HR provides the setup functions for an 8206\sphinxhyphen{}HR POD device.     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 \index{GetDeviceName() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{GetDeviceName()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
 
 \begin{fulllineitems}
@@ -3109,6 +3748,696 @@ str
 \pysigstopsignatures
 \sphinxAtStartPar
 Write a command to stop streaming data to all POD devices.
+
+\end{fulllineitems}
+
+\index{\_CHANNELKEYS (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_CHANNELKEYS}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._CHANNELKEYS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_CHANNELKEYS}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }{[}\textquotesingle{}A\textquotesingle{}, \textquotesingle{}B\textquotesingle{}, \textquotesingle{}C\textquotesingle{}, \textquotesingle{}D\textquotesingle{}{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level list containing the keys of ‘Preamplifier Gain’,’Second Stage Gain’,    ‘High\sphinxhyphen{}pass’,’Low\sphinxhyphen{}pass’,’Bias’,’DC Mode’ parameters.
+
+\end{fulllineitems}
+
+\index{\_CodeDCmode() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_CodeDCmode()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._CodeDCmode}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_CodeDCmode}}}{\sphinxparam{\DUrole{n,n}{dcMode}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+gets the integer payload to use for ‘SET DC MODE’ commands given the mode.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{dcMode}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} DC mode VBIAS or AGND.
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} DC Mode value is not supported.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer code representing the DC mode.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_CodeHighpass() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_CodeHighpass()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._CodeHighpass}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_CodeHighpass}}}{\sphinxparam{\DUrole{n,n}{highpass}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{float}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets the integer payload to use for ‘SET HIGHPASS’ given a highpass value.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{highpass}} (\sphinxstyleliteralemphasis{\sphinxupquote{float}}) \textendash{} Highpass value in Hz.
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} High\sphinxhyphen{}pass value is not supported.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer code representing the highpass value.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ConnectPODdevice() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_ConnectPODdevice()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._ConnectPODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectPODdevice}}}{\sphinxparam{\DUrole{n,n}{deviceNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{deviceParams}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Creates a POD\_8206HR object and write the setup parameters to it.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device’s number.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceParams}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}) \textendash{} Dictionary of the device’s parameters
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if connection was successful, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPODdeviceParameterTable() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_GetPODdeviceParameterTable()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._GetPODdeviceParameterTable}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetPODdeviceParameterTable}}}{}{{ $\rightarrow$ Texttable}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a table containing the parameters for all POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Texttable containing all parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+Texttable
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetParam\_onePODdevice() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_GetParam\_onePODdevice()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._GetParam_onePODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetParam\_onePODdevice}}}{\sphinxparam{\DUrole{n,n}{forbiddenNames}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input all the device parameters.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbiddenNames}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of port names already used by other devices.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of device parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,(str|int|dict{[}str,int{]}){]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPreampDeviceName() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_GetPreampDeviceName()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._GetPreampDeviceName}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetPreampDeviceName}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to select a mouse/rat preamplifier.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String of the chosen preamplifier.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_IsChannelTypeValid() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_IsChannelTypeValid()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._IsChannelTypeValid}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_IsChannelTypeValid}}}{\sphinxparam{\DUrole{n,n}{chdict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict}}, \sphinxparam{\DUrole{n,n}{isType}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Checks that the keys and values for a given channel are valid.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{chdict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}) \textendash{} dictionary with ABCD keys and isType type values.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{isType}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} data type.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Channel dictionary is empty.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid channel keys.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid channel value.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True for valid parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_IsOneDeviceValid() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_IsOneDeviceValid()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._IsOneDeviceValid}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_IsOneDeviceValid}}}{\sphinxparam{\DUrole{n,n}{paramDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Checks if the parameters for one device are valid.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{paramDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}) \textendash{} Dictionary of the parameters for one device
+
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameters.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameter value types.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Preamplifier is not supported.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True for valid parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_NAME (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_NAME}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._NAME}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }str}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\textquotesingle{}8401\sphinxhyphen{}HR\textquotesingle{}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level string containing the POD device name.
+
+\end{fulllineitems}
+
+\index{\_NiceABCDtableText() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_NiceABCDtableText()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._NiceABCDtableText}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_NiceABCDtableText}}}{\sphinxparam{\DUrole{n,n}{abcdValueDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{channelMap}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a string that formats the channel values to be input into the parameter table.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{abcdValueDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{int}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Dictionary with ABCD keys.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelMap}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Maps the ABCD channels to the sensor’s channel name.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String with “channel name: value newline…” for each channel.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_EDF() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._OpenSaveFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ EdfWriter}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens EDF file and write header.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+EdfWriter
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_TXT() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._OpenSaveFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a text file and writes the column names. Writes the current date/time at         the top of the txt file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+IOBase
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_PARAMKEYS (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_PARAMKEYS}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._PARAMKEYS}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_PARAMKEYS}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }{[}\textquotesingle{}Port\textquotesingle{}, \textquotesingle{}Preamplifier Device\textquotesingle{}, \textquotesingle{}Sample Rate\textquotesingle{}, \textquotesingle{}Mux Mode\textquotesingle{}, \textquotesingle{}Preamplifier Gain\textquotesingle{}, \textquotesingle{}Second Stage Gain\textquotesingle{}, \textquotesingle{}High\sphinxhyphen{}pass\textquotesingle{}, \textquotesingle{}Low\sphinxhyphen{}pass\textquotesingle{}, \textquotesingle{}Bias\textquotesingle{}, \textquotesingle{}DC Mode\textquotesingle{}{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level list containing the device parameter dict keys.
+
+\end{fulllineitems}
+
+\index{\_PHYSICAL\_BOUND\_uV (Setup\_8401HR.Setup\_8401HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup\_8401HR.Setup\_8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_PHYSICAL\_BOUND\_uV}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }2046}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the max/\sphinxhyphen{}min physical value in uV. Used for     EDF files.
+
+\end{fulllineitems}
+
+\index{\_SetBias() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetBias()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetBias}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetBias}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the bias voltage in V (+/\sphinxhyphen{}2.048V).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+A float for thebias voltage in V.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetDCMode() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetDCMode()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetDCMode}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetDCMode}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the DC mode (VBIAS or AGND).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String for the DC mode.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetForMappedChannels() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_SetForMappedChannels()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetForMappedChannels}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_SetForMappedChannels}}}{\sphinxparam{\DUrole{n,n}{message}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{channelMap}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{func}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{function}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input values for all channels (excluding no\sphinxhyphen{}connects).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{message}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Message to ask the user.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelMap}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Maps the ABCD channels to the sensor’s channel name.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{func}} (\sphinxstyleliteralemphasis{\sphinxupquote{function}}) \textendash{} a function that asks the user for an input. takes one string                 parameter and returns one value.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with ABCD keys and user inputs for values.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int|None{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetHighpass() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetHighpass()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetHighpass}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetHighpass}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ float\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the high\sphinxhyphen{}pass in Hz (0.5,1,10Hz, or DC).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+A float for the high\sphinxhyphen{}pass frequency in Hz, or None if DC.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float|None
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetLowpass() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetLowpass()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetLowpass}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetLowpass}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the low\sphinxhyphen{}pass in Hz (21\sphinxhyphen{}15000Hz).
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+An integer for the low\sphinxhyphen{}pass frequency in Hz.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int|None
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetPreampGain() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetPreampGain()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetPreampGain}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetPreampGain}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the preamplifier gain.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+An integer for the gain, or None if no gain.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int|None
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetSSGain() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_SetSSGain()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._SetSSGain}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetSSGain}}}{\sphinxparam{\DUrole{n,n}{channelName}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the second stage gain.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channelName}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the channel.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+An integer for the gain.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamThreading() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_StreamThreading()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._StreamThreading}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a save file, then creates a thread for each device to stream and write         data from.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with keys as the device number and values as                 the started Thread.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}int,Thread{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamUntilStop() (Setup\_8401HR.Setup\_8401HR method)@\spxentry{\_StreamUntilStop()}\spxextra{Setup\_8401HR.Setup\_8401HR method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._StreamUntilStop}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamUntilStop}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR}]{\sphinxcrossref{POD\_8401HR}}}}}, \sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }EdfWriter}}, \sphinxparam{\DUrole{n,n}{sampleRate}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Streams data from a POD device and saves data to file. Stops looking when a stop         stream command is read. Calculates average time difference across multiple packets to         collect a continuous time series data.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{pod}} ({\hyperref[\detokenize{PodDevice_8206HR:PodDevice_8206HR.POD_8206HR}]{\sphinxcrossref{\sphinxstyleliteralemphasis{\sphinxupquote{POD\_8206HR}}}}}) \textendash{} POD device to read from.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} open file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{sampleRate}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer sample rate in Hz.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_WriteDataToFile\_EDF() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_WriteDataToFile\_EDF()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._WriteDataToFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{EdfWriter}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Writes data to an open EDF file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} opened EDF file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List with one item for each channel.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_WriteDataToFile\_TXT() (Setup\_8401HR.Setup\_8401HR static method)@\spxentry{\_WriteDataToFile\_TXT()}\spxextra{Setup\_8401HR.Setup\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8401HR:Setup_8401HR.Setup_8401HR._WriteDataToFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{t}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{ndarray}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Writes data to an open text file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}) \textendash{} opened write file.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List with one item for each channel.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{t}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}) \textendash{} list with the time stamps (in seconds).
+
+\end{itemize}
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -3303,6 +4632,456 @@ Gets the path/file name from the user and stores it. Used in initialization.
 
 \end{fulllineitems}
 
+\index{\_AskOption() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_AskOption()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._AskOption}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_AskOption}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks user which option to do.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer number representing an option key.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_AskToStopStream() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_AskToStopStream()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._AskToStopStream}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_AskToStopStream}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks user to press enter to stop streaming. The program will then prompt all POD         devices to end stream.
+
+\end{fulllineitems}
+
+\index{\_AskUserForDevices() (Setup\_PodDevices.Setup\_PodDevices static method)@\spxentry{\_AskUserForDevices()}\spxextra{Setup\_PodDevices.Setup\_PodDevices static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._AskUserForDevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_AskUserForDevices}}}{}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user what POD devices they want to use.
+
+\end{fulllineitems}
+
+\index{\_CheckFileExt() (Setup\_PodDevices.Setup\_PodDevices static method)@\spxentry{\_CheckFileExt()}\spxextra{Setup\_PodDevices.Setup\_PodDevices static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._CheckFileExt}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_CheckFileExt}}}{\sphinxparam{\DUrole{n,n}{f}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{fIsExt}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}, \sphinxparam{\DUrole{n,n}{goodExt}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{{[}\textquotesingle{}.csv\textquotesingle{}, \textquotesingle{}.txt\textquotesingle{}, \textquotesingle{}.edf\textquotesingle{}{]}}}, \sphinxparam{\DUrole{n,n}{printErr}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+\_summary\_
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{f}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} file name or extension
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fIsExt}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Boolean flag that is true if f is an extension, false                 otherwise. Defaults to True.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{goodExt}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} List of valid file extensions. Defaults to                 {[}‘.csv’,’.txt’,’.edf’{]}.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{printErr}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Boolean flag that, when true, will print an error                 statement. Defaults to True.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if extension is in goodExt list, False otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_CheckForValidParams() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_CheckForValidParams()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._CheckForValidParams}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_CheckForValidParams}}}{\sphinxparam{\DUrole{n,n}{podParametersDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }None\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Checks if the parameters are correctly formatted.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{podParametersDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Dictionary with keys as the device names and                 values as None or the respective parameter dictionary.
+
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Parameters must be dictionary type.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Parameters dictionary is empty.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid device name in paramater dictionary.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if the parameters are correctly formatted.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ConnectNewDevice() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_ConnectNewDevice()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._ConnectNewDevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectNewDevice}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the POD device type, then it sets up that device.
+
+\end{fulllineitems}
+
+\index{\_DoOption() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_DoOption()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._DoOption}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_DoOption}}}{\sphinxparam{\DUrole{n,n}{choice}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Performs the methods associated with the user selected option.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{choice}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer number representing an option key.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_EditCheckConnect() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_EditCheckConnect()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._EditCheckConnect}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_EditCheckConnect}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Displays the POD devices parameters, asks the user to edit the device, and then reconnects         the device for each POD device type.
+
+\end{fulllineitems}
+
+\index{\_EditSaveFilePath() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_EditSaveFilePath()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._EditSaveFilePath}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_EditSaveFilePath}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the POD device type, then asks the user for a new file name and path,         then sets the value to the POD devices.
+
+\end{fulllineitems}
+
+\index{\_GetChosenDeviceType() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_GetChosenDeviceType()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._GetChosenDeviceType}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetChosenDeviceType}}}{\sphinxparam{\DUrole{n,n}{question}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user which type of POD device they want.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{question}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Question to ask the user.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String of the user input (may be invalid POD device type).
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetFileName() (Setup\_PodDevices.Setup\_PodDevices static method)@\spxentry{\_GetFileName()}\spxextra{Setup\_PodDevices.Setup\_PodDevices static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._GetFileName}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_GetFileName}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for a filename.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String of the file name and extension.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetFilePath() (Setup\_PodDevices.Setup\_PodDevices static method)@\spxentry{\_GetFilePath()}\spxextra{Setup\_PodDevices.Setup\_PodDevices static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._GetFilePath}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_GetFilePath}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks user for a path and filename to save streaming data to.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String of the file path, name, and extension.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetParams() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_GetParams()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._GetParams}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetParams}}}{\sphinxparam{\DUrole{n,n}{podParametersDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{None\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }None\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }dict\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+If no parameters are give, this asks user which types of POD devices they want to use.         Then it checks if the parameters are valid.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{podParametersDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary whose keys are the POD device name, and value the setup                 dictionary.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,dict|None{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_PrintInitCode() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_PrintInitCode()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._PrintInitCode}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_PrintInitCode}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Prints code that can be used to initialize and run SetupPodDevices with the         current parameters.
+
+\end{fulllineitems}
+
+\index{\_PrintOptions() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_PrintOptions()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._PrintOptions}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_PrintOptions}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Prints options available for user.
+
+\end{fulllineitems}
+
+\index{\_PrintSaveFile() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_PrintSaveFile()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._PrintSaveFile}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_PrintSaveFile}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Prints the file path and name that data is saved to. Note that the device name and number         will be appended to the end of the filename,
+
+\end{fulllineitems}
+
+\index{\_Reconnect() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_Reconnect()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._Reconnect}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Reconnect}}}{}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Reconnects all POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Bool that is true if all devices were successfully connected. False otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_RemoveDevice() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_RemoveDevice()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._RemoveDevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_RemoveDevice}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Displays the POD devices parameters, asks the user which device ro remove, and then         deletes that POD device.
+
+\end{fulllineitems}
+
+\index{\_SetFilenameToDevices() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_SetFilenameToDevices()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._SetFilenameToDevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_SetFilenameToDevices}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Sets the filename to each POD device type.
+
+\end{fulllineitems}
+
+\index{\_Set\_Setup\_PodDevices() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_Set\_Setup\_PodDevices()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._Set_Setup_PodDevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Set\_Setup\_PodDevices}}}{\sphinxparam{\DUrole{n,n}{podParametersDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }dict\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Sets the \_Setup\_PodDevices varaible to have keys as the POD device name and values         as the setup class.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{podParametersDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} Dictionary with keys as the device names                 and values as None or the respective parameter dictionary.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ShowCurrentSettings() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_ShowCurrentSettings()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._ShowCurrentSettings}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ShowCurrentSettings}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Displays the POD device settings for all devices, and then prints the save file name.
+
+\end{fulllineitems}
+
+\index{\_Stream() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_Stream()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._Stream}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Stream}}}{}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Streams data from all POD devices and prints the execution time.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Float of the execution time in seconds.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamAllDevices() (Setup\_PodDevices.Setup\_PodDevices method)@\spxentry{\_StreamAllDevices()}\spxextra{Setup\_PodDevices.Setup\_PodDevices method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._StreamAllDevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamAllDevices}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Streams data from all the devices. User is asked to click enter to stop streaming.         Data is saved to file. Uses threading.
+
+\end{fulllineitems}
+
+\index{\_TimeFunc() (Setup\_PodDevices.Setup\_PodDevices static method)@\spxentry{\_TimeFunc()}\spxextra{Setup\_PodDevices.Setup\_PodDevices static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodDevices:Setup_PodDevices.Setup_PodDevices._TimeFunc}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TimeFunc}}}{\sphinxparam{\DUrole{n,n}{func}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{function}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Runs a function and gets the calculated execultion time.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{func}} (\sphinxstyleliteralemphasis{\sphinxupquote{function}}) \textendash{} Function/method name.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Float of the execution time in seconds rounded to 3 decimal places.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 
 \end{fulllineitems}
 
@@ -3323,42 +5102,6 @@ Bases: \sphinxcode{\sphinxupquote{object}}
 
 \sphinxAtStartPar
 Setup\_Interface provides the basic interface of required methods for subclasses to implement.     SetupPodDevices.py is designed to handle any of these children.
-\index{\_NAME (Setup\_PodInterface.Setup\_Interface attribute)@\spxentry{\_NAME}\spxextra{Setup\_PodInterface.Setup\_Interface attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._NAME}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level string for the Device name. This hould be overwritten by child             subclasses.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-str
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_PORTKEY (Setup\_PodInterface.Setup\_Interface attribute)@\spxentry{\_PORTKEY}\spxextra{Setup\_PodInterface.Setup\_Interface attribute}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._PORTKEY}}
-\pysigstartsignatures
-\pysigline{\sphinxbfcode{\sphinxupquote{\_PORTKEY}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Class\sphinxhyphen{}level string that is the parameter’s dictionary key for the COM port.
-\begin{quote}\begin{description}
-\sphinxlineitem{Type}
-\sphinxAtStartPar
-str
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_podDevices (Setup\_PodInterface.Setup\_Interface attribute)@\spxentry{\_podDevices}\spxextra{Setup\_PodInterface.Setup\_Interface attribute}}
 
 \begin{fulllineitems}
@@ -3597,6 +5340,608 @@ Dictionary with integer device number keys and Thread values.
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
 dict{[}int,Thread{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_AddPODdevice() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_AddPODdevice()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._AddPODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_AddPODdevice}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for the parameters for the new device. A new device number         is generated.
+
+\end{fulllineitems}
+
+\index{\_BuildFileName() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_BuildFileName()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._BuildFileName}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_BuildFileName}}}{\sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Appends the device name and number to the end of the file name.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device number.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String file name.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ChoosePort() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_ChoosePort()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._ChoosePort}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChoosePort}}}{\sphinxparam{\DUrole{n,n}{forbidden}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{{[}{]}}}}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to select a COM port.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbidden}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} List of port names that are already used. Defaults to {[}{]}.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String name of the port.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ConnectPODdevice() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_ConnectPODdevice()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._ConnectPODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectPODdevice}}}{\sphinxparam{\DUrole{n,n}{deviceNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{deviceParams}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Creates a POD device object and write the setup parameters to it.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device’s number.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceParams}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{,}}) \textendash{} Dictionary of the device’s parameters
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if connection was successful, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_DisconnectAllPODdevices() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_DisconnectAllPODdevices()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_DisconnectAllPODdevices}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Disconnects all POD devices by deleted all POD obejcts.
+
+\end{fulllineitems}
+
+\index{\_EditParams() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_EditParams()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._EditParams}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_EditParams}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user which device to edit, and then asks them to re\sphinxhyphen{}input the device parameters.
+
+\end{fulllineitems}
+
+\index{\_GetForbiddenNames() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_GetForbiddenNames()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._GetForbiddenNames}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetForbiddenNames}}}{\sphinxparam{\DUrole{n,n}{key}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{\textquotesingle{}Port\textquotesingle{}}}, \sphinxparam{\DUrole{n,n}{exclude}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }None}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{None}}}{{ $\rightarrow$ list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Generates a list of port names used by the active pod devices. There is an option to         exclude an additional name from the list.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{key}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} String key to access the \_podParametersDict. Defaults to ‘Port’.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{exclude}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{None}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} String port name to exclude from the returned list.                 Defaults to None.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+List of string names of ports in use.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+list{[}str{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPODdeviceParameterTable() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_GetPODdeviceParameterTable()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetPODdeviceParameterTable}}}{}{{ $\rightarrow$ Texttable}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a table containing the parameters for all POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Texttable containing all parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+Texttable
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetParam\_onePODdevice() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_GetParam\_onePODdevice()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._GetParam_onePODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetParam\_onePODdevice}}}{\sphinxparam{\DUrole{n,n}{forbiddenNames}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input all the device parameters.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbiddenNames}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of port names already used by other devices.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of device parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,(str|int|dict{[}str,int{]}){]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPortsList() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_GetPortsList()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._GetPortsList}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_GetPortsList}}}{\sphinxparam{\DUrole{n,n}{forbidden}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{{[}{]}}}}{{ $\rightarrow$ list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets the names of all available ports.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbidden}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} List of port names that are already used. Defaults to {[}{]}.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+List of port names.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+list{[}str{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetTimeHeader\_forTXT() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_GetTimeHeader\_forTXT()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_GetTimeHeader\_forTXT}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a string containing the current date and time to be written to the text file header.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String containing the date and time. Each line begins with ‘\#’ and ends with a newline.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_IsOneDeviceValid() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_IsOneDeviceValid()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._IsOneDeviceValid}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_IsOneDeviceValid}}}{\sphinxparam{\DUrole{n,n}{paramDict}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{dict}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Checks if the parameters for one device are valid.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{paramDict}} (\sphinxstyleliteralemphasis{\sphinxupquote{dict}}) \textendash{} Dictionary of the parameters for one device.
+
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameters.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Invalid parameter value types.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Preamplifier is not supported.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True for valid parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_NAME (Setup\_PodInterface.Setup\_Interface attribute)@\spxentry{\_NAME}\spxextra{Setup\_PodInterface.Setup\_Interface attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._NAME}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_NAME}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }str}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\textquotesingle{}GENERIC\textquotesingle{}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level string for the Device name. This should be overwritten by child     subclasses.
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_OpenSaveFile()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._OpenSaveFile}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile}}}{\sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ IOBase\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }EdfWriter}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a save file for a given device.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device number.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file. IOBase for a text file, or EdfWriter for EDF file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+IOBase | EdfWriter
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_EDF() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ EdfWriter}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens EDF file and write header.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+EdfWriter
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_TXT() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+IOBase
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_PORTKEY (Setup\_PodInterface.Setup\_Interface attribute)@\spxentry{\_PORTKEY}\spxextra{Setup\_PodInterface.Setup\_Interface attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._PORTKEY}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_PORTKEY}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }str}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }\textquotesingle{}Port\textquotesingle{}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level string that is the parameter’s dictionary key for the COM port.
+
+\end{fulllineitems}
+
+\index{\_PrintDeviceNumber() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_PrintDeviceNumber()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._PrintDeviceNumber}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_PrintDeviceNumber}}}{\sphinxparam{\DUrole{n,n}{num}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Prints a title with the device number.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{num}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device number.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_RemoveDevice() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_RemoveDevice()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._RemoveDevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_RemoveDevice}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for a device number to remove, then deletes that device. This will         only remove a device if there are more than one options.
+
+\end{fulllineitems}
+
+\index{\_SelectDeviceFromDict() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_SelectDeviceFromDict()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._SelectDeviceFromDict}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_SelectDeviceFromDict}}}{\sphinxparam{\DUrole{n,n}{action}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to select a valid device number. The input must be an integer number         of an existing device.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{action}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Description of the action to be performed on the device.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer for the device number.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetNumberOfDevices() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_SetNumberOfDevices()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._SetNumberOfDevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_SetNumberOfDevices}}}{\sphinxparam{\DUrole{n,n}{name}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user for how many devices they want to setup.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{name}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Name of the POD device type.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer number of POD devices desired by the user.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_SetParam\_allPODdevices() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_SetParam\_allPODdevices()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._SetParam_allPODdevices}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_SetParam\_allPODdevices}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+First gets the number of POD devices, then asks the user for the information         for each device.
+
+\end{fulllineitems}
+
+\index{\_StreamThreading() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_StreamThreading()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._StreamThreading}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a save file, then creates a thread for each device to stream and write data from.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with keys as the device number and values as the started Thread.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}int,Thread{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TestDeviceConnection() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_TestDeviceConnection()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._TestDeviceConnection}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TestDeviceConnection}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics}]{\sphinxcrossref{POD\_Basics}}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Tests if a POD device can be read from or written. Sends a PING command.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{pod}} ({\hyperref[\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics}]{\sphinxcrossref{\sphinxstyleliteralemphasis{\sphinxupquote{POD\_Basics}}}}}) \textendash{} POD device to read to and write from.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True for successful connection, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TestDeviceConnection\_All() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_TestDeviceConnection\_All()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._TestDeviceConnection_All}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_TestDeviceConnection\_All}}}{}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Tests the connection of all setup POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True when all devices are successfully connected, false otherwise
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ValidateParams() (Setup\_PodInterface.Setup\_Interface method)@\spxentry{\_ValidateParams()}\spxextra{Setup\_PodInterface.Setup\_Interface method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._ValidateParams}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ValidateParams}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Displays a table of the parameters of all devices, then asks the user if everything         is correct. The user can then edit the parameters of a device.
+
+\end{fulllineitems}
+
+\index{\_uV() (Setup\_PodInterface.Setup\_Interface static method)@\spxentry{\_uV()}\spxextra{Setup\_PodInterface.Setup\_Interface static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface._uV}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_uV}}}{\sphinxparam{\DUrole{n,n}{voltage}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{float\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int}}}{{ $\rightarrow$ float}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts volts to microVolts, rounded to 6 decimal places.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{voltage}} (\sphinxstyleliteralemphasis{\sphinxupquote{float}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} number of volts.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+voltage in of uV.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+float
 
 \end{description}\end{quote}
 

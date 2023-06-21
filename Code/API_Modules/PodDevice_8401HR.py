@@ -29,16 +29,11 @@ class POD_8401HR(POD_Basics) :
 
     __B5LENGTH : int = 31
     """Class-level integer representing the number of bytes for a Binary 5 packet.
-    
-    Type: 
-        int"""
+    """
 
     __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
     """Class-level integer representing the number of binary bytes for a \
     Binary 5 packet.
-    
-    Type: 
-        int
     """
 
     __CHANNELMAPALL : dict[str,dict[str,str]] = {
@@ -60,9 +55,6 @@ class POD_8401HR(POD_Basics) :
     }
     """Class-level dictionary containing the channel map for \
     all preamplifier devices.
-    
-    Type: 
-        dict[str,dict[str,str]]
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

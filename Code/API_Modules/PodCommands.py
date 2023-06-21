@@ -22,58 +22,37 @@ class POD_Commands :
     __NAME      : int = 0
     """Class-level integer representing the index key for the command name for __commands \
     list values.
-    
-    Type: 
-        int
     """
 
     __ARGUMENTS : int = 1
     """Class-level integer representing the index key for the number of bytes in an \
     argument for __commands list values.
-    
-    Type: 
-        int
     """
 
     __RETURNS   : int = 2
     """Class-level integer representing the index key for the number of bytes in the \
     return for __commands list values.
-    
-    Type: 
-        int
     """
 
     __BINARY    : int = 3
     """Class-level integer representing the index key for the binary flag for __commands \
     list values.
-    
-    Type: 
-        int
     """
 
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE : int = -1
     """Class-level integer used to mark when a list item in __commands means 'no value' \
     or is undefined.
-    
-    Type: 
-        int
     """
 
     __U8  : int = 2
     """Class-level integer representing the number of hexadecimal characters for an \
     unsigned 8-bit value.
-    
-    Type: 
-        int
     """
 
     __U16 : int = 2*__U8
     """Class-level integer representing the number of hexadecimal characters for an \
     unsigned 16-bit value.
-    
-    Type: 
-        int
     """
 
 
