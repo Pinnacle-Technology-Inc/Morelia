@@ -8,7 +8,7 @@
 
 The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
 
-The [Setup_PodDevices](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Setup_PodDevices-Usage.pdf) Python module is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
+The [Setup_PodDevices](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/API_Manuals/Setup_PodDevices-Usage.pdf) Python module is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
 Currently, the API supports 8206-HR and 8401-HR POD devices. In the future, we will offer support to other Pinnacle devices. 
 
@@ -33,7 +33,7 @@ This project is open-source; all code is freely and publically accessable for an
 
 Here are some useful documents for setting up your coding environment to use the Python modules in this project:
 
-* Tips for installing your Python environment: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PythonEnviornmentTips.txt)
+* Tips for installing your Python environment: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Programming_Tutorials/PythonEnviornmentTips.txt)
 
 * Python libraries required for this project: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/requirements.txt)
 
