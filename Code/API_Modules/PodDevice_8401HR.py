@@ -18,11 +18,6 @@ class POD_8401HR(POD_Basics) :
     POD_8401HR handles communication using an 8401-HR POD device. 
 
     Attributes:
-        __B5LENGTH (int): Class-level integer representing the number of bytes for a Binary 5 packet.
-        __B5BINARYLENGTH (int): Class-level integer representing the number of binary bytes for a \
-            Binary 5 packet.
-        __CHANNELMAPALL (dict[str,dict[str,str]]): Class-level dictionary containing the channel map for \
-            all preamplifier devices.
         _ssGain (dict[str,int|None]): Instance-level dictionary storing the second-stage gain for all \
             four channels. 
         _preampGain (dict[str,int|None]): Instance-level dictionary storing the pramplifier gain for \
@@ -32,12 +27,21 @@ class POD_8401HR(POD_Basics) :
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
 
-    # number of bytes for a Binary 5 packet 
     __B5LENGTH : int = 31
-    # number of binary bytes for a Binary 5 packet 
-    __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+    """Class-level integer representing the number of bytes for a Binary 5 packet.
+    
+    Type: 
+        int"""
 
-    __CHANNELMAPALL : dict = {
+    __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+    """Class-level integer representing the number of binary bytes for a \
+    Binary 5 packet.
+    
+    Type: 
+        int
+    """
+
+    __CHANNELMAPALL : dict[str,dict[str,str]] = {
         '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         '8407-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
@@ -54,6 +58,12 @@ class POD_8401HR(POD_Basics) :
         '8406-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
         '8406-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
     }
+    """Class-level dictionary containing the channel map for \
+    all preamplifier devices.
+    
+    Type: 
+        dict[str,dict[str,str]]
+    """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
     

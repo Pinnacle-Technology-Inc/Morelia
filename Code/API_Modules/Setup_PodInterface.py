@@ -26,9 +26,6 @@ class Setup_Interface :
     SetupPodDevices.py is designed to handle any of these children.
 
     Attributes:
-        _NAME (str): Class-level string for the Device name. This hould be overwritten by child \
-            subclasses.
-        _PORTKEY (str): Class-level string that is the parameter's dictionary key for the COM port.
         _podDevices (dict[int,POD_Basics]): Instance-level dictionary of pod device objects. MUST have \
             keys as device number.
         _podParametersDict (dict[int,dict]): Instance-level dictionary of device information. MUST have \
@@ -40,9 +37,20 @@ class Setup_Interface :
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
 
-    _NAME    : str = 'GENERIC'  # overwrite this in child classes 
-    _PORTKEY : str = 'Port'     # dictionary key for the device's port name 
+    _NAME    : str = 'GENERIC' 
+    """Class-level string for the Device name. This should be overwritten by child \
+    subclasses.
 
+    Type:
+        str
+    """
+
+    _PORTKEY : str = 'Port' 
+    """Class-level string that is the parameter's dictionary key for the COM port.
+
+    Type:
+        str
+    """
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 

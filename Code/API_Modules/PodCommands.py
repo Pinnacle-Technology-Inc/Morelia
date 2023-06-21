@@ -11,20 +11,6 @@ class POD_Commands :
     POD_Commands manages a dictionary containing available commands for a POD device.
 
     Attributes:
-        __NAME (int): Class-level integer representing the index key for the command name for __commands \
-            list values.
-        __ARGUMENTS (int): Class-level integer representing the index key for the number of bytes in an \
-            argument for __commands list values.
-        __RETURNS (int): Class-level integer representing the index key for the number of bytes in the \
-            return for __commands list values.
-        __BINARY (int): Class-level integer representing the index key for the binary flag for __commands \
-            list values.
-        __NOVALUE (int): Class-level integer used to mark when a list item in __commands means 'no value' \
-            or is undefined. 
-        __U8 (int): Class-level integer representing the number of hexadecimal characters for an unsigned \
-            8-bit value.
-        __U16 (int): Class-level integer representing the number of hexadecimal characters for an unsigned \
-            16-bit value.
         __commands (dict[int,list[str|tuple[int]|bool]]): Dictionary containing the available commands for \
             a POD device. Each entry is formatted as { key(command number) : value([command name, number \
             of argument ASCII bytes, number of return bytes, binary flag ) }.
@@ -33,18 +19,62 @@ class POD_Commands :
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
 
-    # index keys for self.__commands dict values 
     __NAME      : int = 0
+    """Class-level integer representing the index key for the command name for __commands \
+    list values.
+    
+    Type: 
+        int
+    """
+
     __ARGUMENTS : int = 1
+    """Class-level integer representing the index key for the number of bytes in an \
+    argument for __commands list values.
+    
+    Type: 
+        int
+    """
+
     __RETURNS   : int = 2
+    """Class-level integer representing the index key for the number of bytes in the \
+    return for __commands list values.
+    
+    Type: 
+        int
+    """
+
     __BINARY    : int = 3
+    """Class-level integer representing the index key for the binary flag for __commands \
+    list values.
+    
+    Type: 
+        int
+    """
 
     # flag used to mark if self.__commands dict value has no real value 
     __NOVALUE : int = -1
+    """Class-level integer used to mark when a list item in __commands means 'no value' \
+    or is undefined.
+    
+    Type: 
+        int
+    """
 
-    # number of hex characters for a given payload value (U=unsigned, #=bit)
     __U8  : int = 2
+    """Class-level integer representing the number of hexadecimal characters for an \
+    unsigned 8-bit value.
+    
+    Type: 
+        int
+    """
+
     __U16 : int = 2*__U8
+    """Class-level integer representing the number of hexadecimal characters for an \
+    unsigned 16-bit value.
+    
+    Type: 
+        int
+    """
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================

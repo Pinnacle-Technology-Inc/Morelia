@@ -27,29 +27,41 @@ __email__       = "sales@pinnaclet.com"
 class Setup_8206HR(Setup_Interface) : 
     """
     Setup_8206HR provides the setup functions for an 8206-HR POD device.
-
-    Attributes:
-        _PARAMKEYS (list[str]): Class-level list containing the device parameter dict keys.
-        _LOWPASSKEYS (list[str]): Class-level list containing the keys of the 'Low-pass' parameter \
-            dict value.
-        _PHYSICAL_BOUND_uV (int): Class-level integer representing the max/-min physical value in uV. \
-            Used for EDF files. 
-        _NAME (str): Class-level string containing the POD device name.
     """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
     
-    # deviceParams keys for reference 
     _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low-pass']
-    _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
+    """Class-level list containing the device parameter dict keys.
 
-    # for EDF file writing 
+    Type:
+        list[str]
+    """
+
+    _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
+    """Class-level list containing the keys of the 'Low-pass' parameter \
+    dict value.
+
+    Type:
+        list[str]
+    """
+
     _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV
+    """Class-level integer representing the max/-min physical value in uV. \
+    Used for EDF files. 
+
+    Type:
+        int
+    """
 
     # overwrite from parent
     _NAME : str = '8206-HR'
+    """Class-level string containing the POD device name.
 
+    Type:
+        str
+    """
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 

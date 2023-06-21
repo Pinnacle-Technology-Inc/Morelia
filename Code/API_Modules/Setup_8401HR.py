@@ -25,27 +25,42 @@ __email__       = "sales@pinnaclet.com"
 
 class Setup_8401HR(Setup_Interface) : 
     """
-    Setup_8401HR provides the setup functions for an 8206-HR POD device.
-
+    Setup_8401HR provides the setup functions for an 8206-HR POD device. \
     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
-
-    Attributes:
-        _PARAMKEYS (list[str]): class-level list containing the device parameter dict keys.
-        _CHANNELKEYS (list[str]): class-level list containing the keys of 'Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode' parameters.
-        _PHYSICAL_BOUND_uV (int): class-level integer representing the max/-min physical value in uV. Used for EDF files. 
-        _NAME (str): class-level string containing the POD device name.
     """
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
 
     _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode']
-    _CHANNELKEYS = ['A','B','C','D']
+    """Class-level list containing the device parameter dict keys.
 
-    # for EDF file writing 
-    _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV 
+    Type:
+        list[str]
+    """
+    
+    _CHANNELKEYS = ['A','B','C','D']
+    """Class-level list containing the keys of 'Preamplifier Gain','Second Stage Gain',\
+    'High-pass','Low-pass','Bias','DC Mode' parameters.
+
+    Type:
+        list[str]
+    """
+
+    _PHYSICAL_BOUND_uV : int = 2046 
+    """Class-level integer representing the max/-min physical value in uV. Used for \
+    EDF files. 
+
+    Type:
+        int
+    """
 
     # overwrite from parent
     _NAME : str = '8401-HR'
+    """Class-level string containing the POD device name.
+
+    Type:
+        str
+    """
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -206,8 +221,8 @@ class Setup_8401HR(Setup_Interface) :
         Args:
             message (str): Message to ask the user.
             channelMap (dict[str,str]): Maps the ABCD channels to the sensor's channel name. 
-            func (function): a function that asks the user for an input. takes one string parameter \
-                and returns one value.  
+            func (function): a function that asks the user for an input. takes one string \
+                parameter and returns one value.  
 
         Returns:
             dict[str,int|None]: Dictionary with ABCD keys and user inputs for values.
@@ -472,7 +487,8 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        """Opens a text file and writes the column names. Writes the current date/time at the top of the txt file.
+        """Opens a text file and writes the column names. Writes the current date/time at \
+        the top of the txt file.
 
         Args:
             fname (str): String filename.
@@ -573,10 +589,12 @@ class Setup_8401HR(Setup_Interface) :
 
 
     def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+        """Opens a save file, then creates a thread for each device to stream and write \
+        data from. 
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            dict[int,Thread]: Dictionary with keys as the device number and values as \
+                the started Thread.
         """
         # create save files for pod devices
         podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
@@ -601,8 +619,9 @@ class Setup_8401HR(Setup_Interface) :
     
 
     def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int, devNum: int) -> None :
-        """Streams data from a POD device and saves data to file. Stops looking when a stop stream command is read. 
-        Calculates average time difference across multiple packets to collect a continuous time series data. 
+        """Streams data from a POD device and saves data to file. Stops looking when a stop \
+        stream command is read. Calculates average time difference across multiple packets to \
+        collect a continuous time series data. 
 
         Args:
             pod (POD_8206HR): POD device to read from.
@@ -669,7 +688,7 @@ class Setup_8401HR(Setup_Interface) :
                 times = np.zeros(sampleRate)
                 for i in range(sampleRate):
                     times[i] = (round(currentTime, 9))
-                    currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
+                    currentTime += average_td  # adding avg time differences + CurrentTime = CurrentTime
                 # write to file 
                 self._WriteDataToFile_TXT(file, data, times)
 

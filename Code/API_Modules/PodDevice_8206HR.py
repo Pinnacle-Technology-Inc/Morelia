@@ -18,20 +18,26 @@ class POD_8206HR(POD_Basics) :
     POD_8206HR handles communication using an 8206HR POD device. 
     
     Attributes:
-        __B4LENGTH (int): Class-level integer representing the number of bytes for a Binary 4 packet.
-        __B4BINARYLENGTH (int): Class-level integer representing the number of binary bytes for a \
-            Binary 4 packet.
         _preampGain (int): Instance-level integer (10 or 100) preamplifier gain.
     """
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
 
-    # number of bytes for a Binary 4 packet 
     __B4LENGTH : int = 16
-    # number of binary bytes for a Binary 4 packet 
-    __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+    """Class-level integer representing the number of bytes for a Binary 4 packet.
+    
+    Type: 
+        int
+    """
 
+    __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+    """Class-level integer representing the number of binary bytes for a \
+    Binary 4 packet.
+    
+    Type: 
+        int
+    """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
