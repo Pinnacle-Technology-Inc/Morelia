@@ -49,7 +49,10 @@ The Setup_PodDevices Python module usage description: [here](https://github.com/
 
 ## Modules 
 
-Detailed instructions of all Python modules and methods: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/API_Manuals/Python_POD_API_Manual.pdf)
+Detailed instructions of all Python modules and methods: 
+* Read the Docs website: [here](python-pod-api.readthedocs.io)
+* PDF Manual: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/API_Manuals/Python_POD_API_Manual.pdf)
+
 
 | Module                 | Class        | Description                                                                                                     |
 |------------------------|--------------|-----------------------------------------------------------------------------------------------------------------|
@@ -64,3 +67,5 @@ Detailed instructions of all Python modules and methods: [here](https://github.c
 | [Setup_8401HR.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/API_Modules/Setup_8401HR.py) | Setup_8401HR | Provides the setup functions for an 8401-HR POD device. REQUIRES FIRMWARE 1.0.2 OR HIGHER. | 
 | [Setup_PodDevices.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/API_Modules/Setup_PodDevices.py) | Setup_PodDevices | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. |
 | [Setup_PodInterface.py](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/API_Modules/Setup_PodInterface.py) | Setup_PodInterface | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. |
+
+![](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/Diagrams/UML-class-diagram.png)
