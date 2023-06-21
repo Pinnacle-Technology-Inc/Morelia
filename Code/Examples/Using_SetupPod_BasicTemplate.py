@@ -1,7 +1,6 @@
 """
 Simple example template that runs SetupPodDevices. 
 """
-# set path to <path>\Python-POD-API\Code\Modules
 import sys, os
 sys.path.insert(0, os.path.join( os.path.abspath('.'), 'Code', 'API_Modules') )
 
