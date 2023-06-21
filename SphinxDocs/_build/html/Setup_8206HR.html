@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup_8206HR module &mdash; Python POD API v1.1.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setup_8401HR module" href="Setup_8401HR.html" />
+    <link rel="prev" title="SerialCommunication module" href="SerialCommunication.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Python POD API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Setup_8206HR module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._ChoosePreampGain"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._ChoosePreampGain()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._IsOneDeviceValid"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._IsOneDeviceValid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._LOWPASSKEYS"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._LOWPASSKEYS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._NAME"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._NAME</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._OpenSaveFile_EDF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._OpenSaveFile_TXT()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._PARAMKEYS"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._PARAMKEYS</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._PHYSICAL_BOUND_uV</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._StreamThreading()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._StreamUntilStop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._WriteDataToFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._WriteDataToFile_EDF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_8206HR.Setup_8206HR._WriteDataToFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._WriteDataToFile_TXT()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python POD API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API_Modules</a></li>
+      <li class="breadcrumb-item active">Setup_8206HR module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Setup_8206HR.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-Setup_8206HR">
+<span id="setup-8206hr-module"></span><h1>Setup_8206HR module<a class="headerlink" href="#module-Setup_8206HR" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_8206HR.</span></span><span class="sig-name descname"><span class="pre">Setup_8206HR</span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface" title="Setup_PodInterface.Setup_Interface"><code class="xref py py-class docutils literal notranslate"><span class="pre">Setup_Interface</span></code></a></p>
+<p>Setup_8206HR provides the setup functions for an 8206-HR POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR.GetDeviceName">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR.GetDeviceName" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String of _NAME.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR.StopStream">
+<span class="sig-name descname"><span class="pre">StopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR.StopStream" title="Permalink to this definition"></a></dt>
+<dd><p>Write a command to stop streaming data to all POD devices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._ChoosePreampGain">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ChoosePreampGain</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._ChoosePreampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Asks user for the preamplifier gain of their POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer 10 or 100 for the preamplifier gain.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._ConnectPODdevice">
+<span class="sig-name descname"><span class="pre">_ConnectPODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviceNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._ConnectPODdevice" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a POD_8206HR object and write the setup parameters to it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deviceNum</strong> (<em>int</em>) – Integer of the device’s number.</p></li>
+<li><p><strong>deviceParams</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em>) – Dictionary of the device’s parameters</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if connection was successful, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable">
+<span class="sig-name descname"><span class="pre">_GetPODdeviceParameterTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Texttable</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a table containing the parameters for all POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Texttable containing all parameters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Texttable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._GetParam_onePODdevice">
+<span class="sig-name descname"><span class="pre">_GetParam_onePODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbiddenNames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._GetParam_onePODdevice" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user to input all the device parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbiddenNames</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of port names already used by other devices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of device parameters.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,(str|int|dict[str,int])]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._IsOneDeviceValid">
+<span class="sig-name descname"><span class="pre">_IsOneDeviceValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">paramDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._IsOneDeviceValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the parameters dictionary is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>paramDict</strong> (<em>dict</em>) – Dictionary of the parameters for one device.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Invalid parameters.</p></li>
+<li><p><strong>Exception</strong> – Invalid parameter value types.</p></li>
+<li><p><strong>Exception</strong> – Invalid low-pass parameters.</p></li>
+<li><p><strong>Exception</strong> – Invalid low-pass value types.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if no exceptions are raised.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._LOWPASSKEYS">
+<span class="sig-name descname"><span class="pre">_LOWPASSKEYS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['EEG1',</span> <span class="pre">'EEG2',</span> <span class="pre">'EEG3/EMG']</span></em><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._LOWPASSKEYS" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level list containing the keys of the ‘Low-pass’ parameter     dict value.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._NAME">
+<span class="sig-name descname"><span class="pre">_NAME</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'8206-HR'</span></em><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._NAME" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level string containing the POD device name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">EdfWriter</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF" title="Permalink to this definition"></a></dt>
+<dd><p>Opens EDF file and write header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – String filename.</p></li>
+<li><p><strong>devNum</strong> (<em>int</em>) – Integer device number.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>EdfWriter</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT" title="Permalink to this definition"></a></dt>
+<dd><p>Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – String filename.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>IOBase</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._PARAMKEYS">
+<span class="sig-name descname"><span class="pre">_PARAMKEYS</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">['Port',</span> <span class="pre">'Sample</span> <span class="pre">Rate',</span> <span class="pre">'Preamplifier</span> <span class="pre">Gain',</span> <span class="pre">'Low-pass']</span></em><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._PARAMKEYS" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level list containing the device parameter dict keys.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV">
+<span class="sig-name descname"><span class="pre">_PHYSICAL_BOUND_uV</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2046</span></em><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer representing the max/-min physical value in uV.     Used for EDF files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._StreamThreading">
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._StreamThreading" title="Permalink to this definition"></a></dt>
+<dd><p>Opens a save file, then creates a thread for each device to stream and write data from.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with keys as the device number and values as the started Thread.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int,Thread]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._StreamUntilStop">
+<span class="sig-name descname"><span class="pre">_StreamUntilStop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR" title="PodDevice_8206HR.POD_8206HR"><span class="pre">POD_8206HR</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._StreamUntilStop" title="Permalink to this definition"></a></dt>
+<dd><p>Streams data from a POD device and saves data to file. Stops looking when a stop stream         command is read. Calculates average time difference across multiple packets to collect a         continuous time series data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pod</strong> (<a class="reference internal" href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR" title="PodDevice_8206HR.POD_8206HR"><em>POD_8206HR</em></a>) – POD device to read from.</p></li>
+<li><p><strong>file</strong> (<em>IOBase</em><em> | </em><em>EdfWriter</em>) – open file.</p></li>
+<li><p><strong>sampleRate</strong> (<em>int</em>) – Integer sample rate in Hz.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._WriteDataToFile_EDF">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._WriteDataToFile_EDF" title="Permalink to this definition"></a></dt>
+<dd><p>Writes data to an open EDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>EdfWriter</em>) – opened EDF file.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List of 3 items, one for each channel.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup_8206HR.Setup_8206HR._WriteDataToFile_TXT">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup_8206HR.Setup_8206HR._WriteDataToFile_TXT" title="Permalink to this definition"></a></dt>
+<dd><p>Writes data to an open text file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file</strong> (<em>IOBase</em>) – opened write file.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List of 3 items, one for each channel.</p></li>
+<li><p><strong>t</strong> (<em>np.ndarray</em>) – list with the time stamps (in seconds).</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="SerialCommunication.html" class="btn btn-neutral float-left" title="SerialCommunication module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Setup_8401HR.html" class="btn btn-neutral float-right" title="Setup_8401HR module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BasicPodProtocol module &mdash; Python POD API v1.1.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="GetUserInput module" href="GetUserInput.html" />
+    <link rel="prev" title="API_Modules" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Python POD API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">BasicPodProtocol module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#BasicPodProtocol.POD_Basics"><code class="docutils literal notranslate"><span class="pre">POD_Basics</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._port"><code class="docutils literal notranslate"><span class="pre">POD_Basics._port</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._commands"><code class="docutils literal notranslate"><span class="pre">POD_Basics._commands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetNumberOfPODDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.ReadPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.ReadPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice"><code class="docutils literal notranslate"><span class="pre">POD_Basics.SetBaudrateOfDevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WritePacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WritePacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WriteRead"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WriteRead()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ReadPODpacket_Recursive()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_GetCommand"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_GetCommand()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_ToETX"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_ToETX()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ValidateChecksum"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ValidateChecksum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINBINARYLENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINSTANDARDLENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__numPod"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__numPod</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python POD API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API_Modules</a></li>
+      <li class="breadcrumb-item active">BasicPodProtocol module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/BasicPodProtocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-BasicPodProtocol">
+<span id="basicpodprotocol-module"></span><h1>BasicPodProtocol module<a class="headerlink" href="#module-BasicPodProtocol" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">POD_Basics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#BasicPodProtocol.POD_Basics" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>POD_Basics handles basic communication with a generic POD device, including reading and writing
+packets and packet interpretation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._port">
+<span class="sig-name descname"><span class="pre">_port</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._port" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level COM_io object, which handles the COM port</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="SerialCommunication.html#SerialCommunication.COM_io" title="SerialCommunication.COM_io">COM_io</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._commands">
+<span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._commands" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level POD_Commands object, which stores information about             the commands available to this POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands" title="PodCommands.POD_Commands">POD_Commands</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetDeviceCommands">
+<span class="sig-name descname"><span class="pre">GetDeviceCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the dictionary containing the class instance’s available POD commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing the available commands and their                 information.Formatted as key(command number) : value([command name, number of argument                 ASCII bytes, number of return bytes, binary flag ])</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, list[str|tuple[int]|bool]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetNumberOfPODDevices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetNumberOfPODDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the POD device counter (__numPod).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Number of POD_Basics instances.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetPODpacket">
+<span class="sig-name descname"><span class="pre">GetPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give,         the method will convert it into a bytes string of the length expected by the command. If a bytes         payload is given, it must be the correct length.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – POD command does not exist.</p></li>
+<li><p><strong>Exception</strong> – POD command requires a payload.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string of the POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string containing a POD packet beginning with STX and ending with ETX. This                 may be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.SetBaudrateOfDevice">
+<span class="sig-name descname"><span class="pre">SetBaudrateOfDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice" title="Permalink to this definition"></a></dt>
+<dd><p>If the port is open, it will change the baud rate to the parameter’s value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>baudrate</strong> (<em>int</em>) – Baud rate to set for the open serial port.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if successful at setting the baud rate, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket">
+<span class="sig-name descname"><span class="pre">TranslatePODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Determines if the packet is standard or binary, and translates accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing either a standard or binary packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the unpacked message in numbers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TranslatePODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded
+bytes into integer values and leaves the binary-encoded bytes as is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a variable-length POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the ‘Command Number’ and ‘Binary Packet Length’                 in integers, and ‘Binary Data’ in bytes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard">
+<span class="sig-name descname"><span class="pre">TranslatePODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard" title="Permalink to this definition"></a></dt>
+<dd><p>Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a standard POD packet</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the POD packet’s ‘Command Number’ and ‘Payload’                 (if applicable) in integers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket">
+<span class="sig-name descname"><span class="pre">UnpackPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Determines if the packet is standard or binary, and unpacks accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing either a standard or binary packet</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the unpacked message in bytes</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a variable-length binary packet into a dictionary containing the command
+number, binary packet length, and binary data in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a variable-length POD packet</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing ‘Command Number’, ‘Binary Packet Length’,                 and ‘Binary Data’ keys with bytes values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,bytes]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – <ol class="arabic simple">
+<li><p>The msg does not have the minimum number of bytes in a standard pod                 packet,(2) does not begin with STX, (3) does not end with ETX, and (4) does                 not have an ETX after standard packet.</p></li>
+</ol>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a standard POD packet into a dictionary containing the command number and payload
+(if applicable) in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a standard POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the POD packet’s ‘Command Number’ and ‘Payload’                 (if applicable) in bytes.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,bytes]</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – <ol class="arabic simple">
+<li><p>The msg does not have the minimum number of bytes in a standard pod packet,                 (2) does not begin with STX, and (3) does not end with ETX.</p></li>
+</ol>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.WriteRead">
+<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WriteRead" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command with optional payload to POD device, then reads (once) the device response.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>|</em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value or a bytes string. Defaults to None.</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                     validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string containing a POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive">
+<span class="sig-name descname"><span class="pre">_ReadPODpacket_Recursive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the command number. If the command number ends in ETX, the packet is returned.         Next, it checks if the command is allowed. Then, it checks if the command is standard or         binary and reads accordingly, then returns the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Cannot read an invalid command.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string containing a POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a variable-length binary POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_GetCommand">
+<span class="sig-name descname"><span class="pre">_Read_GetCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_GetCommand" title="Permalink to this definition"></a></dt>
+<dd><p>Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or         (3) continue building the command number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>4 byte long string containing the ASCII-encoded command number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Standard">
+<span class="sig-name descname"><span class="pre">_Read_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Standard" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a complete standard POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_ToETX">
+<span class="sig-name descname"><span class="pre">_Read_ToETX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_ToETX" title="Permalink to this definition"></a></dt>
+<dd><p>Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX         is found anywhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string ending with ETX.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ValidateChecksum">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateChecksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ValidateChecksum" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum
+from the data matches the checksum written in the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum                 (2 bytes) + ETX (1 byte).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the checksum is correct, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – msg does not begin with STX or end with ETX.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">
+<span class="sig-name descname"><span class="pre">__MINBINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer representing the minimum length of a binary POD     command packet. Format is STX (1 byte) + command number (4 bytes) + length     of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH     bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">
+<span class="sig-name descname"><span class="pre">__MINSTANDARDLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer representing the minimum length of a standard     POD command packet. Format is STX (1 byte) + command number (4 bytes)     + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__numPod">
+<span class="sig-name descname"><span class="pre">__numPod</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__numPod" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer counting the number of POD_Basics instances.     Maintained by __init__ and __del__.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="API_Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="GetUserInput.html" class="btn btn-neutral float-right" title="GetUserInput module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

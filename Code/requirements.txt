@@ -1,0 +1,4 @@
+numpy==1.24.2
+pyEDFlib==0.1.30
+pyserial==3.5
+texttable==1.6.7

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodDevice_8206HR module &mdash; Python POD API v1.1.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PodDevice_8401HR module" href="PodDevice_8401HR.html" />
+    <link rel="prev" title="PodCommands module" href="PodCommands.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Python POD API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PodDevice_8206HR module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR"><code class="docutils literal notranslate"><span class="pre">POD_8206HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._preampGain"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._preampGain</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.TranslatePODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.TranslatePODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.UnpackPODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._BinaryBytesToVoltage()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._Read_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._TranslateTTLbyte_ASCII()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8206HR._TranslateTTLbyte_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4BINARYLENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8206HR.__B4LENGTH</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python POD API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API_Modules</a></li>
+      <li class="breadcrumb-item active">PodDevice_8206HR module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PodDevice_8206HR.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-PodDevice_8206HR">
+<span id="poddevice-8206hr-module"></span><h1>PodDevice_8206HR module<a class="headerlink" href="#module-PodDevice_8206HR" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodDevice_8206HR.</span></span><span class="sig-name descname"><span class="pre">POD_8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><code class="xref py py-class docutils literal notranslate"><span class="pre">POD_Basics</span></code></a></p>
+<p>POD_8206HR handles communication using an 8206HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._preampGain">
+<span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level integer (10 or 100) preamplifier gain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.TranslatePODpacket">
+<span class="sig-name descname"><span class="pre">TranslatePODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Overwrites the parent’s method. Determines if the packet is standard or binary, and         translates accordingly. Adds a check for the ‘GET TTL PORT’ command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing either a standard or binary packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing the unpacked message in numbers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|dict[str,int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary">
+<span class="sig-name descname"><span class="pre">TranslatePODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.TranslatePODpacket_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Overwrites the parent’s method. Unpacks the binary4 POD packet and converts the values of the         ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers.         Channel values are given in Volts.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a complete binary4 Pod packet:  STX (1 byte)                 + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) + ch0 (2 bytes)                 + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A dictionary containing ‘Command Number’, ‘Packet #’,             ‘TTL’, ‘Ch0’, ‘Ch1’, and ‘Ch2’ as numbers.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|float|dict[str,int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.UnpackPODpacket_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Overwrites the parent’s method. Separates the components of a binary4 packet into a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a complete binary4 Pod packet:  STX (1 byte)                  + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) + ch0 (2 bytes)                 + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – <ol class="arabic simple">
+<li><p>the packet does not have the minimum number of bytes, (2) does not begin                 with STX, or (3) does not end with ETX.</p></li>
+</ol>
+</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A dictionary containing ‘Command Number’, ‘Packet #’, ‘TTL’, ‘Ch0’, ‘Ch1’,                 and ‘Ch2’ in bytes.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage">
+<span class="sig-name descname"><span class="pre">_BinaryBytesToVoltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._BinaryBytesToVoltage" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a binary bytes value read from POD device and converts it to the real voltage value         at the preamplifier input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>bytes</em>) – Bytes string containing voltage measurement.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A number containing the voltage in Volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX         (checksum+ETX).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Bad checksum for binary POD packet read.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Byte string for a binary4 POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLbyte_ASCII</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII" title="Permalink to this definition"></a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a ASCII encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (ASCII encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLbyte_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a binary encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (binary encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH">
+<span class="sig-name descname"><span class="pre">__B4BINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4BINARYLENGTH" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer representing the number of binary bytes for a     Binary 4 packet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="PodDevice_8206HR.POD_8206HR.__B4LENGTH">
+<span class="sig-name descname"><span class="pre">__B4LENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">16</span></em><a class="headerlink" href="#PodDevice_8206HR.POD_8206HR.__B4LENGTH" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level integer representing the number of bytes for a Binary 4 packet.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PodCommands.html" class="btn btn-neutral float-left" title="PodCommands module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PodDevice_8401HR.html" class="btn btn-neutral float-right" title="PodDevice_8401HR module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
