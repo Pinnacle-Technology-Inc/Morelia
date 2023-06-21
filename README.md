@@ -35,7 +35,7 @@ Here are some useful documents for setting up your coding environment to use the
 
 * Tips for installing your Python environment: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PythonEnviornmentTips.txt)
 
-* Python libraries required for this project: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Documents/PyEnvRequirements.txt)
+* Python libraries required for this project: [here](https://github.com/Pinnacle-Technology-Inc/Python-POD-API/blob/integration/Code/requirements.txt)
 
 ## Examples & Usage 
 
