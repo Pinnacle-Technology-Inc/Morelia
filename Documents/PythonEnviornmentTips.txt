@@ -27,6 +27,7 @@ Enter the python enviornment:
 
     # Windows 
     >> & <path>/.venv/Scripts/Activate.ps1
+
     example: >> & C:/git/Python-POD-API/.venv/Scripts/Activate.ps1
 
     If the activate command generates the message "Activate.ps1 is not digitally signed. 
@@ -40,22 +41,28 @@ Enter the python enviornment:
 Install python packages while in env:
 
     # macOS
-    >> python3 -m pip install PACKAGENAME
+    >> python3 -m pip install <package name>
 
     # Windows (may require elevation)
-    >> python -m pip install PACKAGENAME
+    >> python -m pip install <package name>
 
     # Linux (Debian)
     >> apt-get install python3-tk
-    >> python3 -m pip install PACKAGENAME
+    >> python3 -m pip install <package name>
 
 
 Install all required packages while in env:
 
-    >> cd <path>\Python-POD-API\Documents
-    >> pip install -r PyEnvRequirements.txt
+    >> cd <path>\Python-POD-API\Code
+    >> pip install -r requirements.txt
 
 
-Get list of packages in env:
+Get list of required packages for project:
+
+    >> pip install pipreqs
+    >> pipreqs <path>\Python-POD-API\Code
+    
+
+Get list of packages in enviornment:
 
     >> pip freeze
