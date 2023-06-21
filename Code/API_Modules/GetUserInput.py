@@ -75,10 +75,23 @@ class UserInput :
             prompt (str): Statement requesting input from the user.
 
         Returns:
-            int: integer type input from user.
+            int: Integer type input from user.
         """
         return(UserInput.AskForType(typecast=UserInput.CastInt, prompt=prompt))
 
+
+    @staticmethod
+    def AskForBool(prompt: str) -> bool :
+        """Asks user for bool type input.
+
+        Args:
+            prompt (str):  Statement requesting input from the user.
+
+        Returns:
+            bool: Boolean type input from user.
+        """
+        return(UserInput.AskForType(typecast=UserInput.CastBool, prompt=prompt))
+    
 
     # ------------ QUESTION ------------
 
@@ -289,3 +302,16 @@ class UserInput :
             str: Value type casted as a string.
         """
         return(str(value))
+    
+
+    @staticmethod
+    def CastBool(value) -> bool :
+        """Casts the argument as an string.
+
+        Args:
+            value: Value to type casted.
+
+        Returns:
+            bool: Value type casted as a bool.
+        """
+        return(bool(value))
