@@ -1,9 +1,8 @@
 """
 Example that demonstrates how to run SetupPodDevices. 
 """
-# set path to <local path>\Python-POD-API\Code\Modules
 import sys, os
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'Modules')) 
+sys.path.insert(0, os.path.join( os.path.abspath('.'), 'Code', 'API_Modules') )
 
 # local imports
 from Setup_PodDevices import Setup_PodDevices
