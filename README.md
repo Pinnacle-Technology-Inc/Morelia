@@ -3,7 +3,6 @@
 ## Project Description 
 
 ![GitHub license](https://img.shields.io/github/license/Pinnacle-Technology-Inc/Python-POD-API)
-![GitHub top language](https://img.shields.io/github/languages/top/Pinnacle-Technology-Inc/Python-POD-API)
 ![GitHub repo size](https://img.shields.io/github/repo-size/Pinnacle-Technology-Inc/Python-POD-API)
 
 The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
