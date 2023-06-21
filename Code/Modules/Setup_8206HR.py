@@ -110,9 +110,8 @@ class Setup_8206HR(Setup_Interface) :
             print('[!] Input must be 10 or 100.')
             return(Setup_8206HR._ChoosePreampGain())
         # return preamplifier gain 
-        return(gain)
+        return(gain)    
     
-
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
@@ -277,7 +276,7 @@ class Setup_8206HR(Setup_Interface) :
             )
         ) : 
             raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
-        # check that low-pass is correct
+        # check that Stimulus values are correct
         if( list(paramDict['Low-pass'].keys()).sort() != copy.copy(self._LOWPASSKEYS).sort() ) : 
             raise Exception('[!] Invalid low-pass parameters for '+str(self._NAME)+'.')
         # check type of low-pass

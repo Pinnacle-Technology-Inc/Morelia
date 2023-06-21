@@ -7,6 +7,7 @@ from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
 
+
 # authorship
 __author__      = "Sree Kondi"
 __maintainer__  = "Sree Kondi"
@@ -62,12 +63,22 @@ class POD_8480HR(POD_Basics) :
 
     @staticmethod
     def StimulusConfigBits(optoElec:bool, monoBiphasic:bool, Simul:bool) -> int :
-        return (0 | (optoElec << 2) | (monoBiphasic << 1) | (Simul))
+        return (0 | (Simul << 2) | (monoBiphasic << 1) | (optoElec))
         
     # TODO make a method to build a payload for SET STIMULUS given each of the bits as parameters. 
     # @staticmethod
     # def StimulusCommandFormat(channel,period,width,repeat,config: int) -> tuple(int) : 
+    
+    @staticmethod
+    def _SyncConfigBits(sync_level:bool, sync_idle:bool, signal_trigger:bool) -> int :
+        return (0 | (signal_trigger << 2) | (sync_idle << 1) | (sync_level))
 
-    # TODO make a method to build the config flags 
+    # TODO make a method to build the config flags - DONE
     # @staticmethod
     # def StimulusConfigBits(optoElec, monoBiphasic, Simul) -> int : 
+
+
+    @staticmethod    
+    def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool):
+        return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
+    

@@ -244,7 +244,7 @@ class POD_Basics :
     def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         # return False if command is not valid
         print(cmd)
-        print(payload)
+        print("PAYLOAD",payload)
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not Exist.')
         # get command number 

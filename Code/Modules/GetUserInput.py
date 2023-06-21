@@ -35,6 +35,8 @@ class UserInput :
                 print('[!] Please enter a number.')
             elif(typecast == UserInput.CastStr) : 
                 print('[!] Please enter string.')
+            elif(typecast == UserInput.CastBool) :
+                print('[!] Please enter a boolean value.')
             # ask again 
             return(UserInput.AskForType(typecast, prompt))
     
@@ -139,4 +141,8 @@ class UserInput :
     
     @staticmethod
     def CastBool(value) -> bool :
-        return(bool(value))
+        try :
+            return(bool(value))
+        except:
+            print("Please enter bool ")
+            raise
