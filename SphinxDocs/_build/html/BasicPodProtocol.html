@@ -1,163 +1,80 @@
-<!doctype html>
-<html class="no-js" lang="en">
-  <head><meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width,initial-scale=1"/>
-    <meta name="color-scheme" content="light dark"><meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="index" title="Index" href="genindex.html" /><link rel="search" title="Search" href="search.html" /><link rel="next" title="GetUserInput module" href="GetUserInput.html" /><link rel="prev" title="API_Modules" href="modules.html" />
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
-    <!-- Generated with Sphinx 7.0.1 and Furo 2023.05.20 -->
-        <title>BasicPodProtocol module - Python POD API v1.1.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo.css?digest=e6660623a769aa55fea372102b9bf3151b292993" />
-    <link rel="stylesheet" type="text/css" href="_static/styles/furo-extensions.css?digest=30d1aed668e5c3a91c3e3bf6a60b675221979f0e" />
-    
-    
-
-
-<style>
-  body {
-    --color-code-background: #f8f8f8;
-  --color-code-foreground: black;
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BasicPodProtocol module &mdash; Python POD API v1.1.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
   
-  }
-  @media not print {
-    body[data-theme="dark"] {
-      --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
-  
-    }
-    @media (prefers-color-scheme: dark) {
-      body:not([data-theme="light"]) {
-        --color-code-background: #202020;
-  --color-code-foreground: #d0d0d0;
-  
-      }
-    }
-  }
-</style></head>
-  <body>
-    
-    <script>
-      document.body.dataset.theme = localStorage.getItem("theme") || "auto";
-    </script>
-    
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="GetUserInput module" href="GetUserInput.html" />
+    <link rel="prev" title="API_Modules" href="modules.html" /> 
+</head>
 
-<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
-  <symbol id="svg-toc" viewBox="0 0 24 24">
-    <title>Contents</title>
-    <svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 1024 1024">
-      <path d="M408 442h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8zm-8 204c0 4.4 3.6 8 8 8h480c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8H408c-4.4 0-8 3.6-8 8v56zm504-486H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zm0 632H120c-4.4 0-8 3.6-8 8v56c0 4.4 3.6 8 8 8h784c4.4 0 8-3.6 8-8v-56c0-4.4-3.6-8-8-8zM115.4 518.9L271.7 642c5.8 4.6 14.4.5 14.4-6.9V388.9c0-7.4-8.5-11.5-14.4-6.9L115.4 505.1a8.74 8.74 0 0 0 0 13.8z"/>
-    </svg>
-  </symbol>
-  <symbol id="svg-menu" viewBox="0 0 24 24">
-    <title>Menu</title>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-menu">
-      <line x1="3" y1="12" x2="21" y2="12"></line>
-      <line x1="3" y1="6" x2="21" y2="6"></line>
-      <line x1="3" y1="18" x2="21" y2="18"></line>
-    </svg>
-  </symbol>
-  <symbol id="svg-arrow-right" viewBox="0 0 24 24">
-    <title>Expand</title>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather-chevron-right">
-      <polyline points="9 18 15 12 9 6"></polyline>
-    </svg>
-  </symbol>
-  <symbol id="svg-sun" viewBox="0 0 24 24">
-    <title>Light mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="feather-sun">
-      <circle cx="12" cy="12" r="5"></circle>
-      <line x1="12" y1="1" x2="12" y2="3"></line>
-      <line x1="12" y1="21" x2="12" y2="23"></line>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-      <line x1="1" y1="12" x2="3" y2="12"></line>
-      <line x1="21" y1="12" x2="23" y2="12"></line>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-    </svg>
-  </symbol>
-  <symbol id="svg-moon" viewBox="0 0 24 24">
-    <title>Dark mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-moon">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-      <path d="M12 3c.132 0 .263 0 .393 0a7.5 7.5 0 0 0 7.92 12.446a9 9 0 1 1 -8.313 -12.454z" />
-    </svg>
-  </symbol>
-  <symbol id="svg-sun-half" viewBox="0 0 24 24">
-    <title>Auto light/dark mode</title>
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="icon-tabler-shadow">
-      <path stroke="none" d="M0 0h24v24H0z" fill="none"/>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M13 12h5" />
-      <path d="M13 15h4" />
-      <path d="M13 18h1" />
-      <path d="M13 9h4" />
-      <path d="M13 6h1" />
-    </svg>
-  </symbol>
-</svg>
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
 
-<input type="checkbox" class="sidebar-toggle" name="__navigation" id="__navigation">
-<input type="checkbox" class="sidebar-toggle" name="__toc" id="__toc">
-<label class="overlay sidebar-overlay" for="__navigation">
-  <div class="visually-hidden">Hide navigation sidebar</div>
-</label>
-<label class="overlay toc-overlay" for="__toc">
-  <div class="visually-hidden">Hide table of contents sidebar</div>
-</label>
-
-
-
-<div class="page">
-  <header class="mobile-header">
-    <div class="header-left">
-      <label class="nav-overlay-icon" for="__navigation">
-        <div class="visually-hidden">Toggle site navigation sidebar</div>
-        <i class="icon"><svg><use href="#svg-menu"></use></svg></i>
-      </label>
-    </div>
-    <div class="header-center">
-      <a href="index.html"><div class="brand">Python POD API v1.1.1 documentation</div></a>
-    </div>
-    <div class="header-right">
-      <div class="theme-toggle-container theme-toggle-header">
-        <button class="theme-toggle">
-          <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-          <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
-          <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
-          <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
-        </button>
-      </div>
-      <label class="toc-overlay-icon toc-header-icon" for="__toc">
-        <div class="visually-hidden">Toggle table of contents sidebar</div>
-        <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
-      </label>
-    </div>
-  </header>
-  <aside class="sidebar-drawer">
-    <div class="sidebar-container">
-      
-      <div class="sidebar-sticky"><a class="sidebar-brand" href="index.html">
-  
-  
-  <span class="sidebar-brand-text">Python POD API v1.1.1 documentation</span>
-  
-</a><form class="sidebar-search-container" method="get" action="search.html" role="search">
-  <input class="sidebar-search" placeholder="Search" name="q" aria-label="Search">
-  <input type="hidden" name="check_keywords" value="yes">
-  <input type="hidden" name="area" value="default">
-</form>
-<div id="searchbox"></div><div class="sidebar-scroll"><div class="sidebar-tree">
-  <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Python POD API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1 current has-children"><a class="reference internal" href="modules.html">API_Modules</a><input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" role="switch" type="checkbox"/><label for="toctree-checkbox-1"><div class="visually-hidden">Toggle navigation of API_Modules</div><i class="icon"><svg><use href="#svg-arrow-right"></use></svg></i></label><ul class="current">
-<li class="toctree-l2 current current-page"><a class="current reference internal" href="#">BasicPodProtocol module</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">BasicPodProtocol module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#BasicPodProtocol.POD_Basics"><code class="docutils literal notranslate"><span class="pre">POD_Basics</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._port"><code class="docutils literal notranslate"><span class="pre">POD_Basics._port</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._commands"><code class="docutils literal notranslate"><span class="pre">POD_Basics._commands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetNumberOfPODDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.ReadPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.ReadPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice"><code class="docutils literal notranslate"><span class="pre">POD_Basics.SetBaudrateOfDevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WritePacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WritePacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WriteRead"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WriteRead()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ReadPODpacket_Recursive()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Binary()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_GetCommand"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_GetCommand()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Standard()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_ToETX"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_ToETX()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ValidateChecksum"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ValidateChecksum()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINBINARYLENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINSTANDARDLENGTH</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__numPod"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__numPod</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
@@ -172,49 +89,42 @@
 </li>
 </ul>
 
-</div>
-</div>
-
-      </div>
-      
-    </div>
-  </aside>
-  <div class="main">
-    <div class="content">
-      <div class="article-container">
-        <a href="#" class="back-to-top muted-link">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-            <path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12z"></path>
-          </svg>
-          <span>Back to top</span>
-        </a>
-        <div class="content-icon-container">
-          
-<div class="theme-toggle-container theme-toggle-content">
-            <button class="theme-toggle">
-              <div class="visually-hidden">Toggle Light / Dark / Auto color theme</div>
-              <svg class="theme-icon-when-auto"><use href="#svg-sun-half"></use></svg>
-              <svg class="theme-icon-when-dark"><use href="#svg-moon"></use></svg>
-              <svg class="theme-icon-when-light"><use href="#svg-sun"></use></svg>
-            </button>
-          </div>
-          <label class="toc-overlay-icon toc-content-icon" for="__toc">
-            <div class="visually-hidden">Toggle table of contents sidebar</div>
-            <i class="icon"><svg><use href="#svg-toc"></use></svg></i>
-          </label>
         </div>
-        <article role="main">
-          <section id="module-BasicPodProtocol">
-<span id="basicpodprotocol-module"></span><h1>BasicPodProtocol module<a class="headerlink" href="#module-BasicPodProtocol" title="Permalink to this heading">#</a></h1>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python POD API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API_Modules</a></li>
+      <li class="breadcrumb-item active">BasicPodProtocol module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/BasicPodProtocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-BasicPodProtocol">
+<span id="basicpodprotocol-module"></span><h1>BasicPodProtocol module<a class="headerlink" href="#module-BasicPodProtocol" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">POD_Basics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#BasicPodProtocol.POD_Basics" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">POD_Basics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#BasicPodProtocol.POD_Basics" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>POD_Basics handles basic communication with a generic POD device, including reading and writing
 packets and packet interpretation.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._port">
-<span class="sig-name descname"><span class="pre">_port</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._port" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_port</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._port" title="Permalink to this definition"></a></dt>
 <dd><p>Instance-level COM_io object, which handles the COM port</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -225,7 +135,7 @@ packets and packet interpretation.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._commands">
-<span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._commands" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._commands" title="Permalink to this definition"></a></dt>
 <dd><p>Instance-level POD_Commands object, which stores information about             the commands available to this POD device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
@@ -236,7 +146,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetDeviceCommands">
-<span class="sig-name descname"><span class="pre">GetDeviceCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GetDeviceCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the dictionary containing the class instance’s available POD commands.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -250,7 +160,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetNumberOfPODDevices">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetNumberOfPODDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetNumberOfPODDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the POD device counter (__numPod).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -264,7 +174,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetPODpacket">
-<span class="sig-name descname"><span class="pre">GetPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetPODpacket" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">GetPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetPODpacket" title="Permalink to this definition"></a></dt>
 <dd><p>Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give,         the method will convert it into a bytes string of the length expected by the command. If a bytes         payload is given, it must be the correct length.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -290,7 +200,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.ReadPODpacket">
-<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.ReadPODpacket" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.ReadPODpacket" title="Permalink to this definition"></a></dt>
 <dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -307,7 +217,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.SetBaudrateOfDevice">
-<span class="sig-name descname"><span class="pre">SetBaudrateOfDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">SetBaudrateOfDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice" title="Permalink to this definition"></a></dt>
 <dd><p>If the port is open, it will change the baud rate to the parameter’s value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -324,7 +234,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket">
-<span class="sig-name descname"><span class="pre">TranslatePODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">TranslatePODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket" title="Permalink to this definition"></a></dt>
 <dd><p>Determines if the packet is standard or binary, and translates accordingly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -341,7 +251,7 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TranslatePODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TranslatePODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary" title="Permalink to this definition"></a></dt>
 <dd><p>Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded
 bytes into integer values and leaves the binary-encoded bytes as is.</p>
 <dl class="field-list simple">
@@ -359,7 +269,7 @@ bytes into integer values and leaves the binary-encoded bytes as is.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard">
-<span class="sig-name descname"><span class="pre">TranslatePODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">TranslatePODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard" title="Permalink to this definition"></a></dt>
 <dd><p>Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -376,7 +286,7 @@ bytes into integer values and leaves the binary-encoded bytes as is.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket">
-<span class="sig-name descname"><span class="pre">UnpackPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">UnpackPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket" title="Permalink to this definition"></a></dt>
 <dd><p>Determines if the packet is standard or binary, and unpacks accordingly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -393,7 +303,7 @@ bytes into integer values and leaves the binary-encoded bytes as is.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a variable-length binary packet into a dictionary containing the command
 number, binary packet length, and binary data in bytes.</p>
 <dl class="field-list simple">
@@ -417,7 +327,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">UnpackPODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard" title="Permalink to this definition"></a></dt>
 <dd><p>Converts a standard POD packet into a dictionary containing the command number and payload
 (if applicable) in bytes.</p>
 <dl class="field-list simple">
@@ -441,7 +351,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.WritePacket">
-<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WritePacket" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WritePacket" title="Permalink to this definition"></a></dt>
 <dd><p>Builds a POD packet and writes it to the POD device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -461,7 +371,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.WriteRead">
-<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WriteRead" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.WriteRead" title="Permalink to this definition"></a></dt>
 <dd><p>Writes a command with optional payload to POD device, then reads (once) the device response.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -482,7 +392,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive">
-<span class="sig-name descname"><span class="pre">_ReadPODpacket_Recursive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_ReadPODpacket_Recursive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive" title="Permalink to this definition"></a></dt>
 <dd><p>Reads the command number. If the command number ends in ETX, the packet is returned.         Next, it checks if the command is allowed. Then, it checks if the command is standard or         binary and reads accordingly, then returns the packet.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -502,7 +412,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Binary">
-<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Binary" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Binary" title="Permalink to this definition"></a></dt>
 <dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -525,7 +435,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_GetCommand">
-<span class="sig-name descname"><span class="pre">_Read_GetCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_GetCommand" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_Read_GetCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_GetCommand" title="Permalink to this definition"></a></dt>
 <dd><p>Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or         (3) continue building the command number.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -542,7 +452,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_Standard">
-<span class="sig-name descname"><span class="pre">_Read_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Standard" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_Read_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_Standard" title="Permalink to this definition"></a></dt>
 <dd><p>Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -565,7 +475,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._Read_ToETX">
-<span class="sig-name descname"><span class="pre">_Read_ToETX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_ToETX" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">_Read_ToETX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._Read_ToETX" title="Permalink to this definition"></a></dt>
 <dd><p>Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX         is found anywhere.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -582,7 +492,7 @@ number, binary packet length, and binary data in bytes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics._ValidateChecksum">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateChecksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ValidateChecksum" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateChecksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics._ValidateChecksum" title="Permalink to this definition"></a></dt>
 <dd><p>Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum
 from the data matches the checksum written in the packet.</p>
 <dl class="field-list simple">
@@ -603,19 +513,19 @@ from the data matches the checksum written in the packet.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">
-<span class="sig-name descname"><span class="pre">__MINBINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__MINBINARYLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH" title="Permalink to this definition"></a></dt>
 <dd><p>Class-level integer representing the minimum length of a binary POD     command packet. Format is STX (1 byte) + command number (4 bytes) + length     of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH     bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">
-<span class="sig-name descname"><span class="pre">__MINSTANDARDLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__MINSTANDARDLENGTH</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH" title="Permalink to this definition"></a></dt>
 <dd><p>Class-level integer representing the minimum length of a standard     POD command packet. Format is STX (1 byte) + command number (4 bytes)     + optional packet  (? bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
 </dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.__numPod">
-<span class="sig-name descname"><span class="pre">__numPod</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__numPod" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">__numPod</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#BasicPodProtocol.POD_Basics.__numPod" title="Permalink to this definition"></a></dt>
 <dd><p>Class-level integer counting the number of POD_Basics instances.     Maintained by __init__ and __del__.</p>
 </dd></dl>
 
@@ -623,103 +533,35 @@ from the data matches the checksum written in the packet.</p>
 
 </section>
 
-        </article>
-      </div>
-      <footer>
-        
-        <div class="related-pages">
-          <a class="next-page" href="GetUserInput.html">
-              <div class="page-info">
-                <div class="context">
-                  <span>Next</span>
-                </div>
-                <div class="title">GetUserInput module</div>
-              </div>
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-            </a>
-          <a class="prev-page" href="modules.html">
-              <svg class="furo-related-icon"><use href="#svg-arrow-right"></use></svg>
-              <div class="page-info">
-                <div class="context">
-                  <span>Previous</span>
-                </div>
-                
-                <div class="title">API_Modules</div>
-                
-              </div>
-            </a>
-        </div>
-        <div class="bottom-of-page">
-          <div class="left-details">
-            <div class="copyright">
-                Copyright &#169; 2023, Thresa Kelly
-            </div>
-            Made with <a href="https://www.sphinx-doc.org/">Sphinx</a> and <a class="muted-link" href="https://pradyunsg.me">@pradyunsg</a>'s
-            
-            <a href="https://github.com/pradyunsg/furo">Furo</a>
-            
-          </div>
-          <div class="right-details">
-            
-          </div>
-        </div>
-        
-      </footer>
-    </div>
-    <aside class="toc-drawer">
-      
-      
-      <div class="toc-sticky toc-scroll">
-        <div class="toc-title-container">
-          <span class="toc-title">
-            On this page
-          </span>
-        </div>
-        <div class="toc-tree-container">
-          <div class="toc-tree">
-            <ul>
-<li><a class="reference internal" href="#">BasicPodProtocol module</a><ul>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics"><code class="docutils literal notranslate"><span class="pre">POD_Basics</span></code></a><ul>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._port"><code class="docutils literal notranslate"><span class="pre">POD_Basics._port</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._commands"><code class="docutils literal notranslate"><span class="pre">POD_Basics._commands</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetNumberOfPODDevices()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetPODpacket()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.ReadPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.ReadPODpacket()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice"><code class="docutils literal notranslate"><span class="pre">POD_Basics.SetBaudrateOfDevice()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Binary()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket_Standard()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Binary()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.UnpackPODpacket_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics.UnpackPODpacket_Standard()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WritePacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WritePacket()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.WriteRead"><code class="docutils literal notranslate"><span class="pre">POD_Basics.WriteRead()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ReadPODpacket_Recursive"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ReadPODpacket_Recursive()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Binary()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_GetCommand"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_GetCommand()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_Standard"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_Standard()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._Read_ToETX"><code class="docutils literal notranslate"><span class="pre">POD_Basics._Read_ToETX()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics._ValidateChecksum"><code class="docutils literal notranslate"><span class="pre">POD_Basics._ValidateChecksum()</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINBINARYLENGTH</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__MINSTANDARDLENGTH</span></code></a></li>
-<li><a class="reference internal" href="#BasicPodProtocol.POD_Basics.__numPod"><code class="docutils literal notranslate"><span class="pre">POD_Basics.__numPod</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
 
+           </div>
           </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="API_Modules" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="GetUserInput.html" class="btn btn-neutral float-right" title="GetUserInput module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
         </div>
       </div>
-      
-      
-    </aside>
+    </section>
   </div>
-</div><script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-    <script src="_static/doctools.js"></script>
-    <script src="_static/sphinx_highlight.js"></script>
-    <script src="_static/scripts/furo.js"></script>
-    </body>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
 </html>

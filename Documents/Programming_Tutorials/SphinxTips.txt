@@ -31,7 +31,7 @@ https://www.sphinx-doc.org/en/master/
         For the Python POD API project: 
         https://sphinx-themes.org/sample-sites/furo/
 
-            >> pip install furo
+            >> pip install sphinx-rtd-theme
 
 
 Setting up a new Sphinx project:
@@ -59,7 +59,7 @@ Update Sphinx configuration:
 
         extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
-        html_theme = 'furo'
+        html_theme = 'sphinx_rtd_theme'
         
         autodoc_default_options = {'private-members': True}
 
