@@ -150,14 +150,13 @@ class Setup_8480HR(Setup_Interface) :
                 user_channel = UserInput.AskForInt(("Choose channel for TTL Setup(0 or 1) "))
                 return(user_channel)
             if(eeg) == 'ttl_config':
-                # bit_0 = bool(int(input("Enter a value (0 for rising edge triggering, 1 for falling edge): ")))
-                bit_0 = UserInput.AskForBool("Enter a value (0 for rising edge triggering, 1 for falling edge): ")
-                bit_1 = bool(int(input("Enter a value for stimulus triggering (0 or 1): " )))
-                bit_7 = bool(int(input("Enter a value for TTL Input/Sync (0 or 1): ")))
+                bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge) ", 0, 1)
+                bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 or 1) ", 0, 1 )
+                bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 or 1) ", 0, 1)
                 ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
                 return(ttl_value)
             if(eeg) == 'debounce':
-                debounce = UserInput. AskForInt("Enter a debounce value (ms) : ")
+                debounce = UserInput. AskForInt("Enter a debounce value (ms)  ")
                 return(debounce)
         except :
             print('[!] Please enter a valid number.')
@@ -243,7 +242,7 @@ class Setup_8480HR(Setup_Interface) :
     @staticmethod
     def _Choosettlpullups() -> int:
         try :
-            pull_choice = UserInput. AskForInt('Enter value (0 for pullups disabled, non-zero for enabled): ')
+            pull_choice = UserInput. AskForInt('Enter value (0 for pullups disabled, non-zero for enabled)')
             return (pull_choice)
         except : 
             # if bad input, start over 
@@ -278,7 +277,7 @@ class Setup_8480HR(Setup_Interface) :
         # setup table 
         tab = Texttable(160)
         # write column names
-        tab.header(['Device #',self._PORTKEY, 'Stimulus', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullup', 'TTL Setup'])
+        tab.header(['Device #',self._PORTKEY, 'Stimulus', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullup','Preamp', 'TTL Setup'])
         # write rows
         for key,val in self._podParametersDict.items() :
             tab.add_row([key, val[self._PORTKEY], '\n'.join([f"{k}: {v}" for k, v in val['stimulus'].items()]), 
@@ -286,6 +285,7 @@ class Setup_8480HR(Setup_Interface) :
                         '\n'.join([f"{k}: {v}" for k,v in val['estimcurrent'].items()]),
                         (val['Sync_Config']), 
                         (val['ttl_pullups']),
+                        (val['preamp']),
                        '\n'.join([f"{k}: {v}" for k,v in val['ttl_setup'].items()])
                     ])
             print("key: ", key)
