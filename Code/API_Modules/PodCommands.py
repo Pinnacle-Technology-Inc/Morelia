@@ -55,6 +55,7 @@ class POD_Commands :
     unsigned 16-bit value.
     """
 
+    __U32 : int = 4*__U8
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -99,6 +100,17 @@ class POD_Commands :
         """
         # returns the no value marker for commands dict 
         return(POD_Commands.__U16)
+    
+    @staticmethod
+    def U32() -> int : 
+        """Gets value of __U16.
+
+        Returns:
+            int: Value of __U16.
+        """
+        # returns the no value marker for commands dict 
+        return(POD_Commands.__U32)
+    
 
     @staticmethod
     def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool]] : 

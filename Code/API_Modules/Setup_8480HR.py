@@ -81,7 +81,8 @@ class Setup_8480HR(Setup_Interface) :
                                                                    *deviceParams['stimulus']['width_ms'], 
                                                                    deviceParams['stimulus']['repeat'], 
                                                                    deviceParams['stimulus']['config']))
-            
+            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', (deviceParams['preamp']))
+
             self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0,deviceParams['ledcurrent']['EEG1']))
             self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1,deviceParams['ledcurrent']['EEG2']))
             #print("table testing", Setup_8480HR._GetPODdeviceParameterTable(self))
@@ -119,6 +120,8 @@ class Setup_8480HR(Setup_Interface) :
                     'repeat'     : Setup_8480HR._ChooseStimulusTypes('repeat'),
                     'config'     : Setup_8480HR._ChooseStimulusTypes('config'),
                 },
+            'preamp'             : Setup_8480HR._ChoosePreamp(),
+
             'ledcurrent'     : {
                     'EEG1'       : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
                     'EEG2'       : Setup_8480HR._ChooseLedCurrentforChannel('CH1'),
@@ -144,29 +147,36 @@ class Setup_8480HR(Setup_Interface) :
     def _ChooseTtlSetup(eeg: str) -> int :
         try:
             if(eeg) == 'channel':
-                user_channel = UserInput.AskForInt(("Enter a value to choose channel (0 or 1) "))
+                user_channel = UserInput.AskForInt(("Choose channel for TTL Setup(0 or 1) "))
                 return(user_channel)
             if(eeg) == 'ttl_config':
-                bit_0 = bool(int(input("Enter a value (0 for rising edge triggering, 1 for falling edge): ")))
-                bit_1 = bool(int(input("Enter a value for stimulus triggering: " )))
-                bit_7 = bool(int(input("Enter a value for TTL Input/Sync(0 or 1): ")))
+                # bit_0 = bool(int(input("Enter a value (0 for rising edge triggering, 1 for falling edge): ")))
+                bit_0 = UserInput.AskForBool("Enter a value (0 for rising edge triggering, 1 for falling edge): ")
+                bit_1 = bool(int(input("Enter a value for stimulus triggering (0 or 1): " )))
+                bit_7 = bool(int(input("Enter a value for TTL Input/Sync (0 or 1): ")))
                 ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
                 return(ttl_value)
             if(eeg) == 'debounce':
-                debounce = int(input("Enter a debounce value (ms) : "))
+                debounce = UserInput. AskForInt("Enter a debounce value (ms) : ")
                 return(debounce)
         except :
             print('[!] Please enter a valid number.')
             return (Setup_8480HR._ChooseTtlSetup(eeg))
 
-    
+        
+    @staticmethod
+    def _ChoosePreamp() -> int:
+        preamp_type = UserInput.AskForIntInRange('Set Preamp value (0-1023)',     0, 1023),
+        return(preamp_type)
+         
+        
 
 
     @staticmethod
     def _ChooseStimulusTypes(eeg: str) -> int :
         try : 
             if(eeg) == 'channel':
-                user_channel = UserInput.AskForInt(("Enter a value to choose channel (0 or 1) "))
+                user_channel = UserInput.AskForBool(("Enter a value to choose channel (0 or 1) "))
                 return(user_channel)        
             if (eeg) == 'period_ms':
                 user_period = UserInput.AskForFloat(("Enter a Stimulus period value (ms) "))
@@ -184,9 +194,9 @@ class Setup_8480HR(Setup_Interface) :
                 rep = UserInput.AskForInt("Enter a value for Stimulus Repeat Count ")
                 return(rep)
             if(eeg) == 'config':
-                bit_0 = bool(int(input("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus) : ")))
-                bit_1 = bool(int(input("Enter a value (0 for Monophasic, 1 for Biphasic) : ")))
-                bit_2 = bool(int(input("Enter a value (0 for standard, 1 for simultaneous) :  ")))
+                bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus) ", 0, 1)
+                bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
+                bit_2 = UserInput.AskForIntInRange("Enter a value (0 for standard, 1 for simultaneous) ", 0, 1)
                 value = POD_8480HR.StimulusConfigBits(bit_0, bit_1, bit_2)
                 return(value)
                 
@@ -224,21 +234,22 @@ class Setup_8480HR(Setup_Interface) :
 
     @staticmethod
     def _ChooseSyncConfig() -> int :
-        bit_0 = bool(int(input("Enter a value (0 for LOW sync line, 1 for HIGH sync line) : ")))
-        bit_1 = bool(int(input("Enter a value for Sync Idle(0 or 1) : ")))
-        bit_2 = bool(int(input("Enter a value for Signal/Trigger(0 or 1) : ")))
+        bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line) ", 0, 1)
+        bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle(0 or 1) ", 0, 1)
+        bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger(0 or 1) ", 0, 1)
         final_value = POD_8480HR._SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
     
     @staticmethod
     def _Choosettlpullups() -> int:
         try :
-            pull_choice = int(input('Enter value (0 for pullups disabled, non-zero for enabled) '+str()+' : '))
+            pull_choice = UserInput. AskForInt('Enter value (0 for pullups disabled, non-zero for enabled): ')
+            return (pull_choice)
         except : 
             # if bad input, start over 
             print('[!] Please enter an integer number.')
             return(Setup_8480HR._Choosettlpullups())
-        return (pull_choice)
+        
    
 
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
@@ -263,23 +274,33 @@ class Setup_8480HR(Setup_Interface) :
         return(True)
 
 
-    # def _GetPODdeviceParameterTable(self) -> Texttable : 
-    #     # setup table 
-    #     tab = Texttable(160)
-    #     # write column names
-    #     tab.header(['Device #',self._PORTKEY, 'Stimulus', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullup', 'TTL Setup'])
-    #     # write rows
-    #     for key,val in self._podParametersDict.items() :
-    #         tab.add_row([key, val[self._PORTKEY], '\n'.join([f"{k}: {v}" for k, v in val['stimulus'].items()]), 
-    #                     '\n'.join([f"{k}: {v}" for k,v in val['ledcurrent'].items()]), 
-    #                     '\n'.join([f"{k}: {v}" for k,v in val['estimcurrent'].items()]),
-    #                     (val['Sync_Config']), 
-    #                     (val['ttl_pullups']),
-    #                     '\n'.join([f"{k}: {v}" for k,v in val['ttl_setup'].items()])
-    #                 ])
-    #         print("key: ", key)
-    #         print("value", val)
-    #         print("dict",self._podParametersDict.items())
-    #     return(tab)
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        # setup table 
+        tab = Texttable(160)
+        # write column names
+        tab.header(['Device #',self._PORTKEY, 'Stimulus', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullup', 'TTL Setup'])
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            tab.add_row([key, val[self._PORTKEY], '\n'.join([f"{k}: {v}" for k, v in val['stimulus'].items()]), 
+                        '\n'.join([f"{k}: {v}" for k,v in val['ledcurrent'].items()]), 
+                        '\n'.join([f"{k}: {v}" for k,v in val['estimcurrent'].items()]),
+                        (val['Sync_Config']), 
+                        (val['ttl_pullups']),
+                       '\n'.join([f"{k}: {v}" for k,v in val['ttl_setup'].items()])
+                    ])
+            print("key: ", key)
+            print("value", val)
+            print("dict",self._podParametersDict.items())
+        return(tab)
         
 
+        # def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+
+        #     # open file and write column names 
+        #     f = open(fname, 'w')
+        #     # write time
+        #     f.write( self._GetTimeHeader_forTXT() ) 
+        #     # columns names
+        #     f.write('\nTime,CH0,CH1,CH2\n')
+        #     return(f)
+    

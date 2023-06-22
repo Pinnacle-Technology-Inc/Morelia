@@ -377,7 +377,7 @@ class Setup_8206HR(Setup_Interface) :
             )
         ) : 
             raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
-        # check that Stimulus values are correct
+        # check that low-pass values are correct
         if( list(paramDict['Low-pass'].keys()).sort() != copy.copy(self._LOWPASSKEYS).sort() ) : 
             raise Exception('[!] Invalid low-pass parameters for '+str(self._NAME)+'.')
         # check type of low-pass
