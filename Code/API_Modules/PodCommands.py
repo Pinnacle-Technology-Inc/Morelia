@@ -61,7 +61,10 @@ class POD_Commands :
     """
 
     __U32 : int = 4*__U8
-
+    """Class-level integer representing the number of hexadecimal characters for an \
+    unsigned 32-bit value.
+    """
+    
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 

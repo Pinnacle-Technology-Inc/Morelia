@@ -17,6 +17,7 @@ __copyright__   = "Copyright (c) 2023, Sree Kondi"
 __email__       = "sales@pinnaclet.com"
 
 class POD_8480HR(POD_Basics) : 
+    # NOTE: dont forget to add docstrings to everything 
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
@@ -25,6 +26,7 @@ class POD_8480HR(POD_Basics) :
     # __B5LENGTH : int = 31
     # # number of binary bytes for a Binary 5 packet 
     # __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+    # NOTE: is there a reason this is commented out? Delete it if you dont need it
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -38,9 +40,11 @@ class POD_8480HR(POD_Basics) :
         U32 = POD_Commands.U32()
 
         self._commands.RemoveCommand(10) # SAMPLE RATE
-        
+        # NOTE: remove 5, 6, 9, and 11 too 
+
         # add device specific commands
         self._commands.AddCommand(  10, 'STRATE',               (0,),                               (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
+        # NOTE: ^^ STRATE is unimplemented. It says this in the command set sheet description 
         self._commands.AddCommand( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
         self._commands.AddCommand( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  , 'Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. ')
         self._commands.AddCommand( 102,	'SET STIMULUS',	        (U8, U16, U16, U16, U16, U32, U8),	(0,),                                False  , 'Sets the stimulus configuration on the selected channel.  See format below.')  
@@ -56,6 +60,7 @@ class POD_8480HR(POD_Basics) :
         self._commands.AddCommand( 125,	'SET PREAMP TYPE',	    (U16,),	                            (0,),                                False  , 'Sets the preamp value, from 0-1023.  This should match the table in Sirenia, it is a 10-bit code that tells the 8401 what preamp is connected.  Only needed when used with an 8401. See table below.')
         self._commands.AddCommand( 126,	'GET SYNC CONFIG',	    (0,),	                            (U8,),                               False  ,  'Gets the sync config byte.  See format below.')
         self._commands.AddCommand( 127,	'SET SYNC CONFIG',	    (U8,),	                            (0,),                                False  , 'Sets the sync config byte.  See format below.')
+        # The commands below are event commands and as such are outbound only.The API should handle these commands but should not send them. 
         self._commands.AddCommand( 132,	'EVENT TTL',	        (0,),	                            (U8,),                               False  , 'Indicates a TTL event has occurred on the indicated U8 TTL input.  If debounce is non-zero then this will not occur until the debounce has completed successfully.')
         self._commands.AddCommand( 133,	'EVENT STIM START',	    (0,),	                            (U8,),                               False  , 'Indicates the start of a stimulus.  Returns U8 channel.')
         self._commands.AddCommand( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ,'Indicates the end of a stimulus. Returns U8 channel.')
