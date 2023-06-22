@@ -233,7 +233,7 @@ class POD_Commands :
             tuple[int]|None: Tuple representing the number of bytes in the argument for cmd. If the \
                 command could not be found, return None.
         """
-        return( self._Search(cmd, self.__ARGUMENTS) )
+        return( self.Search(cmd, self.__ARGUMENTS) )
 
 
     def ReturnHexChar(self, cmd: int|str) -> tuple[int]|None : 
@@ -246,7 +246,7 @@ class POD_Commands :
             tuple[int]|None: Tuple representing the number of hex characters in the return for cmd. If the \
                 command could not be found, return None.
         """
-        return( self._Search(cmd, self.__RETURNS) )
+        return( self.Search(cmd, self.__RETURNS) )
 
 
     def IsCommandBinary(self, cmd: int|str) -> bool|None :
@@ -259,7 +259,7 @@ class POD_Commands :
             bool|None: Boolean flag that is True if the command is binary and False if standard. If the \
                 command could not be found, return None.
         """
-        return( self._Search(cmd, self.__BINARY) )
+        return( self.Search(cmd, self.__BINARY) )
 
 
     def Description(self, cmd: int|str) -> str|None : 
@@ -272,7 +272,7 @@ class POD_Commands :
             str|None: String description for the command. If the command could not be found, \
                 return None.
         """
-        return( self._Search(cmd, self.__DESCRIPTION) )
+        return( self.Search(cmd, self.__DESCRIPTION) )
 
 
 
@@ -285,7 +285,7 @@ class POD_Commands :
         Returns:
             bool: True if the command exists, false otherwise.
         """
-        return( self._Search(cmd) )# idx does not matter
+        return( self.Search(cmd) )
 
 
     def Search(self, cmd: int|str, idx: int = None) -> str|tuple[int]|bool|str|None :
