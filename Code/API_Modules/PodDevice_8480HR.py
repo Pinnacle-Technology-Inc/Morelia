@@ -19,22 +19,12 @@ __email__       = "sales@pinnaclet.com"
 class POD_8480HR(POD_Basics) : 
     # NOTE: dont forget to add docstrings to everything 
 
-    # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
-
-
-    # # number of bytes for a Binary 5 packet 
-    # __B5LENGTH : int = 31
-    # # number of binary bytes for a Binary 5 packet 
-    # __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
-    # NOTE: is there a reason this is commented out? Delete it if you dont need it
-
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None :
 
-        super().__init__(port, baudrate=baudrate) #inheritance 
+        super().__init__(port, baudrate=baudrate) # inheritance 
         U8  = POD_Commands.U8()
         U16 = POD_Commands.U16()
         U32 = POD_Commands.U32()
@@ -72,21 +62,44 @@ class POD_8480HR(POD_Basics) :
     @staticmethod
     def StimulusConfigBits(optoElec:bool, monoBiphasic:bool, Simul:bool) -> int :
         return (0 | (Simul << 2) | (monoBiphasic << 1) | (optoElec))
-        
-    # TODO make a method to build a payload for SET STIMULUS given each of the bits as parameters. 
-    # @staticmethod
-    # def StimulusCommandFormat(channel,period,width,repeat,config: int) -> tuple(int) : 
+
     
     @staticmethod
-    def _SyncConfigBits(sync_level:bool, sync_idle:bool, signal_trigger:bool) -> int :
+    def SyncConfigBits(sync_level:bool, sync_idle:bool, signal_trigger:bool) -> int :
         return (0 | (signal_trigger << 2) | (sync_idle << 1) | (sync_level))
-
-    # TODO make a method to build the config flags - DONE
-    # @staticmethod
-    # def StimulusConfigBits(optoElec, monoBiphasic, Simul) -> int : 
 
 
     @staticmethod    
     def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool):
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
     
+
+    # TODO decode StimulusConfigBits
+    # def DecodeStimulusConfigBits(config: int) -> dict : 
+    #     decodedConfic = {
+    #         'Stimulus' :
+    #         'Xphasic' : 
+    #         'Simultaneous' : 
+    #     }
+
+    # TODO decode SyncConfigBits
+    # TODO decode TtlConfigBits
+
+    # TODO overwrite TranslatePODpacket to handle special commands (reverse the bitmasking)
+    # see TranslatePODpacket in PodDevice_8401HR for example
+    # example pseudocode:
+    """
+    if(command == GET STIMULUS) 
+        # unpack 
+        msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+        # start building translated dictionary 
+        transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
+        transdict[payload] = (
+
+            msgDict[payload] [all previous],
+
+            DecodeStimulusConfigBits (
+                msgDict[payload] [last U8 for Config Flags] 
+            ) 
+        ) # maintain (U8, U16x4, U32, U8) tuple structure 
+    """

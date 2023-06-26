@@ -21,7 +21,6 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Sree Kondi"
 __email__       = "sales@pinnaclet.com"
 
-# TODO replace user inputs with methods in GetUserInput 
 
 class Setup_8480HR(Setup_Interface) : 
 
@@ -39,16 +38,19 @@ class Setup_8480HR(Setup_Interface) :
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
+    
+    
     @staticmethod
     def GetDeviceName() -> str : 
         # returns the name of the POD device 
         return(Setup_8480HR._NAME)
 
+
     # ============ PRIVATE METHODS ============ 
     
     
-    
     # ------------ DEVICE CONNECTION ------------
+
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
         failed = True 
@@ -98,9 +100,9 @@ class Setup_8480HR(Setup_Interface) :
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
             self._PORTKEY   : Setup_8480HR._ChoosePort(forbiddenNames),
-            'Stimulus'      : { 'Channel'    : Setup_8480HR._ChooseChannel('stimulus'),    # NOTE: usually for the deiceParams dict, I use title case with spaces for the dictionary keys.
-                                'Period(ms)'  : Setup_8480HR._ChoosePeriod(),  #       What you have is completely functional! But it is good practice to keep the style consistent.  
-                                'Width(ms)'   : Setup_8480HR._ChooseWidth(),
+            'Stimulus'      : { 'Channel'    : Setup_8480HR._ChooseChannel('stimulus'),
+                                'Period(ms)' : Setup_8480HR._ChoosePeriod(),
+                                'Width(ms)'  : Setup_8480HR._ChooseWidth(),
                                 'Repeat'     : Setup_8480HR._ChooseRepeat(),
                                 'Config'     : Setup_8480HR._ChooseStimulusConfig(),
                             },
@@ -114,18 +116,17 @@ class Setup_8480HR(Setup_Interface) :
             'Sync Config'   : Setup_8480HR._ChooseSyncConfig(),
             'Ttl Pullups'   : Setup_8480HR._Choosettlpullups(),
             'Ttl Setup'     : { 'Channel'    : Setup_8480HR._ChooseChannel('TTL Setup'),
-                                'Ttl Config' : Setup_8480HR._TtlSetup(),
+                                'Ttl Config' : Setup_8480HR._TtlSetup(), # NOTE TTL all caps 
                                 'Debounce'   : Setup_8480HR._debounce(),
                             }  
-        }) # NOTE: try to keep the colons and spacing all in line. I've gone ahead and made the style changes.
-
-
+        })
         
 
     @staticmethod
     def _ChooseChannel(eeg: str) -> int:
         return(UserInput.AskForIntInRange('Choose channel (0 or 1) for ' + eeg, 0, 1))
     
+
     @staticmethod
     def _TtlSetup() -> int:
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
@@ -134,9 +135,10 @@ class Setup_8480HR(Setup_Interface) :
         ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
         return(ttl_value)
     
+
     @staticmethod
     def _debounce():
-        return(UserInput.AskForInt('Enter a debounce value(ms)'))
+        return(UserInput.AskForInt('Enter a debounce value (ms)'))
     
         
     @staticmethod
@@ -153,11 +155,11 @@ class Setup_8480HR(Setup_Interface) :
         return(value)
 
 
-
     @staticmethod
     def _ChooseRepeat() -> int:
         return(UserInput.AskForInt("Enter a value for the stimulus repeat count"))
     
+
     @staticmethod
     def _ChoosePeriod():
         user_period = UserInput.AskForFloat(("Enter a simulus period value (ms)")) # NOTE : Small style thing, dont put a space at the end of the promt. I've gone ahead and changed this her.
@@ -166,6 +168,7 @@ class Setup_8480HR(Setup_Interface) :
         period_us = int(period[1])
         return(period_ms, period_us) 
     
+
     @staticmethod
     def _ChooseWidth():
         user_width = UserInput.AskForFloat("Enter a stimulus width value (ms)")
@@ -182,7 +185,6 @@ class Setup_8480HR(Setup_Interface) :
             return(UserInput.AskForIntInRange('Set LED Current (0-600 mA) for '+str(eeg)+' ', 0, 600))# NOTE: I made a small style change here to text. Also, Led should be LED.
  
     
-    
     @staticmethod
     def _ChooseEstimCurrentforChannel(eeg: str) -> int :
         # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
@@ -195,7 +197,7 @@ class Setup_8480HR(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1) # NOTE: small style thing, dont put space at end of prompt. I went ahead and changed this 
         bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 to idle the opposite of active state, 1 to sync to idle tristate)", 0, 1) # NOTE: what do 0 or 1 mean here? 
         bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) # NOTE: what do 0 or 1 mean here? 
-        final_value = POD_8480HR._SyncConfigBits(bit_0, bit_1, bit_2)
+        final_value = POD_8480HR.SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
     
 
@@ -205,7 +207,6 @@ class Setup_8480HR(Setup_Interface) :
         pull_choice = UserInput.AskForInt('Are TTL pullups enabled? (0 for pullups disabled, non-zero for enabled)') # NOTE: this prompt is vague. Use UserInput.AskYN() instead here and ask the user something like "are TTL pullups enabled?".
         return (pull_choice)
        
-        
    
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
