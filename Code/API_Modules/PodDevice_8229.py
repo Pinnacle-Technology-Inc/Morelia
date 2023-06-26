@@ -89,7 +89,7 @@ class POD_8229(POD_Basics) :
     def DecodeDaySchedule(schedule: bytes) -> dict[str, int|tuple[int]] :
         # use this for getting the command #141 'SET DAY SCHEDULE' argument 
         # check for valid arguments 
-        validSchedule = POD_8229._Validate_Schedule(schedule)
+        validSchedule = POD_8229._Validate_Schedule(schedule, 24)
         # decode each hour
         hours  = [None] * 24
         speeds = [None] * 24
@@ -102,7 +102,31 @@ class POD_8229(POD_Basics) :
             # speeds has all identical elements
             speeds = speeds[0]
         # return hour and speeds 
-        return({ 'Hour': hours, 'Speed' : speeds})
+        return({ 
+            'Hour'  : hours, 
+            'Speed' : speeds
+        })
+    
+
+    @staticmethod
+    def DecodeLCDSchedule(schedule: bytes) : 
+        # use this for translating the command #202	'LCD SET DAY SCHEDULE' return 
+        # check for valid arguments 
+        validSchedule = POD_8229._Validate_Schedule(schedule, 4)
+        # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
+        day = POD_8229.DecodeDayOfWeek( POD_Packets.AsciiBytesToInt( validSchedule[0:2] ) )
+        hourBytes = validSchedule[2:]
+        # Get each hour bit 
+        hours = []
+        topBit = POD_Commands.U8() * 3 * 4 # (number of hex characters per U8) * (number of U8 bytes) * (bits per hex character)
+        while(topBit > 0 ) : 
+            hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
+            topBit -= 1
+        # return decoded LCD SET DAY SCHEDULE value
+        return({
+            'Day' : day,
+            'Hours' : hours # Each bit represents the motor state in that hour, 1 for on and 0 for off.
+        })
 
 
     @staticmethod
@@ -133,6 +157,7 @@ class POD_8229(POD_Basics) :
             case 6 : return('Saturday')
             case _ : Exception('[!] Day of the week code must be 0-6.')  
             
+
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
@@ -181,9 +206,9 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def _Validate_Schedule(schedule: bytes) :
+    def _Validate_Schedule(schedule: bytes, size: int) :
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
-        if( len(schedule) != 24 * POD_Commands.U8() ) : 
+        if( len(schedule) != size * POD_Commands.U8() ) : 
             raise Exception('[!] The schedule must have U8x24.')
         return(schedule)
