@@ -263,12 +263,16 @@ class POD_8401HR(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
+        specialCommands = [127, 128, 129, 130] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS # 130 GET SS CONFIG
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            if('Payload' in msgDict) : 
-                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
+            # 130 GET SS CONFIG
+            if( cmd == 130 ) :
+                transdict['Payload'] = self.DecodeSSConfigBitmask(msgDict['Payload'])
+            # TTL 
+            else : 
+                transdict['Payload'] = ( self.DecodeTTLByte(msgDict['Payload'][:2]), self.DecodeTTLByte(msgDict['Payload'][2:]))
             return(transdict)
         # message is binary 
         elif(self._commands.IsCommandBinary(cmd)): 
@@ -278,7 +282,7 @@ class POD_8401HR(POD_Basics) :
             return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
 
 
-    # ------------ HELPER ------------           ------------------------------------------------------------------------------------------------------------------------
+    # ------------ MAPPING ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
     @staticmethod
@@ -320,9 +324,10 @@ class POD_8401HR(POD_Basics) :
         """
         return(name in POD_8401HR.__CHANNELMAPALL)    
 
+    # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+    def GetTTLbitmask(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
         """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
 
         Args:
@@ -342,7 +347,27 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+    def DecodeTTLByte(ttlByte: bytes) -> dict[str,int] : 
+        """Converts the TTL bytes argument into a dictionary of integer TTL values.
+
+        Args:
+            ttlByte (bytes): U8 byte containing the TTL bitmask. 
+
+        Returns:
+            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
+        """
+        return({
+            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+        })
+    
+
+    @staticmethod
+    def GetSSConfigBitmask(gain: int, highpass: float) -> int :
         """Gets a bitmask, represented by an unsigned integer, used for 'SET SS CONFIG' command. 
 
         Args:
@@ -362,6 +387,32 @@ class POD_8401HR(POD_Basics) :
         return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
 
     
+    @staticmethod
+    def DecodeSSConfigBitmask(config: bytes) : 
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain. 
+
+        Args:
+            config (bytes): U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, \
+                1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
+        """
+        # high-pass
+        if(POD_Packets.AsciiBytesToInt(config[0:1]) == 0) : 
+            highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
+        else: 
+            highpass = 0.0 # Bit 0 = 1 for DC Highpass
+        # gain 
+        if(POD_Packets.AsciiBytesToInt(config[1,2]) == 0) :
+            gain = 5 # Bit 1 = 0 for 5x gain
+        else : 
+            gain = 1 # Bit 1 = 1 for 1x gain
+        # pack values into dict 
+        return({
+            'High-pass' : highpass, 
+            'Gain'      : gain
+        })
+    
+    # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
     @staticmethod
     def CalculateBiasDAC_GetVout(value: int) -> float :
         """Calculates the output voltage given the DAC value. Used for 'GET/SET BIAS' commands. 
@@ -397,26 +448,6 @@ class POD_8401HR(POD_Basics) :
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
-
-    @staticmethod
-    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
-        """Converts the TTL bytes argument into a dictionary of integer TTL values.
-
-        Args:
-            ttlByte (bytes): One byte containing the TTL bitmask. 
-
-        Returns:
-            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
-        """
-        return({
-            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
-        })
-    
 
     @staticmethod
     def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :

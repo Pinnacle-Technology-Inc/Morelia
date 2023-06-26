@@ -105,7 +105,7 @@ class Setup_8401HR(Setup_Interface) :
                     if(deviceParams['Bias'     ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (i, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams['Bias'][letter])))
                     if(deviceParams['DC Mode'  ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (i, self._CodeDCmode(deviceParams['DC Mode'][letter])))
                     if(deviceParams['Second Stage Gain'][letter] != None and 
-                       deviceParams['High-pass'][letter]!= None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask_int(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
+                       deviceParams['High-pass'][letter]!= None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
                 # successful write if no exceptions raised 
                 failed = False
         except : # except Exception as e : print('[!]', e)            
