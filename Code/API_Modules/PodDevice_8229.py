@@ -86,7 +86,7 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def DecodeDaySchedule(schedule: bytes) -> dict[str, int|tuple[int]] :
+    def DecodeDaySchedule(schedule: bytes) -> dict[str,int|list[int]] :
         # use this for getting the command #141 'SET DAY SCHEDULE' argument 
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 24)
@@ -109,7 +109,7 @@ class POD_8229(POD_Basics) :
     
 
     @staticmethod
-    def DecodeLCDSchedule(schedule: bytes) : 
+    def DecodeLCDSchedule(schedule: bytes) -> dict[str,int|list[int]] : 
         # use this for translating the command #202	'LCD SET DAY SCHEDULE' return 
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 4)
@@ -145,7 +145,7 @@ class POD_8229(POD_Basics) :
     
 
     @staticmethod
-    def DecodeDayOfWeek(day : int) -> str :
+    def DecodeDayOfWeek(day: int) -> str :
         # Weekday is 0-6, with Sunday being 0
         match int(day):
             case 0 : return('Sunday')
@@ -180,7 +180,7 @@ class POD_8229(POD_Basics) :
     
     
     @staticmethod
-    def _Validate_Day(day: str|int) : 
+    def _Validate_Day(day: str|int) -> int : 
         if(isinstance(day,str)) : 
             dayCode = POD_8229.CodeDayOfWeek(day)
         elif(isinstance(day,int)) : 
@@ -193,7 +193,7 @@ class POD_8229(POD_Basics) :
         
 
     @staticmethod
-    def _Validate_Hours(hours: list|tuple[bool|int]) :
+    def _Validate_Hours(hours: list|tuple[bool|int]) -> list[bool|int] :
         if( not isinstance(hours, list) and not isinstance(hours, tuple) ) : 
             raise Exception('[!] The hours argument must be a list or tuple.')
         if(len(hours) != 24 ) : 
@@ -205,7 +205,7 @@ class POD_8229(POD_Basics) :
             
 
     @staticmethod
-    def _Validate_Speed(speed: int|list[bool|int]|tuple[bool|int]) :
+    def _Validate_Speed(speed: int|list|tuple[int]) -> list[int] :
         if( not isinstance(speed, list) and not isinstance(speed, tuple) and not isinstance(speed, int)) : 
             raise Exception('[!] The speed argument must be an int, list, or tuple.')
         if(isinstance(speed,int)) : 
@@ -223,7 +223,7 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def _Validate_Schedule(schedule: bytes, size: int) :
+    def _Validate_Schedule(schedule: bytes, size: int) -> bytes:
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
         if( len(schedule) != size * POD_Commands.U8() ) : 
