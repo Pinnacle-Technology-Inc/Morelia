@@ -12,6 +12,10 @@ __email__       = "sales@pinnaclet.com"
 
 class POD_8229(POD_Basics) : 
 
+
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
+
     def __init__(self, port: str|int, baudrate:int=19200) -> None :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
@@ -33,7 +37,7 @@ class POD_8229(POD_Basics) :
         self._commands.AddCommand(136, 'SET MOTOR SPEED',       (U16,),                 (U16,),                 False, 'Sets motor speed as a percentage, 0-100.  Replies with value set.')
         self._commands.AddCommand(137, 'GET MOTOR SPEED',       (0,),                   (U16,),                 False, 'Gets the motor speed as a percentage, 0-100.')
         self._commands.AddCommand(140, 'SET TIME',              (U8,U8,U8,U8,U8,U8,U8), (U8,U8,U8,U8,U8,U8,U8), False, 'Sets the RTC time.  Format is (Seconds, Minutes, Hours, Day, Month, Year (without century, so 23 for 2023), Weekday).  Weekday is 0-6, with Sunday being 0.  Binary Coded Decimal. Returns current time.  Note that the the seconds (and sometimes minutes field) can rollover during execution of this command and may not match what you sent.')
-        self._commands.AddCommand(141, 'SET DAY SCHEDULE',      (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), 
+        self._commands.AddCommand(141, 'SET DAY SCHEDULE',      (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), # ( U8, U8 x 24 )
                                                                                         (0,),                   False, 'Sets the schedule for the day.  U8 day, followed by 24 hourly schedule values.  MSb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100).')
         self._commands.AddCommand(142, 'GET DAY SCHEDULE',      (U8,),                  (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), 
                                                                                                                 False, 'Gets the schedule for the selected week day (0-6 with 0 being Sunday).')
@@ -50,3 +54,88 @@ class POD_8229(POD_Basics) :
         self._commands.AddCommand(201, 'LCD SET MOTOR SPEED',   (NOVALUE,),             (U16,),                 False, 'Indicates the motor speed has been changed by the LCD.  0-100 as a percentage.')
         self._commands.AddCommand(202, 'LCD SET DAY SCHEDULE',  (NOVALUE,),             (U8,U8,U8,U8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
         self._commands.AddCommand(204, 'LCD SET MODE',          (NOVALUE,),             (U16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
+
+
+    # ============ PUBLIC METHODS ============      ========================================================================================================================
+
+
+    @staticmethod
+    def BuildArgForSetDaySchedule(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
+        # get good values 
+        validDay, validHours, validSpeed = POD_8229._Validate_BuildArgForSetDaySchedule(day, hours, speed) 
+        # modify bits of each hour 
+        schedule = [0] * 24
+        for i in range(24) : 
+            # msb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100)
+            schedule[i] = ( validHours[i] << 7 ) | validSpeed[i]
+        # return tuple that works as an argument for command #141 'SET DAY SCHEDULE'
+        return( tuple( list(validDay) + list(schedule) ) )
+
+
+    @staticmethod
+    def CodeDayOfWeek(day : str) -> int :
+        # Weekday is 0-6, with Sunday being 0
+        match str(day).lower()[:2] : 
+            case 'su' : return(0) # sunday
+            case 'tu' : return(2) # tuesday
+            case 'th' : return(4) # thursday
+            case 'sa' : return(6) # saturday
+        match str(day).lower()[:1] : 
+            case 'm'  : return(1) # monday
+            case 'w'  : return(3) # wednesday 
+            case 'f'  : return(5) # friday 
+        raise Exception('[!] Invalid day of the week: '+str(day))  
+    
+
+    @staticmethod
+    def DecodeDayOfWeek(day : int) -> str :
+        # Weekday is 0-6, with Sunday being 0
+        match int(day):
+            case 0 : return('Sunday')
+            case 1 : return('Monday')
+            case 2 : return('Tuesday')
+            case 3 : return('Wednesday')
+            case 4 : return('Thursday')
+            case 5 : return('Friday')
+            case 6 : return('Saturday')
+            case _ : Exception('[!] Day of the week code must be 0-6.')  
+            
+
+    # ============ PROTECTED METHODS ============      ========================================================================================================================    
+    
+
+    @staticmethod
+    def _Validate_BuildArgForSetDaySchedule(day: str|int, hours: list|tuple[bool|int], speed: int|list[bool|int]|tuple[bool|int]) -> tuple[int,list[bool|int],list[int]] : 
+        # check day
+        if(isinstance(day,str)) : 
+            dayCode = POD_8229.CodeDayOfWeek(day)
+        elif(isinstance(day,int)) : 
+            if(day < 0 or day > 6) : 
+                raise Exception('[!] The day integer argument must be 0-6.')
+            dayCode = day
+        else: 
+            raise Exception('[!] The day argument must be a str or int.')
+        # check hours
+        if( not isinstance(hours, list) and not isinstance(hours, tuple) ) : 
+            raise Exception('[!] The hours argument must be a list or tuple.')
+        if(len(hours) != 24 ) : 
+            raise Exception('[!] The hours argument must have exactly 24 items.')
+        for h in hours  :
+            if(int(h) != 0 and int(h) != 1 ) : 
+                raise Exception('[!] The hours items must be 0 or 1.')
+        # check speed
+        if( not isinstance(speed, list) and not isinstance(speed, tuple) and not isinstance(speed, int)) : 
+            raise Exception('[!] The speed argument must be an int, list, or tuple.')
+        if(isinstance(speed,int)) : 
+            if( speed < 0 or speed > 100 ) : 
+                raise Exception('[!] The speed must be between 0 and 100.')
+            speedArr = [speed] * 24 
+        else : 
+            if(len(speed) != 24 ) : 
+                raise Exception('[!] The speed argument must have exactly 24 items as a list/tuple.')
+            for s in speed : 
+                if( s < 0 or s > 100 ) : 
+                    raise Exception('[!] The speed must be between 0 and 100 for every list/tuple item.')
+            speedArr = speed
+        # return valid values 
+        return int(dayCode), list(hours), list(speedArr)
