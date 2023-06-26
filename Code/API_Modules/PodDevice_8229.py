@@ -11,4 +11,12 @@ __email__       = "sales@pinnaclet.com"
 
 class POD_8229(POD_Basics) : 
 
-    pass
+    def __init__(self, port: str|int, baudrate:int=19200) -> None :
+        # initialize POD_Basics
+        super().__init__(port, baudrate=baudrate) 
+        # remove unimplemented commands 
+        self._commands.RemoveCommand( 4) # ERROR
+        self._commands.RemoveCommand( 5) # STATUS
+        self._commands.RemoveCommand( 6) # STREAM
+        self._commands.RemoveCommand(10) # SRATE
+        self._commands.RemoveCommand(11) # BINARY
