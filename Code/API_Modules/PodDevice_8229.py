@@ -158,6 +158,23 @@ class POD_8229(POD_Basics) :
             case _ : Exception('[!] Day of the week code must be 0-6.')  
             
 
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        # get command number (same for standard and binary packets)
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
+        # these commands have some specific formatting 
+        specialCommands = [142, 202] # 142 GET DAY SCHEDULE # 202 LCD SET DAY SCHEDULE
+        if(cmd in specialCommands):
+            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
+            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
+            if(cmd == 142): # 142 GET DAY SCHEDULE
+                transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload'])
+            else : # 202 LCD SET DAY SCHEDULE
+                transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload'])
+        # standard packet 
+        else: 
+            return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
+
+
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
