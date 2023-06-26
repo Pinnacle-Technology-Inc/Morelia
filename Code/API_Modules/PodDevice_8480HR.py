@@ -40,10 +40,13 @@ class POD_8480HR(POD_Basics) :
         U32 = POD_Commands.U32()
 
         self._commands.RemoveCommand(10) # SAMPLE RATE
-        # NOTE: remove 5, 6, 9, and 11 too 
-
+        self._commands.RemoveCommand(5)
+        self._commands.RemoveCommand(6)
+        self._commands.RemoveCommand(9)
+        self._commands.RemoveCommand(11)
+    
         # add device specific commands
-        self._commands.AddCommand(  10, 'STRATE',               (0,),                               (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
+        #self._commands.AddCommand(  10, 'STRATE',               (0,),                               (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
         # NOTE: ^^ STRATE is unimplemented. It says this in the command set sheet description 
         self._commands.AddCommand( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
         self._commands.AddCommand( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  , 'Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. ')

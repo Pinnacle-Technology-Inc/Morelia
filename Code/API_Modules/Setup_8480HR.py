@@ -3,18 +3,8 @@ Setup_8480HR provides the setup functions for an 8480HR POD device.
 """
 
 # enviornment imports
-import texttable    # NOTE: only import things that you use. Remove this. This one is imported twice.
-import os           # NOTE: only import things that you use. Remove this.
-import copy 
-import time         # NOTE: only import things that you use. Remove this.
 
-import numpy       as     np        # NOTE: only import things that you use. Remove this.
-from   threading   import Thread    # NOTE: only import things that you use. Remove this.
-from   pyedflib    import EdfWriter # NOTE: only import things that you use. Remove this.
-from   io          import IOBase    # NOTE: only import things that you use. Remove this.
-from   datetime    import datetime  # NOTE: only import things that you use. Remove this.
-from   datetime    import date      # NOTE: only import things that you use. Remove this.
-from   time        import gmtime, strftime  # NOTE: only import things that you use. Remove this.
+import copy 
 from   texttable   import Texttable
 
 
@@ -39,10 +29,7 @@ class Setup_8480HR(Setup_Interface) :
     
     
     # deviceParams keys for reference 
-    # _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Stimulus','LED Current','Estim Current', 'Preamp Type', 'Sync Config ']
-    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Stimulus'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
-    # _LEDCURRENTKEYS : list[str] = ['EEG1','EEG2'] # Maybe not necessary
-    # _ESTIMCURRENTTKEYS : list[str] = ['EEG1','EEG2'] #Not necessary
+    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'stimulus', 'preamp', 'ledcurrent', 'estimcurrent', 'Sync_Config', 'ttl_pullups', 'ttl_setup'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
 
     # for EDF file writing 
     _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
@@ -76,26 +63,24 @@ class Setup_8480HR(Setup_Interface) :
         print("testingafter")
         if(self._TestDeviceConnection(self._podDevices[deviceNum])): 
             #write setup parameters
-            self._podDevices[deviceNum].WriteRead('SET STIMULUS', (deviceParams['stimulus']['channel'], 
-                                                                   *deviceParams['stimulus']['period_ms'], 
-                                                                   *deviceParams['stimulus']['width_ms'], 
-                                                                   deviceParams['stimulus']['repeat'], 
-                                                                   deviceParams['stimulus']['config']))
-            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', (deviceParams['preamp']))
-
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0,deviceParams['ledcurrent']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1,deviceParams['ledcurrent']['EEG2']))
+            self._podDevices[deviceNum].WriteRead('SET STIMULUS', (deviceParams['Stimulus']['Channel'], 
+                                                                   *deviceParams['Stimulus']['Period(ms)'], 
+                                                                   *deviceParams['Stimulus']['Width(ms)'], 
+                                                                   deviceParams['Stimulus']['Repeat'], 
+                                                                   deviceParams['Stimulus']['Config']))
+            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', (deviceParams['Preamp']))
+            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0,deviceParams['Ledcurrent']['EEG1']))
+            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1,deviceParams['Ledcurrent']['EEG2']))
             #print("table testing", Setup_8480HR._GetPODdeviceParameterTable(self))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['estimcurrent']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['estimcurrent']['EEG2']))
-            self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams['Sync_Config']))
-            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams['ttl_pullups']))
-            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams['ttl_setup']['channel'], 
-                                                                    deviceParams['ttl_setup']['ttl_config'],
-                                                                    deviceParams['ttl_setup']['debounce']))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estimcurrent']['EEG1']))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estimcurrent']['EEG2']))
+            self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams['Sync Config']))
+            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams['Ttl Pullups']))
+            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams['Ttl Setup']['Channel'], 
+                                                                    deviceParams['Ttl Setup']['Ttl Config'],
+                                                                    deviceParams['Ttl Setup']['Debounce']))
             
             failed = False
-        
 
         # check if connection failed 
         if(failed) :
@@ -113,161 +98,131 @@ class Setup_8480HR(Setup_Interface) :
     def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
         return({
             self._PORTKEY   : Setup_8480HR._ChoosePort(forbiddenNames),
-            'stimulus'      : { 'channel'    : Setup_8480HR._ChooseStimulusTypes('channel'),    # NOTE: usually for the deiceParams dict, I use title case with spaces for the dictionary keys.
-                                'period_ms'  : Setup_8480HR._ChooseStimulusTypes('period_ms'),  #       What you have is completely functional! But it is good practice to keep the style consistent.  
-                                'width_ms'   : Setup_8480HR._ChooseStimulusTypes('width_ms'),
-                                'repeat'     : Setup_8480HR._ChooseStimulusTypes('repeat'),
-                                'config'     : Setup_8480HR._ChooseStimulusTypes('config'),
+            'Stimulus'      : { 'Channel'    : Setup_8480HR._ChooseChannel('stimulus'),    # NOTE: usually for the deiceParams dict, I use title case with spaces for the dictionary keys.
+                                'Period(ms)'  : Setup_8480HR._ChoosePeriod(),  #       What you have is completely functional! But it is good practice to keep the style consistent.  
+                                'Width(ms)'   : Setup_8480HR._ChooseWidth(),
+                                'Repeat'     : Setup_8480HR._ChooseRepeat(),
+                                'Config'     : Setup_8480HR._ChooseStimulusConfig(),
                             },
-            'preamp'        : Setup_8480HR._ChoosePreamp(),
-            'ledcurrent'    : { 'EEG1'       : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
+            'Preamp'        : Setup_8480HR._ChoosePreamp(),
+            'Ledcurrent'    : { 'EEG1'       : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
                                 'EEG2'       : Setup_8480HR._ChooseLedCurrentforChannel('CH1'),
                             },
-            'estimcurrent'  : { 'EEG1'   : Setup_8480HR._ChooseEstimCurrentforChannel("CH0"),
-                                'EEG2'   : Setup_8480HR._ChooseEstimCurrentforChannel("CH1"),
+            'Estimcurrent'  : { 'EEG1'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH0"),
+                                'EEG2'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH1"),
                             },
-            'Sync_Config'   : Setup_8480HR._ChooseSyncConfig(),
-            'ttl_pullups'   : Setup_8480HR._Choosettlpullups(),
-            'ttl_setup'     : { 'channel'    : Setup_8480HR._ChooseTtlSetup('channel'),
-                                'ttl_config' : Setup_8480HR._ChooseTtlSetup('ttl_config'),
-                                'debounce'   : Setup_8480HR._ChooseTtlSetup('debounce'),
+            'Sync Config'   : Setup_8480HR._ChooseSyncConfig(),
+            'Ttl Pullups'   : Setup_8480HR._Choosettlpullups(),
+            'Ttl Setup'     : { 'Channel'    : Setup_8480HR._ChooseChannel('TTL Setup'),
+                                'Ttl Config' : Setup_8480HR._TtlSetup(),
+                                'Debounce'   : Setup_8480HR._debounce(),
                             }  
         }) # NOTE: try to keep the colons and spacing all in line. I've gone ahead and made the style changes.
 
 
         
-    @staticmethod
-    def _ChooseTtlSetup(eeg: str) -> int : # NOTE: It may be better to split this one function into three smaller functions (one for each if statement).
-        try:
-            if(eeg) == 'channel':
-                user_channel = UserInput.AskForInt(("Choose channel for TTL Setup (0 or 1)")) # NOTE : no space acter prompt, changed this 
-                return(user_channel)
-            if(eeg) == 'ttl_config':
-                bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
-                bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 or 1)", 0, 1 ) # NOTE : what do 0 or 1 mean here? 
-                bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 or 1)", 0, 1) # NOTE : what do 0 or 1 mean here? 
-                ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
-                return(ttl_value)
-            if(eeg) == 'debounce':
-                debounce = UserInput. AskForInt("Enter a debounce value (ms)")
-                return(debounce)
-        except :
-            print('[!] Please enter a valid number.')
-            return (Setup_8480HR._ChooseTtlSetup(eeg))
 
+    @staticmethod
+    def _ChooseChannel(eeg: str) -> int:
+        return(UserInput.AskForIntInRange('Choose channel (0 or 1) for ' + eeg, 0, 1))
+    
+    @staticmethod
+    def _TtlSetup() -> int:
+        bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
+        bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 for TTL event, 1 for TTL inputs as triggers)", 0, 1 ) # NOTE : what do 0 or 1 mean here? 
+        bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1) # NOTE : what do 0 or 1 mean here? 
+        ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
+        return(ttl_value)
+    
+    @staticmethod
+    def _debounce():
+        return(UserInput.AskForInt('Enter a debounce value(ms)'))
+    
         
     @staticmethod
     def _ChoosePreamp() -> int:
-        preamp_type = UserInput.AskForIntInRange('Set Preamp value (0-1023)', 0, 1023), # NOTE: what is the unit here for (0-1023)? (ex. format as (0-1023 mA))
-        return(preamp_type) # NOTE: you can combine this with the above line of code. no need to declare a varaible. 
-         
-
-    # NOTE: It may be better to split this one function into three smaller functions (one for each if statement).
-    #   this _ChooseStimulusTypes function can either return one or two values, depending on the eeg input. 
-    #   This is unuaual behavior for a function. So, it would be better to have multiple functions that do the different things. 
+        return(UserInput.AskForIntInRange('Set Preamp value (0-1023)', 0, 1023)) # NOTE: what is the unit here for (0-1023)? (ex. format as (0-1023 mA))
+                     
+        
     @staticmethod
-    def _ChooseStimulusTypes(eeg: str) -> int : 
-        try : 
-            if(eeg) == 'channel':
-                user_channel = UserInput.AskForBool(("Enter a value to choose channel (0 or 1) ")) # NOTE: I was able to enter '5' and did not get an error. This needs to be fixed.
-                return(user_channel)        
-            if (eeg) == 'period_ms':
-                user_period = UserInput.AskForFloat(("Enter a simulus period value (ms)")) # NOTE : Small style thing, dont put a space at the end of the promt. I've gone ahead and changed this her.
-                period = str(user_period).split(".")
-                period_ms = int(period[0])
-                period_us = int(period[1])
-                return(period_ms, period_us) 
-            if(eeg) == 'width_ms':
-                user_width = UserInput.AskForFloat("Enter a stimulus width value (ms)")
-                width = str(user_width).split(".")
-                width_ms = int(width[0])
-                width_us = int(width[1])
-                return(width_ms, width_us)
-            if(eeg) == 'repeat':
-                rep = UserInput.AskForInt("Enter a value for the stimulus repeat count")
-                return(rep)
-            if(eeg) == 'config':
-                bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
-                bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
-                bit_2 = UserInput.AskForIntInRange("Enter a value (0 for standard, 1 for simultaneous) ", 0, 1)
-                value = POD_8480HR.StimulusConfigBits(bit_0, bit_1, bit_2)
-                return(value)
-                
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter a valid number.')
-            return(Setup_8480HR._ChooseStimulusTypes(eeg))
-        #return(stimulus)
+    def _ChooseStimulusConfig():
+        bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
+        bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
+        bit_2 = UserInput.AskForIntInRange("Enter a value (0 for standard, 1 for simultaneous)", 0, 1)
+        value = POD_8480HR.StimulusConfigBits(bit_0, bit_1, bit_2)
+        return(value)
+
+
+
+    @staticmethod
+    def _ChooseRepeat() -> int:
+        return(UserInput.AskForInt("Enter a value for the stimulus repeat count"))
+    
+    @staticmethod
+    def _ChoosePeriod():
+        user_period = UserInput.AskForFloat(("Enter a simulus period value (ms)")) # NOTE : Small style thing, dont put a space at the end of the promt. I've gone ahead and changed this her.
+        period = str(user_period).split(".")
+        period_ms = int(period[0])
+        period_us = int(period[1])
+        return(period_ms, period_us) 
+    
+    @staticmethod
+    def _ChooseWidth():
+        user_width = UserInput.AskForFloat("Enter a stimulus width value (ms)")
+        width = str(user_width).split(".")
+        width_ms = int(width[0])
+        width_us = int(width[1])
+        return(width_ms, width_us)
 
     
     @staticmethod
     def _ChooseLedCurrentforChannel(eeg: str) -> dict[str,int] :
-        # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
-        try : 
+        # NOTE: UserInput should handle exeptions. I dont think you need the try/except here. 
             # get ledcurrent from user 
-            ledcurrent = UserInput.AskForIntInRange('Set LED Current (0-600 mA) for '+str(eeg)+' ', 0, 600) # NOTE: I made a small style change here to text. Also, Led should be LED.
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_8480HR._ChooseLedCurrentforChannel(eeg))
-        return(ledcurrent)
-    
+            return(UserInput.AskForIntInRange('Set LED Current (0-600 mA) for '+str(eeg)+' ', 0, 600))# NOTE: I made a small style change here to text. Also, Led should be LED.
+ 
     
     
     @staticmethod
     def _ChooseEstimCurrentforChannel(eeg: str) -> int :
         # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
-        try : 
-            # get ledcurrent from user 
-            estimcurrent = UserInput.AskForIntInRange('Set Estim Current as a percentage (0-100) for '+str(eeg)+'', 0, 100) # NOTE: I made a small style change here to text
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter value between 0-100.')
-            return(Setup_8480HR._ChooseEstimCurrentforChannel(eeg))
+        estimcurrent = UserInput.AskForIntInRange('Set Estim Current as a percentage (0-100) for '+str(eeg)+'', 0, 100) # NOTE: I made a small style change here to text
         return(estimcurrent)
     
 
     @staticmethod
     def _ChooseSyncConfig() -> int :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1) # NOTE: small style thing, dont put space at end of prompt. I went ahead and changed this 
-        bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 or 1)", 0, 1) # NOTE: what do 0 or 1 mean here? 
-        bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 or 1)", 0, 1) # NOTE: what do 0 or 1 mean here? 
+        bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 to idle the opposite of active state, 1 to sync to idle tristate)", 0, 1) # NOTE: what do 0 or 1 mean here? 
+        bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) # NOTE: what do 0 or 1 mean here? 
         final_value = POD_8480HR._SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
     
+
     @staticmethod
     def _Choosettlpullups() -> int:
         # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
-        try :
-            pull_choice = UserInput.AskForInt('Enter value (0 for pullups disabled, non-zero for enabled)') # NOTE: this prompt is vague. Use UserInput.AskYN() instead here and ask the user something like "are TTL pullups enabled?".
-            return (pull_choice)
-        except : 
-            # if bad input, start over 
-            print('[!] Please enter an integer number.')
-            return(Setup_8480HR._Choosettlpullups())
+        pull_choice = UserInput.AskForInt('Are TTL pullups enabled? (0 for pullups disabled, non-zero for enabled)') # NOTE: this prompt is vague. Use UserInput.AskYN() instead here and ask the user something like "are TTL pullups enabled?".
+        return (pull_choice)
+       
         
    
-
     def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        # check that all params exist 
         if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
             raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
         # check type of each specific command 
         if( not(
-                    isinstance( paramDict[Setup_Interface._PORTKEY], str  ) 
-                and isinstance( paramDict['Stimulus'],              dict  ) 
+                    isinstance( paramDict[Setup_Interface._PORTKEY],str  ) 
+                and isinstance( paramDict['Stimulus'],       dict  ) 
+                and isinstance( paramDict['Led Current'],    dict  ) 
+                and isinstance( paramDict['Estim Current'],  dict ) 
+                and isinstance( paramDict['Sync Config'],    int ) 
+                and isinstance( paramDict['TTL Pullup'],     int ) 
+                and isinstance( paramDict['Preamp'],         int ) 
+                and isinstance( paramDict['TTL Setup'],      dict ) 
             )
         ) : 
-            raise Exception('[!] Invalid paramter value types for '+str(self._NAME)+'.')
-        # check that stimulus is correct
-        if( list(paramDict['Stimulus'].keys()).sort() != copy.copy(self._LOWPASSKEYS).sort() ) : # NOTE: _LOWPASSKEYS is commented out, so this code wont work 
-            raise Exception('[!] Invalid Stimulus parameters for '+str(self._NAME)+'.')
-        # check type of stimulus
-        for stimulusVal in paramDict['Stimulus'].values() : 
-            if( not isinstance(stimulusVal, int) ) : 
-                raise Exception('[!] Invalid Stimulus value types for '+str(self._NAME)+'.')
-        # no exception raised 
-        return(True)
+            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
 
 
     def _GetPODdeviceParameterTable(self) -> Texttable : 
@@ -277,19 +232,18 @@ class Setup_8480HR(Setup_Interface) :
         tab.header(['Device #',self._PORTKEY, 'Stimulus', 'LED Current', 'Estim Current', 'Sync Config', 'TTL Pullup','Preamp', 'TTL Setup']) # NOTE: small style change 
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val[self._PORTKEY], '\n'.join([f"{k}: {v}" for k, v in val['stimulus'].items()]), 
-                        '\n'.join([f"{k}: {v}" for k,v in val['ledcurrent'].items()]), 
-                        '\n'.join([f"{k}: {v}" for k,v in val['estimcurrent'].items()]),
-                        (val['Sync_Config']), 
-                        (val['ttl_pullups']),
-                        (val['preamp']),
-                       '\n'.join([f"{k}: {v}" for k,v in val['ttl_setup'].items()]) # NOTE: nice list comprehension here! Since you do this similar code three times, 
+            tab.add_row([key, 
+                        val[self._PORTKEY], 
+                        '\n'.join([f"{k}: {v}" for k, v in val['Stimulus'].items()]), 
+                        '\n'.join([f"{k}: {v}" for k,v in val['Ledcurrent'].items()]), 
+                        '\n'.join([f"{k}: {v}" for k,v in val['Estimcurrent'].items()]),
+                        (val['Sync Config']), 
+                        (val['Ttl Pullups']),
+                        (val['Preamp']),
+                       '\n'.join([f"{k}: {v}" for k,v in val['Ttl Setup'].items()]) # NOTE: nice list comprehension here! Since you do this similar code three times, 
                                                                                     #       it may be useful to put this in a function (which takes val['ttl_setup'] 
                                                                                     #       as argument ) for convinience.
                     ])
-            print("key: ", key)
-            print("value", val)
-            print("dict",self._podParametersDict.items())
         # NOTE : period_ms and width_ms are not formatted in a way that makes sense to the user. 
         #        (AB, CD) is not intuitive to be (ms, us). Instead, put the parts back together 
         #        and show AB.CD
