@@ -1,6 +1,7 @@
 # local imports 
 from BasicPodProtocol   import POD_Basics
 from PodCommands        import POD_Commands
+from PodPacketHandling  import POD_Packets
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -39,7 +40,7 @@ class POD_8229(POD_Basics) :
         self._commands.AddCommand(140, 'SET TIME',              (U8,U8,U8,U8,U8,U8,U8), (U8,U8,U8,U8,U8,U8,U8), False, 'Sets the RTC time.  Format is (Seconds, Minutes, Hours, Day, Month, Year (without century, so 23 for 2023), Weekday).  Weekday is 0-6, with Sunday being 0.  Binary Coded Decimal. Returns current time.  Note that the the seconds (and sometimes minutes field) can rollover during execution of this command and may not match what you sent.')
         self._commands.AddCommand(141, 'SET DAY SCHEDULE',      (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), # ( U8, U8 x 24 )
                                                                                         (0,),                   False, 'Sets the schedule for the day.  U8 day, followed by 24 hourly schedule values.  MSb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100).')
-        self._commands.AddCommand(142, 'GET DAY SCHEDULE',      (U8,),                  (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), 
+        self._commands.AddCommand(142, 'GET DAY SCHEDULE',      (U8,),                  (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), # ( U8 x 24 )
                                                                                                                 False, 'Gets the schedule for the selected week day (0-6 with 0 being Sunday).')
         self._commands.AddCommand(143, 'REVERSE TIME EVENT',    (0,),                   (U16,),                 False, 'Indicates the bar has just reveresed.  Returns the time in seconds until the next bar reversal.')
         self._commands.AddCommand(144, 'SET REVERSE PARAMS',    (U16,U16),              (0,),                   False, 'Sets (Base Time, Variable Time) for random reverse in seconds.  The random reverse time will be base time + a random value in Variable Time range.')
@@ -50,6 +51,7 @@ class POD_8229(POD_Basics) :
         self._commands.AddCommand(149, 'SET ID',                (U16,),                 (0,),                   False, 'Sets the system ID displayed on the LCD.')
         self._commands.AddCommand(150, 'SET RANDOM REVERSE',    (U8,),                  (0,),                   False, 'Enables or Disables Random Reverse function.  0 = disabled, Non-Zero = enabled.')
         self._commands.AddCommand(151, 'GET RANDOM REVERSE',    (0,),                   (U8,),                  False, 'Reads the Random Reverse function.  0 = disabled, non-zero = enabled.')
+        # recieved only commands below vvv 
         self._commands.AddCommand(200, 'LCD SET MOTOR STATE',   (NOVALUE,),             (U16,),                 False, 'Indicates that the motor state has been changed by the LCD.  1 for On, 0 for Off.')
         self._commands.AddCommand(201, 'LCD SET MOTOR SPEED',   (NOVALUE,),             (U16,),                 False, 'Indicates the motor speed has been changed by the LCD.  0-100 as a percentage.')
         self._commands.AddCommand(202, 'LCD SET DAY SCHEDULE',  (NOVALUE,),             (U8,U8,U8,U8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
@@ -60,16 +62,47 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def BuildArgForSetDaySchedule(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
+    def BuildSetDayScheduleArgument(day: str|int, schedule: list[int]) -> tuple[int] : 
+        # use this for getting the command #141 'SET DAY SCHEDULE' argument 
+        # get good value
+        validDay = POD_8229._Validate_Day(day)
+        # prepend the day to the schedule  
+        return( tuple( schedule.insert(0, validDay) ) )
+
+
+    @staticmethod
+    def CodeDaySchedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
+        # use this for getting the command #141 'SET DAY SCHEDULE' U8x24 argument component 
         # get good values 
-        validDay, validHours, validSpeed = POD_8229._Validate_BuildArgForSetDaySchedule(day, hours, speed) 
+        validHours = POD_8229._Validate_Hours(hours)
+        validSpeed = POD_8229._Validate_Speed(speed) 
         # modify bits of each hour 
         schedule = [0] * 24
         for i in range(24) : 
             # msb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100)
             schedule[i] = ( validHours[i] << 7 ) | validSpeed[i]
         # return tuple that works as an argument for command #141 'SET DAY SCHEDULE'
-        return( tuple( list(validDay) + list(schedule) ) )
+        return( list(schedule) )
+
+
+    @staticmethod
+    def DecodeDaySchedule(schedule: bytes) -> dict[str, int|tuple[int]] :
+        # use this for getting the command #141 'SET DAY SCHEDULE' argument 
+        # check for valid arguments 
+        validSchedule = POD_8229._Validate_Schedule(schedule)
+        # decode each hour
+        hours  = [None] * 24
+        speeds = [None] * 24
+        for i in range(24) : 
+            thisHr = validSchedule[2*i:2*i+2]
+            hours[i]  = POD_Packets.ASCIIbytesToInt_Split(thisHr, 8, 7) # msb in each byte is a flag for motor on (1) or off (0)
+            speeds[i] = POD_Packets.ASCIIbytesToInt_Split(thisHr, 7, 0) # remaining 7 bits are the speed (0-100)
+        # check if all speeds are the same 
+        if(len(set(speeds)) == 1) : 
+            # speeds has all identical elements
+            speeds = speeds[0]
+        # return hour and speeds 
+        return({ 'Hour': hours, 'Speed' : speeds})
 
 
     @staticmethod
@@ -103,10 +136,9 @@ class POD_8229(POD_Basics) :
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
-
+    
     @staticmethod
-    def _Validate_BuildArgForSetDaySchedule(day: str|int, hours: list|tuple[bool|int], speed: int|list[bool|int]|tuple[bool|int]) -> tuple[int,list[bool|int],list[int]] : 
-        # check day
+    def _Validate_Day(day: str|int) : 
         if(isinstance(day,str)) : 
             dayCode = POD_8229.CodeDayOfWeek(day)
         elif(isinstance(day,int)) : 
@@ -115,7 +147,11 @@ class POD_8229(POD_Basics) :
             dayCode = day
         else: 
             raise Exception('[!] The day argument must be a str or int.')
-        # check hours
+        return(dayCode)
+        
+
+    @staticmethod
+    def _Validate_Hours(hours: list|tuple[bool|int]) :
         if( not isinstance(hours, list) and not isinstance(hours, tuple) ) : 
             raise Exception('[!] The hours argument must be a list or tuple.')
         if(len(hours) != 24 ) : 
@@ -123,7 +159,11 @@ class POD_8229(POD_Basics) :
         for h in hours  :
             if(int(h) != 0 and int(h) != 1 ) : 
                 raise Exception('[!] The hours items must be 0 or 1.')
-        # check speed
+        return(list(hours))
+            
+
+    @staticmethod
+    def _Validate_Speed(speed: int|list[bool|int]|tuple[bool|int]) :
         if( not isinstance(speed, list) and not isinstance(speed, tuple) and not isinstance(speed, int)) : 
             raise Exception('[!] The speed argument must be an int, list, or tuple.')
         if(isinstance(speed,int)) : 
@@ -137,5 +177,13 @@ class POD_8229(POD_Basics) :
                 if( s < 0 or s > 100 ) : 
                     raise Exception('[!] The speed must be between 0 and 100 for every list/tuple item.')
             speedArr = speed
-        # return valid values 
-        return int(dayCode), list(hours), list(speedArr)
+        return(list(speedArr))
+
+
+    @staticmethod
+    def _Validate_Schedule(schedule: bytes) :
+        if(not isinstance(schedule, bytes)) : 
+            raise Exception('[!] The schedule must be bytes.')
+        if( len(schedule) != 24 * POD_Commands.U8() ) : 
+            raise Exception('[!] The schedule must have U8x24.')
+        return(schedule)
