@@ -38,7 +38,7 @@ class POD_8206HR(POD_Basics) :
 
     def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
-            the _commands to contain the appropriate commands for an 8206-HR POD device. 
+        the _commands to contain the appropriate commands for an 8206-HR POD device. 
 
         Args:
             port (str | int): Serial port to be opened. Used when initializing the COM_io instance.

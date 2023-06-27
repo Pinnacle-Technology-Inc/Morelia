@@ -202,7 +202,21 @@ class POD_8401HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] : 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] :
+        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
+        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
+        channels and analogs are converted to volts (V).
+
+        Args:
+            msg (bytes): msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
+                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
+                + checksum (2) + ETX (1).
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
+                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
+                'Analog TTL3', 'Analog TTL4', as numbers.
+        """
         # unpack parts of POD packet into dict
         msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -240,7 +254,6 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) )
         msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) )
         msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) )
-        
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -251,24 +264,24 @@ class POD_8401HR(POD_Basics) :
         channels and analogs are converted to volts (V).
 
         Args:
-            msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
-                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
-                + checksum (2) + ETX (1).
+            msg (bytes): Bytes message containing a standard or binary5 POD packet.
 
         Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
-                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
-                'Analog TTL3', 'Analog TTL4', as numbers.
+            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
         """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
+        specialCommands = [127, 128, 129, 130] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS # 130 GET SS CONFIG
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            if('Payload' in msgDict) : 
-                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
+            # 130 GET SS CONFIG
+            if( cmd == 130 ) :
+                transdict['Payload'] = self.DecodeSSConfigBitmask(msgDict['Payload'])
+            # TTL 
+            else : 
+                transdict['Payload'] = ( self.DecodeTTLByte(msgDict['Payload'][:2]), self.DecodeTTLByte(msgDict['Payload'][2:]))
             return(transdict)
         # message is binary 
         elif(self._commands.IsCommandBinary(cmd)): 
@@ -278,7 +291,7 @@ class POD_8401HR(POD_Basics) :
             return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
 
 
-    # ------------ HELPER ------------           ------------------------------------------------------------------------------------------------------------------------
+    # ------------ MAPPING ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
     @staticmethod
@@ -320,9 +333,10 @@ class POD_8401HR(POD_Basics) :
         """
         return(name in POD_8401HR.__CHANNELMAPALL)    
 
+    # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+    def GetTTLbitmask(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
         """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
 
         Args:
@@ -342,7 +356,27 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+    def DecodeTTLByte(ttlByte: bytes) -> dict[str,int] : 
+        """Converts the TTL bytes argument into a dictionary of integer TTL values.
+
+        Args:
+            ttlByte (bytes): U8 byte containing the TTL bitmask. 
+
+        Returns:
+            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
+        """
+        return({
+            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+        })
+    
+
+    @staticmethod
+    def GetSSConfigBitmask(gain: int, highpass: float) -> int :
         """Gets a bitmask, represented by an unsigned integer, used for 'SET SS CONFIG' command. 
 
         Args:
@@ -362,6 +396,32 @@ class POD_8401HR(POD_Basics) :
         return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
 
     
+    @staticmethod
+    def DecodeSSConfigBitmask(config: bytes) : 
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain. 
+
+        Args:
+            config (bytes): U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, \
+                1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
+        """
+        # high-pass
+        if(POD_Packets.AsciiBytesToInt(config[0:1]) == 0) : 
+            highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
+        else: 
+            highpass = 0.0 # Bit 0 = 1 for DC Highpass
+        # gain 
+        if(POD_Packets.AsciiBytesToInt(config[1,2]) == 0) :
+            gain = 5 # Bit 1 = 0 for 5x gain
+        else : 
+            gain = 1 # Bit 1 = 1 for 1x gain
+        # pack values into dict 
+        return({
+            'High-pass' : highpass, 
+            'Gain'      : gain
+        })
+    
+    # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
     @staticmethod
     def CalculateBiasDAC_GetVout(value: int) -> float :
         """Calculates the output voltage given the DAC value. Used for 'GET/SET BIAS' commands. 
@@ -397,26 +457,6 @@ class POD_8401HR(POD_Basics) :
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
-
-    @staticmethod
-    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
-        """Converts the TTL bytes argument into a dictionary of integer TTL values.
-
-        Args:
-            ttlByte (bytes): One byte containing the TTL bitmask. 
-
-        Returns:
-            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
-        """
-        return({
-            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
-        })
-    
 
     @staticmethod
     def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :

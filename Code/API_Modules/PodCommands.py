@@ -126,23 +126,24 @@ class POD_Commands :
                 argument ASCII bytes, number of return bytes, binary flag, description) }.
         """
         # constants 
-        U8 = POD_Commands.U8()
+        U8  = POD_Commands.U8()
+        U16 = POD_Commands.U16()
         NOVALUE = POD_Commands.NoValue()
         # basic standard POD commands 
         basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag, description]), 
-            0  : [ 'ACK',               (0,),   (0,),       False,  'Deprecated in favor of responding with the command number received.'                    ],
-            1  : [ 'NACK',              (0,),   (0,),       False,  'Used to indicate an unsupported command was received.'                                  ],
-            2  : [ 'PING',              (0,),   (0,),       False,  'Basic ping command to check if a device is alive and communicating.'                    ],
-            3  : [ 'RESET',             (0,),   (0,),       False,  'Causes the device to reset.  Devices also send this command upon bootup.'               ],
-            4  : [ 'ERROR',             (0,),   (U8,),      False,  'Reports error codes; mostly unused.'                                                    ],
-            5  : [ 'STATUS',            (0,),   (0,),       False,  'Reports status codes; mostly unused.'                                                   ],
-            6  : [ 'STREAM',            (U8,),  (U8,),      False,  'Enables or disables streaming of binary packets on the device'                          ], 
-            7  : [ 'BOOT',              (0,),   (0,),       False,  'Instructs the device to enter bootload mode.'                                           ],
-            8  : [ 'TYPE',              (0,),   (U8,),      False,  'Gets the device type. Often unused due to USB descriptor duplicating this function.'    ],
-            9  : [ 'ID',                (0,),   (0,),       False,  'ID number for the device. Often unused due to USB descriptor duplicating this function.'],
-            10 : [ 'SAMPLE RATE',       (0,),   (0,),       False,  'Gets the sample rate of the device.  Often unused in favor of just setting it.'         ],
-            11 : [ 'BINARY',            (0,),   (NOVALUE,),  True,  'Indicates a binary packet.'                                                             ],  # No return bytes because the length depends on the message
-            12 : [ 'FIRMWARE VERSION',  (0,),   (U8,U8,U8), False,  'Returns firmware version of the device.'                                                ]
+            0  : [ 'ACK',               (0,),   (0,),        False,  'Deprecated in favor of responding with the command number received.'                    ],
+            1  : [ 'NACK',              (0,),   (0,),        False,  'Used to indicate an unsupported command was received.'                                  ],
+            2  : [ 'PING',              (0,),   (0,),        False,  'Basic ping command to check if a device is alive and communicating.'                    ],
+            3  : [ 'RESET',             (0,),   (0,),        False,  'Causes the device to reset.  Devices also send this command upon bootup.'               ],
+            4  : [ 'ERROR',             (0,),   (U8,),       False,  'Reports error codes; mostly unused.'                                                    ],
+            5  : [ 'STATUS',            (0,),   (0,),        False,  'Reports status codes; mostly unused.'                                                   ],
+            6  : [ 'STREAM',            (U8,),  (U8,),       False,  'Enables or disables streaming of binary packets on the device'                          ], 
+            7  : [ 'BOOT',              (0,),   (0,),        False,  'Instructs the device to enter bootload mode.'                                           ],
+            8  : [ 'TYPE',              (0,),   (U8,),       False,  'Gets the device type. Often unused due to USB descriptor duplicating this function.'    ],
+            9  : [ 'ID',                (0,),   (0,),        False,  'ID number for the device. Often unused due to USB descriptor duplicating this function.'],
+            10 : [ 'SAMPLE RATE',       (0,),   (0,),        False,  'Gets the sample rate of the device.  Often unused in favor of just setting it.'         ],
+            11 : [ 'BINARY',            (0,),   (NOVALUE,),   True,  'Indicates a binary packet.'                                                             ],  # No return bytes because the length depends on the message
+            12 : [ 'FIRMWARE VERSION',  (0,),   (U8,U8,U16), False,  'Returns firmware version of the device.'                                                ]
         }
         # return dict of commands 
         return(basics)
