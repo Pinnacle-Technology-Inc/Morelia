@@ -12,12 +12,21 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_8229(POD_Basics) : 
-
+    """POD_8229 handles communication using an 8229 POD device.
+    """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
     def __init__(self, port: str|int, baudrate:int=19200) -> None :
+        """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
+        the _commands to contain the appropriate command set for an 8229 POD device. 
+
+        Args:
+            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
+            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
+                the COM_io instance. Defaults to 19200.
+        """
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
@@ -61,25 +70,55 @@ class POD_8229(POD_Basics) :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
+    # ------------ ENCODING ------------           ------------------------------------------------------------------------------------------------------------------------
+
+
     @staticmethod
-    def BuildSetDayScheduleArgument(day: str|int, schedule: list[int]) -> tuple[int] : 
-        # use this for getting the command #141 'SET DAY SCHEDULE' argument 
+    def BuildSetDayScheduleArgument(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
+        """Appends the day of the week code to the front of the encoded hourly schedule. this tuple is \
+        formatted to be used as the #141 'SET DAY SCHEDULE' argument.
+
+        Args:
+            day (str | int): Day of the week. Can be either the name of the day (i.e. Sunday, Monday, etc.) \
+                or the 0-6 day code (0 for Sunday increacing to 6 for Saturday). 
+            hours (list | tuple[bool | int]): Array of 24 items. The value is 1 for motor on and 0 for \
+                motor off.
+            speed (int | list | tuple[int]): Speed of the motor (0-100). This is an integer of all hours \
+                are the same speed. If there are multiple speeds, this should be an array of 24 items.
+
+        Returns:
+            tuple[int]: _description_
+        """
         # get good value
         validDay = POD_8229._Validate_Day(day)
+        # get encoded schedule
+        encodedSched = POD_8229.CodeDaySchedule(hours,speed)
         # prepend the day to the schedule  
-        return( tuple( schedule.insert(0, validDay) ) )
+        return( tuple( encodedSched.insert(0, validDay) ) )
 
 
     @staticmethod
     def CodeDaySchedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
-        # use this for getting the command #141 'SET DAY SCHEDULE' U8x24 argument component 
+        """Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this \
+        for getting the command #141 'SET DAY SCHEDULE' U8x24 argument component.
+
+        Args:
+            hours (list | tuple[bool | int]): Array of 24 items. The value is 1 for motor on and 0 for \
+                motor off.
+            speed (int | list | tuple[int]): Speed of the motor (0-100). This is an integer of all hours \
+                are the same speed. If there are multiple speeds, this should be an array of 24 items.
+
+        Returns:
+            list[int]: List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits \
+                are the speed.
+        """
         # get good values 
         validHours = POD_8229._Validate_Hours(hours)
         validSpeed = POD_8229._Validate_Speed(speed) 
         # modify bits of each hour 
         schedule = [0] * 24
         for i in range(24) : 
-            # msb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100)
+            # msb is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100)
             schedule[i] = ( validHours[i] << 7 ) | validSpeed[i]
         # return tuple that works as an argument for command #141 'SET DAY SCHEDULE'
         return( list(schedule) )
@@ -87,7 +126,17 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def DecodeDaySchedule(schedule: bytes) -> dict[str,int|list[int]] :
-        # use this for getting the command #141 'SET DAY SCHEDULE' argument 
+        """Interprets the return bytes from the command #142 'GET DAY SCHEDULE'.
+
+        Args:
+            schedule (bytes): 24 byte long bitstring with one U8 per hour in a day.
+
+        Returns:
+            dict[str,int|list[int]]: Dictionary with 'Hour' as a list of 24 0/1 values (0 is motor off and \
+                1 is motor on) and 'Speed' as the motor speed (0-100). If the motor speed is the same \
+                every hour, 'Speed' will be an integer; otherwise, 'Speed' will be a list of 24 items.
+        """
+        # use this for getting the command #argument 
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 24)
         # decode each hour
@@ -95,8 +144,10 @@ class POD_8229(POD_Basics) :
         speeds = [None] * 24
         for i in range(24) : 
             thisHr = validSchedule[2*i:2*i+2]
-            hours[i]  = POD_Packets.ASCIIbytesToInt_Split(thisHr, 8, 7) # msb in each byte is a flag for motor on (1) or off (0)
-            speeds[i] = POD_Packets.ASCIIbytesToInt_Split(thisHr, 7, 0) # remaining 7 bits are the speed (0-100)
+            # msb in each byte is a flag for motor on (1) or off (0)
+            hours[i]  = POD_Packets.ASCIIbytesToInt_Split(thisHr, 8, 7) 
+            # remaining 7 bits are the speed (0-100)
+            speeds[i] = POD_Packets.ASCIIbytesToInt_Split(thisHr, 7, 0) 
         # check if all speeds are the same 
         if(len(set(speeds)) == 1) : 
             # speeds has all identical elements
@@ -109,8 +160,18 @@ class POD_8229(POD_Basics) :
     
 
     @staticmethod
-    def DecodeLCDSchedule(schedule: bytes) -> dict[str,int|list[int]] : 
-        # use this for translating the command #202	'LCD SET DAY SCHEDULE' return 
+    def DecodeLCDSchedule(schedule: bytes) -> dict[str,str|list[int]] : 
+        """Interprets the return bytes from the command #202 'LCD SET DAY SCHEDULE'.
+
+        Args:
+            schedule (bytes): 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7, \
+                Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
+
+        Returns:
+            dict[str,int|list[int]]: Dictionary with Day as the day of the week, and Hours \
+                containing a list of 24 0/1 values (one for each hour). Each bit represents the \
+                motor state in that hour, 1 for on and 0 for off.
+        """
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
@@ -118,7 +179,7 @@ class POD_8229(POD_Basics) :
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
-        topBit = POD_Commands.U8() * 3 * 4 # (number of hex characters per U8) * (number of U8 bytes) * (bits per hex character)
+        topBit = POD_Commands.U8() * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
             hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
@@ -131,6 +192,20 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def CodeDayOfWeek(day : str) -> int :
+        """Converts the day of the week to an integer code understandable by the POD device. The day \
+        is determined by the first 1-2 characters of the string, which supports multiple abbreviations \
+        for days of the week.  
+
+        Args:
+            day (str): Day of the week.
+
+        Raises:
+            Exception: Invalid day of the week.
+
+        Returns:
+            int: Code for the day of the week. Values are 0-6, with 0 for Saturday, 1 for Monday, ..., \
+                and 6 for Saturday.
+        """
         # Weekday is 0-6, with Sunday being 0
         match str(day).lower()[:2] : 
             case 'su' : return(0) # sunday
@@ -146,6 +221,14 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def DecodeDayOfWeek(day: int) -> str :
+        """Converts the integer code for a day of the week to a human-readable string. 
+
+        Args:
+            day (int): Day of the week code must be 0-6.
+
+        Returns:
+            str: Day of the week ('Sunday', 'Monday', etc.).
+        """
         # Weekday is 0-6, with Sunday being 0
         match int(day):
             case 0 : return('Sunday')
@@ -158,7 +241,20 @@ class POD_8229(POD_Basics) :
             case _ : Exception('[!] Day of the week code must be 0-6.')  
             
 
+    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
+
+
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        """Overwrites the parent's method. Adds an addittional check to handle specially formatted \
+        payloads. 
+
+        Args:
+            msg (bytes): Bytes string containing a POD packet.
+
+        Returns:
+            dict[str,int|dict[str,int]]: A translated POD packet, which has Command Number and Payload \
+                keys. The payload may formatted uniquely to the command.
+        """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
@@ -172,7 +268,7 @@ class POD_8229(POD_Basics) :
                 transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload'])
         # standard packet 
         else: 
-            return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
+            return(self.TranslatePODpacket_Standard(msg))  
 
 
 
@@ -181,6 +277,19 @@ class POD_8229(POD_Basics) :
     
     @staticmethod
     def _Validate_Day(day: str|int) -> int : 
+        """Raises an exception if the day is incorrectly formatted. If the day is given as \
+        a string, it will be converted to its integer code. 
+
+        Args:
+            day (str | int): String day of the week or its repsective integer code. 
+
+        Raises:
+            Exception: The day integer argument must be 0-6.
+            Exception: The day argument must be a str or int.
+
+        Returns:
+            int: Integer code representing a day of the week.
+        """
         if(isinstance(day,str)) : 
             dayCode = POD_8229.CodeDayOfWeek(day)
         elif(isinstance(day,int)) : 
@@ -194,6 +303,21 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def _Validate_Hours(hours: list|tuple[bool|int]) -> list[bool|int] :
+        """Raises an exception if the hours is incorrectly formatted. Converts the hours \
+        into a list before returning it.
+
+        Args:
+            hours (list | tuple[bool | int]): Array with 24 items with values of 1/0 \
+                representing each hour
+
+        Raises:
+            Exception: The hours argument must be a list or tuple.
+            Exception: The hours argument must have exactly 24 items.
+            Exception: The hours items must be 0 or 1.
+
+        Returns:
+            list[bool|int]: List with 24 items for each hour. The values are 1/0.
+        """
         if( not isinstance(hours, list) and not isinstance(hours, tuple) ) : 
             raise Exception('[!] The hours argument must be a list or tuple.')
         if(len(hours) != 24 ) : 
@@ -206,6 +330,22 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def _Validate_Speed(speed: int|list|tuple[int]) -> list[int] :
+        """Raises an exception if the speed is incorrectly formatted. If an integer speed \
+        is given, it will convert it to a list. 
+
+        Args:
+            speed (int | list | tuple[int]): Motor speed (0-100). This can either be an \
+                integer or a tuple/list of 24 speeds. 
+
+        Raises:
+            Exception: The speed argument must be an int, list, or tuple.
+            Exception: The speed must be between 0 and 100.
+            Exception: The speed argument must have exactly 24 items as a list/tuple.
+            Exception: The speed must be between 0 and 100 for every list/tuple item.
+
+        Returns:
+            list[int]: List containing 24 motor speeds.
+        """
         if( not isinstance(speed, list) and not isinstance(speed, tuple) and not isinstance(speed, int)) : 
             raise Exception('[!] The speed argument must be an int, list, or tuple.')
         if(isinstance(speed,int)) : 
@@ -224,8 +364,21 @@ class POD_8229(POD_Basics) :
 
     @staticmethod
     def _Validate_Schedule(schedule: bytes, size: int) -> bytes:
+        """Raises an exception if the schedule is incorrectly formatted 
+
+        Args:
+            schedule (bytes): Bytes string containing the day schedule.
+            size (int): Number of U8 bytes.
+
+        Raises:
+            Exception: The schedule must be bytes.
+            Exception: The schedule is the incorrect size 
+
+        Returns:
+            bytes: Same as the schedule argument.
+        """
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
         if( len(schedule) != size * POD_Commands.U8() ) : 
-            raise Exception('[!] The schedule must have U8x24.')
+            raise Exception('[!] The schedule must have U8x'+str(size)+'.')
         return(schedule)
