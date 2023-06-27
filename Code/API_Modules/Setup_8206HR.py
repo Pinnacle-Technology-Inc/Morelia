@@ -137,14 +137,15 @@ class Setup_8206HR(Setup_Interface) :
         Returns:
             dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
         """
-        return(Params_8206HR(
-            port                =   self._ChoosePort(forbiddenNames),
-            sampleRate          =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
-            preamplifierGain    =   self._ChoosePreampGain(),
-            lowPass             = ( UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
+        params = Params_8206HR()
+        params.port             =   self._ChoosePort(forbiddenNames)
+        params.sampleRate       =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000)
+        params.preamplifierGain =   self._ChoosePreampGain()
+        params.lowPass          = ( UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
                                     UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
-                                    UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)    )
-        ))
+                                    UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500) )
+        return(params)
+
     
     @staticmethod
     def _ChoosePreampGain() -> int :
