@@ -202,7 +202,21 @@ class POD_8401HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] : 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] :
+        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
+        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
+        channels and analogs are converted to volts (V).
+
+        Args:
+            msg (bytes): msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
+                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
+                + checksum (2) + ETX (1).
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
+                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
+                'Analog TTL3', 'Analog TTL4', as numbers.
+        """
         # unpack parts of POD packet into dict
         msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -240,7 +254,6 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) )
         msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) )
         msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) )
-        
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -251,14 +264,10 @@ class POD_8401HR(POD_Basics) :
         channels and analogs are converted to volts (V).
 
         Args:
-            msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
-                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
-                + checksum (2) + ETX (1).
+            msg (bytes): Bytes message containing a standard or binary5 POD packet.
 
         Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
-                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
-                'Analog TTL3', 'Analog TTL4', as numbers.
+            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
         """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
