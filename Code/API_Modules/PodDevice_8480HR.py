@@ -36,8 +36,6 @@ class POD_8480HR(POD_Basics) :
         self._commands.RemoveCommand(11)
     
         # add device specific commands
-        #self._commands.AddCommand(  10, 'STRATE',               (0,),                               (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
-        # NOTE: ^^ STRATE is unimplemented. It says this in the command set sheet description 
         self._commands.AddCommand( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
         self._commands.AddCommand( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  , 'Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. ')
         self._commands.AddCommand( 102,	'SET STIMULUS',	        (U8, U16, U16, U16, U16, U32, U8),	(0,),                                False  , 'Sets the stimulus configuration on the selected channel.  See format below.')  
@@ -74,32 +72,78 @@ class POD_8480HR(POD_Basics) :
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
     
 
-    # TODO decode StimulusConfigBits
-    # def DecodeStimulusConfigBits(config: int) -> dict : 
-    #     decodedConfic = {
-    #         'Stimulus' :
-    #         'Xphasic' : 
-    #         'Simultaneous' : 
-    #     }
+    def DecodeStimulusConfigBits(config: int) -> dict:
+        DecodeStimulus = {
+            'optoElec'      : config & 1,  
+            'monoBiphasic'  : (config >> 1) & 1,  
+            'Simul'         : (config >> 2) & 1,  
+        }
+        return DecodeStimulus
+
+    stimulustrial = DecodeStimulusConfigBits(6)
+    print("\nbits: ", stimulustrial)
+
 
     # TODO decode SyncConfigBits
-    # TODO decode TtlConfigBits
+    def DecodeSyncConfigBits(config: int) -> dict:
+        DecodeSync = {
+            'SyncLevel'     : config & 1,
+            'SyncIdle'      : (config >> 1) & 1,
+            'SignalTrigger' : (config >> 2),
+        }
+        return DecodeSync
+    
+    synctrail = DecodeSyncConfigBits(1)
+    print("\nsyncbits: ", synctrail)
+
+
+    def DecodeTTlConfigBits(config:int) -> dict:
+        DecodeTTL = {
+            'RisingFalling'  : config & 1,
+            'StimulusTrig'   : (config >> 1) & 1,
+            'TTLInputSync'   : (config >> 7) & 1, 
+        }
+        return DecodeTTL
+    
+    TTLtrail = DecodeTTlConfigBits(128)
+    print("\nTTL:", TTLtrail)
+
+    @staticmethod
+    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
+        #Converts the TTL bytes argument into a dictionary of integer TTL values.
+
+        return({
+            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+        })
 
     # TODO overwrite TranslatePODpacket to handle special commands (reverse the bitmasking)
     # see TranslatePODpacket in PodDevice_8401HR for example
     # example pseudocode:
-    """
-    if(command == GET STIMULUS) 
-        # unpack 
-        msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-        # start building translated dictionary 
-        transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-        transdict[payload] = (
+    
+    def TranslatePODpacket(self, msg: bytes) -> dict[str, int | bytes]:
+        specialcommands = [101] #101 is the number for 'GET STIMULUS'
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) #gets the command number
 
-            msgDict[payload] [all previous],
+        print("testing...")
+        print("msg", msg)
+        if(cmd in specialcommands) : 
+            # unpack 
+            print("Special")
+            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)  #breaks up the msg into dictionary with keys as 'command number' and 'payload'
+            # start building translated dictionary 
+            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }   #pulling value from msgdict and changing into int
+            if('Payload' in msgDict) :
+                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
+                print(msg)
+                #msgDict[payload] [all previous],
 
-            DecodeStimulusConfigBits (
-                msgDict[payload] [last U8 for Config Flags] 
-            ) 
-        ) # maintain (U8, U16x4, U32, U8) tuple structure 
-    """
+                # DecodeStimulusConfigBits (
+                #     msgDict[payload] [last U8 for Config Flags] 
+                # ) 
+            
+        # maintain (U8, U16x4, U32, U8) tuple structure 

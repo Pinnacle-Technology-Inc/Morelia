@@ -28,7 +28,7 @@ class Setup_8480HR(Setup_Interface) :
     
     
     # deviceParams keys for reference 
-    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'stimulus', 'preamp', 'ledcurrent', 'estimcurrent', 'Sync_Config', 'ttl_pullups', 'ttl_setup'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
+    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Stimulus', 'Preamp', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullups', 'TTL Setup'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
 
     # for EDF file writing 
     _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
@@ -74,13 +74,13 @@ class Setup_8480HR(Setup_Interface) :
             self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0,deviceParams['Ledcurrent']['EEG1']))
             self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1,deviceParams['Ledcurrent']['EEG2']))
             #print("table testing", Setup_8480HR._GetPODdeviceParameterTable(self))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estimcurrent']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estimcurrent']['EEG2']))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estim Current']['EEG1']))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estim Current']['EEG2']))
             self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams['Sync Config']))
-            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams['Ttl Pullups']))
-            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams['Ttl Setup']['Channel'], 
-                                                                    deviceParams['Ttl Setup']['Ttl Config'],
-                                                                    deviceParams['Ttl Setup']['Debounce']))
+            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams['TTL Pullups']))
+            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams['TTL Setup']['Channel'], 
+                                                                    deviceParams['TTL Setup']['TTL Config'],
+                                                                    deviceParams['TTL Setup']['Debounce']))
             
             failed = False
 
@@ -110,13 +110,13 @@ class Setup_8480HR(Setup_Interface) :
             'Ledcurrent'    : { 'EEG1'       : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
                                 'EEG2'       : Setup_8480HR._ChooseLedCurrentforChannel('CH1'),
                             },
-            'Estimcurrent'  : { 'EEG1'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH0"),
+            'Estim Current' : { 'EEG1'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH0"),
                                 'EEG2'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH1"),
                             },
             'Sync Config'   : Setup_8480HR._ChooseSyncConfig(),
-            'Ttl Pullups'   : Setup_8480HR._Choosettlpullups(),
-            'Ttl Setup'     : { 'Channel'    : Setup_8480HR._ChooseChannel('TTL Setup'),
-                                'Ttl Config' : Setup_8480HR._TtlSetup(), # NOTE TTL all caps 
+            'TTL Pullups'   : Setup_8480HR._Choosettlpullups(),
+            'TTL Setup'     : { 'Channel'    : Setup_8480HR._ChooseChannel('TTL Setup'),
+                                'TTL Config' : Setup_8480HR._TtlSetup(), 
                                 'Debounce'   : Setup_8480HR._debounce(),
                             }  
         })
@@ -237,11 +237,11 @@ class Setup_8480HR(Setup_Interface) :
                         val[self._PORTKEY], 
                         '\n'.join([f"{k}: {v}" for k, v in val['Stimulus'].items()]), 
                         '\n'.join([f"{k}: {v}" for k,v in val['Ledcurrent'].items()]), 
-                        '\n'.join([f"{k}: {v}" for k,v in val['Estimcurrent'].items()]),
+                        '\n'.join([f"{k}: {v}" for k,v in val['Estim Current'].items()]),
                         (val['Sync Config']), 
-                        (val['Ttl Pullups']),
+                        (val['TTL Pullups']),
                         (val['Preamp']),
-                       '\n'.join([f"{k}: {v}" for k,v in val['Ttl Setup'].items()]) # NOTE: nice list comprehension here! Since you do this similar code three times, 
+                       '\n'.join([f"{k}: {v}" for k,v in val['TTL Setup'].items()]) # NOTE: nice list comprehension here! Since you do this similar code three times, 
                                                                                     #       it may be useful to put this in a function (which takes val['ttl_setup'] 
                                                                                     #       as argument ) for convinience.
                     ])
