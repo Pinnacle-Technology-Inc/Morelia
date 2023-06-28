@@ -73,12 +73,12 @@ class Setup_8401HR(Setup_Interface) :
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (Params_8401HR): Device parameters
+            deviceParams (Params_8401HR): Device parameters.
 
         Returns:
             bool: True if connection was successful, false otherwise.
         """
-        failed = True 
+        success = False 
         try : 
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
@@ -102,15 +102,13 @@ class Setup_8401HR(Setup_Interface) :
                     if(deviceParams.ssGain  [channel] != None and 
                        deviceParams.highPass[channel] != None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
                 # successful write if no exceptions raised 
-                failed = False
-        except : # except Exception as e : print('[!]', e)            
-            # fill entry 
-            self._podDevices[deviceNum] = 0
-        # check if connection failed 
-        if(failed) : print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
-        else : print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+                success = True
+                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+        except Exception as e :
+            self._podDevices[deviceNum] = 0 # fill entry with bad value
+            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
-        return(not failed)
+        return(success)
     
 
     @staticmethod

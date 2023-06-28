@@ -75,12 +75,12 @@ class Setup_8206HR(Setup_Interface) :
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (dict[str,): Dictionary of the device's parameters
+            deviceParams (Params_8206HR): Device's parameters.
 
         Returns:
             bool: True if connection was successful, false otherwise.
         """
-        failed = True 
+        success = False 
         try : 
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
@@ -92,19 +92,15 @@ class Setup_8206HR(Setup_Interface) :
                 self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
                 self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))   
-                failed = False
-        except : # except Exception as e : print('[!]', e) # use this for testing 
-            # fill entry 
-            self._podDevices[deviceNum] = 0
-
-        # check if connection failed 
-        if(failed) :
-            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
-        else :
-            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
+                # successful write if no exceptions raised 
+                success = True
+                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+        except Exception as e :
+            self._podDevices[deviceNum] = 0 # fill entry with bad value
+            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
-        return(not failed)
+        return(success)
 
 
     # ------------ SETUP POD PARAMETERS ------------
