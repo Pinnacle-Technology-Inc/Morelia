@@ -103,11 +103,9 @@ class Setup_8401HR(Setup_Interface) :
                        deviceParams.highPass[channel] != None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
                 # successful write if no exceptions raised 
                 failed = False
-        # except : 
-        except Exception as e : 
-            print('[!]', e)            
+        except : # except Exception as e : print('[!]', e)            
             # fill entry 
-            self._podDevices[deviceNum] = None
+            self._podDevices[deviceNum] = 0
         # check if connection failed 
         if(failed) : print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
         else : print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
@@ -167,20 +165,26 @@ class Setup_8401HR(Setup_Interface) :
         Returns:
             Params_8401HR: Device parameters.
         """
-        params = Params_8401HR()
-        params.port         = self._ChoosePort(forbiddenNames)
-        params.preampDevice = self._GetPreampDeviceName()
-        params.sampleRate   = UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000)
-        params.muxMode      = UserInput.AskYN('Use mux mode?')
+        # ask for port first
+        port = self._ChoosePort(forbiddenNames)
         # get channel map for the user's preamplifier 
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(params.preampDevice)
-        # get parameters for each channel (A,B,C,D)
-        params.preampGain   = self._SetForMappedChannels('Set preamplifier gain (1, 10, or 100) for...',        chmap, self._SetPreampGain  )
-        params.ssGain       = self._SetForMappedChannels('Set second stage gain (1 or 5) for...',               chmap, self._SetSSGain      )
-        params.highPass     = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    ) 
-        params.lowPass      = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     ) 
-        params.bias         = self._SetForMappedChannels('Set bias (+/- 2.048 V) for...',                       chmap, self._SetBias        ) 
-        params.dcMode       = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      ) 
+        preampDevice = self._GetPreampDeviceName()
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(preampDevice)
+        # get all parameters 
+        params = Params_8401HR(
+            # get parameters for full device 
+            port         = port,
+            preampDevice = preampDevice,
+            sampleRate   = UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
+            muxMode      = UserInput.AskYN('Use mux mode?'),
+            # get parameters for each ABCD channel
+            preampGain   = self._SetForMappedChannels('Set preamplifier gain (1, 10, or 100) for...',        chmap, self._SetPreampGain  ),
+            ssGain       = self._SetForMappedChannels('Set second stage gain (1 or 5) for...',               chmap, self._SetSSGain      ),
+            highPass     = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    ),
+            lowPass      = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     ),
+            bias         = self._SetForMappedChannels('Set bias (+/- 2.048 V) for...',                       chmap, self._SetBias        ),
+            dcMode       = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      ) 
+        )
         return(params)
 
 

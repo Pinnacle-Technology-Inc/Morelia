@@ -127,38 +127,6 @@ class Setup_Interface :
         # NOTE replace Setup_Interface with the correct child class 
         return(Setup_Interface._NAME)
     
-    
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Checks if the parameters for one device are valid.
-
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device.
-
-        Returns:
-            bool: True for valid parameters.
-        """
-        # NOTE replace Params_Interface with the correct child class 
-        return(Params_Interface.IsParamDictValid(paramDict), self._NAME)
-    
-
-    def _ParamDictToObjects(self, podParametersDict: dict[int,dict]) -> dict[int,Params_Interface] :
-        """Converts the POD parameters dictionary for each device into a Params object.
-
-        Args:
-            podParametersDict (dict[int,dict]): Dictionary of all pod devices where the keys are\
-                the device numbers and the values are dictionaries of parameters. 
-        
-        Returns:
-            dict[int,Params_Interface]: Dictionary of all pod devices where the keys are\
-                the device numbers and the values are the parameters.
-        """
-        paramObjects = {}
-        for key,val in podParametersDict.items():
-            # NOTE replace Params_Interface with the correct child class 
-            paramObjects[key] = Params_Interface(val) 
-        return(paramObjects)
-
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -186,25 +154,25 @@ class Setup_Interface :
             fileName (str): String file name.
         """
         self._saveFileName = str(fileName)
-
-
-    def GetPODparametersDict(self) -> dict[int,dict] :
-        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
-
-        Returns:
-            dict[int,dict]: Dictionary of POD device parameters. The keys are the device number.
-        """
-        params = {}
-        for key,val in self._podParametersDict.items() :
-            params[key] = val.GetDictOfParams()
-        return(params)
     
 
-    def SetupPODparameters(self, podParametersDict:dict[int,dict]|None=None) -> None :
+    def GetPODparametersInit(self) -> str :
+        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
+        Returns:
+            str: String representation of a dictionary of POD device parameters. The keys are the device number.
+        """
+        initParams = '{'
+        for key,val in self._podParametersDict.items() :
+            initParams += ' '+str(key)+' : '+val.GetInit()+','
+        initParams = initParams[:-1] + ' }' # cut off last comma and add close bracket 
+        return(initParams)
+    
+
+    def SetupPODparameters(self, podParametersDict:dict[int,Params_Interface]|None=None) -> None :
         """Sets the parameters for the POD devices.
 
         Args:
-            podParametersDict (dict[int,dict] | None, optional): dictionary of the device parameters \
+            podParametersDict (dict[int,Params_Interface] | None, optional): dictionary of the device parameters \
                 for all devices. Defaults to None.
         """
         # get dictionary of POD device parameters
@@ -212,9 +180,9 @@ class Setup_Interface :
             # get setup parameters for all POD devices
             self._podParametersDict = self._GetParam_allPODdevices()  
             # display parameters and allow user to edit them
-            self._ValidateParams()          
+            self.ValidateParams()          
         else:
-            self._podParametersDict = self._ParamDictToObjects(podParametersDict)
+            self._podParametersDict = podParametersDict
         # connect and initialize all POD devices
         self.ConnectAllPODdevices()
 
@@ -223,11 +191,11 @@ class Setup_Interface :
     # ------------ VALIDATION ------------
     
 
-    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,Params_Interface]) :
         """Checks if the parameters dictionary is valid. 
 
         Args:
-            paramDict (None | dict[int,dict]): Dictionary of parameters for all POD devices. 
+            paramDict (None | dict[int,Params_Interface]): Dictionary of parameters for all POD devices. 
 
         Raises:
             Exception: Parameters must be contained in a dictionary.
@@ -241,18 +209,13 @@ class Setup_Interface :
         if(not isinstance(paramDict, dict)) :
             raise Exception('[!] Parameters must be contained in a dictionary.')
         # are keys int and value dict
-        allGood = True 
         for key,value in paramDict.items() : 
             if(not isinstance(key,int)) : 
                 raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
-            if(not isinstance(value,dict)) : 
-                raise Exception('[!] Device parameters must be dictionary type for '+str(self._NAME)+'.')
-            if(len(value)==0) : 
-                raise Exception('[!] Device parameters dictionary is empty for '+str(self._NAME)+'.')
-            # check values 
-            allGood = allGood and self._IsOneDeviceValid(value)
+            if(not isinstance(value,Params_Interface)) : 
+                raise Exception('[!] Device parameters must be Params_Interface type for '+str(self._NAME)+'.')
         # no exceptions raised
-        return(allGood)
+        return(True)
     
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
@@ -311,7 +274,7 @@ class Setup_Interface :
             del pod # port closed on delete in COM_io
 
 
-    def _AddPODdevice(self) -> None :
+    def AddPODdevice(self) -> None :
         """Asks the user for the parameters for the new device. A new device number \
         is generated.
         """
@@ -323,9 +286,12 @@ class Setup_Interface :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_allPODdevices(self) -> None :
+    def _GetParam_allPODdevices(self) -> dict[int,Params_Interface] :
         """First gets the number of POD devices, then asks the user for the information \
         for each device.
+
+        Returns:
+            dict[int,Params_Interface]: Dictionary with device numbers for keys and parameters for values.
         """
         # get the number of devices 
         numDevices = self._SetNumberOfDevices(self._NAME)
@@ -405,7 +371,7 @@ class Setup_Interface :
     # ------------ EDIT POD PARAMETERS ------------
 
 
-    def _ValidateParams(self) -> None : 
+    def ValidateParams(self) -> None : 
         """Displays a table of the parameters of all devices, then asks the user if everything \
         is correct. The user can then edit the parameters of a device. 
         """
@@ -416,7 +382,7 @@ class Setup_Interface :
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
-            self._ValidateParams()
+            self.ValidateParams()
 
 
     def _RemoveDevice(self) -> None : 
@@ -430,6 +396,11 @@ class Setup_Interface :
         # chose device # to remove 
         removeThis = self._SelectDeviceFromDict('Remove')
         # remove from dicts
+
+        print(self._podParametersDict)
+        print(self._podDevices)
+        print(self._podDevices[removeThis])
+
         self._podParametersDict.pop(removeThis)
         self._podDevices.pop(removeThis)
         # print feedback
@@ -473,7 +444,6 @@ class Setup_Interface :
         exclude an additional name from the list.
 
         Args:
-            key (str, optional): String key to access the _podParametersDict. Defaults to 'Port'.
             exclude (str | None, optional): String port name to exclude from the returned list. \
                 Defaults to None.
 

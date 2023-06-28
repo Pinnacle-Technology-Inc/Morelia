@@ -7,10 +7,11 @@ from   threading  import Thread
 from   math       import floor 
 
 # local imports
-from Setup_PodInterface import Setup_Interface
-from Setup_8206HR       import Setup_8206HR
-from Setup_8401HR       import Setup_8401HR
-from GetUserInput       import UserInput
+from Setup_PodInterface     import Setup_Interface
+from Setup_PodParameters    import Params_Interface
+from Setup_8206HR           import Setup_8206HR
+from Setup_8401HR           import Setup_8401HR
+from GetUserInput           import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -39,15 +40,15 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict|None]|None=None) -> None :
+    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
         """Initializes the class. Sets the default values of the class instance variables. Calls \
         functions to complete the class setup.
 
         Args:
             saveFile (str | None, optional): String describing the directory path and filename with an \
                 extension. Defaults to None.
-            podParametersDict (dict[str,dict | None] | None, optional): Dictionary of POD devices and \
-                their respective initialization dictionaries. Defaults to None.
+            podParametersDict (dict[int,Params_Interface] | None] | None, optional): Dictionary of POD devices and \
+                their respective parameters. Defaults to None.
         """
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
@@ -85,18 +86,19 @@ class Setup_PodDevices :
     # ------------ GETTERS ------------
 
 
-    def GetPODparametersDict(self) -> dict[str, dict[int, dict] ]: 
+    def GetPODparametersInit(self) -> str : 
         """Sets up each POD device type. Used in initialization.
-
         Returns:
-            dict[str, dict[int, dict] ]: Dictionary of all POD devices initialization. The keys are the \
+            str: String representing a dictionary of all POD devices initialization. The keys are the \
                 device name and the entries are the initialization dictionaries. 
         """
-        allParamDict = {}
+        allInitParams = '{'
         # for each type of device
-        for key,value in self._Setup_PodDevices.items() : 
-            allParamDict[key] = value.GetPODparametersDict()
-        return(allParamDict)
+        for key,val in self._Setup_PodDevices.items() : 
+            allInitParams += ' \''+key+'\' : '+val.GetPODparametersInit()+','
+        # cut off last comma and add close bracket 
+        allInitParams = allInitParams[:-1] + ' }' 
+        return(allInitParams)
 
 
     def GetSaveFileName(self) -> str:
@@ -120,11 +122,11 @@ class Setup_PodDevices :
     # ------------ CLASS SETUP ------------
 
 
-    def SetupPODparameters(self, podParametersDict:dict[str,dict|None]) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[str,dict[int,Params_Interface]|None]) -> None :
         """Sets up each POD device type. Used in initialization.
 
         Args:
-            podParametersDict (dict[str,dict | None]): Dictionary of all POD devices initialization. \
+            podParametersDict (dict[str,dict[int,Params_Interface] | None]): Dictionary of all POD devices initialization. \
                 The keys are the device name and the entries are the initialization dictionaries. 
         """
         # for each type of POD device 
@@ -253,7 +255,7 @@ class Setup_PodDevices :
         if(deviceName in self._Setup_PodDevices) :
             self._Setup_PodDevices[deviceName].DisplayPODdeviceParameters()
             self._Setup_PodDevices[deviceName]._EditParams()
-            self._Setup_PodDevices[deviceName]._ValidateParams()
+            self._Setup_PodDevices[deviceName].ValidateParams()
             self._Setup_PodDevices[deviceName].ConnectAllPODdevices()
         else : 
             print('[!] '+deviceName+' is not available.')
@@ -277,8 +279,8 @@ class Setup_PodDevices :
         deviceName = self._GetChosenDeviceType('What type of POD device do you want to add?')
         # add device if available 
         if(deviceName in self._Setup_PodDevices) : 
-            self._Setup_PodDevices[deviceName]._AddPODdevice()
-            self._Setup_PodDevices[deviceName]._ValidateParams()
+            self._Setup_PodDevices[deviceName].AddPODdevice()
+            self._Setup_PodDevices[deviceName].ValidateParams()
             self._Setup_PodDevices[deviceName].ConnectAllPODdevices()
         else : 
             print('[!] '+deviceName+' is not available.')
@@ -305,7 +307,7 @@ class Setup_PodDevices :
         print(
             '\n' + 
             'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
-            'podParametersDict = ' + str(self.GetPODparametersDict())  + '\n' + 
+            'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 
             'go = Setup_PodDevices(saveFile, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
@@ -515,7 +517,7 @@ class Setup_PodDevices :
         Data is saved to file. Uses threading.
         """
         # start streaming from all devices 
-        allThreads = {}
+        allThreads: dict[str, dict[int, Thread]] = {}
         for key, podType in self._Setup_PodDevices.items() :
             try : 
                 allThreads[key] = podType.Stream()

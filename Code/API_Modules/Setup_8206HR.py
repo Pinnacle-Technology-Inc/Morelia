@@ -96,7 +96,7 @@ class Setup_8206HR(Setup_Interface) :
                 failed = False
         except : # except Exception as e : print('[!]', e) # use this for testing 
             # fill entry 
-            self._podDevices[deviceNum] = None
+            self._podDevices[deviceNum] = 0
 
         # check if connection failed 
         if(failed) :
@@ -136,15 +136,14 @@ class Setup_8206HR(Setup_Interface) :
         Returns:
             dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
         """
-        params = Params_8206HR()
-        params.port             =   self._ChoosePort(forbiddenNames)
-        params.sampleRate       =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000)
-        params.preamplifierGain =   self._ChoosePreampGain()
-        params.lowPass          = ( UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
-                                    UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
-                                    UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500) )
-        return(params)
-
+        return(Params_8206HR(
+            port             =   self._ChoosePort(forbiddenNames),
+            sampleRate       =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
+            preamplifierGain =   self._ChoosePreampGain(),
+            lowPass          = ( UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
+                                 UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
+                                 UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500) )
+        ))
     
     @staticmethod
     def _ChoosePreampGain() -> int :

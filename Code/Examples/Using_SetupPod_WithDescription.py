@@ -36,7 +36,7 @@ if(runExample == '1'):
     """
     optional: you can store setup parameters as variables. 
     """
-    newParams = go.GetPODparametersDict()
+    newParams = go.GetPODparametersInit()
     newFile   = go.GetSaveFileName()
     print('Parameters: \npodParametersDict = ', newParams, '\nsaveFile = ', newFile, '\n')
 
@@ -68,7 +68,7 @@ elif(runExample == '2'):
     """
     optional: you can store setup parameters as variables. 
     """    
-    newParams = go.GetPODparametersDict()
+    newParams = go.GetPODparametersInit()
     newFile   = go.GetSaveFileName()
     print('Parameters: \npodParametersDict = ', newParams, '\nsaveFile = ', newFile, '\n')
 
