@@ -3,7 +3,6 @@
 # enviornment imports
 import os 
 import time
-import copy
 import numpy       as     np
 from   texttable   import Texttable
 from   threading   import Thread
@@ -280,7 +279,7 @@ class Setup_8206HR(Setup_Interface) :
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : Thread(
                     target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] ))
+                    args = ( pod, file, params.sampleRate ))
             # for each device 
             for devNum,params,pod,file in 
                 zip(
@@ -375,4 +374,4 @@ class Setup_8206HR(Setup_Interface) :
         Returns:
             bool: True if the parameters dictionary is correctly formatted.
         """
-        return(Params_8206HR.IsParamDictValid(paramDict),self._NAME)
+        return(Params_8206HR.IsParamDictValid(paramDict), self._NAME)

@@ -1,19 +1,19 @@
 
 
 # enviornment imports
-import copy
 import os 
 import time 
-import numpy       as     np
+import numpy        as     np
 from   texttable    import Texttable
 from   threading    import Thread
 from   io           import IOBase
 from   pyedflib     import EdfWriter
 
 # local imports
-from Setup_PodInterface import Setup_Interface
-from PodDevice_8401HR   import POD_8401HR 
-from GetUserInput       import UserInput
+from Setup_PodInterface  import Setup_Interface
+from PodDevice_8401HR    import POD_8401HR 
+from GetUserInput        import UserInput
+from Setup_PodParameters import Params_8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -31,24 +31,21 @@ class Setup_8401HR(Setup_Interface) :
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
     
 
-    _PARAMKEYS = [Setup_Interface._PORTKEY,'Preamplifier Device','Sample Rate','Mux Mode','Preamplifier Gain','Second Stage Gain','High-pass','Low-pass','Bias','DC Mode']
-    """Class-level list containing the device parameter dict keys.
-    """
-    
-    _CHANNELKEYS = ['A','B','C','D']
-    """Class-level list containing the keys of 'Preamplifier Gain','Second Stage Gain',\
-    'High-pass','Low-pass','Bias','DC Mode' parameters.
-    """
-
     _PHYSICAL_BOUND_uV : int = 2046 
     """Class-level integer representing the max/-min physical value in uV. Used for \
     EDF files. 
     """
 
-    # overwrite from parent
-    _NAME : str = '8401-HR'
+    _NAME : str = '8401-HR' # overwrite from parent
     """Class-level string containing the POD device name.
     """
+
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._podParametersDict : dict[int,Params_8401HR] = {}  
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -71,12 +68,12 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8401HR) -> bool : 
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (dict[str,): Dictionary of the device's parameters
+            deviceParams (Params_8401HR): Device parameters
 
         Returns:
             bool: True if connection was successful, false otherwise.
@@ -84,31 +81,31 @@ class Setup_8401HR(Setup_Interface) :
         failed = True 
         try : 
             # get port name 
-            port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string
+            port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
             self._podDevices[deviceNum] = POD_8401HR(
                 port        = port, 
-                preampName  = deviceParams['Preamplifier Device'], 
-                ssGain      = deviceParams['Second Stage Gain'],
-                preampGain  = deviceParams['Preamplifier Gain'],
+                ssGain      = deviceParams.ssGain,
+                preampGain  = deviceParams.preampGain,
             )
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
                 # write devicesetup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate'])
-                self._podDevices[deviceNum].WriteRead('SET MUX MODE', int(deviceParams['Mux Mode'])) # bool to int 
+                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+                self._podDevices[deviceNum].WriteRead('SET MUX MODE', int(deviceParams.muxMode)) # bool to int 
                 # write channel specific setup parameters
-                channels = ['A','B','C','D']
-                for i, letter in enumerate(channels, start=0) : 
-                    if(deviceParams['High-pass'][letter] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (i, self._CodeHighpass(deviceParams['High-pass'][letter])))
-                    if(deviceParams['Low-pass' ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET LOWPASS',  (i, deviceParams['Low-pass'][letter]))
-                    if(deviceParams['Bias'     ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (i, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams['Bias'][letter])))
-                    if(deviceParams['DC Mode'  ][letter] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (i, self._CodeDCmode(deviceParams['DC Mode'][letter])))
-                    if(deviceParams['Second Stage Gain'][letter] != None and 
-                       deviceParams['High-pass'][letter]!= None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (i, POD_8401HR.GetSSConfigBitmask(gain=deviceParams['Second Stage Gain'][letter], highpass=deviceParams['High-pass'][letter])))
+                for channel in range(4) : 
+                    if(deviceParams.highPass[channel] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (channel, self._CodeHighpass(deviceParams.highPass[channel])))
+                    if(deviceParams.lowPass [channel] != None) : self._podDevices[deviceNum].WriteRead('SET LOWPASS',  (channel, deviceParams.lowPass[channel]))
+                    if(deviceParams.bias    [channel] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (channel, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
+                    if(deviceParams.dcMode  [channel] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (channel, self._CodeDCmode(deviceParams.dcMode[channel])))
+                    if(deviceParams.ssGain  [channel] != None and 
+                       deviceParams.highPass[channel] != None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
                 # successful write if no exceptions raised 
                 failed = False
-        except : # except Exception as e : print('[!]', e)            
+        # except : 
+        except Exception as e : 
+            print('[!]', e)            
             # fill entry 
             self._podDevices[deviceNum] = None
         # check if connection failed 
@@ -161,30 +158,29 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8401HR :
         """Asks the user to input all the device parameters. 
 
         Args:
             forbiddenNames (list[str]): List of port names already used by other devices.
 
         Returns:
-            dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
+            Params_8401HR: Device parameters.
         """
-        params = {
-            self._PORTKEY           : self._ChoosePort(forbiddenNames),
-            'Preamplifier Device'   : self._GetPreampDeviceName(),
-            'Sample Rate'           : UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000),
-            'Mux Mode'              : UserInput.AskYN('Use mux mode?')
-        }
+        params = Params_8401HR()
+        params.port         = self._ChoosePort(forbiddenNames)
+        params.preampDevice = self._GetPreampDeviceName()
+        params.sampleRate   = UserInput.AskForIntInRange('Set sample rate (Hz)', 2000, 20000)
+        params.muxMode      = UserInput.AskYN('Use mux mode?')
         # get channel map for the user's preamplifier 
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(params['Preamplifier Device'])
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(params.preampDevice)
         # get parameters for each channel (A,B,C,D)
-        params['Preamplifier Gain'] = self._SetForMappedChannels('Set preamplifier gain (1, 10, or 100) for...',        chmap, self._SetPreampGain  )
-        params['Second Stage Gain'] = self._SetForMappedChannels('Set second stage gain (1 or 5) for...',               chmap, self._SetSSGain      )
-        params['High-pass']         = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    )
-        params['Low-pass']          = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     )
-        params['Bias']              = self._SetForMappedChannels('Set bias (+/- 2.048 V) for...',                       chmap, self._SetBias        )
-        params['DC Mode']           = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      )
+        params.preampGain   = self._SetForMappedChannels('Set preamplifier gain (1, 10, or 100) for...',        chmap, self._SetPreampGain  )
+        params.ssGain       = self._SetForMappedChannels('Set second stage gain (1 or 5) for...',               chmap, self._SetSSGain      )
+        params.highPass     = self._SetForMappedChannels('Set high-pass filter (0, 0.5, 1, or 10 Hz) for...',   chmap, self._SetHighpass    ) 
+        params.lowPass      = self._SetForMappedChannels('Set low-pass filter (21-15000 Hz) for...',            chmap, self._SetLowpass     ) 
+        params.bias         = self._SetForMappedChannels('Set bias (+/- 2.048 V) for...',                       chmap, self._SetBias        ) 
+        params.dcMode       = self._SetForMappedChannels('Set DC mode (VBIAS or AGND) for...',                  chmap, self._SetDCMode      ) 
         return(params)
 
 
@@ -203,7 +199,7 @@ class Setup_8401HR(Setup_Interface) :
 
         
     # func MUST take one argument, which is the channel map value 
-    def _SetForMappedChannels(self, message: str, channelMap: dict[str,str], func: 'function') -> dict[str,int|None]: 
+    def _SetForMappedChannels(self, message: str, channelMap: dict[str,str], func: 'function') -> tuple[int|None] : 
         """Asks the user to input values for all channels (excluding no-connects). 
 
         Args:
@@ -213,18 +209,15 @@ class Setup_8401HR(Setup_Interface) :
                 parameter and returns one value.  
 
         Returns:
-            dict[str,int|None]: Dictionary with ABCD keys and user inputs for values.
+            tuple[int|None] : Tuple with user inputs for values for the ABCD channels
         """
         print(message)
-        preampDict = {}
-        for abcd, label in channelMap.items() : 
-            # automatically set to None if no-connect (NC)
-            if(label == 'NC') : 
-                preampDict[abcd] = None
-            # otherwise, ask for input 
-            else: 
-                preampDict[abcd] = func(label)
-        return(preampDict)
+        channels = [None] * 4
+        for i, label in enumerate(channelMap.values()): 
+            # ask for value if not No-Connect (NC)
+            if(label != 'NC') : 
+               channels[i] = func(label)
+        return(tuple(channels))
     
 
     @staticmethod
@@ -353,28 +346,28 @@ class Setup_8401HR(Setup_Interface) :
         # setup table 
         tab = Texttable(160)
         # write column names
-        tab.header(['Device #',self._PORTKEY,'Preamplifier Device',
+        tab.header(['Device #','Port','Preamplifier Device',
                     'Sample Rate (Hz)','Mux Mode', 'Preamplifier Gain','Second Stage Gain',
                     'High-pass (Hz)','Low-pass (Hz)','Bias (V)','DC Mode'])
         # for each device 
         for key,val in self._podParametersDict.items() :
             # get channel mapping for device 
-            chmap = POD_8401HR.GetChannelMapForPreampDevice(val['Preamplifier Device'])
+            chmap = POD_8401HR.GetChannelMapForPreampDevice(val.preampDevice)
             # write row to table 
             tab.add_row([
-                key, val[self._PORTKEY], val['Preamplifier Device'], val['Sample Rate'],str(val['Mux Mode']),
-                self._NiceABCDtableText(val['Preamplifier Gain'],   chmap),
-                self._NiceABCDtableText(val['Second Stage Gain'],   chmap),
-                self._NiceABCDtableText(val['High-pass'],           chmap),
-                self._NiceABCDtableText(val['Low-pass'],            chmap),
-                self._NiceABCDtableText(val['Bias'],                chmap),
-                self._NiceABCDtableText(val['DC Mode'],             chmap)
+                key, val.port, val.preampDevice, val.sampleRate,str(val.muxMode),
+                self._NiceABCDtableText(val.preampGain, chmap),
+                self._NiceABCDtableText(val.ssGain,     chmap),
+                self._NiceABCDtableText(val.highPass,   chmap),
+                self._NiceABCDtableText(val.lowPass,    chmap),
+                self._NiceABCDtableText(val.bias,       chmap),
+                self._NiceABCDtableText(val.dcMode,     chmap)
             ])
         # return table object 
         return(tab)
     
 
-    def _NiceABCDtableText(self, abcdValueDict: dict[str,int|str|None], channelMap: dict[str,str]) -> str:
+    def _NiceABCDtableText(self, abcdValues: list[int|str|None], channelMap: dict[str,str]) -> str:
         """Builds a string that formats the channel values to be input into the parameter table.
 
         Args:
@@ -386,11 +379,11 @@ class Setup_8401HR(Setup_Interface) :
         """
         # build nicely formatted text
         text = ''
-        for key,val in channelMap.items() : 
+        for i,val in enumerate(channelMap.values()) : 
             # esclude no-connects from table 
             if(val!='NC') : 
                 # <channel label>: <user's input> \n
-                text += (str(val) +': ' + str(abcdValueDict[key]) + '\n')
+                text += (str(val) +': ' + str(abcdValues[i]) + '\n')
         # cut off the last newline then return string 
         return(text[:-1])
     
@@ -404,72 +397,29 @@ class Setup_8401HR(Setup_Interface) :
         Args:
             paramDict (dict): Dictionary of the parameters for one device 
 
-        Raises:
-            Exception: Invalid parameters.
-            Exception: Invalid parameter value types.
-            Exception: Preamplifier is not supported.
-
         Returns:
             bool: True for valid parameters.
         """
-        # check that all params exist 
-        if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
-            raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
-        # check type of each specific command 
-        if( not(
-                    isinstance( paramDict[Setup_Interface._PORTKEY],str  ) 
-                and isinstance( paramDict['Preamplifier Device'],   str  ) 
-                and isinstance( paramDict['Sample Rate'],           int  ) 
-                and isinstance( paramDict['Mux Mode'],              bool ) 
-                and isinstance( paramDict['Preamplifier Gain'],     dict ) 
-                and isinstance( paramDict['Second Stage Gain'],     dict ) 
-                and isinstance( paramDict['High-pass'],             dict ) 
-                and isinstance( paramDict['Low-pass'],              dict ) 
-                and isinstance( paramDict['Bias'],                  dict ) 
-                and isinstance( paramDict['DC Mode'],               dict ) 
-            )
-        ) : 
-            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
-        # check preamp 
-        if(not POD_8401HR.IsPreampDeviceSupported(paramDict['Preamplifier Device'])) :
-            raise Exception('[!] Preamplifier '+str(paramDict['Preamplifier Device'])+' is not supported for '+str(self._NAME)+'.')
-        # check ABCD channel value types
-        self._IsChannelTypeValid( paramDict['Preamplifier Gain'],    int   ) 
-        self._IsChannelTypeValid( paramDict['Second Stage Gain'],    int   )
-        self._IsChannelTypeValid( paramDict['High-pass'],            float )
-        self._IsChannelTypeValid( paramDict['Low-pass'],             int   )
-        self._IsChannelTypeValid( paramDict['Bias'],                 float )
-        self._IsChannelTypeValid( paramDict['DC Mode'],              str   )
-        # no exception raised 
-        return(True)
+        return(Params_8401HR.IsParamDictValid(paramDict), self._NAME)
+    
 
-
-    def _IsChannelTypeValid(self, chdict: dict, isType) -> bool :
-        """Checks that the keys and values for a given channel are valid.
+    def _ParamDictToObjects(self, podParametersDict: dict[int,dict]) -> dict[int,Params_8401HR] :
+        """Converts the POD parameters dictionary for each device into a Params object.
 
         Args:
-            chdict (dict): dictionary with ABCD keys and isType type values.
-            isType (bool): data type.
-
-        Raises:
-            Exception: Channel dictionary is empty.
-            Exception: Invalid channel keys.
-            Exception: Invalid channel value.
-
+            podParametersDict (dict[int,dict]): Dictionary of all pod devices where the keys are\
+                the device numbers and the values are dictionaries of parameters. 
+        
         Returns:
-            bool: True for valid parameters.
+            dict[int,Params_8401HR]: Dictionary of all pod devices where the keys are\
+                the device numbers and the values are the parameters.
         """
-        # is dict empty?
-        if(len(chdict)==0) : 
-            raise Exception('[!] Channel dictionary is empty for '+str(self._NAME)+'.')
-        # check that keys are ABCD
-        if(list(chdict.keys()).sort() != copy.copy(self._CHANNELKEYS).sort() ) :
-            raise Exception('[!] Invalid channel keys for '+str(self._NAME)+'.')
-        for value in chdict.values() :
-            if( value != None and not isinstance(value, isType) ) :
-                raise Exception('[!] Invalid channel value type for '+str(self._NAME)+'.')
-        return(True)
-
+        paramObjects = {}
+        for key,val in podParametersDict.items():
+            # NOTE replace Params_Interface with the correct child class 
+            paramObjects[key] = Params_8401HR(val) 
+        return(paramObjects)
+    
 
     # ------------ FILE HANDLING ------------
 
@@ -591,7 +541,7 @@ class Setup_8401HR(Setup_Interface) :
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : Thread(
                     target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'], devNum))
+                    args = ( pod, file, params.sampleRate, devNum))
             # for each device 
             for devNum,params,pod,file in 
                 zip(
@@ -629,7 +579,7 @@ class Setup_8401HR(Setup_Interface) :
         currentTime: float = 0.0 
 
         # exclude no-connects 
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device'])
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice)
         dataColumns = []
         for key,val in chmap.items() : 
             if(val!='NC') : dataColumns.append(key) # ABCD 

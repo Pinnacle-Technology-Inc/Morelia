@@ -46,18 +46,7 @@ class Setup_Interface :
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
     
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Checks if the parameters for one device are valid.
-
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device.
-
-        Returns:
-            bool: True for valid parameters.
-        """
-        pass
-    
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> Params_Interface :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_Interface :
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -135,10 +124,23 @@ class Setup_Interface :
         Returns:
             str: String of _NAME.
         """
-        # returns the name of the POD device 
+        # NOTE replace Setup_Interface with the correct child class 
         return(Setup_Interface._NAME)
     
     
+    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
+        """Checks if the parameters for one device are valid.
+
+        Args:
+            paramDict (dict): Dictionary of the parameters for one device.
+
+        Returns:
+            bool: True for valid parameters.
+        """
+        # NOTE replace Params_Interface with the correct child class 
+        return(Params_Interface.IsParamDictValid(paramDict), self._NAME)
+    
+
     def _ParamDictToObjects(self, podParametersDict: dict[int,dict]) -> dict[int,Params_Interface] :
         """Converts the POD parameters dictionary for each device into a Params object.
 
@@ -152,7 +154,7 @@ class Setup_Interface :
         """
         paramObjects = {}
         for key,val in podParametersDict.items():
-            # NOTE replace podParametersDict with correct child class 
+            # NOTE replace Params_Interface with the correct child class 
             paramObjects[key] = Params_Interface(val) 
         return(paramObjects)
 
