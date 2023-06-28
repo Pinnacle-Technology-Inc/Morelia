@@ -1,7 +1,3 @@
-
-# local imports 
-from PodDevice_8401HR import POD_8401HR
-
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -17,7 +13,7 @@ class Params_Interface :
         self.port: str = port # name of the COM port 
 
     def GetInit(self) -> str : 
-        return('Params_Interface(port='+str(self.port)+')')
+        return('Params_Interface(port=\''+self.port+'\')')
 
 
 # ##########################################################################################

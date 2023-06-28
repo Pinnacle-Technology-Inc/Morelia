@@ -5,7 +5,8 @@ import sys, os
 sys.path.insert(0, os.path.join( os.path.abspath('.'), 'Code', 'API_Modules') )
 
 # local imports
-from Setup_PodDevices import Setup_PodDevices
+from Setup_PodDevices    import Setup_PodDevices
+from Setup_PodParameters import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -51,9 +52,9 @@ elif(runExample == '2'):
     #   Note that the POD device number will be appended to the end of the filename.
     saveFile = r'C:\Users\tkelly\Desktop\TEST\test.csv'
     # example dictionary with 8206HR POD device setup parameters
-    podParametersDict = { '8206-HR' : {
-        1: {'Port': 'COM5 - USB EEG/EMG (COM5)', 'Sample Rate': 500, 'Preamplifier Gain': 100, 'Low-pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}, 
-        2: {'Port': 'COM4 - USB EEG/EMG (COM4)', 'Sample Rate': 500, 'Preamplifier Gain': 10,  'Low-pass': {'EEG1': 40, 'EEG2': 40, 'EEG3/EMG': 40}}}}
+    podParametersDict = { '8206-HR' : { 
+        1 : Params_8206HR(port='COM5 - USB EEG/EMG (COM5)', sampleRate=500, preamplifierGain=100, lowPass=(40, 40, 40)) , 
+        2 : Params_8206HR(port='COM4 - USB EEG/EMG (COM4)', sampleRate=500, preamplifierGain=10,  lowPass=(40, 40, 40)) } }
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """
