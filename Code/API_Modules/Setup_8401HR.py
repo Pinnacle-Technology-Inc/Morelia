@@ -100,7 +100,7 @@ class Setup_8401HR(Setup_Interface) :
                     if(deviceParams.bias    [channel] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (channel, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
                     if(deviceParams.dcMode  [channel] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (channel, self._CodeDCmode(deviceParams.dcMode[channel])))
                     if(deviceParams.ssGain  [channel] != None and 
-                       deviceParams.highPass[channel] != None ) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
+                       deviceParams.highPass[channel] != None) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
                 # successful write if no exceptions raised 
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')

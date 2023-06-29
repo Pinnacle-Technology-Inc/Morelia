@@ -14,7 +14,7 @@ class Params_Interface :
     """
     # NOTE Address all NOTE's when making a child of Params_Interface.
 
-    
+
     def __init__(self, 
                  port: str,
                  checkForValidParams: bool = True 
@@ -88,7 +88,7 @@ class Params_8206HR(Params_Interface) :
         valid when checkForValidParams is True.  
 
         Args:
-            port (str): Name of the COM port 
+            port (str): Name of the COM port.
             sampleRate (int): Sample rate in 100-2000 Hz range.
             preamplifierGain (int): Preamplifier gain. Should be 10x or 100x.
             lowPass (tuple[int]): Low-pass for EEG/EMG in 11-500 Hz range. 
@@ -182,7 +182,7 @@ class Params_8401HR(Params_Interface) :
         valid when checkForValidParams is True.  
 
         Args:
-            port (str): Name of the COM port .
+            port (str): Name of the COM port.
             preampDevice (str): Name of the mouse/rat preamplifier device.
             sampleRate (int): Sample rate (2000-20000 Hz).
             muxMode (bool): Using mux mode when True, false otherwise.
@@ -190,7 +190,7 @@ class Params_8401HR(Params_Interface) :
             ssGain (tuple[int  ]): Second stage gain (1 or 5) for all channels.
             highPass (tuple[float]): High-pass filter (0, 0.5, 1, or 10 Hz) for all channels.
             lowPass (tuple[int  ]): Low-pass filter (21-15000 Hz) for all channels.
-            bias (tuple[float]): Bias voltage (+/- 2.048 V) for all channels .
+            bias (tuple[float]): Bias voltage (+/- 2.048 V) for all channels.
             dcMode (tuple[str  ]): DC mode (VBIAS or AGND) for all channels.
             checkForValidParams (bool, optional): Flag to raise Exceptions for invalid \
                 parameters when True. Defaults to True.
