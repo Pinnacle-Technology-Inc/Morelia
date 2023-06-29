@@ -72,7 +72,7 @@ class POD_8480HR(POD_Basics) :
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
     
 
-    def DecodeStimulusConfigBits(config: int) -> dict:
+    def DecodeStimulusConfigBits(self,config: int) -> dict:
         DecodeStimulus = {
             'optoElec'      : config & 1,  
             'monoBiphasic'  : (config >> 1) & 1,  
@@ -80,24 +80,24 @@ class POD_8480HR(POD_Basics) :
         }
         return DecodeStimulus
 
-    stimulustrial = DecodeStimulusConfigBits(6)
-    print("\nbits: ", stimulustrial)
+    # stimulustrial = DecodeStimulusConfigBits(6)
+    # print("\nbits: ", stimulustrial)
 
 
     # TODO decode SyncConfigBits
-    def DecodeSyncConfigBits(config: int) -> dict:
+    def DecodeSyncConfigBits(self, config: int) -> dict:
         DecodeSync = {
-            'SyncLevel'     : config & 1,
+            'SyncLevel'     : (config) & 1,
             'SyncIdle'      : (config >> 1) & 1,
             'SignalTrigger' : (config >> 2),
         }
         return DecodeSync
     
-    synctrail = DecodeSyncConfigBits(1)
-    print("\nsyncbits: ", synctrail)
+    # synctrail = DecodeSyncConfigBits(1)
+    # print("\nsyncbits: ", synctrail)
 
 
-    def DecodeTTlConfigBits(config:int) -> dict:
+    def DecodeTTlConfigBits(self, config:int) -> dict:
         DecodeTTL = {
             'RisingFalling'  : config & 1,
             'StimulusTrig'   : (config >> 1) & 1,
@@ -105,45 +105,45 @@ class POD_8480HR(POD_Basics) :
         }
         return DecodeTTL
     
-    TTLtrail = DecodeTTlConfigBits(128)
-    print("\nTTL:", TTLtrail)
+    # TTLtrail = DecodeTTlConfigBits(128)
+    # print("\nTTL:", TTLtrail)
 
-    @staticmethod
-    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
-        #Converts the TTL bytes argument into a dictionary of integer TTL values.
-
-        return({
-            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
-        })
 
     # TODO overwrite TranslatePODpacket to handle special commands (reverse the bitmasking)
     # see TranslatePODpacket in PodDevice_8401HR for example
     # example pseudocode:
     
     def TranslatePODpacket(self, msg: bytes) -> dict[str, int | bytes]:
-        specialcommands = [101] #101 is the number for 'GET STIMULUS'
+        specialcommands = [101, 126, 108] #101 is the number for 'GET STIMULUS'
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) #gets the command number
 
         print("testing...")
         print("msg", msg)
         if(cmd in specialcommands) : 
             # unpack 
-            print("Special")
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)  #breaks up the msg into dictionary with keys as 'command number' and 'payload'
             # start building translated dictionary 
+            print("msgDict", msgDict)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }   #pulling value from msgdict and changing into int
-            if('Payload' in msgDict) :
-                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
-                print(msg)
-                #msgDict[payload] [all previous],
-
-                # DecodeStimulusConfigBits (
-                #     msgDict[payload] [last U8 for Config Flags] 
-                # ) 
+            if (cmd == 126):  #126 GET SYNC CONFIG
+                # print("SYNC CONFIG")
+                # print("TYPE", type(msgDict['Payload']))
+                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'] ) }  #changing the bytes to int
+                transdict['Payload'] = self.DecodeSyncConfigBits(transdict['Payload'])  #putting the integer into the decode function
+                print("TRANSDICTIONARY", transdict['Payload'])
+            if(cmd == 108): #108 GET TTL SETUP
+                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][:4] ) }
+                #print("PAYLOAD... TTL", transdict['Payload'])
+                transdict['Payload'] = self.DecodeTTlConfigBits(transdict['Payload'])
+                print("TRANSDICTIONARY", transdict)
+            if(cmd == 101): #101 GET STIMULUS
+                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][-1:] ) }
+                #print("PAYLOAD... STIMULS", transdict['Payload'])
+                transdict['Payload'] = self.DecodeStimulusConfigBits(transdict['Payload'])
+                print("TRANSDICTIONARY", transdict)
+        else:
+            return(self.TranslatePODpacket_Standard(msg))
+                 
             
-        # maintain (U8, U16x4, U32, U8) tuple structure 
+        # maintain (U8, U16x4, U32, U8) tuple structure.
+        

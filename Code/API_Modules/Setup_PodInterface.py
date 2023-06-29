@@ -193,6 +193,7 @@ class Setup_Interface :
                 for all devices. Defaults to None.
         """
         # get dictionary of POD device parameters
+        print("TESTING PURPOSE")
         if(podParametersDict==None):
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
             self._ValidateParams()          # display parameters and allow user to edit them
@@ -201,6 +202,9 @@ class Setup_Interface :
         # connect and initialize all POD devices
         self.ConnectAllPODdevices()
 
+
+    #def SetupSaveFile(self, saveFile:str|None=None) -> None:
+        #print("hello from save")
 
     # ------------ VALIDATION ------------
     
@@ -310,7 +314,7 @@ class Setup_Interface :
 
 
     def _SetParam_allPODdevices(self) -> None :
-        """First gets the number of POD devices, then asks the user for the information \
+        """First gets the number of POD devices, then asks the user for the information 
         for each device.
         """
         # get the number of devices 
@@ -329,6 +333,7 @@ class Setup_Interface :
             podDict[i+1] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
+        print("podparamters:", self._podParametersDict )
 
 
     @staticmethod
