@@ -239,8 +239,8 @@ class Params_8401HR(Params_Interface) :
         Returns:
             str: String that represents the Params_8401HR constructor.
         """
-        return('Params_8401HR(port=\''+self.port+'\', preampDevice='+str(self.preampDevice)+
-               ', sampleRate='+str(self.sampleRate)+', muxMode='+str(self.muxMode)+
+        return('Params_8401HR(port=\''+self.port+'\', preampDevice=\''+str(self.preampDevice)+
+               '\', sampleRate='+str(self.sampleRate)+', muxMode='+str(self.muxMode)+
                ', preampGain='+str(self.preampGain)+', ssGain='+str(self.ssGain)+
                ', highPass='+str(self.highPass)+', lowPass='+str(self.lowPass)+
                ', bias='+str(self.bias)+', dcMode='+str(self.dcMode)+')')
