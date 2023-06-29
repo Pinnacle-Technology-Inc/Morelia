@@ -29,7 +29,7 @@ class Setup_PodDevices :
     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
 
     Attributes:
-        _Setup_PodDevices (dict[str,Setup_Interface]): Dictionary containing the Setup_Interface \
+        _Setup_PodDevices (dict[str,dict[int,Params_Interface]): Dictionary containing the Setup_Interface \
             subclasses for each POD device.
         _saveFileName (str): String containing the path, filename, and file extension to a file to \
             save streaming data to. The filename will be extended with "_<DEVICE NAME>_<DEVICE NUMBER>" \
