@@ -241,7 +241,7 @@ class Setup_PodDevices :
         then sets the value to the POD devices.
         """
         self._saveFileName = self._GetFilePath()
-        self._saveFileName = self._SetFilenameToDevices()
+        self._SetFilenameToDevices()
         self._PrintSaveFile()
 
 
@@ -425,10 +425,8 @@ class Setup_PodDevices :
         """Prints the file path and name that data is saved to. Note that the device name and number \
         will be appended to the end of the filename,
         """
-        # print name 
+        # print name  
         print('\nStreaming data will be saved to '+ str(self._saveFileName))
-        # if setup 8480 print special filename also 
-        # OR for each POD Interface child, print save file 
  
 
     @staticmethod
@@ -450,11 +448,10 @@ class Setup_PodDevices :
         # get extension 
         if(not fIsExt) : name, ext = os.path.splitext(f)
         else :  ext = f
-            # check if extension is allowed
+        # check if extension is allowed
         if(ext not in goodExt) : 
             if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
             return(False) # bad extension 
-        
         return(True)      # good extension 
 
 
@@ -497,8 +494,6 @@ class Setup_PodDevices :
             str: String of the file name and extension.
         """
         # ask user for file name 
-        print("PLEASE NOTE: Only .txt files are permitted for POD device 8480-HR. Any other extensions given will automatically be changed to .txt")
-        # added the above warning to users so Only txt files are allowed for 8480-HR.
         inp = input('File name: ')
         # prompt again if no name given
         if(inp=='') : 
@@ -519,7 +514,6 @@ class Setup_PodDevices :
         # give filename to devices
         for podType in self._Setup_PodDevices.values() : 
             podType.SetFileName(self._saveFileName)
-  
 
 
     # ------------ STREAM ------------ 

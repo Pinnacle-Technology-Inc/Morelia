@@ -5,9 +5,7 @@ Setup_8480HR provides the setup functions for an 8480HR POD device.
 # enviornment imports
 
 import copy 
-import os
 from   texttable   import Texttable
-from   io           import IOBase
 
 
 # local imports
@@ -45,18 +43,8 @@ class Setup_8480HR(Setup_Interface) :
     @staticmethod
     def GetDeviceName() -> str : 
         # returns the name of the POD device 
-        print("NAME: ", Setup_8480HR._NAME)
         return(Setup_8480HR._NAME)
 
-    def SetFileName(self, fileName: str) -> str:
-        split_tup = os.path.splitext(fileName)
-        print("Extension:", split_tup[1])
-        if split_tup[1] != '.txt':
-            newFileName = split_tup[0] + '.txt'
-            print("Modified file name:", newFileName)
-            self._saveFileName = newFileName
-        else:
-            self._saveFileName = fileName
 
     # ============ PRIVATE METHODS ============ 
     
@@ -261,37 +249,17 @@ class Setup_8480HR(Setup_Interface) :
         #        (AB, CD) is not intuitive to be (ms, us). Instead, put the parts back together 
         #        and show AB.CD
         # NOTE: use title case with spaces for everything in the table. ex: channel -> Channel, period_ms -> period (ms)
-        # NOTE: show the channel in the table also 
+        # NOTE: show the chanel in the table also 
         return(tab)
         
 
-    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        # open file and write column names 
-        f = open(fname, 'w')
-        print("OPENING...")
-        # write time
-        f.write( self._GetTimeHeader_forTXT() ) 
-        # columns names
-        f.write('\nTime,CH0,CH1,CH2\n')
-        return(f)
+        # def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+
+        #     # open file and write column names 
+        #     f = open(fname, 'w')
+        #     # write time
+        #     f.write( self._GetTimeHeader_forTXT() ) 
+        #     # columns names
+        #     f.write('\nTime,CH0,CH1,CH2\n')
+        #     return(f)
     
-    @staticmethod
-    def _WriteDataToFile_TXT(file: IOBase) : 
-        """Writes data to an open text file.
-
-        Args:
-            file (IOBase): opened write file.
-            data (list[np.ndarray]): List of 3 items, one for each channel.
-            t (np.ndarray): list with the time stamps (in seconds).
-        """
-        # for i in range(len(t)) : 
-        #     line = [t[i], data[0][i], data[1][i], data[2][i] ]
-        #     # convert data into comma separated string
-        #     line = ','.join(str(x) for x in line) + '\n'
-        #     # write data to file 
-        #     file.write(line)
-    
-        print("hi")
-
-        
-
