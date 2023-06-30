@@ -35,14 +35,6 @@ class Setup_Interface :
             will be appended to the filename.
     """
 
-    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
-
-
-    _NAME    : str = 'GENERIC' 
-    """Class-level string for the Device name. This should be overwritten by child \
-    subclasses.
-    """
-
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
     
@@ -122,10 +114,10 @@ class Setup_Interface :
         """returns the name of the POD device.
 
         Returns:
-            str: String of _NAME.
+            str: GENERIC.
         """
-        # NOTE replace Setup_Interface with the correct child class 
-        return(Setup_Interface._NAME)
+        # NOTE replace GENERIC with the correct child class' name 
+        return('GENERIC')
     
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -211,9 +203,9 @@ class Setup_Interface :
         # are keys int and value dict
         for key,value in paramDict.items() : 
             if(not isinstance(key,int)) : 
-                raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
+                raise Exception('[!] Device keys must be integer type for '+str(self.GetDeviceName())+'.')
             if(not isinstance(value,Params_Interface)) : 
-                raise Exception('[!] Device parameters must be Params_Interface type for '+str(self._NAME)+'.')
+                raise Exception('[!] Device parameters must be Params_Interface type for '+str(self.GetDeviceName())+'.')
         # no exceptions raised
         return(True)
     
@@ -258,7 +250,7 @@ class Setup_Interface :
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
-        print('\nConnecting '+self._NAME+' devices...')
+        print('\nConnecting '+self.GetDeviceName()+' devices...')
         # setup each POD device
         areAllGood = True
         for key,val in self._podParametersDict.items():
@@ -294,7 +286,7 @@ class Setup_Interface :
             dict[int,Params_Interface]: Dictionary with device numbers for keys and parameters for values.
         """
         # get the number of devices 
-        numDevices = self._SetNumberOfDevices(self._NAME)
+        numDevices = self._SetNumberOfDevices(self.GetDeviceName())
         # initialize 
         portNames = [None] * numDevices
         podDict = {}
@@ -378,7 +370,7 @@ class Setup_Interface :
         # display all pod devices and parameters
         self.DisplayPODdeviceParameters()
         # ask if params are good or not
-        validParams = UserInput.AskYN(question='Are the '+self._NAME+' device parameters correct?')
+        validParams = UserInput.AskYN(question='Are the '+self.GetDeviceName()+' device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
@@ -428,7 +420,7 @@ class Setup_Interface :
         Returns:
             int: Integer for the device number.
         """
-        podKey = UserInput.AskForInt(str(action)+' '+self._NAME+' device #')
+        podKey = UserInput.AskForInt(str(action)+' '+self.GetDeviceName()+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
@@ -477,7 +469,7 @@ class Setup_Interface :
         tab : Texttable|None = self._GetPODdeviceParameterTable()
         if(tab != None) : 
             # print title 
-            print('\nParameters for all '+str(self._NAME)+' Devices:')
+            print('\nParameters for all '+str(self.GetDeviceName())+' Devices:')
             # show table 
             print(tab.draw())
 
@@ -516,7 +508,7 @@ class Setup_Interface :
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
         #    ex: text.txt --> test_8206-HR_1.txt
         name, ext = os.path.splitext(self._saveFileName)
-        fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
+        fname = name+'_'+self.GetDeviceName()+'_'+str(devNum)+ext   
         return(fname)
 
 
@@ -551,7 +543,7 @@ class Setup_Interface :
         """
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 
-            raise Exception('Could not stream from '+self._NAME+'.')
+            raise Exception('Could not stream from '+self.GetDeviceName()+'.')
         # start streaming from all devices 
         else:
             return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys  
@@ -596,7 +588,7 @@ class Setup_Interface :
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
-                print('[!] Connection issue with '+self._NAME+' device #'+str(key)+'.')
+                print('[!] Connection issue with '+self.GetDeviceName()+' device #'+str(key)+'.')
                 # flag that a connection failed
                 allGood = False 
         # return True when all connections are successful, false otherwise

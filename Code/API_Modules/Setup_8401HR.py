@@ -36,10 +36,6 @@ class Setup_8401HR(Setup_Interface) :
     EDF files. 
     """
 
-    _NAME : str = '8401-HR' # overwrite from parent
-    """Class-level string containing the POD device name.
-    """
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -53,13 +49,13 @@ class Setup_8401HR(Setup_Interface) :
 
     @staticmethod
     def GetDeviceName() -> str : 
-        """returns the name of the POD device.
+        """returns the name of the 8401-HR POD device.
 
         Returns:
-            str: String of _NAME.
+            str: 8401-HR.
         """
         # returns the name of the POD device 
-        return(Setup_8401HR._NAME)
+        return('8401-HR')
     
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
