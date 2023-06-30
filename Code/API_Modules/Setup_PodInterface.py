@@ -37,7 +37,18 @@ class Setup_Interface :
 
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
+
+    @staticmethod
+    def GetDeviceName() -> str : 
+        """returns the name of the POD device.
+
+        Returns:
+            str: GENERIC.
+        """
+        # NOTE replace GENERIC with the correct child class' name 
+        return('GENERIC')   
     
+
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_Interface :
         """Asks the user to input all the device parameters. 
 
@@ -49,13 +60,6 @@ class Setup_Interface :
         """
         pass
 
-    def _GetPODdeviceParameterTable(self) -> Texttable : 
-        """Builds a table containing the parameters for all POD devices.
-
-        Returns:
-            Texttable: Table containing all parameters.
-        """
-        pass
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_Interface) -> bool : 
         """Creates a POD device object and write the setup parameters to it. 
@@ -70,18 +74,14 @@ class Setup_Interface :
         # write setup commands to initialize the POD device with the user's parameters
         pass
 
-    def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        """Builds a table containing the parameters for all POD devices.
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            Texttable: Table containing all parameters.
         """
-        # each POD device has its own thread 
         pass
 
-    def StopStream(self) -> None: 
-        """Write a command to stop streaming data to all POD devices."""
-        pass
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
         """Opens a text file and writes the column names. Writes the current date/time at the top of \
@@ -96,6 +96,7 @@ class Setup_Interface :
         # open a text file and write column names 
         pass
 
+
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
         """Opens EDF file and write header.
 
@@ -109,16 +110,23 @@ class Setup_Interface :
         # create an EDF file and write all channel information
         pass
 
-    @staticmethod
-    def GetDeviceName() -> str : 
-        """returns the name of the POD device.
+
+    def StopStream(self) -> None: 
+        """Write a command to stop streaming data to all POD devices."""
+        pass
+    
+
+    def _StreamThreading(self) -> dict[int,Thread] :
+        """Opens a save file, then creates a thread for each device to stream and write data from. 
 
         Returns:
-            str: GENERIC.
+            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
         """
-        # NOTE replace GENERIC with the correct child class' name 
-        return('GENERIC')
-    
+        # each POD device has its own thread 
+        pass
+
+
+
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
