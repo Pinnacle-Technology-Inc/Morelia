@@ -106,23 +106,6 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
     
 
-    def _ParamDictToObjects(self, podParametersDict: dict[int,dict]) -> dict[int,Params_8206HR] :
-        """Converts the POD parameters dictionary for each device into a Params object.
-
-        Args:
-            podParametersDict (dict[int,dict]): Dictionary of all pod devices where the keys are\
-                the device numbers and the values are dictionaries of parameters. 
-        
-        Returns:
-            dict[int,Params_8206HR]: Dictionary of all pod devices where the keys are\
-                the device numbers and the values are the parameters.
-        """
-        paramObjects = {}
-        for key,val in podParametersDict.items():
-            paramObjects[key] = Params_8206HR(val) 
-        return(paramObjects)
-    
-
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8206HR : 
         """Asks the user to input all the device parameters. 
 
@@ -210,13 +193,13 @@ class Setup_8206HR(Setup_Interface) :
             EdfWriter: Opened file.
         """
         # number of channels 
-        n = len(Params_8206HR.keys_lowPass)
+        n = len(Params_8206HR.lowPassLabels)
         # create file
         f = EdfWriter(fname, n) 
         # get info for each channel
         for i in range(n):
             f.setSignalHeader( i, {
-                'label' : Params_8206HR.keys_lowPass[i],
+                'label' : Params_8206HR.lowPassLabels[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
                 'physical_max': self._PHYSICAL_BOUND_uV,
@@ -355,18 +338,4 @@ class Setup_8206HR(Setup_Interface) :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             if(pod != None) : pod.WritePacket(cmd='STREAM', payload=0)
-            
 
-    # ------------ VALIDATION ------------
-
-
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Raises an exception if the parameters dictionary is incorrectly formatted.
-
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device.
-
-        Returns:
-            bool: True if the parameters dictionary is correctly formatted.
-        """
-        return(Params_8206HR.IsParamDictValid(paramDict), self._NAME)
