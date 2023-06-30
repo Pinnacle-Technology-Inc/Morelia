@@ -390,39 +390,6 @@ class Setup_8401HR(Setup_Interface) :
         return(text[:-1])
     
 
-    # ------------ VALIDATION ------------
-
-
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Checks if the parameters for one device are valid.
-
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device 
-
-        Returns:
-            bool: True for valid parameters.
-        """
-        return(Params_8401HR.IsParamDictValid(paramDict), self._NAME)
-    
-
-    def _ParamDictToObjects(self, podParametersDict: dict[int,dict]) -> dict[int,Params_8401HR] :
-        """Converts the POD parameters dictionary for each device into a Params object.
-
-        Args:
-            podParametersDict (dict[int,dict]): Dictionary of all pod devices where the keys are\
-                the device numbers and the values are dictionaries of parameters. 
-        
-        Returns:
-            dict[int,Params_8401HR]: Dictionary of all pod devices where the keys are\
-                the device numbers and the values are the parameters.
-        """
-        paramObjects = {}
-        for key,val in podParametersDict.items():
-            # NOTE replace Params_Interface with the correct child class 
-            paramObjects[key] = Params_8401HR(val) 
-        return(paramObjects)
-    
-
     # ------------ FILE HANDLING ------------
 
 
