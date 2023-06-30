@@ -88,6 +88,8 @@ class Params_8206HR(Params_Interface) :
         lowPass (tuple[int]): Low-pass for EEG/EMG in 11-500 Hz range. 
     """
 
+    lowPassLabels = ('EEG1', 'EEG2', 'EEG/EMG')
+
     def __init__(self, 
                  port:              str,       
                  sampleRate:        int,       
@@ -189,6 +191,8 @@ class Params_8401HR(Params_Interface) :
         bias (tuple[float]): Bias voltage (+/- 2.048 V) for all channels.
         dcMode (tuple[str]): DC mode (VBIAS or AGND) for all channels.
     """
+
+    channelLabels = ('A','B','C','D')
 
     def __init__(self, 
                  port:          str,            
