@@ -60,8 +60,8 @@ class POD_8401HR(POD_Basics) :
 
     def __init__(self, 
                  port: str|int, 
-                 ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
-                 preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  baudrate:int=9600
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
@@ -71,14 +71,16 @@ class POD_8401HR(POD_Basics) :
         Args:
             port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
             preampName (str): String of the corresponding device/sensor name.
-            ssGain (dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
+            ssGain (tuple|list|dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
                 channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            preampGain (dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
+            preampGain (tuple|list|dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
                 four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
             baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
                 the COM_io instance. Defaults to 9600.
 
         Raises:
+            Exception: The ssGain argument must be a dict or list.
+            Exception: The preampGain argument must be a dict or list.
             Exception: The ssGain dictionary has improper keys; keys must be ['A','B','C','D'].
             Exception: The preampGain dictionary has improper keys; keys must be ['A','B','C','D'].
             Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
@@ -110,8 +112,8 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 115,	'GET EXT1 VALUE',   (0,),	    (U16,),     False,  'Reads the analog value on the EXT1 pin. Returns an unsigned 12-bit value, representing a 3.3V input. This is normally used to identify if an 8480 is present.  Similar caveat re blocking as GET EXT0 VALUE.')
         self._commands.AddCommand( 116,	'SET EXT0',	        (U8,),	    (0,),       False,  'Sets the digital value of EXT0, 0 or 1.')
         self._commands.AddCommand( 117,	'SET EXT1',	        (U8,),	    (0,),       False,  'Sets the digital value of EXT1, 0 or 1.')
-        self._commands.AddCommand( 121,	'SET INPUT GROUND'  (U8,),	    (0,),       False,  'Sets whether channel inputs are grounded or connected to the preamp. Bitfield, bits 0-3, high nibble should be 0s. 0=Grounded, 1=Connected to Preamp.')
-        self._commands.AddCommand( 122,	'GET INPUT GROUND'  (0,),	    (U8,),      False,  'Returns the bitmask value from SET INPUT GROUND.')
+        self._commands.AddCommand( 121,	'SET INPUT GROUND', (U8,),	    (0,),       False,  'Sets whether channel inputs are grounded or connected to the preamp. Bitfield, bits 0-3, high nibble should be 0s. 0=Grounded, 1=Connected to Preamp.')
+        self._commands.AddCommand( 122,	'GET INPUT GROUND', (0,),	    (U8,),      False,  'Returns the bitmask value from SET INPUT GROUND.')
         self._commands.AddCommand( 127,	'SET TTL CONFIG',   (U8, U8),	(0,),       False,  'Configures the TTL pins. First argument is output setup, 0 is open collector and 1 is push-pull. Second argument is input setup, 0 is analog and 1 is digital. Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins.')
         self._commands.AddCommand( 128,	'GET TTL CONFIG',   (0,),	    (U8, U8),   False,  'Gets the TTL config byte, values are as per SET TTL CONFIG.')
         self._commands.AddCommand( 129,	'SET TTL OUTS',	    (U8, U8),	(0,),       False,  'Sets the TTL pins.  First byte is a bitmask, 0 = do not modify, 1=modify. Second byte is bit field, 0 = low, 1 = high.')
@@ -122,26 +124,50 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 134,	'GET TTL ANALOG',   (U8,),	    (U16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
         self._commands.AddCommand( 181, 'BINARY5 DATA',     (0,),	    (B5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
 
+        # fix types
+        if(isinstance(ssGain, tuple|list)) : 
+            ssGain_dict = {
+                'A' : ssGain[0],
+                'B' : ssGain[1],
+                'C' : ssGain[2],
+                'D' : ssGain[3]
+            }
+        elif(isinstance(ssGain, dict)) : 
+            ssGain_dict = ssGain
+        else:
+            raise Exception('[!] The ssGain argument must be a dict or list.')
+        if(isinstance(preampGain,tuple|list)) : 
+            preampGain_dict = {
+                'A' : preampGain[0],
+                'B' : preampGain[1],
+                'C' : preampGain[2],
+                'D' : preampGain[3]
+            }
+        elif(isinstance(preampGain, dict)) : 
+            preampGain_dict = preampGain
+        else:
+            raise Exception('[!] The preampGain argument must be a dict or list.')
+
         # verify that dictionaries are correct structure
         goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
-        if(list(ssGain.keys()).sort() != goodKeys) : 
+        if(list(ssGain_dict.keys()).sort() != goodKeys) : 
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        if(list(preampGain.keys()).sort() != goodKeys) : 
+        if(list(preampGain_dict.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
 
         # second stage gain 
-        for value in ssGain.values() :
+        for value in ssGain_dict.values() :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssGain : dict[str,int|None] = ssGain 
+        self._ssGain : dict[str,int|None] = ssGain_dict 
 
         # preamplifier gain
-        for value in preampGain.values() :
+        for value in preampGain_dict.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
                 raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
-        self._preampGain : dict[str,int|None] = preampGain
+        self._preampGain : dict[str,int|None] = preampGain_dict
     
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
