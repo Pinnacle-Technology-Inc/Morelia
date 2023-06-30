@@ -302,4 +302,41 @@ class Params_8401HR(Params_Interface) :
 
 
 class Params_8229(Params_Interface) :
-    pass
+    
+    def __init__(self, 
+                 port:              str, 
+                 systemID:          int, 
+                 motorDirection:    int, 
+                 motorSpeed:        int, 
+                 randomReverse:     bool, 
+                 reverseBaseTime:   int,
+                 reverseVarTime:    int,
+                 mode:              int, 
+                 schedule:          dict[str, tuple[int]], 
+                 checkForValidParams: bool = True
+                ) -> None:
+        self.systemID:          int     =  int(systemID)
+        self.motorDirection:    int     =  int(motorDirection)
+        self.motorSpeed:        int     =  int(motorSpeed)
+        self.randomReverse:     bool    = bool(randomReverse)
+        self.reverseBaseTime:   int     =  int(reverseBaseTime)
+        self.reverseVarTime:    int     =  int(reverseVarTime)
+        self.mode:              int     =  int(mode)
+        self.schedule:          dict[str, tuple[int]] = {}
+        for key,val in schedule.items() : 
+            self.schedule[str(key)] = self._FixTypeInTuple(val, int)
+        super().__init__(port, checkForValidParams)
+
+    def GetInit(self) -> str : 
+        """Builds a string that represents the Params_8229 constructor with the \
+        arguments set to the values of this class instance. 
+
+        Returns:
+            str: String that represents the Params_Interface constructor.
+        """
+        return('Params_8229(port=\''+self.port+'\', systemID='+str(self.systemID)+
+               ', motorDirection='+str(self.motorDirection)+', motorSpeed='+
+               str(self.motorSpeed)+', randomReverse='+str(self.randomReverse)+
+               ', reverseBaseTime='+str(self.reverseBaseTime)+', reverseVarTime='+
+               str(self.reverseVarTime)+', mode='+str(self.mode)+', schedule='+
+               str(self.schedule)+')')
