@@ -11,6 +11,7 @@ from Setup_PodInterface     import Setup_Interface
 from Setup_PodParameters    import Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
+from Setup_8480HR           import Setup_8480HR
 from GetUserInput           import UserInput
 
 # authorship

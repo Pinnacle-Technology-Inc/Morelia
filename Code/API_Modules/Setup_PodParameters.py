@@ -292,3 +292,10 @@ class Params_8401HR(Params_Interface) :
         for dc in self.dcMode : 
             if(dc not in ['VBIAS','AGND']) : 
                 raise Exception('The DC mode must be VBIAS or AGND.')
+            
+
+# ##########################################################################################
+
+
+class Params_8480(Params_Interface) :
+    pass # TODO add this 
