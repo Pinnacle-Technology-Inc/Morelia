@@ -193,6 +193,7 @@ class Setup_Interface :
                 for all devices. Defaults to None.
         """
         # get dictionary of POD device parameters
+        print("TESTING PURPOSE")
         if(podParametersDict==None):
             self._SetParam_allPODdevices()  # get setup parameters for all POD devices
             self._ValidateParams()          # display parameters and allow user to edit them
@@ -200,6 +201,7 @@ class Setup_Interface :
             self._podParametersDict = podParametersDict
         # connect and initialize all POD devices
         self.ConnectAllPODdevices()
+
 
 
     # ------------ VALIDATION ------------
@@ -310,7 +312,7 @@ class Setup_Interface :
 
 
     def _SetParam_allPODdevices(self) -> None :
-        """First gets the number of POD devices, then asks the user for the information \
+        """First gets the number of POD devices, then asks the user for the information 
         for each device.
         """
         # get the number of devices 
@@ -329,6 +331,7 @@ class Setup_Interface :
             podDict[i+1] = onePodDict
         # save dict containing information to setup all POD devices
         self._podParametersDict = podDict
+        print("podparamters:", self._podParametersDict )
 
 
     @staticmethod
@@ -499,7 +502,35 @@ class Setup_Interface :
 
 
     # ------------ FILE HANDLING ------------
+    @staticmethod
+    def _GetFilePath() -> str:  #added from POD_devices
+        """Asks user for a path and filename to save streaming data to.
 
+        Returns:
+            str: String of the file path, name, and extension.
+        """
+        # ask user for path 
+        path = input('\nWhere would you like to save streaming data to?\nPath: ')
+        # split into path/name and extension 
+        name, ext = os.path.splitext(path)
+        # if there is no extension , assume that a file name was not given and path ends with a directory 
+        if(ext == '') : 
+            # ask user for file name 
+            fileName = Setup_Interface._GetFileName()
+            # add slash if path is given 
+            if(name != ''): 
+                # check for slash 
+                if( ('/' in name) and (not name.endswith('/')) )  :
+                    name = name+'/'
+                elif(not name.endswith('\\')) : 
+                    name = name+'\\'
+            # return complete path and filename 
+            return(name+fileName)
+        # prompt again if bad extension is given 
+        elif( not Setup_Interface._CheckFileExt(ext)) : return(Setup_Interface._GetFilePath())
+        # path is correct
+        else :
+            return(path)
 
     def _OpenSaveFile(self, devNum: int) -> IOBase | EdfWriter : 
         """Opens a save file for a given device.
@@ -638,3 +669,31 @@ class Setup_Interface :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
+
+    
+    def _SetFilenameToDevices(self) -> None :
+        """Sets the filename to each POD device type."""
+        # give filename to devices
+        for podType in self._Setup_PodDevices.values() : 
+        #for podType in self._SetNumberOfDevices.values() : 
+            podType.SetFileName(self._saveFileName)
+    
+
+    def GetSaveFileName(self) -> str: #added from POD_devices
+        """Gets the name of the class object's save file.
+
+        Returns:
+            str: String of the save file name and path (_saveFileName).
+        """
+        return(self._saveFileName)
+    
+    
+    def _PrintSaveFile(self) -> None :
+        """Prints the file path and name that data is saved to. Note that the device name and number \
+        will be appended to the end of the filename,
+        """
+        # print name 
+        print('\nStreaming data will be saved to '+ str(self._saveFileName))
+        # if setup 8480 print special filename also 
+        # OR for each POD Interface child, print save file 
+

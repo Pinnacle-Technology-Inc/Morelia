@@ -142,7 +142,8 @@ class Setup_PodDevices :
         """
         # initialize file name and path 
         if(saveFile == None) :
-            self._saveFileName = self._GetFilePath()
+            self.SetupSaveFile = self._GetFilePath()
+            print("SAVE FILE", self.SetupSaveFile)
             self._PrintSaveFile()
         else:
             self._saveFileName = saveFile
