@@ -79,7 +79,7 @@ class Params_Interface :
 
 
 class Params_8206HR(Params_Interface) :
-    """Interface for a container class that stores parameters for an 8206-HR POD device.
+    """Container class that stores parameters for an 8206-HR POD device.
 
     Attributes:
         port (str): Name of the COM port.
@@ -175,7 +175,7 @@ class Params_8206HR(Params_Interface) :
 
 
 class Params_8401HR(Params_Interface) :
-    """Interface for a container class that stores parameters for an 8401-HR POD device.
+    """Container class that stores parameters for an 8401-HR POD device.
 
     Attributes:
         port (str): Name of the COM port.
