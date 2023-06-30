@@ -11,9 +11,9 @@ from   io          import IOBase
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
+from Setup_PodParameters import Params_8206HR
 from PodDevice_8206HR    import POD_8206HR 
 from GetUserInput        import UserInput
-from Setup_PodParameters import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
