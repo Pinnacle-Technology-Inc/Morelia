@@ -76,16 +76,10 @@ class Setup_8229(Setup_Interface) :
         schedule: dict[str, tuple[int]] = {}
         # for each day in the week...
         print('For each hour, enter \'y\' or \'1\' if the motor should be on and \'n\' or \'0\' if the motor should be off.')
-        week = ('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday')
-        for day in week : 
+        for day in Params_8229.week : 
             print('Set set motor schedule for '+day+':')
-            # ...for each hour...
-            hours = [0] * 24
-            for hr in range(24) : 
-                # ...get the motor on/off status 
-                hours[hr] = UserInput.AskYN('\tHour '+str(hr), append=': ')
-            # save dict entry 
-            schedule[day] = tuple(hours)
+            # ... for each hour... get the motor on/off status 
+            schedule[day] = tuple( [UserInput.AskYN('\tHour '+str(hr), append=': ') for hr in range(Params_8229.hoursPerDay)] )
         return(schedule)
 
 
