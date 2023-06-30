@@ -11,6 +11,7 @@ from Setup_PodInterface     import Setup_Interface
 from Setup_PodParameters    import Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
+from Setup_8229             import Setup_8229
 from GetUserInput           import UserInput
 
 # authorship
@@ -342,15 +343,14 @@ class Setup_PodDevices :
         
 
     @staticmethod
-    def _AskUserForDevices() :  # NOTE add all supported devices here 
+    def _AskUserForDevices() : 
         """Asks the user what POD devices they want to use."""
         useParams = {}
-        name = Setup_8206HR.GetDeviceName()
-        if(UserInput.AskYN('\nWill you be using any '+str(name)+' devices?')) :
-            useParams[name] = None
-        name = Setup_8401HR.GetDeviceName()
-        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
-            useParams[name] = None
+        names = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
+        print('')
+        for name in names:
+            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) : 
+                useParams[name] = None
         # ask again if user responds No to all 
         if(len(useParams) == 0 ) : 
             print('[!] No POD devices selected. Please choose at least one device.')
@@ -382,7 +382,7 @@ class Setup_PodDevices :
             raise Exception('[!] Parameters dictionary is empty.')
         # for each dict entry...
         allGood = True 
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName()) # NOTE add all supported devices here 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
             # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
@@ -394,7 +394,7 @@ class Setup_PodDevices :
         return(allGood)
 
 
-    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : # NOTE add all supported devices here 
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : 
         """Sets the _Setup_PodDevices varaible to have keys as the POD device name and values \
         as the setup class.
 
@@ -409,7 +409,10 @@ class Setup_PodDevices :
         name = Setup_8401HR.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8401HR()
-
+        name = Setup_8229.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8229()
+        # NOTE add all supported devices here 
 
     # ------------ FILE HANDLING ------------
 
