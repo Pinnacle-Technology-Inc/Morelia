@@ -2,6 +2,7 @@
 
 # enviornment imports 
 import serial.tools.list_ports
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -168,11 +169,16 @@ class COM_io :
 
     # ----- INPUT/OUTPUT -----
 
-    def Read(self, numBytes: int) -> bytes|None :
+    def Read(self, numBytes: int, timeout_sec: int|float = 5) -> bytes|None :
         """Reads a specified number of bytes from the open serial port.
 
         Args:
             numBytes (int): Integer number of bytes to read.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
+        
+        Raises:
+            Exception: Timeout for serial read.
 
         Returns:
             bytes|None: If the serial port is open, it will return a set number of read bytes. \
@@ -182,10 +188,15 @@ class COM_io :
         if(self.IsSerialClosed()) :
             return(None)
         # wait until port is in waiting, then read 
-        while True :
+        t = 0.0
+        while (t < timeout_sec) :
+            ti = (round(time.time(),9)) # initial time (sec)          
             if self.__serialInst.in_waiting : 
                 # read packet
                 return(self.__serialInst.read(numBytes) )
+            t += (round(time.time(),9)) - ti
+        raise Exception('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+
 
     def ReadLine(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.

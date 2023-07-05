@@ -435,13 +435,15 @@ class POD_Basics :
         return(packet)
 
 
-    def ReadPODpacket(self, validateChecksum:bool=True) -> bytes :
+    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> bytes :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
         Args:
             validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
                 skip validation. Defaults to True.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
 
         Returns:
             bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This \
@@ -450,7 +452,7 @@ class POD_Basics :
         # read until STX is found
         b = None
         while(b != POD_Packets.STX()) :
-            b = self._port.Read(1)     # read next byte  
+            b = self._port.Read(1,timeout_sec)     # read next byte  
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return final packet
