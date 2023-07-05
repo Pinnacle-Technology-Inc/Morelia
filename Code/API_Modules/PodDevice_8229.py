@@ -90,11 +90,11 @@ class POD_8229(POD_Basics) :
             tuple[int]: _description_
         """
         # get good value
-        validDay = POD_8229._Validate_Day(day)
+        validDay: int = POD_8229._Validate_Day(day)
         # get encoded schedule
-        encodedSched = POD_8229.CodeDaySchedule(hours,speed)
+        encodedSched: list = POD_8229.CodeDaySchedule(hours,speed)
         # prepend the day to the schedule  
-        return( tuple( encodedSched.insert(0, validDay) ) )
+        return( tuple( [validDay]+encodedSched ) )
 
 
     @staticmethod
