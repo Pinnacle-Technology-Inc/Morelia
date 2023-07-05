@@ -332,10 +332,10 @@ class Params_8229(Params_Interface) :
                  motorDirection:    bool, 
                  motorSpeed:        int, 
                  randomReverse:     bool, 
-                 reverseBaseTime:   int,
-                 reverseVarTime:    int,
                  mode:              int, 
-                 schedule:          dict[str, tuple[bool]], 
+                 reverseBaseTime:   int = None,
+                 reverseVarTime:    int = None,
+                 schedule:          dict[str, tuple[bool]] = None, 
                  checkForValidParams: bool = True
                 ) -> None:
         """Sets the instance variables of each 8229 parameter. Checks if the arguments are \
@@ -360,12 +360,19 @@ class Params_8229(Params_Interface) :
         self.motorDirection:    bool    =  int(motorDirection)
         self.motorSpeed:        int     =  int(motorSpeed)
         self.randomReverse:     bool    = bool(randomReverse)
-        self.reverseBaseTime:   int     =  int(reverseBaseTime)
-        self.reverseVarTime:    int     =  int(reverseVarTime)
         self.mode:              int     =  int(mode)
-        self.schedule:          dict[str, tuple[bool]] = {}
-        for key,val in schedule.items() : 
-            self.schedule[str(key)] = self._FixTypeInTuple(val, bool)
+        match reverseBaseTime : 
+            case None   : self.reverseBaseTime = None
+            case _      : self.reverseBaseTime = int(reverseBaseTime)
+        match reverseVarTime : 
+            case None   : self.reverseVarTime = None
+            case _      : self.reverseVarTime = int(reverseVarTime)
+        if(schedule != None) : 
+            self.schedule: dict[str, tuple[bool]] = {}
+            for key,val in schedule.items() : 
+                self.schedule[str(key)] = self._FixTypeInTuple(val, bool)
+        else: 
+            self.schedule = None
         super().__init__(port, checkForValidParams)
 
 
@@ -413,18 +420,20 @@ class Params_8229(Params_Interface) :
         if(self.motorSpeed < 0 or self.motorSpeed > 100) :
             raise Exception('The motor speed must be between 0-100%.')
         
-        if(self.reverseBaseTime < 0 ) :
-            raise Exception('The reverse base time (sec) must be a positive integer.')
+        if(self.reverseBaseTime != None) : 
+            if(self.reverseBaseTime < 0 ) :
+                raise Exception('The reverse base time (sec) must be a positive integer.')
 
-        if(self.reverseVarTime < 0 ) :
-            raise Exception('The reverse variable time (sec) must be a positive integer.')
+        if(self.reverseVarTime != None) : 
+            if(self.reverseVarTime < 0 ) :
+                raise Exception('The reverse variable time (sec) must be a positive integer.')
         
         if(self.mode not in (0,1,2)) : 
             raise Exception('The mode must be 0, 1, or 2.')
         
-        if(list(self.schedule.keys()).sort() != list(copy.copy(Params_8229.week)).sort() ) : 
-            raise Exception('The schedule must have exactly '+str(Params_8229.week)+' as keys.')
-
-        for day in self.schedule.values() : 
-            if(len(day) != Params_8229.hoursPerDay ) : 
-                raise Exception('There must be '+str(Params_8229.hoursPerDay)+' items in the schedule for each day.')
+        if(self.schedule != None) : 
+            if(list(self.schedule.keys()).sort() != list(copy.copy(Params_8229.week)).sort() ) : 
+                raise Exception('The schedule must have exactly '+str(Params_8229.week)+' as keys.')
+            for day in self.schedule.values() : 
+                if(len(day) != Params_8229.hoursPerDay ) : 
+                    raise Exception('There must be '+str(Params_8229.hoursPerDay)+' items in the schedule for each day.')

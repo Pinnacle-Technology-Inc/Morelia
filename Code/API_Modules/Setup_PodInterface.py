@@ -433,7 +433,7 @@ class Setup_Interface :
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
             print('[!] Invalid device number. Please try again.')
-            return(self._SelectDeviceFromDict())
+            return(self._SelectDeviceFromDict(action))
         else:
             # return the pod device number
             return(podKey)

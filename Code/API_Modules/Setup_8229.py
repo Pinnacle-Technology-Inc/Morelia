@@ -1,3 +1,6 @@
+# enviornment imports
+from texttable import Texttable
+
 # local imports
 from Setup_PodInterface  import Setup_Interface
 from Setup_PodParameters import Params_8229
@@ -43,7 +46,7 @@ class Setup_8229(Setup_Interface) :
     
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8229) -> bool : 
-        """Creates a 8992 POD device object and write the setup parameters to it. 
+        """Creates a 8229 POD device object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
@@ -93,19 +96,19 @@ class Setup_8229(Setup_Interface) :
         motorDirection  = UserInput.AskForIntInRange('Set motor direction (0 for clockwise and 1 for counterclockwise)', 0, 1)
         motorSpeed      = UserInput.AskForIntInRange('Set motor speed (0-100%)', 0,100)
         # ask for addittional params if allowing random reverse 
-        randomReverse = UserInput.AskYN('Enable random reverse?'),
+        randomReverse = UserInput.AskYN('Enable random reverse?')
         if(randomReverse) : 
             reverseBaseTime = UserInput.AskForIntInRange('Set reverse base time (sec)', 0, MAX)
             reverseVarTime  = UserInput.AskForIntInRange('Set reverse variable time (sec)', 0, MAX)
-        else:
-            reverseBaseTime = 0
-            reverseVarTime  = 0
+        else :
+            reverseBaseTime = None
+            reverseVarTime  = None
         # set schedule if using schedule mode 
         mode = UserInput.AskForIntInRange('Set system mode (0 = Manual, 1 = PC Control, 2 = Internal Schedule)',0,2)
         if(mode == 2):
             schedule = self._GetScheduleForWeek()        
         else:
-            schedule = {}
+            schedule = None
         # make param object and return 
         return(Params_8229(port=port, systemID=systemID, motorDirection=motorDirection, motorSpeed=motorSpeed, 
                            randomReverse=randomReverse, reverseBaseTime=reverseBaseTime, reverseVarTime=reverseVarTime, 
@@ -134,3 +137,42 @@ class Setup_8229(Setup_Interface) :
 
 
     # ============ WORKING ============      ========================================================================================================================
+
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        """Builds a table containing the parameters for all POD devices.
+
+        Returns:
+            Texttable: Table containing all parameters.
+        """
+        # setup table 
+        tab = Texttable(180)
+        # write column names
+        tab.header( ['Device #','Port','Motor Direction','Motor Speed',
+                     'Random Reverse','Random Reverse Time (s)','Mode','Schedule'] )
+        # write rows
+        for key,val in self._podParametersDict.items() :
+            # build row
+            row = [ key, val.port ]
+            match val.motorDirection : 
+                case 0 : row.append('Clockwise')
+                case _ : row.append('Counterclockwise') # 1
+            row.append(str(val.motorSpeed)+'%')
+            row.append(str(val.randomReverse))
+            match val.randomReverse : 
+                case True : row.append('Base: '+str(val.reverseBaseTime)+'\nVariable: '+str(val.reverseVarTime))
+                case    _ : row.append('None')
+            match val.mode :
+                case 0 : 
+                    row.append('Manual')
+                    row.append('None')
+                case 1 : 
+                    row.append('PC Control')
+                    row.append('None')
+                case _ : # 2 
+                    row.append('Internal Schedule')
+                    row.append(val.schedule)
+            # add row to table 
+            tab.add_row(row)
+        # return complete texttable 
+        return(tab)
+    
