@@ -1,5 +1,8 @@
 # enviornment imports
-from texttable import Texttable
+from texttable          import Texttable
+from io                 import IOBase
+from threading          import Thread
+import time
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
@@ -24,6 +27,7 @@ class Setup_8229(Setup_Interface) :
     def __init__(self) -> None:
         super().__init__()
         self._podParametersDict : dict[int,Params_8229] = {}   
+        self._streamMode : bool = False
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -171,10 +175,85 @@ class Setup_8229(Setup_Interface) :
     
     # ------------ FILE HANDLING ------------
     
+
+    def _OpenSaveFile_EDF(self, fname: str, devNum: int) :
+        raise Exception('[!] EDF filetype is not supported for 8229 POD devices.')
+    
+
+    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
+        """Opens a text file and writes the column names. Writes the current date/time at the top of \
+        the txt file.
+
+        Args:
+            fname (str): String filename.
+
+        Returns:
+            IOBase: Opened file.
+        """
+        # open file and write column names 
+        f = open(fname, 'w')
+        # write time
+        f.write( self._GetTimeHeader_forTXT() ) 
+        # columns names
+        f.write('\nTime (s),Command Number,Payload\n')
+        return(f)
     
     # ------------ STREAM ------------ 
 
 
-    # ============ WORKING ============      ========================================================================================================================
+    def _StreamThreading(self) -> dict[int,Thread] :
+        """Opens a save file, then creates a thread for each device to stream and write data from. 
 
+        Returns:
+            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+        """
+        # set state 
+        self._streamMode = True
+        # create save files for pod devices
+        podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
+        # make threads for reading 
+        readThreads = {
+            # create thread to _StreamUntilStop() to dictionary entry devNum
+            devNum : Thread(
+                    target = self._StreamUntilStop, 
+                    args   = (pod, file))
+            # for each device 
+            for devNum,pod,file in 
+                zip(
+                    self._podParametersDict.keys(),     # devNum
+                    self._podDevices.values(),          # pod
+                    podFiles.values() )                 # file
+        }
+        for t in readThreads.values() : 
+            # start streaming (program will continue until .join() or streaming ends)
+            t.start()
+        return(readThreads)
     
+
+    def _StreamUntilStop(self, pod: POD_8229, file: IOBase) -> None :
+            # initialize
+            currentTime : float = 0.0
+            t : float = (round(time.time(),9)) # initial time (sec)          
+            # start waiting for data   
+            while(self._streamMode) : 
+                try : 
+                    # attempt to read packet.         vvv An exception will occur HERE if no data can be read 
+                    read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=1)) 
+                    # update time by adding (dt = tf - ti)
+                    currentTime += (round(time.time(),9)) - t 
+                    # build line to write 
+                    data = [str(currentTime), str(read['Command Number'])]
+                    if('Payload' in read) : data.append(str(read['Payload']))
+                    else :                  data.append('None')
+                    # write to file 
+                    file.write(','.join(data) + '\n')
+                    # update initial time for next loop 
+                    t = (round(time.time(),9)) # initial time (sec)
+                except : pass # keep looping 
+                # end while 
+            # streaming done
+            file.close()
+
+
+    def StopStream(self) -> None: 
+        self._streamMode = False
