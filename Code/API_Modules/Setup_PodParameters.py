@@ -301,5 +301,69 @@ class Params_8401HR(Params_Interface) :
 # ##########################################################################################
 
 
-class Params_8480(Params_Interface) :
+class Params_8480HR(Params_Interface) :
     pass # TODO add this 
+      
+    ledCurrentLabels = ('CH0', 'CH1')
+    estimCurrentlabels = ('Channel0', 'Channel1')
+
+    def __init__(self,
+        port:  str,
+        stimulus = tuple[int],
+        preamp = int,
+        ledCurrent = tuple[int],
+        ttlPullups = int,
+        estimCurrent = tuple[int],
+        syncConfig = int,
+        ttlSetup = tuple[int],                                                    
+        checkForValidParams: bool = True
+        ) -> None:
+        
+
+        self.stimulus:       tuple[int]  =  self._FixTypeInTuple( tuple(stimulus), int )
+        #self.stimulus:       tuple[int  ]    = self._FixTypeInTuple( tuple( stimulus     ), int   )
+        self.preamp:         int         =  int( preamp)
+        self.ledCurrent:     tuple[int]  =  self._FixTypeInTuple( tuple(ledCurrent), int )
+        self.ttlPullups:     int         =  int( ttlPullups)
+        self.estimCurrent:   tuple[int]  =  self._FixTypeInTuple( tuple(estimCurrent), int )
+        self.syncConfig:     int         =  int( syncConfig)
+        self.ttlSetup:       tuple[int]  =  self._FixTypeInTuple( tuple(ttlSetup), int )
+        super().__init__(port,checkForValidParams)
+
+    
+
+
+    def ledCurrent_CH0(self) -> int :
+        """Gets the filter value of CH0 for led-current. 
+
+        Returns:
+            int: EEG1 low-pass filter in Hz.
+        """
+        return(int(self.ledCurrent[0]))
+    
+    def ledCurrent_CH1(self) -> int :
+        """Gets the filter value of CH1 for led-current. 
+
+        Returns:
+            int: EEG1 low-pass filter in Hz.
+        """
+        return(int(self.ledCurrent[1]))
+    
+    def estimCurrent_CH0(self) -> int :
+        """Gets the filter value of Channel0 for estim-current. 
+
+        Returns:
+            int: EEG1 low-pass filter in Hz.
+        """
+        return(int(self.estimCurrent[0]))
+    
+    def estimCurrent_CH1(self) -> int :
+        """Gets the filter value of of Channel1 for estim-current. 
+
+        Returns:
+            int: EEG1 low-pass filter in Hz.
+        """
+        return(int(self.estimCurrent[1]))
+    
+
+    

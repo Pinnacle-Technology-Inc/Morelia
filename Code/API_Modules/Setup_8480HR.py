@@ -12,6 +12,7 @@ from   texttable   import Texttable
 from Setup_PodInterface  import Setup_Interface
 from PodDevice_8480HR    import POD_8480HR
 from GetUserInput        import UserInput
+from Setup_PodParameters import Params_8480HR
 
 # authorship
 __author__      = "Sree Kondi"
@@ -28,7 +29,7 @@ class Setup_8480HR(Setup_Interface) :
     
     
     # deviceParams keys for reference 
-    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Stimulus', 'Preamp', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullups', 'TTL Setup'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
+   # _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Stimulus', 'Preamp', 'Ledcurrent', 'Estim Current', 'Sync Config', 'TTL Pullups', 'TTL Setup'] # NOTE: where are the other properties? There should be more than Stimulus. this should match the deviceParams keys.
 
     # for EDF file writing 
     _PHYSICAL_BOUND_uV : int = 4069 # max/-min stream value in uV
@@ -44,6 +45,10 @@ class Setup_8480HR(Setup_Interface) :
     def GetDeviceName() -> str : 
         # returns the name of the POD device 
         return(Setup_8480HR._NAME)
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self._podParametersDict : dict[int,Params_8480HR] = {}  
 
 
     # ============ PRIVATE METHODS ============ 
@@ -52,80 +57,60 @@ class Setup_8480HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
-        failed = True 
-        # try : 
-        # get port name 
-        print("testing")
-        port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string 
-        # create POD device 
-        print("testingmiddle")
-        self._podDevices[deviceNum] = POD_8480HR(port=port)
-        # test if connection is successful
-        print("testingafter")
-        if(self._TestDeviceConnection(self._podDevices[deviceNum])): 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480HR) -> bool : 
+            success = False 
+            # get port name 
+            port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
+            # create POD device 
+            self._podDevices[deviceNum] = POD_8480HR(port=port)
+            # test if connection is successful
+            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
             #write setup parameters
-            self._podDevices[deviceNum].WriteRead('SET STIMULUS', (deviceParams['Stimulus']['Channel'], 
-                                                                   *deviceParams['Stimulus']['Period(ms)'], 
-                                                                   *deviceParams['Stimulus']['Width(ms)'], 
-                                                                   deviceParams['Stimulus']['Repeat'], 
-                                                                   deviceParams['Stimulus']['Config']))
-            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', (deviceParams['Preamp']))
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0,deviceParams['Ledcurrent']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1,deviceParams['Ledcurrent']['EEG2']))
-            #print("table testing", Setup_8480HR._GetPODdeviceParameterTable(self))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estim Current']['EEG1']))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0,deviceParams['Estim Current']['EEG2']))
-            self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams['Sync Config']))
-            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams['TTL Pullups']))
-            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams['TTL Setup']['Channel'], 
-                                                                    deviceParams['TTL Setup']['TTL Config'],
-                                                                    deviceParams['TTL Setup']['Debounce']))
+                self._podDevices[deviceNum].WriteRead('SET STIMULUS', deviceParams.stimulus)
+                self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', deviceParams.preamp)
+                self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
+                self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
+                self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
+                self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
+                self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
+                self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
+                self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
             
             failed = False
 
-        # check if connection failed 
-        if(failed) :
-            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-        else :
+            # check if connection failed 
+            if(failed) :
+                print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+            else :
 
-            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
-        # return True when connection successful, false otherwise
-        return(not failed)
+                print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+            # return True when connection successful, false otherwise
+            return(not failed)
 
 
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])]: 
-        return({
-            self._PORTKEY   : Setup_8480HR._ChoosePort(forbiddenNames),
-            'Stimulus'      : { 'Channel'    : Setup_8480HR._ChooseChannel('stimulus'),
-                                'Period(ms)' : Setup_8480HR._ChoosePeriod(),
-                                'Width(ms)'  : Setup_8480HR._ChooseWidth(),
-                                'Repeat'     : Setup_8480HR._ChooseRepeat(),
-                                'Config'     : Setup_8480HR._ChooseStimulusConfig(),
-                            },
-            'Preamp'        : Setup_8480HR._ChoosePreamp(),
-            'Ledcurrent'    : { 'EEG1'       : Setup_8480HR._ChooseLedCurrentforChannel('CH0'),
-                                'EEG2'       : Setup_8480HR._ChooseLedCurrentforChannel('CH1'),
-                            },
-            'Estim Current' : { 'EEG1'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH0"),
-                                'EEG2'       : Setup_8480HR._ChooseEstimCurrentforChannel("CH1"),
-                            },
-            'Sync Config'   : Setup_8480HR._ChooseSyncConfig(),
-            'TTL Pullups'   : Setup_8480HR._Choosettlpullups(),
-            'TTL Setup'     : { 'Channel'    : Setup_8480HR._ChooseChannel('TTL Setup'),
-                                'TTL Config' : Setup_8480HR._TtlSetup(), 
-                                'Debounce'   : Setup_8480HR._debounce(),
-                            }  
-        })
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8480HR : 
+        return(Params_8480HR(
+            port              =   self._ChoosePort(forbiddenNames),
+            stimulus          =    (UserInput.AskForIntInRange('Choose channel (0 or 1) for Stimulus', 0, 1),
+                                    *Setup_8480HR._ChoosePeriod(),
+                                    *Setup_8480HR._ChooseWidth(),
+                                    UserInput.AskForInt('Enter a value for the stimulus repeat count'),
+                                    Setup_8480HR._ChooseStimulusConfig()),
+            preamp            =     UserInput.AskForIntInRange('Set preamp (0-1023)', 0, 1023),
+            ledCurrent        =     ( UserInput.AskForIntInRange('Set ledCurrent (Hz) for CH0 (0-600)',     0, 600),
+                                    UserInput.AskForIntInRange('Set ledCurrent (Hz) for CH1 (0-600)', 0, 600) ),
+            ttlPullups        =     UserInput.AskForInt('Are the pullups enabled on the TTL lines? (0 for disabled, non-zero for enabled)' ),
+            estimCurrent      =     (UserInput.AskForIntInRange('Set estimCurrent for Channel0  (0-100)', 0, 100),
+                                    UserInput.AskForIntInRange('Set estimCurrent for Channel1  (0-100)', 0, 100)),
+            syncConfig        =     Setup_8480HR._ChooseSyncConfig(),   
+            ttlSetup          =    (UserInput.AskForIntInRange('Choose channel (0 or 1) for TTL Setup', 0, 1),
+                                    Setup_8480HR._TtlSetup(),
+                                    UserInput.AskForInt('Enter a debounce value (ms)'))
+        ))
         
-
-    @staticmethod
-    def _ChooseChannel(eeg: str) -> int:
-        return(UserInput.AskForIntInRange('Choose channel (0 or 1) for ' + eeg, 0, 1))
-    
 
     @staticmethod
     def _TtlSetup() -> int:
@@ -134,18 +119,8 @@ class Setup_8480HR(Setup_Interface) :
         bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1) # NOTE : what do 0 or 1 mean here? 
         ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
         return(ttl_value)
-    
+        
 
-    @staticmethod
-    def _debounce():
-        return(UserInput.AskForInt('Enter a debounce value (ms)'))
-    
-        
-    @staticmethod
-    def _ChoosePreamp() -> int:
-        return(UserInput.AskForIntInRange('Set Preamp value (0-1023)', 0, 1023)) # NOTE: what is the unit here for (0-1023)? (ex. format as (0-1023 mA))
-                     
-        
     @staticmethod
     def _ChooseStimulusConfig():
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
@@ -176,20 +151,6 @@ class Setup_8480HR(Setup_Interface) :
         width_ms = int(width[0])
         width_us = int(width[1])
         return(width_ms, width_us)
-
-    
-    @staticmethod
-    def _ChooseLedCurrentforChannel(eeg: str) -> dict[str,int] :
-        # NOTE: UserInput should handle exeptions. I dont think you need the try/except here. 
-            # get ledcurrent from user 
-            return(UserInput.AskForIntInRange('Set LED Current (0-600 mA) for '+str(eeg)+' ', 0, 600))# NOTE: I made a small style change here to text. Also, Led should be LED.
- 
-    
-    @staticmethod
-    def _ChooseEstimCurrentforChannel(eeg: str) -> int :
-        # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
-        estimcurrent = UserInput.AskForIntInRange('Set Estim Current as a percentage (0-100) for '+str(eeg)+'', 0, 100) # NOTE: I made a small style change here to text
-        return(estimcurrent)
     
 
     @staticmethod
@@ -201,65 +162,37 @@ class Setup_8480HR(Setup_Interface) :
         return(final_value)
     
 
-    @staticmethod
-    def _Choosettlpullups() -> int:
-        # NOTE: UserInput should handle exeptions. I dont think you need the try/except here.
-        pull_choice = UserInput.AskForInt('Are TTL pullups enabled? (0 for pullups disabled, non-zero for enabled)') # NOTE: this prompt is vague. Use UserInput.AskYN() instead here and ask the user something like "are TTL pullups enabled?".
-        return (pull_choice)
-       
-   
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
-            raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
-        # check type of each specific command 
-        if( not(
-                    isinstance( paramDict[Setup_Interface._PORTKEY],str  ) 
-                and isinstance( paramDict['Stimulus'],       dict  ) 
-                and isinstance( paramDict['Led Current'],    dict  ) 
-                and isinstance( paramDict['Estim Current'],  dict ) 
-                and isinstance( paramDict['Sync Config'],    int ) 
-                and isinstance( paramDict['TTL Pullup'],     int ) 
-                and isinstance( paramDict['Preamp'],         int ) 
-                and isinstance( paramDict['TTL Setup'],      dict ) 
-            )
-        ) : 
-            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
 
 
-    def _GetPODdeviceParameterTable(self) -> Texttable : 
+    #     # NOTE : period_ms and width_ms are not formatted in a way that makes sense to the user. 
+    #     #        (AB, CD) is not intuitive to be (ms, us). Instead, put the parts back together 
+    #     #        and show AB.CD
+    #     # NOTE: use title case with spaces for everything in the table. ex: channel -> Channel, period_ms -> period (ms)
+    #     # NOTE: show the chanel in the table also 
+    #     return(tab)
+        
+    def _GetPODdeviceParameterTable(self) -> Texttable :
+        """Builds a table containing the parameters for all POD devices.
+
+        Returns:
+            Texttable: Texttable containing all parameters.
+        """
         # setup table 
         tab = Texttable(160)
         # write column names
-        tab.header(['Device #',self._PORTKEY, 'Stimulus', 'LED Current', 'Estim Current', 'Sync Config', 'TTL Pullup','Preamp', 'TTL Setup']) # NOTE: small style change 
+        tab.header(['Device #','Port','Stimulus', 'Preamp', 'Led Current', 'TTL Pullups', 'Estim Current', 'Sync Config', 'TTL Setup'])
         # write rows
-        for key,val in self._podParametersDict.items() :
-            tab.add_row([key, 
-                        val[self._PORTKEY], 
-                        '\n'.join([f"{k}: {v}" for k, v in val['Stimulus'].items()]), 
-                        '\n'.join([f"{k}: {v}" for k,v in val['Ledcurrent'].items()]), 
-                        '\n'.join([f"{k}: {v}" for k,v in val['Estim Current'].items()]),
-                        (val['Sync Config']), 
-                        (val['TTL Pullups']),
-                        (val['Preamp']),
-                       '\n'.join([f"{k}: {v}" for k,v in val['TTL Setup'].items()]) # NOTE: nice list comprehension here! Since you do this similar code three times, 
-                                                                                    #       it may be useful to put this in a function (which takes val['ttl_setup'] 
-                                                                                    #       as argument ) for convinience.
-                    ])
-        # NOTE : period_ms and width_ms are not formatted in a way that makes sense to the user. 
-        #        (AB, CD) is not intuitive to be (ms, us). Instead, put the parts back together 
-        #        and show AB.CD
-        # NOTE: use title case with spaces for everything in the table. ex: channel -> Channel, period_ms -> period (ms)
-        # NOTE: show the chanel in the table also 
-        return(tab)
         
+        for key,val in self._podParametersDict.items() :
+                            stimulus_str = f" Channel: {val.stimulus[0]}\n Period: {val.stimulus[1]}\n Width: {val.stimulus[2]}\n Repeat: {val.stimulus[3]}\n Config: {val.stimulus[4]}"
+                            ledCurrent_str = f" Channel 1: {val.ledCurrent[0]}\n Channel 2: {val.ledCurrent[1]}\n "
+                            estimCurrent_str = f" Channel 1: {val.estimCurrent[0]}\n Channel 2: {val.estimCurrent[1]}\n "
+                            ttlSetup_str = f" Channel: {val.ttlSetup[0]}\n Config FLag: {val.ttlSetup[1]}\n Debounce: {val.ttlSetup[2]}\n"
+                            tab.add_row([key, val.port, stimulus_str, val.preamp, ledCurrent_str, val.ttlPullups, estimCurrent_str, val.syncConfig, ttlSetup_str]),
+        return(tab)
 
-        # def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
 
-        #     # open file and write column names 
-        #     f = open(fname, 'w')
-        #     # write time
-        #     f.write( self._GetTimeHeader_forTXT() ) 
-        #     # columns names
-        #     f.write('\nTime,CH0,CH1,CH2\n')
-        #     return(f)
-    
+
+
+
+
