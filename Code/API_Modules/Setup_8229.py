@@ -130,14 +130,6 @@ class Setup_8229(Setup_Interface) :
     # ------------ DISPLAY POD PARAMETERS ------------
     
     
-    # ------------ FILE HANDLING ------------
-    
-    
-    # ------------ STREAM ------------ 
-
-
-    # ============ WORKING ============      ========================================================================================================================
-
     def _GetPODdeviceParameterTable(self) -> Texttable : 
         """Builds a table containing the parameters for all POD devices.
 
@@ -175,4 +167,14 @@ class Setup_8229(Setup_Interface) :
             tab.add_row(row)
         # return complete texttable 
         return(tab)
+    
+    
+    # ------------ FILE HANDLING ------------
+    
+    
+    # ------------ STREAM ------------ 
+
+
+    # ============ WORKING ============      ========================================================================================================================
+
     
