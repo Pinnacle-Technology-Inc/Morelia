@@ -13,6 +13,7 @@ from Setup_PodInterface  import Setup_Interface
 from PodDevice_8480HR    import POD_8480HR
 from GetUserInput        import UserInput
 from Setup_PodParameters import Params_8480HR
+from pyedflib            import EdfWriter
 
 # authorship
 __author__      = "Sree Kondi"
@@ -40,7 +41,12 @@ class Setup_8480HR(Setup_Interface) :
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
-    
+    """returns the name of the POD device.
+
+        Returns:
+            str: String of _NAME.
+    """
+    # returns the name of the POD device
     @staticmethod
     def GetDeviceName() -> str : 
         # returns the name of the POD device 
@@ -160,8 +166,6 @@ class Setup_8480HR(Setup_Interface) :
         bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) # NOTE: what do 0 or 1 mean here? 
         final_value = POD_8480HR.SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
-    
-
 
 
     #     # NOTE : period_ms and width_ms are not formatted in a way that makes sense to the user. 
@@ -184,7 +188,7 @@ class Setup_8480HR(Setup_Interface) :
         # write rows
         
         for key,val in self._podParametersDict.items() :
-                            stimulus_str = f" Channel: {val.stimulus[0]}\n Period: {val.stimulus[1]}\n Width: {val.stimulus[2]}\n Repeat: {val.stimulus[3]}\n Config: {val.stimulus[4]}"
+                            stimulus_str = f" Channel: {val.stimulus[0]}\n Period: {val.stimulus[1]}.{val.stimulus[2]}\n Width: {val.stimulus[3]}.{val.stimulus[4]}\n Repeat: {val.stimulus[5]}\n Config: {val.stimulus[6]}"
                             ledCurrent_str = f" Channel 1: {val.ledCurrent[0]}\n Channel 2: {val.ledCurrent[1]}\n "
                             estimCurrent_str = f" Channel 1: {val.estimCurrent[0]}\n Channel 2: {val.estimCurrent[1]}\n "
                             ttlSetup_str = f" Channel: {val.ttlSetup[0]}\n Config FLag: {val.ttlSetup[1]}\n Debounce: {val.ttlSetup[2]}\n"

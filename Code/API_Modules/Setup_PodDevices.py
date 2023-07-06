@@ -68,7 +68,7 @@ class Setup_PodDevices :
         # choose devices to use 
         params = self._GetParams(podParametersDict)
         # setup devices  
-        self.SetupPODparameters(params)
+        self.SetupPODparameters(params) 
         self.SetupSaveFile(saveFile)
 
 
@@ -131,6 +131,7 @@ class Setup_PodDevices :
                 The keys are the device name and the entries are the initialization dictionaries. 
         """
         # for each type of POD device 
+        print("DICTTTTTTTTTTTTT", podParametersDict)
         for key, value in podParametersDict.items() : 
             self._Setup_PodDevices[key].SetupPODparameters(value)
 
@@ -473,6 +474,7 @@ class Setup_PodDevices :
         if(ext == '') : 
             # ask user for file name 
             fileName = Setup_PodDevices._GetFileName()
+            print("THIS IS WHERE FILENAME",  fileName)
             # add slash if path is given 
             if(name != ''): 
                 # check for slash 

@@ -603,15 +603,10 @@ class Setup_Interface :
         Returns:
             bool: True for successful connection, false otherwise.
         """
-        # returns True when connection is successful, false otherwise
-        # try:
-        # print("hi")
-        # pod = POD_Basics('') #new added 
+        # returns True when connection is successful, false otherwise 
         w = pod.WritePacket(cmd = 'PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
         # print("write")
         r = pod.ReadPODpacket()
-        # except:
-        #     return(False)
         # check that read matches ping write
         print("w:", w)
         print("r:", r)
@@ -657,12 +652,12 @@ class Setup_Interface :
     
 
     
-    def _SetFilenameToDevices(self) -> None :
-        """Sets the filename to each POD device type."""
-        # give filename to devices
-        for podType in self._Setup_PodDevices.values() : 
-        #for podType in self._SetNumberOfDevices.values() : 
-            podType.SetFileName(self._saveFileName)
+    # def _SetFilenameToDevices(self) -> None :
+    #     """Sets the filename to each POD device type."""
+    #     # give filename to devices
+    #     for podType in self._Setup_PodDevices.values() : 
+    #     #for podType in self._SetNumberOfDevices.values() : 
+    #         podType.SetFileName(self._saveFileName)
     
 
     def GetSaveFileName(self) -> str: #added from POD_devices
@@ -683,3 +678,5 @@ class Setup_Interface :
         # if setup 8480 print special filename also 
         # OR for each POD Interface child, print save file 
 
+    
+    
