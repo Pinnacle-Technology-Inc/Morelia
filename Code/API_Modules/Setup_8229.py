@@ -75,8 +75,6 @@ class Setup_8229(Setup_Interface) :
             self._podDevices[deviceNum] = POD_8229(port=port)
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
-                # set temporary mode  
-                self._podDevices[deviceNum].WriteRead('SET MODE',               1)
                 # write setup parameters
                 self._podDevices[deviceNum].WriteRead('SET ID',                 deviceParams.systemID)
                 self._podDevices[deviceNum].WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
@@ -88,7 +86,7 @@ class Setup_8229(Setup_Interface) :
                 if(deviceParams.mode == 2):
                     for day, hours in deviceParams.schedule.items() :
                         self._podDevices[deviceNum].WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
-                # set mode last 
+                # set mode last
                 self._podDevices[deviceNum].WriteRead('SET MODE',               deviceParams.mode)
                 # successful write if no exceptions raised 
                 success = True
