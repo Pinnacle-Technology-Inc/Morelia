@@ -266,6 +266,7 @@ class POD_8229(POD_Basics) :
                 transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload'])
             else : # 202 LCD SET DAY SCHEDULE
                 transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload'])
+            return(transdict)
         # standard packet 
         else: 
             return(self.TranslatePODpacket_Standard(msg))  
