@@ -414,8 +414,8 @@ class Params_8229(Params_Interface) :
         """
         super()._CheckParams() 
 
-        if(self.systemID < 0) : 
-            raise Exception('The system ID must be a positive integer.')
+        if(self.systemID < 0 or self.systemID > 999) : 
+            raise Exception('The system ID must be between 0-999.')
         
         if(self.motorSpeed < 0 or self.motorSpeed > 100) :
             raise Exception('The motor speed must be between 0-100%.')

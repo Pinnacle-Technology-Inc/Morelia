@@ -116,7 +116,7 @@ class Setup_8229(Setup_Interface) :
         MAX = 0xFFFF # max value for U16 (xFFFF = 65535 in decimal)
         # basic params 
         port            = self._ChoosePort(forbiddenNames)
-        systemID        = UserInput.AskForIntInRange('Set system ID', 0, MAX)
+        systemID        = UserInput.AskForIntInRange('Set system ID', 0, 999)
         motorDirection  = UserInput.AskForIntInRange('Set motor direction (0 for clockwise and 1 for counterclockwise)', 0, 1)
         motorSpeed      = UserInput.AskForIntInRange('Set motor speed (0-100%)', 0,100)
         # ask for addittional params if allowing random reverse 
