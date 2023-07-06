@@ -75,18 +75,21 @@ class Setup_8229(Setup_Interface) :
             self._podDevices[deviceNum] = POD_8229(port=port)
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+                # set temporary mode  
+                self._podDevices[deviceNum].WriteRead('SET MODE',               1)
                 # write setup parameters
                 self._podDevices[deviceNum].WriteRead('SET ID',                 deviceParams.systemID)
                 self._podDevices[deviceNum].WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
                 self._podDevices[deviceNum].WriteRead('SET MOTOR SPEED',        deviceParams.motorSpeed)
                 self._podDevices[deviceNum].WriteRead('SET RANDOM REVERSE',     deviceParams.randomReverse)
-                self._podDevices[deviceNum].WriteRead('SET MODE',               deviceParams.mode)
                 # write conditional params 
                 if(deviceParams.randomReverse) : 
                     self._podDevices[deviceNum].WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
                 if(deviceParams.mode == 2):
                     for day, hours in deviceParams.schedule.items() :
                         self._podDevices[deviceNum].WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
+                # set mode last 
+                self._podDevices[deviceNum].WriteRead('SET MODE',               deviceParams.mode)
                 # successful write if no exceptions raised 
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
