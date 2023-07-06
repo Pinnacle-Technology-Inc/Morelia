@@ -18,15 +18,23 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8229(Setup_Interface) : 
 
+class Setup_8229(Setup_Interface) : 
+    """Setup_8229 provides the setup functions for an 8229 POD device.
+
+    Attributes:
+        _streamMode (bool): True when the user wants to stream data from an 8229 POD \
+            device, False otherwise.
+    """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
     def __init__(self) -> None:
+        """Initializes the class instance variables.
+        """
         super().__init__()
-        self._podParametersDict : dict[int,Params_8229] = {}   
+        self._podParametersDict : dict[int,Params_8229] = {} # correct Param type
         self._streamMode : bool = False
 
 
@@ -93,6 +101,15 @@ class Setup_8229(Setup_Interface) :
     
     
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8229 :
+        """Asks the user to input all the device parameters. 
+
+        Args:
+            forbiddenNames (list[str], optional): List of port names already used \
+                by other devices. Defaults to [].
+
+        Returns:
+            Params_8229: Device parameters.
+        """
         MAX = 0xFFFF # max value for U16 (xFFFF = 65535 in decimal)
         # basic params 
         port            = self._ChoosePort(forbiddenNames)
@@ -121,6 +138,15 @@ class Setup_8229(Setup_Interface) :
 
     @staticmethod
     def _GetScheduleForWeek() -> dict[str, tuple[int]]: 
+        """Asks the user to input if the motor is on/off for each hour of each \
+            day of the week. 
+
+        Returns:
+            dict[str, tuple[int]]: Dictionary with the schedule. The keys are the \
+                days of the week (Sunday, Monday, ...). The values are a tuple of 24 \
+                items for each hour; the items are 1 if the motor is on or 0 if the \
+                motor is off
+        """
         schedule: dict[str, tuple[int]] = {}
         # for each day in the week...
         print('For each hour, enter \'y\' or \'1\' if the motor should be on and \'n\' or \'0\' if the motor should be off.')
@@ -177,15 +203,25 @@ class Setup_8229(Setup_Interface) :
     
 
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) :
+        """EDF files are not supported for 8229 POD devices. Overwrites the \
+        parent's method, which would open an EDF file and write the header.
+
+        Args:
+            fname (str): String filename. Not used.
+            devNum (int): Integer device number. Not used.
+
+        Raises:
+            Exception: EDF filetype is not supported for 8229 POD devices.
+        """
         raise Exception('[!] EDF filetype is not supported for 8229 POD devices.')
     
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        """Opens a text file and writes the column names. Writes the current date/time at the top of \
-        the txt file.
+        """Opens a text file and writes the column names. Writes the current date/time \
+        at the top of the txt file.
 
         Args:
-            fname (str): String filename.
+            fname (str): String filename. 
 
         Returns:
             IOBase: Opened file.
@@ -198,14 +234,17 @@ class Setup_8229(Setup_Interface) :
         f.write('\nTime (s),Command Number,Payload\n')
         return(f)
     
+
     # ------------ STREAM ------------ 
 
 
     def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+        """Opens a save file, then creates a thread for each device to stream and write \
+        data from. 
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            dict[int,Thread]: Dictionary with keys as the device number and values as the \
+                started Thread.
         """
         # set state 
         self._streamMode = True
@@ -231,29 +270,39 @@ class Setup_8229(Setup_Interface) :
     
 
     def _StreamUntilStop(self, pod: POD_8229, file: IOBase) -> None :
-            # initialize
-            currentTime : float = 0.0
-            t : float = (round(time.time(),9)) # initial time (sec)          
-            # start waiting for data   
-            while(self._streamMode) : 
-                try : 
-                    # attempt to read packet.         vvv An exception will occur HERE if no data can be read 
-                    read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=1)) 
-                    # update time by adding (dt = tf - ti)
-                    currentTime += (round(time.time(),9)) - t 
-                    # build line to write 
-                    data = [str(currentTime), str(read['Command Number'])]
-                    if('Payload' in read) : data.append(str(read['Payload']))
-                    else :                  data.append('None')
-                    # write to file 
-                    file.write(','.join(data) + '\n')
-                    # update initial time for next loop 
-                    t = (round(time.time(),9)) # initial time (sec)
-                except : pass # keep looping 
-                # end while 
-            # streaming done
-            file.close()
+        """Saves a log of all packets recieved from the 8229 POD device until the user decides \
+        to stop streaming.
+
+        Args:
+            pod (POD_8229): POD device to read from. 
+            file (IOBase): Opened text file to save data to.
+        """
+        # initialize
+        currentTime : float = 0.0
+        t : float = (round(time.time(),9)) # initial time (sec)          
+        # start waiting for data   
+        while(self._streamMode) : 
+            try : 
+                # attempt to read packet.         vvv An exception will occur HERE if no data can be read 
+                read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=1)) 
+                # update time by adding (dt = tf - ti)
+                currentTime += (round(time.time(),9)) - t 
+                # build line to write 
+                data = [str(currentTime), str(read['Command Number'])]
+                if('Payload' in read) : data.append(str(read['Payload']))
+                else :                  data.append('None')
+                # write to file 
+                file.write(','.join(data) + '\n')
+                # update initial time for next loop 
+                t = (round(time.time(),9)) # initial time (sec)
+            except : 
+                continue # keep looping 
+            # end while 
+        # streaming done
+        file.close()
 
 
     def StopStream(self) -> None: 
+        """Update the state flag to signal to stop streaming data.
+        """
         self._streamMode = False

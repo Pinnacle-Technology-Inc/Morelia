@@ -53,7 +53,7 @@ class Setup_Interface :
         """Asks the user to input all the device parameters. 
 
         Args:
-            forbiddenNames (list[str]): List of port names already used by other devices.
+            forbiddenNames (list[str]): List of port names already used by other devices. Defaults to [].
 
         Returns:
             Params_Interface: Device parameters.
