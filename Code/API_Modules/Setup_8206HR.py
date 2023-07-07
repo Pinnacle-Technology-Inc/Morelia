@@ -11,9 +11,9 @@ from   io          import IOBase
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
+from Setup_PodParameters import Params_8206HR
 from PodDevice_8206HR    import POD_8206HR 
 from GetUserInput        import UserInput
-from Setup_PodParameters import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -36,12 +36,6 @@ class Setup_8206HR(Setup_Interface) :
     Used for EDF files. 
     """
 
-    # overwrite from parent
-    _NAME : str = '8206-HR'
-    """Class-level string containing the POD device name.
-    """
-
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -55,13 +49,12 @@ class Setup_8206HR(Setup_Interface) :
 
     @staticmethod
     def GetDeviceName() -> str : 
-        """Returns the name of the POD device.
+        """Returns the name of the 8206-HR POD device.
 
         Returns:
-            str: String of _NAME.
+            str: 8206-HR.
         """
-        # returns the name of the POD device 
-        return(Setup_8206HR._NAME)
+        return('8206-HR')
     
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================

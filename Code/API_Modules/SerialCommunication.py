@@ -2,6 +2,7 @@
 
 # enviornment imports 
 import serial.tools.list_ports
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -142,10 +143,31 @@ class COM_io :
             raise Exception('Port does not exist.')
 
     def SetBaudrate(self, baudrate: int) -> bool :
+        """Sets the baud rate of the serial port
+
+        Args:
+            baudrate (int): Baud rate, or signals per second. 
+
+        Returns:
+            bool: True if the baudrate was set, False otherwise.
+        """
         # port must be open 
         if(self.IsSerialOpen) : 
             # set baudrate 
             self.__serialInst.baudrate = baudrate
+            return(True) 
+        else : 
+            return(False)
+
+    def Flush(self) -> bool : 
+        """Reset the input and output serial buffer.
+
+        Returns:
+            bool: True of the buffers are flushed, False otherwise.
+        """
+        if(self.IsSerialOpen) : 
+            self.__serialInst.reset_input_buffer()
+            self.__serialInst.reset_output_buffer()
             return(True) 
         else : 
             return(False)
@@ -168,11 +190,16 @@ class COM_io :
 
     # ----- INPUT/OUTPUT -----
 
-    def Read(self, numBytes: int) -> bytes|None :
+    def Read(self, numBytes: int, timeout_sec: int|float = 5) -> bytes|None :
         """Reads a specified number of bytes from the open serial port.
 
         Args:
             numBytes (int): Integer number of bytes to read.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
+        
+        Raises:
+            Exception: Timeout for serial read.
 
         Returns:
             bytes|None: If the serial port is open, it will return a set number of read bytes. \
@@ -182,10 +209,15 @@ class COM_io :
         if(self.IsSerialClosed()) :
             return(None)
         # wait until port is in waiting, then read 
-        while True :
+        t = 0.0
+        while (t < timeout_sec) :
+            ti = (round(time.time(),9)) # initial time (sec)          
             if self.__serialInst.in_waiting : 
                 # read packet
                 return(self.__serialInst.read(numBytes) )
+            t += (round(time.time(),9)) - ti
+        raise Exception('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+
 
     def ReadLine(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
