@@ -62,10 +62,12 @@ Detailed instructions of all Python modules and methods:
 | [SerialCommunication.py](/Code/API_Modules/SerialCommunication.py)    | COM_io                | Handle serial communication (read/write) using COM ports. | [X](https://python-pod-api.readthedocs.io/en/latest/SerialCommunication.html) |
 | [Setup_8206HR.py](/Code/API_Modules/Setup_8206HR.py)                  | Setup_8206HR          | Provides the setup functions for an 8206-HR POD device. | [X](https://python-pod-api.readthedocs.io/en/latest/Setup_8206HR.html) |
 | [Setup_8401HR.py](/Code/API_Modules/Setup_8401HR.py)                  | Setup_8401HR          | Provides the setup functions for an 8401-HR POD device. REQUIRES FIRMWARE 1.0.2 OR HIGHER. |  [X](https://python-pod-api.readthedocs.io/en/latest/Setup_8401HR.html) |
+| [Setup_8229.py](/Code/API_Modules/Setup_8229.py)                      | Setup_8401HR          | Provides the setup functions for an 8229 POD device. |  Pending |
 | [Setup_PodDevices.py](/Code/API_Modules/Setup_PodDevices.py)          | Setup_PodDevices      | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X](https://python-pod-api.readthedocs.io/en/latest/Setup_PodDevices.html) |
 | [Setup_PodInterface.py](/Code/API_Modules/Setup_PodInterface.py)      | Setup_PodInterface    | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. | [X](https://python-pod-api.readthedocs.io/en/latest/Setup_PodInterface.html) |
 | [Setup_PodParameters.py](/Code/API_Modules/Setup_PodParameters.py)    | Params_Interface      | Interface for a container class that stores parameters for a POD device. | Pending | 
 | ^                                                                     | Params_8206HR         | Container class that stores parameters for a 8206-HR POD device. | Pending | 
 | ^                                                                     | Params_8401HR         | Container class that stores parameters for a 8401-HR POD device. | Pending | 
+| ^                                                                     | Params_8229           | Container class that stores parameters for a 8229 POD device.    | Pending | 
 
 ![UML class diagram](/Documents/Diagrams/UML-class-diagram.png)
