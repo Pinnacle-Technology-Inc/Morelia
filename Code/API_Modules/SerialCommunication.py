@@ -143,10 +143,31 @@ class COM_io :
             raise Exception('Port does not exist.')
 
     def SetBaudrate(self, baudrate: int) -> bool :
+        """Sets the baud rate of the serial port
+
+        Args:
+            baudrate (int): Baud rate, or signals per second. 
+
+        Returns:
+            bool: True if the baudrate was set, False otherwise.
+        """
         # port must be open 
         if(self.IsSerialOpen) : 
             # set baudrate 
             self.__serialInst.baudrate = baudrate
+            return(True) 
+        else : 
+            return(False)
+
+    def Flush(self) -> bool : 
+        """Reset the input and output serial buffer.
+
+        Returns:
+            bool: True of the buffers are flushed, False otherwise.
+        """
+        if(self.IsSerialOpen) : 
+            self.__serialInst.reset_input_buffer()
+            self.__serialInst.reset_output_buffer()
             return(True) 
         else : 
             return(False)

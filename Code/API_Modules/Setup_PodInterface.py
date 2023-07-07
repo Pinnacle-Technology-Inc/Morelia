@@ -572,15 +572,13 @@ class Setup_Interface :
         """
         # returns True when connection is successful, false otherwise
         try:
-            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
+            pod.FlushPort() # clear out previous packets 
+            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
             r = pod.ReadPODpacket()
-        except:     
-            return(False)
+        except:   return(False)
         # check that read matches ping write
-        if(w==r):   
-            return(True)
-        else:       
-            return(False)
+        if(w==r): return(True)
+        return(False)
         
 
     def _TestDeviceConnection_All(self) -> bool:
