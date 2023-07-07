@@ -324,7 +324,10 @@ class Params_8229(Params_Interface) :
     """
 
     week: tuple[str] = ('Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday')
+    """Tuple containing strings of the 7 days of the week."""
+
     hoursPerDay: int = 24
+    """Integer storing the number of hours in a day."""
 
     def __init__(self, 
                  port:              str, 
@@ -378,6 +381,12 @@ class Params_8229(Params_Interface) :
 
     @staticmethod
     def BuildEmptySchedule() -> dict[str, tuple[bool]]:
+        """Creates a schedule where the motor is off for all hours of every day.  
+
+        Returns:
+            dict[str, tuple[bool]]: Dictionary of the empty schedule. The keys are \
+                the days of the week. The values are tuples of 24 zeros. 
+        """
         schedule = {}
         for day in Params_8229.week : 
             schedule[day] = tuple([0]*Params_8229.hoursPerDay)
