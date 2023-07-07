@@ -75,6 +75,9 @@ class Setup_8229(Setup_Interface) :
             self._podDevices[deviceNum] = POD_8229(port=port)
             # test if connection is successful
             if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+                # set mode to PC control and stop motor
+                self._podDevices[deviceNum].WriteRead('SET MODE', 1)
+                self._podDevices[deviceNum].WriteRead('SET MOTOR STATE', 0)
                 # write setup parameters
                 self._podDevices[deviceNum].WriteRead('SET ID',                 deviceParams.systemID)
                 self._podDevices[deviceNum].WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
