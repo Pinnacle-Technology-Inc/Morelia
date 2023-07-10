@@ -50,7 +50,23 @@ class Setup_8229(Setup_Interface) :
         """
         return('8229')
     
+
+    @staticmethod
+    def GetSupportedFileExtensions() -> list[str] : 
+        """Returns a list containing valid file extensions. 
+
+        Returns:
+            list[str]: List of string file extensions.
+        """
+        return(['.csv','.txt'])
     
+    
+    def StopStream(self) -> None: 
+        """Update the state flag to signal to stop streaming data.
+        """
+        self._streamMode = False
+
+        
     # ============ PRIVATE METHODS ============      ========================================================================================================================
     
     
@@ -305,8 +321,3 @@ class Setup_8229(Setup_Interface) :
         # streaming done
         file.close()
 
-
-    def StopStream(self) -> None: 
-        """Update the state flag to signal to stop streaming data.
-        """
-        self._streamMode = False
