@@ -1,5 +1,3 @@
-
-
 # enviornment imports
 import time 
 from   threading  import Thread
@@ -37,14 +35,14 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
+    def __init__(self, saveFileDict:dict[str,str]|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
         """Initializes the class. Sets the default values of the class instance variables. Calls \
         functions to complete the class setup.
 
         Args:
-            saveFile (str | None, optional): String describing the directory path and filename with an \
-                extension. Defaults to None.
-            podParametersDict (dict[int,Params_Interface] | None] | None, optional): Dictionary of POD devices and \
+            saveFileDict (dict[str, str] | None, optional): Dictionary with keys are the POD device names and values \
+                as the file names. Defaults to None.
+            podParametersDict (dict[int, Params_Interface] | None] | None, optional): Dictionary of POD devices and \
                 their respective parameters. Defaults to None.
         """
         # initialize class instance variables
@@ -62,7 +60,7 @@ class Setup_PodDevices :
         }
         # setup devices  
         self.SetupPODparameters(self._GetParams(podParametersDict))
-        self.SetupSaveFile(saveFile)
+        self.SetupSaveFile(saveFileDict)
 
 
     def __del__(self) -> None :

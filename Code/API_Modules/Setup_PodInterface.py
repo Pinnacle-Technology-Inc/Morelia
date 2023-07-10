@@ -489,7 +489,7 @@ class Setup_Interface :
             fileName (str | None, optional): Name and path of the file, if known. Defaults to None.
         """
         if(fileName == None) :
-            self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?')
+            self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?', goodExt=self.GetSupportedFileExtensions())
             self.PrintSaveFile()
         else:
             if(UserInput.CheckFileExt(fileName, fIsExt=False, goodExt=self.GetSupportedFileExtensions())) : 
