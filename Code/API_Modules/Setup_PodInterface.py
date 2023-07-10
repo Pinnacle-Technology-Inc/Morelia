@@ -144,16 +144,6 @@ class Setup_Interface :
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    def SetFileName(self, fileName: str) -> None :
-        """Sets the filename to save data to. Note that the device name and number will be appended \
-        to the end. 
-
-        Args:
-            fileName (str): String file name.
-        """
-        self._saveFileName = str(fileName)
     
 
     def GetPODparametersInit(self) -> str :
@@ -614,3 +604,32 @@ class Setup_Interface :
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
     
+
+    ### WORKING
+
+    def SetupFileName(self, fileName: str|None = None) -> None : 
+        if(fileName == None) :
+            self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?')
+            self.PrintSaveFile()
+        else:
+            if(UserInput.CheckFileExt(fileName, fIsExt=False)) : 
+                self._saveFileName = fileName
+            else : 
+                print('[!] Extension on '+str(fileName)+' is not supported for '+self.GetDeviceName()+' POD devices. Please input a new file name.')
+                self.SetupFileName(None)
+
+    def PrintSaveFile(self) -> None :
+        """Prints the file path and name that data is saved to. Note that the device name and number \
+        will be appended to the end of the filename,
+        """
+        # print name  
+        print('\nStreaming data for '+self.GetDeviceName()+' will be saved to '+ str(self._saveFileName))
+
+
+    def GetSaveFileName(self) -> str:
+        """Gets the name of the class object's save file.
+
+        Returns:
+            str: String of the save file name and path (_saveFileName).
+        """
+        return(self._saveFileName)

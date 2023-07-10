@@ -369,6 +369,6 @@ class UserInput :
             ext = f
         # check if extension is allowed
         if(ext not in goodExt) : 
-            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
+            if(printErr) : print('[!] Filename must have ' + str(goodExt) + ' extension.')
             return(False) # bad extension 
         return(True)      # good extension 
