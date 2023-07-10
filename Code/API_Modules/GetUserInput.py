@@ -293,11 +293,21 @@ class UserInput :
         """
         return(str(value))
     
+    
     # ------------ FILE ------------
 
 
     @staticmethod
-    def GetFilePath(prompt: str|None = None, goodExt:list[str]=['.csv','.txt','.edf']) -> str:         
+    def GetFilePath(prompt: str|None = None, goodExt: list[str] = ['.txt']) -> str :
+        """Asks the user for a file path and file name. 
+
+        Args:
+            prompt (str | None, optional): Text to print to the user before requesting the path. Defaults to None.
+            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.csv','.txt','.edf'].
+
+        Returns:
+            str: File path and name.
+        """
         if(prompt != None): 
             print(prompt)
         # ask user for path 
@@ -324,6 +334,7 @@ class UserInput :
         else :
             return(path)
         
+
     @staticmethod
     def GetFileName() -> str:
         """Asks the user for a filename.
@@ -348,7 +359,7 @@ class UserInput :
     
     
     @staticmethod
-    def CheckFileExt(f: str, fIsExt:bool=True, goodExt:list[str]=['.csv','.txt','.edf'], printErr:bool=True) -> bool : 
+    def CheckFileExt(f: str, fIsExt:bool=True, goodExt: list[str] = ['.txt'], printErr: bool = True) -> bool : 
         """Checks if a file name has a valid extension.
 
         Args:
@@ -356,7 +367,7 @@ class UserInput :
             fIsExt (bool, optional): Boolean flag that is true if f is an extension, false \
                 otherwise. Defaults to True.
             goodExt (list[str], optional): List of valid file extensions. Defaults to \
-                ['.csv','.txt','.edf'].
+                ['.txt',].
             printErr (bool, optional): Boolean flag that, when true, will print an error \
                 statement. Defaults to True.
 
