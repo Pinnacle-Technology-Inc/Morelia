@@ -293,7 +293,7 @@ class UserInput :
         """
         return(str(value))
     
-    
+
     # ------------ FILE ------------
 
 
@@ -351,7 +351,7 @@ class UserInput :
         # get parts 
         name, ext = os.path.splitext(inp)
         # default to csv if no extension is given
-        if(ext=='') : ext='.csv'
+        if(ext=='') : ext='.txt'
         # check if extension is correct 
         if( not UserInput.CheckFileExt(ext)) : return(UserInput.GetFileName())
         # return file name with extension 
