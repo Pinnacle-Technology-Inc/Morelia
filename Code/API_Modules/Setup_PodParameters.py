@@ -75,7 +75,12 @@ class Params_Interface :
         Returns:
             tuple[type]: Tuple with values of all itemType types.
         """
-        return(tuple([itemType(x) for x in arr]))
+        n = len(arr)
+        items = [None] * n
+        for i in range(n) : 
+            if(arr[i] != None) : 
+                items[i] = itemType( arr[i] )
+        return(tuple(items))
     
 
 # ##########################################################################################
@@ -287,20 +292,24 @@ class Params_8401HR(Params_Interface) :
                 raise Exception('The second stage gain must be 1x or 5x; set gain to None if no-connect.')
             
         for hp in self.highPass : 
-            if(hp not in [0., 0.5, 1., 10.]) : 
-                raise Exception('The high-pass filter must be 0.5, 1, or 10 Hz. If the channel is DC, input 0.')
+            if(hp != None) : 
+                if(hp not in [0., 0.5, 1., 10.]) : 
+                    raise Exception('The high-pass filter must be 0.5, 1, or 10 Hz. If the channel is DC, input 0.')
             
         for lp in self.lowPass : 
-            if(lp < 21 or lp > 15000) : 
-                raise Exception('The low-pass filter must be between 21-15000 Hz.')
+            if(lp != None) : 
+                if(lp < 21 or lp > 15000) : 
+                    raise Exception('The low-pass filter must be between 21-15000 Hz.')
             
         for bs in self.bias :
-            if(bs < -2.048 or bs > 2.048) : 
-                raise Exception('The bias voltage must be +/- 2.048 V.')
+            if(bs != None):
+                if(bs < -2.048 or bs > 2.048) : 
+                    raise Exception('The bias voltage must be +/- 2.048 V.')
             
         for dc in self.dcMode : 
-            if(dc not in ['VBIAS','AGND']) : 
-                raise Exception('The DC mode must be VBIAS or AGND.')
+            if(dc != None) : 
+                if(dc not in ['VBIAS','AGND']) : 
+                    raise Exception('The DC mode must be VBIAS or AGND.')
             
 
 # ##########################################################################################

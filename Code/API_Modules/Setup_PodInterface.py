@@ -48,6 +48,17 @@ class Setup_Interface :
         # NOTE replace GENERIC with the correct child class' name 
         return('GENERIC')   
     
+    
+    @staticmethod
+    def GetSupportedFileExtensions() -> list[str] : 
+        """Returns a list containing valid file extensions. 
+
+        Returns:
+            list[str]: List of string file extensions.
+        """
+        # NOTE add or remove extensions in child class if needed
+        return(['.csv','.txt','.edf'])
+
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_Interface :
         """Asks the user to input all the device parameters. 
@@ -126,7 +137,6 @@ class Setup_Interface :
         pass
 
 
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -143,49 +153,7 @@ class Setup_Interface :
         self._DisconnectAllPODdevices
 
 
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    def SetFileName(self, fileName: str) -> None :
-        """Sets the filename to save data to. Note that the device name and number will be appended \
-        to the end. 
-
-        Args:
-            fileName (str): String file name.
-        """
-        self._saveFileName = str(fileName)
-    
-
-    def GetPODparametersInit(self) -> str :
-        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
-        Returns:
-            str: String representation of a dictionary of POD device parameters. The keys are the device number.
-        """
-        initParams = '{'
-        for key,val in self._podParametersDict.items() :
-            initParams += ' '+str(key)+' : '+val.GetInit()+','
-        initParams = initParams[:-1] + ' }' # cut off last comma and add close bracket 
-        return(initParams)
-    
-
-    def SetupPODparameters(self, podParametersDict:dict[int,Params_Interface]|None=None) -> None :
-        """Sets the parameters for the POD devices.
-
-        Args:
-            podParametersDict (dict[int,Params_Interface] | None, optional): dictionary of the device parameters \
-                for all devices. Defaults to None.
-        """
-        # get dictionary of POD device parameters
-        if(podParametersDict==None):
-            # get setup parameters for all POD devices
-            self._podParametersDict = self._GetParam_allPODdevices()  
-            # display parameters and allow user to edit them
-            self.ValidateParams()          
-        else:
-            self._podParametersDict = podParametersDict
-        # connect and initialize all POD devices
-        self.ConnectAllPODdevices()
-
+    # ============ PUBLIC/PRIVATE METHODS ============      ========================================================================================================================
 
 
     # ------------ VALIDATION ------------
@@ -217,9 +185,6 @@ class Setup_Interface :
         # no exceptions raised
         return(True)
     
-
-    # ============ PRIVATE METHODS ============      ========================================================================================================================
-
 
     # ------------ DEVICE CONNECTION ------------
 
@@ -284,6 +249,25 @@ class Setup_Interface :
 
 
     # ------------ SETUP POD PARAMETERS ------------
+
+    
+    def SetupPODparameters(self, podParametersDict:dict[int,Params_Interface]|None=None) -> None :
+        """Sets the parameters for the POD devices.
+
+        Args:
+            podParametersDict (dict[int,Params_Interface] | None, optional): dictionary of the device parameters \
+                for all devices. Defaults to None.
+        """
+        # get dictionary of POD device parameters
+        if(podParametersDict==None):
+            # get setup parameters for all POD devices
+            self._podParametersDict = self._GetParam_allPODdevices()  
+            # display parameters and allow user to edit them
+            self.ValidateParams()          
+        else:
+            self._podParametersDict = podParametersDict
+        # connect and initialize all POD devices
+        self.ConnectAllPODdevices()
 
 
     def _GetParam_allPODdevices(self) -> dict[int,Params_Interface] :
@@ -459,7 +443,19 @@ class Setup_Interface :
     
 
     # ------------ DISPLAY POD PARAMETERS ------------
-       
+
+
+    def GetPODparametersInit(self) -> str :
+        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
+        Returns:
+            str: String representation of a dictionary of POD device parameters. The keys are the device number.
+        """
+        initParams = '{'
+        for key,val in self._podParametersDict.items() :
+            initParams += ' '+str(key)+' : '+val.GetInit()+','
+        initParams = initParams[:-1] + ' }' # cut off last comma and add close bracket 
+        return(initParams)
+
 
     @staticmethod
     def _PrintDeviceNumber(num: int) -> None :
@@ -483,6 +479,41 @@ class Setup_Interface :
 
 
     # ------------ FILE HANDLING ------------
+
+
+    def SetupFileName(self, fileName: str|None = None) -> None : 
+        """Gets the file path and name to save streaming data to. Note that the device name and number \
+        will be appended to the end of the filename.
+
+        Args:
+            fileName (str | None, optional): Name and path of the file, if known. Defaults to None.
+        """
+        if(fileName == None) :
+            self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?', goodExt=self.GetSupportedFileExtensions())
+            self.PrintSaveFile()
+        else:
+            if(UserInput.CheckFileExt(fileName, fIsExt=False, goodExt=self.GetSupportedFileExtensions())) : 
+                self._saveFileName = fileName
+            else : 
+                print('[!] Extension on '+str(fileName)+' is not supported for '+self.GetDeviceName()+' POD devices. Please input a new file name.')
+                self.SetupFileName(None)
+
+
+    def PrintSaveFile(self) -> None :
+        """Prints the file path and name that data is saved to. Note that the device name and number \
+        will be appended to the end of the filename.
+        """
+        # print name  
+        print('\nStreaming data for '+self.GetDeviceName()+' will be saved to '+ str(self._saveFileName))
+
+
+    def GetSaveFileName(self) -> str:
+        """Gets the path and filename where streaming data is saved to.
+
+        Returns:
+            str: String of the save file name and path (_saveFileName).
+        """
+        return(self._saveFileName)
 
 
     def _OpenSaveFile(self, devNum: int) -> IOBase | EdfWriter : 
@@ -613,4 +644,3 @@ class Setup_Interface :
         """
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
-    

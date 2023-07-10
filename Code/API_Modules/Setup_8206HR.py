@@ -144,7 +144,7 @@ class Setup_8206HR(Setup_Interface) :
             Texttable: Texttable containing all parameters.
         """
         # setup table 
-        tab = Texttable()
+        tab = Texttable(110)
         # write column names
         tab.header(['Device #','Port','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
         # write rows
