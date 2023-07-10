@@ -297,7 +297,7 @@ class UserInput :
 
 
     @staticmethod
-    def GetFilePath(prompt: str|None = None) -> str:         
+    def GetFilePath(prompt: str|None = None, goodExt:list[str]=['.csv','.txt','.edf']) -> str:         
         if(prompt != None): 
             print(prompt)
         # ask user for path 
@@ -318,7 +318,8 @@ class UserInput :
             # return complete path and filename 
             return(name+fileName)
         # prompt again if bad extension is given 
-        elif( not UserInput.CheckFileExt(ext)) : return(UserInput.GetFilePath())
+        elif( not UserInput.CheckFileExt(ext,goodExt=goodExt)) : 
+            return(UserInput.GetFilePath())
         # path is correct
         else :
             return(path)

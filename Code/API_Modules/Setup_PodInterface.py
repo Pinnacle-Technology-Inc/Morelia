@@ -612,7 +612,7 @@ class Setup_Interface :
             self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?')
             self.PrintSaveFile()
         else:
-            if(UserInput.CheckFileExt(fileName, fIsExt=False)) : 
+            if(UserInput.CheckFileExt(fileName, fIsExt=False, goodExt=self.GetSupportedFileExtensions())) : 
                 self._saveFileName = fileName
             else : 
                 print('[!] Extension on '+str(fileName)+' is not supported for '+self.GetDeviceName()+' POD devices. Please input a new file name.')
@@ -633,3 +633,8 @@ class Setup_Interface :
             str: String of the save file name and path (_saveFileName).
         """
         return(self._saveFileName)
+    
+    @staticmethod
+    def GetSupportedFileExtensions() -> list[str] : 
+        # NOTE add or remove extensions in child class if needed
+        return(['.csv','.txt','.edf'])
