@@ -1,3 +1,6 @@
+# enviornment imports
+import os
+
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -307,14 +310,93 @@ class UserInput :
         return(str(value))
     
 
+    # ------------ FILE ------------
+
+
     @staticmethod
-    def CastBool(value) -> bool :
-        """Casts the argument as an string.
+    def GetFilePath(prompt: str|None = None, goodExt: list[str] = ['.txt']) -> str :
+        """Asks the user for a file path and file name. 
 
         Args:
-            value: Value to type casted.
+            prompt (str | None, optional): Text to print to the user before requesting the path. Defaults to None.
+            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.csv','.txt','.edf'].
 
         Returns:
-            bool: Value type casted as a bool.
+            str: File path and name.
         """
-        return(bool(int(value)))
+        if(prompt != None): 
+            print(prompt)
+        # ask user for path 
+        path = input('Path: ')
+        # split into path/name and extension 
+        name, ext = os.path.splitext(path)
+        # if there is no extension , assume that a file name was not given and path ends with a directory 
+        if(ext == '') : 
+            # ask user for file name 
+            fileName = UserInput.GetFileName()
+            # add slash if path is given 
+            if(name != ''): 
+                # check for slash 
+                if( ('/' in name) and (not name.endswith('/')) )  :
+                    name = name+'/'
+                elif(not name.endswith('\\')) : 
+                    name = name+'\\'
+            # return complete path and filename 
+            return(name+fileName)
+        # prompt again if bad extension is given 
+        elif( not UserInput.CheckFileExt(ext,goodExt=goodExt)) : 
+            return(UserInput.GetFilePath())
+        # path is correct
+        else :
+            return(path)
+        
+
+    @staticmethod
+    def GetFileName() -> str:
+        """Asks the user for a filename.
+
+        Returns:
+            str: String of the file name and extension.
+        """
+        # ask user for file name 
+        inp = input('File name: ')
+        # prompt again if no name given
+        if(inp=='') : 
+            print('[!] No filename given.')
+            return(UserInput.GetFileName())
+        # get parts 
+        name, ext = os.path.splitext(inp)
+        # default to csv if no extension is given
+        if(ext=='') : ext='.txt'
+        # check if extension is correct 
+        if( not UserInput.CheckFileExt(ext)) : return(UserInput.GetFileName())
+        # return file name with extension 
+        return(name+ext)
+    
+    
+    @staticmethod
+    def CheckFileExt(f: str, fIsExt:bool=True, goodExt: list[str] = ['.txt'], printErr: bool = True) -> bool : 
+        """Checks if a file name has a valid extension.
+
+        Args:
+            f (str): file name or extension
+            fIsExt (bool, optional): Boolean flag that is true if f is an extension, false \
+                otherwise. Defaults to True.
+            goodExt (list[str], optional): List of valid file extensions. Defaults to \
+                ['.txt',].
+            printErr (bool, optional): Boolean flag that, when true, will print an error \
+                statement. Defaults to True.
+
+        Returns:
+            bool: True if extension is in goodExt list, False otherwise.
+        """
+        # get extension 
+        if(not fIsExt) : 
+            name, ext = os.path.splitext(f)
+        else :  
+            ext = f
+        # check if extension is allowed
+        if(ext not in goodExt) : 
+            if(printErr) : print('[!] Filename must have ' + str(goodExt) + ' extension.')
+            return(False) # bad extension 
+        return(True)      # good extension 

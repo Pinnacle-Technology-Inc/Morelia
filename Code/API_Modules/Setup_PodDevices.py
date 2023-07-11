@@ -1,8 +1,5 @@
-
-
 # enviornment imports
 import time 
-import os
 from   threading  import Thread
 from   math       import floor 
 
@@ -12,6 +9,7 @@ from Setup_PodParameters    import Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
 from Setup_8480HR           import Setup_8480HR
+from Setup_8229             import Setup_8229
 from GetUserInput           import UserInput
 
 # authorship
@@ -32,28 +30,24 @@ class Setup_PodDevices :
     Attributes:
         _Setup_PodDevices (dict[str,dict[int,Params_Interface]): Dictionary containing the Setup_Interface \
             subclasses for each POD device.
-        _saveFileName (str): String containing the path, filename, and file extension to a file to \
-            save streaming data to. The filename will be extended with "_<DEVICE NAME>_<DEVICE NUMBER>" \
-            for each device. 
         _options (dict[int,str]): Dictionary listing the different options for the user to complete.
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFile:str|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
+    def __init__(self, saveFileDict:dict[str,str]|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
         """Initializes the class. Sets the default values of the class instance variables. Calls \
         functions to complete the class setup.
 
         Args:
-            saveFile (str | None, optional): String describing the directory path and filename with an \
-                extension. Defaults to None.
-            podParametersDict (dict[int,Params_Interface] | None] | None, optional): Dictionary of POD devices and \
+            saveFileDict (dict[str, str] | None, optional): Dictionary with keys are the POD device names and values \
+                as the file names. Defaults to None.
+            podParametersDict (dict[int, Params_Interface] | None] | None, optional): Dictionary of POD devices and \
                 their respective parameters. Defaults to None.
         """
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
-        self._saveFileName : str = ''
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
             2 : 'Show current settings.',
@@ -65,11 +59,9 @@ class Setup_PodDevices :
             8 : 'Generate initialization code.', 
             9 : 'Quit.'
         }
-        # choose devices to use 
-        params = self._GetParams(podParametersDict)
         # setup devices  
-        self.SetupPODparameters(params) 
-        self.SetupSaveFile(saveFile)
+        self.SetupPODparameters(self._GetParams(podParametersDict))
+        self.SetupSaveFile(saveFileDict)
 
 
     def __del__(self) -> None :
@@ -102,13 +94,12 @@ class Setup_PodDevices :
         return(allInitParams)
 
 
-    def GetSaveFileName(self) -> str:
-        """Gets the name of the class object's save file.
+    def GetSaveFileNames(self) -> str:
 
-        Returns:
-            str: String of the save file name and path (_saveFileName).
-        """
-        return(self._saveFileName)
+        fileNames = {}
+        for key,val in self._Setup_PodDevices.items() : 
+            fileNames[key] = val.GetSaveFileName()
+        return(fileNames)
     
 
     def GetOptions(self) -> dict[int,str] :
@@ -136,24 +127,19 @@ class Setup_PodDevices :
             self._Setup_PodDevices[key].SetupPODparameters(value)
 
 
-    def SetupSaveFile(self, saveFile:str|None=None) -> None :
+    def SetupSaveFile(self, saveFileDict:dict[str,str]|None=None) -> None :
         """Gets the path/file name from the user and stores it. Used in initialization.
 
         Args:
-            saveFile (str | None, optional): String of the save file, which includes the directory path, \
+            saveFile (dict[str,str|None] | None, optional): String of the save file, which includes the directory path, \
                 filename, and file extension. Defaults to None.
         """
-        # initialize file name and path 
-        if(saveFile == None) :
-            #self.SetupSaveFile = self._GetFilePath()
-            self._saveFileName= self._GetFilePath()
-            print("SAVE FILE", self.SetupSaveFile)
-            self._PrintSaveFile()
-        else:
-            self._saveFileName = saveFile
-        # setup devices 
-        self._SetFilenameToDevices()
-
+        if(saveFileDict == None ) : 
+            for val in self._Setup_PodDevices.values() : 
+                val.SetupFileName(None)
+        else: 
+            for key, value in saveFileDict.items() : 
+                self._Setup_PodDevices[key].SetupFileName(value)
     
 
     # ------------ EXECUTION ------------
@@ -238,16 +224,18 @@ class Setup_PodDevices :
         """Displays the POD device settings for all devices, and then prints the save file name."""
         for podType in self._Setup_PodDevices.values() :
             podType.DisplayPODdeviceParameters()
-        self._PrintSaveFile()
+            podType.PrintSaveFile()
     
 
     def _EditSaveFilePath(self) -> None : 
         """Asks the user for the POD device type, then asks the user for a new file name and path, \
         then sets the value to the POD devices.
         """
-        self._saveFileName = self._GetFilePath()
-        self._SetFilenameToDevices()
-        self._PrintSaveFile()
+        deviceName = self._GetChosenDeviceType('What type of POD device do you want to change the filename for?')
+        if(deviceName in self._Setup_PodDevices) :
+            self._Setup_PodDevices[deviceName].SetupFileName()
+        else : 
+            print('[!] '+deviceName+' is not available.')
 
 
     def _EditCheckConnect(self) -> None :
@@ -310,9 +298,9 @@ class Setup_PodDevices :
         """
         print(
             '\n' + 
-            'saveFile = r\'' + str(self._saveFileName) + '\'\n' + 
+            'saveFileDicts = ' + str(self.GetSaveFileNames()) + '\n' + 
             'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 
-            'go = Setup_PodDevices(saveFile, podParametersDict)'  + '\n' + 
+            'go = Setup_PodDevices(saveFileDicts, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
 
@@ -346,18 +334,14 @@ class Setup_PodDevices :
         
 
     @staticmethod
-    def _AskUserForDevices() :  # NOTE add all supported devices here 
+    def _AskUserForDevices() : 
         """Asks the user what POD devices they want to use."""
         useParams = {}
-        name = Setup_8206HR.GetDeviceName()
-        if(UserInput.AskYN('\nWill you be using any '+str(name)+' devices?')) :
-            useParams[name] = None
-        name = Setup_8401HR.GetDeviceName()
-        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
-            useParams[name] = None
-        name = Setup_8480HR.GetDeviceName()
-        if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) :
-            useParams[name] = None
+        names = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName(), Setup_8480HR.GetDeviceName()) # NOTE add all supported devices here 
+        print('')
+        for name in names:
+            if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) : 
+                useParams[name] = None
         # ask again if user responds No to all 
         if(len(useParams) == 0 ) : 
             print('[!] No POD devices selected. Please choose at least one device.')
@@ -389,7 +373,7 @@ class Setup_PodDevices :
             raise Exception('[!] Parameters dictionary is empty.')
         # for each dict entry...
         allGood = True 
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8480HR.GetDeviceName()) # NOTE add all supported devices here 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8480HR.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
             # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
@@ -401,7 +385,7 @@ class Setup_PodDevices :
         return(allGood)
 
 
-    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : # NOTE add all supported devices here 
+    def _Set_Setup_PodDevices(self, podParametersDict:dict[str,dict|None]) -> None : 
         """Sets the _Setup_PodDevices varaible to have keys as the POD device name and values \
         as the setup class.
 
@@ -416,110 +400,13 @@ class Setup_PodDevices :
         name = Setup_8401HR.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8401HR()
+        name = Setup_8229.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8229()
         name = Setup_8480HR.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8480HR()
-        
-        
-
-
-    # ------------ FILE HANDLING ------------
-
-
-    def _PrintSaveFile(self) -> None :
-        """Prints the file path and name that data is saved to. Note that the device name and number \
-        will be appended to the end of the filename,
-        """
-        # print name  
-        print('\nStreaming data will be saved to ', self._saveFileName)
- 
-
-    @staticmethod
-    def _CheckFileExt(f: str, fIsExt:bool=True, goodExt:list[str]=['.csv','.txt','.edf'], printErr:bool=True) -> bool : 
-        """_summary_
-
-        Args:
-            f (str): file name or extension
-            fIsExt (bool, optional): Boolean flag that is true if f is an extension, false \
-                otherwise. Defaults to True.
-            goodExt (list[str], optional): List of valid file extensions. Defaults to \
-                ['.csv','.txt','.edf'].
-            printErr (bool, optional): Boolean flag that, when true, will print an error \
-                statement. Defaults to True.
-
-        Returns:
-            bool: True if extension is in goodExt list, False otherwise.
-        """
-        # get extension 
-        if(not fIsExt) : name, ext = os.path.splitext(f)
-        else :  ext = f
-        # check if extension is allowed
-        if(ext not in goodExt) : 
-            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
-            return(False) # bad extension 
-        return(True)      # good extension 
-
-
-    @staticmethod
-    def _GetFilePath() -> str: 
-        """Asks user for a path and filename to save streaming data to.
-
-        Returns:
-            str: String of the file path, name, and extension.
-        """
-        # ask user for path 
-        path = input('\nWhere would you like to save streaming data to?\nPath: ')
-        # split into path/name and extension 
-        name, ext = os.path.splitext(path)
-        # if there is no extension , assume that a file name was not given and path ends with a directory 
-        if(ext == '') : 
-            # ask user for file name 
-            fileName = Setup_PodDevices._GetFileName()
-            print("THIS IS WHERE FILENAME",  fileName)
-            # add slash if path is given 
-            if(name != ''): 
-                # check for slash 
-                if( ('/' in name) and (not name.endswith('/')) )  :
-                    name = name+'/'
-                elif(not name.endswith('\\')) : 
-                    name = name+'\\'
-            # return complete path and filename 
-            return(name+fileName)
-        # prompt again if bad extension is given 
-        elif( not Setup_PodDevices._CheckFileExt(ext)) : return(Setup_PodDevices._GetFilePath())
-        # path is correct
-        else :
-            return(path)
-
-
-    @staticmethod
-    def _GetFileName() -> str:
-        """Asks the user for a filename.
-
-        Returns:
-            str: String of the file name and extension.
-        """
-        # ask user for file name 
-        inp = input('File name: ')
-        # prompt again if no name given
-        if(inp=='') : 
-            print('[!] No filename given.')
-            return(Setup_PodDevices._GetFileName())
-        # get parts 
-        name, ext = os.path.splitext(inp)
-        # default to csv if no extension is given
-        if(ext=='') : ext='.csv'
-        # check if extension is correct 
-        if( not Setup_PodDevices._CheckFileExt(ext)) : return(Setup_PodDevices._GetFileName())
-        # return file name with extension 
-        return(name+ext)
-    
-
-    def _SetFilenameToDevices(self) -> None :
-        """Sets the filename to each POD device type."""
-        # give filename to devices
-        for podType in self._Setup_PodDevices.values() : 
-            podType.SetFileName(self._saveFileName)
+        # NOTE add all supported devices here 
 
 
     # ------------ STREAM ------------ 

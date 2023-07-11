@@ -56,7 +56,6 @@ class POD_8229(POD_Basics) :
         self._commands.AddCommand(145, 'GET REVERSE PARAMS',    (0,),                   (U16,U16),              False, 'Gets the base and variable times for random reverse, in seconds.')
         self._commands.AddCommand(146, 'SET MOTOR STATE',       (U16,),                 (U16,),                 False, 'Sets whether the motor is on or off.  1 for On, 0 for Off.')
         self._commands.AddCommand(147, 'GET MOTOR STATE',       (0,),                   (U16,),                 False, 'Gets the motor state.')
-        self._commands.AddCommand(148, 'LCD RESET',             (U8,),                  (0,),                   False, 'Resets the LCD.  Probably never need to send this.  Can cause desync between LCD state and system state.')
         self._commands.AddCommand(149, 'SET ID',                (U16,),                 (0,),                   False, 'Sets the system ID displayed on the LCD.')
         self._commands.AddCommand(150, 'SET RANDOM REVERSE',    (U8,),                  (0,),                   False, 'Enables or Disables Random Reverse function.  0 = disabled, Non-Zero = enabled.')
         self._commands.AddCommand(151, 'GET RANDOM REVERSE',    (0,),                   (U8,),                  False, 'Reads the Random Reverse function.  0 = disabled, non-zero = enabled.')
@@ -90,11 +89,11 @@ class POD_8229(POD_Basics) :
             tuple[int]: _description_
         """
         # get good value
-        validDay = POD_8229._Validate_Day(day)
+        validDay: int = POD_8229._Validate_Day(day)
         # get encoded schedule
-        encodedSched = POD_8229.CodeDaySchedule(hours,speed)
+        encodedSched: list = POD_8229.CodeDaySchedule(hours,speed)
         # prepend the day to the schedule  
-        return( tuple( encodedSched.insert(0, validDay) ) )
+        return( tuple( [validDay]+encodedSched ) )
 
 
     @staticmethod
@@ -266,6 +265,7 @@ class POD_8229(POD_Basics) :
                 transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload'])
             else : # 202 LCD SET DAY SCHEDULE
                 transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload'])
+            return(transdict)
         # standard packet 
         else: 
             return(self.TranslatePODpacket_Standard(msg))  

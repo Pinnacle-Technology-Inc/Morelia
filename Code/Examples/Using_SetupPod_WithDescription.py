@@ -38,7 +38,7 @@ if(runExample == '1'):
     optional: you can store setup parameters as variables. 
     """
     newParams = go.GetPODparametersInit()
-    newFile   = go.GetSaveFileName()
+    newFile   = go.GetSaveFileNames()
     print('Parameters: \npodParametersDict = ', newParams, '\nsaveFile = ', newFile, '\n')
 
 # ===== EXAMPLE 2: USING INITIALIZATION OPTIONS =====
@@ -50,7 +50,7 @@ elif(runExample == '2'):
     """
     # example path and file name to save streaming data to. 
     #   Note that the POD device number will be appended to the end of the filename.
-    saveFile = r'C:\Users\tkelly\Desktop\TEST\test.csv'
+    saveFile = { '8206-HR' : r'C:\Users\tkelly\Desktop\TEST\test.csv' }
     # example dictionary with 8206HR POD device setup parameters
     podParametersDict = { '8206-HR' : { 
         1 : Params_8206HR(port='COM5 - USB EEG/EMG (COM5)', sampleRate=500, preamplifierGain=100, lowPass=(40, 40, 40)) , 
@@ -70,7 +70,7 @@ elif(runExample == '2'):
     optional: you can store setup parameters as variables. 
     """    
     newParams = go.GetPODparametersInit()
-    newFile   = go.GetSaveFileName()
+    newFile   = go.GetSaveFileNames()
     print('Parameters: \npodParametersDict = ', newParams, '\nsaveFile = ', newFile, '\n')
 
 # ===== BAD INPUT =====
