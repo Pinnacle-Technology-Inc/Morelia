@@ -78,19 +78,20 @@ class Setup_8206HR(Setup_Interface) :
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams.preamplifierGain)
+            pod = POD_8206HR(port=port, preampGain=deviceParams.preamplifierGain)
             # test if connection is successful
-            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+            if(self._TestDeviceConnection(pod)):
                 # write setup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
+                pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
+                pod.WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
+                pod.WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
+                pod.WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
                 # successful write if no exceptions raised 
+                self._podDevices[deviceNum] = pod
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
-            self._podDevices[deviceNum] = 0 # fill entry with bad value
+            self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
         return(success)
