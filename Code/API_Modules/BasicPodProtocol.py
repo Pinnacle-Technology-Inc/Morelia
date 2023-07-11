@@ -190,8 +190,10 @@ class POD_Basics :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
+        print("MESSAGE", msgDict)
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
+            print("TRANSLTEEEEEEE")
             # get payload bytes
             pldBytes = msgDict['Payload']
             # get sizes 

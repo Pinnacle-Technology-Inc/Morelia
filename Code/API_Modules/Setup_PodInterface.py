@@ -488,6 +488,53 @@ class Setup_Interface :
 
 
     # ------------ FILE HANDLING ------------
+    @staticmethod #brought this from devices
+    def _GetFileName() -> str:
+        """Asks the user for a filename.
+
+        Returns:
+            str: String of the file name and extension.
+        """
+        # ask user for file name 
+        inp = input('File name: ')
+        # prompt again if no name given
+        if(inp=='') : 
+            print('[!] No filename given.')
+            return(Setup_Interface._GetFileName())
+        # get parts 
+        name, ext = os.path.splitext(inp)
+        # default to csv if no extension is given
+        if(ext=='') : ext='.csv'
+        # check if extension is correct 
+        if( not Setup_Interface._CheckFileExt(ext)) : return(Setup_Interface._GetFileName())
+        # return file name with extension 
+        return(name+ext)
+    
+    @staticmethod
+    def _CheckFileExt(f: str, fIsExt:bool=True, goodExt:list[str]=['.csv','.txt','.edf'], printErr:bool=True) -> bool : 
+        """_summary_
+
+        Args:
+            f (str): file name or extension
+            fIsExt (bool, optional): Boolean flag that is true if f is an extension, false \
+                otherwise. Defaults to True.
+            goodExt (list[str], optional): List of valid file extensions. Defaults to \
+                ['.csv','.txt','.edf'].
+            printErr (bool, optional): Boolean flag that, when true, will print an error \
+                statement. Defaults to True.
+
+        Returns:
+            bool: True if extension is in goodExt list, False otherwise.
+        """
+        # get extension 
+        if(not fIsExt) : name, ext = os.path.splitext(f)
+        else :  ext = f
+        # check if extension is allowed
+        if(ext not in goodExt) : 
+            if(printErr) : print('[!] Filename must have' + str(goodExt) + ' extension.')
+            return(False) # bad extension 
+        return(True)      # good extension
+    
     @staticmethod
     def _GetFilePath() -> str:  #added from POD_devices
         """Asks user for a path and filename to save streaming data to.

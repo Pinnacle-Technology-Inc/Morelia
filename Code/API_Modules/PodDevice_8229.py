@@ -245,7 +245,7 @@ class POD_8229(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Adds an addittional check to handle specially formatted \
+        """Overwrites the parent's method. Adds an additional check to handle specially formatted \
         payloads. 
 
         Args:

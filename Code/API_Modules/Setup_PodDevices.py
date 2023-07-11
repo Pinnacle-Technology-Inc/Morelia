@@ -145,7 +145,8 @@ class Setup_PodDevices :
         """
         # initialize file name and path 
         if(saveFile == None) :
-            self.SetupSaveFile = self._GetFilePath()
+            #self.SetupSaveFile = self._GetFilePath()
+            self._saveFileName= self._GetFilePath()
             print("SAVE FILE", self.SetupSaveFile)
             self._PrintSaveFile()
         else:
@@ -430,7 +431,7 @@ class Setup_PodDevices :
         will be appended to the end of the filename,
         """
         # print name  
-        print('\nStreaming data will be saved to '+ str(self._saveFileName))
+        print('\nStreaming data will be saved to ', self._saveFileName)
  
 
     @staticmethod
