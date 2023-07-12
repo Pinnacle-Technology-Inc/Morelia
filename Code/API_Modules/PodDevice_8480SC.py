@@ -10,9 +10,9 @@ from PodCommands            import POD_Commands
 # authorship
 __author__      = "Sree Kondi"
 __maintainer__  = "Sree Kondi"
-__credits__     = ["Sree Kondi", "Seth Gabbert"]
+__credits__     = ["Sree Kondi", "Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
-__copyright__   = "Copyright (c) 2023, Sree Kondi"
+__copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class POD_8480SC(POD_Basics) : 

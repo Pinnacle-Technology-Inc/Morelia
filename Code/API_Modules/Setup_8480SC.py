@@ -15,9 +15,8 @@ __author__      = "Sree Kondi"
 __maintainer__  = "Sree Kondi"
 __credits__     = ["Sree Kondi", "Thresa Kelly" "Seth Gabbert"]
 __license__     = "New BSD License"
-__copyright__   = "Copyright (c) 2023, Sree Kondi"
+__copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
-
 
 class Setup_8480SC(Setup_Interface) : 
     """
