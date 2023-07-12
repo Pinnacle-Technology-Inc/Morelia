@@ -1,5 +1,3 @@
-
-
 # enviornment imports
 import os 
 import time

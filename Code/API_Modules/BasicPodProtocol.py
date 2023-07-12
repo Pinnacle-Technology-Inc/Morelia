@@ -75,6 +75,22 @@ class POD_Basics :
 
     # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
 
+    @staticmethod
+    def GetU(u: int) -> int : 
+        """number of hexadecimal characters for an unsigned u-bit value.
+
+        Args:
+            u (int): 8, 16, or 32 bits. Enter any other number for NOVALUE.
+
+        Returns:
+            int: number of hexadecimal characters for an unsigned u-bit value.
+        """
+        match u : 
+            case  8: return(POD_Commands.U8())
+            case 16: return(POD_Commands.U16())
+            case 32: return(POD_Commands.U32())
+            case  _: return(POD_Commands.NoValue())
+
 
     @staticmethod
     def GetNumberOfPODDevices() -> int :

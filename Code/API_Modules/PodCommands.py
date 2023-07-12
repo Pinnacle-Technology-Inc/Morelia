@@ -107,10 +107,10 @@ class POD_Commands :
     
     @staticmethod
     def U32() -> int : 
-        """Gets value of __U16.
+        """Gets value of __U32.
 
         Returns:
-            int: Value of __U16.
+            int: Value of __U32.
         """
         # returns the no value marker for commands dict 
         return(POD_Commands.__U32)

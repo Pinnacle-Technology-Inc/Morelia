@@ -1,7 +1,6 @@
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
-from PodCommands            import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -90,8 +89,8 @@ class POD_8401HR(POD_Basics) :
         super().__init__(port, baudrate=baudrate) 
 
         # get constants for adding commands 
-        U8  = POD_Commands.U8()
-        U16 = POD_Commands.U16()
+        U8  = POD_Basics.GetU(8)
+        U16 = POD_Basics.GetU(16)
         B5  = POD_8401HR.__B5BINARYLENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS

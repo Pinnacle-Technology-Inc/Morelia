@@ -5,7 +5,6 @@ POD_8480SC handles communication using an 8480-SC POD device.
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
-from PodCommands            import POD_Commands
 
 # authorship
 __author__      = "Sree Kondi"
@@ -35,9 +34,9 @@ class POD_8480SC(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Commands.U8()
-        U16 = POD_Commands.U16()
-        U32 = POD_Commands.U32()
+        U8  = POD_Basics.GetU(8)
+        U16 = POD_Basics.GetU(16)
+        U32 = POD_Basics.GetU(32)
         # remove unimplemented commands in POD-device 8480.
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(6)  # STREAM
