@@ -6,9 +6,9 @@ import time
 
 # local imports
 from Setup_PodInterface  import Setup_Interface
-from PodDevice_8480HR    import POD_8480HR
+from PodDevice_8480SC    import POD_8480SC
 from GetUserInput        import UserInput
-from Setup_PodParameters import Params_8480HR
+from Setup_PodParameters import Params_8480SC
 
 # authorship
 __author__      = "Sree Kondi"
@@ -19,9 +19,9 @@ __copyright__   = "Copyright (c) 2023, Sree Kondi"
 __email__       = "sales@pinnaclet.com"
 
 
-class Setup_8480HR(Setup_Interface) : 
+class Setup_8480SC(Setup_Interface) : 
     """
-    Setup_8480HR provides the setup functions for an 8480-HR POD device. 
+    Setup_8480SC provides the setup functions for an 8480-SC POD device. 
     
     Attributes:
         _streamMode (bool): Set to True when the user wants to start streaming data from \
@@ -31,7 +31,7 @@ class Setup_8480HR(Setup_Interface) :
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
 
 
-    _NAME : str = '8480-HR' # overwrite from parent
+    _NAME : str = '8480-SC' # overwrite from parent
     """Class-level string containing the POD device name.
     """
 
@@ -41,7 +41,7 @@ class Setup_8480HR(Setup_Interface) :
     
     def __init__(self) -> None :
         super().__init__()
-        self._podParametersDict : dict[int,Params_8480HR] = {} 
+        self._podParametersDict : dict[int,Params_8480SC] = {} 
         self._streamMode : bool = False
 
 
@@ -55,7 +55,7 @@ class Setup_8480HR(Setup_Interface) :
         Returns:
             str: String of _NAME.
         """
-        return(Setup_8480HR._NAME)
+        return(Setup_8480SC._NAME)
     
 
     @staticmethod
@@ -80,12 +80,12 @@ class Setup_8480HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480HR) -> bool :  
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480SC) -> bool :  
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (Params_8480HR): Device parameters.
+            deviceParams (Params_8480SC): Device parameters.
 
         Returns:
             bool: returns true if failed, false otherwise.
@@ -93,7 +93,7 @@ class Setup_8480HR(Setup_Interface) :
         # get port name 
         port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
         # create POD device 
-        self._podDevices[deviceNum] = POD_8480HR(port=port)
+        self._podDevices[deviceNum] = POD_8480SC(port=port)
         # test if connection is successful
         failed = True
         if(self._TestDeviceConnection(self._podDevices[deviceNum])):
@@ -121,32 +121,32 @@ class Setup_8480HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8480HR : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8480SC : 
         """Asks the user to input all the device parameters. 
 
         Args:
             forbiddenNames (list[str]): List of port names already used by other devices.
 
         Returns:
-            Params_8480HR: Device parameters.
+            Params_8480SC: Device parameters.
         """
         # ask for port first
-        return(Params_8480HR(
+        return(Params_8480SC(
             port              =     self._ChoosePort(forbiddenNames),
             stimulus          =    (UserInput.AskForIntInRange('Choose channel (0 or 1) for Stimulus', 0, 1),
-                                    *Setup_8480HR._ChoosePeriod(),
-                                    *Setup_8480HR._ChooseWidth(),
+                                    *Setup_8480SC._ChoosePeriod(),
+                                    *Setup_8480SC._ChooseWidth(),
                                     UserInput.AskForInt('Enter a value for the stimulus repeat count'),
-                                    Setup_8480HR._ChooseStimulusConfig()),
+                                    Setup_8480SC._ChooseStimulusConfig()),
             preamp            =     UserInput.AskForIntInRange('\nSet preamp (0-1023)', 0, 1023),
             ledCurrent        =     ( UserInput.AskForIntInRange('\nSet ledCurrent (Hz) for CH0 (0-600)',     0, 600),
                                     UserInput.AskForIntInRange('Set ledCurrent (Hz) for CH1 (0-600)', 0, 600) ),
             ttlPullups        =     UserInput.AskForInt('\nAre the pullups enabled on the TTL lines? (0 for disabled, non-zero for enabled)' ),
             estimCurrent      =     (UserInput.AskForIntInRange('\nSet estimCurrent for Channel0  (0-100)', 0, 100),
                                     UserInput.AskForIntInRange('Set estimCurrent for Channel1  (0-100)', 0, 100)),
-            syncConfig        =     Setup_8480HR._ChooseSyncConfig(),   
+            syncConfig        =     Setup_8480SC._ChooseSyncConfig(),   
             ttlSetup          =    (UserInput.AskForIntInRange('\nChoose channel (0 or 1) for TTL Setup', 0, 1),
-                                    Setup_8480HR._TtlSetup(),
+                                    Setup_8480SC._TtlSetup(),
                                     UserInput.AskForInt('Enter a debounce value (ms)'))
         ))
         
@@ -161,7 +161,7 @@ class Setup_8480HR(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 for TTL event, 1 for TTL inputs as triggers)", 0, 1 ) # NOTE : what do 0 or 1 mean here? 
         bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for normal TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1) # NOTE : what do 0 or 1 mean here? 
-        ttl_value = POD_8480HR.TtlConfigBits(bit_0, bit_1, bit_7)
+        ttl_value = POD_8480SC.TtlConfigBits(bit_0, bit_1, bit_7)
         return(ttl_value)
         
 
@@ -175,7 +175,7 @@ class Setup_8480HR(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
         bit_2 = UserInput.AskForIntInRange("Enter a value (0 for standard, 1 for simultaneous)", 0, 1)
-        value = POD_8480HR.StimulusConfigBits(bit_0, bit_1, bit_2)
+        value = POD_8480SC.StimulusConfigBits(bit_0, bit_1, bit_2)
         return(value)
 
 
@@ -231,7 +231,7 @@ class Setup_8480HR(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1) # NOTE: small style thing, dont put space at end of prompt. I went ahead and changed this 
         bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 to idle the opposite of active state, 1 to sync to idle tristate)", 0, 1) 
         bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) 
-        final_value = POD_8480HR.SyncConfigBits(bit_0, bit_1, bit_2)
+        final_value = POD_8480SC.SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
 
         
@@ -319,7 +319,7 @@ class Setup_8480HR(Setup_Interface) :
         return(readThreads)
         
 
-    def _StreamUntilStop(self, pod: POD_8480HR, file: IOBase) -> None :
+    def _StreamUntilStop(self, pod: POD_8480SC, file: IOBase) -> None :
         """Saves a log of all packets recieved from the 8480 POD device until the user decides \
         to stop streaming.
 

@@ -460,7 +460,7 @@ class Params_8229(Params_Interface) :
 # ##########################################################################################
 
 
-class Params_8480HR(Params_Interface) :
+class Params_8480SC(Params_Interface) :
     """Container class that stores parameters for an 8401-HR POD device.
 
     Attributes:
@@ -485,7 +485,7 @@ class Params_8480HR(Params_Interface) :
         ttlSetup = tuple[int],                                                    
         checkForValidParams: bool = True
         ) -> None:
-        """Sets the member variables of each 8480-HR parameter. Checks if the arguments are \
+        """Sets the member variables of each 8480-SC parameter. Checks if the arguments are \
         valid when checkForValidParams is True.  
 
         Args:
@@ -511,11 +511,11 @@ class Params_8480HR(Params_Interface) :
 
 
     def GetInit(self) -> str : 
-        """Builds a string that represents the Params_8480HR constructor with the \
+        """Builds a string that represents the Params_8480SC constructor with the \
         arguments set to the values of this class instance. 
 
         Returns:
-            str: String that represents the Params_8480HR constructor.
+            str: String that represents the Params_8480SC constructor.
         """
         return('Params_8401HR(port=\''+self.port+'\', preamp=\''+str(self.preamp)+
                '\', ledCurrent='+str(self.ledCurrent)+', ttlPullups='+str(self.ttlPullups)+

@@ -1,5 +1,5 @@
 """
-POD_8480HR handles communication using an 8480-HR POD device. 
+POD_8480SC handles communication using an 8480-SC POD device. 
 """
 
 # local imports 
@@ -15,9 +15,9 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Sree Kondi"
 __email__       = "sales@pinnaclet.com"
 
-class POD_8480HR(POD_Basics) : 
+class POD_8480SC(POD_Basics) : 
     """
-    POD_8480HR handles communication using an 8480-HR POD device. 
+    POD_8480SC handles communication using an 8480-SC POD device. 
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
