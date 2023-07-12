@@ -39,7 +39,7 @@ class Setup_8480HR(Setup_Interface) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
     
-    def __init__(self) -> None:
+    def __init__(self) -> None :
         super().__init__()
         self._podParametersDict : dict[int,Params_8480HR] = {} 
         self._streamMode : bool = False
@@ -80,7 +80,8 @@ class Setup_8480HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    """Creates a POD_8206HR object and write the setup parameters to it. 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480HR) -> bool :  
+        """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
@@ -88,34 +89,33 @@ class Setup_8480HR(Setup_Interface) :
 
         Returns:
             bool: returns true if failed, false otherwise.
-    """
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480HR) -> bool :  
-            # get port name 
-            port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
-            # create POD device 
-            self._podDevices[deviceNum] = POD_8480HR(port=port)
-            # test if connection is successful
-            failed = True
-            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
-            #write setup parameters
-                self._podDevices[deviceNum].WriteRead('SET STIMULUS', deviceParams.stimulus)
-                self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', deviceParams.preamp)
-                self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
-                self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
-                self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
-                self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
-                self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
-                self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
-                self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
-                self._podDevices[deviceNum].WriteRead('RUN STIMULUS', (0))
-            failed = False
-            # check if connection failed 
-            if(failed) :
-                print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-            else :
-                print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
-            # return True when connection successful, false otherwise
-                return(not failed)
+        """
+        # get port name 
+        port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
+        # create POD device 
+        self._podDevices[deviceNum] = POD_8480HR(port=port)
+        # test if connection is successful
+        failed = True
+        if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+        #write setup parameters
+            self._podDevices[deviceNum].WriteRead('SET STIMULUS', deviceParams.stimulus)
+            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', deviceParams.preamp)
+            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
+            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
+            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
+            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
+            self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
+            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
+            self._podDevices[deviceNum].WriteRead('RUN STIMULUS', (0))
+        failed = False
+        # check if connection failed 
+        if(failed) :
+            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
+        else :
+            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+        # return True when connection successful, false otherwise
+            return(not failed)
 
 
     # ------------ SETUP POD PARAMETERS ------------
@@ -152,7 +152,7 @@ class Setup_8480HR(Setup_Interface) :
         
 
     @staticmethod
-    def _TtlSetup() -> int:
+    def _TtlSetup() -> int :
         """Asks the user to input values for Config format values of TTL Setup.
 
         Returns:
@@ -170,7 +170,7 @@ class Setup_8480HR(Setup_Interface) :
         """Asks the user to input values for Config format of Stimulus
 
         Returns:
-            Formatted Stimulus Config value.
+            (int): Formatted Stimulus Config value.
         """
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
@@ -180,17 +180,17 @@ class Setup_8480HR(Setup_Interface) :
 
 
     @staticmethod
-    def _ChooseRepeat() -> int:
+    def _ChooseRepeat() -> int :
         """Asks the user to input a value for the number of stimulus pulses to perform.
 
         Returns:
-            (int): representing repeat count for command 'SET STIMULUS'.
+            int: representing repeat count for command 'SET STIMULUS'.
         """
         return(UserInput.AskForInt("Enter a value for the stimulus repeat count"))
     
 
     @staticmethod
-    def _ChoosePeriod():
+    def _ChoosePeriod() :
         """Asks the user an input value for Stimulus Period, which is then seperated into Period_ms and Period_us. \
            Seperation is required because the 'SET STIMULUS' requires 7 items in payload, and the second and third items \
            is the Period_ms and Period_us.
@@ -206,7 +206,7 @@ class Setup_8480HR(Setup_Interface) :
     
 
     @staticmethod
-    def _ChooseWidth():
+    def _ChooseWidth() :
         """Asks the user an input value for Stimulus width, which is then seperated into width_ms and width_us. \
         Seperation is required because the 'SET STIMULUS' requires 7 items in payload, and the fourth and fifth items \
         is the width_ms and width_us. 

@@ -69,17 +69,13 @@ class POD_8480HR(POD_Basics) :
 
     @staticmethod
     def StimulusConfigBits(optoElec:bool, monoBiphasic:bool, Simul:bool) -> int :
-        """ Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload to command #102 'SET STIMULUS'.
+        """ Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload \
+        to command #102 'SET STIMULUS'.
     
         Args:
-            Three inputs given from the user represent 3 bits in the Stimulus Config Bits. \
-                (Bit 1 is Opto/Electrical, bit 2 is Monophasic/Biphasic, bit 3 is Simultaneous ) \
-                Each input value will either be 0 or 1.
-            # NOTE the Args is not formatted correctly, please fix. Format is 
-            #       Args:
-            #           argumentVariableName (type): description 
-            #           argumentVariableName (type): description 
-            #           argumentVariableName (type): description 
+            optoElec (bool): Bit  is Opto/Electrical. 
+            monoBiphasic (bool): Bit 1 is Monophasic/Biphasic.
+            Simul (bool): Bit 2 is Simultaneous. 
 
         Returns:
             int: which represents the Config flag byte in the Stimulus Command. \
@@ -94,11 +90,9 @@ class POD_8480HR(POD_Basics) :
         as the payload to command #127 'SET SYNC CONFIG'.
 
         Args:
-            3 inputs are given to the function, which represent 3 individual bit values. \
-                Bit 0 is Sync Level, Bit 1 is Stimulus Triggering, Bit 2 is Signal/Trigger. \
-                Each input values will either be 0 or 1 (for ex: 0 for Sync level means \
-                Sync line to be low during stimulus).
-            # NOTE the Args is not formatted correctly, please fix.
+            sync_level (bool): Bit 0 is Sync Level.
+            sync_idle (bool): Bit 1 is Stimulus Triggering.
+            signal_trigger (bool): Bit 2 is Signal/Trigger. 
 
         Returns:
             int: which represents the Sync Config Bits format value. \
@@ -107,16 +101,15 @@ class POD_8480HR(POD_Basics) :
 
 
     @staticmethod    
-    def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool):
+    def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool) -> int :
         """Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to \
-            command #109 'SET TTL SETUP'. This commands accepts 3 items in the payload, and the return value of this function \
-            is given as the second item.
+        command #109 'SET TTL SETUP'. This commands accepts 3 items in the payload, and the return value of this function \
+        is given as the second item.
 
         Args:
-            Bit 0, Bit 1, and Bit 7 are used for the TTL Config Bits format.\
-                Bit 0 is 0 for rising edge, 1 for falling edge \
-                Bit 1 is  0 for TTL event notifications, 1 for TTL inputs as triggers. \
-                Bit 7 is 0 for normal TTL operation, 1 for TTL pin operates as a sync output.
+            trigger (bool): Bit 0 is 0 for rising edge, 1 for falling edge.
+            stimtrig (bool): Bit 1 is  0 for TTL event notifications, 1 for TTL inputs as triggers.
+            input_sync (bool): Bit 7 is 0 for normal TTL operation, 1 for TTL pin operates as a sync output.
 
         Returns:
             int: which represents the TTL Config Bits Format value. \
@@ -124,7 +117,7 @@ class POD_8480HR(POD_Basics) :
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
     
 
-    def DecodeStimulusConfigBits(self, config: int) -> dict:
+    def DecodeStimulusConfigBits(self, config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
             
         Args:
@@ -141,11 +134,11 @@ class POD_8480HR(POD_Basics) :
         return DecodeStimulus
 
 
-    def DecodeSyncConfigBits(self, config: int) -> dict:
+    def DecodeSyncConfigBits(self, config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits. 
             
         Args:
-            config (int): an integer is passed in, and it represents the Config Flag byte. 
+            config (int): an integer is passed in, and it represents the Sync Config Flag byte. 
 
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit. 
@@ -158,11 +151,11 @@ class POD_8480HR(POD_Basics) :
         return DecodeSync
 
 
-    def DecodeTTlConfigBits(self, config: int) -> dict:
+    def DecodeTTlConfigBits(self, config: int) -> dict :
         """Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.
             
         Args:
-            config (int): an integer is passed in, and it represents the TTL Setup Config Flag.
+            config (int): an integer is passed in, and it represents the TTL Setup Config Flag Byte.
 
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit. 
@@ -175,7 +168,7 @@ class POD_8480HR(POD_Basics) :
         return DecodeTTL
     
 
-    def TranslatePODpacket(self, msg: bytes) -> dict[str, int | bytes]:
+    def TranslatePODpacket(self, msg: bytes) -> dict[str, int | bytes] :
         """Overwrites the parent's method. Adds an additional check to handle specially formatted \
         payloads. 
 

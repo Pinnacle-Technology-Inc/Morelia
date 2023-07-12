@@ -465,12 +465,12 @@ class Params_8480HR(Params_Interface) :
 
     Attributes:
         port (str): Name of the COM port.
-        stimulus (tuple[int]): Stimulus configuration on selected channel
-        preamp (int): Preamp value (0-1023) 
+        stimulus (tuple[int]): Stimulus configuration on selected channel.
+        preamp (int): Preamp value (0-1023).
         ledCurrent tuple[int]: Led-Current (0-600 mA) for both channels. 
         ttlPUllups (int): pullups disabled for value 0, pullups enabled for values that are non-zero.
         estimCurrent (tuple[int]): Estim-Current (0-100 %) for both channels.
-        syncConfig (int): Sets Sync-Config byte
+        syncConfig (int): Sets Sync-Config byte.
         ttlSetup (tuple[int]): TTL-Setup for selected channel.
     """
 
@@ -485,23 +485,21 @@ class Params_8480HR(Params_Interface) :
         ttlSetup = tuple[int],                                                    
         checkForValidParams: bool = True
         ) -> None:
-
         """Sets the member variables of each 8480-HR parameter. Checks if the arguments are \
         valid when checkForValidParams is True.  
 
         Args:
             port (str): Name of the COM port.
-            stimulus (tuple[int]): Stimulus configuration on selected channel
-            preamp (int): Preamp value (0-1023) 
+            stimulus (tuple[int]): Stimulus configuration on selected channel.
+            preamp (int): Preamp value (0-1023).
             ledCurrent tuple[int]: Led-Current (0-600 mA) for both channels. 
             ttlPUllups (int): pullups disabled for value 0, pullups enabled for values that are non-zero.
             estimCurrent (tuple[int]): Estim-Current (0-100 %) for both channels.
-            syncConfig (int): Sets Sync-Config byte
+            syncConfig (int): Sets Sync-Config byte.
             ttlSetup (tuple[int]): TTL-Setup for selected channel.
             checkForValidParams (bool, optional): Flag to raise Exceptions for invalid \
                 parameters when True. Defaults to True.
         """
-        
         self.stimulus:       tuple[int]  =  self._FixTypeInTuple( tuple(stimulus), int )
         self.preamp:         int         =  int( preamp)
         self.ledCurrent:     tuple[int]  =  self._FixTypeInTuple( tuple(ledCurrent), int )
@@ -547,7 +545,7 @@ class Params_8480HR(Params_Interface) :
         """Gets the estimCurrent value for Channel 0.
 
         Returns:
-            int: Channel 0 estimCurrent  in percentage.
+            int: Channel 0 estimCurrent in percentage.
         """
         return(int(self.estimCurrent[0]))
     
@@ -556,7 +554,7 @@ class Params_8480HR(Params_Interface) :
         """Gets the estimCurrent value for Channel 1. 
 
         Returns:
-            int: Channel 1 estimCurrent  in percentage.
+            int: Channel 1 estimCurrent in percentage.
         """
         return(int(self.estimCurrent[1]))
     
@@ -565,9 +563,9 @@ class Params_8480HR(Params_Interface) :
         """Throws an exception if Params_8206HR member variable is an invalid value.
 
         Raises:
-            Exception: Sample rate must be between 100-2000 Hz.
-            Exception: Preamplidier gain must be 10x or 100x.
-            Exception: Low-pass EEG/EMG must be between 11-500 Hz.
+            Exception: The preamp must be between 0-1023.
+            Exception: Led-Curent must be between 0-600.
+            Exception: Estim-Current must be between 0-100.
         """
         super()._CheckParams() 
 
@@ -583,6 +581,3 @@ class Params_8480HR(Params_Interface) :
                 raise Exception('Estim-Current must be between 0-100.')
 
     
-            
-        
-        
