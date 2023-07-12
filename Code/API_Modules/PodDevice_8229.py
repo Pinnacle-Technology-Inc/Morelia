@@ -3,7 +3,6 @@ from datetime import datetime
 
 # local imports 
 from BasicPodProtocol   import POD_Basics
-from PodCommands        import POD_Commands
 from PodPacketHandling  import POD_Packets
 
 # authorship
@@ -33,9 +32,9 @@ class POD_8229(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Commands.U8()
-        U16 = POD_Commands.U16()
-        NOVALUE = POD_Commands.NoValue()
+        U8  = POD_Basics.GetU(8)
+        U16 = POD_Basics.GetU(16)
+        NOVALUE = POD_Basics.GetU(0)
         # remove unimplemented commands 
         self._commands.RemoveCommand( 4) # ERROR
         self._commands.RemoveCommand( 5) # STATUS
@@ -195,7 +194,7 @@ class POD_8229(POD_Basics) :
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
-        topBit = POD_Commands.U8() * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
+        topBit = POD_Basics.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
             hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
@@ -261,7 +260,7 @@ class POD_8229(POD_Basics) :
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Adds an addittional check to handle specially formatted \
+        """Overwrites the parent's method. Adds an additional check to handle specially formatted \
         payloads. 
 
         Args:
@@ -463,6 +462,6 @@ class POD_8229(POD_Basics) :
         """
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
-        if( len(schedule) != size * POD_Commands.U8() ) : 
+        if( len(schedule) != size * POD_Basics.GetU(8) ) : 
             raise Exception('[!] The schedule must have U8x'+str(size)+'.')
         return(schedule)

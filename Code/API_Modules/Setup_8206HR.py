@@ -1,5 +1,3 @@
-
-
 # enviornment imports
 import os 
 import time
@@ -132,9 +130,8 @@ class Setup_8206HR(Setup_Interface) :
             print('[!] Input must be 10 or 100.')
             return(Setup_8206HR._ChoosePreampGain())
         # return preamplifier gain 
-        return(gain)
+        return(gain)    
     
-
     # ------------ DISPLAY POD PARAMETERS ------------
 
 

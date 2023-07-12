@@ -1,9 +1,6 @@
-
-
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
-from PodCommands            import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -52,8 +49,8 @@ class POD_8206HR(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Commands.U8()
-        U16 = POD_Commands.U16()
+        U8  = POD_Basics.GetU(8)
+        U16 = POD_Basics.GetU(16)
         B4  = POD_8206HR.__B4BINARYLENGTH
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
@@ -75,7 +72,7 @@ class POD_8206HR(POD_Basics) :
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
 
-
+        
     # ============ PUBLIC METHODS ============      ========================================================================================================================
     
 

@@ -8,6 +8,7 @@ from Setup_PodInterface     import Setup_Interface
 from Setup_PodParameters    import Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
+from Setup_8480SC           import Setup_8480SC
 from Setup_8229             import Setup_8229
 from GetUserInput           import UserInput
 
@@ -335,7 +336,7 @@ class Setup_PodDevices :
     def _AskUserForDevices() : 
         """Asks the user what POD devices they want to use."""
         useParams = {}
-        names = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
+        names = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName(), Setup_8480SC.GetDeviceName()) # NOTE add all supported devices here 
         print('')
         for name in names:
             if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) : 
@@ -371,7 +372,7 @@ class Setup_PodDevices :
             raise Exception('[!] Parameters dictionary is empty.')
         # for each dict entry...
         allGood = True 
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
+        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8480SC.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
             # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
@@ -401,6 +402,9 @@ class Setup_PodDevices :
         name = Setup_8229.GetDeviceName()
         if(name in podParametersDict) : 
             self._Setup_PodDevices[name] = Setup_8229()
+        name = Setup_8480SC.GetDeviceName()
+        if(name in podParametersDict) : 
+            self._Setup_PodDevices[name] = Setup_8480SC()
         # NOTE add all supported devices here 
 
 

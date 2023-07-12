@@ -55,9 +55,12 @@ class UserInput :
                 print('[!] Please enter a number.')
             elif(typecast == UserInput.CastStr) : 
                 print('[!] Please enter string.')
+            elif(typecast == UserInput.CastBool) :
+                print('[!] Please enter Boolean value.')
             # ask again 
             return(UserInput.AskForType(typecast, prompt))
-    
+
+
     @staticmethod
     def AskForFloat(prompt: str) -> float :
         """Asks user for float type input.
@@ -78,10 +81,23 @@ class UserInput :
             prompt (str): Statement requesting input from the user.
 
         Returns:
-            int: integer type input from user.
+            int: Integer type input from user.
         """
         return(UserInput.AskForType(typecast=UserInput.CastInt, prompt=prompt))
 
+
+    @staticmethod
+    def AskForBool(prompt: str) -> bool :
+        """Asks user for bool type input.
+
+        Args:
+            prompt (str):  Statement requesting input from the user.
+
+        Returns:
+            bool: Boolean type input from user.
+        """
+        return(UserInput.AskForType(typecast=UserInput.CastBool, prompt=prompt))
+    
 
     # ------------ QUESTION ------------
 
