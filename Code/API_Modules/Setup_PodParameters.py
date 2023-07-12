@@ -467,7 +467,7 @@ class Params_8480SC(Params_Interface) :
         port (str): Name of the COM port.
         stimulus (tuple[int]): Stimulus configuration on selected channel.
         preamp (int): Preamp value (0-1023).
-        ledCurrent tuple[int]: Led-Current (0-600 mA) for both channels. 
+        ledCurrent (tuple[int]): Led-Current (0-600 mA) for both channels. 
         ttlPUllups (int): pullups disabled for value 0, pullups enabled for values that are non-zero.
         estimCurrent (tuple[int]): Estim-Current (0-100 %) for both channels.
         syncConfig (int): Sets Sync-Config byte.
@@ -492,7 +492,7 @@ class Params_8480SC(Params_Interface) :
             port (str): Name of the COM port.
             stimulus (tuple[int]): Stimulus configuration on selected channel.
             preamp (int): Preamp value (0-1023).
-            ledCurrent tuple[int]: Led-Current (0-600 mA) for both channels. 
+            ledCurrent (tuple[int]): Led-Current (0-600 mA) for both channels. 
             ttlPUllups (int): pullups disabled for value 0, pullups enabled for values that are non-zero.
             estimCurrent (tuple[int]): Estim-Current (0-100 %) for both channels.
             syncConfig (int): Sets Sync-Config byte.

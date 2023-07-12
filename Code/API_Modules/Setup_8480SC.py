@@ -28,14 +28,6 @@ class Setup_8480SC(Setup_Interface) :
             an 8480 POD device, False otherwise.
     """
 
-    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
-
-
-    _NAME : str = '8480-SC' # overwrite from parent
-    """Class-level string containing the POD device name.
-    """
-
-
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
     
@@ -55,7 +47,7 @@ class Setup_8480SC(Setup_Interface) :
         Returns:
             str: String of _NAME.
         """
-        return(Setup_8480SC._NAME)
+        return('8480-SC')
     
 
     @staticmethod
@@ -65,7 +57,7 @@ class Setup_8480SC(Setup_Interface) :
         Returns:
             list[str]: List of string file extensions.
         """
-        return(['.txt'])
+        return(['.txt','.csv'])
 
 
     def StopStream(self) -> None: 
@@ -88,34 +80,37 @@ class Setup_8480SC(Setup_Interface) :
             deviceParams (Params_8480SC): Device parameters.
 
         Returns:
-            bool: returns true if failed, false otherwise.
+            bool: True if connection was successful, false otherwise.
         """
+        success = False 
         # get port name 
         port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
-        # create POD device 
-        self._podDevices[deviceNum] = POD_8480SC(port=port)
-        # test if connection is successful
-        failed = True
-        if(self._TestDeviceConnection(self._podDevices[deviceNum])):
-        #write setup parameters
-            self._podDevices[deviceNum].WriteRead('SET STIMULUS', deviceParams.stimulus)
-            self._podDevices[deviceNum].WriteRead('SET PREAMP TYPE', deviceParams.preamp)
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
-            self._podDevices[deviceNum].WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
-            self._podDevices[deviceNum].WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
-            self._podDevices[deviceNum].WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
-            self._podDevices[deviceNum].WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
-            self._podDevices[deviceNum].WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
-            self._podDevices[deviceNum].WriteRead('RUN STIMULUS', (0))
-        failed = False
-        # check if connection failed 
-        if(failed) :
-            print('[!] Failed to connect POD device #'+str(deviceNum)+' to '+port+'.')
-        else :
-            print('Successfully connected POD device #'+str(deviceNum)+' to '+port+'.')
+        
+        try : 
+            # create POD device 
+            pod = POD_8480SC(port=port)
+            # test if connection is successful
+            if(self._TestDeviceConnection(pod)):
+            #write setup parameters
+                pod.WriteRead('SET STIMULUS', deviceParams.stimulus)
+                pod.WriteRead('SET PREAMP TYPE', deviceParams.preamp)
+                pod.WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
+                pod.WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
+                pod.WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
+                pod.WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
+                pod.WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
+                pod.WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
+                pod.WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
+                pod.WriteRead('RUN STIMULUS', (0))
+                # successful write if no exceptions raised 
+                self._podDevices[deviceNum] = pod
+                success = True
+                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+        except Exception as e :
+            self._podDevices[deviceNum] = False # fill entry with bad value
+            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
-            return(not failed)
+        return(success)
 
 
     # ------------ SETUP POD PARAMETERS ------------
@@ -159,8 +154,8 @@ class Setup_8480SC(Setup_Interface) :
             Formatted TTL Setup config value.
         """
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
-        bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 for TTL event, 1 for TTL inputs as triggers)", 0, 1 ) # NOTE : what do 0 or 1 mean here? 
-        bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for normal TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1) # NOTE : what do 0 or 1 mean here? 
+        bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 for TTL event, 1 for TTL inputs as triggers)", 0, 1 )
+        bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for normal TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1)
         ttl_value = POD_8480SC.TtlConfigBits(bit_0, bit_1, bit_7)
         return(ttl_value)
         
@@ -190,13 +185,13 @@ class Setup_8480SC(Setup_Interface) :
     
 
     @staticmethod
-    def _ChoosePeriod() :
+    def _ChoosePeriod() -> tuple[int] :
         """Asks the user an input value for Stimulus Period, which is then seperated into Period_ms and Period_us. \
            Seperation is required because the 'SET STIMULUS' requires 7 items in payload, and the second and third items \
            is the Period_ms and Period_us.
 
         Returns: 
-            Formatted period into millisecs and microsecs.  
+            tuple[int]: Formatted period into millisecs and microsecs.  
         """
         user_period = UserInput.AskForFloat(("Enter a simulus period value (ms)")) 
         period = str(user_period).split(".")
@@ -206,13 +201,13 @@ class Setup_8480SC(Setup_Interface) :
     
 
     @staticmethod
-    def _ChooseWidth() :
+    def _ChooseWidth() -> tuple[int] :
         """Asks the user an input value for Stimulus width, which is then seperated into width_ms and width_us. \
         Seperation is required because the 'SET STIMULUS' requires 7 items in payload, and the fourth and fifth items \
         is the width_ms and width_us. 
 
         Returns: 
-            Formatted given width into millisecs and microsecs  
+            tuple[int]: Formatted given width into millisecs and microsecs  
         """
         user_width = UserInput.AskForFloat("Enter a stimulus width value (ms)")
         width = str(user_width).split(".")
@@ -226,9 +221,9 @@ class Setup_8480SC(Setup_Interface) :
         """Asks the user to input values for Sync Config bits.
 
         Returns: 
-            (int): Value calculated from the input bits, this value would be given as payload.
+            int: Value calculated from the input bits, this value would be given as payload.
         """
-        bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1) # NOTE: small style thing, dont put space at end of prompt. I went ahead and changed this 
+        bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 to idle the opposite of active state, 1 to sync to idle tristate)", 0, 1) 
         bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) 
         final_value = POD_8480SC.SyncConfigBits(bit_0, bit_1, bit_2)
@@ -247,11 +242,11 @@ class Setup_8480SC(Setup_Interface) :
         tab.header(['Device #','Port','Stimulus', 'Preamp', 'Led Current', 'TTL Pullups', 'Estim Current', 'Sync Config', 'TTL Setup'])
         # write rows
         for key,val in self._podParametersDict.items() :
-                            stimulus_str = f" Channel: {val.stimulus[0]}\n Period: {val.stimulus[1]}.{val.stimulus[2]}\n Width: {val.stimulus[3]}.{val.stimulus[4]}\n Repeat: {val.stimulus[5]}\n Config: {val.stimulus[6]}"
-                            ledCurrent_str = f" Channel 1: {val.ledCurrent[0]}\n Channel 2: {val.ledCurrent[1]}\n "
-                            estimCurrent_str = f" Channel 1: {val.estimCurrent[0]}\n Channel 2: {val.estimCurrent[1]}\n "
-                            ttlSetup_str = f" Channel: {val.ttlSetup[0]}\n Config FLag: {val.ttlSetup[1]}\n Debounce: {val.ttlSetup[2]}\n"
-                            tab.add_row([key, val.port, stimulus_str, val.preamp, ledCurrent_str, val.ttlPullups, estimCurrent_str, val.syncConfig, ttlSetup_str]),
+            stimulus_str = f" Channel: {val.stimulus[0]}\n Period: {val.stimulus[1]}.{val.stimulus[2]}\n Width: {val.stimulus[3]}.{val.stimulus[4]}\n Repeat: {val.stimulus[5]}\n Config: {val.stimulus[6]}"
+            ledCurrent_str = f" Channel 1: {val.ledCurrent[0]}\n Channel 2: {val.ledCurrent[1]}\n "
+            estimCurrent_str = f" Channel 1: {val.estimCurrent[0]}\n Channel 2: {val.estimCurrent[1]}\n "
+            ttlSetup_str = f" Channel: {val.ttlSetup[0]}\n Config FLag: {val.ttlSetup[1]}\n Debounce: {val.ttlSetup[2]}\n"
+            tab.add_row([key, val.port, stimulus_str, val.preamp, ledCurrent_str, val.ttlPullups, estimCurrent_str, val.syncConfig, ttlSetup_str])
         return(tab)
 
 
@@ -352,11 +347,3 @@ class Setup_8480SC(Setup_Interface) :
             # end while 
         # streaming done
         file.close()
-
-
- 
-
-    
-
-    
-
