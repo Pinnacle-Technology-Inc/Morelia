@@ -56,7 +56,6 @@ class POD_Basics :
                 instance. Default value is 9600.
         """
         # initialize serial port 
-        print("com_io testing")
         self._port : COM_io = COM_io(port, baudrate)
         # create object to handle commands 
         #print(port)
@@ -190,10 +189,8 @@ class POD_Basics :
         # initialize dictionary for translated values 
         msgDictTrans = {}
         # translate the binary ascii encoding into a readable integer
-        print("MESSAGE", msgDict)
         msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(msgDict['Command Number'])
         if( 'Payload' in msgDict) :
-            print("TRANSLTEEEEEEE")
             # get payload bytes
             pldBytes = msgDict['Payload']
             # get sizes 
@@ -408,8 +405,6 @@ class POD_Basics :
             bytes: Bytes string of the POD packet. 
         """
         # return False if command is not valid
-        print(cmd)
-        print("PAYLOAD",payload)
         if(not self._commands.DoesCommandExist(cmd)) : 
             raise Exception('POD command does not exist.')
         # get command number 
@@ -428,17 +423,11 @@ class POD_Basics :
                 raise Exception('POD command requires a payload.')
             # get payload in bytes
             pld = POD_Packets.PayloadToBytes(payload, argSizes)
-            #pld = '11'
-            print(pld)
-            print(type(pld))
-            print(argSizes)
-            print(type(argSizes))
         else :
             pld = None
         # build POD packet 
         
         packet = POD_Packets.BuildPODpacket_Standard(cmdNum, payload=pld)
-        print(packet)
         # return complete packet 
         return(packet)
     
@@ -487,7 +476,6 @@ class POD_Basics :
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return final packet
-        print("read packet",packet)
         return(packet)
 
 

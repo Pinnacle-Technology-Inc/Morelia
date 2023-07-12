@@ -117,7 +117,7 @@ class POD_8480HR(POD_Basics) :
     
 
     def DecodeStimulusConfigBits(self, config: int) -> dict:
-        """Converts an interger into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
+        """Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
             
         Args:
             (int) : an integer is passed in, and it represents the Config Flag byte. 
@@ -134,7 +134,7 @@ class POD_8480HR(POD_Basics) :
 
 
     def DecodeSyncConfigBits(self, config: int) -> dict:
-        """Converts an interger into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
+        """Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits. 
             
         Args:
             (int) : an integer is passed in, and it represents the Config Flag byte. 
@@ -151,6 +151,14 @@ class POD_8480HR(POD_Basics) :
 
 
     def DecodeTTlConfigBits(self,config:int) -> dict:
+        """Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.
+            
+        Args:
+            (int) : an integer is passed in, and it represents the TTL Setup Config Flag.
+
+        Returns:
+            dict: Keys as the names of the bits, the values representing values at each bit. 
+        """
         DecodeTTL = {
             'RisingFalling'  : config & 1,
             'StimulusTrig'   : (config >> 1) & 1,
@@ -186,11 +194,9 @@ class POD_8480HR(POD_Basics) :
             if(cmd == 108): #108 GET TTL SETUP
                 transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][:4] ) }
                 transdict['Payload'] = self.DecodeTTlConfigBits(transdict['Payload'])
-                #print("TRANSDICTIONARY", transdict)
             if(cmd == 101): #101 GET STIMULUS
                 transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][-1:] ) }
                 transdict['Payload'] = self.DecodeStimulusConfigBits(transdict['Payload'])
-                print("TRANSDICTIONARY", transdict)
         else:
             return(self.TranslatePODpacket_Standard(msg))
                

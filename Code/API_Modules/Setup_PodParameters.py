@@ -7,7 +7,7 @@ import copy
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -476,16 +476,15 @@ class Params_8480HR(Params_Interface) :
 
     def __init__(self,
         port:  str,
-        # stimulus = tuple[int],
-        #preamp = int,
-        # ledCurrent = tuple[int],
-        # ttlPullups = int,
-        # estimCurrent = tuple[int],
-        # syncConfig = int,
+        stimulus = tuple[int],
+        preamp = int,
+        ledCurrent = tuple[int],
+        ttlPullups = int,
+        estimCurrent = tuple[int],
+        syncConfig = int,
         ttlSetup = tuple[int],                                                    
         checkForValidParams: bool = True
         ) -> None:
-        
 
         """Sets the member variables of each 8480-HR parameter. Checks if the arguments are \
         valid when checkForValidParams is True.  
@@ -502,28 +501,28 @@ class Params_8480HR(Params_Interface) :
             checkForValidParams (bool, optional): Flag to raise Exceptions for invalid \
                 parameters when True. Defaults to True.
         """
-
-
-        # self.stimulus:       tuple[int]  =  self._FixTypeInTuple( tuple(stimulus), int )
-        #self.preamp:         int         =  int( preamp)
-        # self.ledCurrent:     tuple[int]  =  self._FixTypeInTuple( tuple(ledCurrent), int )
-        # self.ttlPullups:     int         =  int( ttlPullups)
-        # self.estimCurrent:   tuple[int]  =  self._FixTypeInTuple( tuple(estimCurrent), int )
-        # self.syncConfig:     int         =  int( syncConfig)
+        
+        self.stimulus:       tuple[int]  =  self._FixTypeInTuple( tuple(stimulus), int )
+        self.preamp:         int         =  int( preamp)
+        self.ledCurrent:     tuple[int]  =  self._FixTypeInTuple( tuple(ledCurrent), int )
+        self.ttlPullups:     int         =  int( ttlPullups)
+        self.estimCurrent:   tuple[int]  =  self._FixTypeInTuple( tuple(estimCurrent), int )
+        self.syncConfig:     int         =  int( syncConfig)
         self.ttlSetup:       tuple[int]  =  self._FixTypeInTuple( tuple(ttlSetup), int )
         super().__init__(port,checkForValidParams)
 
-    # def GetInit(self) -> str : 
-    #     """Builds a string that represents the Params_8480HR constructor with the \
-    #     arguments set to the values of this class instance. 
 
-    #     Returns:
-    #         str: String that represents the Params_8480HR constructor.
-    #     """
-    #     return('Params_8401HR(port=\''+self.port+'\', preamp=\''+str(self.preamp)+
-    #            '\', ledCurrent='+str(self.ledCurrent)+', ttlPullups='+str(self.ttlPullups)+
-    #            ', estimCurrent='+str(self.estimCurrent)+', syncConfig='+str(self.syncConfig)+
-    #            ', ttlSetup='+str(self.ttlSetup)+')')
+    def GetInit(self) -> str : 
+        """Builds a string that represents the Params_8480HR constructor with the \
+        arguments set to the values of this class instance. 
+
+        Returns:
+            str: String that represents the Params_8480HR constructor.
+        """
+        return('Params_8401HR(port=\''+self.port+'\', preamp=\''+str(self.preamp)+
+               '\', ledCurrent='+str(self.ledCurrent)+', ttlPullups='+str(self.ttlPullups)+
+               ', estimCurrent='+str(self.estimCurrent)+', syncConfig='+str(self.syncConfig)+
+               ', ttlSetup='+str(self.ttlSetup)+')')
 
 
     def ledCurrent_CH0(self) -> int :
@@ -562,29 +561,28 @@ class Params_8480HR(Params_Interface) :
         return(int(self.estimCurrent[1]))
     
   
-    # def _CheckParams(self) -> None :
-    #     """Throws an exception if Params_8206HR member variable is an invalid value.
+    def _CheckParams(self) -> None :
+        """Throws an exception if Params_8206HR member variable is an invalid value.
 
-    #     Raises:
-    #         Exception: Sample rate must be between 100-2000 Hz.
-    #         Exception: Preamplidier gain must be 10x or 100x.
-    #         Exception: Low-pass EEG/EMG must be between 11-500 Hz.
-    #     """
-    #     super()._CheckParams() 
+        Raises:
+            Exception: Sample rate must be between 100-2000 Hz.
+            Exception: Preamplidier gain must be 10x or 100x.
+            Exception: Low-pass EEG/EMG must be between 11-500 Hz.
+        """
+        super()._CheckParams() 
+
+        if(self.preamp < 0 and self.preamp > 1023 ) : 
+            raise Exception('The preamp must be between 0-1023.')
+
+        for channel in self.ledCurrent : 
+            if(channel < 0 or channel > 600) :
+                raise Exception('Led-Curent must be between 0-600.')
+            
+        for channel in self.estimCurrent : 
+            if(channel < 0 or channel > 100) :
+                raise Exception('Estim-Current must be between 0-100.')
 
     
-    #     if(self.preamp < 0 and self.preamp > 1023 ) : 
-    #         raise Exception('The preamp must be between 0-1023.')
-        
-
-    #     for channel in self.ledCurrent : 
-    #         if(channel < 0 or channel > 600) :
-    #             raise Exception('Led-Curent must be between 0-600.')
-            
-        
-    #     for channel in self.estimCurrent : 
-    #         if(channel < 0 or channel > 100) :
-    #             raise Exception('Estim-Current must be between 0-100.')
             
         
         

@@ -122,7 +122,6 @@ class Setup_PodDevices :
                 The keys are the device name and the entries are the initialization dictionaries. 
         """
         # for each type of POD device 
-        print("DICTTTTTTTTTTTTT", podParametersDict)
         for key, value in podParametersDict.items() : 
             self._Setup_PodDevices[key].SetupPODparameters(value)
 

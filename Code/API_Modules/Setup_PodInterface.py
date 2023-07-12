@@ -226,12 +226,8 @@ class Setup_Interface :
         print('\nConnecting '+self.GetDeviceName()+' devices...')
         # setup each POD device
         areAllGood = True
-        print("connected")
         for key,val in self._podParametersDict.items():
            # areAllGood is false if any device fails
-           print("param", self._podParametersDict)
-           print("key", key)
-           print("value", val)
            areAllGood = areAllGood and self._ConnectPODdevice(key,val)
         return(areAllGood)
 
