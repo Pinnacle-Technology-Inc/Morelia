@@ -79,29 +79,30 @@ class Setup_8401HR(Setup_Interface) :
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            self._podDevices[deviceNum] = POD_8401HR(
+            pod = POD_8401HR(
                 port        = port, 
                 ssGain      = deviceParams.ssGain,
                 preampGain  = deviceParams.preampGain,
             )
             # test if connection is successful
-            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+            if(self._TestDeviceConnection(pod)):
                 # write devicesetup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
-                self._podDevices[deviceNum].WriteRead('SET MUX MODE', int(deviceParams.muxMode)) # bool to int 
+                pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+                pod.WriteRead('SET MUX MODE', int(deviceParams.muxMode)) # bool to int 
                 # write channel specific setup parameters
                 for channel in range(4) : 
-                    if(deviceParams.highPass[channel] != None) : self._podDevices[deviceNum].WriteRead('SET HIGHPASS', (channel, self._CodeHighpass(deviceParams.highPass[channel])))
-                    if(deviceParams.lowPass [channel] != None) : self._podDevices[deviceNum].WriteRead('SET LOWPASS',  (channel, deviceParams.lowPass[channel]))
-                    if(deviceParams.bias    [channel] != None) : self._podDevices[deviceNum].WriteRead('SET BIAS',     (channel, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
-                    if(deviceParams.dcMode  [channel] != None) : self._podDevices[deviceNum].WriteRead('SET DC MODE',  (channel, self._CodeDCmode(deviceParams.dcMode[channel])))
-                    if(deviceParams.ssGain  [channel] != None and 
-                       deviceParams.highPass[channel] != None) : self._podDevices[deviceNum].WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
+                    if(deviceParams.highPass[channel] != None) : pod.WriteRead('SET HIGHPASS', (channel, self._CodeHighpass(deviceParams.highPass[channel])))
+                    if(deviceParams.lowPass [channel] != None) : pod.WriteRead('SET LOWPASS',  (channel, deviceParams.lowPass[channel]))
+                    if(deviceParams.bias    [channel] != None) : pod.WriteRead('SET BIAS',     (channel, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
+                    if(deviceParams.dcMode  [channel] != None) : pod.WriteRead('SET DC MODE',  (channel, self._CodeDCmode(deviceParams.dcMode[channel])))
+                    if(deviceParams.ssGain  [channel] != None and
+                       deviceParams.highPass[channel] != None) : pod.WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
                 # successful write if no exceptions raised 
+                self._podDevices[deviceNum] = pod
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
-            self._podDevices[deviceNum] = 0 # fill entry with bad value
+            self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
         return(success)

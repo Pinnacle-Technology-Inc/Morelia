@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodDevice_8401HR module &mdash; Python POD API v1.1.1 documentation</title>
+  <title>PodDevice_8401HR module &mdash; Python POD API v1.2.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="PodPacketHandling module" href="PodPacketHandling.html" />
-    <link rel="prev" title="PodDevice_8206HR module" href="PodDevice_8206HR.html" /> 
+    <link rel="prev" title="PodDevice_8229 module" href="PodDevice_8229.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,22 +49,24 @@
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">PodDevice_8401HR module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR"><code class="docutils literal notranslate"><span class="pre">POD_8401HR</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._ssGain"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._ssGain</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._preampGain"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._preampGain</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetDACValue"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.CalculateBiasDAC_GetDACValue()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetVout"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.CalculateBiasDAC_GetVout()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.DecodeSSConfigBitmask()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.DecodeTTLByte"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.DecodeTTLByte()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetChannelMapForPreampDevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetSSConfigBitmask_int()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetSSConfigBitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetSupportedPreampDevices"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetSupportedPreampDevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetTTLbitmask_Int()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetTTLbitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetTTLbitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.IsPreampDeviceSupported"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.IsPreampDeviceSupported()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.TranslatePODpacket()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.TranslatePODpacket_Binary()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.UnpackPODpacket_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.UnpackPODpacket_Binary()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._Read_Binary"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._Read_Binary()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._TranslateTTLByte"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._TranslateTTLByte()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._Voltage_PrimaryChannels()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels_Biosensor"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._Voltage_PrimaryChannels_Biosensor()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels_EEGEMG"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._Voltage_PrimaryChannels_EEGEMG()</span></code></a></li>
@@ -79,9 +81,11 @@
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
 </ul>
 </li>
 </ul>
@@ -115,7 +119,7 @@
 <span id="poddevice-8401hr-module"></span><h1>PodDevice_8401HR module<a class="headerlink" href="#module-PodDevice_8401HR" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodDevice_8401HR.</span></span><span class="sig-name descname"><span class="pre">POD_8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodDevice_8401HR.</span></span><span class="sig-name descname"><span class="pre">POD_8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><code class="xref py py-class docutils literal notranslate"><span class="pre">POD_Basics</span></code></a></p>
 <p>POD_8401HR handles communication using an 8401-HR POD device.</p>
 <dl class="py attribute">
@@ -175,6 +179,34 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeSSConfigBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>bytes</em>) – U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass,                 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.DecodeTTLByte">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeTTLByte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.DecodeTTLByte" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the TTL bytes argument into a dictionary of integer TTL values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – U8 byte containing the TTL bitmask.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictinoary with TTL name keys and integer TTL values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetChannelMapForPreampDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preampName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice" title="Permalink to this definition"></a></dt>
 <dd><p>Get the channel mapping (channel labels for A,B,C,D) for a given device.</p>
@@ -192,8 +224,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSSConfigBitmask_int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSSConfigBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask" title="Permalink to this definition"></a></dt>
 <dd><p>Gets a bitmask, represented by an unsigned integer, used for ‘SET SS CONFIG’ command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -226,8 +258,8 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetTTLbitmask_Int</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl4</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int" title="Permalink to this definition"></a></dt>
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetTTLbitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetTTLbitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl4</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetTTLbitmask" title="Permalink to this definition"></a></dt>
 <dd><p>Builds an integer, which represents a binary mask, that can be used for TTL command arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -272,10 +304,10 @@
 <dd><p>Overwrites the parent’s method. Unpacks the binary5 POD packet and converts the values of the         ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The         channels and analogs are converted to volts (V).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a complete binary 5 Pod packet: STX (1 byte)                 + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12)                 + checksum (2) + ETX (1).</p>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a standard or binary5 POD packet.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A dictionary containing ‘Command Number’, ‘Packet #’, ‘Status’,                 ‘D’, ‘C’, ‘B’, ‘A’, ‘Analog EXT0’,  ‘Analog EXT1’, ‘Analog TTL1’, ‘Analog TTL2’,                 ‘Analog TTL3’, ‘Analog TTL4’, as numbers.</p>
+<dd class="field-even"><p>A dictionary containing the unpacked message in numbers.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict[str,int|dict[str,int]]</p>
@@ -286,17 +318,16 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary">
 <span class="sig-name descname"><span class="pre">TranslatePODpacket_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary" title="Permalink to this definition"></a></dt>
-<dd><p>Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded
-bytes into integer values and leaves the binary-encoded bytes as is.</p>
+<dd><p>Overwrites the parent’s method. Unpacks the binary5 POD packet and converts the values of the         ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The         channels and analogs are converted to volts (V).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a variable-length POD packet.</p>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte)                 + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12)                 + checksum (2) + ETX (1).</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>A dictionary containing the ‘Command Number’ and ‘Binary Packet Length’                 in integers, and ‘Binary Data’ in bytes.</p>
+<dd class="field-even"><p>A dictionary containing ‘Command Number’, ‘Packet #’, ‘Status’,                 ‘D’, ‘C’, ‘B’, ‘A’, ‘Analog EXT0’,  ‘Analog EXT1’, ‘Analog TTL1’, ‘Analog TTL2’,                 ‘Analog TTL3’, ‘Analog TTL4’, as numbers.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,int|bytes]</p>
+<dd class="field-odd"><p>dict[str,int|dict[str,int]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -337,23 +368,6 @@ bytes into integer values and leaves the binary-encoded bytes as is.</p>
 </dd>
 <dt class="field-even">Raises<span class="colon">:</span></dt>
 <dd class="field-even"><p><strong>Exception</strong> – Bad checksum for binary POD packet read.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR._TranslateTTLByte">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLByte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR._TranslateTTLByte" title="Permalink to this definition"></a></dt>
-<dd><p>Converts the TTL bytes argument into a dictionary of integer TTL values.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte containing the TTL bitmask.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictinoary with TTL name keys and integer TTL values.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,int]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -463,7 +477,7 @@ bytes into integer values and leaves the binary-encoded bytes as is.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="PodDevice_8206HR.html" class="btn btn-neutral float-left" title="PodDevice_8206HR module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PodDevice_8229.html" class="btn btn-neutral float-left" title="PodDevice_8229 module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="PodPacketHandling.html" class="btn btn-neutral float-right" title="PodPacketHandling module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

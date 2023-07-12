@@ -1,3 +1,6 @@
+# enviornment imports 
+from datetime import datetime
+
 # local imports 
 from BasicPodProtocol   import POD_Basics
 from PodCommands        import POD_Commands
@@ -71,6 +74,20 @@ class POD_8229(POD_Basics) :
 
     # ------------ ENCODING ------------           ------------------------------------------------------------------------------------------------------------------------
 
+    @staticmethod
+    def GetCurrentTime() -> tuple[int] : 
+        """Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time. 
+
+        Returns:
+            tuple[int]: Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year \
+                (without century, so 23 for 2023), Weekday (0 for Sunday))
+        """
+        now = datetime.now()
+        # Format is (Seconds, Minutes, Hours, Day, Month, Year (without century, so 23 for 2023), Weekday).
+        arg = ( now.second, now.minute, now.hour, now.day, now.month, 
+            int(now.strftime('%y')), # gets the year without the century 
+            int(now.strftime('%w')) ) # Weekday is 0-6, with Sunday being 0.
+        return(arg)
 
     @staticmethod
     def BuildSetDayScheduleArgument(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
@@ -238,7 +255,7 @@ class POD_8229(POD_Basics) :
             case 5 : return('Friday')
             case 6 : return('Saturday')
             case _ : Exception('[!] Day of the week code must be 0-6.')  
-            
+
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
@@ -257,24 +274,91 @@ class POD_8229(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [142, 202] # 142 GET DAY SCHEDULE # 202 LCD SET DAY SCHEDULE
+        specialCommands = [140, 142, 202] # 140 SET TIME # 142 GET DAY SCHEDULE # 202 LCD SET DAY SCHEDULE 
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            if(cmd == 142): # 142 GET DAY SCHEDULE
-                transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload'])
-            else : # 202 LCD SET DAY SCHEDULE
-                transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload'])
+            match cmd : 
+                case 140 : # 140 SET TIME
+                    transdict['Payload'] = tuple([self._DecodeDecimalAsHex(x) for x in self.TranslatePODpacket_Standard(msg)['Payload']]) 
+                case 142 : # 142 GET DAY SCHEDULE
+                    transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload']) 
+                case   _ : # 202 LCD SET DAY SCHEDULE 
+                    transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload']) 
             return(transdict)
         # standard packet 
         else: 
             return(self.TranslatePODpacket_Standard(msg))  
 
 
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
+        """Builds a POD packet and writes it to the POD device. 
+
+        Args:
+            cmd (str | int): Command number.
+            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
+
+        Returns:
+            bytes: Bytes string that was written to the POD device.
+        """
+        # check for special commands 
+        if(cmd == 140 or cmd == 'SET TIME') : 
+            pld = tuple([self._CodeDecimalAsHex(x) for x in payload ])
+            packet = self.GetPODpacket(cmd, pld)
+        else : 
+            # POD packet 
+            packet = self.GetPODpacket(cmd, payload)
+        # write packet to serial port 
+        self._port.Write(packet)
+        # returns packet that was written
+        return(packet)
+    
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================    
     
     
+    @staticmethod
+    def _CodeDecimalAsHex(val: int) -> int : 
+        """Builds an integer that equals the val argument when converted into hexadecimal. \
+        All integers are converted to hexadecimal ASCII encoded bytes. Some commands \
+        (i.e. 8229 #140) need decimal ASCII encoded bytes; to do this, give the return \
+        value of _CodeDecimalAsHex() as the payload. Example: I want a number that is \
+        equal to 16 in hex. 1*16^1 + 6*16^0 = 22. Calling _CodeDecimalAsHex(16) will \
+        return 22.
+
+        Args:
+            val (int): Unsigned integer number.
+
+        Returns:
+            int: integer that equals the val argument when converted into hexadecimal.
+        """
+        decAsHex: int = 0
+        # get each digit and reverse order
+        decimal: list[int] = [ int(x) for x in [*str(val)] ]
+        decimal.reverse()
+        # calculate hex: dn-1 … d1 d0 (hex) = dn-1 * 16^n-1 + … + d1 * 16^1 + d0 * 16^0 (decimal)
+        for i,digit in enumerate(decimal) :
+            decAsHexDigit = digit * 16**i
+            decAsHex += decAsHexDigit
+        return(decAsHex)
+
+
+    @staticmethod
+    def _DecodeDecimalAsHex(val: int) -> int : 
+        """Interprets an integer that was converted to a hexadecimal representation of a \
+        decimal value. In other words, this method reverses _CodeDecimalAsHex().
+
+        Args:
+            val (int): Unsigned integer that was converted to a hexadecimal representation of a \
+                decimal value.
+
+        Returns:
+            int: Unsigned integer as a true decimal number. 
+        """
+        return(int(hex(val).replace('0x','')))
+
+
     @staticmethod
     def _Validate_Day(day: str|int) -> int : 
         """Raises an exception if the day is incorrectly formatted. If the day is given as \

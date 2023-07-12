@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup_PodDevices module &mdash; Python POD API v1.1.1 documentation</title>
+  <title>Setup_PodDevices module &mdash; Python POD API v1.2.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -49,41 +49,37 @@
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Setup_PodDevices module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._Setup_PodDevices</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._saveFileName"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._saveFileName</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._options"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._options</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.GetOptions"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.GetOptions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.GetPODparametersDict"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.GetPODparametersDict()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.GetSaveFileName"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.GetSaveFileName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.GetPODparametersInit"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.GetPODparametersInit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.GetSaveFileNames"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.GetSaveFileNames()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.Run"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.Run()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.SetupPODparameters"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.SetupPODparameters()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices.SetupSaveFile"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices.SetupSaveFile()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._AskOption"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._AskOption()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._AskToStopStream"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._AskToStopStream()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._AskUserForDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._AskUserForDevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._CheckFileExt"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._CheckFileExt()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._CheckForValidParams"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._CheckForValidParams()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._ConnectNewDevice"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._ConnectNewDevice()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._DoOption"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._DoOption()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._EditCheckConnect"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._EditCheckConnect()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._EditSaveFilePath"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._EditSaveFilePath()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._GetChosenDeviceType"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._GetChosenDeviceType()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._GetFileName"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._GetFileName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._GetFilePath"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._GetFilePath()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._GetParams"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._GetParams()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._PrintInitCode"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._PrintInitCode()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._PrintOptions"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._PrintOptions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._PrintSaveFile"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._PrintSaveFile()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._Reconnect"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._Reconnect()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._RemoveDevice"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._RemoveDevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._SetFilenameToDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._SetFilenameToDevices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._Set_Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._Set_Setup_PodDevices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._ShowCurrentSettings"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._ShowCurrentSettings()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#Setup_PodDevices.Setup_PodDevices._Stream"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices._Stream()</span></code></a></li>
@@ -94,6 +90,7 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
 </ul>
 </li>
 </ul>
@@ -127,7 +124,7 @@
 <span id="setup-poddevices-module"></span><h1>Setup_PodDevices module<a class="headerlink" href="#module-Setup_PodDevices" title="Permalink to this heading"></a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_PodDevices.</span></span><span class="sig-name descname"><span class="pre">Setup_PodDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup_PodDevices.</span></span><span class="sig-name descname"><span class="pre">Setup_PodDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface" title="Setup_PodParameters.Params_Interface"><span class="pre">Setup_PodParameters.Params_Interface</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed     data is saved to a file.</p>
 <p>REQUIRES FIRMWARE 1.0.2 OR HIGHER.</p>
@@ -137,18 +134,7 @@
 <dd><p>Dictionary containing the Setup_Interface             subclasses for each POD device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,<a class="reference internal" href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface" title="Setup_PodInterface.Setup_Interface">Setup_Interface</a>]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._saveFileName">
-<span class="sig-name descname"><span class="pre">_saveFileName</span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._saveFileName" title="Permalink to this definition"></a></dt>
-<dd><p>String containing the path, filename, and file extension to a file to             save streaming data to. The filename will be extended with “_&lt;DEVICE NAME&gt;_&lt;DEVICE NUMBER&gt;”             for each device.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
+<dd class="field-odd"><p>dict[str,dict[int,<a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface" title="Setup_PodParameters.Params_Interface">Params_Interface</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -179,32 +165,17 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.GetPODparametersDict">
-<span class="sig-name descname"><span class="pre">GetPODparametersDict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.GetPODparametersDict" title="Permalink to this definition"></a></dt>
-<dd><p>Sets up each POD device type. Used in initialization.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary of all POD devices initialization. The keys are the                 device name and the entries are the initialization dictionaries.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict[str, dict[int, dict] ]</p>
-</dd>
-</dl>
+<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.GetPODparametersInit">
+<span class="sig-name descname"><span class="pre">GetPODparametersInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.GetPODparametersInit" title="Permalink to this definition"></a></dt>
+<dd><p>Sets up each POD device type. Used in initialization.
+:returns: String representing a dictionary of all POD devices initialization. The keys are the                 device name and the entries are the initialization dictionaries.
+:rtype: str</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.GetSaveFileName">
-<span class="sig-name descname"><span class="pre">GetSaveFileName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.GetSaveFileName" title="Permalink to this definition"></a></dt>
-<dd><p>Gets the name of the class object’s save file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>String of the save file name and path (_saveFileName).</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
+<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.GetSaveFileNames">
+<span class="sig-name descname"><span class="pre">GetSaveFileNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.GetSaveFileNames" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.Run">
@@ -214,22 +185,22 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.SetupPODparameters">
-<span class="sig-name descname"><span class="pre">SetupPODparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.SetupPODparameters" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SetupPODparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface" title="Setup_PodParameters.Params_Interface"><span class="pre">Setup_PodParameters.Params_Interface</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.SetupPODparameters" title="Permalink to this definition"></a></dt>
 <dd><p>Sets up each POD device type. Used in initialization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em> | </em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em>[</em><em>int</em><em>,</em><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface" title="Setup_PodParameters.Params_Interface"><em>Params_Interface</em></a><em>] </em><em>| </em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices.SetupSaveFile">
-<span class="sig-name descname"><span class="pre">SetupSaveFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFile</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.SetupSaveFile" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">SetupSaveFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices.SetupSaveFile" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the path/file name from the user and stores it. Used in initialization.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>saveFile</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – String of the save file, which includes the directory path,                 filename, and file extension. Defaults to None.</p>
+<dd class="field-odd"><p><strong>saveFile</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>|</em><em>None</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – String of the save file, which includes the directory path,                 filename, and file extension. Defaults to None.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -258,28 +229,6 @@
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._AskUserForDevices">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_AskUserForDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._AskUserForDevices" title="Permalink to this definition"></a></dt>
 <dd><p>Asks the user what POD devices they want to use.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._CheckFileExt">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_CheckFileExt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fIsExt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">goodExt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['.csv',</span> <span class="pre">'.txt',</span> <span class="pre">'.edf']</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">printErr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._CheckFileExt" title="Permalink to this definition"></a></dt>
-<dd><p>_summary_</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>f</strong> (<em>str</em>) – file name or extension</p></li>
-<li><p><strong>fIsExt</strong> (<em>bool</em><em>, </em><em>optional</em>) – Boolean flag that is true if f is an extension, false                 otherwise. Defaults to True.</p></li>
-<li><p><strong>goodExt</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of valid file extensions. Defaults to                 [‘.csv’,’.txt’,’.edf’].</p></li>
-<li><p><strong>printErr</strong> (<em>bool</em><em>, </em><em>optional</em>) – Boolean flag that, when true, will print an error                 statement. Defaults to True.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>True if extension is in goodExt list, False otherwise.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bool</p>
-</dd>
-</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -353,34 +302,6 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._GetFileName">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_GetFileName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._GetFileName" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user for a filename.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>String of the file name and extension.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._GetFilePath">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_GetFilePath</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._GetFilePath" title="Permalink to this definition"></a></dt>
-<dd><p>Asks user for a path and filename to save streaming data to.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>String of the file path, name, and extension.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._GetParams">
 <span class="sig-name descname"><span class="pre">_GetParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._GetParams" title="Permalink to this definition"></a></dt>
 <dd><p>If no parameters are give, this asks user which types of POD devices they want to use.         Then it checks if the parameters are valid.</p>
@@ -410,12 +331,6 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._PrintSaveFile">
-<span class="sig-name descname"><span class="pre">_PrintSaveFile</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._PrintSaveFile" title="Permalink to this definition"></a></dt>
-<dd><p>Prints the file path and name that data is saved to. Note that the device name and number         will be appended to the end of the filename,</p>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._Reconnect">
 <span class="sig-name descname"><span class="pre">_Reconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._Reconnect" title="Permalink to this definition"></a></dt>
 <dd><p>Reconnects all POD devices.</p>
@@ -433,12 +348,6 @@
 <dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._RemoveDevice">
 <span class="sig-name descname"><span class="pre">_RemoveDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._RemoveDevice" title="Permalink to this definition"></a></dt>
 <dd><p>Displays the POD devices parameters, asks the user which device ro remove, and then         deletes that POD device.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup_PodDevices.Setup_PodDevices._SetFilenameToDevices">
-<span class="sig-name descname"><span class="pre">_SetFilenameToDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup_PodDevices.Setup_PodDevices._SetFilenameToDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Sets the filename to each POD device type.</p>
 </dd></dl>
 
 <dl class="py method">
