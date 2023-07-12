@@ -38,7 +38,7 @@ class POD_8206HR(POD_Basics) :
 
     def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
-            the _commands to contain the appropriate commands for an 8206-HR POD device. 
+        the _commands to contain the appropriate commands for an 8206-HR POD device. 
 
         Args:
             port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
@@ -61,15 +61,15 @@ class POD_8206HR(POD_Basics) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand(100, 'GET SAMPLE RATE',      (0,),       (U16,),    False   )
-        self._commands.AddCommand(101, 'SET SAMPLE RATE',      (U16,),     (0,),      False   )
-        self._commands.AddCommand(102, 'GET LOWPASS',          (U8,),      (U16,),    False   )
-        self._commands.AddCommand(103, 'SET LOWPASS',          (U8,U16),   (0,),      False   )
-        self._commands.AddCommand(104, 'SET TTL OUT',          (U8,U8),    (0,),      False   )
-        self._commands.AddCommand(105, 'GET TTL IN',           (U8,),      (U8,),     False   )
-        self._commands.AddCommand(106, 'GET TTL PORT',         (0,),       (U8,),     False   )
-        self._commands.AddCommand(107, 'GET FILTER CONFIG',    (0,),       (U8,),     False   )
-        self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True    )     # see _Read_Binary()
+        self._commands.AddCommand(100, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
+        self._commands.AddCommand(101, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
+        self._commands.AddCommand(102, 'GET LOWPASS',          (U8,),      (U16,),    False,   'Gets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG). Returns the value in Hz.')
+        self._commands.AddCommand(103, 'SET LOWPASS',          (U8,U16),   (0,),      False,   'Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.')
+        self._commands.AddCommand(104, 'SET TTL OUT',          (U8,U8),    (0,),      False,   'Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).')
+        self._commands.AddCommand(105, 'GET TTL IN',           (U8,),      (U8,),     False,   'Sets the selected TTL pin (0,1,2,3) to an input and returns the value (0-1).')
+        self._commands.AddCommand(106, 'GET TTL PORT',         (0,),       (U8,),     False,   'Gets the value of the entire TTL port as a byte. Does not modify pin direction.')
+        self._commands.AddCommand(107, 'GET FILTER CONFIG',    (0,),       (U8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
+        self._commands.AddCommand(180, 'BINARY4 DATA ',        (0,),       (B4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _Read_Binary()
         # preamplifier gain (should be 10x or 100x)
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
@@ -281,13 +281,14 @@ class POD_8206HR(POD_Basics) :
         # 7	    Ch0 LSB	        Binary		Least significant byte of the Channel 0 (EEG1) value
         # 8	    Ch0 MSB	        Binary		Most significant byte of the Channel 0 (EEG1) value
         # 9	    Ch1 LSB	        Binary		Channel 1 / EEG2 LSB
-        # 10	    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
-        # 11	    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
-        # 12	    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
-        # 13	    Checksum MSB	ASCII		MSB of checksum
-        # 14	    Checksum LSB	ASCII		LSB of checkxum
-        # 15	    0x03	        Binary		ETX
+        # 10    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
+        # 11    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
+        # 12    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
+        # 13    Checksum MSB	ASCII		MSB of checksum
+        # 14    Checksum LSB	ASCII		LSB of checkxum
+        # 15    0x03	        Binary		ETX
         # ------------------------------------------------------------
+        
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = prePacket + self._port.Read(self.__B4BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 

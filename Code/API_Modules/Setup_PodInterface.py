@@ -11,6 +11,7 @@ from   time       import gmtime, strftime
 from SerialCommunication    import COM_io
 from BasicPodProtocol       import POD_Basics
 from GetUserInput           import UserInput
+from Setup_PodParameters    import Params_Interface
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -28,68 +29,55 @@ class Setup_Interface :
     Attributes:
         _podDevices (dict[int,POD_Basics]): Instance-level dictionary of pod device objects. MUST have \
             keys as device number.
-        _podParametersDict (dict[int,dict]): Instance-level dictionary of device information. MUST have \
-            keys as device number, and each value must have {'_PORTKEY': str, ...other values...}.
+        _podParametersDict (dict[int,Params_Interface]): Instance-level dictionary of device information. \ 
+            MUST have keys as device number.
         _saveFileName (str): Instance-level string filename: <path>/file.ext. The device name and number \
             will be appended to the filename.
     """
 
-    # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
-
-
-    _NAME    : str = 'GENERIC' 
-    """Class-level string for the Device name. This should be overwritten by child \
-    subclasses.
-    """
-
-    _PORTKEY : str = 'Port' 
-    """Class-level string that is the parameter's dictionary key for the COM port.
-    """
-
     # ============ REQUIRED INTERFACE METHODS ============      ========================================================================================================================
 
-    
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Checks if the parameters for one device are valid.
 
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device.
-
-        Raises:
-            Exception: Invalid parameters.
-            Exception: Invalid parameter value types.
-            Exception: Preamplifier is not supported.
+    @staticmethod
+    def GetDeviceName() -> str : 
+        """returns the name of the POD device.
 
         Returns:
-            bool: True for valid parameters.
+            str: GENERIC.
         """
-        pass
+        # NOTE replace GENERIC with the correct child class' name 
+        return('GENERIC')   
     
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict)] :
+    
+    @staticmethod
+    def GetSupportedFileExtensions() -> list[str] : 
+        """Returns a list containing valid file extensions. 
+
+        Returns:
+            list[str]: List of string file extensions.
+        """
+        # NOTE add or remove extensions in child class if needed
+        return(['.csv','.txt','.edf'])
+
+
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_Interface :
         """Asks the user to input all the device parameters. 
 
         Args:
-            forbiddenNames (list[str]): List of port names already used by other devices.
+            forbiddenNames (list[str]): List of port names already used by other devices. Defaults to [].
 
         Returns:
-            dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
+            Params_Interface: Device parameters.
         """
         pass
 
-    def _GetPODdeviceParameterTable(self) -> Texttable : 
-        """Builds a table containing the parameters for all POD devices.
 
-        Returns:
-            Texttable: Texttable containing all parameters.
-        """
-        pass
-
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict)]) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_Interface) -> bool : 
         """Creates a POD device object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (dict[str,): Dictionary of the device's parameters
+            deviceParams (Params_Interface): Device parameters.
 
         Returns:
             bool: True if connection was successful, false otherwise.
@@ -97,18 +85,14 @@ class Setup_Interface :
         # write setup commands to initialize the POD device with the user's parameters
         pass
 
-    def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+    def _GetPODdeviceParameterTable(self) -> Texttable : 
+        """Builds a table containing the parameters for all POD devices.
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            Texttable: Table containing all parameters.
         """
-        # each POD device has its own thread 
         pass
 
-    def StopStream(self) -> None: 
-        """Write a command to stop streaming data to all POD devices."""
-        pass
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
         """Opens a text file and writes the column names. Writes the current date/time at the top of \
@@ -123,6 +107,7 @@ class Setup_Interface :
         # open a text file and write column names 
         pass
 
+
     def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
         """Opens EDF file and write header.
 
@@ -136,15 +121,20 @@ class Setup_Interface :
         # create an EDF file and write all channel information
         pass
 
-    @staticmethod
-    def GetDeviceName() -> str : 
-        """returns the name of the POD device.
+
+    def StopStream(self) -> None: 
+        """Write a command to stop streaming data to all POD devices."""
+        pass
+    
+
+    def _StreamThreading(self) -> dict[int,Thread] :
+        """Opens a save file, then creates a thread for each device to stream and write data from. 
 
         Returns:
-            str: String of _NAME.
+            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
         """
-        # returns the name of the POD device 
-        return(Setup_Interface._NAME)
+        # each POD device has its own thread 
+        pass
 
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -152,9 +142,9 @@ class Setup_Interface :
 
     def __init__(self) -> None :
         """Initializes the class instance variables."""
-        self._podDevices : dict[int,POD_Basics]  = {}   # dict of pod device objects. MUST have keys as device#
-        self._podParametersDict : dict[int,dict] = {}   # dictionary of device information. MUST have keys as device#, and each value must have {'_PORTKEY': str, ...other values...}
-        self._saveFileName : str = ''                   # string filename: <path>/file.ext # the device name and number will be appended to the filename 
+        self._podDevices : dict[int,POD_Basics]  = {}               # dict of pod device objects. MUST have keys as the device number
+        self._podParametersDict : dict[int,Params_Interface] = {}   # dictionary of device information. MUST have keys as the device number
+        self._saveFileName : str = ''                               # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
     def __del__(self) -> None :
@@ -163,53 +153,17 @@ class Setup_Interface :
         self._DisconnectAllPODdevices
 
 
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    def SetFileName(self, fileName: str) -> None :
-        """Sets the filename to save data to. Note that the device name and number will be appended \
-        to the end. 
-
-        Args:
-            fileName (str): String file name.
-        """
-        self._saveFileName = str(fileName)
-
-
-    def GetPODparametersDict(self) -> dict[int,dict] :
-        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
-
-        Returns:
-            dict[int,dict]: Dictionary of POD device parameters. The keys are the device number.
-        """
-        return(self._podParametersDict)
-    
-
-    def SetupPODparameters(self, podParametersDict:dict[int,dict]|None=None) -> None :
-        """Sets the parameters for the POD devices.
-
-        Args:
-            podParametersDict (dict[int,dict] | None, optional): dictionary of the device parameters \
-                for all devices. Defaults to None.
-        """
-        # get dictionary of POD device parameters
-        if(podParametersDict==None):
-            self._SetParam_allPODdevices()  # get setup parameters for all POD devices
-            self._ValidateParams()          # display parameters and allow user to edit them
-        else:
-            self._podParametersDict = podParametersDict
-        # connect and initialize all POD devices
-        self.ConnectAllPODdevices()
+    # ============ PUBLIC/PRIVATE METHODS ============      ========================================================================================================================
 
 
     # ------------ VALIDATION ------------
     
 
-    def AreDeviceParamsValid(self, paramDict: None|dict[int,dict]) :
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,Params_Interface]) :
         """Checks if the parameters dictionary is valid. 
 
         Args:
-            paramDict (None | dict[int,dict]): Dictionary of parameters for all POD devices. 
+            paramDict (None | dict[int,Params_Interface]): Dictionary of parameters for all POD devices. 
 
         Raises:
             Exception: Parameters must be contained in a dictionary.
@@ -223,22 +177,14 @@ class Setup_Interface :
         if(not isinstance(paramDict, dict)) :
             raise Exception('[!] Parameters must be contained in a dictionary.')
         # are keys int and value dict
-        allGood = True 
         for key,value in paramDict.items() : 
             if(not isinstance(key,int)) : 
-                raise Exception('[!] Device keys must be integer type for '+str(self._NAME)+'.')
-            if(not isinstance(value,dict)) : 
-                raise Exception('[!] Device parameters must be dictionary type for '+str(self._NAME)+'.')
-            if(len(value)==0) : 
-                raise Exception('[!] Device parameters dictionary is empty for '+str(self._NAME)+'.')
-            # check values 
-            allGood = allGood and self._IsOneDeviceValid(value)
+                raise Exception('[!] Device keys must be integer type for '+str(self.GetDeviceName())+'.')
+            if(not isinstance(value,Params_Interface)) : 
+                raise Exception('[!] Device parameters must be Params_Interface type for '+str(self.GetDeviceName())+'.')
         # no exceptions raised
-        return(allGood)
+        return(True)
     
-
-    # ============ PRIVATE METHODS ============      ========================================================================================================================
-
 
     # ------------ DEVICE CONNECTION ------------
 
@@ -277,7 +223,7 @@ class Setup_Interface :
         # delete existing 
         self._DisconnectAllPODdevices()
         # connect new devices
-        print('\nConnecting '+self._NAME+' devices...')
+        print('\nConnecting '+self.GetDeviceName()+' devices...')
         # setup each POD device
         areAllGood = True
         for key,val in self._podParametersDict.items():
@@ -293,24 +239,46 @@ class Setup_Interface :
             del pod # port closed on delete in COM_io
 
 
-    def _AddPODdevice(self) -> None :
+    def AddPODdevice(self) -> None :
         """Asks the user for the parameters for the new device. A new device number \
         is generated.
         """
         nextNum = max(self._podParametersDict.keys())+1
         self._PrintDeviceNumber(nextNum)
-        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames(key=self._PORTKEY))
+        self._podParametersDict[nextNum] = self._GetParam_onePODdevice(self._GetForbiddenNames())
 
 
     # ------------ SETUP POD PARAMETERS ------------
 
+    
+    def SetupPODparameters(self, podParametersDict:dict[int,Params_Interface]|None=None) -> None :
+        """Sets the parameters for the POD devices.
 
-    def _SetParam_allPODdevices(self) -> None :
+        Args:
+            podParametersDict (dict[int,Params_Interface] | None, optional): dictionary of the device parameters \
+                for all devices. Defaults to None.
+        """
+        # get dictionary of POD device parameters
+        if(podParametersDict==None):
+            # get setup parameters for all POD devices
+            self._podParametersDict = self._GetParam_allPODdevices()  
+            # display parameters and allow user to edit them
+            self.ValidateParams()          
+        else:
+            self._podParametersDict = podParametersDict
+        # connect and initialize all POD devices
+        self.ConnectAllPODdevices()
+
+
+    def _GetParam_allPODdevices(self) -> dict[int,Params_Interface] :
         """First gets the number of POD devices, then asks the user for the information \
         for each device.
+
+        Returns:
+            dict[int,Params_Interface]: Dictionary with device numbers for keys and parameters for values.
         """
         # get the number of devices 
-        numDevices = self._SetNumberOfDevices(self._NAME)
+        numDevices = self._SetNumberOfDevices(self.GetDeviceName())
         # initialize 
         portNames = [None] * numDevices
         podDict = {}
@@ -321,10 +289,10 @@ class Setup_Interface :
             # get parameters
             onePodDict = self._GetParam_onePODdevice(portNames)
             # update lists 
-            portNames[i] = onePodDict[self._PORTKEY]
+            portNames[i] = onePodDict.port
             podDict[i+1] = onePodDict
         # save dict containing information to setup all POD devices
-        self._podParametersDict = podDict
+        return(podDict)
 
 
     @staticmethod
@@ -387,18 +355,18 @@ class Setup_Interface :
     # ------------ EDIT POD PARAMETERS ------------
 
 
-    def _ValidateParams(self) -> None : 
+    def ValidateParams(self) -> None : 
         """Displays a table of the parameters of all devices, then asks the user if everything \
         is correct. The user can then edit the parameters of a device. 
         """
         # display all pod devices and parameters
         self.DisplayPODdeviceParameters()
         # ask if params are good or not
-        validParams = UserInput.AskYN(question='Are the '+self._NAME+' device parameters correct?')
+        validParams = UserInput.AskYN(question='Are the '+self.GetDeviceName()+' device parameters correct?')
         # edit if the parameters are not correct 
         if(not validParams) : 
             self._EditParams()
-            self._ValidateParams()
+            self.ValidateParams()
 
 
     def _RemoveDevice(self) -> None : 
@@ -412,6 +380,11 @@ class Setup_Interface :
         # chose device # to remove 
         removeThis = self._SelectDeviceFromDict('Remove')
         # remove from dicts
+
+        print(self._podParametersDict)
+        print(self._podDevices)
+        print(self._podDevices[removeThis])
+
         self._podParametersDict.pop(removeThis)
         self._podDevices.pop(removeThis)
         # print feedback
@@ -423,7 +396,7 @@ class Setup_Interface :
         # chose device # to edit
         editThis = self._SelectDeviceFromDict('Edit')
         # get all port names except for device# to be edited
-        forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis][self._PORTKEY], key=self._PORTKEY)
+        forbiddenNames = self._GetForbiddenNames(exclude=self._podParametersDict[editThis].port)
         # edit device
         self._PrintDeviceNumber(editThis)
         self._podParametersDict[editThis] = self._GetParam_onePODdevice(forbiddenNames)
@@ -439,23 +412,22 @@ class Setup_Interface :
         Returns:
             int: Integer for the device number.
         """
-        podKey = UserInput.AskForInt(str(action)+' '+self._NAME+' device #')
+        podKey = UserInput.AskForInt(str(action)+' '+self.GetDeviceName()+' device #')
         # check is pod device exists
         keys = self._podParametersDict.keys()
         if(podKey not in keys) : 
             print('[!] Invalid device number. Please try again.')
-            return(self._SelectDeviceFromDict())
+            return(self._SelectDeviceFromDict(action))
         else:
             # return the pod device number
             return(podKey)
         
 
-    def _GetForbiddenNames(self, key:str='Port', exclude:str|None=None) -> list[str] :
+    def _GetForbiddenNames(self, exclude:str|None=None) -> list[str] :
         """Generates a list of port names used by the active pod devices. There is an option to \
         exclude an additional name from the list.
 
         Args:
-            key (str, optional): String key to access the _podParametersDict. Defaults to 'Port'.
             exclude (str | None, optional): String port name to exclude from the returned list. \
                 Defaults to None.
 
@@ -464,14 +436,26 @@ class Setup_Interface :
         """
         if(exclude == None) : 
             # get port name for each POD device 
-            portNames = [x[key] for x in self._podParametersDict.values()]
+            portNames = [x.port for x in self._podParametersDict.values()]
         else :
-            portNames = [x[key] for x in self._podParametersDict.values() if exclude != x[key]]
+            portNames = [x.port for x in self._podParametersDict.values() if exclude != x.port]
         return(portNames)
     
 
     # ------------ DISPLAY POD PARAMETERS ------------
-       
+
+
+    def GetPODparametersInit(self) -> str :
+        """Gets a dictionary whose keys are the device number and the value is the device parameters dict.
+        Returns:
+            str: String representation of a dictionary of POD device parameters. The keys are the device number.
+        """
+        initParams = '{'
+        for key,val in self._podParametersDict.items() :
+            initParams += ' '+str(key)+' : '+val.GetInit()+','
+        initParams = initParams[:-1] + ' }' # cut off last comma and add close bracket 
+        return(initParams)
+
 
     @staticmethod
     def _PrintDeviceNumber(num: int) -> None :
@@ -489,12 +473,47 @@ class Setup_Interface :
         tab : Texttable|None = self._GetPODdeviceParameterTable()
         if(tab != None) : 
             # print title 
-            print('\nParameters for all '+str(self._NAME)+' Devices:')
+            print('\nParameters for all '+str(self.GetDeviceName())+' Devices:')
             # show table 
             print(tab.draw())
 
 
     # ------------ FILE HANDLING ------------
+
+
+    def SetupFileName(self, fileName: str|None = None) -> None : 
+        """Gets the file path and name to save streaming data to. Note that the device name and number \
+        will be appended to the end of the filename.
+
+        Args:
+            fileName (str | None, optional): Name and path of the file, if known. Defaults to None.
+        """
+        if(fileName == None) :
+            self._saveFileName = UserInput.GetFilePath('\nWhere would you like to save '+self.GetDeviceName()+' streaming data to?', goodExt=self.GetSupportedFileExtensions())
+            self.PrintSaveFile()
+        else:
+            if(UserInput.CheckFileExt(fileName, fIsExt=False, goodExt=self.GetSupportedFileExtensions())) : 
+                self._saveFileName = fileName
+            else : 
+                print('[!] Extension on '+str(fileName)+' is not supported for '+self.GetDeviceName()+' POD devices. Please input a new file name.')
+                self.SetupFileName(None)
+
+
+    def PrintSaveFile(self) -> None :
+        """Prints the file path and name that data is saved to. Note that the device name and number \
+        will be appended to the end of the filename.
+        """
+        # print name  
+        print('\nStreaming data for '+self.GetDeviceName()+' will be saved to '+ str(self._saveFileName))
+
+
+    def GetSaveFileName(self) -> str:
+        """Gets the path and filename where streaming data is saved to.
+
+        Returns:
+            str: String of the save file name and path (_saveFileName).
+        """
+        return(self._saveFileName)
 
 
     def _OpenSaveFile(self, devNum: int) -> IOBase | EdfWriter : 
@@ -528,7 +547,7 @@ class Setup_Interface :
         # build file name --> path\filename_<DEVICENAME>_<DEVICE#>.ext 
         #    ex: text.txt --> test_8206-HR_1.txt
         name, ext = os.path.splitext(self._saveFileName)
-        fname = name+'_'+self._NAME+'_'+str(devNum)+ext   
+        fname = name+'_'+self.GetDeviceName()+'_'+str(devNum)+ext   
         return(fname)
 
 
@@ -563,7 +582,7 @@ class Setup_Interface :
         """
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 
-            raise Exception('Could not stream from '+self._NAME+'.')
+            raise Exception('Could not stream from '+self.GetDeviceName()+'.')
         # start streaming from all devices 
         else:
             return(self._StreamThreading()) # returns dictionary of all threads with the device# as the keys  
@@ -584,15 +603,13 @@ class Setup_Interface :
         """
         # returns True when connection is successful, false otherwise
         try:
-            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, move this function into the relevant subclasses
+            pod.FlushPort() # clear out previous packets 
+            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
             r = pod.ReadPODpacket()
-        except:     
-            return(False)
+        except:   return(False)
         # check that read matches ping write
-        if(w==r):   
-            return(True)
-        else:       
-            return(False)
+        if(w==r): return(True)
+        return(False)
         
 
     def _TestDeviceConnection_All(self) -> bool:
@@ -608,7 +625,7 @@ class Setup_Interface :
                 # write newline for first bad connection 
                 if(allGood==True) : print('') 
                 # print error message
-                print('[!] Connection issue with '+self._NAME+' device #'+str(key)+'.')
+                print('[!] Connection issue with '+self.GetDeviceName()+' device #'+str(key)+'.')
                 # flag that a connection failed
                 allGood = False 
         # return True when all connections are successful, false otherwise
@@ -627,4 +644,3 @@ class Setup_Interface :
         """
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
         return ( round(voltage * 1E-6, 6 ) + 0.0 )
-    

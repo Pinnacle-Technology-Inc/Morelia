@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BasicPodProtocol module &mdash; Python POD API v1.1.1 documentation</title>
+  <title>BasicPodProtocol module &mdash; Python POD API v1.2.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -49,6 +49,7 @@
 <li class="toctree-l3"><a class="reference internal" href="#BasicPodProtocol.POD_Basics"><code class="docutils literal notranslate"><span class="pre">POD_Basics</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._port"><code class="docutils literal notranslate"><span class="pre">POD_Basics._port</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics._commands"><code class="docutils literal notranslate"><span class="pre">POD_Basics._commands</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.FlushPort"><code class="docutils literal notranslate"><span class="pre">POD_Basics.FlushPort()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetNumberOfPODDevices()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#BasicPodProtocol.POD_Basics.GetPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetPODpacket()</span></code></a></li>
@@ -78,13 +79,16 @@
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
 </ul>
 </li>
 </ul>
@@ -145,6 +149,20 @@ packets and packet interpretation.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.FlushPort">
+<span class="sig-name descname"><span class="pre">FlushPort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.FlushPort" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the input and output serial port buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True of the buffers are flushed, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.GetDeviceCommands">
 <span class="sig-name descname"><span class="pre">GetDeviceCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.GetDeviceCommands" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the dictionary containing the class instance’s available POD commands.</p>
@@ -200,11 +218,14 @@ packets and packet interpretation.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="BasicPodProtocol.POD_Basics.ReadPODpacket">
-<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#BasicPodProtocol.POD_Basics.ReadPODpacket" title="Permalink to this definition"></a></dt>
 <dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>Bytes string containing a POD packet beginning with STX and ending with ETX. This                 may be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>

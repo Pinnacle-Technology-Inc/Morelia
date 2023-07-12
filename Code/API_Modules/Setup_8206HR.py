@@ -3,18 +3,17 @@
 # enviornment imports
 import os 
 import time
-import copy
 import numpy       as     np
 from   texttable   import Texttable
 from   threading   import Thread
 from   pyedflib    import EdfWriter
 from   io          import IOBase
 
-
 # local imports
-from Setup_PodInterface import Setup_Interface
-from PodDevice_8206HR   import POD_8206HR 
-from GetUserInput       import UserInput
+from Setup_PodInterface  import Setup_Interface
+from Setup_PodParameters import Params_8206HR
+from PodDevice_8206HR    import POD_8206HR 
+from GetUserInput        import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -30,39 +29,32 @@ class Setup_8206HR(Setup_Interface) :
     """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
-    
-    
-    _PARAMKEYS   : list[str] = [Setup_Interface._PORTKEY,'Sample Rate','Preamplifier Gain','Low-pass']
-    """Class-level list containing the device parameter dict keys.
-    """
 
-    _LOWPASSKEYS : list[str] = ['EEG1','EEG2','EEG3/EMG']
-    """Class-level list containing the keys of the 'Low-pass' parameter \
-    dict value.
-    """
 
     _PHYSICAL_BOUND_uV : int = 2046 # max/-min stream value in uV
     """Class-level integer representing the max/-min physical value in uV. \
     Used for EDF files. 
     """
 
-    # overwrite from parent
-    _NAME : str = '8206-HR'
-    """Class-level string containing the POD device name.
-    """
+    # ============ DUNDER METHODS ============      ========================================================================================================================
+
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._podParametersDict : dict[int,Params_8206HR] = {}   
+
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
     @staticmethod
     def GetDeviceName() -> str : 
-        """Returns the name of the POD device.
+        """Returns the name of the 8206-HR POD device.
 
         Returns:
-            str: String of _NAME.
+            str: 8206-HR.
         """
-        # returns the name of the POD device 
-        return(Setup_8206HR._NAME)
+        return('8206-HR')
     
 
     # ============ PRIVATE METHODS ============      ========================================================================================================================
@@ -71,47 +63,44 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: dict[str,(str|int|dict[str,int])]) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8206HR) -> bool : 
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.
-            deviceParams (dict[str,): Dictionary of the device's parameters
+            deviceParams (Params_8206HR): Device's parameters.
 
         Returns:
             bool: True if connection was successful, false otherwise.
         """
-        failed = True 
+        success = False 
         try : 
             # get port name 
-            port = deviceParams[self._PORTKEY].split(' ')[0] # isolate COM# from rest of string
+            port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            self._podDevices[deviceNum] = POD_8206HR(port=port, preampGain=deviceParams['Preamplifier Gain'])
+            pod = POD_8206HR(port=port, preampGain=deviceParams.preamplifierGain)
             # test if connection is successful
-            if(self._TestDeviceConnection(self._podDevices[deviceNum])):
+            if(self._TestDeviceConnection(pod)):
                 # write setup parameters
-                self._podDevices[deviceNum].WriteRead('SET SAMPLE RATE', deviceParams['Sample Rate']          )
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (0, deviceParams['Low-pass']['EEG1']    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (1, deviceParams['Low-pass']['EEG2']    ))
-                self._podDevices[deviceNum].WriteRead('SET LOWPASS', (2, deviceParams['Low-pass']['EEG3/EMG']))   
-                failed = False
-        except : # except Exception as e : print('[!]', e) # use this for testing 
-            # fill entry 
-            self._podDevices[deviceNum] = None
-
-        # check if connection failed 
-        if(failed) :
-            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+'.')
-        else :
-            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+                pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
+                pod.WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
+                pod.WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
+                pod.WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
+                # successful write if no exceptions raised 
+                self._podDevices[deviceNum] = pod
+                success = True
+                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+        except Exception as e :
+            self._podDevices[deviceNum] = False # fill entry with bad value
+            print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
-        return(not failed)
+        return(success)
 
 
     # ------------ SETUP POD PARAMETERS ------------
+    
 
-
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str]) -> dict[str,(str|int|dict[str,int])] : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8206HR : 
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -120,17 +109,14 @@ class Setup_8206HR(Setup_Interface) :
         Returns:
             dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
         """
-         
-        return({
-            self._PORTKEY       : self._ChoosePort(forbiddenNames),
-            'Sample Rate'       : UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
-            'Preamplifier Gain' : self._ChoosePreampGain(),
-            'Low-pass'          : {
-                    'EEG1'      : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
-                    'EEG2'      : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
-                    'EEG3/EMG'  : UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500)
-                }
-        })
+        return(Params_8206HR(
+            port             =   self._ChoosePort(forbiddenNames),
+            sampleRate       =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
+            preamplifierGain =   self._ChoosePreampGain(),
+            lowPass          = ( UserInput.AskForIntInRange('Set lowpass (Hz) for EEG1',     11, 500),
+                                 UserInput.AskForIntInRange('Set lowpass (Hz) for EEG2',     11, 500),
+                                 UserInput.AskForIntInRange('Set lowpass (Hz) for EEG3/EMG', 11, 500) )
+        ))
     
     @staticmethod
     def _ChoosePreampGain() -> int :
@@ -159,12 +145,12 @@ class Setup_8206HR(Setup_Interface) :
             Texttable: Texttable containing all parameters.
         """
         # setup table 
-        tab = Texttable()
+        tab = Texttable(110)
         # write column names
-        tab.header(['Device #',self._PORTKEY,'Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
+        tab.header(['Device #','Port','Sample Rate (Hz)', 'Preamplifier Gain', 'EEG1 Low-pass (Hz)','EEG2 Low-pass (Hz)','EEG3/EMG Low-pass (Hz)'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            tab.add_row([key, val[self._PORTKEY], val['Sample Rate'], val['Preamplifier Gain'], val['Low-pass']['EEG1'], val['Low-pass']['EEG2'], val['Low-pass']['EEG3/EMG']])       
+            tab.add_row([key, val.port, val.sampleRate, val.preamplifierGain, val.EEG1(), val.EEG2(), val.EEG3_EMG()])       
         return(tab)
     
 
@@ -201,13 +187,13 @@ class Setup_8206HR(Setup_Interface) :
             EdfWriter: Opened file.
         """
         # number of channels 
-        n = len(self._LOWPASSKEYS)
+        n = len(Params_8206HR.lowPassLabels)
         # create file
         f = EdfWriter(fname, n) 
         # get info for each channel
         for i in range(n):
             f.setSignalHeader( i, {
-                'label' : self._LOWPASSKEYS[i],
+                'label' : Params_8206HR.lowPassLabels[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
                 'physical_max': self._PHYSICAL_BOUND_uV,
@@ -265,7 +251,7 @@ class Setup_8206HR(Setup_Interface) :
             # create thread to _StreamUntilStop() to dictionary entry devNum
             devNum : Thread(
                     target = self._StreamUntilStop, 
-                    args = ( pod, file, params['Sample Rate'] ))
+                    args = ( pod, file, params.sampleRate ))
             # for each device 
             for devNum,params,pod,file in 
                 zip(
@@ -346,44 +332,4 @@ class Setup_8206HR(Setup_Interface) :
         # tell devices to stop streaming 
         for pod in self._podDevices.values() : 
             if(pod != None) : pod.WritePacket(cmd='STREAM', payload=0)
-            
 
-    # ------------ VALIDATION ------------
-
-
-    def _IsOneDeviceValid(self, paramDict: dict) -> bool :
-        """Raises an exception if the parameters dictionary is incorrectly formatted.
-
-        Args:
-            paramDict (dict): Dictionary of the parameters for one device.
-
-        Raises:
-            Exception: Invalid parameters.
-            Exception: Invalid parameter value types.
-            Exception: Invalid low-pass parameters.
-            Exception: Invalid low-pass value types.
-
-        Returns:
-            bool: True if no exceptions are raised.
-        """
-        # check that all params exist 
-        if(list(paramDict.keys()).sort() != copy.copy(self._PARAMKEYS).sort() ) :
-            raise Exception('[!] Invalid parameters for '+str(self._NAME)+'.')
-        # check type of each specific command 
-        if( not(
-                    isinstance( paramDict[Setup_Interface._PORTKEY], str  ) 
-                and isinstance( paramDict['Sample Rate'],            int  ) 
-                and isinstance( paramDict['Preamplifier Gain'],      int  ) 
-                and isinstance( paramDict['Low-pass'],               dict ) 
-            )
-        ) : 
-            raise Exception('[!] Invalid parameter value types for '+str(self._NAME)+'.')
-        # check that low-pass is correct
-        if( list(paramDict['Low-pass'].keys()).sort() != copy.copy(self._LOWPASSKEYS).sort() ) : 
-            raise Exception('[!] Invalid low-pass parameters for '+str(self._NAME)+'.')
-        # check type of low-pass
-        for lowPassVal in paramDict['Low-pass'].values() : 
-            if( not isinstance(lowPassVal, int) ) : 
-                raise Exception('[!] Invalid low-pass value types for '+str(self._NAME)+'.')
-        # no exception raised 
-        return(True)

@@ -1,5 +1,3 @@
-
-
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
@@ -62,8 +60,8 @@ class POD_8401HR(POD_Basics) :
 
     def __init__(self, 
                  port: str|int, 
-                 ssGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
-                 preampGain:dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  baudrate:int=9600
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
@@ -73,14 +71,16 @@ class POD_8401HR(POD_Basics) :
         Args:
             port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
             preampName (str): String of the corresponding device/sensor name.
-            ssGain (dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
+            ssGain (tuple|list|dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
                 channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            preampGain (dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
+            preampGain (tuple|list|dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
                 four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
             baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
                 the COM_io instance. Defaults to 9600.
 
         Raises:
+            Exception: The ssGain argument must be a dict or list.
+            Exception: The preampGain argument must be a dict or list.
             Exception: The ssGain dictionary has improper keys; keys must be ['A','B','C','D'].
             Exception: The preampGain dictionary has improper keys; keys must be ['A','B','C','D'].
             Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
@@ -98,52 +98,76 @@ class POD_8401HR(POD_Basics) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand( 100, 'GET SAMPLE RATE',      (0,),       (U16,),     False  ) # Gets the current sample rate of the system, in Hz
-        self._commands.AddCommand( 101, 'SET SAMPLE RATE',      (U16,),     (0,),       False  ) # Sets the sample rate of the system, in Hz.  Valid values are 2000 - 20000 currently
-        self._commands.AddCommand( 102,	'GET HIGHPASS',	        (U8,),	    (U8,),      False  ) # Reads the highpass filter value for a channel.  Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass 
-        self._commands.AddCommand( 103,	'SET HIGHPASS',	        (U8, U8),	(0,),       False  ) # Sets the highpass filter for a channel. Requires channel to set, and filter value.  Values are the same as returned in GET HIGHPASS
-        self._commands.AddCommand( 104,	'GET LOWPASS',	        (U8,),	    (U16,),     False  ) # Gets the lowpass filter for the desired channel.  Requires the channel to read, Returns the value in Hz
-        self._commands.AddCommand( 105,	'SET LOWPASS',	        (U8, U16),	(0,),       False  ) # Sets the lowpass filter for the desired channel to the desired value (21 - 15000) in Hz.   Requires the channel to read, and value in Hz.
-        self._commands.AddCommand( 106,	'GET DC MODE',	        (U8,),	    (U8,),      False  ) # Gets the DC mode for the channel.   Requires the channel to read, returns the value 0 = Subtract VBias, 1 = Subtract AGND.  Typically 0 for Biosensors, and 1 for EEG/EMG
-        self._commands.AddCommand( 107,	'SET DC MODE',	        (U8, U8),	(0,),       False  ) # Sets the DC mode for the selected channel.   Requires the channel to read, and value to set.  Values are the same as in GET DC MODE
-        self._commands.AddCommand( 112,	'GET BIAS',	            (U8,),	    (U16,),     False  ) # Gets the bias on a given channel.  Returns the DAC value as a 16-bit 2's complement value, representing a value from +/- 2.048V
-        self._commands.AddCommand( 113,	'SET BIAS',	            (U8, U16),	(0,),       False  ) # Sets the bias on a given channel.  Requires the channel and DAC value as specified in GET BIAS.  Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio chanenls
-        self._commands.AddCommand( 114,	'GET EXT0 VALUE',	    (0,),	    (U16,),     False  ) # Reads the analog value on the EXT0 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify preamps.  Note that this function takes some time and blocks, so it should not be called during data acquisition if possible
-        self._commands.AddCommand( 115,	'GET EXT1 VALUE',	    (0,),	    (U16,),     False  ) # Reads the analog value on the EXT1 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify if an 8480 is present.  Similar caveat re blocking as GET EXT0 VALUE
-        self._commands.AddCommand( 116,	'SET EXT0',	            (U8,),	    (0,),       False  ) # Sets the digital value of EXT0, 0 or 1
-        self._commands.AddCommand( 117,	'SET EXT1',	            (U8,),	    (0,),       False  ) # Sets the digital value of EXT1, 0 or 1
-        self._commands.AddCommand( 121,	'SET INPUT GROUND',	    (U8,),	    (0,),       False  ) # Sets whether channel inputs are grounded or connected to the preamp.  Bitfield, bits 0-3, high nibble should be 0s.  0=Grounded, 1=Connected to Preamp
-        self._commands.AddCommand( 122,	'GET INPUT GROUND',	    (0,),	    (U8,),      False  ) # Returns the bitmask value from SET INPUT GROUND
-        self._commands.AddCommand( 127,	'SET TTL CONFIG',	    (U8, U8),	(0,),       False  ) # Configures the TTL pins.  First argument is output setup, 0 is open collector and 1 is push-pull.  Second argument is input setup, 0 is analog and 1 is digital.  Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins
-        self._commands.AddCommand( 128,	'GET TTL CONFIG',	    (0,),	    (U8, U8),   False  ) # Gets the TTL config byte, values are as per SET TTL CONFIG
-        self._commands.AddCommand( 129,	'SET TTL OUTS',	        (U8, U8),	(0,),       False  ) # Sets the TTL pins.  First byte is a bitmask, 0 = do not modify, 1=modify.  Second byte is bit field, 0 = low, 1 = high
-        self._commands.AddCommand( 130,	'GET SS CONFIG',	    (U8,),	    (U8,),      False  ) # Gets the second stage gain config.  Requires the channel and returins a bitfield. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass.  Bit 1 = 0 for 5x gain, 1 for 1x gain
-        self._commands.AddCommand( 131,	'SET SS CONFIG',	    (U8, U8),	(0,),       False  ) # Sets the second stage gain config.  Requires the channel and a config bitfield as per GET SS CONFIG
-        self._commands.AddCommand( 132,	'SET MUX MODE',	        (U8,),	    (0,),       False  ) # Sets mux mode on or off.  This causes EXT1 to toggle periodically to control 2BIO 3EEG preamps.  0 = off, 1 = on
-        self._commands.AddCommand( 133,	'GET MUX MODE',	        (0,),	    (U8,),      False  ) # Gets the state of mux mode.  See SET MUX MODE
-        self._commands.AddCommand( 134,	'GET TTL ANALOG',	    (U8,),	    (U16,),     False  ) # Reads a TTL input as an analog signal.  Requires a channel to read, returns a 10-bit analog value.  Same caveats and restrictions as GET EXTX VALUE commands.  Normally you would just enable an extra channel in Sirenia for this.
-        self._commands.AddCommand( 181, 'BINARY5 DATA', 	    (0,),	    (B5,),      True   ) # Binary data packets, enabled by using the STREAM command with a '1' argument. 
+        self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
+        self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
+        self._commands.AddCommand( 102,	'GET HIGHPASS',	    (U8,),	    (U8,),      False,  'Reads the highpass filter value for a channel. Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass.')
+        self._commands.AddCommand( 103,	'SET HIGHPASS',	    (U8, U8),	(0,),       False,  'Sets the highpass filter for a channel. Requires channel to set, and filter value. Values are the same as returned in GET HIGHPASS.')
+        self._commands.AddCommand( 104,	'GET LOWPASS',	    (U8,),	    (U16,),     False,  'Gets the lowpass filter for the desired channel. Requires the channel to read, Returns the value in Hz.')
+        self._commands.AddCommand( 105,	'SET LOWPASS',	    (U8, U16),	(0,),       False,  'Sets the lowpass filter for the desired channel to the desired value (21 - 15000) in Hz. Requires the channel to read, and value in Hz.')
+        self._commands.AddCommand( 106,	'GET DC MODE',	    (U8,),	    (U8,),      False,  'Gets the DC mode for the channel. Requires the channel to read, returns the value 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for Biosensors, and 1 for EEG/EMG.')
+        self._commands.AddCommand( 107,	'SET DC MODE',	    (U8, U8),	(0,),       False,  'Sets the DC mode for the selected channel. Requires the channel to read, and value to set. Values are the same as in GET DC MODE.')
+        self._commands.AddCommand( 112,	'GET BIAS',	        (U8,),	    (U16,),     False,  'Gets the bias on a given channel. Returns the DAC value as a 16-bit 2\'s complement value, representing a value from +/- 2.048V.')
+        self._commands.AddCommand( 113,	'SET BIAS',	        (U8, U16),	(0,),       False,  'Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio chanenls.')
+        self._commands.AddCommand( 114,	'GET EXT0 VALUE',   (0,),	    (U16,),     False,  'Reads the analog value on the EXT0 pin. Returns an unsigned 12-bit value, representing a 3.3V input. This is normally used to identify preamps.  Note that this function takes some time and blocks, so it should not be called during data acquisition if possible.')
+        self._commands.AddCommand( 115,	'GET EXT1 VALUE',   (0,),	    (U16,),     False,  'Reads the analog value on the EXT1 pin. Returns an unsigned 12-bit value, representing a 3.3V input. This is normally used to identify if an 8480 is present.  Similar caveat re blocking as GET EXT0 VALUE.')
+        self._commands.AddCommand( 116,	'SET EXT0',	        (U8,),	    (0,),       False,  'Sets the digital value of EXT0, 0 or 1.')
+        self._commands.AddCommand( 117,	'SET EXT1',	        (U8,),	    (0,),       False,  'Sets the digital value of EXT1, 0 or 1.')
+        self._commands.AddCommand( 121,	'SET INPUT GROUND', (U8,),	    (0,),       False,  'Sets whether channel inputs are grounded or connected to the preamp. Bitfield, bits 0-3, high nibble should be 0s. 0=Grounded, 1=Connected to Preamp.')
+        self._commands.AddCommand( 122,	'GET INPUT GROUND', (0,),	    (U8,),      False,  'Returns the bitmask value from SET INPUT GROUND.')
+        self._commands.AddCommand( 127,	'SET TTL CONFIG',   (U8, U8),	(0,),       False,  'Configures the TTL pins. First argument is output setup, 0 is open collector and 1 is push-pull. Second argument is input setup, 0 is analog and 1 is digital. Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins.')
+        self._commands.AddCommand( 128,	'GET TTL CONFIG',   (0,),	    (U8, U8),   False,  'Gets the TTL config byte, values are as per SET TTL CONFIG.')
+        self._commands.AddCommand( 129,	'SET TTL OUTS',	    (U8, U8),	(0,),       False,  'Sets the TTL pins.  First byte is a bitmask, 0 = do not modify, 1=modify. Second byte is bit field, 0 = low, 1 = high.')
+        self._commands.AddCommand( 130,	'GET SS CONFIG',    (U8,),	    (U8,),      False,  'Gets the second stage gain config. Requires the channel and returins a bitfield. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.')
+        self._commands.AddCommand( 131,	'SET SS CONFIG',    (U8, U8),	(0,),       False,  'Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG.')
+        self._commands.AddCommand( 132,	'SET MUX MODE',	    (U8,),	    (0,),       False,  'Sets mux mode on or off.  This causes EXT1 to toggle periodically to control 2BIO 3EEG preamps.  0 = off, 1 = on.')
+        self._commands.AddCommand( 133,	'GET MUX MODE',	    (0,),	    (U8,),      False,  'Gets the state of mux mode. See SET MUX MODE.')
+        self._commands.AddCommand( 134,	'GET TTL ANALOG',   (U8,),	    (U16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
+        self._commands.AddCommand( 181, 'BINARY5 DATA',     (0,),	    (B5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
+
+        # fix types
+        if(isinstance(ssGain, tuple|list)) : 
+            ssGain_dict = {
+                'A' : ssGain[0],
+                'B' : ssGain[1],
+                'C' : ssGain[2],
+                'D' : ssGain[3]
+            }
+        elif(isinstance(ssGain, dict)) : 
+            ssGain_dict = ssGain
+        else:
+            raise Exception('[!] The ssGain argument must be a dict or list.')
+        if(isinstance(preampGain,tuple|list)) : 
+            preampGain_dict = {
+                'A' : preampGain[0],
+                'B' : preampGain[1],
+                'C' : preampGain[2],
+                'D' : preampGain[3]
+            }
+        elif(isinstance(preampGain, dict)) : 
+            preampGain_dict = preampGain
+        else:
+            raise Exception('[!] The preampGain argument must be a dict or list.')
 
         # verify that dictionaries are correct structure
         goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
-        if(list(ssGain.keys()).sort() != goodKeys) : 
+        if(list(ssGain_dict.keys()).sort() != goodKeys) : 
             raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        if(list(preampGain.keys()).sort() != goodKeys) : 
+        if(list(preampGain_dict.keys()).sort() != goodKeys) : 
             raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
 
         # second stage gain 
-        for value in ssGain.values() :
+        for value in ssGain_dict.values() :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssGain : dict[str,int|None] = ssGain 
+        self._ssGain : dict[str,int|None] = ssGain_dict 
 
         # preamplifier gain
-        for value in preampGain.values() :
+        for value in preampGain_dict.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
                 raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
-        self._preampGain : dict[str,int|None] = preampGain
+        self._preampGain : dict[str,int|None] = preampGain_dict
     
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -204,7 +228,21 @@ class POD_8401HR(POD_Basics) :
         return(msg_unpacked)
 
 
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] : 
+    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] :
+        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
+        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
+        channels and analogs are converted to volts (V).
+
+        Args:
+            msg (bytes): msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
+                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
+                + checksum (2) + ETX (1).
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
+                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
+                'Analog TTL3', 'Analog TTL4', as numbers.
+        """
         # unpack parts of POD packet into dict
         msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
         # translate the binary ascii encoding into a readable integer
@@ -242,7 +280,6 @@ class POD_8401HR(POD_Basics) :
         msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) )
         msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) )
         msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) )
-        
         # return translated unpacked POD packet 
         return(msgDictTrans)
 
@@ -253,24 +290,24 @@ class POD_8401HR(POD_Basics) :
         channels and analogs are converted to volts (V).
 
         Args:
-            msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
-                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
-                + checksum (2) + ETX (1).
+            msg (bytes): Bytes message containing a standard or binary5 POD packet.
 
         Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
-                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
-                'Analog TTL3', 'Analog TTL4', as numbers.
+            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
         """
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
+        specialCommands = [127, 128, 129, 130] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS # 130 GET SS CONFIG
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            if('Payload' in msgDict) : 
-                transdict['Payload'] = ( self._TranslateTTLByte(msgDict['Payload'][:2]), self._TranslateTTLByte(msgDict['Payload'][2:]))
+            # 130 GET SS CONFIG
+            if( cmd == 130 ) :
+                transdict['Payload'] = self.DecodeSSConfigBitmask(msgDict['Payload'])
+            # TTL 
+            else : 
+                transdict['Payload'] = ( self.DecodeTTLByte(msgDict['Payload'][:2]), self.DecodeTTLByte(msgDict['Payload'][2:]))
             return(transdict)
         # message is binary 
         elif(self._commands.IsCommandBinary(cmd)): 
@@ -280,7 +317,7 @@ class POD_8401HR(POD_Basics) :
             return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
 
 
-    # ------------ HELPER ------------           ------------------------------------------------------------------------------------------------------------------------
+    # ------------ MAPPING ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
     @staticmethod
@@ -322,9 +359,10 @@ class POD_8401HR(POD_Basics) :
         """
         return(name in POD_8401HR.__CHANNELMAPALL)    
 
+    # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def GetTTLbitmask_Int(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+    def GetTTLbitmask(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
         """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
 
         Args:
@@ -344,7 +382,27 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def GetSSConfigBitmask_int(gain: int, highpass: float) -> int :
+    def DecodeTTLByte(ttlByte: bytes) -> dict[str,int] : 
+        """Converts the TTL bytes argument into a dictionary of integer TTL values.
+
+        Args:
+            ttlByte (bytes): U8 byte containing the TTL bitmask. 
+
+        Returns:
+            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
+        """
+        return({
+            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+        })
+    
+
+    @staticmethod
+    def GetSSConfigBitmask(gain: int, highpass: float) -> int :
         """Gets a bitmask, represented by an unsigned integer, used for 'SET SS CONFIG' command. 
 
         Args:
@@ -364,6 +422,32 @@ class POD_8401HR(POD_Basics) :
         return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
 
     
+    @staticmethod
+    def DecodeSSConfigBitmask(config: bytes) : 
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain. 
+
+        Args:
+            config (bytes): U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, \
+                1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
+        """
+        # high-pass
+        if(POD_Packets.AsciiBytesToInt(config[0:1]) == 0) : 
+            highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
+        else: 
+            highpass = 0.0 # Bit 0 = 1 for DC Highpass
+        # gain 
+        if(POD_Packets.AsciiBytesToInt(config[1,2]) == 0) :
+            gain = 5 # Bit 1 = 0 for 5x gain
+        else : 
+            gain = 1 # Bit 1 = 1 for 1x gain
+        # pack values into dict 
+        return({
+            'High-pass' : highpass, 
+            'Gain'      : gain
+        })
+    
+    # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
     @staticmethod
     def CalculateBiasDAC_GetVout(value: int) -> float :
         """Calculates the output voltage given the DAC value. Used for 'GET/SET BIAS' commands. 
@@ -399,26 +483,6 @@ class POD_8401HR(POD_Basics) :
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
-
-    @staticmethod
-    def _TranslateTTLByte(ttlByte: bytes) -> dict[str,int] : 
-        """Converts the TTL bytes argument into a dictionary of integer TTL values.
-
-        Args:
-            ttlByte (bytes): One byte containing the TTL bitmask. 
-
-        Returns:
-            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
-        """
-        return({
-            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
-        })
-    
 
     @staticmethod
     def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :
@@ -505,6 +569,7 @@ class POD_8401HR(POD_Basics) :
         Raises:
             Exception: Bad checksum for binary POD packet read.
         """
+        
         # -----------------------------------------------------------------------------
         # Binary 5 Data Format
         # -----------------------------------------------------------------------------		
@@ -542,6 +607,7 @@ class POD_8401HR(POD_Basics) :
         # 29	Checksum LSB	                ASCII		Checksum 
         # 30	0x03	                        Binary		ETX
         # -----------------------------------------------------------------------------
+
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = prePacket + self._port.Read(self.__B5BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 

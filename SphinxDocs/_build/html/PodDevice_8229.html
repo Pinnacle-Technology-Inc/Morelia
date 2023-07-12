@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PodDevice_8229 module &mdash; Python POD API v1.2.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="PodDevice_8401HR module" href="PodDevice_8401HR.html" />
+    <link rel="prev" title="PodDevice_8206HR module" href="PodDevice_8206HR.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Python POD API
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">API_Modules</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">PodDevice_8229 module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#PodDevice_8229.POD_8229"><code class="docutils literal notranslate"><span class="pre">POD_8229</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.BuildSetDayScheduleArgument"><code class="docutils literal notranslate"><span class="pre">POD_8229.BuildSetDayScheduleArgument()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.CodeDayOfWeek"><code class="docutils literal notranslate"><span class="pre">POD_8229.CodeDayOfWeek()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.CodeDaySchedule"><code class="docutils literal notranslate"><span class="pre">POD_8229.CodeDaySchedule()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.DecodeDayOfWeek"><code class="docutils literal notranslate"><span class="pre">POD_8229.DecodeDayOfWeek()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.DecodeDaySchedule"><code class="docutils literal notranslate"><span class="pre">POD_8229.DecodeDaySchedule()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.DecodeLCDSchedule"><code class="docutils literal notranslate"><span class="pre">POD_8229.DecodeLCDSchedule()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.GetCurrentTime"><code class="docutils literal notranslate"><span class="pre">POD_8229.GetCurrentTime()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_8229.TranslatePODpacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229.WritePacket"><code class="docutils literal notranslate"><span class="pre">POD_8229.WritePacket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._CodeDecimalAsHex"><code class="docutils literal notranslate"><span class="pre">POD_8229._CodeDecimalAsHex()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._DecodeDecimalAsHex"><code class="docutils literal notranslate"><span class="pre">POD_8229._DecodeDecimalAsHex()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._Validate_Day"><code class="docutils literal notranslate"><span class="pre">POD_8229._Validate_Day()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._Validate_Hours"><code class="docutils literal notranslate"><span class="pre">POD_8229._Validate_Hours()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._Validate_Schedule"><code class="docutils literal notranslate"><span class="pre">POD_8229._Validate_Schedule()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8229.POD_8229._Validate_Speed"><code class="docutils literal notranslate"><span class="pre">POD_8229._Validate_Speed()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Python POD API</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">API_Modules</a></li>
+      <li class="breadcrumb-item active">PodDevice_8229 module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/PodDevice_8229.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-PodDevice_8229">
+<span id="poddevice-8229-module"></span><h1>PodDevice_8229 module<a class="headerlink" href="#module-PodDevice_8229" title="Permalink to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodDevice_8229.</span></span><span class="sig-name descname"><span class="pre">POD_8229</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">19200</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8229.POD_8229" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics" title="BasicPodProtocol.POD_Basics"><code class="xref py py-class docutils literal notranslate"><span class="pre">POD_Basics</span></code></a></p>
+<p>POD_8229 handles communication using an 8229 POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.BuildSetDayScheduleArgument">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildSetDayScheduleArgument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.BuildSetDayScheduleArgument" title="Permalink to this definition"></a></dt>
+<dd><p>Appends the day of the week code to the front of the encoded hourly schedule. this tuple is         formatted to be used as the #141 ‘SET DAY SCHEDULE’ argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>day</strong> (<em>str</em><em> | </em><em>int</em>) – Day of the week. Can be either the name of the day (i.e. Sunday, Monday, etc.)                 or the 0-6 day code (0 for Sunday increacing to 6 for Saturday).</p></li>
+<li><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array of 24 items. The value is 1 for motor on and 0 for                 motor off.</p></li>
+<li><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Speed of the motor (0-100). This is an integer of all hours                 are the same speed. If there are multiple speeds, this should be an array of 24 items.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>_description_</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.CodeDayOfWeek">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CodeDayOfWeek</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.CodeDayOfWeek" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the day of the week to an integer code understandable by the POD device. The day         is determined by the first 1-2 characters of the string, which supports multiple abbreviations         for days of the week.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>str</em>) – Day of the week.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Invalid day of the week.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Code for the day of the week. Values are 0-6, with 0 for Saturday, 1 for Monday, …,                 and 6 for Saturday.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.CodeDaySchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.CodeDaySchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this         for getting the command #141 ‘SET DAY SCHEDULE’ U8x24 argument component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array of 24 items. The value is 1 for motor on and 0 for                 motor off.</p></li>
+<li><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Speed of the motor (0-100). This is an integer of all hours                 are the same speed. If there are multiple speeds, this should be an array of 24 items.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits                 are the speed.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.DecodeDayOfWeek">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDayOfWeek</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.DecodeDayOfWeek" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the integer code for a day of the week to a human-readable string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>int</em>) – Day of the week code must be 0-6.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Day of the week (‘Sunday’, ‘Monday’, etc.).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.DecodeDaySchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.DecodeDaySchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets the return bytes from the command #142 ‘GET DAY SCHEDULE’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schedule</strong> (<em>bytes</em>) – 24 byte long bitstring with one U8 per hour in a day.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with ‘Hour’ as a list of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0-100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a list of 24 items.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.DecodeLCDSchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeLCDSchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.DecodeLCDSchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets the return bytes from the command #202 ‘LCD SET DAY SCHEDULE’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schedule</strong> (<em>bytes</em>) – 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7,                 Byte 1 is hours 8-15, and byte 0 is hours 16-23.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with Day as the day of the week, and Hours                 containing a list of 24 0/1 values (one for each hour). Each bit represents the                 motor state in that hour, 1 for on and 0 for off.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.GetCurrentTime">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetCurrentTime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.GetCurrentTime" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year                 (without century, so 23 for 2023), Weekday (0 for Sunday))</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.TranslatePODpacket">
+<span class="sig-name descname"><span class="pre">TranslatePODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.TranslatePODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Overwrites the parent’s method. Adds an addittional check to handle specially formatted         payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A translated POD packet, which has Command Number and Payload                 keys. The payload may formatted uniquely to the command.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|dict[str,int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._CodeDecimalAsHex">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_CodeDecimalAsHex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._CodeDecimalAsHex" title="Permalink to this definition"></a></dt>
+<dd><p>Builds an integer that equals the val argument when converted into hexadecimal.         All integers are converted to hexadecimal ASCII encoded bytes. Some commands         (i.e. 8229 #140) need decimal ASCII encoded bytes; to do this, give the return         value of _CodeDecimalAsHex() as the payload. Example: I want a number that is         equal to 16 in hex. 1*16^1 + 6*16^0 = 22. Calling _CodeDecimalAsHex(16) will         return 22.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>int</em>) – Unsigned integer number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>integer that equals the val argument when converted into hexadecimal.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._DecodeDecimalAsHex">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_DecodeDecimalAsHex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._DecodeDecimalAsHex" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets an integer that was converted to a hexadecimal representation of a         decimal value. In other words, this method reverses _CodeDecimalAsHex().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>int</em>) – Unsigned integer that was converted to a hexadecimal representation of a                 decimal value.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unsigned integer as a true decimal number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._Validate_Day">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Day</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._Validate_Day" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the day is incorrectly formatted. If the day is given as         a string, it will be converted to its integer code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>str</em><em> | </em><em>int</em>) – String day of the week or its repsective integer code.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The day integer argument must be 0-6.</p></li>
+<li><p><strong>Exception</strong> – The day argument must be a str or int.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer code representing a day of the week.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._Validate_Hours">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Hours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._Validate_Hours" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the hours is incorrectly formatted. Converts the hours         into a list before returning it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array with 24 items with values of 1/0                 representing each hour</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The hours argument must be a list or tuple.</p></li>
+<li><p><strong>Exception</strong> – The hours argument must have exactly 24 items.</p></li>
+<li><p><strong>Exception</strong> – The hours items must be 0 or 1.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List with 24 items for each hour. The values are 1/0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[bool|int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._Validate_Schedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._Validate_Schedule" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the schedule is incorrectly formatted</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schedule</strong> (<em>bytes</em>) – Bytes string containing the day schedule.</p></li>
+<li><p><strong>size</strong> (<em>int</em>) – Number of U8 bytes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The schedule must be bytes.</p></li>
+<li><p><strong>Exception</strong> – The schedule is the incorrect size</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Same as the schedule argument.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8229.POD_8229._Validate_Speed">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Speed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229._Validate_Speed" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the speed is incorrectly formatted. If an integer speed         is given, it will convert it to a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Motor speed (0-100). This can either be an                 integer or a tuple/list of 24 speeds.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The speed argument must be an int, list, or tuple.</p></li>
+<li><p><strong>Exception</strong> – The speed must be between 0 and 100.</p></li>
+<li><p><strong>Exception</strong> – The speed argument must have exactly 24 items as a list/tuple.</p></li>
+<li><p><strong>Exception</strong> – The speed must be between 0 and 100 for every list/tuple item.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List containing 24 motor speeds.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="PodDevice_8206HR.html" class="btn btn-neutral float-left" title="PodDevice_8206HR module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PodDevice_8401HR.html" class="btn btn-neutral float-right" title="PodDevice_8401HR module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
