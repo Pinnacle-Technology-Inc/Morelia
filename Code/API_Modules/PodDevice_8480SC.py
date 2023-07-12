@@ -23,7 +23,7 @@ class POD_8480SC(POD_Basics) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
     
 
-    def __init__(self, port: str|int, baudrate:int=9600) -> None :
+    def __init__(self, port: str|int, baudrate: int=9600) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8480 POD device. 
 
@@ -68,7 +68,7 @@ class POD_8480SC(POD_Basics) :
 
 
     @staticmethod
-    def StimulusConfigBits(optoElec:bool, monoBiphasic:bool, Simul:bool) -> int :
+    def StimulusConfigBits(optoElec: bool, monoBiphasic: bool, Simul: bool) -> int :
         """ Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload \
         to command #102 'SET STIMULUS'.
     
@@ -85,7 +85,7 @@ class POD_8480SC(POD_Basics) :
 
     
     @staticmethod
-    def SyncConfigBits(sync_level:bool, sync_idle:bool, signal_trigger:bool) -> int :
+    def SyncConfigBits(sync_level: bool, sync_idle: bool, signal_trigger: bool) -> int :
         """Incoming inputs are bitmasked into an integer value. This value is later given \
         as the payload to command #127 'SET SYNC CONFIG'.
 
@@ -189,15 +189,11 @@ class POD_8480SC(POD_Basics) :
             # start building translated dictionary
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }   #pulling value from msgdict and changing into int
             if (cmd == 126):  #126 GET SYNC CONFIG
-                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'] ) }  #changing the bytes to int
-                transdict['Payload'] = self.DecodeSyncConfigBits(transdict['Payload'])  #putting the integer into the decode function
-                #print("TRANSDICTIONARY", transdict['Payload'])
+                transdict['Payload'] = self.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'] )) # changing the bytes to int, then putting the integer into the decode function
             if(cmd == 108): #108 GET TTL SETUP
-                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][:4] ) }
-                transdict['Payload'] = self.DecodeTTlConfigBits(transdict['Payload'])
+                transdict['Payload'] = self.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][:4] ))
             if(cmd == 101): #101 GET STIMULUS
-                transdict = { 'Payload' : POD_Packets.AsciiBytesToInt( msgDict['Payload'][-1:] ) }
-                transdict['Payload'] = self.DecodeStimulusConfigBits(transdict['Payload'])
+                transdict['Payload'] = self.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][-1:] ))
         else:
             return(self.TranslatePODpacket_Standard(msg))
                
