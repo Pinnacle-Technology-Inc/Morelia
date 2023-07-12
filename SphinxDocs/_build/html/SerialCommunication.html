@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SerialCommunication module &mdash; Python POD API v1.1.1 documentation</title>
+  <title>SerialCommunication module &mdash; Python POD API v1.2.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -49,12 +49,14 @@
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodCommands.html">PodCommands module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">SerialCommunication module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#SerialCommunication.COM_io"><code class="docutils literal notranslate"><span class="pre">COM_io</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.__serialInst"><code class="docutils literal notranslate"><span class="pre">COM_io.__serialInst</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.CloseSerialPort"><code class="docutils literal notranslate"><span class="pre">COM_io.CloseSerialPort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.Flush"><code class="docutils literal notranslate"><span class="pre">COM_io.Flush()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.GetCOMportsList"><code class="docutils literal notranslate"><span class="pre">COM_io.GetCOMportsList()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.GetPortName"><code class="docutils literal notranslate"><span class="pre">COM_io.GetPortName()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#SerialCommunication.COM_io.IsSerialClosed"><code class="docutils literal notranslate"><span class="pre">COM_io.IsSerialClosed()</span></code></a></li>
@@ -71,9 +73,11 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
 </ul>
 </li>
 </ul>
@@ -125,6 +129,20 @@
 <dt class="sig sig-object py" id="SerialCommunication.COM_io.CloseSerialPort">
 <span class="sig-name descname"><span class="pre">CloseSerialPort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.CloseSerialPort" title="Permalink to this definition"></a></dt>
 <dd><p>Closes the instance serial port if it is open.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="SerialCommunication.COM_io.Flush">
+<span class="sig-name descname"><span class="pre">Flush</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.Flush" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the input and output serial buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True of the buffers are flushed, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -202,17 +220,23 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="SerialCommunication.COM_io.Read">
-<span class="sig-name descname"><span class="pre">Read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numBytes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.Read" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numBytes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.Read" title="Permalink to this definition"></a></dt>
 <dd><p>Reads a specified number of bytes from the open serial port.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>numBytes</strong> (<em>int</em>) – Integer number of bytes to read.</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>numBytes</strong> (<em>int</em>) – Integer number of bytes to read.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>If the serial port is open, it will return a set number of read bytes.                 If it is closed, it will return None.</p>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Timeout for serial read.</p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bytes|None</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If the serial port is open, it will return a set number of read bytes.                 If it is closed, it will return None.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes|None</p>
 </dd>
 </dl>
 </dd></dl>
@@ -251,7 +275,19 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="SerialCommunication.COM_io.SetBaudrate">
 <span class="sig-name descname"><span class="pre">SetBaudrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#SerialCommunication.COM_io.SetBaudrate" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Sets the baud rate of the serial port</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>baudrate</strong> (<em>int</em>) – Baud rate, or signals per second.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the baudrate was set, False otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="SerialCommunication.COM_io.Write">

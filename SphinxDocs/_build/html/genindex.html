@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Index &mdash; Python POD API v1.1.1 documentation</title>
+  <title>Index &mdash; Python POD API v1.2.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -77,8 +77,11 @@
  | <a href="#C"><strong>C</strong></a>
  | <a href="#D"><strong>D</strong></a>
  | <a href="#E"><strong>E</strong></a>
+ | <a href="#F"><strong>F</strong></a>
  | <a href="#G"><strong>G</strong></a>
+ | <a href="#H"><strong>H</strong></a>
  | <a href="#I"><strong>I</strong></a>
+ | <a href="#L"><strong>L</strong></a>
  | <a href="#M"><strong>M</strong></a>
  | <a href="#N"><strong>N</strong></a>
  | <a href="#O"><strong>O</strong></a>
@@ -87,6 +90,7 @@
  | <a href="#S"><strong>S</strong></a>
  | <a href="#T"><strong>T</strong></a>
  | <a href="#U"><strong>U</strong></a>
+ | <a href="#V"><strong>V</strong></a>
  | <a href="#W"><strong>W</strong></a>
  
 </div>
@@ -111,6 +115,8 @@
 </li>
       <li><a href="PodCommands.html#PodCommands.POD_Commands.__commands">__commands (PodCommands.POD_Commands attribute)</a>
 </li>
+      <li><a href="PodCommands.html#PodCommands.POD_Commands.__DESCRIPTION">__DESCRIPTION (PodCommands.POD_Commands attribute)</a>
+</li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINBINARYLENGTH">__MINBINARYLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
 </li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.__MINSTANDARDLENGTH">__MINSTANDARDLENGTH (BasicPodProtocol.POD_Basics attribute)</a>
@@ -129,8 +135,6 @@
 </li>
       <li><a href="PodCommands.html#PodCommands.POD_Commands.__U8">__U8 (PodCommands.POD_Commands attribute)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._AddPODdevice">_AddPODdevice() (Setup_PodInterface.Setup_Interface method)</a>
-</li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._AskOption">_AskOption() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._AskToStopStream">_AskToStopStream() (Setup_PodDevices.Setup_PodDevices method)</a>
@@ -141,17 +145,25 @@
 </li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._BuildFileName">_BuildFileName() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._CHANNELKEYS">_CHANNELKEYS (Setup_8401HR.Setup_8401HR attribute)</a>
-</li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._CheckFileExt">_CheckFileExt() (Setup_PodDevices.Setup_PodDevices static method)</a>
-</li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._CheckForValidParams">_CheckForValidParams() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR._CheckParams">_CheckParams() (Setup_PodParameters.Params_8206HR method)</a>
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229._CheckParams">(Setup_PodParameters.Params_8229 method)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR._CheckParams">(Setup_PodParameters.Params_8401HR method)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface._CheckParams">(Setup_PodParameters.Params_Interface method)</a>
+</li>
+      </ul></li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._ChoosePort">_ChoosePort() (Setup_PodInterface.Setup_Interface static method)</a>
 </li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._ChoosePreampGain">_ChoosePreampGain() (Setup_8206HR.Setup_8206HR static method)</a>
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._CodeDCmode">_CodeDCmode() (Setup_8401HR.Setup_8401HR static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._CodeDecimalAsHex">_CodeDecimalAsHex() (PodDevice_8229.POD_8229 static method)</a>
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._CodeHighpass">_CodeHighpass() (Setup_8401HR.Setup_8401HR static method)</a>
 </li>
@@ -162,11 +174,15 @@
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._ConnectPODdevice">_ConnectPODdevice() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._ConnectPODdevice">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._ConnectPODdevice">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._ConnectPODdevice">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
       </ul></li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._DecodeDecimalAsHex">_DecodeDecimalAsHex() (PodDevice_8229.POD_8229 static method)</a>
+</li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices">_DisconnectAllPODdevices() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._DoOption">_DoOption() (Setup_PodDevices.Setup_PodDevices method)</a>
@@ -177,17 +193,19 @@
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._EditSaveFilePath">_EditSaveFilePath() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface._FixTypeInTuple">_FixTypeInTuple() (Setup_PodParameters.Params_Interface static method)</a>
+</li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._GetChosenDeviceType">_GetChosenDeviceType() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._GetFileName">_GetFileName() (Setup_PodDevices.Setup_PodDevices static method)</a>
-</li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._GetFilePath">_GetFilePath() (Setup_PodDevices.Setup_PodDevices static method)</a>
-</li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._GetForbiddenNames">_GetForbiddenNames() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._GetParam_allPODdevices">_GetParam_allPODdevices() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._GetParam_onePODdevice">_GetParam_onePODdevice() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._GetParam_onePODdevice">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._GetParam_onePODdevice">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._GetParam_onePODdevice">(Setup_PodInterface.Setup_Interface method)</a>
@@ -198,6 +216,8 @@
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable">_GetPODdeviceParameterTable() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._GetPODdeviceParameterTable">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._GetPODdeviceParameterTable">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable">(Setup_PodInterface.Setup_Interface method)</a>
@@ -207,28 +227,10 @@
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._GetPreampDeviceName">_GetPreampDeviceName() (Setup_8401HR.Setup_8401HR method)</a>
 </li>
+      <li><a href="Setup_8229.html#Setup_8229.Setup_8229._GetScheduleForWeek">_GetScheduleForWeek() (Setup_8229.Setup_8229 static method)</a>
+</li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT">_GetTimeHeader_forTXT() (Setup_PodInterface.Setup_Interface static method)</a>
 </li>
-      <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._IsChannelTypeValid">_IsChannelTypeValid() (Setup_8401HR.Setup_8401HR method)</a>
-</li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._IsOneDeviceValid">_IsOneDeviceValid() (Setup_8206HR.Setup_8206HR method)</a>
-
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._IsOneDeviceValid">(Setup_8401HR.Setup_8401HR method)</a>
-</li>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._IsOneDeviceValid">(Setup_PodInterface.Setup_Interface method)</a>
-</li>
-      </ul></li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._LOWPASSKEYS">_LOWPASSKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
-</li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._NAME">_NAME (Setup_8206HR.Setup_8206HR attribute)</a>
-
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._NAME">(Setup_8401HR.Setup_8401HR attribute)</a>
-</li>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._NAME">(Setup_PodInterface.Setup_Interface attribute)</a>
-</li>
-      </ul></li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._NiceABCDtableText">_NiceABCDtableText() (Setup_8401HR.Setup_8401HR method)</a>
 </li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._OpenSaveFile">_OpenSaveFile() (Setup_PodInterface.Setup_Interface method)</a>
@@ -236,6 +238,8 @@
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF">_OpenSaveFile_EDF() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._OpenSaveFile_EDF">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._OpenSaveFile_EDF">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF">(Setup_PodInterface.Setup_Interface method)</a>
@@ -246,6 +250,8 @@
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT">_OpenSaveFile_TXT() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._OpenSaveFile_TXT">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._OpenSaveFile_TXT">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT">(Setup_PodInterface.Setup_Interface method)</a>
@@ -253,12 +259,6 @@
       </ul></li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._options">_options (Setup_PodDevices.Setup_PodDevices attribute)</a>
 </li>
-      <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PARAMKEYS">_PARAMKEYS (Setup_8206HR.Setup_8206HR attribute)</a>
-
-      <ul>
-        <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._PARAMKEYS">(Setup_8401HR.Setup_8401HR attribute)</a>
-</li>
-      </ul></li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV">_PHYSICAL_BOUND_uV (Setup_8206HR.Setup_8206HR attribute)</a>
 
       <ul>
@@ -271,8 +271,6 @@
 </li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._port">_port (BasicPodProtocol.POD_Basics attribute)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._PORTKEY">_PORTKEY (Setup_PodInterface.Setup_Interface attribute)</a>
-</li>
       <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR._preampGain">_preampGain (PodDevice_8206HR.POD_8206HR attribute)</a>
 
       <ul>
@@ -284,8 +282,6 @@
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._PrintInitCode">_PrintInitCode() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._PrintOptions">_PrintOptions() (Setup_PodDevices.Setup_PodDevices method)</a>
-</li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._PrintSaveFile">_PrintSaveFile() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._Read_Binary">_Read_Binary() (BasicPodProtocol.POD_Basics method)</a>
 
@@ -311,12 +307,8 @@
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._RemoveDevice">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
       </ul></li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._saveFileName">_saveFileName (Setup_PodDevices.Setup_PodDevices attribute)</a>
-
-      <ul>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._saveFileName">(Setup_PodInterface.Setup_Interface attribute)</a>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._saveFileName">_saveFileName (Setup_PodInterface.Setup_Interface attribute)</a>
 </li>
-      </ul></li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._SelectDeviceFromDict">_SelectDeviceFromDict() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._Set_Setup_PodDevices">_Set_Setup_PodDevices() (Setup_PodDevices.Setup_PodDevices method)</a>
@@ -325,8 +317,6 @@
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._SetDCMode">_SetDCMode() (Setup_8401HR.Setup_8401HR static method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._SetFilenameToDevices">_SetFilenameToDevices() (Setup_PodDevices.Setup_PodDevices method)</a>
-</li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._SetForMappedChannels">_SetForMappedChannels() (Setup_8401HR.Setup_8401HR method)</a>
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._SetHighpass">_SetHighpass() (Setup_8401HR.Setup_8401HR static method)</a>
@@ -334,8 +324,6 @@
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._SetLowpass">_SetLowpass() (Setup_8401HR.Setup_8401HR static method)</a>
 </li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._SetNumberOfDevices">_SetNumberOfDevices() (Setup_PodInterface.Setup_Interface static method)</a>
-</li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._SetParam_allPODdevices">_SetParam_allPODdevices() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._SetPreampGain">_SetPreampGain() (Setup_8401HR.Setup_8401HR static method)</a>
 </li>
@@ -351,9 +339,13 @@
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._StreamAllDevices">_StreamAllDevices() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
+      <li><a href="Setup_8229.html#Setup_8229.Setup_8229._streamMode">_streamMode (Setup_8229.Setup_8229 attribute)</a>
+</li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._StreamThreading">_StreamThreading() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._StreamThreading">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._StreamThreading">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._StreamThreading">(Setup_PodInterface.Setup_Interface method)</a>
@@ -362,6 +354,8 @@
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR._StreamUntilStop">_StreamUntilStop() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229._StreamUntilStop">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._StreamUntilStop">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
       </ul></li>
@@ -371,17 +365,21 @@
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices._TimeFunc">_TimeFunc() (Setup_PodDevices.Setup_PodDevices static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._TranslateTTLByte">_TranslateTTLByte() (PodDevice_8401HR.POD_8401HR static method)</a>
-</li>
       <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_ASCII">_TranslateTTLbyte_ASCII() (PodDevice_8206HR.POD_8206HR static method)</a>
 </li>
       <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR._TranslateTTLbyte_Binary">_TranslateTTLbyte_Binary() (PodDevice_8206HR.POD_8206HR static method)</a>
 </li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._uV">_uV() (Setup_PodInterface.Setup_Interface static method)</a>
 </li>
-      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._ValidateChecksum">_ValidateChecksum() (BasicPodProtocol.POD_Basics static method)</a>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._Validate_Day">_Validate_Day() (PodDevice_8229.POD_8229 static method)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface._ValidateParams">_ValidateParams() (Setup_PodInterface.Setup_Interface method)</a>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._Validate_Hours">_Validate_Hours() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._Validate_Schedule">_Validate_Schedule() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229._Validate_Speed">_Validate_Speed() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics._ValidateChecksum">_ValidateChecksum() (BasicPodProtocol.POD_Basics static method)</a>
 </li>
       <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR._Voltage_PrimaryChannels">_Voltage_PrimaryChannels() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
@@ -410,6 +408,8 @@
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="PodCommands.html#PodCommands.POD_Commands.AddCommand">AddCommand() (PodCommands.POD_Commands method)</a>
+</li>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.AddPODdevice">AddPODdevice() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.AreDeviceParamsValid">AreDeviceParamsValid() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
@@ -458,13 +458,19 @@
         <li><a href="BasicPodProtocol.html#module-BasicPodProtocol">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.bias">bias (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt">BinaryBytesToInt() (PodPacketHandling.POD_Packets static method)</a>
 </li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BinaryBytesToInt_Split">BinaryBytesToInt_Split() (PodPacketHandling.POD_Packets static method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.BuildEmptySchedule">BuildEmptySchedule() (Setup_PodParameters.Params_8229 static method)</a>
+</li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.BuildPODpacket_Standard">BuildPODpacket_Standard() (PodPacketHandling.POD_Packets static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.BuildSetDayScheduleArgument">BuildSetDayScheduleArgument() (PodDevice_8229.POD_8229 static method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -482,11 +488,19 @@
 </li>
       <li><a href="GetUserInput.html#GetUserInput.UserInput.CastStr">CastStr() (GetUserInput.UserInput static method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.channelLabels">channelLabels (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      <li><a href="GetUserInput.html#GetUserInput.UserInput.CheckFileExt">CheckFileExt() (GetUserInput.UserInput static method)</a>
+</li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.Checksum">Checksum() (PodPacketHandling.POD_Packets static method)</a>
 </li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.CloseSerialPort">CloseSerialPort() (SerialCommunication.COM_io method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.CodeDayOfWeek">CodeDayOfWeek() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.CodeDaySchedule">CodeDaySchedule() (PodDevice_8229.POD_8229 static method)</a>
 </li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io">COM_io (class in SerialCommunication)</a>
 </li>
@@ -500,10 +514,24 @@
 <h2 id="D">D</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters">DisplayPODdeviceParameters() (Setup_PodInterface.Setup_Interface method)</a>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.dcMode">dcMode (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.DecodeDayOfWeek">DecodeDayOfWeek() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.DecodeDaySchedule">DecodeDaySchedule() (PodDevice_8229.POD_8229 static method)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.DecodeLCDSchedule">DecodeLCDSchedule() (PodDevice_8229.POD_8229 static method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask">DecodeSSConfigBitmask() (PodDevice_8401HR.POD_8401HR static method)</a>
+</li>
+      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.DecodeTTLByte">DecodeTTLByte() (PodDevice_8401HR.POD_8401HR static method)</a>
+</li>
+      <li><a href="PodCommands.html#PodCommands.POD_Commands.Description">Description() (PodCommands.POD_Commands method)</a>
+</li>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters">DisplayPODdeviceParameters() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
       <li><a href="PodCommands.html#PodCommands.POD_Commands.DoesCommandExist">DoesCommandExist() (PodCommands.POD_Commands method)</a>
 </li>
   </ul></td>
@@ -512,7 +540,27 @@
 <h2 id="E">E</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.EEG1">EEG1() (Setup_PodParameters.Params_8206HR method)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.EEG2">EEG2() (Setup_PodParameters.Params_8206HR method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.EEG3_EMG">EEG3_EMG() (Setup_PodParameters.Params_8206HR method)</a>
+</li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.ETX">ETX() (PodPacketHandling.POD_Packets static method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
+<h2 id="F">F</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Flush">Flush() (SerialCommunication.COM_io method)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.FlushPort">FlushPort() (BasicPodProtocol.POD_Basics method)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -528,39 +576,65 @@
 </li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetCOMportsList">GetCOMportsList() (SerialCommunication.COM_io static method)</a>
 </li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.GetCurrentTime">GetCurrentTime() (PodDevice_8229.POD_8229 static method)</a>
+</li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetDeviceCommands">GetDeviceCommands() (BasicPodProtocol.POD_Basics method)</a>
 </li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.GetDeviceName">GetDeviceName() (Setup_8206HR.Setup_8206HR static method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229.GetDeviceName">(Setup_8229.Setup_8229 static method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.GetDeviceName">(Setup_8401HR.Setup_8401HR static method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetDeviceName">(Setup_PodInterface.Setup_Interface static method)</a>
 </li>
       </ul></li>
+      <li><a href="GetUserInput.html#GetUserInput.UserInput.GetFileName">GetFileName() (GetUserInput.UserInput static method)</a>
+</li>
+      <li><a href="GetUserInput.html#GetUserInput.UserInput.GetFilePath">GetFilePath() (GetUserInput.UserInput static method)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.GetInit">GetInit() (Setup_PodParameters.Params_8206HR method)</a>
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.GetInit">(Setup_PodParameters.Params_8229 method)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.GetInit">(Setup_PodParameters.Params_8401HR method)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface.GetInit">(Setup_PodParameters.Params_Interface method)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices">GetNumberOfPODDevices() (BasicPodProtocol.POD_Basics static method)</a>
 </li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetOptions">GetOptions() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetPODpacket">GetPODpacket() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetPODparametersDict">GetPODparametersDict() (Setup_PodDevices.Setup_PodDevices method)</a>
+      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetPODparametersInit">GetPODparametersInit() (Setup_PodDevices.Setup_PodDevices method)</a>
 
       <ul>
-        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetPODparametersDict">(Setup_PodInterface.Setup_Interface method)</a>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetPODparametersInit">(Setup_PodInterface.Setup_Interface method)</a>
 </li>
       </ul></li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.GetPortName">GetPortName() (SerialCommunication.COM_io method)</a>
 </li>
-      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetSaveFileName">GetSaveFileName() (Setup_PodDevices.Setup_PodDevices method)</a>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetSaveFileName">GetSaveFileName() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask_int">GetSSConfigBitmask_int() (PodDevice_8401HR.POD_8401HR static method)</a>
+      <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.GetSaveFileNames">GetSaveFileNames() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
+      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask">GetSSConfigBitmask() (PodDevice_8401HR.POD_8401HR static method)</a>
+</li>
+      <li><a href="Setup_8229.html#Setup_8229.Setup_8229.GetSupportedFileExtensions">GetSupportedFileExtensions() (Setup_8229.Setup_8229 static method)</a>
+
+      <ul>
+        <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.GetSupportedFileExtensions">(Setup_PodInterface.Setup_Interface static method)</a>
+</li>
+      </ul></li>
       <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetSupportedPreampDevices">GetSupportedPreampDevices() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
-      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetTTLbitmask_Int">GetTTLbitmask_Int() (PodDevice_8401HR.POD_8401HR static method)</a>
+      <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.GetTTLbitmask">GetTTLbitmask() (PodDevice_8401HR.POD_8401HR static method)</a>
 </li>
       <li>
     GetUserInput
@@ -569,6 +643,18 @@
         <li><a href="GetUserInput.html#module-GetUserInput">module</a>
 </li>
       </ul></li>
+  </ul></td>
+</tr></table>
+
+<h2 id="H">H</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.highPass">highPass (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.hoursPerDay">hoursPerDay (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -590,9 +676,27 @@
   </ul></td>
 </tr></table>
 
+<h2 id="L">L</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.lowPass">lowPass (Setup_PodParameters.Params_8206HR attribute)</a>
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.lowPass">(Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.lowPassLabels">lowPassLabels (Setup_PodParameters.Params_8206HR attribute)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="M">M</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.mode">mode (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
       <li>
     module
 
@@ -605,6 +709,8 @@
 </li>
         <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">PodDevice_8206HR</a>
 </li>
+        <li><a href="PodDevice_8229.html#module-PodDevice_8229">PodDevice_8229</a>
+</li>
         <li><a href="PodDevice_8401HR.html#module-PodDevice_8401HR">PodDevice_8401HR</a>
 </li>
         <li><a href="PodPacketHandling.html#module-PodPacketHandling">PodPacketHandling</a>
@@ -613,13 +719,25 @@
 </li>
         <li><a href="Setup_8206HR.html#module-Setup_8206HR">Setup_8206HR</a>
 </li>
+        <li><a href="Setup_8229.html#module-Setup_8229">Setup_8229</a>
+</li>
         <li><a href="Setup_8401HR.html#module-Setup_8401HR">Setup_8401HR</a>
 </li>
         <li><a href="Setup_PodDevices.html#module-Setup_PodDevices">Setup_PodDevices</a>
 </li>
         <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">Setup_PodInterface</a>
 </li>
+        <li><a href="Setup_PodParameters.html#module-Setup_PodParameters">Setup_PodParameters</a>
+</li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.motorDirection">motorDirection (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.motorSpeed">motorSpeed (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.muxMode">muxMode (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
   </ul></td>
 </tr></table>
 
@@ -642,9 +760,19 @@
 <h2 id="P">P</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR">Params_8206HR (class in Setup_PodParameters)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229">Params_8229 (class in Setup_PodParameters)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR">Params_8401HR (class in Setup_PodParameters)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface">Params_Interface (class in Setup_PodParameters)</a>
+</li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.PayloadToBytes">PayloadToBytes() (PodPacketHandling.POD_Packets static method)</a>
 </li>
       <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR">POD_8206HR (class in PodDevice_8206HR)</a>
+</li>
+      <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229">POD_8229 (class in PodDevice_8229)</a>
 </li>
       <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR">POD_8401HR (class in PodDevice_8401HR)</a>
 </li>
@@ -661,13 +789,20 @@
         <li><a href="PodCommands.html#module-PodCommands">module</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li>
     PodDevice_8206HR
 
       <ul>
         <li><a href="PodDevice_8206HR.html#module-PodDevice_8206HR">module</a>
+</li>
+      </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li>
+    PodDevice_8229
+
+      <ul>
+        <li><a href="PodDevice_8229.html#module-PodDevice_8229">module</a>
 </li>
       </ul></li>
       <li>
@@ -684,12 +819,32 @@
         <li><a href="PodPacketHandling.html#module-PodPacketHandling">module</a>
 </li>
       </ul></li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.port">port (Setup_PodParameters.Params_8206HR attribute)</a>
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.port">(Setup_PodParameters.Params_8229 attribute)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.port">(Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface.port">(Setup_PodParameters.Params_Interface attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.preampDevice">preampDevice (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.preampGain">preampGain (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.preamplifierGain">preamplifierGain (Setup_PodParameters.Params_8206HR attribute)</a>
+</li>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.PrintSaveFile">PrintSaveFile() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
   </ul></td>
 </tr></table>
 
 <h2 id="R">R</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.randomReverse">randomReverse (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Read">Read() (SerialCommunication.COM_io method)</a>
 </li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.ReadLine">ReadLine() (SerialCommunication.COM_io method)</a>
@@ -706,6 +861,10 @@
 </li>
       <li><a href="PodCommands.html#PodCommands.POD_Commands.ReturnHexChar">ReturnHexChar() (PodCommands.POD_Commands method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.reverseBaseTime">reverseBaseTime (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.reverseVarTime">reverseVarTime (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.Run">Run() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
   </ul></td>
@@ -714,6 +873,16 @@
 <h2 id="S">S</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8206HR.sampleRate">sampleRate (Setup_PodParameters.Params_8206HR attribute)</a>
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.sampleRate">(Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
+      </ul></li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.schedule">schedule (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
+      <li><a href="PodCommands.html#PodCommands.POD_Commands.Search">Search() (PodCommands.POD_Commands method)</a>
+</li>
       <li>
     SerialCommunication
 
@@ -725,8 +894,6 @@
 </li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice">SetBaudrateOfDevice() (BasicPodProtocol.POD_Basics method)</a>
 </li>
-      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetFileName">SetFileName() (Setup_PodInterface.Setup_Interface method)</a>
-</li>
       <li>
     Setup_8206HR
 
@@ -735,6 +902,15 @@
 </li>
       </ul></li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR">Setup_8206HR (class in Setup_8206HR)</a>
+</li>
+      <li>
+    Setup_8229
+
+      <ul>
+        <li><a href="Setup_8229.html#module-Setup_8229">module</a>
+</li>
+      </ul></li>
+      <li><a href="Setup_8229.html#Setup_8229.Setup_8229">Setup_8229 (class in Setup_8229)</a>
 </li>
       <li>
     Setup_8401HR
@@ -765,6 +941,15 @@
         <li><a href="Setup_PodInterface.html#module-Setup_PodInterface">module</a>
 </li>
       </ul></li>
+      <li>
+    Setup_PodParameters
+
+      <ul>
+        <li><a href="Setup_PodParameters.html#module-Setup_PodParameters">module</a>
+</li>
+      </ul></li>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.SetupFileName">SetupFileName() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupPODparameters">SetupPODparameters() (Setup_PodDevices.Setup_PodDevices method)</a>
 
       <ul>
@@ -773,9 +958,13 @@
       </ul></li>
       <li><a href="Setup_PodDevices.html#Setup_PodDevices.Setup_PodDevices.SetupSaveFile">SetupSaveFile() (Setup_PodDevices.Setup_PodDevices method)</a>
 </li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.ssGain">ssGain (Setup_PodParameters.Params_8401HR attribute)</a>
+</li>
       <li><a href="Setup_8206HR.html#Setup_8206HR.Setup_8206HR.StopStream">StopStream() (Setup_8206HR.Setup_8206HR method)</a>
 
       <ul>
+        <li><a href="Setup_8229.html#Setup_8229.Setup_8229.StopStream">(Setup_8229.Setup_8229 method)</a>
+</li>
         <li><a href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR.StopStream">(Setup_8401HR.Setup_8401HR method)</a>
 </li>
         <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.StopStream">(Setup_PodInterface.Setup_Interface method)</a>
@@ -784,6 +973,8 @@
       <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.Stream">Stream() (Setup_PodInterface.Setup_Interface method)</a>
 </li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.STX">STX() (PodPacketHandling.POD_Packets static method)</a>
+</li>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.systemID">systemID (Setup_PodParameters.Params_8229 attribute)</a>
 </li>
   </ul></td>
 </tr></table>
@@ -796,9 +987,13 @@
       <ul>
         <li><a href="PodDevice_8206HR.html#PodDevice_8206HR.POD_8206HR.TranslatePODpacket">(PodDevice_8206HR.POD_8206HR method)</a>
 </li>
+        <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.TranslatePODpacket">(PodDevice_8229.POD_8229 method)</a>
+</li>
         <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket">(PodDevice_8401HR.POD_8401HR method)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Binary">TranslatePODpacket_Binary() (BasicPodProtocol.POD_Basics static method)</a>
 
       <ul>
@@ -807,8 +1002,6 @@
         <li><a href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.TranslatePODpacket_Binary">(PodDevice_8401HR.POD_8401HR method)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket_Standard">TranslatePODpacket_Standard() (BasicPodProtocol.POD_Basics method)</a>
 </li>
       <li><a href="PodPacketHandling.html#PodPacketHandling.POD_Packets.TwosComplement">TwosComplement() (PodPacketHandling.POD_Packets static method)</a>
@@ -842,15 +1035,29 @@
   </ul></td>
 </tr></table>
 
+<h2 id="V">V</h2>
+<table style="width: 100%" class="indextable genindextable"><tr>
+  <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodInterface.html#Setup_PodInterface.Setup_Interface.ValidateParams">ValidateParams() (Setup_PodInterface.Setup_Interface method)</a>
+</li>
+  </ul></td>
+</tr></table>
+
 <h2 id="W">W</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="Setup_PodParameters.html#Setup_PodParameters.Params_8229.week">week (Setup_PodParameters.Params_8229 attribute)</a>
+</li>
       <li><a href="SerialCommunication.html#SerialCommunication.COM_io.Write">Write() (SerialCommunication.COM_io method)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WritePacket">WritePacket() (BasicPodProtocol.POD_Basics method)</a>
+
+      <ul>
+        <li><a href="PodDevice_8229.html#PodDevice_8229.POD_8229.WritePacket">(PodDevice_8229.POD_8229 method)</a>
 </li>
+      </ul></li>
       <li><a href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.WriteRead">WriteRead() (BasicPodProtocol.POD_Basics method)</a>
 </li>
   </ul></td>
