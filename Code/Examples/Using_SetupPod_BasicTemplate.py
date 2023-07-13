@@ -19,7 +19,6 @@ __email__       = "sales@pinnaclet.com"
 
 # setup 8206HR devices for streaming
 go = Setup_PodDevices()
-print("run testing")
 go.Run()
 
 
