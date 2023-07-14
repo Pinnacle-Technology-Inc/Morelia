@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GetUserInput module &mdash; Python POD API v1.2.0 documentation</title>
+  <title>GetUserInput module &mdash; Python POD API v1.3.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -48,6 +48,7 @@
 <li class="toctree-l2"><a class="reference internal" href="BasicPodProtocol.html">BasicPodProtocol module</a></li>
 <li class="toctree-l2 current"><a class="current reference internal" href="#">GetUserInput module</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#GetUserInput.UserInput"><code class="docutils literal notranslate"><span class="pre">UserInput</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#GetUserInput.UserInput.AskForBool"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForBool()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#GetUserInput.UserInput.AskForFloat"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloat()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#GetUserInput.UserInput.AskForFloatInList"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloatInList()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#GetUserInput.UserInput.AskForFloatInRange"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloatInRange()</span></code></a></li>
@@ -74,11 +75,13 @@
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8480SC.html">PodDevice_8480SC module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8480SC.html">Setup_8480SC module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
@@ -118,6 +121,23 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">GetUserInput.</span></span><span class="sig-name descname"><span class="pre">UserInput</span></span><a class="headerlink" href="#GetUserInput.UserInput" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>UserInput contains several methods for getting user input for POD device setup.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="GetUserInput.UserInput.AskForBool">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AskForBool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#GetUserInput.UserInput.AskForBool" title="Permalink to this definition"></a></dt>
+<dd><p>Asks user for bool type input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>prompt</strong> (<em>str</em>) – Statement requesting input from the user.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Boolean type input from user.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="GetUserInput.UserInput.AskForFloat">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AskForFloat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prompt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#GetUserInput.UserInput.AskForFloat" title="Permalink to this definition"></a></dt>
@@ -208,7 +228,7 @@
 <dd class="field-odd"><p><strong>prompt</strong> (<em>str</em>) – Statement requesting input from the user.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>integer type input from user.</p>
+<dd class="field-even"><p>Integer type input from user.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>int</p>

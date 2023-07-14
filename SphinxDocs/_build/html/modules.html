@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>API_Modules &mdash; Python POD API v1.2.0 documentation</title>
+  <title>API_Modules &mdash; Python POD API v1.3.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -51,11 +51,13 @@
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8206HR.html">PodDevice_8206HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8229.html">PodDevice_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodDevice_8401HR.html">PodDevice_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8480SC.html">PodDevice_8480SC module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="PodPacketHandling.html">PodPacketHandling module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="SerialCommunication.html">SerialCommunication module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8206HR.html">Setup_8206HR module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8229.html">Setup_8229 module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_8401HR.html">Setup_8401HR module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8480SC.html">Setup_8480SC module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodDevices.html">Setup_PodDevices module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodInterface.html">Setup_PodInterface module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html">Setup_PodParameters module</a></li>
@@ -99,6 +101,7 @@
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetDeviceCommands"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetDeviceCommands()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetNumberOfPODDevices"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetNumberOfPODDevices()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetPODpacket()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.GetU"><code class="docutils literal notranslate"><span class="pre">POD_Basics.GetU()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.ReadPODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.ReadPODpacket()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.SetBaudrateOfDevice"><code class="docutils literal notranslate"><span class="pre">POD_Basics.SetBaudrateOfDevice()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="BasicPodProtocol.html#BasicPodProtocol.POD_Basics.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_Basics.TranslatePODpacket()</span></code></a></li>
@@ -124,6 +127,7 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="GetUserInput.html">GetUserInput module</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="GetUserInput.html#GetUserInput.UserInput"><code class="docutils literal notranslate"><span class="pre">UserInput</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="GetUserInput.html#GetUserInput.UserInput.AskForBool"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForBool()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="GetUserInput.html#GetUserInput.UserInput.AskForFloat"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloat()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInList"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloatInList()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="GetUserInput.html#GetUserInput.UserInput.AskForFloatInRange"><code class="docutils literal notranslate"><span class="pre">UserInput.AskForFloatInRange()</span></code></a></li>
@@ -163,6 +167,7 @@
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.ReturnHexChar"><code class="docutils literal notranslate"><span class="pre">POD_Commands.ReturnHexChar()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.Search"><code class="docutils literal notranslate"><span class="pre">POD_Commands.Search()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.U16"><code class="docutils literal notranslate"><span class="pre">POD_Commands.U16()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.U32"><code class="docutils literal notranslate"><span class="pre">POD_Commands.U32()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.U8"><code class="docutils literal notranslate"><span class="pre">POD_Commands.U8()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__ARGUMENTS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__ARGUMENTS</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__BINARY"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__BINARY</span></code></a></li>
@@ -171,6 +176,7 @@
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__NOVALUE"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__NOVALUE</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__RETURNS"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__RETURNS</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__U16"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U16</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__U32"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U32</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodCommands.html#PodCommands.POD_Commands.__U8"><code class="docutils literal notranslate"><span class="pre">POD_Commands.__U8</span></code></a></li>
 </ul>
 </li>
@@ -237,6 +243,19 @@
 <li class="toctree-l3"><a class="reference internal" href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5BINARYLENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.__B5BINARYLENGTH</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__B5LENGTH"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.__B5LENGTH</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="PodDevice_8401HR.html#PodDevice_8401HR.POD_8401HR.__CHANNELMAPALL"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.__CHANNELMAPALL</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="PodDevice_8480SC.html">PodDevice_8480SC module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC"><code class="docutils literal notranslate"><span class="pre">POD_8480SC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.DecodeStimulusConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.DecodeStimulusConfigBits()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.DecodeSyncConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.DecodeSyncConfigBits()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.DecodeTTlConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.DecodeTTlConfigBits()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.StimulusConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.StimulusConfigBits()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.SyncConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.SyncConfigBits()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.TranslatePODpacket"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.TranslatePODpacket()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="PodDevice_8480SC.html#PodDevice_8480SC.POD_8480SC.TtlConfigBits"><code class="docutils literal notranslate"><span class="pre">POD_8480SC.TtlConfigBits()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -340,6 +359,29 @@
 <li class="toctree-l3"><a class="reference internal" href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._StreamUntilStop()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._WriteDataToFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._WriteDataToFile_EDF()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="Setup_8401HR.html#Setup_8401HR.Setup_8401HR._WriteDataToFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._WriteDataToFile_TXT()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Setup_8480SC.html">Setup_8480SC module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._streamMode"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._streamMode</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.GetDeviceName()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.GetSupportedFileExtensions()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.StopStream()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ChoosePeriod"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChoosePeriod()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ChooseRepeat"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseRepeat()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ChooseStimulusConfig"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseStimulusConfig()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ChooseSyncConfig"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseSyncConfig()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ChooseWidth"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseWidth()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._OpenSaveFile_EDF()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._OpenSaveFile_TXT()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._StreamThreading()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._StreamUntilStop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_8480SC.html#Setup_8480SC.Setup_8480SC._TtlSetup"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._TtlSetup()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -467,6 +509,23 @@
 <li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.GetInit"><code class="docutils literal notranslate"><span class="pre">Params_8401HR.GetInit()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR._CheckParams"><code class="docutils literal notranslate"><span class="pre">Params_8401HR._CheckParams()</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8401HR.channelLabels"><code class="docutils literal notranslate"><span class="pre">Params_8401HR.channelLabels</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC"><code class="docutils literal notranslate"><span class="pre">Params_8480SC</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.port"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.port</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.stimulus"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.stimulus</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.preamp"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.preamp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.ledCurrent"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.ledCurrent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.ttlPUllups"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.ttlPUllups</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.estimCurrent"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.estimCurrent</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.syncConfig"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.syncConfig</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.ttlSetup"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.ttlSetup</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.GetInit"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.GetInit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC._CheckParams"><code class="docutils literal notranslate"><span class="pre">Params_8480SC._CheckParams()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.estimCurrent_CH0"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.estimCurrent_CH0()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.estimCurrent_CH1"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.estimCurrent_CH1()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.ledCurrent_CH0"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.ledCurrent_CH0()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_8480SC.ledCurrent_CH1"><code class="docutils literal notranslate"><span class="pre">Params_8480SC.ledCurrent_CH1()</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup_PodParameters.html#Setup_PodParameters.Params_Interface"><code class="docutils literal notranslate"><span class="pre">Params_Interface</span></code></a><ul>

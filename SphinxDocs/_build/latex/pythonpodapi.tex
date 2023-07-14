@@ -64,8 +64,8 @@
 
 
 \title{Python POD API}
-\date{Jul 12, 2023}
-\release{v1.2.0}
+\date{Jul 14, 2023}
+\release{v1.3.0}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -248,6 +248,32 @@ Bytes string of the POD packet.
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
 bytes
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{GetU() (BasicPodProtocol.POD\_Basics static method)@\spxentry{GetU()}\spxextra{BasicPodProtocol.POD\_Basics static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics.GetU}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetU}}}{\sphinxparam{\DUrole{n,n}{u}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+number of hexadecimal characters for an unsigned u\sphinxhyphen{}bit value.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{u}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} 8, 16, or 32 bits. Enter any other number for NOVALUE.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+number of hexadecimal characters for an unsigned u\sphinxhyphen{}bit value.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
 
 \end{description}\end{quote}
 
@@ -806,6 +832,32 @@ Bases: \sphinxcode{\sphinxupquote{object}}
 
 \sphinxAtStartPar
 UserInput contains several methods for getting user input for POD device setup.
+\index{AskForBool() (GetUserInput.UserInput static method)@\spxentry{AskForBool()}\spxextra{GetUserInput.UserInput static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{GetUserInput:GetUserInput.UserInput.AskForBool}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{AskForBool}}}{\sphinxparam{\DUrole{n,n}{prompt}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks user for bool type input.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{prompt}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} Statement requesting input from the user.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Boolean type input from user.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{AskForFloat() (GetUserInput.UserInput static method)@\spxentry{AskForFloat()}\spxextra{GetUserInput.UserInput static method}}
 
 \begin{fulllineitems}
@@ -963,7 +1015,7 @@ Asks user for int type input.
 
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-integer type input from user.
+Integer type input from user.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
@@ -1824,6 +1876,28 @@ int
 
 \end{fulllineitems}
 
+\index{U32() (PodCommands.POD\_Commands static method)@\spxentry{U32()}\spxextra{PodCommands.POD\_Commands static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.U32}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{U32}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets value of \_\_U32.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Value of \_\_U32.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{U8() (PodCommands.POD\_Commands static method)@\spxentry{U8()}\spxextra{PodCommands.POD\_Commands static method}}
 
 \begin{fulllineitems}
@@ -1927,6 +2001,18 @@ Class\sphinxhyphen{}level integer representing the index key for the number of b
 \pysigstopsignatures
 \sphinxAtStartPar
 Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an     unsigned 16\sphinxhyphen{}bit value.
+
+\end{fulllineitems}
+
+\index{\_\_U32 (PodCommands.POD\_Commands attribute)@\spxentry{\_\_U32}\spxextra{PodCommands.POD\_Commands attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodCommands:PodCommands.POD_Commands.__U32}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_\_U32}}\sphinxbfcode{\sphinxupquote{\DUrole{p,p}{:}\DUrole{w,w}{  }int}}\sphinxbfcode{\sphinxupquote{\DUrole{w,w}{  }\DUrole{p,p}{=}\DUrole{w,w}{  }8}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Class\sphinxhyphen{}level integer representing the number of hexadecimal characters for an     unsigned 32\sphinxhyphen{}bit value.
 
 \end{fulllineitems}
 
@@ -2436,7 +2522,7 @@ tuple{[}int{]}
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{TranslatePODpacket}}}{\sphinxparam{\DUrole{n,n}{msg}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Overwrites the parent’s method. Adds an addittional check to handle specially formatted         payloads.
+Overwrites the parent’s method. Adds an additional check to handle specially formatted         payloads.
 \begin{quote}\begin{description}
 \sphinxlineitem{Parameters}
 \sphinxAtStartPar
@@ -3298,6 +3384,244 @@ Class\sphinxhyphen{}level integer representing the number of bytes for a Binary 
 \pysigstopsignatures
 \sphinxAtStartPar
 Class\sphinxhyphen{}level dictionary containing the channel map for     all preamplifier devices.
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+\sphinxstepscope
+
+
+\section{PodDevice\_8480SC module}
+\label{\detokenize{PodDevice_8480SC:module-PodDevice_8480SC}}\label{\detokenize{PodDevice_8480SC:poddevice-8480sc-module}}\label{\detokenize{PodDevice_8480SC::doc}}\index{module@\spxentry{module}!PodDevice\_8480SC@\spxentry{PodDevice\_8480SC}}\index{PodDevice\_8480SC@\spxentry{PodDevice\_8480SC}!module@\spxentry{module}}
+\sphinxAtStartPar
+POD\_8480SC handles communication using an 8480\sphinxhyphen{}SC POD device.
+\index{POD\_8480SC (class in PodDevice\_8480SC)@\spxentry{POD\_8480SC}\spxextra{class in PodDevice\_8480SC}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class\DUrole{w,w}{  }}}\sphinxcode{\sphinxupquote{PodDevice\_8480SC.}}\sphinxbfcode{\sphinxupquote{POD\_8480SC}}}{\sphinxparam{\DUrole{n,n}{port}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }int}}, \sphinxparam{\DUrole{n,n}{baudrate}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{9600}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Bases: {\hyperref[\detokenize{BasicPodProtocol:BasicPodProtocol.POD_Basics}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{POD\_Basics}}}}}
+
+\sphinxAtStartPar
+POD\_8480SC handles communication using an 8480\sphinxhyphen{}SC POD device.
+\index{DecodeStimulusConfigBits() (PodDevice\_8480SC.POD\_8480SC method)@\spxentry{DecodeStimulusConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.DecodeStimulusConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{DecodeStimulusConfigBits}}}{\sphinxparam{\DUrole{n,n}{config}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ dict}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{config}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} an integer is passed in, and it represents the Config Flag byte.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Keys as the names of the bits, the values representing values at each bit.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{DecodeSyncConfigBits() (PodDevice\_8480SC.POD\_8480SC method)@\spxentry{DecodeSyncConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.DecodeSyncConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{DecodeSyncConfigBits}}}{\sphinxparam{\DUrole{n,n}{config}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ dict}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{config}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} an integer is passed in, and it represents the Sync Config Flag byte.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Keys as the names of the bits, the values representing values at each bit.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{DecodeTTlConfigBits() (PodDevice\_8480SC.POD\_8480SC method)@\spxentry{DecodeTTlConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.DecodeTTlConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{DecodeTTlConfigBits}}}{\sphinxparam{\DUrole{n,n}{config}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ dict}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{config}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} an integer is passed in, and it represents the TTL Setup Config Flag Byte.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Keys as the names of the bits, the values representing values at each bit.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{StimulusConfigBits() (PodDevice\_8480SC.POD\_8480SC static method)@\spxentry{StimulusConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.StimulusConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{StimulusConfigBits}}}{\sphinxparam{\DUrole{n,n}{optoElec}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{monoBiphasic}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{Simul}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload         to command \#102 ‘SET STIMULUS’.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{optoElec}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit  is Opto/Electrical.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{monoBiphasic}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 1 is Monophasic/Biphasic.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Simul}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 2 is Simultaneous.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+which represents the Config flag byte in the Stimulus Command.                 The return value is the seventh item in the payload for command ‘SET STIMULUS’.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{SyncConfigBits() (PodDevice\_8480SC.POD\_8480SC static method)@\spxentry{SyncConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.SyncConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{SyncConfigBits}}}{\sphinxparam{\DUrole{n,n}{sync\_level}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{sync\_idle}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{signal\_trigger}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Incoming inputs are bitmasked into an integer value. This value is later given         as the payload to command \#127 ‘SET SYNC CONFIG’.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{sync\_level}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 0 is Sync Level.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{sync\_idle}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 1 is Stimulus Triggering.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{signal\_trigger}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 2 is Signal/Trigger.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+which represents the Sync Config Bits format value.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{TranslatePODpacket() (PodDevice\_8480SC.POD\_8480SC method)@\spxentry{TranslatePODpacket()}\spxextra{PodDevice\_8480SC.POD\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.TranslatePODpacket}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{TranslatePODpacket}}}{\sphinxparam{\DUrole{n,n}{msg}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }bytes\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Overwrites the parent’s method. Adds an additional check to handle specially formatted         payloads.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{msg}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing a POD packet.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+A translated POD packet, which has Command Number and Payload                 keys. There are 3 special commands in the 8480 Device, and the payload will be uniquely formatted                 to fit these commands.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int|dict{[}str,int{]}{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{TtlConfigBits() (PodDevice\_8480SC.POD\_8480SC static method)@\spxentry{TtlConfigBits()}\spxextra{PodDevice\_8480SC.POD\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC.TtlConfigBits}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{TtlConfigBits}}}{\sphinxparam{\DUrole{n,n}{trigger}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{stimtrig}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{input\_sync}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to         command \#109 ‘SET TTL SETUP’. This commands accepts 3 items in the payload, and the return value of this function         is given as the second item.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{trigger}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 0 is 0 for rising edge, 1 for falling edge.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{stimtrig}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 1 is  0 for TTL event notifications, 1 for TTL inputs as triggers.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{input\_sync}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} Bit 7 is 0 for normal TTL operation, 1 for TTL pin operates as a sync output.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+which represents the TTL Config Bits Format value.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
 
 \end{fulllineitems}
 
@@ -5299,6 +5623,411 @@ Writes data to an open text file.
 \sphinxstyleliteralstrong{\sphinxupquote{t}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}) \textendash{} list with the time stamps (in seconds).
 
 \end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
+
+\sphinxstepscope
+
+
+\section{Setup\_8480SC module}
+\label{\detokenize{Setup_8480SC:module-Setup_8480SC}}\label{\detokenize{Setup_8480SC:setup-8480sc-module}}\label{\detokenize{Setup_8480SC::doc}}\index{module@\spxentry{module}!Setup\_8480SC@\spxentry{Setup\_8480SC}}\index{Setup\_8480SC@\spxentry{Setup\_8480SC}!module@\spxentry{module}}\index{Setup\_8480SC (class in Setup\_8480SC)@\spxentry{Setup\_8480SC}\spxextra{class in Setup\_8480SC}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{class\DUrole{w,w}{  }}}\sphinxcode{\sphinxupquote{Setup\_8480SC.}}\sphinxbfcode{\sphinxupquote{Setup\_8480SC}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Bases: {\hyperref[\detokenize{Setup_PodInterface:Setup_PodInterface.Setup_Interface}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{Setup\_Interface}}}}}
+
+\sphinxAtStartPar
+Setup\_8480SC provides the setup functions for an 8480\sphinxhyphen{}SC POD device.
+\index{\_streamMode (Setup\_8480SC.Setup\_8480SC attribute)@\spxentry{\_streamMode}\spxextra{Setup\_8480SC.Setup\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._streamMode}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_streamMode}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Set to True when the user wants to start streaming data from             an 8480 POD device, False otherwise.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{GetDeviceName() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{GetDeviceName()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC.GetDeviceName}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetDeviceName}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Returns the name of the POD device.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String of \_NAME.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{GetSupportedFileExtensions() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{GetSupportedFileExtensions()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC.GetSupportedFileExtensions}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetSupportedFileExtensions}}}{}{{ $\rightarrow$ list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Returns a list containing valid file extensions.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+List of string file extensions.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+list{[}str{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{StopStream() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{StopStream()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC.StopStream}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{StopStream}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Update the state flag to signal to stop streaming data.
+
+\end{fulllineitems}
+
+\index{\_ChoosePeriod() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_ChoosePeriod()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ChoosePeriod}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChoosePeriod}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user an input value for Stimulus Period, which is then seperated into Period\_ms and Period\_us.            Seperation is required because the ‘SET STIMULUS’ requires 7 items in payload, and the second and third items            is the Period\_ms and Period\_us.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Formatted period into millisecs and microsecs.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ChooseRepeat() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_ChooseRepeat()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ChooseRepeat}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChooseRepeat}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input a value for the number of stimulus pulses to perform.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+representing repeat count for command ‘SET STIMULUS’.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ChooseStimulusConfig() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_ChooseStimulusConfig()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ChooseStimulusConfig}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChooseStimulusConfig}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input values for Config format of Stimulus
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Formatted Stimulus Config value.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+(int)
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ChooseSyncConfig() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_ChooseSyncConfig()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ChooseSyncConfig}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChooseSyncConfig}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input values for Sync Config bits.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Value calculated from the input bits, this value would be given as payload.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ChooseWidth() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_ChooseWidth()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ChooseWidth}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_ChooseWidth}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user an input value for Stimulus width, which is then seperated into width\_ms and width\_us.         Seperation is required because the ‘SET STIMULUS’ requires 7 items in payload, and the fourth and fifth items         is the width\_ms and width\_us.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Formatted given width into millisecs and microsecs
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_ConnectPODdevice() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_ConnectPODdevice()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._ConnectPODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectPODdevice}}}{\sphinxparam{\DUrole{n,n}{deviceNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{deviceParams}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC}]{\sphinxcrossref{Params\_8480SC}}}}}}{{ $\rightarrow$ bool}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Creates a POD\_8206HR object and write the setup parameters to it.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer of the device’s number.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{deviceParams}} ({\hyperref[\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC}]{\sphinxcrossref{\sphinxstyleliteralemphasis{\sphinxupquote{Params\_8480SC}}}}}) \textendash{} Device parameters.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+True if connection was successful, false otherwise.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+bool
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetPODdeviceParameterTable() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_GetPODdeviceParameterTable()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._GetPODdeviceParameterTable}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetPODdeviceParameterTable}}}{}{{ $\rightarrow$ Texttable}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a table containing the parameters for all POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Texttable containing all parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+Texttable
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_GetParam\_onePODdevice() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_GetParam\_onePODdevice()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._GetParam_onePODdevice}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_GetParam\_onePODdevice}}}{\sphinxparam{\DUrole{n,n}{forbiddenNames}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{{[}{]}}}}{{ $\rightarrow$ {\hyperref[\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC}]{\sphinxcrossref{Params\_8480SC}}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input all the device parameters.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{forbiddenNames}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of port names already used by other devices.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Device parameters.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+{\hyperref[\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC}]{\sphinxcrossref{Params\_8480SC}}}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_EDF() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._OpenSaveFile_EDF}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+EDF files are not supported for 8480 POD devices. Overwrites the         parent’s method, which would open an EDF file and write the header.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename. Not used.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number. Not used.
+
+\end{itemize}
+
+\sphinxlineitem{Raises}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} EDF filetype is not supported for 8480 POD devices.
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_OpenSaveFile\_TXT() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._OpenSaveFile_TXT}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a text file and writes the column names. Writes the current date/time             at the top of the txt file.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Opened file.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+IOBase
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamThreading() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_StreamThreading()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._StreamThreading}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Opens a save file, then creates a thread for each device to stream and write         data from.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with keys as the device number and values as the                 started Thread.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}int,Thread{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_StreamUntilStop() (Setup\_8480SC.Setup\_8480SC method)@\spxentry{\_StreamUntilStop()}\spxextra{Setup\_8480SC.Setup\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._StreamUntilStop}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamUntilStop}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodDevice_8480SC:PodDevice_8480SC.POD_8480SC}]{\sphinxcrossref{POD\_8480SC}}}}}, \sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase}}}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Saves a log of all packets recieved from the 8480 POD device until the user decides         to stop streaming.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{pod}} (\sphinxstyleliteralemphasis{\sphinxupquote{POD\_8480}}) \textendash{} POD device to read from.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}) \textendash{} Opened text file to save data to.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_TtlSetup() (Setup\_8480SC.Setup\_8480SC static method)@\spxentry{\_TtlSetup()}\spxextra{Setup\_8480SC.Setup\_8480SC static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_8480SC:Setup_8480SC.Setup_8480SC._TtlSetup}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_TtlSetup}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Asks the user to input values for Config format values of TTL Setup.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Formatted TTL Setup config value.
 
 \end{description}\end{quote}
 
@@ -7443,6 +8172,304 @@ Tuple listing the four channel characters in order.
 
 \end{fulllineitems}
 
+\index{Params\_8480SC (class in Setup\_PodParameters)@\spxentry{Params\_8480SC}\spxextra{class in Setup\_PodParameters}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{class\DUrole{w,w}{  }}}\sphinxcode{\sphinxupquote{Setup\_PodParameters.}}\sphinxbfcode{\sphinxupquote{Params\_8480SC}}}{\sphinxparam{port: str, stimulus=tuple{[}int{]}, preamp=\textless{}class \textquotesingle{}int\textquotesingle{}\textgreater{}, ledCurrent=tuple{[}int{]}, ttlPullups=\textless{}class \textquotesingle{}int\textquotesingle{}\textgreater{}, estimCurrent=tuple{[}int{]}, syncConfig=\textless{}class \textquotesingle{}int\textquotesingle{}\textgreater{}, ttlSetup=tuple{[}int{]}, checkForValidParams: bool = True}}{}
+\pysigstopsignatures
+\sphinxAtStartPar
+Bases: {\hyperref[\detokenize{Setup_PodParameters:Setup_PodParameters.Params_Interface}]{\sphinxcrossref{\sphinxcode{\sphinxupquote{Params\_Interface}}}}}
+
+\sphinxAtStartPar
+Container class that stores parameters for an 8401\sphinxhyphen{}HR POD device.
+\index{port (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{port}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.port}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{port}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Name of the COM port.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{stimulus (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{stimulus}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.stimulus}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{stimulus}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Stimulus configuration on selected channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{preamp (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{preamp}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.preamp}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{preamp}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Preamp value (0\sphinxhyphen{}1023).
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{ledCurrent (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{ledCurrent}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.ledCurrent}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{ledCurrent}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Led\sphinxhyphen{}Current (0\sphinxhyphen{}600 mA) for both channels.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{ttlPUllups (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{ttlPUllups}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.ttlPUllups}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{ttlPUllups}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+pullups disabled for value 0, pullups enabled for values that are non\sphinxhyphen{}zero.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{estimCurrent (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{estimCurrent}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.estimCurrent}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{estimCurrent}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Estim\sphinxhyphen{}Current (0\sphinxhyphen{}100 \%) for both channels.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{syncConfig (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{syncConfig}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.syncConfig}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{syncConfig}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Sets Sync\sphinxhyphen{}Config byte.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{ttlSetup (Setup\_PodParameters.Params\_8480SC attribute)@\spxentry{ttlSetup}\spxextra{Setup\_PodParameters.Params\_8480SC attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.ttlSetup}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{ttlSetup}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+TTL\sphinxhyphen{}Setup for selected channel.
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+tuple{[}int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{GetInit() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{GetInit()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.GetInit}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{GetInit}}}{}{{ $\rightarrow$ str}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Builds a string that represents the Params\_8480SC constructor with the         arguments set to the values of this class instance.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+String that represents the Params\_8480SC constructor.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+str
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{\_CheckParams() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{\_CheckParams()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC._CheckParams}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_CheckParams}}}{}{{ $\rightarrow$ None}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Throws an exception if Params\_8206HR member variable is an invalid value.
+\begin{quote}\begin{description}
+\sphinxlineitem{Raises}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} The preamp must be between 0\sphinxhyphen{}1023.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Led\sphinxhyphen{}Curent must be between 0\sphinxhyphen{}600.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} Estim\sphinxhyphen{}Current must be between 0\sphinxhyphen{}100.
+
+\end{itemize}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{estimCurrent\_CH0() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{estimCurrent\_CH0()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.estimCurrent_CH0}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{estimCurrent\_CH0}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets the estimCurrent value for Channel 0.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Channel 0 estimCurrent in percentage.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{estimCurrent\_CH1() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{estimCurrent\_CH1()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.estimCurrent_CH1}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{estimCurrent\_CH1}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets the estimCurrent value for Channel 1.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Channel 1 estimCurrent in percentage.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{ledCurrent\_CH0() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{ledCurrent\_CH0()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.ledCurrent_CH0}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{ledCurrent\_CH0}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets he ledCurrent value for Channel 0.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Channel 0 ledCurrent in mA.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{ledCurrent\_CH1() (Setup\_PodParameters.Params\_8480SC method)@\spxentry{ledCurrent\_CH1()}\spxextra{Setup\_PodParameters.Params\_8480SC method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup_PodParameters:Setup_PodParameters.Params_8480SC.ledCurrent_CH1}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{ledCurrent\_CH1}}}{}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets he ledCurrent value for Channel 1.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Channel 1 ledCurrent in mA.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+
+\end{fulllineitems}
+
 \index{Params\_Interface (class in Setup\_PodParameters)@\spxentry{Params\_Interface}\spxextra{class in Setup\_PodParameters}}
 
 \begin{fulllineitems}
@@ -7582,6 +8609,7 @@ tuple{[}type{]}
 \item\relax\sphinxstyleindexentry{PodDevice\_8206HR}\sphinxstyleindexpageref{PodDevice_8206HR:\detokenize{module-PodDevice_8206HR}}
 \item\relax\sphinxstyleindexentry{PodDevice\_8229}\sphinxstyleindexpageref{PodDevice_8229:\detokenize{module-PodDevice_8229}}
 \item\relax\sphinxstyleindexentry{PodDevice\_8401HR}\sphinxstyleindexpageref{PodDevice_8401HR:\detokenize{module-PodDevice_8401HR}}
+\item\relax\sphinxstyleindexentry{PodDevice\_8480SC}\sphinxstyleindexpageref{PodDevice_8480SC:\detokenize{module-PodDevice_8480SC}}
 \item\relax\sphinxstyleindexentry{PodPacketHandling}\sphinxstyleindexpageref{PodPacketHandling:\detokenize{module-PodPacketHandling}}
 \indexspace
 \bigletter{s}
@@ -7589,6 +8617,7 @@ tuple{[}type{]}
 \item\relax\sphinxstyleindexentry{Setup\_8206HR}\sphinxstyleindexpageref{Setup_8206HR:\detokenize{module-Setup_8206HR}}
 \item\relax\sphinxstyleindexentry{Setup\_8229}\sphinxstyleindexpageref{Setup_8229:\detokenize{module-Setup_8229}}
 \item\relax\sphinxstyleindexentry{Setup\_8401HR}\sphinxstyleindexpageref{Setup_8401HR:\detokenize{module-Setup_8401HR}}
+\item\relax\sphinxstyleindexentry{Setup\_8480SC}\sphinxstyleindexpageref{Setup_8480SC:\detokenize{module-Setup_8480SC}}
 \item\relax\sphinxstyleindexentry{Setup\_PodDevices}\sphinxstyleindexpageref{Setup_PodDevices:\detokenize{module-Setup_PodDevices}}
 \item\relax\sphinxstyleindexentry{Setup\_PodInterface}\sphinxstyleindexpageref{Setup_PodInterface:\detokenize{module-Setup_PodInterface}}
 \item\relax\sphinxstyleindexentry{Setup\_PodParameters}\sphinxstyleindexpageref{Setup_PodParameters:\detokenize{module-Setup_PodParameters}}
