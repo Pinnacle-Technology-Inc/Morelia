@@ -297,15 +297,11 @@ class POD_8401HR(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
         # these commands have some specific formatting 
-        specialCommands = [127, 128, 129, 130] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS # 130 GET SS CONFIG
+        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            # 130 GET SS CONFIG
-            if( cmd == 130 ) :
-                transdict['Payload'] = self.DecodeSSConfigBitmask(msgDict['Payload'])
-            # TTL 
-            else : 
+            if('Payload' in msgDict) : 
                 transdict['Payload'] = ( self.DecodeTTLByte(msgDict['Payload'][:2]), self.DecodeTTLByte(msgDict['Payload'][2:]))
             return(transdict)
         # message is binary 
@@ -423,7 +419,8 @@ class POD_8401HR(POD_Basics) :
     
     @staticmethod
     def DecodeSSConfigBitmask(config: bytes) : 
-        """Converts the SS configuration byte to a dictionary with the high-pass and gain. 
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain. \
+        Use for 'GET SS CONFIG' command payloads.
 
         Args:
             config (bytes): U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, \
@@ -435,7 +432,7 @@ class POD_8401HR(POD_Basics) :
         else: 
             highpass = 0.0 # Bit 0 = 1 for DC Highpass
         # gain 
-        if(POD_Packets.AsciiBytesToInt(config[1,2]) == 0) :
+        if(POD_Packets.AsciiBytesToInt(config[1:2]) == 0) :
             gain = 5 # Bit 1 = 0 for 5x gain
         else : 
             gain = 1 # Bit 1 = 1 for 1x gain
@@ -444,7 +441,44 @@ class POD_8401HR(POD_Basics) :
             'High-pass' : highpass, 
             'Gain'      : gain
         })
-    
+        
+
+    @staticmethod
+    def GetChannelBitmask(a: bool, b: bool, c: bool, d: bool) -> int :
+        """Gets a bitmask, represented by an unsigned integer, used for 'SET INPUT GROUND' command. 
+
+        Args:
+            a (bool): State for channel A, 0=Grounded and 1=Connected to Preamp.
+            b (bool): State for channel B, 0=Grounded and 1=Connected to Preamp.
+            c (bool): State for channel C, 0=Grounded and 1=Connected to Preamp.
+            d (bool): State for channel D, 0=Grounded and 1=Connected to Preamp.
+
+        Returns:
+            int: Integer representing a bitmask.
+        """
+        return( 0 | (d << 3) | (c << 2) | (b << 1) | a )
+
+
+    @staticmethod
+    def DecodeChannelBitmask(channels: bytes) -> dict[str,int] :
+        """Converts the channel bitmask byte to a dictionary with each channel value. \
+        Use for 'GET INPUT GROUND' command payloads.
+
+        Args:
+            channels (bytes): U8 byte containing the channel configuration. 
+
+        Returns:
+            dict[str,int]: Dictionary with the channels as keys and values as the state. \
+                0=Grounded and 1=Connected to Preamp.
+        """
+        return({
+            'A' : POD_Packets.ASCIIbytesToInt_Split(channels, 4, 3),
+            'B' : POD_Packets.ASCIIbytesToInt_Split(channels, 3, 2),
+            'C' : POD_Packets.ASCIIbytesToInt_Split(channels, 2, 1),
+            'D' : POD_Packets.ASCIIbytesToInt_Split(channels, 1, 0)
+        })
+
+
     # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
