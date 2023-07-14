@@ -533,7 +533,7 @@ class Setup_Interface :
         if(ext=='.csv' or ext=='.txt') :    f = self._OpenSaveFile_TXT(fname)
         elif(ext=='.edf') :                 f = self._OpenSaveFile_EDF(fname, devNum)
         return(f)
-    
+        
 
     def _BuildFileName(self, devNum: int) -> str : 
         """Appends the device name and number to the end of the file name. 

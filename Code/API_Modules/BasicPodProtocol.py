@@ -58,6 +58,7 @@ class POD_Basics :
         # initialize serial port 
         self._port : COM_io = COM_io(port, baudrate)
         # create object to handle commands 
+        #print(port)
         self._commands : POD_Commands = POD_Commands()
         # increment number of POD device counter
         POD_Basics.__numPod += 1
@@ -73,6 +74,22 @@ class POD_Basics :
     
 
     # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def GetU(u: int) -> int : 
+        """number of hexadecimal characters for an unsigned u-bit value.
+
+        Args:
+            u (int): 8, 16, or 32 bits. Enter any other number for NOVALUE.
+
+        Returns:
+            int: number of hexadecimal characters for an unsigned u-bit value.
+        """
+        match u : 
+            case  8: return(POD_Commands.U8())
+            case 16: return(POD_Commands.U16())
+            case 32: return(POD_Commands.U32())
+            case  _: return(POD_Commands.NoValue())
 
 
     @staticmethod
@@ -413,8 +430,10 @@ class POD_Basics :
             cmdNum = cmd
         # get length of expected paylaod 
         argSizes = self._commands.ArgumentHexChar(cmdNum)
-        # check if command requires a payload. 
-        if( sum(argSizes) > 0 ):
+        # check if command requires a payload.
+        #   
+
+        if( sum(argSizes) > 0 ): 
             # check to see if a payload was given 
             if(payload == None):
                 raise Exception('POD command requires a payload.')
@@ -423,6 +442,7 @@ class POD_Basics :
         else :
             pld = None
         # build POD packet 
+        
         packet = POD_Packets.BuildPODpacket_Standard(cmdNum, payload=pld)
         # return complete packet 
         return(packet)
@@ -440,7 +460,10 @@ class POD_Basics :
             bytes: Bytes string that was written to the POD device.
         """
         # POD packet 
+        # print("enter write")
         packet = self.GetPODpacket(cmd, payload)
+        #print("write packet testing")
+        # print("packet")
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
@@ -462,6 +485,7 @@ class POD_Basics :
                 may be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
+        # print("readpod")
         b = None
         while(b != POD_Packets.STX()) :
             b = self._port.Read(1,timeout_sec)     # read next byte  

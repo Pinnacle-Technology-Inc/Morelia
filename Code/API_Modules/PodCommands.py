@@ -1,7 +1,7 @@
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Seth Gabbert", "Sree Kondi"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -60,7 +60,11 @@ class POD_Commands :
     unsigned 16-bit value.
     """
 
-
+    __U32 : int = 4*__U8
+    """Class-level integer representing the number of hexadecimal characters for an \
+    unsigned 32-bit value.
+    """
+    
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
@@ -100,6 +104,17 @@ class POD_Commands :
             int: Value of __U16.
         """
         return(POD_Commands.__U16)
+    
+    @staticmethod
+    def U32() -> int : 
+        """Gets value of __U32.
+
+        Returns:
+            int: Value of __U32.
+        """
+        # returns the no value marker for commands dict 
+        return(POD_Commands.__U32)
+    
 
     @staticmethod
     def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool|str]] : 
