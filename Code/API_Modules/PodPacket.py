@@ -21,8 +21,8 @@ class Packet :
             pkt (bytes): Bytes string containing a POD packet. Should begin with STX and ending with ETX.
             commands (POD_Commands | None, optional): _description_. Defaults to None.
         """
-        self.rawPacket: bytes = pkt
-        self._commands: POD_Commands|None = commands
+        self.rawPacket: bytes = bytes(pkt)
+        self.commands: POD_Commands|None = commands
         
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -39,7 +39,7 @@ class Packet :
         Returns:
             bool: True if the commands have been set, false otherwise.
         """ 
-        return( isinstance(self._commands, POD_Commands) )
+        return( isinstance(self.commands, POD_Commands) )
 
 
 # ==========================================================================================================
@@ -92,16 +92,17 @@ class Packet_Standard(Packet) :
         Returns:
             tuple[int]: Tuple with integer values for each component of the payload.
         """
+        # check for payload 
+        if(not self.HasPayload()) : return None
         # get format of payload 
         useSizes = (len(self.payload),)
         if(self.HasCommands()) : 
             cmd = self.CommandNumber()
-            argSizes: tuple[int] = self._commands.ArgumentHexChar(cmd)
-            retSizes: tuple[int] = self._commands.ReturnHexChar(cmd)
+            argSizes: tuple[int] = self.commands.ArgumentHexChar(cmd)
+            retSizes: tuple[int] = self.commands.ReturnHexChar(cmd)
             # override which size tuple to use
-            match sum(useSizes) : 
-                case sum(argSizes) : useSizes = argSizes
-                case sum(retSizes) : useSizes = retSizes
+            if(  sum(useSizes) == sum(argSizes)) : useSizes = argSizes
+            elif(sum(useSizes) == sum(retSizes)): useSizes = retSizes
         # split up payload using tuple of sizes 
         pldSplit = [None]*len(useSizes)
         startByte = 0

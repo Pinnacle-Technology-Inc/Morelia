@@ -354,7 +354,7 @@ class POD_Basics :
         return(packet)
     
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -363,17 +363,14 @@ class POD_Basics :
                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
         Returns:
-            bytes: Bytes string that was written to the POD device.
+            Packet_Standard: Packet that was written to the POD device.
         """
         # POD packet 
-        # print("enter write")
-        packet = self.GetPODpacket(cmd, payload)
-        #print("write packet testing")
-        # print("packet")
+        packet = self.GetPODpacket(cmd, payload) 
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
-        return(packet)
+        return(Packet_Standard(packet, self._commands))
 
 
     def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> bytes|Packet_Standard :
