@@ -1,5 +1,6 @@
 # local imports
 from PodPacketHandling import POD_Packets
+from PodCommands import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,7 +19,7 @@ class Packet :
         Args:
             pkt (bytes): Bytes string containing a POD packet. Should begin with STX and ending with ETX.
         """
-        self.rawPacket : bytes = pkt
+        self.rawPacket: bytes = pkt
         
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -34,10 +35,13 @@ class Packet_Standard(Packet) :
     
     def __init__(self, pkt: bytes) -> None:
         super().__init__(pkt)
-        unpacked = Packet_Standard.UnpackPODpacket_Standard(self.rawPacket)
-        self.commandNumber = unpacked['Command Number']
-        self.payload = unpacked['Payload']
-        
+        unpacked: dict[str,bytes] = Packet_Standard.UnpackPODpacket_Standard(self.rawPacket)
+        self.commandNumber: bytes = unpacked['Command Number']
+        if('Payload' in unpacked) : 
+            self.payload: bytes = unpacked['Payload']
+        else : 
+            self.payload: None = None
+    
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible packet. 
@@ -46,9 +50,76 @@ class Packet_Standard(Packet) :
             int: integer representing the minimum length of a standard \
                 POD command packet. Format is STX (1 byte) + command number (4 bytes) \
                 + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-
         """
-        return(8)
+        return 8
+    
+    
+    def HasPayload(self) -> bool : 
+        """Checks if this Packet_Standard instance has a payload. 
+
+        Returns:
+            bool: True if there is a payload, false otherwise.
+        """
+        return( self.payload != None )
+        
+        
+    def CommandNumber(self) -> int : 
+        """Translate the binary ASCII encoding into a readable integer
+
+        Returns:
+            int: Integer of the command number.
+        """
+        # 
+        return POD_Packets.AsciiBytesToInt(self.commandNumber)
+        
+        
+    def Payload(self, commands: POD_Commands = None) -> tuple :
+        """Splits the payload up into its components and translates the binary ASCII encoding \
+        into a readable integer
+
+        Args:
+            commands (POD_Commands, optional): Commands for the POD device. Defaults to None.
+
+        Returns:
+            tuple[int]: Tuple with integer values for each component of the payload.
+        """
+        # get format of payload 
+        useSizes = (len(self.payload),)
+        if(commands != None) : 
+            cmd = self.CommandNumber()
+            argSizes: tuple[int] = commands.ArgumentHexChar(cmd)
+            retSizes: tuple[int] = commands.ReturnHexChar(cmd)
+            # override which size tuple to use
+            match sum(useSizes) : 
+                case sum(argSizes) : useSizes = argSizes
+                case sum(retSizes) : useSizes = retSizes
+        # split up payload using tuple of sizes 
+        pldSplit = [None]*len(useSizes)
+        startByte = 0
+        for i in range(len(useSizes)) : 
+            endByte = startByte + useSizes[i] # count to stop byte
+            pldSplit[i] = POD_Packets.AsciiBytesToInt(self.payload[startByte:endByte]) # get bytes 
+            startByte = endByte # get new start byte
+        return tuple(pldSplit) 
+        
+        
+    @staticmethod
+    def TranslatePODpacket_Standard(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
+        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values. 
+
+        Args: 
+            msg (bytes): Bytes message containing a standard POD packet.
+
+        Returns:
+            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
+                (if applicable) in integers.
+        """
+        packetObj = Packet_Standard(msg)
+        msgDictTrans: dict[str,int] = { 'Command Number' : packetObj.CommandNumber() }
+        if(packetObj.HasPayload()) : 
+            msgDictTrans['Payload'] = packetObj.Payload(commands)
+        return msgDictTrans
+        
 
     @staticmethod
     def UnpackPODpacket_Standard(msg: bytes) -> dict[str,bytes] : 
@@ -66,26 +137,20 @@ class Packet_Standard(Packet) :
             Exception: (1) The msg does not have the minimum number of bytes in a standard pod packet, \
                 (2) does not begin with STX, and (3) does not end with ETX. 
         """
-        # standard POD packet with optional payload = 
-        #   STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+        # standard POD packet with optional payload = STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         MINBYTES = Packet_Standard.GetMinimumLength()
-
         # get number of bytes in message
         packetBytes = len(msg)
-
         # message must have enough bytes, start with STX, or end with ETX
         if(    (packetBytes < MINBYTES)
             or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
             or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
         ) : 
             raise Exception('Cannot unpack an invalid POD packet.')
-
         # create dict and add command number, payload, and checksum
-        msg_unpacked = {}
-        msg_unpacked['Command Number']  = msg[1:5]                                  # 4 bytes after STX
+        msg_unpacked = {'Command Number' : msg[1:5] }# 4 bytes after STX
         if( (packetBytes - MINBYTES) > 0) : # add packet to dict, if available 
-            msg_unpacked['Payload']     = msg[5:(packetBytes-3)]                    # remaining bytes between command number and checksum 
-
+            msg_unpacked['Payload'] = msg[5:(packetBytes-3)] # remaining bytes between command number and checksum 
         # return unpacked POD command
         return(msg_unpacked)
 
