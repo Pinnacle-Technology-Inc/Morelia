@@ -14,7 +14,7 @@ __email__       = "sales@pinnaclet.com"
 
 class Packet : 
     """Container class that stores a command packet for a POD device. The format is \
-    STX (1 byte) + data (? bytes) + ETX (1 byte).
+    STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte).
     
     Attributes:
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
@@ -30,7 +30,7 @@ class Packet :
         """
         self.CheckIfPacketIsValid(pkt)
         self.rawPacket: bytes = bytes(pkt)
-        self.commands: POD_Commands|None = commands
+        self.commands:  POD_Commands|None = commands
         
         
     @staticmethod
@@ -43,13 +43,17 @@ class Packet :
         return(2)
     
     
-    def HasCommands(self) -> bool:
-        """Checks if the Packet instance has commands set.
-        
+    @staticmethod
+    def GetCommandNumber(pkt: bytes) -> int :
+        """Gets the command number as an integer from a POD packet. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+
         Returns:
-            bool: True if the commands have been set, false otherwise.
-        """ 
-        return( isinstance(self.commands, POD_Commands) )
+            int: Integer of the command number.
+        """
+        return POD_Packets.AsciiBytesToInt(pkt[1:5])
     
     
     @staticmethod
@@ -67,6 +71,16 @@ class Packet :
             raise Exception('Packet must begin with STX.')
         if(msg[len(msg)-1].to_bytes(1,'big') != POD_Packets.ETX()) : 
             raise Exception('Packet must end in ETX')
+        
+    
+    def HasCommands(self) -> bool:
+        """Checks if the Packet instance has commands set.
+        
+        Returns:
+            bool: True if the commands have been set, false otherwise.
+        """ 
+        return( isinstance(self.commands, POD_Commands) )
+    
 
 
 # ==========================================================================================================
@@ -106,7 +120,7 @@ class Packet_Standard(Packet) :
                 POD command packet. Format is STX (1 byte) + command number (4 bytes) \
                 + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         """
-        return 8
+        return(8)
     
     
     @staticmethod   
