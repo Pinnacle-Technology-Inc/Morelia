@@ -468,7 +468,7 @@ class Params_8480SC(Params_Interface) :
         stimulus (tuple[int]): Stimulus configuration on selected channel.
         preamp (int): Preamp value (0-1023).
         ledCurrent (tuple[int]): Led-Current (0-600 mA) for both channels. 
-        ttlPUllups (int): pullups disabled for value 0, pullups enabled for values that are non-zero.
+        ttlPUllups (int): TTL Pullups disabled for value 0, pullups enabled for values that are non-zero.
         estimCurrent (tuple[int]): Estim-Current (0-100 %) for both channels.
         syncConfig (int): Sets Sync-Config byte.
         ttlSetup (tuple[int]): TTL-Setup for selected channel.
@@ -524,7 +524,7 @@ class Params_8480SC(Params_Interface) :
 
 
     def ledCurrent_CH0(self) -> int :
-        """Gets he ledCurrent value for Channel 0. 
+        """Gets the ledCurrent value for Channel 0. 
 
         Returns:
             int: Channel 0 ledCurrent in mA.
@@ -533,7 +533,7 @@ class Params_8480SC(Params_Interface) :
     
 
     def ledCurrent_CH1(self) -> int :
-        """Gets he ledCurrent value for Channel 1. 
+        """Gets the ledCurrent value for Channel 1. 
 
         Returns:
             int: Channel 1 ledCurrent in mA.
