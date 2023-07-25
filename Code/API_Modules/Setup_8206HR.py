@@ -192,7 +192,7 @@ class Setup_8206HR(Setup_Interface) :
             f.setSignalHeader( i, {
                 'label' : Params_8206HR.lowPassLabels[i],
                 'dimension' : 'uV',
-                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'sample_rate' : self._podParametersDict[devNum].sampleRate,
                 'physical_max': self._PHYSICAL_BOUND_uV,
                 'physical_min': -self._PHYSICAL_BOUND_uV, 
                 'digital_max': 32767, 
