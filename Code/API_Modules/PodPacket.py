@@ -13,7 +13,8 @@ __email__       = "sales@pinnaclet.com"
 # ==========================================================================================================
 
 class Packet : 
-    """Container class that stores a command packet for a POD device. 
+    """Container class that stores a command packet for a POD device. The format is \
+    STX (1 byte) + data (? bytes) + ETX (1 byte).
     
     Attributes:
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
@@ -27,6 +28,7 @@ class Packet :
             pkt (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
             commands (POD_Commands | None, optional): Available commands for a POD device. Defaults to None.
         """
+        self.CheckIfPacketIsValid(pkt)
         self.rawPacket: bytes = bytes(pkt)
         self.commands: POD_Commands|None = commands
         
@@ -71,12 +73,13 @@ class Packet :
 
 
 class Packet_Standard(Packet) : 
-    """Container class that stores a standard command packet for a POD device. 
+    """Container class that stores a standard command packet for a POD device. The format is \
+    STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
     Attributes:
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
         commands (POD_Commands | None, optional): Available commands for a POD device. 
-        commandNumber (bytes): command number from the packet. 
+        commandNumber (bytes): Command number from the packet. 
         payload (bytes): Optional payload from the packet.
     """
     
@@ -107,7 +110,7 @@ class Packet_Standard(Packet) :
     
     
     @staticmethod   
-    def CheckIfPacketIsValid(msg: bytes):
+    def CheckIfPacketIsValid(msg: bytes) :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
@@ -208,8 +211,85 @@ class Packet_Standard(Packet) :
 # ==========================================================================================================
 
 
-# class Packet_BinaryStandard(Packet) : 
-#     pass
+class Packet_BinaryStandard(Packet) :     
+    """Container class that stores a standard binary command packet for a POD device. The format is \
+    STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) \
+    + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes) 
+    
+    Attributes:
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+        commands (POD_Commands | None, optional): Available commands for a POD device. 
+        binaryLength (bytes): Number of bytes of binary data from the packet.
+        binaryData (bytes): Variable length binary datafrom the packet.
+    """
+
+    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+        """Sets the class instance variables. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and ending with ETX.
+            commands (POD_Commands | None, optional): _description_. Defaults to None.
+        """       
+        super().__init__(pkt, commands)
+        unpacked: dict[str,bytes] = Packet_BinaryStandard.UnpackPODpacket_Binary(self.rawPacket)
+        self.commandNumber: bytes = unpacked['Command Number']
+        self.binaryLength:  bytes = unpacked['Binary Packet Length']
+        self.binaryData:    bytes = unpacked['Binary Data']
+        
+        
+    @staticmethod
+    def GetMinimumLength() -> int : 
+        """Gets the number of bytes in the smallest possible packet; STX (1 byte) + something + ETX (1 byte). 
+
+        Returns:
+            int: integer representing the minimum length of a binary POD \
+                command packet. Format is STX (1 byte) + command number (4 bytes) + length \
+                of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH \
+                bytes) + checksum (2 bytes) + ETX (1 bytes)
+        """
+        return(15)
+    
+    
+    @staticmethod   
+    def CheckIfPacketIsValid(msg: bytes) :
+        """Raises an Exception if the packet is incorrectly formatted. 
+
+        Args:
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+
+        Raises:
+            Exception: Packet is too small to be a standard packet.
+            Exception: A standard binary packet must have an ETX before the binary bytes.
+        """
+        if(len(msg) < Packet_BinaryStandard.GetMinimumLength()) : 
+            raise Exception('Packet is too small to be a standard binary packet.')
+        if(msg[11].to_bytes(1,'big') != POD_Packets.ETX()) : 
+            raise Exception('A standard binary packet must have an ETX before the binary bytes.')
+        super().CheckIfPacketIsValid(msg) 
+
+
+    @staticmethod
+    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes]: 
+        """Converts a variable-length binary packet into a dictionary containing the command 
+        number, binary packet length, and binary data in bytes. 
+
+        Args: 
+            msg (bytes): Bytes message containing a variable-length POD packet
+
+        Returns:
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Binary Packet Length', \
+                and 'Binary Data' keys with bytes values.
+        """
+        Packet_BinaryStandard.CheckIfPacketIsValid(msg)
+        # create dict and add command number and checksum
+        return {
+            'Command Number'        : msg[1:5],             # 4 bytes after STX
+            'Binary Packet Length'  : msg[5:9],             # 4 bytes after command number 
+            'Binary Data'           : msg[12:(len(msg)-3)], # ? bytes after 1st ETX
+        }
+
+
+# ==========================================================================================================
 
 
 # class Packet_Binary2(Packet) : 
