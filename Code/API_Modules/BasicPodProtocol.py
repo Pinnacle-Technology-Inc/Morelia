@@ -575,7 +575,7 @@ class POD_Basics :
                 cmd += b
             # start over if STX is found 
             if(b == POD_Packets.STX() ) : 
-                self._ReadPODpacket_Recursive(validateChecksu=validateChecksum)
+                self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
             # return if ETX is found
             if(b == POD_Packets.ETX() ) : 
                 return(cmd)
