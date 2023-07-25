@@ -462,7 +462,6 @@ class POD_Basics :
         # POD packet 
         # print("enter write")
         packet = self.GetPODpacket(cmd, payload)
-        #print("write packet testing")
         # print("packet")
         # write packet to serial port 
         self._port.Write(packet)
