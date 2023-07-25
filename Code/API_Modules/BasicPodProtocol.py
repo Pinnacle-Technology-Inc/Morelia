@@ -3,6 +3,7 @@ from SerialCommunication    import COM_io
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
 from PodPacket              import Packet_Standard
+from PodPacket              import Packet_BinaryStandard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -29,13 +30,6 @@ class POD_Basics :
     __numPod : int = 0
     """Class-level integer counting the number of POD_Basics instances. \
     Maintained by __init__ and __del__.
-    """
-
-    __MINBINARYLENGTH   : int = 15 
-    """Class-level integer representing the minimum length of a binary POD \
-    command packet. Format is STX (1 byte) + command number (4 bytes) + length \
-    of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH \
-    bytes) + checksum (2 bytes) + ETX (1 bytes)
     """
     
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -100,50 +94,6 @@ class POD_Basics :
 
 
     # ------------ POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
-
-    @staticmethod
-    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes]: 
-        """Converts a variable-length binary packet into a dictionary containing the command 
-        number, binary packet length, and binary data in bytes. 
-
-        Args: 
-            msg (bytes): Bytes message containing a variable-length POD packet
-
-        Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Binary Packet Length', \
-                and 'Binary Data' keys with bytes values.
-
-        Raises:
-            Exception: (1) The msg does not have the minimum number of bytes in a standard pod \
-                packet,(2) does not begin with STX, (3) does not end with ETX, and (4) does \
-                not have an ETX after standard packet. 
-        """
-        # variable binary POD packet = 
-        #   STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes)    <-- STANDARD POD COMMAND
-        #   + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)                                                 <-- BINARY DATA
-        MINBYTES = POD_Basics.__MINBINARYLENGTH
-
-        # get number of bytes in message
-        packetBytes = len(msg)
-
-        # message must have enough bytes, start with STX, have ETX after POD command, or end with ETX
-        if(    (packetBytes < MINBYTES)                        
-            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
-            or (msg[11].to_bytes(1,'big') != POD_Packets.ETX())
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
-        ) : 
-            raise Exception('Cannot unpack an invalid POD packet.')
-
-        # create dict and add command number and checksum
-        msg_unpacked = {
-            'Command Number'        : msg[1:5],                                 # 4 bytes after STX
-            'Binary Packet Length'  : msg[5:9],                                 # 4 bytes after command number 
-            'Binary Data'           : msg[12:(packetBytes-3)],                  # ? bytes after ETX
-        }
-
-        # return unpacked POD command with variable length binary packet 
-        return(msg_unpacked)
-
    
     @staticmethod
     def TranslatePODpacket_Binary(msg: bytes) -> dict[str,int|bytes] : 
@@ -264,12 +214,12 @@ class POD_Basics :
             dict[str,bytes]: A dictionary containing the unpacked message in bytes
         """
         # get command number 
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
+        cmd = Packet_Standard.GetCommandNumber(msg) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
             # message is binary 
-            return(self.UnpackPODpacket_Binary(msg))
+            return(Packet_BinaryStandard.UnpackPODpacket_Binary(msg, self._commands))
         else:
-            return(Packet_Standard.UnpackPODpacket_Standard(msg))
+            return(Packet_Standard.UnpackPODpacket_Standard(msg, self._commands))
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|bytes] : 
