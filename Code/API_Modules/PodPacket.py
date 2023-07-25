@@ -198,27 +198,9 @@ class Packet_Standard(Packet) :
         if(len(msg) < Packet_Standard.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard packet.')
     
-    
-    @staticmethod
-    def TranslatePODpacket_Standard(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
-        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values. 
-
-        Args: 
-            msg (bytes): Bytes message containing a standard POD packet.
-            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
-            
-        Returns:
-            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
-                (if applicable) in integers.
-        """
-        packetObj = Packet_Standard(msg,commands)
-        msgDictTrans: dict[str,int] = { 'Command Number' : packetObj.CommandNumber() }
-        if(packetObj.HasPayload()) : msgDictTrans['Payload'] = packetObj.Payload()
-        return msgDictTrans
-        
 
     @staticmethod
-    def UnpackPODpacket_Standard(msg: bytes) -> dict[str,bytes] : 
+    def UnpackPODpacket(msg: bytes) -> dict[str,bytes] : 
         """Converts a standard POD packet into a dictionary containing the command number and payload \
         (if applicable) in bytes.
 
@@ -238,6 +220,24 @@ class Packet_Standard(Packet) :
         # return finished dict
         return(msg_unpacked)
     
+    
+    @staticmethod
+    def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
+        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values. 
+
+        Args: 
+            msg (bytes): Bytes message containing a standard POD packet.
+            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
+            
+        Returns:
+            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
+                (if applicable) in integers.
+        """
+        packetObj = Packet_Standard(msg,commands)
+        msgDictTrans: dict[str,int] = { 'Command Number' : packetObj.CommandNumber() }
+        if(packetObj.HasPayload()) : msgDictTrans['Payload'] = packetObj.Payload()
+        return msgDictTrans
+        
 
 # ==========================================================================================================
 
@@ -262,7 +262,7 @@ class Packet_BinaryStandard(Packet) :
             commands (POD_Commands | None, optional): _description_. Defaults to None.
         """       
         super().__init__(pkt, commands)
-        unpacked: dict[str,bytes] = Packet_BinaryStandard.UnpackPODpacket_Binary(self.rawPacket)
+        unpacked: dict[str,bytes] = Packet_BinaryStandard.UnpackPODpacket(self.rawPacket)
         self.binaryLength:  bytes = unpacked['Binary Packet Length']
         self.binaryData:    bytes = unpacked['Binary Data']
         
@@ -334,7 +334,7 @@ class Packet_BinaryStandard(Packet) :
 
 
     @staticmethod
-    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes]: 
+    def UnpackPODpacket(msg: bytes) -> dict[str,bytes]: 
         """Converts a variable-length binary packet into a dictionary containing the command 
         number, binary packet length, and binary data in bytes. 
 
@@ -355,7 +355,7 @@ class Packet_BinaryStandard(Packet) :
 
 
     @staticmethod
-    def TranslatePODpacket_Binary(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
+    def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
         """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded \
         bytes into integer values and leaves the binary-encoded bytes as is. 
 

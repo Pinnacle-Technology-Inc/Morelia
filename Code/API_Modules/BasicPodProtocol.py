@@ -50,6 +50,7 @@ class POD_Basics :
 
     # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
 
+
     @staticmethod
     def GetU(u: int) -> int : 
         """number of hexadecimal characters for an unsigned u-bit value.
@@ -67,7 +68,7 @@ class POD_Basics :
             case  _: return(POD_Commands.NoValue())
 
 
-    # ------------ CHECKSUM HANDLING ------------             ------------------------------------------------------------------------------------------------------------------------
+    # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
     @staticmethod
@@ -148,7 +149,7 @@ class POD_Basics :
         # Get commands from this instance's command dict object 
         return(self._commands.GetCommands())
 
-    # ------------ SIMPLE POD PACKET COMPREHENSION ------------             ------------------------------------------------------------------------------------------------------------------------
+    # ------------ PACKET COMPREHENSION ------------ ------------------------------------------------------------------------------------------------------------------------
     
 
     def UnpackPODpacket(self, msg: bytes) -> dict[str,bytes] : 
@@ -164,9 +165,9 @@ class POD_Basics :
         cmd = POD_Packets.AsciiBytesToInt(Packet_Standard.GetCommandNumber(msg)) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
             # message is binary 
-            return(Packet_BinaryStandard.UnpackPODpacket_Binary(msg, self._commands))
+            return(Packet_BinaryStandard.UnpackPODpacket(msg, self._commands))
         else:
-            return(Packet_Standard.UnpackPODpacket_Standard(msg, self._commands))
+            return(Packet_Standard.UnpackPODpacket(msg, self._commands))
 
 
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|bytes] : 
@@ -179,12 +180,12 @@ class POD_Basics :
             dict[str,int|bytes]: A dictionary containing the unpacked message in numbers.
         """
         # get command number 
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) # same for standard and binary packets 
+        cmd = POD_Packets.AsciiBytesToInt(Packet.GetCommandNumber(msg)) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
             # message is binary 
-            return(Packet_BinaryStandard.TranslatePODpacket_Binary(msg, self._commands))
+            return(Packet_BinaryStandard.TranslatePODpacket(msg, self._commands))
         else:
-            return(Packet_Standard.TranslatePODpacket_Standard(msg, self._commands))
+            return(Packet_Standard.TranslatePODpacket(msg, self._commands))
     
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
@@ -454,7 +455,7 @@ class POD_Basics :
          
         # read standard POD packet 
         startPacket = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
-        startDict   = Packet_Standard.UnpackPODpacket_Standard(startPacket)
+        startDict   = Packet_Standard.UnpackPODpacket(startPacket)
         # get length of binary packet 
         numOfbinaryBytes = POD_Packets.AsciiBytesToInt(startDict['Payload'])
         # read binary packet
@@ -471,4 +472,3 @@ class POD_Basics :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return Packet_BinaryStandard(packet, self._commands)
-
