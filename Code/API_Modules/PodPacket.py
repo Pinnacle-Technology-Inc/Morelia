@@ -194,9 +194,9 @@ class Packet_Standard(Packet) :
         Raises:
             Exception: Packet is too small to be a standard packet.
         """
+        Packet.CheckIfPacketIsValid(msg)    
         if(len(msg) < Packet_Standard.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard packet.')
-        super().CheckIfPacketIsValid(msg)    
     
     
     @staticmethod
@@ -230,9 +230,9 @@ class Packet_Standard(Packet) :
                 (if applicable) in bytes.
         """
         # validate packet
-        Packet_Standard.CheckIfPacketIsValid()
+        Packet_Standard.CheckIfPacketIsValid(msg)
         # add command number and payload to a dict
-        msg_unpacked = {'Command Number' : Packet_Standard.GetCommandNumber() } 
+        msg_unpacked = {'Command Number' : Packet_Standard.GetCommandNumber(msg) } 
         pld = Packet_Standard.GetPayload(msg)
         if(pld != None) : msg_unpacked['Payload'] = pld
         # return finished dict
@@ -326,7 +326,7 @@ class Packet_BinaryStandard(Packet) :
             Exception: Packet is too small to be a standard packet.
             Exception: A standard binary packet must have an ETX before the binary bytes.
         """
-        super().CheckIfPacketIsValid(msg) 
+        Packet.CheckIfPacketIsValid(msg) 
         if(len(msg) < Packet_BinaryStandard.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard binary packet.')
         if(msg[11].to_bytes(1,'big') != POD_Packets.ETX()) : 
@@ -353,9 +353,10 @@ class Packet_BinaryStandard(Packet) :
             'Binary Data'           : Packet_BinaryStandard.GetBinaryData(msg)
         }
 
+
     @staticmethod
     def TranslatePODpacket_Binary(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
-        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded 
+        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded \
         bytes into integer values and leaves the binary-encoded bytes as is. 
 
         Args:
