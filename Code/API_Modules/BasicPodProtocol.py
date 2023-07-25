@@ -23,14 +23,6 @@ class POD_Basics :
         _commands (POD_Commands): Instance-level POD_Commands object, which stores information about \
             the commands available to this POD device.
     """
-
-    # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
-
-
-    __numPod : int = 0
-    """Class-level integer counting the number of POD_Basics instances. \
-    Maintained by __init__ and __del__.
-    """
     
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
@@ -50,14 +42,6 @@ class POD_Basics :
         # create object to handle commands 
         #print(port)
         self._commands : POD_Commands = POD_Commands()
-        # increment number of POD device counter
-        POD_Basics.__numPod += 1
-
-
-    def __del__(self) -> None :
-        """Runs when an instance is destructed."""
-        # decrement number of POD device counter
-        POD_Basics.__numPod -= 1
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
@@ -80,17 +64,6 @@ class POD_Basics :
             case 16: return(POD_Commands.U16())
             case 32: return(POD_Commands.U32())
             case  _: return(POD_Commands.NoValue())
-
-
-    @staticmethod
-    def GetNumberOfPODDevices() -> int :
-        """Gets the POD device counter (__numPod).
-
-        Returns: 
-            int: Number of POD_Basics instances.
-        """
-        # returns the counter tracking the number of active pod devices
-        return(POD_Basics.__numPod)
 
 
     # ------------ CHECKSUM HANDLING ------------             ------------------------------------------------------------------------------------------------------------------------
