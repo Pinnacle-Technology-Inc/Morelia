@@ -111,42 +111,6 @@ class Packet_Standard(Packet) :
         else :                      self.payload: None  = None
     
     
-    @staticmethod
-    def GetMinimumLength() -> int : 
-        """Gets the number of bytes in the smallest possible packet. 
-        
-        Returns:
-            int: integer representing the minimum length of a standard \
-                POD command packet. Format is STX (1 byte) + command number (4 bytes) \
-                + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
-        """
-        return(8)
-    
-    
-    @staticmethod   
-    def CheckIfPacketIsValid(msg: bytes) :
-        """Raises an Exception if the packet is incorrectly formatted. 
-
-        Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
-
-        Raises:
-            Exception: Packet is too small to be a standard packet.
-        """
-        if(len(msg) < Packet_Standard.GetMinimumLength()) : 
-            raise Exception('Packet is too small to be a standard packet.')
-        super().CheckIfPacketIsValid(msg)    
-    
-    
-    def HasPayload(self) -> bool : 
-        """Checks if this Packet_Standard instance has a payload. 
-
-        Returns:
-            bool: True if there is a payload, false otherwise.
-        """
-        return( self.payload != None )
-        
-        
     def CommandNumber(self) -> int : 
         """Translate the binary ASCII encoding into a readable integer
 
@@ -182,15 +146,51 @@ class Packet_Standard(Packet) :
             pldSplit[i] = POD_Packets.AsciiBytesToInt(self.payload[startByte:endByte]) # get bytes 
             startByte = endByte # get new start byte
         return tuple(pldSplit) 
+    
+    
+    def HasPayload(self) -> bool : 
+        """Checks if this Packet_Standard instance has a payload. 
+
+        Returns:
+            bool: True if there is a payload, false otherwise.
+        """
+        return( self.payload != None )
+    
+    
+    @staticmethod
+    def GetMinimumLength() -> int : 
+        """Gets the number of bytes in the smallest possible packet. 
         
-        
+        Returns:
+            int: integer representing the minimum length of a standard \
+                POD command packet. Format is STX (1 byte) + command number (4 bytes) \
+                + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+        """
+        return(8)
+    
+    @staticmethod   
+    def CheckIfPacketIsValid(msg: bytes) :
+        """Raises an Exception if the packet is incorrectly formatted. 
+
+        Args:
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+
+        Raises:
+            Exception: Packet is too small to be a standard packet.
+        """
+        if(len(msg) < Packet_Standard.GetMinimumLength()) : 
+            raise Exception('Packet is too small to be a standard packet.')
+        super().CheckIfPacketIsValid(msg)    
+    
+    
     @staticmethod
     def TranslatePODpacket_Standard(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
         """Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values. 
 
         Args: 
             msg (bytes): Bytes message containing a standard POD packet.
-
+            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
+            
         Returns:
             dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
                 (if applicable) in integers.
@@ -251,6 +251,26 @@ class Packet_BinaryStandard(Packet) :
         self.binaryData:    bytes = unpacked['Binary Data']
         
         
+    def CommandNumber(self) -> int : 
+        """Translate the binary ASCII encoding of the command number \
+        into a readable integer
+
+        Returns:
+            int: Integer of the command number.
+        """
+        return POD_Packets.AsciiBytesToInt(self.commandNumber)
+        
+        
+    def BinaryLength(self) -> int : 
+        """Translate the binary ASCII encoding of the binary data length \
+        into a readable integer
+
+        Returns:
+            int: Integer of the binary data length.
+        """
+        return POD_Packets.AsciiBytesToInt(self.binaryLength)
+        
+        
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible packet; STX (1 byte) + something + ETX (1 byte). 
@@ -302,7 +322,27 @@ class Packet_BinaryStandard(Packet) :
             'Binary Data'           : msg[12:(len(msg)-3)], # ? bytes after 1st ETX
         }
 
+    @staticmethod
+    def TranslatePODpacket_Binary(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
+        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded 
+        bytes into integer values and leaves the binary-encoded bytes as is. 
 
+        Args:
+            msg (bytes): Bytes message containing a variable-length POD packet.
+            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
+
+        Returns:
+            dict[str,int|bytes]: Dictionary containing the POD packet's 'Command Number', \
+                'Binary Packet Length', and 'Binary Data'.
+        """
+        packetObj = Packet_BinaryStandard(msg,commands)
+        # translate the binary ascii encoding into a readable integer
+        return {
+            'Command Number'        : packetObj.CommandNumber(),
+            'Binary Packet Length'  : packetObj.BinaryLength(),
+            'Binary Data'           : packetObj.binaryData # leave this as bytes, change type if needed 
+        }
+        
 # ==========================================================================================================
 
 
