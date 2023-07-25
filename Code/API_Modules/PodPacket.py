@@ -262,9 +262,8 @@ class Packet_BinaryStandard(Packet) :
             commands (POD_Commands | None, optional): _description_. Defaults to None.
         """       
         super().__init__(pkt, commands)
-        unpacked: dict[str,bytes] = Packet_BinaryStandard.UnpackPODpacket(self.rawPacket)
-        self.binaryLength:  bytes = unpacked['Binary Packet Length']
-        self.binaryData:    bytes = unpacked['Binary Data']
+        self.binaryLength:  bytes = Packet_BinaryStandard.GetBinaryLength(pkt),
+        self.binaryData:    bytes = Packet_BinaryStandard.GetBinaryData(pkt)
         
         
     def BinaryLength(self) -> int : 
@@ -378,6 +377,87 @@ class Packet_BinaryStandard(Packet) :
 # ==========================================================================================================
 
 
+class Packet_Binary4(Packet) : 
+
+    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+        super().__init__(pkt, commands)
+        self.packetNumber: bytes = self.GetPacketNumber(pkt)
+        self.ttl: bytes = self.GetTTL(pkt)
+        self.ch0: bytes = self.GetCh0(pkt)
+        self.ch1: bytes = self.GetCh1(pkt)
+        self.ch2: bytes = self.GetCh2(pkt)
+
+
+    @staticmethod
+    def GetPacketNumber(pkt: bytes) -> bytes : 
+        return pkt[5].to_bytes(1,'big')
+
+    @staticmethod
+    def GetTTL(pkt: bytes) -> bytes : 
+        return pkt[6].to_bytes(1,'big')
+
+    @staticmethod
+    def GetCh0(pkt: bytes) -> bytes : 
+        return pkt[7:9]
+
+    @staticmethod
+    def GetCh1(pkt: bytes) -> bytes : 
+        return pkt[9:11]
+    
+    @staticmethod
+    def GetCh2(pkt: bytes) -> bytes : 
+        return pkt[11:13]
+
+    @staticmethod
+    def GetMinimumLength() -> int : 
+        """Gets the number of bytes in the smallest possible binary4 packet; STX (1 byte) + command (4 bytes) + \
+        packet number (1 byte) + TTL (1 byte) + CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) \
+        + ETX (1 byte). 
+
+        Returns:
+            int: integer representing the minimum length of a binary4 POD packet. 
+        """
+        return(16)
+
+    @staticmethod   
+    def CheckIfPacketIsValid(msg: bytes) :
+        """Raises an Exception if the packet is incorrectly formatted. 
+
+        Args:
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+
+        Raises:
+            Exception: Packet is too small to be a standard packet.
+            Exception: A standard binary packet must have an ETX before the binary bytes.
+        """
+        Packet.CheckIfPacketIsValid(msg) 
+        if(len(msg) != Packet_Binary4.GetMinimumLength()) : 
+            raise Exception('Packet the wrong size to be a binary4 packet.')
+
+
+    @staticmethod
+    def UnpackPODpacket(pkt: bytes) -> dict[str,bytes] :
+        """Separates the components of a binary4 packet into a dictionary.
+        
+        Returns:
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'TTL', 'Ch0', 'Ch1', \
+                and 'Ch2' in bytes.
+        """
+        Packet_Binary4.CheckIfPacketIsValid(pkt)
+        return {
+            'Command Number'    : Packet_Binary4.GetCommandNumber(pkt),
+            'Packet #'          : Packet_Binary4.GetPacketNumber(pkt), 
+            'TTL'               : Packet_Binary4.GetTTL(pkt),
+            'Ch0'               : Packet_Binary4.GetCh0(pkt),
+            'Ch1'               : Packet_Binary4.GetCh1(pkt),
+            'Ch2'               : Packet_Binary4.GetCh2(pkt)
+        }
+        
+
+
+# ==========================================================================================================
+
+
 # class Packet_Binary2(Packet) : 
 #     pass
 
@@ -386,8 +466,6 @@ class Packet_BinaryStandard(Packet) :
 #     pass
 
 
-# class Packet_Binary4(Packet) : 
-#     pass
 
 
 # class Packet_Binary5(Packet) : 
