@@ -2,6 +2,7 @@
 from SerialCommunication    import COM_io
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
+from PodPacket              import Packet
 from PodPacket              import Packet_Standard
 from PodPacket              import Packet_BinaryStandard
 
@@ -160,7 +161,7 @@ class POD_Basics :
             dict[str,bytes]: A dictionary containing the unpacked message in bytes
         """
         # get command number 
-        cmd = Packet_Standard.GetCommandNumber(msg) # same for standard and binary packets 
+        cmd = POD_Packets.AsciiBytesToInt(Packet_Standard.GetCommandNumber(msg)) # same for standard and binary packets 
         if(self._commands.IsCommandBinary(cmd)):
             # message is binary 
             return(Packet_BinaryStandard.UnpackPODpacket_Binary(msg, self._commands))
@@ -269,7 +270,7 @@ class POD_Basics :
         return(Packet_Standard(packet, self._commands))
 
 
-    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> bytes|Packet_Standard|Packet_BinaryStandard :
+    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> Packet :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
@@ -300,7 +301,7 @@ class POD_Basics :
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
-    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> bytes|Packet_Standard|Packet_BinaryStandard : 
+    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> Packet : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
         binary and reads accordingly, then returns the packet.
@@ -313,7 +314,7 @@ class POD_Basics :
             Exception: Cannot read an invalid command.
 
         Returns:
-            bytes|Packet_Standard|Packet_BinaryStandard: POD packet beginning with STX and ending \
+            Packet|Packet_Standard|Packet_BinaryStandard: POD packet beginning with STX and ending \
                 with ETX. This may be a standard packet, binary packet, or an unformatted packet \
                 (STX+something+ETX). 
         """
@@ -324,7 +325,7 @@ class POD_Basics :
         packet += cmd 
         # return packet if cmd ends in ETX
         if(cmd[len(cmd)-1].to_bytes(1,'big') == POD_Packets.ETX()) : 
-            return(packet)
+            return(Packet(packet))
         # determine the command number
         cmdNum: int = POD_Packets.AsciiBytesToInt(cmd)
         # check if command number is valid
