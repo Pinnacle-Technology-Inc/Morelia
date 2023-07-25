@@ -407,7 +407,7 @@ class Setup_8401HR(Setup_Interface) :
         # columns names
         cols = 'Time,'
         devnum = int((fname.split('.')[0]).split('_')[-1]) # get device number from filename
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum]['Preamplifier Device'])
+        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum].preampDevice)
         for label in chmap.values() : 
             if(label!='NC') : # exclude no-connects 
                 cols += str(label) + ','
@@ -428,7 +428,7 @@ class Setup_8401HR(Setup_Interface) :
         """
         # get all channel names for ABCD, excluding no-connects (NC)
         lables = [x for x 
-                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum]['Preamplifier Device']).values()) 
+                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice).values()) 
                   if x != 'NC']
         lables.extend(['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4'])
         # number of channels 
@@ -440,7 +440,7 @@ class Setup_8401HR(Setup_Interface) :
             f.setSignalHeader( i, {
                 'label' : lables[i],
                 'dimension' : 'uV',
-                'sample_rate' : self._podParametersDict[devNum]['Sample Rate'],
+                'sample_rate' : self._podParametersDict[devNum].sampleRate,
                 'physical_max': self._PHYSICAL_BOUND_uV,
                 'physical_min': -self._PHYSICAL_BOUND_uV, 
                 'digital_max': 32767, 

@@ -319,7 +319,7 @@ class UserInput :
 
         Args:
             prompt (str | None, optional): Text to print to the user before requesting the path. Defaults to None.
-            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.csv','.txt','.edf'].
+            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.txt'].
 
         Returns:
             str: File path and name.
@@ -333,7 +333,7 @@ class UserInput :
         # if there is no extension , assume that a file name was not given and path ends with a directory 
         if(ext == '') : 
             # ask user for file name 
-            fileName = UserInput.GetFileName()
+            fileName = UserInput.GetFileName(goodExt)
             # add slash if path is given 
             if(name != ''): 
                 # check for slash 
@@ -345,15 +345,17 @@ class UserInput :
             return(name+fileName)
         # prompt again if bad extension is given 
         elif( not UserInput.CheckFileExt(ext,goodExt=goodExt)) : 
-            return(UserInput.GetFilePath())
+            return(UserInput.GetFilePath(prompt=prompt, goodExt=goodExt))
         # path is correct
         else :
             return(path)
         
 
     @staticmethod
-    def GetFileName() -> str:
+    def GetFileName(goodExt: list[str] = ['.txt']) -> str:
         """Asks the user for a filename.
+        Args:
+            goodExt (list[str], optional): List of valid file extensions. Defaults to ['.txt'].
 
         Returns:
             str: String of the file name and extension.
@@ -369,7 +371,7 @@ class UserInput :
         # default to csv if no extension is given
         if(ext=='') : ext='.txt'
         # check if extension is correct 
-        if( not UserInput.CheckFileExt(ext)) : return(UserInput.GetFileName())
+        if( not UserInput.CheckFileExt(ext,goodExt=goodExt)) : return(UserInput.GetFileName())
         # return file name with extension 
         return(name+ext)
     
