@@ -1,6 +1,6 @@
 # local imports
-from PodPacketHandling import POD_Packets
-from PodCommands import POD_Commands
+from PodPacketHandling  import POD_Packets
+from PodCommands        import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -17,8 +17,9 @@ class Packet :
     STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte).
     
     Attributes:
-        commands (POD_Commands | None): Available commands for a POD device. 
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+        _commands (POD_Commands | None): Available commands for a POD device. 
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with \
+            STX and end with ETX.
         commandNumber (bytes | None): Command number from the Pod packet.
     """
     
@@ -26,11 +27,13 @@ class Packet :
         """Sets the class instance variables. 
 
         Args:
-            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
-            commands (POD_Commands | None, optional): Available commands for a POD device. Defaults to None.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
+            commands (POD_Commands | None, optional): Available commands for a POD device.\
+                Defaults to None.
         """
         self.CheckIfPacketIsValid(pkt)
-        self.commands:  POD_Commands|None = commands
+        self._commands:  POD_Commands|None = commands
         self.rawPacket: bytes = bytes(pkt)
         self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
         
@@ -49,7 +52,8 @@ class Packet :
         """Gets the command number bytes from a POD packet. 
 
         Args:
-            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
 
         Returns:
             bytes|None: Bytes string of the command number, if available.
@@ -61,7 +65,8 @@ class Packet :
     
     @staticmethod
     def GetMinimumLength() -> int : 
-        """Gets the number of bytes in the smallest possible packet; STX (1 byte) + something + ETX (1 byte). 
+        """Gets the number of bytes in the smallest possible packet; STX (1 byte) + \
+        something + ETX (1 byte). 
 
         Returns:
             int: integer representing the minimum length of a generic bytes string.
@@ -74,7 +79,8 @@ class Packet :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
 
         Raises:
             Exception: Packet must begin with STX.
@@ -92,7 +98,7 @@ class Packet :
         Returns:
             bool: True if the commands have been set, false otherwise.
         """ 
-        return( isinstance(self.commands, POD_Commands) )
+        return( isinstance(self._commands, POD_Commands) )
     
 
 
@@ -105,7 +111,8 @@ class Packet_Standard(Packet) :
     
     Attributes:
         commands (POD_Commands | None, optional): Available commands for a POD device. 
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and \
+            end with ETX.
         commandNumber (bytes): Command number from the packet. 
         payload (bytes): Optional payload from the packet.
     """
@@ -114,7 +121,8 @@ class Packet_Standard(Packet) :
         """Sets the class instance variables. 
 
         Args:
-            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and ending with ETX.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                ending with ETX.
             commands (POD_Commands | None, optional): _description_. Defaults to None.
         """
         super().__init__(pkt,commands)
@@ -134,8 +142,8 @@ class Packet_Standard(Packet) :
         useSizes: tuple[int] = (len(self.payload),)
         if(self.HasCommands()) : 
             cmd = self.CommandNumber()
-            argSizes: tuple[int] = self.commands.ArgumentHexChar(cmd)
-            retSizes: tuple[int] = self.commands.ReturnHexChar(cmd)
+            argSizes: tuple[int] = self._commands.ArgumentHexChar(cmd)
+            retSizes: tuple[int] = self._commands.ReturnHexChar(cmd)
             # override which size tuple to use
             if(  sum(useSizes) == sum(argSizes)) : useSizes = argSizes
             elif(sum(useSizes) == sum(retSizes)) : useSizes = retSizes
@@ -189,7 +197,8 @@ class Packet_Standard(Packet) :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
 
         Raises:
             Exception: Packet is too small to be a standard packet.
@@ -201,15 +210,15 @@ class Packet_Standard(Packet) :
 
     @staticmethod
     def UnpackPODpacket(msg: bytes) -> dict[str,bytes] : 
-        """Converts a standard POD packet into a dictionary containing the command number and payload \
-        (if applicable) in bytes.
+        """Converts a standard POD packet into a dictionary containing the command number \
+            and payload (if applicable) in bytes.
 
         Args:
             msg (bytes): Bytes message containing a standard POD packet.
 
         Returns:
-            dict[str,bytes]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
-                (if applicable) in bytes.
+            dict[str,bytes]: A dictionary containing the POD packet's 'Command Number' and \
+                'Payload' (if applicable) in bytes.
         """
         # validate packet
         Packet_Standard.CheckIfPacketIsValid(msg)
@@ -223,15 +232,17 @@ class Packet_Standard(Packet) :
     
     @staticmethod
     def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
-        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values into integer values. 
+        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values \
+        into integer values. 
 
         Args: 
             msg (bytes): Bytes message containing a standard POD packet.
-            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
+            commands (POD_Commands, optional): Available commands for a POD device. \
+                Defaults to None.
             
         Returns:
-            dict[str,int]: A dictionary containing the POD packet's 'Command Number' and 'Payload' \
-                (if applicable) in integers.
+            dict[str,int]: A dictionary containing the POD packet's 'Command Number' \
+                and 'Payload' (if applicable) in integers.
         """
         packetObj = Packet_Standard(msg,commands)
         msgDictTrans: dict[str,int] = { 'Command Number' : packetObj.CommandNumber() }
@@ -248,7 +259,8 @@ class Packet_BinaryStandard(Packet) :
     + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes) 
     
     Attributes:
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and end with ETX.
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
+            and end with ETX.
         commands (POD_Commands | None, optional): Available commands for a POD device. 
         binaryLength (bytes): Number of bytes of binary data from the packet.
         binaryData (bytes): Variable length binary datafrom the packet.
@@ -258,7 +270,8 @@ class Packet_BinaryStandard(Packet) :
         """Sets the class instance variables. 
 
         Args:
-            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and ending with ETX.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                ending with ETX.
             commands (POD_Commands | None, optional): _description_. Defaults to None.
         """       
         super().__init__(pkt, commands)
@@ -303,7 +316,8 @@ class Packet_BinaryStandard(Packet) :
         
     @staticmethod
     def GetMinimumLength() -> int : 
-        """Gets the number of bytes in the smallest possible packet; STX (1 byte) + something + ETX (1 byte). 
+        """Gets the number of bytes in the smallest possible packet; \
+        STX (1 byte) + something + ETX (1 byte). 
 
         Returns:
             int: integer representing the minimum length of a binary POD \
@@ -319,7 +333,8 @@ class Packet_BinaryStandard(Packet) :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
 
         Raises:
             Exception: Packet is too small to be a standard packet.
@@ -355,12 +370,13 @@ class Packet_BinaryStandard(Packet) :
 
     @staticmethod
     def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
-        """Unpacks the variable-length binary POD packet and converts the values of the ASCII-encoded \
-        bytes into integer values and leaves the binary-encoded bytes as is. 
+        """Unpacks the variable-length binary POD packet and converts the values of the \
+        ASCII-encoded bytes into integer values and leaves the binary-encoded bytes as is. 
 
         Args:
             msg (bytes): Bytes message containing a variable-length POD packet.
-            commands (POD_Commands, optional): Available commands for a POD device. Defaults to None.
+            commands (POD_Commands, optional): Available commands for a POD device. \
+                Defaults to None.
 
         Returns:
             dict[str,int|bytes]: Dictionary containing the POD packet's 'Command Number', \
@@ -379,15 +395,30 @@ class Packet_BinaryStandard(Packet) :
 
 class Packet_Binary4(Packet) : 
 
-    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+    def __init__(self, pkt: bytes, preampGain: int, commands: POD_Commands | None = None) -> None:
         super().__init__(pkt, commands)
         self.packetNumber: bytes = self.GetPacketNumber(pkt)
         self.ttl: bytes = self.GetTTL(pkt)
         self.ch0: bytes = self.GetCh0(pkt)
         self.ch1: bytes = self.GetCh1(pkt)
         self.ch2: bytes = self.GetCh2(pkt)
+        self._preampGain: int = int(preampGain)
 
+    def PacketNumber(self) -> int : 
+        return POD_Packets.BinaryBytesToInt(self.packetNumber)
+    
+    def Ttl(self) -> dict[str,int] : 
+        return Packet_Binary4.TranslateBinaryTTLbyte(self.ttl)
 
+    def Ch0(self) -> float :
+        return Packet_Binary4.BinaryBytesToVoltage(self.ch0, self._preampGain)
+
+    def Ch1(self) -> float :
+        return Packet_Binary4.BinaryBytesToVoltage(self.ch1, self._preampGain)
+    
+    def Ch2(self) -> float :
+        return Packet_Binary4.BinaryBytesToVoltage(self.ch2, self._preampGain)
+    
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
         return pkt[5].to_bytes(1,'big')
@@ -410,9 +441,9 @@ class Packet_Binary4(Packet) :
 
     @staticmethod
     def GetMinimumLength() -> int : 
-        """Gets the number of bytes in the smallest possible binary4 packet; STX (1 byte) + command (4 bytes) + \
-        packet number (1 byte) + TTL (1 byte) + CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) \
-        + ETX (1 byte). 
+        """Gets the number of bytes in the smallest possible binary4 packet; \
+        STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) + \
+        CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
 
         Returns:
             int: integer representing the minimum length of a binary4 POD packet. 
@@ -424,7 +455,8 @@ class Packet_Binary4(Packet) :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX and end with ETX.
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
 
         Raises:
             Exception: Packet is too small to be a standard packet.
@@ -440,8 +472,8 @@ class Packet_Binary4(Packet) :
         """Separates the components of a binary4 packet into a dictionary.
         
         Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'TTL', 'Ch0', 'Ch1', \
-                and 'Ch2' in bytes.
+            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', \
+                'TTL', 'Ch0', 'Ch1', and 'Ch2' in bytes.
         """
         Packet_Binary4.CheckIfPacketIsValid(pkt)
         return {
@@ -453,6 +485,69 @@ class Packet_Binary4(Packet) :
             'Ch2'               : Packet_Binary4.GetCh2(pkt)
         }
         
+    def TranslatePODpacket(self, msg: bytes, preampGain: int, commands: POD_Commands = None) -> dict[str,int|float|dict[str,int]] : 
+        """Unpacks the binary4 POD packet and converts the values of the ASCII-encoded bytes \
+        into integer values and the values of binary-encoded bytes into integers. \
+        Channel values are given in Volts.
+
+        Args:
+            msg (bytes): Bytes string containing a complete binary4 Pod packet.
+            commands (POD_Commands, optional): Available commands for a POD device. \
+                Defaults to None.
+
+        Returns:
+            dict[str,int|float|dict[str,int]]: A dictionary containing 'Command Number', \
+                'Packet #', 'TTL', 'Ch0', 'Ch1', and 'Ch2' as numbers.
+        """
+        packetObj = Packet_Binary4(msg,preampGain,commands)
+        # translate the binary ascii encoding into a readable integer
+        return {
+            'Command Number'  : packetObj.CommandNumber(),
+            'Packet #'        : packetObj.PacketNumber(),
+            'TTL'             : packetObj.Ttl(),
+            'Ch0'             : packetObj.Ch0(),
+            'Ch1'             : packetObj.Ch1(),
+            'Ch2'             : packetObj.Ch2() 
+        }
+
+    @staticmethod
+    def TranslateBinaryTTLbyte(ttlByte: bytes) -> dict[str,int] : 
+        """Separates the bits of each TTL (0-3) from a binary encoded byte.
+
+        Args:
+            ttlByte (bytes): One byte string for the TTL (binary encoded).
+
+        Returns:
+            dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
+        """
+        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
+        return( {
+            'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+        } )
+        
+        
+    @staticmethod
+    def BinaryBytesToVoltage(value: bytes, preampGain: int) -> float :
+        """Converts a binary bytes value read from POD device and converts it to the \
+        real voltage value at the preamplifier input.
+
+        Args:
+            value (bytes): Bytes string containing voltage measurement.
+
+        Returns:
+            float: A number containing the voltage in Volts [V].
+        """
+        # convert binary message from POD to integer
+        value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
+        # calculate voltage 
+        voltageADC = ( value_int / 65535.0 ) * 4.096 # V
+        totalGain = preampGain * 50.2918
+        realValue = ( voltageADC - 2.048 ) / totalGain
+        # return the real value at input to preamplifier 
+        return(realValue) # V 
 
 
 # ==========================================================================================================
@@ -464,8 +559,6 @@ class Packet_Binary4(Packet) :
 
 # class Packet_Binary3(Packet) : 
 #     pass
-
-
 
 
 # class Packet_Binary5(Packet) : 

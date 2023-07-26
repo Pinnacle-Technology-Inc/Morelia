@@ -2,6 +2,8 @@
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
 from PodPacket              import Packet_Binary4
+from PodPacket              import Packet_Standard
+
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -16,18 +18,6 @@ class POD_8206HR(POD_Basics) :
     
     Attributes:
         _preampGain (int): Instance-level integer (10 or 100) preamplifier gain.
-    """
-
-    # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
-
-
-    __B4LENGTH : int = 16
-    """Class-level integer representing the number of bytes for a Binary 4 packet.
-    """
-
-    __B4BINARYLENGTH : int = __B4LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
-    """Class-level integer representing the number of binary bytes for a \
-    Binary 4 packet.
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -78,35 +68,6 @@ class POD_8206HR(POD_Basics) :
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float|dict[str,int]] : 
-        """Overwrites the parent's method. Unpacks the binary4 POD packet and converts the values of the \
-        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. \
-        Channel values are given in Volts.
-
-        Args:
-            msg (bytes): Bytes string containing a complete binary4 Pod packet:  STX (1 byte) \
-                + command (4 bytes) + packet number (1 bytes) + TTL (1 byte) + ch0 (2 bytes) \
-                + ch1 (2 bytes) + ch2 (2 bytes) + checksum (2 bytes) + ETX (1 byte).
-
-        Returns:
-            dict[str,int|float|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', \
-            'TTL', 'Ch0', 'Ch1', and 'Ch2' as numbers.
-        """
-        # unpack parts of POD packet into dict
-        msgDict = Packet_Binary4.UnpackPODpacket(msg)
-        # translate the binary ascii encoding into a readable integer
-        msgDictTrans = {
-            'Command Number'  : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
-            'Packet #'        : POD_Packets.BinaryBytesToInt(msgDict['Packet #']),
-            'TTL'             : self._TranslateTTLbyte_Binary(msgDict['TTL']),
-            'Ch0'             : self._BinaryBytesToVoltage(msgDict['Ch0']),
-            'Ch1'             : self._BinaryBytesToVoltage(msgDict['Ch1']),
-            'Ch2'             : self._BinaryBytesToVoltage(msgDict['Ch2'])
-        }
-        # return translated unpacked POD packet 
-        return(msgDictTrans)
-
-
     def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
         """Overwrites the parent's method. Determines if the packet is standard or binary, and \
         translates accordingly. Adds a check for the 'GET TTL PORT' command.
@@ -120,15 +81,15 @@ class POD_8206HR(POD_Basics) :
         # get command number (same for standard and binary packets)
         cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
         if(self._commands.IsCommandBinary(cmd)): # message is binary 
-            return(self.TranslatePODpacket_Binary(msg))
+            return(Packet_Binary4.TranslatePODpacket(msg, self._preampGain, self._commands))
         elif(cmd == 106) : # 106, 'GET TTL PORT'
-            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transDict = {'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number'])}
+            msgDict = Packet_Standard.UnpackPODpacket(msg)
+            transDict = {'Command Number' : POD_Packets.AsciiBytesToInt(msgDict['Command Number'])}
             if('Payload' in msgDict) : 
                 transDict['Payload'] = self._TranslateTTLbyte_ASCII(msgDict['Payload']) 
             return(transDict)
         else: # standard packet 
-            return(self.TranslatePODpacket_Standard(msg))
+            return(Packet_Standard.UnpackPODpacket(msg))
             
 
 
@@ -155,45 +116,6 @@ class POD_8206HR(POD_Basics) :
             'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
             'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
         } )   
-    
-
-    @staticmethod
-    def _TranslateTTLbyte_Binary(ttlByte: bytes) -> dict[str,int] : 
-        """Separates the bits of each TTL (0-3) from a binary encoded byte.
-
-        Args:
-            ttlByte (bytes): One byte string for the TTL (binary encoded).
-
-        Returns:
-            dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
-        """
-        # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( {
-            'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        } )   
-
-
-    def _BinaryBytesToVoltage(self, value: bytes) -> float :
-        """Converts a binary bytes value read from POD device and converts it to the real voltage value \
-        at the preamplifier input.
-
-        Args:
-            value (bytes): Bytes string containing voltage measurement.
-
-        Returns:
-            float: A number containing the voltage in Volts [V].
-        """
-        # convert binary message from POD to integer
-        value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
-        # calculate voltage 
-        voltageADC = ( value_int / 65535.0 ) * 4.096 # V
-        totalGain = self._preampGain * 50.2918
-        realValue = ( voltageADC - 2.048 ) / totalGain
-        # return the real value at input to preamplifier 
-        return(realValue) # V 
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
@@ -239,11 +161,13 @@ class POD_8206HR(POD_Basics) :
         # 15    0x03	        Binary		ETX
         # ------------------------------------------------------------
         
+        # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+        binaryLength = Packet_Binary4.GetMinimumLength() - 8 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(self.__B4BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(binaryLength) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return(Packet_Binary4(packet, self._commands))
+        return(Packet_Binary4(packet, self._preampGain, self._commands))
