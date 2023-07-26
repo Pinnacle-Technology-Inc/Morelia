@@ -41,7 +41,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Basics.GetU(8)
         U16 = POD_Basics.GetU(16)
-        B4  = POD_8206HR.__B4BINARYLENGTH
+        B4  = Packet_Binary4.GetMinimumLength() - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
@@ -91,7 +91,6 @@ class POD_8206HR(POD_Basics) :
         else: # standard packet 
             return(Packet_Standard.UnpackPODpacket(msg))
             
-
 
     # ============ PROTECTED METHODS ============      ========================================================================================================================
 
