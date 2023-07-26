@@ -260,7 +260,7 @@ class Setup_8480SC(Setup_Interface) :
         Raises:
             Exception: EDF filetype is not supported for 8480 POD devices.
         """
-        raise Exception('[!] POD Device 8480 does not support EDF filetype.')
+        raise Exception('[!] POD Device 8480-SC does not support EDF filetype.')
     
 
     def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
