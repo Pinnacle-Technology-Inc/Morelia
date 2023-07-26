@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.join( os.path.abspath('.'), 'Code', 'API_Modules') )
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
+from PodPacket              import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -29,14 +30,14 @@ def ChoosePort() -> str :
     return(ChoosePort())
 
 def Write(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
-    write = pod.WritePacket(cmd, payload)
-    write = pod.TranslatePODpacket(write)
-    print('Write:\t', write)
+    write: Packet_Standard = pod.WritePacket(cmd, payload)
+    data = write.TranslateAll()
+    print('Write:\t', data)
 
 def Read(pod: POD_8206HR) : 
     read = pod.ReadPODpacket()
-    read = pod.TranslatePODpacket(read)
-    print('Read:\t', read)
+    data = read.TranslateAll()
+    print('Read:\t', data)
 
 def RunCommand(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
    Write(pod,cmd,payload)

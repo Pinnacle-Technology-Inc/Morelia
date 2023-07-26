@@ -37,10 +37,19 @@ class Packet :
                 Defaults to None.
         """
         self.CheckIfPacketIsValid(pkt)
-        self._commands:  POD_Commands|None = commands
+        self._commands: POD_Commands|None = commands
         self.rawPacket: bytes = bytes(pkt)
         self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
         
+    def UnpackAll(self) -> dict[str,bytes] :
+        if(self.HasCommandNumber()) : 
+            return { 'Command Number' : self.commandNumber }
+        raise Exception('Nothing to unpack.')  
+      
+    def TranslateAll(self) -> dict[str, Any] :
+        if(self.HasCommandNumber()) : 
+            return { 'Command Number' : self.CommandNumber() }
+        raise Exception('Nothing to translate.')  
         
     def CommandNumber(self) -> int : 
         """Translate the binary ASCII encoding into a readable integer
@@ -50,6 +59,13 @@ class Packet :
         """
         return POD_Packets.AsciiBytesToInt(self.commandNumber)
         
+    def HasCommandNumber(self) -> bool :
+        """Checks if the packet has a command number.
+
+        Returns:
+            bool: True if the packet has a command number, False otherwise.
+        """
+        return (self.commandNumber != None)
         
     @staticmethod
     def GetCommandNumber(pkt: bytes) -> bytes|None :
@@ -65,7 +81,6 @@ class Packet :
         if(len(pkt) > Packet.GetMinimumLength() + 4) :
             return pkt[1:5]
         return None
-    
     
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -110,7 +125,7 @@ class Packet :
 
 class Packet_Standard(Packet) : 
     """Container class that stores a standard command packet for a POD device. The format is \
-    STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
+    STX (1 byte) + command number (4 bytes) + optional payload (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
     Attributes:
         _commands (POD_Commands | None): Available commands for a POD device. 
@@ -135,7 +150,18 @@ class Packet_Standard(Packet) :
         self._customPayload: Callable[[Any],tuple]|None = None
         self._customPayloadArgs: Any|None = None
         
-        
+    def UnpackAll(self) -> dict[str, bytes]:
+        data: dict = super().UnpackAll()
+        if(self.HasPayload()) : 
+            data['Payload'] = self.payload
+        return data
+    
+    def TranslateAll(self) -> dict[str, Any]:
+        data: dict =  super().TranslateAll()
+        if(self.HasPayload()) : 
+            data['Payload'] = self.Payload()
+        return data
+    
     def SetCustomPayload(self, func: Callable[[Any],tuple], args: Any = None) -> None :
         """Sets a custom function with optional arguments to translate the payload.
 
@@ -317,6 +343,20 @@ class Packet_BinaryStandard(Packet) :
         self.binaryData:    bytes = Packet_BinaryStandard.GetBinaryData(pkt)
         
         
+    def UnpackAll(self) -> dict[str, bytes]:
+        data: dict = super().UnpackAll()
+        data['Binary Packet Length'] = self.binaryLength
+        data['Binary Data']          = self.binaryData
+        return data
+        
+        
+    def TranslateAll(self) -> dict[str, Any]:
+        data: dict =  super().TranslateAll()
+        data['Binary Packet Length'] = self.BinaryLength()
+        data['Binary Data']          = self.binaryData
+        return data
+        
+        
     def BinaryLength(self) -> int : 
         """Translate the binary ASCII encoding of the binary data length \
         into a readable integer
@@ -488,6 +528,24 @@ class Packet_Binary4(Packet) :
         self.ch2: bytes = self.GetCh(2,pkt)
         self._preampGain: int = int(preampGain)
 
+    def UnpackAll(self) -> dict[str, bytes]:
+        data: dict = super().UnpackAll()
+        data['Packet #'] = self.packetNumber,
+        data['TTL'] = self.ttl, 
+        data['Ch0'] = self.ch0, 
+        data['Ch1'] = self.ch1, 
+        data['Ch2'] = self.ch2  
+        return data
+
+    def TranslateAll(self) -> dict[str, Any]:
+        data: dict = super().TranslateAll()
+        data['Packet #'] = self.PacketNumber(),
+        data['TTL'] = self.Ttl(), 
+        data['Ch0'] = self.ch0, 
+        data['Ch1'] = self.ch1, 
+        data['Ch2'] = self.ch2  
+        return data
+    
     def PacketNumber(self) -> int : 
         """Translates the binary packet number into a readable integer.
 
