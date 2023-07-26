@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodDevice_8229 module &mdash; Python POD API v1.3.0 documentation</title>
+  <title>PodDevice_8229 module &mdash; Python POD API v1.3.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -197,17 +197,17 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PodDevice_8229.POD_8229.DecodeDaySchedule">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.DecodeDaySchedule" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8229.POD_8229.DecodeDaySchedule" title="Permalink to this definition"></a></dt>
 <dd><p>Interprets the return bytes from the command #142 ‘GET DAY SCHEDULE’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>schedule</strong> (<em>bytes</em>) – 24 byte long bitstring with one U8 per hour in a day.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictionary with ‘Hour’ as a list of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0-100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a list of 24 items.</p>
+<dd class="field-even"><p>Dictionary with ‘Hour’ as a tuple of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0-100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a tuple of 24 items.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,int|list[int]]</p>
+<dd class="field-odd"><p>dict[str,int|tuple[int]]</p>
 </dd>
 </dl>
 </dd></dl>

@@ -170,10 +170,10 @@ class POD_8206HR(POD_Basics) :
             return(self.TranslatePODpacket_Binary(msg))
         elif(cmd == 106) : # 106, 'GET TTL PORT'
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            return( {
-                'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number']),
-                'Payload'           : self._TranslateTTLbyte_ASCII(msgDict['Payload']) # TranslatePODpacket_Standard does not handle TTL well
-            } )
+            transDict = {'Command Number'    : POD_Packets.AsciiBytesToInt(msgDict['Command Number'])}
+            if('Payload' in msgDict) : 
+                transDict['Payload'] = self._TranslateTTLbyte_ASCII(msgDict['Payload']) 
+            return(transDict)
         else: # standard packet 
             return(self.TranslatePODpacket_Standard(msg))
             

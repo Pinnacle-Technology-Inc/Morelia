@@ -380,11 +380,6 @@ class Setup_Interface :
         # chose device # to remove 
         removeThis = self._SelectDeviceFromDict('Remove')
         # remove from dicts
-
-        print(self._podParametersDict)
-        print(self._podDevices)
-        print(self._podDevices[removeThis])
-
         self._podParametersDict.pop(removeThis)
         self._podDevices.pop(removeThis)
         # print feedback

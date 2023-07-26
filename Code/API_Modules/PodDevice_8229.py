@@ -140,16 +140,16 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def DecodeDaySchedule(schedule: bytes) -> dict[str,int|list[int]] :
+    def DecodeDaySchedule(schedule: bytes) -> dict[str,int|tuple[int]] :
         """Interprets the return bytes from the command #142 'GET DAY SCHEDULE'.
 
         Args:
             schedule (bytes): 24 byte long bitstring with one U8 per hour in a day.
 
         Returns:
-            dict[str,int|list[int]]: Dictionary with 'Hour' as a list of 24 0/1 values (0 is motor off and \
+            dict[str,int|tuple[int]]: Dictionary with 'Hour' as a tuple of 24 0/1 values (0 is motor off and \
                 1 is motor on) and 'Speed' as the motor speed (0-100). If the motor speed is the same \
-                every hour, 'Speed' will be an integer; otherwise, 'Speed' will be a list of 24 items.
+                every hour, 'Speed' will be an integer; otherwise, 'Speed' will be a tuple of 24 items.
         """
         # use this for getting the command #argument 
         # check for valid arguments 
@@ -167,9 +167,11 @@ class POD_8229(POD_Basics) :
         if(len(set(speeds)) == 1) : 
             # speeds has all identical elements
             speeds = speeds[0]
+        else : 
+            speeds = tuple(speeds)
         # return hour and speeds 
         return({ 
-            'Hour'  : hours, 
+            'Hour'  : tuple(hours), 
             'Speed' : speeds
         })
     
@@ -276,14 +278,18 @@ class POD_8229(POD_Basics) :
         specialCommands = [140, 142, 202] # 140 SET TIME # 142 GET DAY SCHEDULE # 202 LCD SET DAY SCHEDULE 
         if(cmd in specialCommands):
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            match cmd : 
-                case 140 : # 140 SET TIME
-                    transdict['Payload'] = tuple([self._DecodeDecimalAsHex(x) for x in self.TranslatePODpacket_Standard(msg)['Payload']]) 
-                case 142 : # 142 GET DAY SCHEDULE
-                    transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload']) 
-                case   _ : # 202 LCD SET DAY SCHEDULE 
-                    transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload']) 
+            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }
+            if('Payload' in msgDict) :
+                match cmd : 
+                    case 140 : # 140 SET TIME
+                        transdict['Payload'] = tuple([self._DecodeDecimalAsHex(x) for x in self.TranslatePODpacket_Standard(msg)['Payload']]) 
+                    case 142 : # 142 GET DAY SCHEDULE
+                        if(len(msgDict['Payload']) > 2 ) : 
+                            transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload']) 
+                        else : 
+                            transdict['Payload'] = POD_Packets.AsciiBytesToInt(msgDict['Payload']) 
+                    case   _ : # 202 LCD SET DAY SCHEDULE 
+                        transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload']) 
             return(transdict)
         # standard packet 
         else: 
