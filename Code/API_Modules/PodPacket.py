@@ -295,48 +295,6 @@ class Packet_Standard(Packet) :
         Packet.CheckIfPacketIsValid(msg)    
         if(len(msg) < Packet_Standard.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard packet.')
-    
-
-    @staticmethod
-    def UnpackPODpacket(msg: bytes) -> dict[str,bytes] : 
-        """Converts a standard POD packet into a dictionary containing the command number \
-            and payload (if applicable) in bytes.
-
-        Args:
-            msg (bytes): Bytes message containing a standard POD packet.
-
-        Returns:
-            dict[str,bytes]: A dictionary containing the POD packet's 'Command Number' and \
-                'Payload' (if applicable) in bytes.
-        """
-        # validate packet
-        Packet_Standard.CheckIfPacketIsValid(msg)
-        # add command number and payload to a dict
-        msg_unpacked = {'Command Number' : Packet_Standard.GetCommandNumber(msg) } 
-        pld = Packet_Standard.GetPayload(msg)
-        if(pld != None) : msg_unpacked['Payload'] = pld
-        # return finished dict
-        return msg_unpacked
-    
-    
-    @staticmethod
-    def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int] : 
-        """Unpacks the standard POD packet and converts the ASCII-encoded bytes values \
-        into integer values. 
-
-        Args: 
-            msg (bytes): Bytes message containing a standard POD packet.
-            commands (POD_Commands, optional): Available commands for a POD device. \
-                Defaults to None.
-            
-        Returns:
-            dict[str,int]: A dictionary containing the POD packet's 'Command Number' \
-                and 'Payload' (if applicable) in integers.
-        """
-        packetObj = Packet_Standard(msg,commands)
-        msgDictTrans: dict[str,int] = { 'Command Number' : packetObj.CommandNumber() }
-        if(packetObj.HasPayload()) : msgDictTrans['Payload'] = packetObj.Payload()
-        return msgDictTrans
         
 
 # ==========================================================================================================
@@ -454,48 +412,7 @@ class Packet_BinaryStandard(Packet) :
             raise Exception('Packet is too small to be a standard binary packet.')
         if(msg[11].to_bytes(1,'big') != POD_Packets.ETX()) : 
             raise Exception('A standard binary packet must have an ETX before the binary bytes.')
-
-    @staticmethod
-    def UnpackPODpacket(msg: bytes) -> dict[str,bytes]: 
-        """Converts a variable-length binary packet into a dictionary containing the command 
-        number, binary packet length, and binary data in bytes. 
-
-        Args: 
-            msg (bytes): Bytes message containing a variable-length POD packet
-
-        Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Binary Packet Length', \
-                and 'Binary Data' keys with bytes values.
-        """
-        Packet_BinaryStandard.CheckIfPacketIsValid(msg)
-        # create dict and add command number and checksum
-        return {
-            'Command Number'        : Packet_BinaryStandard.GetCommandNumber(msg),
-            'Binary Packet Length'  : Packet_BinaryStandard.GetBinaryLength(msg),
-            'Binary Data'           : Packet_BinaryStandard.GetBinaryData(msg)
-        }
-
-    @staticmethod
-    def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
-        """Unpacks the variable-length binary POD packet and converts the values of the \
-        ASCII-encoded bytes into integer values and leaves the binary-encoded bytes as is. 
-
-        Args:
-            msg (bytes): Bytes message containing a variable-length POD packet.
-            commands (POD_Commands, optional): Available commands for a POD device. \
-                Defaults to None.
-
-        Returns:
-            dict[str,int|bytes]: Dictionary containing the POD packet's 'Command Number', \
-                'Binary Packet Length', and 'Binary Data'.
-        """
-        packetObj = Packet_BinaryStandard(msg,commands)
-        # translate the binary ascii encoding into a readable integer
-        return {
-            'Command Number'        : packetObj.CommandNumber(),
-            'Binary Packet Length'  : packetObj.BinaryLength(),
-            'Binary Data'           : packetObj.binaryData # leave this as bytes, change type if needed 
-        }
+        
         
 # ==========================================================================================================
 
@@ -695,49 +612,6 @@ class Packet_Binary4(Packet) :
         if(len(msg) != Packet_Binary4.GetMinimumLength()) : 
             raise Exception('Packet the wrong size to be a binary4 packet.')
 
-
-    @staticmethod
-    def UnpackPODpacket(pkt: bytes) -> dict[str,bytes] :
-        """Separates the components of a binary4 packet into a dictionary.
-        
-        Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', \
-                'TTL', 'Ch0', 'Ch1', and 'Ch2' in bytes.
-        """
-        Packet_Binary4.CheckIfPacketIsValid(pkt)
-        return {
-            'Command Number'    : Packet_Binary4.GetCommandNumber(pkt),
-            'Packet #'          : Packet_Binary4.GetPacketNumber(pkt), 
-            'TTL'               : Packet_Binary4.GetTTL(pkt),
-            'Ch0'               : Packet_Binary4.GetCh(0,pkt),
-            'Ch1'               : Packet_Binary4.GetCh(1,pkt),
-            'Ch2'               : Packet_Binary4.GetCh(2,pkt)
-        }
-        
-    def TranslatePODpacket(self, msg: bytes, preampGain: int, commands: POD_Commands = None) -> dict[str,int|float|dict[str,int]] : 
-        """Unpacks the binary4 POD packet and converts the values of the ASCII-encoded bytes \
-        into integer values and the values of binary-encoded bytes into integers. \
-        Channel values are given in Volts.
-
-        Args:
-            msg (bytes): Bytes string containing a complete binary4 Pod packet.
-            commands (POD_Commands, optional): Available commands for a POD device. \
-                Defaults to None.
-
-        Returns:
-            dict[str,int|float|dict[str,int]]: A dictionary containing 'Command Number', \
-                'Packet #', 'TTL', 'Ch0', 'Ch1', and 'Ch2' as numbers.
-        """
-        packetObj = Packet_Binary4(msg,preampGain,commands)
-        # translate the binary ascii encoding into a readable integer
-        return {
-            'Command Number'  : packetObj.CommandNumber(),
-            'Packet #'        : packetObj.PacketNumber(),
-            'TTL'             : packetObj.Ttl(),
-            'Ch0'             : packetObj.Ch(0),
-            'Ch1'             : packetObj.Ch(1),
-            'Ch2'             : packetObj.Ch(2) 
-        }
 
     @staticmethod
     def TranslateBinaryTTLbyte(ttlByte: bytes) -> dict[str,int] : 
