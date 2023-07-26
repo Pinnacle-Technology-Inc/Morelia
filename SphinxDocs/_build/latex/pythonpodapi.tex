@@ -64,8 +64,8 @@
 
 
 \title{Python POD API}
-\date{Jul 14, 2023}
-\release{v1.3.0}
+\date{Jul 26, 2023}
+\release{v1.3.1}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -1424,10 +1424,12 @@ bool
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{GetUserInput:GetUserInput.UserInput.GetFileName}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetFileName}}}{}{{ $\rightarrow$ str}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetFileName}}}{\sphinxparam{\DUrole{n,n}{goodExt}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{{[}\textquotesingle{}.txt\textquotesingle{}{]}}}}{{ $\rightarrow$ str}}
 \pysigstopsignatures
 \sphinxAtStartPar
 Asks the user for a filename.
+:param goodExt: List of valid file extensions. Defaults to {[}‘.txt’{]}.
+:type goodExt: list{[}str{]}, optional
 \begin{quote}\begin{description}
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
@@ -1458,7 +1460,7 @@ Asks the user for a file path and file name.
 
 \item {} 
 \sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{goodExt}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} List of valid file extensions. Defaults to {[}‘.csv’,’.txt’,’.edf’{]}.
+\sphinxstyleliteralstrong{\sphinxupquote{goodExt}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{str}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} List of valid file extensions. Defaults to {[}‘.txt’{]}.
 
 \end{itemize}
 
@@ -2445,7 +2447,7 @@ str
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{PodDevice_8229:PodDevice_8229.POD_8229.DecodeDaySchedule}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{DecodeDaySchedule}}}{\sphinxparam{\DUrole{n,n}{schedule}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }list\DUrole{p,p}{{[}}int\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{DecodeDaySchedule}}}{\sphinxparam{\DUrole{n,n}{schedule}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }tuple\DUrole{p,p}{{[}}int\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
 Interprets the return bytes from the command \#142 ‘GET DAY SCHEDULE’.
@@ -2456,11 +2458,11 @@ Interprets the return bytes from the command \#142 ‘GET DAY SCHEDULE’.
 
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-Dictionary with ‘Hour’ as a list of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0\sphinxhyphen{}100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a list of 24 items.
+Dictionary with ‘Hour’ as a tuple of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0\sphinxhyphen{}100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a tuple of 24 items.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-dict{[}str,int|list{[}int{]}{]}
+dict{[}str,int|tuple{[}int{]}{]}
 
 \end{description}\end{quote}
 
@@ -2900,6 +2902,32 @@ float
 
 \end{fulllineitems}
 
+\index{DecodeChannelBitmask() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{DecodeChannelBitmask()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.DecodeChannelBitmask}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{DecodeChannelBitmask}}}{\sphinxparam{\DUrole{n,n}{channels}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{,}\DUrole{w,w}{  }int\DUrole{p,p}{{]}}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Converts the channel bitmask byte to a dictionary with each channel value.         Use for ‘GET INPUT GROUND’ command payloads.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{channels}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} U8 byte containing the channel configuration.
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary with the channels as keys and values as the state.                 0=Grounded and 1=Connected to Preamp.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str,int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{DecodeSSConfigBitmask() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{DecodeSSConfigBitmask()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
 
 \begin{fulllineitems}
@@ -2908,7 +2936,7 @@ float
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{DecodeSSConfigBitmask}}}{\sphinxparam{\DUrole{n,n}{config}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}}{}
 \pysigstopsignatures
 \sphinxAtStartPar
-Converts the SS configuration byte to a dictionary with the high\sphinxhyphen{}pass and gain.
+Converts the SS configuration byte to a dictionary with the high\sphinxhyphen{}pass and gain.         Use for ‘GET SS CONFIG’ command payloads.
 \begin{quote}\begin{description}
 \sphinxlineitem{Parameters}
 \sphinxAtStartPar
@@ -2939,6 +2967,47 @@ Dictinoary with TTL name keys and integer TTL values.
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
 dict{[}str,int{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
+\index{GetChannelBitmask() (PodDevice\_8401HR.POD\_8401HR static method)@\spxentry{GetChannelBitmask()}\spxextra{PodDevice\_8401HR.POD\_8401HR static method}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{PodDevice_8401HR:PodDevice_8401HR.POD_8401HR.GetChannelBitmask}}
+\pysigstartsignatures
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{GetChannelBitmask}}}{\sphinxparam{\DUrole{n,n}{a}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{b}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{c}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}, \sphinxparam{\DUrole{n,n}{d}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}}}{{ $\rightarrow$ int}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Gets a bitmask, represented by an unsigned integer, used for ‘SET INPUT GROUND’ command.
+\begin{quote}\begin{description}
+\sphinxlineitem{Parameters}\begin{itemize}
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{a}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} State for channel A, 0=Grounded and 1=Connected to Preamp.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{b}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} State for channel B, 0=Grounded and 1=Connected to Preamp.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{c}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} State for channel C, 0=Grounded and 1=Connected to Preamp.
+
+\item {} 
+\sphinxAtStartPar
+\sphinxstyleliteralstrong{\sphinxupquote{d}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}) \textendash{} State for channel D, 0=Grounded and 1=Connected to Preamp.
+
+\end{itemize}
+
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Integer representing a bitmask.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+int
 
 \end{description}\end{quote}
 

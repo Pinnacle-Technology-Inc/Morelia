@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GetUserInput module &mdash; Python POD API v1.3.0 documentation</title>
+  <title>GetUserInput module &mdash; Python POD API v1.3.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -462,8 +462,10 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="GetUserInput.UserInput.GetFileName">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetFileName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#GetUserInput.UserInput.GetFileName" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user for a filename.</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetFileName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">goodExt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">['.txt']</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#GetUserInput.UserInput.GetFileName" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user for a filename.
+:param goodExt: List of valid file extensions. Defaults to [‘.txt’].
+:type goodExt: list[str], optional</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>String of the file name and extension.</p>
@@ -482,7 +484,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>prompt</strong> (<em>str</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – Text to print to the user before requesting the path. Defaults to None.</p></li>
-<li><p><strong>goodExt</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of valid file extensions. Defaults to [‘.csv’,’.txt’,’.edf’].</p></li>
+<li><p><strong>goodExt</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of valid file extensions. Defaults to [‘.txt’].</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>

@@ -57,7 +57,7 @@ class POD_8480SC(POD_Basics) :
         self._commands.AddCommand( 119,	'SET ESTIM CURRENT',	(U8, U16),	                        (0,),                                False  , 'Requires U8 channel.  Sets the selected chanenl ESTIM current to the given value in percentage, from 0-100.')
         self._commands.AddCommand( 124,	'GET PREAMP TYPE',	    (0,),	                            (U16,),                              False  , 'Gets the store preamp value.')
         self._commands.AddCommand( 125,	'SET PREAMP TYPE',	    (U16,),	                            (0,),                                False  , 'Sets the preamp value, from 0-1023.  This should match the table in Sirenia, it is a 10-bit code that tells the 8401 what preamp is connected.  Only needed when used with an 8401. See table below.')
-        self._commands.AddCommand( 126,	'GET SYNC CONFIG',	    (0,),	                            (U8,),                               False  ,  'Gets the sync config byte.  See format below.')
+        self._commands.AddCommand( 126,	'GET SYNC CONFIG',	    (0,),	                            (U8,),                               False  , 'Gets the sync config byte.  See format below.')
         self._commands.AddCommand( 127,	'SET SYNC CONFIG',	    (U8,),	                            (0,),                                False  , 'Sets the sync config byte.  See format below.')
         # The commands below are event commands and as such are outbound only.The API should handle these commands but should not send them. 
         self._commands.AddCommand( 132,	'EVENT TTL',	        (0,),	                            (U8,),                               False  , 'Indicates a TTL event has occurred on the indicated U8 TTL input.  If debounce is non-zero then this will not occur until the debounce has completed successfully.')
@@ -187,12 +187,24 @@ class POD_8480SC(POD_Basics) :
             msgDict = POD_Basics.UnpackPODpacket_Standard(msg)  #breaks up the msg into dictionary with keys as 'command number' and 'payload'
             # start building translated dictionary
             transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }   #pulling value from msgdict and changing into int
-            if (cmd == 126):  #126 GET SYNC CONFIG
-                transdict['Payload'] = self.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'] )) # changing the bytes to int, then putting the integer into the decode function
-            if(cmd == 108): #108 GET TTL SETUP
-                transdict['Payload'] = self.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][:4] ))
-            if(cmd == 101): #101 GET STIMULUS
-                transdict['Payload'] = self.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][-1:] ))
+            if('Payload' in msgDict) : 
+                if (cmd == 126):  #126 GET SYNC CONFIG
+                    transdict['Payload'] = self.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][:2]))
+                if(cmd == 108 and len(msgDict['Payload']) > 2): #108 GET TTL SETUP
+                    pay_list =[]
+                    first_bit = POD_Packets.AsciiBytesToInt( msgDict['Payload'][:2])
+                    middle_bit = dict(self.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][2:4] )))
+                    last_bit = POD_Packets.AsciiBytesToInt( msgDict['Payload'][4:6])
+                    pay_list.extend([first_bit, middle_bit, last_bit])
+                    transdict['Payload'] = tuple( pay_list )
+                if(cmd == 101 and len(msgDict['Payload']) > 2): #101 GET STIMULUS
+                    cutoff_dict = dict(self.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][-2:] ))) # bits part of the payload
+                    unpacked = (self.TranslatePODpacket_Standard(msg))
+                    pay_dict = list(unpacked['Payload'][:-1])
+                    pay_dict.append(cutoff_dict)
+                    transdict['Payload'] =  tuple( pay_dict )                    
+            return(transdict)
         else:
             return(self.TranslatePODpacket_Standard(msg))
+        
                
