@@ -1,7 +1,7 @@
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
-from PodPacket              import Packet_Binary4
+from PodPacket              import Packet, Packet_Binary4
 from PodPacket              import Packet_Standard
 
 # authorship
@@ -19,9 +19,8 @@ class POD_8206HR(POD_Basics) :
     Attributes:
         _preampGain (int): Instance-level integer (10 or 100) preamplifier gain.
     """
-
-    # ============ DUNDER METHODS ============      ========================================================================================================================
-
+    
+    # ------------ DUNDER ------------           ------------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
@@ -61,40 +60,8 @@ class POD_8206HR(POD_Basics) :
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
-
-        
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
     
 
-    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
-
-    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Determines if the packet is standard or binary, and \
-        translates accordingly. Adds a check for the 'GET TTL PORT' command.
-
-        Args:
-            msg (bytes): Bytes string containing either a standard or binary packet.
-
-        Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
-        """
-        # get command number (same for standard and binary packets)
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
-        if(self._commands.IsCommandBinary(cmd)): # message is binary 
-            return(Packet_Binary4.TranslatePODpacket(msg, self._preampGain, self._commands))
-        elif(cmd == 106) : # 106, 'GET TTL PORT'
-            msgDict = Packet_Standard.UnpackPODpacket(msg)
-            transDict = {'Command Number' : POD_Packets.AsciiBytesToInt(msgDict['Command Number'])}
-            if('Payload' in msgDict) : 
-                transDict['Payload'] = self._TranslateTTLbyte_ASCII(msgDict['Payload']) 
-            return(transDict)
-        else: # standard packet 
-            return(Packet_Standard.UnpackPODpacket(msg))
-            
-
-    # ============ PROTECTED METHODS ============      ========================================================================================================================
-
-    
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
@@ -119,6 +86,40 @@ class POD_8206HR(POD_Basics) :
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
+
+    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
+        """Overwrites the parent's method. Determines if the packet is standard or binary, and \
+        translates accordingly. Adds a check for the 'GET TTL PORT' command.
+
+        Args:
+            msg (bytes): Bytes string containing either a standard or binary packet.
+
+        Returns:
+            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
+        """
+        # get command number (same for standard and binary packets)
+        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) 
+        if(self._commands.IsCommandBinary(cmd)): # message is binary 
+            return(Packet_Binary4.TranslatePODpacket(msg, self._preampGain, self._commands))
+        elif(cmd == 106) : # 106, 'GET TTL PORT'
+            msgDict = Packet_Standard.UnpackPODpacket(msg)
+            transDict = {'Command Number' : POD_Packets.AsciiBytesToInt(msgDict['Command Number'])}
+            if('Payload' in msgDict) : 
+                transDict['Payload'] = self._TranslateTTLbyte_ASCII(msgDict['Payload']) 
+            return(transDict)
+        else: # standard packet 
+            return(Packet_Standard.UnpackPODpacket(msg))
+
+
+    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
+        packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
+        # check for special packets
+        if(isinstance(packet, Packet_Standard)) : 
+            if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
+                packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, packet.payload)
+        # return packet
+        return packet
+            
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> Packet_Binary4 :
         """After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX \

@@ -1,3 +1,7 @@
+# enviornment imports
+from typing import Any
+from collections.abc import Callable
+
 # local imports
 from PodPacketHandling  import POD_Packets
 from PodCommands        import POD_Commands
@@ -110,6 +114,8 @@ class Packet_Standard(Packet) :
     
     Attributes:
         _commands (POD_Commands | None): Available commands for a POD device. 
+        _customPayload (Callable[[Any],tuple]|None): Optional function to translate the payload. 
+        _customPayloadArgs (Any): Optional arguments for the _customPayload.
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and \
             end with ETX.
         commandNumber (bytes): Command number from the packet. 
@@ -126,17 +132,49 @@ class Packet_Standard(Packet) :
         """
         super().__init__(pkt,commands)
         self.payload: bytes|None = self.GetPayload(pkt)
+        self._customPayload: Callable[[Any],tuple]|None = None
+        self._customPayloadArgs: Any|None = None
         
         
-    def Payload(self) -> tuple :
+    def SetCustomPayload(self, func: Callable[[Any],tuple], args: Any = None) -> None :
+        """Sets a custom function with optional arguments to translate the payload.
+
+        Args:
+            func (function): Function to translate the payload.
+            args (optional): Arguments . Defaults to None.
+        """
+        self._customPayload: Callable[[Any],tuple] = func
+        self._customPayloadArgs: Any = args
+        
+        
+    def HasCustomPayload(self) -> bool : 
+        """Checks if a custom payload has been set.
+
+        Returns:
+            bool: True if there is a custom payload, False otherwise.
+        """
+        return (self._customPayload != None)
+    
+    
+    def Payload(self) -> tuple|None :
+        """Gets the payload as a readable tuple of values. 
+
+        Returns:
+            tuple|None: Translated payload, if available.
+        """
+        # check for payload 
+        if(not self.HasPayload()) :  return None
+        if(self.HasCustomPayload()): return self._customPayload(self._customPayloadArgs)
+        else:                        return self._DefaultPayload()
+        
+        
+    def _DefaultPayload(self) -> tuple[int] :
         """Splits the payload up into its components and translates the binary ASCII encoding \
         into a readable integer.
 
         Returns:
             tuple[int]: Tuple with integer values for each component of the payload.
         """
-        # check for payload 
-        if(not self.HasPayload()) : return None
         # get format of payload 
         useSizes: tuple[int] = (len(self.payload),)
         if(self.HasCommands()) : 
