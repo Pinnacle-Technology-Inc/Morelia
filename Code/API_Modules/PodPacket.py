@@ -71,7 +71,7 @@ class Packet :
         Returns:
             int: integer representing the minimum length of a generic bytes string.
         """
-        return(2)
+        return 2
     
     
     @staticmethod
@@ -98,9 +98,8 @@ class Packet :
         Returns:
             bool: True if the commands have been set, false otherwise.
         """ 
-        return( isinstance(self._commands, POD_Commands) )
+        return isinstance(self._commands, POD_Commands) 
     
-
 
 # ==========================================================================================================
 
@@ -110,7 +109,7 @@ class Packet_Standard(Packet) :
     STX (1 byte) + command number (4 bytes) + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
     Attributes:
-        commands (POD_Commands | None, optional): Available commands for a POD device. 
+        _commands (POD_Commands | None): Available commands for a POD device. 
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and \
             end with ETX.
         commandNumber (bytes): Command number from the packet. 
@@ -190,7 +189,7 @@ class Packet_Standard(Packet) :
                 POD command packet. Format is STX (1 byte) + command number (4 bytes) \
                 + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)
         """
-        return(8)
+        return 8
     
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
@@ -227,7 +226,7 @@ class Packet_Standard(Packet) :
         pld = Packet_Standard.GetPayload(msg)
         if(pld != None) : msg_unpacked['Payload'] = pld
         # return finished dict
-        return(msg_unpacked)
+        return msg_unpacked
     
     
     @staticmethod
@@ -259,9 +258,9 @@ class Packet_BinaryStandard(Packet) :
     + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes) 
     
     Attributes:
+        _commands (POD_Commands | None): Available commands for a POD device. 
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
             and end with ETX.
-        commands (POD_Commands | None, optional): Available commands for a POD device. 
         binaryLength (bytes): Number of bytes of binary data from the packet.
         binaryData (bytes): Variable length binary datafrom the packet.
     """
@@ -272,7 +271,8 @@ class Packet_BinaryStandard(Packet) :
         Args:
             pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
                 ending with ETX.
-            commands (POD_Commands | None, optional): _description_. Defaults to None.
+            commands (POD_Commands | None, optional): Available commands for a POD device. \
+                Defaults to None.
         """       
         super().__init__(pkt, commands)
         self.binaryLength:  bytes = Packet_BinaryStandard.GetBinaryLength(pkt),
@@ -325,7 +325,7 @@ class Packet_BinaryStandard(Packet) :
                 of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH \
                 bytes) + checksum (2 bytes) + ETX (1 bytes)
         """
-        return(15)
+        return 15
     
     
     @staticmethod   
@@ -394,8 +394,54 @@ class Packet_BinaryStandard(Packet) :
 
 
 class Packet_Binary4(Packet) : 
+    """Container class that stores a binary command packet for a POD device. The format is \
+    STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) + \
+    CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
 
+    Attributes:
+        _commands (POD_Commands | None): Available commands for a POD device. 
+        _preampGain (int): Preamplifier gain. This should be 10 or 100 for an 8206-HR device.
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
+            and end with ETX.
+        packetNumber (bytes): Packet number for this POD packet.
+        ttl (bytes): TTL data for this packet.
+        ch0 (bytes): channel 0 data for this packet.
+        ch1 (bytes): channel 1 data for this packet.
+        ch2 (bytes): channel 2 data for this packet.
+    """
+    
+    # ------------------------------------------------------------		
+    # Binary 4 Data Format
+    # ------------------------------------------------------------		
+    # Byte    Value	        Format      Description 
+    # ------------------------------------------------------------		
+    # 0	    0x02	        Binary		STX
+    # 1	    0	            ASCII		Command Number Byte 0
+    # 2	    0	            ASCII		Command Number Byte 1
+    # 3	    B	            ASCII		Command Number Byte 2
+    # 4	    4	            ASCII		Command Number Byte 3
+    # 5	    Packet Number 	Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
+    # 6	    TTL	            Binary		The byte value of the TTL port.  Value would be equivalent to the command 106 GET TTL PORT above
+    # 7	    Ch0 LSB	        Binary		Least significant byte of the Channel 0 (EEG1) value
+    # 8	    Ch0 MSB	        Binary		Most significant byte of the Channel 0 (EEG1) value
+    # 9	    Ch1 LSB	        Binary		Channel 1 / EEG2 LSB
+    # 10    Ch1 MSB	        Binary		Channel 1 / EEG2 MSB
+    # 11    Ch2 LSB	        Binary		Channel 2 / EEG3/EMG LSB
+    # 12    Ch2 MSB	        Binary		Channel 2 / EEG3/EMG MSB
+    # 13    Checksum MSB    ASCII		MSB of checksum
+    # 14    Checksum LSB    ASCII		LSB of checksum
+    # 15    0x03            Binary		ETX
+    # ------------------------------------------------------------
+    
     def __init__(self, pkt: bytes, preampGain: int, commands: POD_Commands | None = None) -> None:
+        """Sets the class instance variables. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                ending with ETX.
+            preampGain (int): Preamplifier gain. This is 10 or 100 for an 8206-HR device.
+            commands (POD_Commands | None, optional): Available commands for a POD device. Defaults to None.
+        """
         super().__init__(pkt, commands)
         self.packetNumber: bytes = self.GetPacketNumber(pkt)
         self.ttl: bytes = self.GetTTL(pkt)
@@ -438,7 +484,6 @@ class Packet_Binary4(Packet) :
             case 2 : ch = self.ch2
             case _ : raise Exception('Channel '+str(n)+' does not exist.')
         return Packet_Binary4.BinaryBytesToVoltage(ch, self._preampGain)
-
 
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
@@ -487,7 +532,6 @@ class Packet_Binary4(Packet) :
             case 2 : return pkt[11:13]
             case _ : raise Exception('Channel '+str(n)+' does not exist.')
 
-
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible binary4 packet; \
@@ -497,7 +541,7 @@ class Packet_Binary4(Packet) :
         Returns:
             int: integer representing the minimum length of a binary4 POD packet. 
         """
-        return(16)
+        return 16
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
@@ -508,8 +552,7 @@ class Packet_Binary4(Packet) :
                 and end with ETX.
 
         Raises:
-            Exception: Packet is too small to be a standard packet.
-            Exception: A standard binary packet must have an ETX before the binary bytes.
+            Exception: Packet the wrong size to be a binary4 packet.
         """
         Packet.CheckIfPacketIsValid(msg) 
         if(len(msg) != Packet_Binary4.GetMinimumLength()) : 
@@ -570,12 +613,12 @@ class Packet_Binary4(Packet) :
             dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
         """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( {
+        return {
             'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
             'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
             'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
             'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        } )
+        } 
         
         
     @staticmethod
@@ -596,7 +639,7 @@ class Packet_Binary4(Packet) :
         totalGain = preampGain * 50.2918
         realValue = ( voltageADC - 2.048 ) / totalGain
         # return the real value at input to preamplifier 
-        return(realValue) # V 
+        return realValue # V 
 
 
 # ==========================================================================================================
