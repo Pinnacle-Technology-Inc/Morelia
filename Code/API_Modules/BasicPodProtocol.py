@@ -41,7 +41,6 @@ class POD_Basics :
         # initialize serial port 
         self._port : COM_io = COM_io(port, baudrate)
         # create object to handle commands 
-        #print(port)
         self._commands : POD_Commands = POD_Commands()
 
 
@@ -226,7 +225,7 @@ class POD_Basics :
             Packet_Standard: Packet that was written to the POD device.
         """
         # POD packet 
-        packet = self.GetPODpacket(cmd, payload) 
+        packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
@@ -249,7 +248,6 @@ class POD_Basics :
                 (STX+something+ETX). 
         """
         # read until STX is found
-        # print("readpod")
         b = None
         while(b != POD_Packets.STX()) :
             b = self._port.Read(1,timeout_sec)     # read next byte  
