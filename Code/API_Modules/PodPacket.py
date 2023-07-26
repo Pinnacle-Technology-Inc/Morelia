@@ -42,11 +42,27 @@ class Packet :
         self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
         
     def UnpackAll(self) -> dict[str,bytes] :
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Raises:
+            Exception: Nothing to unpack.
+
+        Returns:
+            dict[str,bytes]: Dictionary with the command number.
+        """
         if(self.HasCommandNumber()) : 
             return { 'Command Number' : self.commandNumber }
         raise Exception('Nothing to unpack.')  
       
     def TranslateAll(self) -> dict[str, Any] :
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Raises:
+            Exception: Nothing to translate.
+
+        Returns:
+            dict[str,Any]: Dictionary with the command number.
+        """
         if(self.HasCommandNumber()) : 
             return { 'Command Number' : self.CommandNumber() }
         raise Exception('Nothing to translate.')  
@@ -151,12 +167,22 @@ class Packet_Standard(Packet) :
         self._customPayloadArgs: Any|None = None
         
     def UnpackAll(self) -> dict[str, bytes]:
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Returns:
+            dict[str,bytes]: Dictionary with the command number and payload.
+        """
         data: dict = super().UnpackAll()
         if(self.HasPayload()) : 
             data['Payload'] = self.payload
         return data
     
     def TranslateAll(self) -> dict[str, Any]:
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Returns:
+            dict[str,Any]: Dictionary with the command number and payload.
+        """
         data: dict =  super().TranslateAll()
         if(self.HasPayload()) : 
             data['Payload'] = self.Payload()
@@ -342,20 +368,29 @@ class Packet_BinaryStandard(Packet) :
         self.binaryLength:  bytes = Packet_BinaryStandard.GetBinaryLength(pkt),
         self.binaryData:    bytes = Packet_BinaryStandard.GetBinaryData(pkt)
         
-        
     def UnpackAll(self) -> dict[str, bytes]:
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Returns:
+            dict[str,bytes]: Dictionary with the command number, binary packet length, \
+                and binary data.
+        """
         data: dict = super().UnpackAll()
         data['Binary Packet Length'] = self.binaryLength
         data['Binary Data']          = self.binaryData
         return data
         
-        
     def TranslateAll(self) -> dict[str, Any]:
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Returns:
+            dict[str,Any]: Dictionary with the command number, binary packet length, \
+                and binary data.
+        """
         data: dict =  super().TranslateAll()
         data['Binary Packet Length'] = self.BinaryLength()
         data['Binary Data']          = self.binaryData
         return data
-        
         
     def BinaryLength(self) -> int : 
         """Translate the binary ASCII encoding of the binary data length \
@@ -366,7 +401,6 @@ class Packet_BinaryStandard(Packet) :
         """
         return POD_Packets.AsciiBytesToInt(self.binaryLength)
 
-        
     @staticmethod
     def GetBinaryLength(pkt: bytes) -> bytes : 
         """Gets the length, or number of bytes, of the binary data in a POD packet.
@@ -379,7 +413,6 @@ class Packet_BinaryStandard(Packet) :
         """
         return pkt[5:9] # 4 bytes after command number
     
-    
     def GetBinaryData(pkt: bytes) -> bytes : 
         """Gets the binary data from a POD packet.
 
@@ -390,7 +423,6 @@ class Packet_BinaryStandard(Packet) :
             bytes: Bytes string containg binary data.
         """
         return pkt[12:(len(pkt)-3)] # bytes after 1st ETX
-        
         
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -404,7 +436,6 @@ class Packet_BinaryStandard(Packet) :
                 bytes) + checksum (2 bytes) + ETX (1 bytes)
         """
         return 15
-    
     
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
@@ -423,7 +454,6 @@ class Packet_BinaryStandard(Packet) :
             raise Exception('Packet is too small to be a standard binary packet.')
         if(msg[11].to_bytes(1,'big') != POD_Packets.ETX()) : 
             raise Exception('A standard binary packet must have an ETX before the binary bytes.')
-
 
     @staticmethod
     def UnpackPODpacket(msg: bytes) -> dict[str,bytes]: 
@@ -444,7 +474,6 @@ class Packet_BinaryStandard(Packet) :
             'Binary Packet Length'  : Packet_BinaryStandard.GetBinaryLength(msg),
             'Binary Data'           : Packet_BinaryStandard.GetBinaryData(msg)
         }
-
 
     @staticmethod
     def TranslatePODpacket(msg: bytes, commands: POD_Commands = None) -> dict[str,int|bytes] : 
@@ -529,6 +558,12 @@ class Packet_Binary4(Packet) :
         self._preampGain: int = int(preampGain)
 
     def UnpackAll(self) -> dict[str, bytes]:
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Returns:
+            dict[str,bytes]: Dictionary with the command number, packet number, TTL \
+                and channels 0, 1, and 2.
+        """
         data: dict = super().UnpackAll()
         data['Packet #'] = self.packetNumber,
         data['TTL'] = self.ttl, 
@@ -538,6 +573,12 @@ class Packet_Binary4(Packet) :
         return data
 
     def TranslateAll(self) -> dict[str, Any]:
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Returns:
+            dict[str, Any]: Dictionary with the command number, packet number, TTL \
+                and channels 0, 1, and 2.
+        """
         data: dict = super().TranslateAll()
         data['Packet #'] = self.PacketNumber(),
         data['TTL'] = self.Ttl(), 
