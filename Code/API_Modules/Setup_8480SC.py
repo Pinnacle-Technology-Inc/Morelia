@@ -337,7 +337,8 @@ class Setup_8480SC(Setup_Interface) :
                     data.append(str(read['Payload']))
                 else :                  
                     data.append('None')
-                # write to file 
+                # write to file
+                
                 file.write(','.join(data) + '\n')
                 # update initial time for next loop 
                 t = (round(time.time(),9)) # initial time (sec) 
@@ -346,3 +347,11 @@ class Setup_8480SC(Setup_Interface) :
             # end while 
         # streaming done
         file.close()
+
+
+ 
+
+    
+
+    
+
