@@ -399,45 +399,94 @@ class Packet_Binary4(Packet) :
         super().__init__(pkt, commands)
         self.packetNumber: bytes = self.GetPacketNumber(pkt)
         self.ttl: bytes = self.GetTTL(pkt)
-        self.ch0: bytes = self.GetCh0(pkt)
-        self.ch1: bytes = self.GetCh1(pkt)
-        self.ch2: bytes = self.GetCh2(pkt)
+        self.ch0: bytes = self.GetCh(0,pkt)
+        self.ch1: bytes = self.GetCh(1,pkt)
+        self.ch2: bytes = self.GetCh(2,pkt)
         self._preampGain: int = int(preampGain)
 
     def PacketNumber(self) -> int : 
+        """Translates the binary packet number into a readable integer.
+
+        Returns:
+            int: Integer of the packet number.
+        """
         return POD_Packets.BinaryBytesToInt(self.packetNumber)
     
     def Ttl(self) -> dict[str,int] : 
+        """Translates the binary TTL bytes into a dictionary containing each TTL value.
+
+        Returns:
+            dict[str,int]: Dictionary with TTL name keys and TTL data as values.
+        """
         return Packet_Binary4.TranslateBinaryTTLbyte(self.ttl)
 
-    def Ch0(self) -> float :
-        return Packet_Binary4.BinaryBytesToVoltage(self.ch0, self._preampGain)
+    def Ch(self, n: int) -> float :
+        """Translates the binary channel n bytes into a voltage.
 
-    def Ch1(self) -> float :
-        return Packet_Binary4.BinaryBytesToVoltage(self.ch1, self._preampGain)
-    
-    def Ch2(self) -> float :
-        return Packet_Binary4.BinaryBytesToVoltage(self.ch2, self._preampGain)
-    
+        Args:
+            n (int): Channel number. Should be 0, 1, or 2.
+
+        Raises:
+            Exception: Channel does not exist.
+
+        Returns:
+            float: Voltage of channel n in Volts.
+        """
+        match n :
+            case 0 : ch = self.ch0
+            case 1 : ch = self.ch1
+            case 2 : ch = self.ch2
+            case _ : raise Exception('Channel '+str(n)+' does not exist.')
+        return Packet_Binary4.BinaryBytesToVoltage(ch, self._preampGain)
+
+
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
+        """Gets the packet number in bytes from a POD packet.
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the packet number.
+        """
         return pkt[5].to_bytes(1,'big')
 
     @staticmethod
     def GetTTL(pkt: bytes) -> bytes : 
+        """Gets the TTL bytes from a POD packet
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the TTL data.
+        """
         return pkt[6].to_bytes(1,'big')
 
     @staticmethod
-    def GetCh0(pkt: bytes) -> bytes : 
-        return pkt[7:9]
+    def GetCh(n: int, pkt: bytes) -> bytes : 
+        """Gets the channel n bytes from a POD packet. 
 
-    @staticmethod
-    def GetCh1(pkt: bytes) -> bytes : 
-        return pkt[9:11]
-    
-    @staticmethod
-    def GetCh2(pkt: bytes) -> bytes : 
-        return pkt[11:13]
+        Args:
+            n (int): Channel number. Should be 0, 1, or 2.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the channel 0 data.
+
+        Returns:
+            bytes: Channel does not exist.
+        """
+        match n : 
+            case 0 : return pkt[7:9]
+            case 1 : return pkt[9:11]
+            case 2 : return pkt[11:13]
+            case _ : raise Exception('Channel '+str(n)+' does not exist.')
+
 
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -480,9 +529,9 @@ class Packet_Binary4(Packet) :
             'Command Number'    : Packet_Binary4.GetCommandNumber(pkt),
             'Packet #'          : Packet_Binary4.GetPacketNumber(pkt), 
             'TTL'               : Packet_Binary4.GetTTL(pkt),
-            'Ch0'               : Packet_Binary4.GetCh0(pkt),
-            'Ch1'               : Packet_Binary4.GetCh1(pkt),
-            'Ch2'               : Packet_Binary4.GetCh2(pkt)
+            'Ch0'               : Packet_Binary4.GetCh(0,pkt),
+            'Ch1'               : Packet_Binary4.GetCh(1,pkt),
+            'Ch2'               : Packet_Binary4.GetCh(2,pkt)
         }
         
     def TranslatePODpacket(self, msg: bytes, preampGain: int, commands: POD_Commands = None) -> dict[str,int|float|dict[str,int]] : 
@@ -505,9 +554,9 @@ class Packet_Binary4(Packet) :
             'Command Number'  : packetObj.CommandNumber(),
             'Packet #'        : packetObj.PacketNumber(),
             'TTL'             : packetObj.Ttl(),
-            'Ch0'             : packetObj.Ch0(),
-            'Ch1'             : packetObj.Ch1(),
-            'Ch2'             : packetObj.Ch2() 
+            'Ch0'             : packetObj.Ch(0),
+            'Ch1'             : packetObj.Ch(1),
+            'Ch2'             : packetObj.Ch(2) 
         }
 
     @staticmethod
