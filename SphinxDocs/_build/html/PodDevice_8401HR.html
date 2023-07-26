@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodDevice_8401HR module &mdash; Python POD API v1.3.0 documentation</title>
+  <title>PodDevice_8401HR module &mdash; Python POD API v1.3.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -56,8 +56,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR._preampGain"><code class="docutils literal notranslate"><span class="pre">POD_8401HR._preampGain</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetDACValue"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.CalculateBiasDAC_GetDACValue()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.CalculateBiasDAC_GetVout"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.CalculateBiasDAC_GetVout()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.DecodeChannelBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.DecodeChannelBitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.DecodeSSConfigBitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.DecodeTTLByte"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.DecodeTTLByte()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetChannelBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetChannelBitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetChannelMapForPreampDevice"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetChannelMapForPreampDevice()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetSSConfigBitmask"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetSSConfigBitmask()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#PodDevice_8401HR.POD_8401HR.GetSupportedPreampDevices"><code class="docutils literal notranslate"><span class="pre">POD_8401HR.GetSupportedPreampDevices()</span></code></a></li>
@@ -181,9 +183,26 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.DecodeChannelBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeChannelBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.DecodeChannelBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the channel bitmask byte to a dictionary with each channel value.         Use for ‘GET INPUT GROUND’ command payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>channels</strong> (<em>bytes</em>) – U8 byte containing the channel configuration.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with the channels as keys and values as the state.                 0=Grounded and 1=Connected to Preamp.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeSSConfigBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.DecodeSSConfigBitmask" title="Permalink to this definition"></a></dt>
-<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain.</p>
+<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain.         Use for ‘GET SS CONFIG’ command payloads.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>config</strong> (<em>bytes</em>) – U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass,                 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.</p>
@@ -204,6 +223,28 @@
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodDevice_8401HR.POD_8401HR.GetChannelBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetChannelBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodDevice_8401HR.POD_8401HR.GetChannelBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a bitmask, represented by an unsigned integer, used for ‘SET INPUT GROUND’ command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>bool</em>) – State for channel A, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>b</strong> (<em>bool</em>) – State for channel B, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>c</strong> (<em>bool</em>) – State for channel C, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>d</strong> (<em>bool</em>) – State for channel D, 0=Grounded and 1=Connected to Preamp.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer representing a bitmask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
 </dd>
 </dl>
 </dd></dl>
