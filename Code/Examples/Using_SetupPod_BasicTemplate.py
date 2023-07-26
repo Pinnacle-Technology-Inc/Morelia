@@ -1,8 +1,10 @@
 """
 Simple example template that runs SetupPodDevices. 
 """
-import sys, os
-sys.path.insert(0, os.path.join( os.path.abspath('.'), 'Code', 'API_Modules') )
+
+# add directory path to code 
+import Path 
+Path.AddAPItoPath()
 
 # local imports
 from Setup_PodDevices import Setup_PodDevices
@@ -17,9 +19,6 @@ __email__       = "sales@pinnaclet.com"
 
 # ===============================================================
 
-# setup 8206HR devices for streaming
+# setup POD devices for streaming
 go = Setup_PodDevices()
 go.Run()
-
-
-
