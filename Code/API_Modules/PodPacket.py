@@ -232,9 +232,9 @@ class Packet_Standard(Packet) :
         # check for payload 
         if(not self.HasPayload()) :  return None
         if(self.HasCustomPayload()): return self._customPayload(self._customPayloadArgs)
-        else:                        return self._DefaultPayload()
+        else:                        return self.DefaultPayload()
         
-    def _DefaultPayload(self) -> tuple[int] :
+    def DefaultPayload(self) -> tuple[int] :
         """Splits the payload up into its components and translates the binary ASCII encoding \
         into a readable integer.
 
