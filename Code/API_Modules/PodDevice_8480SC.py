@@ -5,6 +5,7 @@ POD_8480SC handles communication using an 8480-SC POD device.
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
+from PodPacket              import Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"
@@ -65,6 +66,7 @@ class POD_8480SC(POD_Basics) :
         self._commands.AddCommand( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ,'Indicates the end of a stimulus. Returns U8 channel.')
         self._commands.AddCommand( 135,	'EVENT LOW CURRENT',	(0,),	                            (U8,),                               False  , 'Indicates a low current status on one or more of the LED channels.  U8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1.')
 
+    # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def StimulusConfigBits(optoElec: bool, monoBiphasic: bool, Simul: bool) -> int :
@@ -116,7 +118,8 @@ class POD_8480SC(POD_Basics) :
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
     
 
-    def DecodeStimulusConfigBits(self, config: int) -> dict :
+    @staticmethod
+    def DecodeStimulusConfigBits(config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
             
         Args:
@@ -125,15 +128,15 @@ class POD_8480SC(POD_Basics) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit. 
         """
-        DecodeStimulus = {
-            'optoElec'      : config & 1,  
+        return {
+            'optoElec'      :  config  & 1,  
             'monoBiphasic'  : (config >> 1) & 1,  
-            'Simul'         : (config >> 2) & 1,  
+            'Simul'         : (config >> 2) & 1
         }
-        return DecodeStimulus
 
 
-    def DecodeSyncConfigBits(self, config: int) -> dict :
+    @staticmethod
+    def DecodeSyncConfigBits(config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits. 
             
         Args:
@@ -142,15 +145,14 @@ class POD_8480SC(POD_Basics) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit. 
         """
-        DecodeSync = {
-            'SyncLevel'     : config & 1,
+        return {
+            'SyncLevel'     :  config  & 1,
             'SyncIdle'      : (config >> 1) & 1,
-            'SignalTrigger' : (config >> 2),
+            'SignalTrigger' : (config >> 2)
         }
-        return DecodeSync
 
-
-    def DecodeTTlConfigBits(self, config: int) -> dict :
+    @staticmethod
+    def DecodeTTlConfigBits(config: int) -> dict :
         """Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.
             
         Args:
@@ -159,52 +161,113 @@ class POD_8480SC(POD_Basics) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit. 
         """
-        DecodeTTL = {
-            'RisingFalling'  : config & 1,
+        return {
+            'RisingFalling'  :  config  & 1,
             'StimulusTrig'   : (config >> 1) & 1,
-            'TTLInputSync'   : (config >> 7) & 1, 
+            'TTLInputSync'   : (config >> 7) & 1
         }
-        return DecodeTTL
     
+    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def TranslatePODpacket(self, msg: bytes) -> dict[str, int | bytes] :
-        """Overwrites the parent's method. Adds an additional check to handle specially formatted \
-        payloads. 
+    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet_Standard:
+        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+        ending with ETX. Reads first STX and then starts recursion. 
 
         Args:
-            msg (bytes): Bytes string containing a POD packet.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
 
         Returns:
-            dict[str,int|dict[str,int]]: A translated POD packet, which has Command Number and Payload \
-                keys. There are 3 special commands in the 8480 Device, and the payload will be uniquely formatted \
-                to fit these commands.
+            Packet: POD packet beginning with STX and ending with ETX. This may be a \
+                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
-        #special commands with the following command number
-        specialcommands = [101, 126, 108] 
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5]) #gets the command number
-        if(cmd in specialcommands) : 
-            # unpack
-            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)  #breaks up the msg into dictionary with keys as 'command number' and 'payload'
-            # start building translated dictionary
-            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }   #pulling value from msgdict and changing into int
-            if('Payload' in msgDict) : 
-                if (cmd == 126):  #126 GET SYNC CONFIG
-                    transdict['Payload'] = self.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][:2]))
-                if(cmd == 108 and len(msgDict['Payload']) > 2): #108 GET TTL SETUP
-                    pay_list =[]
-                    first_bit = POD_Packets.AsciiBytesToInt( msgDict['Payload'][:2])
-                    middle_bit = dict(self.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][2:4] )))
-                    last_bit = POD_Packets.AsciiBytesToInt( msgDict['Payload'][4:6])
-                    pay_list.extend([first_bit, middle_bit, last_bit])
-                    transdict['Payload'] = tuple( pay_list )
-                if(cmd == 101 and len(msgDict['Payload']) > 2): #101 GET STIMULUS
-                    cutoff_dict = dict(self.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( msgDict['Payload'][-2:] ))) # bits part of the payload
-                    unpacked = (self.TranslatePODpacket_Standard(msg))
-                    pay_dict = list(unpacked['Payload'][:-1])
-                    pay_dict.append(cutoff_dict)
-                    transdict['Payload'] =  tuple( pay_dict )                    
-            return(transdict)
-        else:
-            return(self.TranslatePODpacket_Standard(msg))
+        packet: Packet_Standard = super().ReadPODpacket(validateChecksum, timeout_sec)
+        # check for special packets
+        match packet.CommandNumber() : 
+            case 126 : # 126 GET SYNC CONFIG
+                packet.SetCustomPayload(POD_8480SC._CustomSYNCCONFIG, packet.payload)
+            case 108 : # 108 GET TTL SETUP
+                packet.SetCustomPayload(POD_8480SC._Custom108GETTTLSETUP, packet.payload)
+            case 101 : # 101 GET STIMULUS
+                packet.SetCustomPayload(POD_8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
+        return packet
+
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
+        """Builds a POD packet and writes it to the POD device. 
+
+        Args:
+            cmd (str | int): Command number.
+            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
+
+        Returns:
+            Packet_Standard: Packet that was written to the POD device.
+        """
+        packet: Packet_Standard = super().WritePacket(cmd, payload)
+        # check for special packets
+        match packet.CommandNumber() : 
+            case 127: # 127 SET SYNC CONFIG
+                packet.SetCustomPayload(POD_8480SC._CustomSYNCCONFIG, packet.payload)
+            case 109 : # 109 SET TTL SETUP
+                packet.SetCustomPayload(POD_8480SC._Custom109SETTTLSETUP, packet.payload)
+            case 102 : # 102 SET STIMULUS
+                packet.SetCustomPayload(POD_8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
+        return packet
+
+    @staticmethod
+    def _CustomSYNCCONFIG(payload: bytes) -> dict : 
+        """Custom function to translate the sync config.
+
+        Args:
+            payload (bytes): Bytes string of the POD packet payload.
+
+        Returns:
+            dict: Keys as the names of the bits, the values representing values at each bit.
+        """
+        return POD_8480SC.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( payload[:2]))
+
+    @staticmethod
+    def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
+        """Custom function to translate the TTL setup for command #108 GET TTL SETUP.
+
+        Args:
+            payload (bytes): Bytes string of the POD packet payload.
+
+        Returns:
+            tuple[int|dict]: Tuple of the TTL setup.
+        """
+        first_bit : int  = POD_Packets.AsciiBytesToInt( payload[:2])
+        middle_bit: dict = POD_8480SC.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( payload[2:4] ))
+        last_bit  : int  = POD_Packets.AsciiBytesToInt( payload[4:6])
+        return (first_bit, middle_bit, last_bit)
+    
+    @staticmethod
+    def _Custom109SETTTLSETUP(payload: bytes) -> tuple[int|dict] :
+        """Custom function to translate the TTL setup for command #109 SET TTL SETUP.
+
+        Args:
+            payload (bytes): Bytes string of the POD packet payload.
+
+        Returns:
+            tuple[int|dict]: Tuple of the TTL setup.
+        """
+        data: list = [ POD_Packets.AsciiBytesToInt(payload[6:]) ]
+        data.append( POD_8480SC._Custom108GETTTLSETUP(payload[:6]) )
+        return tuple(data)
         
-               
+    @staticmethod
+    def _CustomSTIMULUS(payload: bytes, defaultPayload: tuple) -> tuple : 
+        """_summary_
+
+        Args:
+            payload (bytes): Bytes string of the POD packet payload.
+            defaultPayload (tuple): Default translated payload.
+
+        Returns:
+            tuple: Tuple of the translated stimulus payload.
+        """
+        pld = list(defaultPayload[:-1])
+        pld.append(POD_8480SC.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
+        return tuple( pld )            
