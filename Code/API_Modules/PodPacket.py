@@ -41,6 +41,8 @@ class Packet :
         self.rawPacket: bytes = bytes(pkt)
         self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
         
+    # ----- Packet to dictionary -----
+        
     def UnpackAll(self) -> dict[str,bytes] :
         """Builds a dictionary containing all parts of the POD packet in bytes. 
 
@@ -67,6 +69,8 @@ class Packet :
             return { 'Command Number' : self.CommandNumber() }
         raise Exception('Nothing to translate.')  
         
+    # ----- Translated parts -----
+
     def CommandNumber(self) -> int : 
         """Translate the binary ASCII encoding into a readable integer
 
@@ -74,15 +78,9 @@ class Packet :
             int: Integer of the command number.
         """
         return POD_Packets.AsciiBytesToInt(self.commandNumber)
-        
-    def HasCommandNumber(self) -> bool :
-        """Checks if the packet has a command number.
 
-        Returns:
-            bool: True if the packet has a command number, False otherwise.
-        """
-        return (self.commandNumber != None)
-        
+    # ----- Get parts from packet bytes -----
+
     @staticmethod
     def GetCommandNumber(pkt: bytes) -> bytes|None :
         """Gets the command number bytes from a POD packet. 
@@ -98,6 +96,8 @@ class Packet :
             return pkt[1:5]
         return None
     
+    # ----- Properties -----
+    
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible packet; STX (1 byte) + \
@@ -107,7 +107,6 @@ class Packet :
             int: integer representing the minimum length of a generic bytes string.
         """
         return 2
-    
     
     @staticmethod
     def CheckIfPacketIsValid(msg: bytes) :
@@ -125,7 +124,6 @@ class Packet :
             raise Exception('Packet must begin with STX.')
         if(msg[len(msg)-1].to_bytes(1,'big') != POD_Packets.ETX()) : 
             raise Exception('Packet must end in ETX')
-        
     
     def HasCommands(self) -> bool:
         """Checks if the Packet instance has commands set.
@@ -134,7 +132,14 @@ class Packet :
             bool: True if the commands have been set, false otherwise.
         """ 
         return isinstance(self._commands, POD_Commands) 
-    
+            
+    def HasCommandNumber(self) -> bool :
+        """Checks if the packet has a command number.
+
+        Returns:
+            bool: True if the packet has a command number, False otherwise.
+        """
+        return (self.commandNumber != None)
 
 # ==========================================================================================================
 
@@ -165,6 +170,8 @@ class Packet_Standard(Packet) :
         self.payload: bytes|None = self.GetPayload(pkt)
         self._customPayload: Callable[[Any],tuple]|None = None
         self._customPayloadArgs: Any|None = None
+    
+    # ----- Packet to dictionary -----
         
     def UnpackAll(self) -> dict[str, bytes]:
         """Builds a dictionary containing all parts of the POD packet in bytes. 
@@ -188,6 +195,8 @@ class Packet_Standard(Packet) :
             data['Payload'] = self.Payload()
         return data
     
+    # ----- Customization -----
+
     def SetCustomPayload(self, func: Callable[[Any],tuple], args: Any = None) -> None :
         """Sets a custom function with optional arguments to translate the payload.
 
@@ -198,7 +207,6 @@ class Packet_Standard(Packet) :
         self._customPayload: Callable[[Any],tuple] = func
         self._customPayloadArgs: Any = args
         
-        
     def HasCustomPayload(self) -> bool : 
         """Checks if a custom payload has been set.
 
@@ -207,6 +215,7 @@ class Packet_Standard(Packet) :
         """
         return (self._customPayload != None)
     
+    # ----- Translated parts -----
     
     def Payload(self) -> tuple|None :
         """Gets the payload as a readable tuple of values. 
@@ -218,7 +227,6 @@ class Packet_Standard(Packet) :
         if(not self.HasPayload()) :  return None
         if(self.HasCustomPayload()): return self._customPayload(self._customPayloadArgs)
         else:                        return self._DefaultPayload()
-        
         
     def _DefaultPayload(self) -> tuple[int] :
         """Splits the payload up into its components and translates the binary ASCII encoding \
@@ -245,15 +253,7 @@ class Packet_Standard(Packet) :
             startByte = endByte # get new start byte
         return tuple(pldSplit) 
     
-    
-    def HasPayload(self) -> bool : 
-        """Checks if this Packet_Standard instance has a payload. 
-
-        Returns:
-            bool: True if there is a payload, false otherwise.
-        """
-        return( self.payload != None )
-    
+    # ----- Get parts from packet bytes -----
     
     @staticmethod
     def GetPayload(pkt: bytes) -> bytes|None :
@@ -269,6 +269,15 @@ class Packet_Standard(Packet) :
             return pkt[5:(len(pkt)-3)]
         return None
     
+    # ----- Properties -----
+
+    def HasPayload(self) -> bool : 
+        """Checks if this Packet_Standard instance has a payload. 
+
+        Returns:
+            bool: True if there is a payload, false otherwise.
+        """
+        return( self.payload != None )
     
     @staticmethod
     def GetMinimumLength() -> int : 
@@ -325,7 +334,9 @@ class Packet_BinaryStandard(Packet) :
         super().__init__(pkt, commands)
         self.binaryLength:  bytes = Packet_BinaryStandard.GetBinaryLength(pkt),
         self.binaryData:    bytes = Packet_BinaryStandard.GetBinaryData(pkt)
-        
+       
+    # ----- Packet to dictionary -----
+ 
     def UnpackAll(self) -> dict[str, bytes]:
         """Builds a dictionary containing all parts of the POD packet in bytes. 
 
@@ -350,6 +361,8 @@ class Packet_BinaryStandard(Packet) :
         data['Binary Data']          = self.binaryData
         return data
         
+    # ----- Translated parts -----
+
     def BinaryLength(self) -> int : 
         """Translate the binary ASCII encoding of the binary data length \
         into a readable integer
@@ -358,6 +371,8 @@ class Packet_BinaryStandard(Packet) :
             int: Integer of the binary data length.
         """
         return POD_Packets.AsciiBytesToInt(self.binaryLength)
+
+    # ----- Get parts from packet bytes -----
 
     @staticmethod
     def GetBinaryLength(pkt: bytes) -> bytes : 
@@ -381,7 +396,9 @@ class Packet_BinaryStandard(Packet) :
             bytes: Bytes string containg binary data.
         """
         return pkt[12:(len(pkt)-3)] # bytes after 1st ETX
-        
+                
+    # ----- Properties -----
+
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible packet; \
@@ -474,6 +491,8 @@ class Packet_Binary4(Packet) :
         self.ch2: bytes = self.GetCh(2,pkt)
         self._preampGain: int = int(preampGain)
 
+    # ----- Packet to dictionary -----
+
     def UnpackAll(self) -> dict[str, bytes]:
         """Builds a dictionary containing all parts of the POD packet in bytes. 
 
@@ -503,6 +522,8 @@ class Packet_Binary4(Packet) :
         data['Ch1'] = self.ch1, 
         data['Ch2'] = self.ch2  
         return data
+    
+    # ----- Translated parts -----
     
     def PacketNumber(self) -> int : 
         """Translates the binary packet number into a readable integer.
@@ -538,6 +559,8 @@ class Packet_Binary4(Packet) :
             case 2 : ch = self.ch2
             case _ : raise Exception('Channel '+str(n)+' does not exist.')
         return Packet_Binary4.BinaryBytesToVoltage(ch, self._preampGain)
+
+    # ----- Get parts from packet bytes -----
 
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
@@ -586,6 +609,8 @@ class Packet_Binary4(Packet) :
             case 2 : return pkt[11:13]
             case _ : raise Exception('Channel '+str(n)+' does not exist.')
 
+    # ----- Properties -----
+
     @staticmethod
     def GetMinimumLength() -> int : 
         """Gets the number of bytes in the smallest possible binary4 packet; \
@@ -622,6 +647,7 @@ class Packet_Binary4(Packet) :
         if(len(msg) != Packet_Binary4.GetMinimumLength()) : 
             raise Exception('Packet the wrong size to be a binary4 packet.')
 
+    # ----- Conversions -----
 
     @staticmethod
     def TranslateBinaryTTLbyte(ttlByte: bytes) -> dict[str,int] : 
@@ -665,6 +691,79 @@ class Packet_Binary4(Packet) :
 
 # ==========================================================================================================
 
+
+class Packet_Binary5(Packet) : 
+    
+    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+        super().__init__(pkt, commands)
+        pass
+    
+    # ----- Packet to dictionary -----
+    
+    def UnpackAll(self) -> dict[str, bytes]:
+        pass
+    
+    def TranslateAll(self) -> dict[str, Any]:
+        pass
+    
+    # ----- Translated parts -----
+    
+    def PacketNumber() -> int : 
+        pass
+    
+    def Status() -> int : 
+        pass
+
+    def Channel(n: int) -> float : 
+        pass
+    
+    def AnalogEXT(n: int) -> float : 
+        pass
+    
+    def AnalogTTL(n: int) -> float : 
+        pass
+    
+    # ----- Get parts from packet bytes -----
+    
+    @staticmethod
+    def GetPacketNumber(pkt: bytes) -> bytes : 
+        pass
+    
+    @staticmethod
+    def GetStatus(pkt: bytes) -> bytes : 
+        pass
+
+    @staticmethod
+    def GetChannels(pkt: bytes) -> bytes : 
+        pass
+    
+    @staticmethod
+    def GetAnalogEXT(n: int, pkt: bytes) -> bytes : 
+        pass
+    
+    @staticmethod
+    def GetAnalogTTL(n: int, pkt: bytes) -> bytes : 
+        pass
+        
+    # ----- Properties -----
+        
+    @staticmethod
+    def GetMinimumLength() -> int : 
+        pass
+    
+    @staticmethod
+    def GetBinaryLength() -> int :
+        pass
+
+    @staticmethod   
+    def CheckIfPacketIsValid(msg: bytes) :
+        pass
+    
+    # ----- Conversions -----
+
+
+
+# ==========================================================================================================
 
 # class Packet_Binary2(Packet) : 
 #     pass
