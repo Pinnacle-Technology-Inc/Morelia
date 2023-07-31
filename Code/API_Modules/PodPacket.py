@@ -27,7 +27,10 @@ class Packet :
         commandNumber (bytes | None): Command number from the Pod packet.
     """
     
-    def __init__(self, pkt: bytes, commands: POD_Commands|None = None) -> None:
+    def __init__(self, 
+                 pkt: bytes, 
+                 commands: POD_Commands|None = None
+                ) -> None:
         """Sets the class instance variables. 
 
         Args:
@@ -158,7 +161,10 @@ class Packet_Standard(Packet) :
         payload (bytes): Optional payload from the packet.
     """
     
-    def __init__(self, pkt: bytes, commands: POD_Commands) -> None:
+    def __init__(self, 
+                 pkt: bytes, 
+                 commands: POD_Commands
+                ) -> None:
         """Sets the class instance variables. 
 
         Args:
@@ -322,7 +328,10 @@ class Packet_BinaryStandard(Packet) :
         binaryData (bytes): Variable length binary datafrom the packet.
     """
 
-    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+    def __init__(self, 
+                 pkt: bytes, 
+                 commands: POD_Commands | None = None
+                ) -> None:
         """Sets the class instance variables. 
 
         Args:
@@ -474,7 +483,11 @@ class Packet_Binary4(Packet) :
     # 15    0x03            Binary		ETX
     # ------------------------------------------------------------
     
-    def __init__(self, pkt: bytes, preampGain: int, commands: POD_Commands | None = None) -> None:
+    def __init__(self, 
+                 pkt: bytes, 
+                 preampGain: int, 
+                 commands: POD_Commands | None = None
+                ) -> None:
         """Sets the class instance variables. 
 
         Args:
@@ -694,8 +707,13 @@ class Packet_Binary4(Packet) :
 
 class Packet_Binary5(Packet) : 
     
-    def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
+    def __init__(self, pkt: bytes,                  
+                 ssGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
+                 preampGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
+                 commands: POD_Commands | None = None
+                ) -> None:
         super().__init__(pkt, commands)
+        # packet parts
         self.packetNumber   : bytes = self.GetPacketNumber(pkt)
         self.status         : bytes = self.GetStatus(pkt)
         self.channels       : bytes = self.GetChannels(pkt)
@@ -705,6 +723,9 @@ class Packet_Binary5(Packet) :
         self.aTTL2          : bytes = self.GetAnalogTTL(2, pkt)
         self.aTTL3          : bytes = self.GetAnalogTTL(3, pkt)
         self.aTTL4          : bytes = self.GetAnalogTTL(4, pkt)
+        # device properties 
+        self._ssGain        : dict[str,int|None] = ssGain
+        self._preampGain    : dict[str,int|None] = preampGain
     
     # ----- Packet to dictionary -----
     
@@ -722,24 +743,52 @@ class Packet_Binary5(Packet) :
         return data
     
     def TranslateAll(self) -> dict[str, Any]:
-        pass
-    
+        data: dict = super().UnpackAll()
+        data['Packet #'   ] = self.PacketNumber()
+        data['Status'     ] = self.Status()
+        for c in ['A', 'B', 'C', 'D'] :   # for each channel 
+            if(self._ssGain[c] != None) : # exclude no-connects 
+                data[c] = self.Channel(c) # get channel voltage 
+        data['Analog EXT0'] = self.AnalogEXT(0)
+        data['Analog EXT1'] = self.AnalogEXT(1)
+        data['Analog TTL1'] = self.AnalogTTL(1)
+        data['Analog TTL2'] = self.AnalogTTL(2)
+        data['Analog TTL3'] = self.AnalogTTL(3)
+        data['Analog TTL4'] = self.AnalogTTL(4)
+        return data
+
     # ----- Translated parts -----
     
-    def PacketNumber() -> int : 
-        pass
+    def PacketNumber(self) -> int : 
+        return POD_Packets.BinaryBytesToInt(self.packetNumber)
     
-    def Status() -> int : 
-        pass
+    def Status(self) -> int : 
+        return POD_Packets.BinaryBytesToInt(self.status)
 
-    def Channel(n: int) -> float : 
-        pass
+    def Channel(self, c: str) -> float : 
+        match c : 
+            case 'A' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[6:9], 18, 0) #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
+            case 'B' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[4:7], 20, 2) #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+            case 'C' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[2:5], 22, 4) #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+            case 'D' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[0:3], 24, 6) #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
+            case  _  : raise Exception('Channel '+str(c)+' does not exist.')
+        return Packet_Binary5._Voltage_PrimaryChannels(chan, self._ssGain[c], self._preampGain[c])
+
+    def AnalogEXT(self, n: int) -> float : 
+        match n :
+            case 0 : ext = self.aEXT0
+            case 1 : ext = self.aEXT1
+            case _ : raise Exception('AEXT'+str(n)+' does not exist.')
+        return Packet_Binary5._Voltage_SecondaryChannels(POD_Packets.BinaryBytesToInt(ext))
     
-    def AnalogEXT(n: int) -> float : 
-        pass
-    
-    def AnalogTTL(n: int) -> float : 
-        pass
+    def AnalogTTL(self, n: int) -> float : 
+        match n:
+            case 1 : ttl = self.aTTL1
+            case 2 : ttl = self.aTTL2
+            case 3 : ttl = self.aTTL3
+            case 4 : ttl = self.aTTL4
+            case _ : raise Exception('ATTL'+str(n)+' does not exist.')
+        return Packet_Binary5._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(ttl) )
     
     # ----- Get parts from packet bytes -----
     
@@ -760,7 +809,7 @@ class Packet_Binary5(Packet) :
         match n :
             case 0 : return pkt[16:18]
             case 1 : return pkt[18:20]
-            case _ : raise Exception('AEXT'+str(n)+' does not exist.')
+            case _ : raise  Exception('AEXT'+str(n)+' does not exist.')
     
     @staticmethod
     def GetAnalogTTL(n: int, pkt: bytes) -> bytes : 
@@ -769,7 +818,7 @@ class Packet_Binary5(Packet) :
             case 2 : return pkt[22:24]
             case 3 : return pkt[24:26]
             case 4 : return pkt[26:28]
-            case _ : raise Exception('ATTL'+str(n)+' does not exist.')
+            case _ : raise  Exception('ATTL'+str(n)+' does not exist.')
         
     # ----- Properties -----
         
@@ -790,7 +839,73 @@ class Packet_Binary5(Packet) :
     
     # ----- Conversions -----
 
+    @staticmethod
+    def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :
+        """Converts a value to a voltage for a primary channel. 
 
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int | None, optional): Second stage gain. Defaults to None.
+            PreampGain (int | None, optional): Preamplifier gain. Defaults to None.
+
+        Returns:
+            float: Number of the voltage in volts [V]. Returns value if no gain is given (no-connect).
+        """
+        if(ssGain != None and PreampGain == None) : 
+            return(Packet_Binary5._Voltage_PrimaryChannels_Biosensor(value, ssGain))
+        elif(ssGain != None):
+            return(Packet_Binary5._Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain))
+        else: 
+            return(value) # no connect! this is noise 
+
+    @staticmethod
+    def _Voltage_PrimaryChannels_EEGEMG(value: int, ssGain: int, PreampGain: int) -> float : 
+        """Converts a value to a voltage for an EEG/EMG primary channel. 
+
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int): Second stage gain.
+            PreampGain (int): Preamplifier gain.
+
+        Returns:
+            float: Number of the voltage in volts [V].
+        """
+        # Channels configured as EEG/EMG channels (0.4/1/10 Hz highpass filter, second stage 0.5Hz Highpass, second stage 5x)
+        voltageAtADC = (value / 262144.0) * 4.096 # V
+        totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
+        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
+        return(realVoltage)
+    
+
+    @staticmethod
+    def _Voltage_PrimaryChannels_Biosensor(value: int, ssGain: int) -> float : 
+        """Converts a value to a voltage for a biosensor primary channel. 
+
+        Args:
+            value (int): Value to be converted to voltage.
+            ssGain (int): Second stage gain.
+
+        Returns:
+            float: Number of the voltage in volts [V]. 
+        """
+        # Channels configured as biosensor channels (DC highpass filter, second stage DC mode, second stage 1x)
+        voltageAtADC = (value / 262144.0) * 4.096 # V
+        totalGain    = 1.557 * ssGain * 1E7 # SSGain = 1 or 5
+        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
+        return(realVoltage)
+
+    @staticmethod
+    def _Voltage_SecondaryChannels(value: int) -> float :
+        """Converts a value to a voltage for a secondary channel.
+
+        Args:
+            value (int): Value to be converted to voltage.
+
+        Returns:
+            float: Number of the voltage in volts [V].
+        """
+        # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
+        return( (value / 4096.0) * 3.3 ) # V
 
 # ==========================================================================================================
 
