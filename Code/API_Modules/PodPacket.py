@@ -324,6 +324,7 @@ class Packet_BinaryStandard(Packet) :
         _commands (POD_Commands | None): Available commands for a POD device. 
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
             and end with ETX.
+        commandNumber (bytes | None): Command number from the Pod packet.
         binaryLength (bytes): Number of bytes of binary data from the packet.
         binaryData (bytes): Variable length binary datafrom the packet.
     """
@@ -444,7 +445,7 @@ class Packet_BinaryStandard(Packet) :
 
 
 class Packet_Binary4(Packet) : 
-    """Container class that stores a binary command packet for a POD device. The format is \
+    """Container class that stores a binary4 command packet for a POD device. The format is \
     STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) + \
     CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
 
@@ -453,6 +454,7 @@ class Packet_Binary4(Packet) :
         _preampGain (int): Preamplifier gain. This should be 10 or 100 for an 8206-HR device.
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
             and end with ETX.
+        commandNumber (bytes | None): Command number from the Pod packet.
         packetNumber (bytes): Packet number for this POD packet.
         ttl (bytes): TTL data for this packet.
         ch0 (bytes): channel 0 data for this packet.
@@ -494,7 +496,8 @@ class Packet_Binary4(Packet) :
             pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
                 ending with ETX.
             preampGain (int): Preamplifier gain. This is 10 or 100 for an 8206-HR device.
-            commands (POD_Commands | None, optional): Available commands for a POD device. Defaults to None.
+            commands (POD_Commands | None, optional): Available commands for a POD device. \
+                Defaults to None.
         """
         super().__init__(pkt, commands)
         self.packetNumber: bytes = self.GetPacketNumber(pkt)
@@ -631,7 +634,7 @@ class Packet_Binary4(Packet) :
         CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
 
         Returns:
-            int: integer representing the minimum length of a binary4 POD packet. 
+            int: Integer representing the minimum length of a binary4 POD packet. 
         """
         return 16
 
@@ -650,7 +653,7 @@ class Packet_Binary4(Packet) :
         """Raises an Exception if the packet is incorrectly formatted. 
 
         Args:
-            msg (bytes):  Bytes string containing a POD packet. Should begin with STX \
+            msg (bytes): Bytes string containing a POD packet. Should begin with STX \
                 and end with ETX.
 
         Raises:
@@ -706,51 +709,85 @@ class Packet_Binary4(Packet) :
 
 
 class Packet_Binary5(Packet) : 
+    """Container class that stores a binary5 command packet for a POD device. The format is \
+    STX (1 byte) + command (4 bytes) + packet number (1 byte) + status (1 byte) \
+    + channels (9 bytes) + AEXT0 (2 bytes) + AEXT1 (2 bytes) + ATTL1 (2 bytes) \
+    + ATTL2 (2 bytes) + ATTL3 (2 bytes) + ATTL4 (2 bytes) + checksum (2 bytes) \
+    + EXT (1 byte)
     
+    Attributes:
+        _commands (POD_Commands | None): Available commands for a POD device. 
+        _ssGain (dict[str,int|None]): Dictionary with A, B, C, D keys and \
+            second stage gain values (1, 5, or None).
+        _preampGain (dict[str,int|None]): Dictionary with A, B, C, D keys and \
+            preamplifier gain values (10, 100, or None).
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
+            and end with ETX.
+        commandNumber (bytes | None): Command number from the Pod packet.
+        packetNumber (bytes): Packet number for this POD packet.
+        status (bytes): Status for this POD packet.
+        channels (bytes): channel A, B, C, and D data for this POD packet.
+        aEXT0 (bytes): Analog EXT0 data for this POD packet.
+        aEXT1 (bytes): Analog EXT1 data for this POD packet.
+        aTTL1 (bytes): Analog TTL1 data for this POD packet.
+        aTTL2 (bytes): Analog TTL2 data for this POD packet.
+        aTTL3 (bytes): Analog TTL3 data for this POD packet.
+        aTTL4 (bytes): Analog TTL4 data for this POD packet.
+    """
     
     # -----------------------------------------------------------------------------
-        # Binary 5 Data Format
-        # -----------------------------------------------------------------------------		
-        # Byte    Value	                        Format      Description 
-        # -----------------------------------------------------------------------------		
-        # 0	    0x02	                        Binary		STX
-        # 1	    0	                            ASCII		Command Number Byte 0
-        # 2	    0	                            ASCII		Command Number Byte 1
-        # 3	    B	                            ASCII		Command Number Byte 2
-        # 4	    5	                            ASCII		Command Number Byte 3
-        # 5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
-        # 6	    Status	                        Binary		Status byte, currently unused
-        # 7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
-        # 8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
-        # 9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
-        # 10	CH2 11~4	                    Binary		Middle 8 bits of Ch2
-        # 11	CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
-        # 12	CH1 13~6	                    Binary		Middle 8 bits of CH1
-        # 13	CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
-        # 14	CH0 15~8	                    Binary		Middle 8 bits of Ch0
-        # 15	CH0 7~0	                        Binary		Bottom 8 bits of CH0
-        # 16	EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
-        # 17	EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
-        # 18	EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
-        # 19	EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
-        # 20	TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        # 21	TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        # 22	TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        # 23	TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        # 24	TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
-        # 25	TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
-        # 26	TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
-        # 27	TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
-        # 28	Checksum MSB	                ASCII		Checksum
-        # 29	Checksum LSB	                ASCII		Checksum 
-        # 30	0x03	                        Binary		ETX
-        # -----------------------------------------------------------------------------
+    # Binary 5 Data Format
+    # -----------------------------------------------------------------------------		
+    # Byte    Value	                        Format      Description 
+    # -----------------------------------------------------------------------------		
+    # 0	    0x02	                        Binary		STX
+    # 1	    0	                            ASCII		Command Number Byte 0
+    # 2	    0	                            ASCII		Command Number Byte 1
+    # 3	    B	                            ASCII		Command Number Byte 2
+    # 4	    5	                            ASCII		Command Number Byte 3
+    # 5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
+    # 6	    Status	                        Binary		Status byte, currently unused
+    # 7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
+    # 8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
+    # 9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
+    # 10	CH2 11~4	                    Binary		Middle 8 bits of Ch2
+    # 11	CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
+    # 12	CH1 13~6	                    Binary		Middle 8 bits of CH1
+    # 13	CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
+    # 14	CH0 15~8	                    Binary		Middle 8 bits of Ch0
+    # 15	CH0 7~0	                        Binary		Bottom 8 bits of CH0
+    # 16	EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
+    # 17	EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
+    # 18	EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
+    # 19	EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
+    # 20	TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+    # 21	TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+    # 22	TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+    # 23	TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+    # 24	TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
+    # 25	TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
+    # 26	TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
+    # 27	TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
+    # 28	Checksum MSB	                ASCII		Checksum
+    # 29	Checksum LSB	                ASCII		Checksum 
+    # 30	0x03	                        Binary		ETX
+    # -----------------------------------------------------------------------------
     
     def __init__(self, pkt: bytes,                  
                  ssGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
                  commands: POD_Commands | None = None
                 ) -> None:
+        """Sets the class instance variables. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                ending with ETX.
+            ssGain (dict[str,int|None], optional): Second stage gain for four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            preampGain (dict[str,int|None], optional): Preamplifier gain for four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
+            commands (POD_Commands | None, optional): Available commands for a POD device. \
+                Defaults to None.
+        """
         super().__init__(pkt, commands)
         # packet parts
         self.packetNumber   : bytes = self.GetPacketNumber(pkt)
@@ -769,6 +806,12 @@ class Packet_Binary5(Packet) :
     # ----- Packet to dictionary -----
     
     def UnpackAll(self) -> dict[str, bytes]:
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Returns:
+            dict[str, bytes]: Dictionary with the command number, packet number, status, \
+                channels, analog EXT, and analog TTL.
+        """
         data: dict = super().UnpackAll()
         data['Packet #'   ] = self.packetNumber
         data['Status'     ] = self.status 
@@ -782,6 +825,12 @@ class Packet_Binary5(Packet) :
         return data
     
     def TranslateAll(self) -> dict[str, Any]:
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Returns:
+            dict[str, bytes]: Dictionary with the command number, packet number, status, \
+                channels, analog EXT, and analog TTL.
+        """
         data: dict = super().UnpackAll()
         data['Packet #'   ] = self.PacketNumber()
         data['Status'     ] = self.Status()
@@ -799,12 +848,33 @@ class Packet_Binary5(Packet) :
     # ----- Translated parts -----
     
     def PacketNumber(self) -> int : 
+        """Translates the binary packet number into a readable integer.
+
+        Returns:
+            int: Integer of the packet number.
+        """
         return POD_Packets.BinaryBytesToInt(self.packetNumber)
     
     def Status(self) -> int : 
+        """Translates the binary status value into a readable integer
+
+        Returns:
+            int: Integer status value.
+        """
         return POD_Packets.BinaryBytesToInt(self.status)
 
     def Channel(self, c: str) -> float : 
+        """Translates the channel data into a voltage.
+
+        Args:
+            c (str): Channel character. Should be A, B, C, or D.
+
+        Raises:
+            Exception: Channel does not exist.
+
+        Returns:
+            float: Voltage of the channel in volts (V).
+        """
         match c : 
             case 'A' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[6:9], 18, 0) #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
             case 'B' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[4:7], 20, 2) #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
@@ -814,6 +884,17 @@ class Packet_Binary5(Packet) :
         return Packet_Binary5._Voltage_PrimaryChannels(chan, self._ssGain[c], self._preampGain[c])
 
     def AnalogEXT(self, n: int) -> float : 
+        """Translates the analog EXT value into a voltage. 
+
+        Args:
+            n (int): Analog EXT number. Should be 0 or 1.
+
+        Raises:
+            Exception: AEXT does not exist.
+
+        Returns:
+            float: Analog EXT voltage in volts (V).
+        """
         match n :
             case 0 : ext = self.aEXT0
             case 1 : ext = self.aEXT1
@@ -821,6 +902,17 @@ class Packet_Binary5(Packet) :
         return Packet_Binary5._Voltage_SecondaryChannels(POD_Packets.BinaryBytesToInt(ext))
     
     def AnalogTTL(self, n: int) -> float : 
+        """Translates the analog TTL value into a voltage.
+
+        Args:
+            n (int): Analog TTL number. Should be 1, 2, 3, or 4.
+
+        Raises:
+            Exception: ATTL does not exist.
+
+        Returns:
+            float: Analog TTL voltage in volts (v).
+        """
         match n:
             case 1 : ttl = self.aTTL1
             case 2 : ttl = self.aTTL2
@@ -833,18 +925,58 @@ class Packet_Binary5(Packet) :
     
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
+        """Gets the packet number in bytes from a POD packet.
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the packet number.
+        """
         return pkt[5].to_bytes(1,'big')
     
     @staticmethod
     def GetStatus(pkt: bytes) -> bytes : 
+        """Gets the status value in bytes from a POD packet. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the status.
+        """
         return pkt[6].to_bytes(1,'big')
 
     @staticmethod
     def GetChannels(pkt: bytes) -> bytes : 
+        """Gets the channel bytes for channels A, B, C, and D together from a POD packet.
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes: Bytes string of the channels A, B, C, and D together.
+        """
         return pkt[7:16]
     
     @staticmethod
     def GetAnalogEXT(n: int, pkt: bytes) -> bytes : 
+        """Gets the analog EXT from a POD packet.
+
+        Args:
+            n (int): Analog EXT number. Should be 0 or 1.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Raises:
+            Exception: AEXT does not exist.
+
+        Returns:
+            bytes: Bytes string of the AEXT.
+        """
         match n :
             case 0 : return pkt[16:18]
             case 1 : return pkt[18:20]
@@ -852,6 +984,19 @@ class Packet_Binary5(Packet) :
     
     @staticmethod
     def GetAnalogTTL(n: int, pkt: bytes) -> bytes : 
+        """Gets the analog TTL from a POD packet.
+
+        Args:
+            n (int): Analog TTL number. Should be 1, 2, 3, or 4.
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Raises:
+            Exception: ATTL does not exist.
+
+        Returns:
+            bytes: Bytes string of the ATTL.
+        """
         match n:
             case 1 : return pkt[20:22]
             case 2 : return pkt[22:24]
@@ -863,15 +1008,38 @@ class Packet_Binary5(Packet) :
         
     @staticmethod
     def GetMinimumLength() -> int : 
+        """Gets the number of bytes in the smallest possible binary4 packet; \
+        STX (1 byte) + command (4 bytes) + packet number (1 byte) + status (1 byte) \
+        + channels (9 bytes) + AEXT0 (2 bytes) + AEXT1 (2 bytes) + ATTL1 (2 bytes) \
+        + ATTL2 (2 bytes) + ATTL3 (2 bytes) + ATTL4 (2 bytes) + checksum (2 bytes) \
+        + EXT (1 byte)
+
+        Returns:
+            int: Integer representing the minimum length of a binary5 POD packet. 
+        """
         return 31
     
     @staticmethod
     def GetBinaryLength() -> int :
+        """Gets the number of bytes of binary data in a binary5 packet.
+
+        Returns:
+            int: Integer representing the number of binary encoded bytes in a binary5 packet.
+        """
         # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
         return Packet_Binary5.GetMinimumLength() - 8
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
+        """Raises an Exception if the packet is incorrectly formatted. 
+
+        Args:
+            msg (bytes): Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
+
+        Raises:
+            Exception: Packet the wrong size to be a binary5 packet.
+        """
         Packet.CheckIfPacketIsValid(msg) 
         if(len(msg) != Packet_Binary5.GetMinimumLength()) : 
             raise Exception('Packet the wrong size to be a binary5 packet.')
@@ -914,7 +1082,6 @@ class Packet_Binary5(Packet) :
         totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
         realVoltage  = (voltageAtADC - 2.048) / totalGain # V
         return(realVoltage)
-    
 
     @staticmethod
     def _Voltage_PrimaryChannels_Biosensor(value: int, ssGain: int) -> float : 
@@ -951,10 +1118,5 @@ class Packet_Binary5(Packet) :
 # class Packet_Binary2(Packet) : 
 #     pass
 
-
 # class Packet_Binary3(Packet) : 
-#     pass
-
-
-# class Packet_Binary5(Packet) : 
 #     pass

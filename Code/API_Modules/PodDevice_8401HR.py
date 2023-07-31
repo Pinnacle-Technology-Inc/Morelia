@@ -226,7 +226,9 @@ class POD_8401HR(POD_Basics) :
         """
         return(name in POD_8401HR.__CHANNELMAPALL)    
 
+
     # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
+
 
     @staticmethod
     def GetTTLbitmask(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
@@ -357,6 +359,7 @@ class POD_8401HR(POD_Basics) :
 
 
     # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
+
 
     @staticmethod
     def CalculateBiasDAC_GetVout(value: int) -> float :
