@@ -6,6 +6,7 @@ Path.AddAPItoPath()
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
 from PodPacket              import Packet_Standard
+from PodPacket              import Packet_Binary4
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -19,10 +20,10 @@ __email__       = "sales@pinnaclet.com"
 
 def ChoosePort() -> str : 
     # get ports
-    portList = COM_io.GetCOMportsList()
+    portList: list[str] = COM_io.GetCOMportsList()
     print('Available COM Ports: '+', '.join(portList))
     # request port from user
-    choice = input('Select port: COM')
+    choice: str = input('Select port: COM')
     # search for port in list
     for port in portList:
         if port.startswith('COM'+choice):
@@ -32,12 +33,12 @@ def ChoosePort() -> str :
 
 def Write(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
     write: Packet_Standard = pod.WritePacket(cmd, payload)
-    data = write.TranslateAll()
+    data:  dict = write.TranslateAll()
     print('Write:\t', data)
 
 def Read(pod: POD_8206HR) : 
-    read = pod.ReadPODpacket()
-    data = read.TranslateAll()
+    read: Packet_Standard|Packet_Binary4 = pod.ReadPODpacket()
+    data: dict = read.TranslateAll()
     print('Read:\t', data)
 
 def RunCommand(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :

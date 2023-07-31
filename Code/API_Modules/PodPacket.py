@@ -868,7 +868,7 @@ class Packet_Binary5(Packet) :
     @staticmethod
     def GetBinaryLength() -> int :
         # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
-        return Packet_Binary5.GetMinimumLength - 8
+        return Packet_Binary5.GetMinimumLength() - 8
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :

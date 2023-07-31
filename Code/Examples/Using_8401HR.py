@@ -5,6 +5,8 @@ Path.AddAPItoPath()
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8401HR       import POD_8401HR
+from PodPacket              import Packet_Standard
+from PodPacket              import Packet_Binary5
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,10 +20,10 @@ __email__       = "sales@pinnaclet.com"
 
 def ChoosePort() -> str : 
     # get ports
-    portList = COM_io.GetCOMportsList()
+    portList: list[str] = COM_io.GetCOMportsList()
     print('Available COM Ports: '+', '.join(portList))
     # request port from user
-    choice = input('Select port: COM')
+    choice: str = input('Select port: COM')
     # search for port in list
     for port in portList:
         if port.startswith('COM'+choice):
@@ -30,14 +32,14 @@ def ChoosePort() -> str :
     return(ChoosePort())
 
 def Write(pod: POD_8401HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
-    write = pod.WritePacket(cmd, payload)
-    write = pod.TranslatePODpacket(write)
-    print('Write:\t', write)
+    write: Packet_Standard = pod.WritePacket(cmd, payload)
+    data:  dict = write.TranslateAll()
+    print('Write:\t', data)
 
 def Read(pod: POD_8401HR) : 
-    read = pod.ReadPODpacket()
-    read = pod.TranslatePODpacket(read)
-    print('Read:\t', read)
+    read: Packet_Standard|Packet_Binary5 = pod.ReadPODpacket()
+    data: dict = read.TranslateAll()
+    print('Read:\t', data)
 
 def RunCommand(pod: POD_8401HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
    Write(pod,cmd,payload)
@@ -115,3 +117,13 @@ print('~~ MUX MODE ~~')
 muxMode = 0
 RunCommand(pod, 'SET MUX MODE', muxMode) # Sets mux mode on or off.  This causes EXT1 to toggle periodically to control 2BIO 3EEG preamps.  0 = off, 1 = on
 RunCommand(pod, 'GET MUX MODE') # Gets the state of mux mode.  See SET MUX MODE
+
+print('~~ STREAM ~~')
+RunCommand(pod, 'STREAM', 1) # Command to change streaming state.  0 = OFF, 1 = ON.  Reply returns the argument sent.
+Write(     pod, 'STREAM', 0) # "
+streaming: bool = True
+while(streaming): 
+    try:
+        Read(pod)
+    except:
+        streaming = False
