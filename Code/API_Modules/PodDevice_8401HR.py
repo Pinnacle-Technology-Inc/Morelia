@@ -1,6 +1,9 @@
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
+from PodPacket              import Packet
+from PodPacket              import Packet_Standard
+from PodPacket              import Packet_Binary5
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -23,16 +26,6 @@ class POD_8401HR(POD_Basics) :
 
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
-
-    __B5LENGTH : int = 31
-    """Class-level integer representing the number of bytes for a Binary 5 packet.
-    """
-
-    __B5BINARYLENGTH : int = __B5LENGTH - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
-    """Class-level integer representing the number of binary bytes for a \
-    Binary 5 packet.
-    """
-
     __CHANNELMAPALL : dict[str,dict[str,str]] = {
         '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
@@ -54,8 +47,9 @@ class POD_8401HR(POD_Basics) :
     all preamplifier devices.
     """
 
-    # ============ DUNDER METHODS ============      ========================================================================================================================
+    # ============ METHODS ============      ========================================================================================================================
     
+    # ------------ INITIALIZATION ------------           ------------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, 
                  port: str|int, 
@@ -76,22 +70,13 @@ class POD_8401HR(POD_Basics) :
                 four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
             baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
                 the COM_io instance. Defaults to 9600.
-
-        Raises:
-            Exception: The ssGain argument must be a dict or list.
-            Exception: The preampGain argument must be a dict or list.
-            Exception: The ssGain dictionary has improper keys; keys must be ['A','B','C','D'].
-            Exception: The preampGain dictionary has improper keys; keys must be ['A','B','C','D'].
-            Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
-            Exception: EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.
         """
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
-
         # get constants for adding commands 
         U8  = POD_Basics.GetU(8)
         U16 = POD_Basics.GetU(16)
-        B5  = POD_8401HR.__B5BINARYLENGTH
+        B5  = Packet_Binary5.GetBinaryLength()
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(10) # SAMPLE RATE
@@ -122,196 +107,83 @@ class POD_8401HR(POD_Basics) :
         self._commands.AddCommand( 133,	'GET MUX MODE',	    (0,),	    (U8,),      False,  'Gets the state of mux mode. See SET MUX MODE.')
         self._commands.AddCommand( 134,	'GET TTL ANALOG',   (U8,),	    (U16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
         self._commands.AddCommand( 181, 'BINARY5 DATA',     (0,),	    (B5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
-
-        # fix types
-        if(isinstance(ssGain, tuple|list)) : 
-            ssGain_dict = {
-                'A' : ssGain[0],
-                'B' : ssGain[1],
-                'C' : ssGain[2],
-                'D' : ssGain[3]
-            }
-        elif(isinstance(ssGain, dict)) : 
-            ssGain_dict = ssGain
-        else:
-            raise Exception('[!] The ssGain argument must be a dict or list.')
-        if(isinstance(preampGain,tuple|list)) : 
-            preampGain_dict = {
-                'A' : preampGain[0],
-                'B' : preampGain[1],
-                'C' : preampGain[2],
-                'D' : preampGain[3]
-            }
-        elif(isinstance(preampGain, dict)) : 
-            preampGain_dict = preampGain
-        else:
-            raise Exception('[!] The preampGain argument must be a dict or list.')
-
-        # verify that dictionaries are correct structure
-        goodKeys = ['A','B','C','D'].sort() # CH0, CH1, CH2, CH3
-        if(list(ssGain_dict.keys()).sort() != goodKeys) : 
-            raise Exception('[!] The ssGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-        if(list(preampGain_dict.keys()).sort() != goodKeys) : 
-            raise Exception('[!] The preampGain dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')
-
-        # second stage gain 
-        for value in ssGain_dict.values() :
-            # both biosensors and EEG/EMG have ssGain. None when no connect 
-            if(value != 1 and value != 5 and value != None): 
-                raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
-        self._ssGain : dict[str,int|None] = ssGain_dict 
-
+        # second stage gain
+        ssGain_dict = self._FixABCDtype(ssGain, thisIs='ssGain ')
+        self._ValidateSsGain(ssGain_dict)
+        self._ssGain : dict[str,int|None] = ssGain_dict         
         # preamplifier gain
-        for value in preampGain_dict.values() :
-            # None when biosensor or no connect 
-            if(value != 10 and value != 100 and value != None): 
-                raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
+        preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain ')
+        self._ValidatePreampGain(preampGain_dict)
         self._preampGain : dict[str,int|None] = preampGain_dict
-    
-
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-    
-
-    
-    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
     
     
     @staticmethod
-    def UnpackPODpacket_Binary(msg: bytes) -> dict[str,bytes] :
-        """Overwrites the parent's method. Separates the components of a binary5 packet into a dictionary.
+    def _FixABCDtype(info: tuple|list|dict, thisIs: str = '') -> dict : 
+        """Converts the info argument into a dictionary with A, B, C, and D as keys.
 
         Args:
-            msg (bytes): Bytes string containing a complete binary5 Pod packet:  STX (1 byte) \
-                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
-                + checksum (2) + ETX (1)
+            info (tuple | list | dict): Variable to be converted into a dictionary. 
+            thisIs (str, optional): Description of the info argument, which is used in \
+                Exception statements. Defaults to ''.
 
         Raises:
-            Exception: (1) The packet does not have the minimum number of bytes, (2) does not begin \
-                with STX, or (3) does not end with ETX.
+            Exception: The dictionary has improper keys; keys must be ['A','B','C','D'].
+            Exception: The argument must have only four values.
+            Exception: The argument must be a tuple, list, or dict.
 
         Returns:
-            dict[str,bytes]: A dictionary containing 'Command Number', 'Packet #', 'Status', 'Channels', \
-                'Analog EXT0', 'Analog EXT1', 'Analog TTL1', 'Analog TTL2', 'Analog TTL3', 'Analog TTL4', \
-                in bytes.
+            dict: The info argument converted to a dictionary with A, B, C, and D as keys.  
         """
-        # Binary 5 format = 
-        #   STX (1) + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) 
-        #   + checksum (2) + ETX (1)
-        MINBYTES = POD_8401HR.__B5LENGTH
+        # check for dict type 
+        if(isinstance(info, dict)) : 
+            # check keys
+            if(list(info.keys()).sort() != ['A','B','C','D'].sort()) : 
+                raise Exception('[!] The '+str(thisIs)+'dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')        
+            return info
+        # check for array-like type 
+        if(isinstance(info, tuple|list) ) : 
+            # check size 
+            if(len(info) == 4) : 
+                # build dictionary 
+                return {'A' : info[0],
+                        'B' : info[1],
+                        'C' : info[2],
+                        'D' : info[3] }
+            raise Exception('[!] The '+str(thisIs)+'argument must have only four values.') 
+        raise Exception('[!] The '+str(thisIs)+'argument must be a tuple, list, or dict.')
+    
 
-        # get number of bytes in message
-        packetBytes = len(msg)
-
-        # message must have enough bytes, start with STX, or end with ETX
-        if(    (packetBytes != MINBYTES)
-            or (msg[0].to_bytes(1,'big') != POD_Packets.STX()) 
-            or (msg[packetBytes-1].to_bytes(1,'big') != POD_Packets.ETX())
-        ) : 
-            raise Exception('Cannot unpack an invalid POD packet.')
-        
-        # create dict and separate message parts
-        msg_unpacked = {
-            'Command Number'    : msg[1:5],
-            'Packet #'          : msg[5].to_bytes(1,'big'),
-            'Status'            : msg[6].to_bytes(1,'big'),
-            'Channels'          : msg[7:16], 
-            'Analog EXT0'       : msg[16:18],
-            'Analog EXT1'       : msg[18:20],
-            'Analog TTL1'       : msg[20:22],
-            'Analog TTL2'       : msg[22:24],
-            'Analog TTL3'       : msg[24:26],
-            'Analog TTL4'       : msg[26:28]
-        }
-
-        # return unpacked POD command
-        return(msg_unpacked)
-
-
-    def TranslatePODpacket_Binary(self, msg: bytes) -> dict[str,int|float] :
-        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
-        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
-        channels and analogs are converted to volts (V).
+    @staticmethod
+    def _ValidateSsGain(ssgain: dict) : 
+        """Checks that the second stage gain dictionary has proper values (1, 5, or None).
 
         Args:
-            msg (bytes): msg (bytes): Bytes string containing a complete binary 5 Pod packet: STX (1 byte) \
-                + command (4) + packet number (1) + status (1) + channels (9) + analog inputs (12) \
-                + checksum (2) + ETX (1).
+            ssgain (dict): Second stage gain dictionary.
 
-        Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing 'Command Number', 'Packet #', 'Status', \
-                'D', 'C', 'B', 'A', 'Analog EXT0',  'Analog EXT1', 'Analog TTL1', 'Analog TTL2', \
-                'Analog TTL3', 'Analog TTL4', as numbers.
+        Raises:
+            Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
         """
-        # unpack parts of POD packet into dict
-        msgDict = POD_8401HR.UnpackPODpacket_Binary(msg)
-        # translate the binary ascii encoding into a readable integer
-        msgDictTrans = {}
-        # basics 
-        msgDictTrans['Command Number']  = POD_Packets.AsciiBytesToInt(  msgDict['Command Number'] )
-        msgDictTrans['Packet #']        = POD_Packets.BinaryBytesToInt( msgDict['Packet #'] )
-        msgDictTrans['Status']          = POD_Packets.BinaryBytesToInt( msgDict['Status'] )
-        # BinaryBytesToInt_Split:
-            #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
-            #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
-            #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
-            #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
-        # dont add channel if no connect (NC)
-        if(self._ssGain['D'] != None) : 
-            msgDictTrans['D'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][0:3], 24, 6), 
-                                                    self._ssGain['D'], self._preampGain['D'] )
-        if(self._ssGain['C'] != None) :
-            msgDictTrans['C'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][2:5], 22, 4), 
-                                                    self._ssGain['C'], self._preampGain['C'] )
-        if(self._ssGain['B'] != None) :
-            msgDictTrans['B'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][4:7], 20, 2), 
-                                                    self._ssGain['B'], self._preampGain['B'] )
-        if(self._ssGain['A'] != None) :
-            msgDictTrans['A'] = POD_8401HR._Voltage_PrimaryChannels( 
-                                                    POD_Packets.BinaryBytesToInt_Split(msgDict['Channels'][6:9], 18, 0), 
-                                                    self._ssGain['A'], self._preampGain['A'] )
-        # add analogs 
-        msgDictTrans['Analog EXT0']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT0']) ) 
-        msgDictTrans['Analog EXT1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog EXT1']) )
-        msgDictTrans['Analog TTL1']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL1']) )
-        msgDictTrans['Analog TTL2']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL2']) )
-        msgDictTrans['Analog TTL3']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL3']) )
-        msgDictTrans['Analog TTL4']     = POD_8401HR._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(msgDict['Analog TTL4']) )
-        # return translated unpacked POD packet 
-        return(msgDictTrans)
-
-
-    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Unpacks the binary5 POD packet and converts the values of the \
-        ASCII-encoded bytes into integer values and the values of binary-encoded bytes into integers. The \
-        channels and analogs are converted to volts (V).
+        for value in ssgain.values() :
+            # both biosensors and EEG/EMG have ssGain. None when no connect 
+            if(value != 1 and value != 5 and value != None): 
+                raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
+            
+    @staticmethod
+    def _ValidatePreampGain(preampGain: dict) -> None:
+        """Checks that the preamplifier gain dictionary has proper values (10, 100, or None).
 
         Args:
-            msg (bytes): Bytes message containing a standard or binary5 POD packet.
+            preampGain (dict): preamplifier gain dictionary.
 
-        Returns:
-            dict[str,int|dict[str,int]]: A dictionary containing the unpacked message in numbers.
+        Raises:
+            Exception: EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.
         """
-        # get command number (same for standard and binary packets)
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
-        # these commands have some specific formatting 
-        specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
-        if(cmd in specialCommands):
-            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) } 
-            if('Payload' in msgDict) : 
-                transdict['Payload'] = ( self.DecodeTTLByte(msgDict['Payload'][:2]), self.DecodeTTLByte(msgDict['Payload'][2:]))
-            return(transdict)
-        # message is binary 
-        elif(self._commands.IsCommandBinary(cmd)): 
-            return(self.TranslatePODpacket_Binary(msg))
-        # standard packet 
-        else: 
-            return(self.TranslatePODpacket_Standard(msg)) # TranslatePODpacket_Standard does not handle TTL well, hence elif statements 
-
-
+        for value in preampGain.values() :
+            # None when biosensor or no connect 
+            if(value != 10 and value != 100 and value != None): 
+                raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
+            
+            
     # ------------ MAPPING ------------           ------------------------------------------------------------------------------------------------------------------------
     
 
@@ -374,6 +246,11 @@ class POD_8401HR(POD_Basics) :
         # use this for the argument/return for TTL-specific commands 
         # (msb) Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins (lsb) 
         return( 0 | (ext0 << 7) | (ext1 << 6) | (ttl4 << 3) | (ttl3 << 2) | (ttl2 << 1) | ttl1 )
+
+
+    @staticmethod
+    def DecodeTTLPayload(payload: bytes) : 
+        return ( POD_8401HR.DecodeTTLByte(payload[:2]), POD_8401HR.DecodeTTLByte(payload[2:]))
 
 
     @staticmethod
@@ -509,86 +386,34 @@ class POD_8401HR(POD_Basics) :
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return(int( (vout / 2.048) * 32768. ))
-    
-
-    # ============ PROTECTED METHODS ============      ========================================================================================================================    
-    
-
-    # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def _Voltage_PrimaryChannels(value: int, ssGain:int|None=None, PreampGain:int|None=None) -> float :
-        """Converts a value to a voltage for a primary channel. 
-
-        Args:
-            value (int): Value to be converted to voltage.
-            ssGain (int | None, optional): Second stage gain. Defaults to None.
-            PreampGain (int | None, optional): Preamplifier gain. Defaults to None.
-
-        Returns:
-            float: Number of the voltage in volts [V]. Returns value if no gain is given (no-connect).
-        """
-        if(ssGain != None and PreampGain == None) : 
-            return(POD_8401HR._Voltage_PrimaryChannels_Biosensor(value, ssGain))
-        elif(ssGain != None):
-            return(POD_8401HR._Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain))
-        else: 
-            return(value) # no connect! this is noise 
-
-
-    @staticmethod
-    def _Voltage_PrimaryChannels_EEGEMG(value: int, ssGain: int, PreampGain: int) -> float : 
-        """Converts a value to a voltage for an EEG/EMG primary channel. 
-
-        Args:
-            value (int): Value to be converted to voltage.
-            ssGain (int): Second stage gain.
-            PreampGain (int): Preamplifier gain.
-
-        Returns:
-            float: Number of the voltage in volts [V].
-        """
-        # Channels configured as EEG/EMG channels (0.4/1/10 Hz highpass filter, second stage 0.5Hz Highpass, second stage 5x)
-        voltageAtADC = (value / 262144.0) * 4.096 # V
-        totalGain    = 10.0 * ssGain * PreampGain # SSGain = 1 or 5, PreampGain = 10 or 100
-        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
-        return(realVoltage)
-    
-
-    @staticmethod
-    def _Voltage_PrimaryChannels_Biosensor(value: int, ssGain: int) -> float : 
-        """Converts a value to a voltage for a biosensor primary channel. 
-
-        Args:
-            value (int): Value to be converted to voltage.
-            ssGain (int): Second stage gain.
-
-        Returns:
-            float: Number of the voltage in volts [V]. 
-        """
-        # Channels configured as biosensor channels (DC highpass filter, second stage DC mode, second stage 1x)
-        voltageAtADC = (value / 262144.0) * 4.096 # V
-        totalGain    = 1.557 * ssGain * 1E7 # SSGain = 1 or 5
-        realVoltage  = (voltageAtADC - 2.048) / totalGain # V
-        return(realVoltage)
-
-
-    @staticmethod
-    def _Voltage_SecondaryChannels(value: int) -> float :
-        """Converts a value to a voltage for a secondary channel.
-
-        Args:
-            value (int): Value to be converted to voltage.
-
-        Returns:
-            float: Number of the voltage in volts [V].
-        """
-        # The additional inputs (EXT0, EXT1, TTL1-3) values are all 12-bit referenced to 3.3V.  To convert them to real voltages, the formula is as follows
-        return( (value / 4096.0) * 3.3 ) # V
-
+        
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
+
+    
+    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
+        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+        ending with ETX. Reads first STX and then starts recursion. 
+
+        Args:
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
+
+        Returns:
+            Packet: POD packet beginning with STX and ending with ETX. This may be a \
+                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+        """
+        packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
+        # check for special packets
+        if(isinstance(packet, Packet_Standard)) : 
+            specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
+            if(packet.CommandNumber() in specialCommands) : 
+                packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, packet.payload)
+        # return packet
+        return packet
+
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) :
         """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. 
@@ -642,11 +467,11 @@ class POD_8401HR(POD_Basics) :
         # -----------------------------------------------------------------------------
 
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(self.__B5BINARYLENGTH) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(Packet_Binary5.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return(packet)
+        return Packet_Binary5(packet, self._ssGain, self._preampGain, self._commands)
  
