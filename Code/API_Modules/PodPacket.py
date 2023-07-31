@@ -727,23 +727,31 @@ class Packet_Binary5(Packet) :
     
     @staticmethod
     def GetPacketNumber(pkt: bytes) -> bytes : 
-        pass
+        return pkt[5].to_bytes(1,'big')
     
     @staticmethod
     def GetStatus(pkt: bytes) -> bytes : 
-        pass
+        return pkt[6].to_bytes(1,'big')
 
     @staticmethod
     def GetChannels(pkt: bytes) -> bytes : 
-        pass
+        return pkt[7:16]
     
     @staticmethod
     def GetAnalogEXT(n: int, pkt: bytes) -> bytes : 
-        pass
+        match n :
+            case 0 : return pkt[16:18]
+            case 1 : return pkt[18:20]
+            case _ : raise Exception('AEXT'+str(n)+' does not exist.')
     
     @staticmethod
     def GetAnalogTTL(n: int, pkt: bytes) -> bytes : 
-        pass
+        match n:
+            case 1 : return pkt[20:22]
+            case 2 : return pkt[22:24]
+            case 3 : return pkt[24:26]
+            case 4 : return pkt[26:28]
+            case _ : raise Exception('ATTL'+str(n)+' does not exist.')
         
     # ----- Properties -----
         
