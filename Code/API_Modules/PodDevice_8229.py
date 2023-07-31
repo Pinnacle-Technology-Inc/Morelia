@@ -369,7 +369,15 @@ class POD_8229(POD_Basics) :
 
 
     @staticmethod
-    def _Custom140SETTIME(payload: tuple[int]) : 
+    def _Custom140SETTIME(payload: tuple[int]) -> tuple[int] : 
+        """Custom function to translate the payload for command #140 SET TIME.
+
+        Args:
+            payload (tuple[int]): Default translated payload.
+
+        Returns:
+            tuple[int]: Tuple of times.
+        """
         return tuple([POD_8229._DecodeDecimalAsHex(x) for x in payload]) 
     
     

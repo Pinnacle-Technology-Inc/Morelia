@@ -249,7 +249,15 @@ class POD_8401HR(POD_Basics) :
 
 
     @staticmethod
-    def DecodeTTLPayload(payload: bytes) : 
+    def DecodeTTLPayload(payload: bytes) -> tuple[dict[str, int]] : 
+        """Decodes a paylaod with the two TTL bytes.
+
+        Args:
+            payload (bytes): Bytes string of the POD packet payload.
+
+        Returns:
+            tuple[dict[str, int]]: Tuple with two TTL dictionaries.
+        """
         return ( POD_8401HR.DecodeTTLByte(payload[:2]), POD_8401HR.DecodeTTLByte(payload[2:]))
 
 
