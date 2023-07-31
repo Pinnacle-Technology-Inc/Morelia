@@ -597,6 +597,16 @@ class Packet_Binary4(Packet) :
         """
         return 16
 
+    @staticmethod
+    def GetBinaryLength() -> int :
+        """Gets the number of bytes of binary data in a binary4 packet.
+
+        Returns:
+            int: Integer representing the number of binary encoded bytes in a binary4 packet.
+        """
+        # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+        return( Packet_Binary4.GetMinimumLength() - 8 )
+
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
         """Raises an Exception if the packet is incorrectly formatted. 

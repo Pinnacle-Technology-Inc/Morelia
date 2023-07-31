@@ -40,7 +40,7 @@ class POD_8206HR(POD_Basics) :
         # get constants for adding commands 
         U8  = POD_Basics.GetU(8)
         U16 = POD_Basics.GetU(16)
-        B4  = Packet_Binary4.GetMinimumLength() - 8 # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
+        B4  = Packet_Binary4.GetBinaryLength()
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
@@ -137,10 +137,8 @@ class POD_8206HR(POD_Basics) :
         # 15    0x03	        Binary		ETX
         # ------------------------------------------------------------
         
-        # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
-        binaryLength = Packet_Binary4.GetMinimumLength() - 8 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(binaryLength) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(Packet_Binary4.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
