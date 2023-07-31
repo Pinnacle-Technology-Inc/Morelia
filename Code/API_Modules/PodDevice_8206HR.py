@@ -88,6 +88,19 @@ class POD_8206HR(POD_Basics) :
 
 
     def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
+        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+        ending with ETX. Reads first STX and then starts recursion. 
+
+        Args:
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
+
+        Returns:
+            Packet: POD packet beginning with STX and ending with ETX. This may be a \
+                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+        """
         packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
         # check for special packets
         if(isinstance(packet, Packet_Standard)) : 
@@ -144,4 +157,4 @@ class POD_8206HR(POD_Basics) :
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return(Packet_Binary4(packet, self._preampGain, self._commands))
+        return Packet_Binary4(packet, self._preampGain, self._commands)

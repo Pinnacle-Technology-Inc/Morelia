@@ -707,6 +707,45 @@ class Packet_Binary4(Packet) :
 
 class Packet_Binary5(Packet) : 
     
+    
+    # -----------------------------------------------------------------------------
+        # Binary 5 Data Format
+        # -----------------------------------------------------------------------------		
+        # Byte    Value	                        Format      Description 
+        # -----------------------------------------------------------------------------		
+        # 0	    0x02	                        Binary		STX
+        # 1	    0	                            ASCII		Command Number Byte 0
+        # 2	    0	                            ASCII		Command Number Byte 1
+        # 3	    B	                            ASCII		Command Number Byte 2
+        # 4	    5	                            ASCII		Command Number Byte 3
+        # 5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
+        # 6	    Status	                        Binary		Status byte, currently unused
+        # 7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
+        # 8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
+        # 9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
+        # 10	CH2 11~4	                    Binary		Middle 8 bits of Ch2
+        # 11	CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
+        # 12	CH1 13~6	                    Binary		Middle 8 bits of CH1
+        # 13	CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
+        # 14	CH0 15~8	                    Binary		Middle 8 bits of Ch0
+        # 15	CH0 7~0	                        Binary		Bottom 8 bits of CH0
+        # 16	EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
+        # 17	EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
+        # 18	EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
+        # 19	EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
+        # 20	TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+        # 21	TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+        # 22	TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
+        # 23	TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
+        # 24	TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
+        # 25	TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
+        # 26	TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
+        # 27	TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
+        # 28	Checksum MSB	                ASCII		Checksum
+        # 29	Checksum LSB	                ASCII		Checksum 
+        # 30	0x03	                        Binary		ETX
+        # -----------------------------------------------------------------------------
+    
     def __init__(self, pkt: bytes,                  
                  ssGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 

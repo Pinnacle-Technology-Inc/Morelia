@@ -243,9 +243,8 @@ class POD_Basics :
                 Defaults to 5. 
 
         Returns:
-            bytes|Packet_Standard|Packet_BinaryStandard: POD packet beginning with STX and ending \
-                with ETX. This may be a standard packet, binary packet, or an unformatted packet \
-                (STX+something+ETX). 
+            Packet: POD packet beginning with STX and ending with ETX. This may be a \
+                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
         b = None
