@@ -757,15 +757,18 @@ class Packet_Binary5(Packet) :
         
     @staticmethod
     def GetMinimumLength() -> int : 
-        pass
+        return 31
     
     @staticmethod
     def GetBinaryLength() -> int :
-        pass
+        # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
+        return Packet_Binary5.GetMinimumLength - 8
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
-        pass
+        Packet.CheckIfPacketIsValid(msg) 
+        if(len(msg) != Packet_Binary5.GetMinimumLength()) : 
+            raise Exception('Packet the wrong size to be a binary5 packet.')
     
     # ----- Conversions -----
 
