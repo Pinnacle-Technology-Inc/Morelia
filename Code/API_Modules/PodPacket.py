@@ -501,10 +501,10 @@ class Packet_Binary4(Packet) :
                 and channels 0, 1, and 2.
         """
         data: dict = super().UnpackAll()
-        data['Packet #'] = self.packetNumber,
-        data['TTL'] = self.ttl, 
-        data['Ch0'] = self.ch0, 
-        data['Ch1'] = self.ch1, 
+        data['Packet #'] = self.packetNumber
+        data['TTL'] = self.ttl
+        data['Ch0'] = self.ch0
+        data['Ch1'] = self.ch1
         data['Ch2'] = self.ch2  
         return data
 
@@ -516,11 +516,11 @@ class Packet_Binary4(Packet) :
                 and channels 0, 1, and 2.
         """
         data: dict = super().TranslateAll()
-        data['Packet #'] = self.PacketNumber(),
-        data['TTL'] = self.Ttl(), 
-        data['Ch0'] = self.ch0, 
-        data['Ch1'] = self.ch1, 
-        data['Ch2'] = self.ch2  
+        data['Packet #'] = self.PacketNumber()
+        data['TTL'] = self.Ttl() 
+        data['Ch0'] = self.ch0
+        data['Ch1'] = self.ch1
+        data['Ch2'] = self.ch2
         return data
     
     # ----- Translated parts -----
@@ -696,12 +696,30 @@ class Packet_Binary5(Packet) :
     
     def __init__(self, pkt: bytes, commands: POD_Commands | None = None) -> None:
         super().__init__(pkt, commands)
-        pass
+        self.packetNumber   : bytes = self.GetPacketNumber(pkt)
+        self.status         : bytes = self.GetStatus(pkt)
+        self.channels       : bytes = self.GetChannels(pkt)
+        self.aEXT0          : bytes = self.GetAnalogEXT(0, pkt)
+        self.aEXT1          : bytes = self.GetAnalogEXT(1, pkt)
+        self.aTTL1          : bytes = self.GetAnalogTTL(1, pkt)
+        self.aTTL2          : bytes = self.GetAnalogTTL(2, pkt)
+        self.aTTL3          : bytes = self.GetAnalogTTL(3, pkt)
+        self.aTTL4          : bytes = self.GetAnalogTTL(4, pkt)
     
     # ----- Packet to dictionary -----
     
     def UnpackAll(self) -> dict[str, bytes]:
-        pass
+        data: dict = super().UnpackAll()
+        data['Packet #'   ] = self.packetNumber
+        data['Status'     ] = self.status 
+        data['Channels'   ] = self.channels
+        data['Analog EXT0'] = self.aEXT0
+        data['Analog EXT1'] = self.aEXT1
+        data['Analog TTL1'] = self.aTTL1
+        data['Analog TTL2'] = self.aTTL2
+        data['Analog TTL3'] = self.aTTL3
+        data['Analog TTL4'] = self.aTTL4
+        return data
     
     def TranslateAll(self) -> dict[str, Any]:
         pass
