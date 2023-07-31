@@ -177,7 +177,17 @@ class POD_8229(POD_Basics) :
             'Speed' : speeds
         })
     
-
+    
+    @staticmethod
+    def DecodeDayAndSchedule(dayschedule: bytes) : 
+        U8 = POD_8229.GetU(8)
+        day = POD_Packets.AsciiBytesToInt(dayschedule[:U8])
+        print(dayschedule[:U8+1], day)
+        schedule = POD_8229.DecodeDaySchedule(dayschedule[U8:])
+        print(schedule)
+        return (day, schedule)
+        
+        
     @staticmethod
     def DecodeLCDSchedule(schedule: bytes) -> dict[str,str|list[int]] : 
         """Interprets the return bytes from the command #202 'LCD SET DAY SCHEDULE'.
@@ -203,10 +213,7 @@ class POD_8229(POD_Basics) :
             hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
         # return decoded LCD SET DAY SCHEDULE value
-        return({
-            'Day' : day,
-            'Hours' : hours # Each bit represents the motor state in that hour, 1 for on and 0 for off.
-        })
+        return{'Day' : day, 'Hours' : hours} # Each bit represents the motor state in that hour, 1 for on and 0 for off.
 
 
     @staticmethod
@@ -302,15 +309,17 @@ class POD_8229(POD_Basics) :
         Returns:
             bytes: Bytes string that was written to the POD device.
         """
-        # check for special commands 
+        # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
-            pld = tuple([self._CodeDecimalAsHex(x) for x in payload ])
-            packet: bytes = self.GetPODpacket(cmd, pld)
-        # POD packet
-        else :      
-            packet: bytes = self.GetPODpacket(cmd, payload)
-        # write packet to serial port 
-        self._port.Write(packet)
+            packet: Packet_Standard = super().WritePacket(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
+        else :
+            packet: Packet_Standard = super().WritePacket(cmd,payload)
+        # check for special commands 
+        match packet.CommandNumber() : 
+            case 140 : # 140 SET TIME
+                packet.SetCustomPayload(POD_8229._Custom140SETTIME, packet.DefaultPayload())
+            case 141 : # 141 SET DAY SCHEDULE
+                packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, packet.payload)
         # returns packet that was written
         return(packet)
     
