@@ -391,6 +391,27 @@ class POD_8401HR(POD_Basics) :
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
+
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
+        """Builds a POD packet and writes it to the POD device. 
+
+        Args:
+            cmd (str | int): Command number.
+            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
+
+        Returns:
+            Packet_Standard: Packet that was written to the POD device.
+        """
+        # write
+        packet: Packet_Standard = super().WritePacket(cmd, payload)
+        # check for special packets
+        specialCommands = [127, 129] # 127 SET TTL CONFIG # 129 SET TTL OUTS
+        if(packet.CommandNumber() in specialCommands) : 
+            packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, packet.payload)
+        # returns packet object
+        return packet
+    
     
     def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -409,8 +430,7 @@ class POD_8401HR(POD_Basics) :
         packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
         # check for special packets
         if(isinstance(packet, Packet_Standard)) : 
-            specialCommands = [127, 128, 129] # 127 SET TTL CONFIG # 128 GET TTL CONFIG # 129 SET TTL OUTS
-            if(packet.CommandNumber() in specialCommands) : 
+            if(packet.CommandNumber() == 128) : # 128 GET TTL CONFIG
                 packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, packet.payload)
         # return packet
         return packet

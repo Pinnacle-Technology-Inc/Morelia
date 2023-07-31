@@ -320,7 +320,7 @@ class POD_8229(POD_Basics) :
                 packet.SetCustomPayload(POD_8229._Custom140SETTIME, packet.DefaultPayload())
             case 141 : # 141 SET DAY SCHEDULE
                 packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, packet.payload)
-        # returns packet that was written
+        # returns packet object
         return(packet)
     
 
