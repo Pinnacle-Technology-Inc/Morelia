@@ -3,8 +3,8 @@ import Path
 Path.AddAPItoPath()
 
 # local imports
-from SerialCommunication    import COM_io
-from PodDevice_8480SC       import POD_8480SC
+from PodDevices.SerialCommunication    import COM_io
+from PodDevices.PodDevice_8480SC       import POD_8480SC
 from PodPacket.PodPacket_Standard     import Packet_Standard
 
 # authorship

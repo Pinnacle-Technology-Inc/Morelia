@@ -9,10 +9,10 @@ from   datetime   import datetime
 from   time       import gmtime, strftime
 
 # local imports
-from SerialCommunication    import COM_io
+from PodDevices.SerialCommunication    import COM_io
 from GetUserInput           import UserInput
 from Setup_PodParameters    import Params_Interface
-from BasicPodProtocol       import POD_Basics, Packet, Packet_Standard
+from PodDevices.BasicPodProtocol       import POD_Basics, Packet, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

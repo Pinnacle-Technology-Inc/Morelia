@@ -1,5 +1,5 @@
 # local imports 
-from BasicPodProtocol import POD_Basics, Packet_Standard
+from PodDevices import POD_Basics, Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"

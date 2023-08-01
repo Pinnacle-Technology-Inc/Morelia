@@ -275,7 +275,7 @@ class Params_8401HR(Params_Interface) :
         """
         super()._CheckParams() 
 
-        from PodDevice_8401HR import POD_8401HR
+        from PodDevices.PodDevice_8401HR import POD_8401HR
         devices = POD_8401HR.GetSupportedPreampDevices()
         if(self.preampDevice not in devices) :
             raise Exception('Mouse/rat preamplifier must be in '+str(devices)+'.')

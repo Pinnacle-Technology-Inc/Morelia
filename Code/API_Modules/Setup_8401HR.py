@@ -11,7 +11,7 @@ from   pyedflib     import EdfWriter
 
 # local imports
 from Setup_PodInterface  import Setup_Interface, UserInput
-from PodDevice_8401HR    import POD_8401HR, Packet_Standard, Packet_Binary5
+from PodDevices.PodDevice_8401HR    import POD_8401HR, Packet_Standard, Packet_Binary5
 from Setup_PodParameters import Params_8401HR
 
 # authorship
