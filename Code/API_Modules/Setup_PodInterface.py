@@ -296,7 +296,15 @@ class Setup_Interface :
         return(podDict)
 
     @staticmethod
-    def _ChoosePortLinux(forbidden):
+    def _ChoosePortLinux(forbidden) -> str : 
+        """User picks Serial port in Linux.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used.
+
+        Returns:
+            str: String name of the port.
+        """
         portList = Setup_Interface._GetPortsList()
         print('Available Serial Ports: '+', '.join(portList))
         choice = input('Select port: /dev/tty')
@@ -309,14 +317,21 @@ class Setup_Interface :
                 if port.startswith('COM'+choice):
                     return(port)
                 if port.startswith('/dev/tty'+choice):
-                    print("!!!", port)
                     return(port)
             # if return condition not reached...
             print('[!] tty'+choice+' does not exist. Try again.')
             return(Setup_Interface._ChoosePortLinux(forbidden))
 
     @staticmethod
-    def _ChoosePortWindows(forbidden):
+    def _ChoosePortWindows(forbidden) -> str :
+        """User picks COM port in Windows.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. 
+
+        Returns:
+            str: String name of the port.
+        """
         portList = Setup_Interface._GetPortsList(forbidden)
         print('Available COM Ports: '+', '.join(portList))
         # request port from user
@@ -336,7 +351,7 @@ class Setup_Interface :
 
     @staticmethod
     def _ChoosePort(forbidden:list[str]=[]) -> str : 
-        """Asks the user to select a COM port.
+        """Systems checks user's Operating System, and chooses ports accordingly.
 
         Args:
             forbidden (list[str], optional): List of port names that are already used. Defaults to [].
@@ -344,12 +359,14 @@ class Setup_Interface :
         Returns:
             str: String name of the port.
         """
-        # get ports
+        # checks user's Operating System.
         plat = platform.system() 
         print("plat", plat)
         if plat == 'Linux':
+            # serial ports for Linux
             chosenport = Setup_Interface._ChoosePortLinux(forbidden)
         if plat == 'Windows':
+            # COM ports for Windows
             chosenport = Setup_Interface._ChoosePortWindows(forbidden)
         return(chosenport)
     
