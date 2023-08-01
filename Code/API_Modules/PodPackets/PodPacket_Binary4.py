@@ -3,7 +3,7 @@ from typing import Any
 
 # local imports
 from PodCommands        import POD_Commands
-from PodPacket_Packet   import Packet
+from PodPackets.PodPacket_Packet   import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

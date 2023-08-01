@@ -8,7 +8,7 @@ import time
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8229         import POD_8229
-from PodPacket_Standard     import Packet_Standard
+from PodPacket.PodPacket_Standard     import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
