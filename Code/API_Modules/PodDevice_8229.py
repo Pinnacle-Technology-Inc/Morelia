@@ -3,7 +3,6 @@ from datetime import datetime
 
 # local imports 
 from BasicPodProtocol   import POD_Basics
-from PodPacketHandling  import POD_Packets
 from PodPacket_Standard import Packet_Standard
 
 # authorship
@@ -162,9 +161,9 @@ class POD_8229(POD_Basics) :
         for i in range(24) : 
             thisHr = validSchedule[2*i:2*i+2]
             # msb in each byte is a flag for motor on (1) or off (0)
-            hours[i]  = POD_Packets.ASCIIbytesToInt_Split(thisHr, 8, 7) 
+            hours[i]  = Packet_Standard.ASCIIbytesToInt_Split(thisHr, 8, 7) 
             # remaining 7 bits are the speed (0-100)
-            speeds[i] = POD_Packets.ASCIIbytesToInt_Split(thisHr, 7, 0) 
+            speeds[i] = Packet_Standard.ASCIIbytesToInt_Split(thisHr, 7, 0) 
         # check if all speeds are the same 
         if(len(set(speeds)) == 1) : 
             # speeds has all identical elements
@@ -181,7 +180,7 @@ class POD_8229(POD_Basics) :
     @staticmethod
     def DecodeDayAndSchedule(dayschedule: bytes) : 
         U8 = POD_8229.GetU(8)
-        day = POD_Packets.AsciiBytesToInt(dayschedule[:U8])
+        day = Packet_Standard.AsciiBytesToInt(dayschedule[:U8])
         print(dayschedule[:U8+1], day)
         schedule = POD_8229.DecodeDaySchedule(dayschedule[U8:])
         print(schedule)
@@ -204,13 +203,13 @@ class POD_8229(POD_Basics) :
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = POD_8229.DecodeDayOfWeek( POD_Packets.AsciiBytesToInt( validSchedule[0:2] ) )
+        day = POD_8229.DecodeDayOfWeek( Packet_Standard.AsciiBytesToInt( validSchedule[0:2] ) )
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
         topBit = POD_Basics.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
-            hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
+            hours.append( Packet_Standard.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
         # return decoded LCD SET DAY SCHEDULE value
         return{'Day' : day, 'Hours' : hours} # Each bit represents the motor state in that hour, 1 for on and 0 for off.

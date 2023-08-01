@@ -2,7 +2,6 @@
 from typing import Any
 
 # local imports
-from PodPacketHandling  import POD_Packets
 from PodCommands        import POD_Commands
 from PodPacket_Packet   import Packet
 
@@ -113,7 +112,7 @@ class Packet_Binary4(Packet) :
         Returns:
             int: Integer of the packet number.
         """
-        return POD_Packets.BinaryBytesToInt(self.packetNumber)
+        return Packet.BinaryBytesToInt(self.packetNumber)
     
     def Ttl(self) -> dict[str,int] : 
         """Translates the binary TTL bytes into a dictionary containing each TTL value.
@@ -243,10 +242,10 @@ class Packet_Binary4(Packet) :
         """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return {
-            'TTL1' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            'TTL2' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            'TTL3' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            'TTL4' : POD_Packets.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+            'TTL1' : Packet.BinaryBytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : Packet.BinaryBytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : Packet.BinaryBytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : Packet.BinaryBytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
         } 
         
         
@@ -262,7 +261,7 @@ class Packet_Binary4(Packet) :
             float: A number containing the voltage in Volts [V].
         """
         # convert binary message from POD to integer
-        value_int = POD_Packets.BinaryBytesToInt(value, byteorder='little')
+        value_int = Packet.BinaryBytesToInt(value, byteorder='little')
         # calculate voltage 
         voltageADC = ( value_int / 65535.0 ) * 4.096 # V
         totalGain = preampGain * 50.2918

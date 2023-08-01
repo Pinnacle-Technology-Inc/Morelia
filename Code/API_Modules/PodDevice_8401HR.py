@@ -1,6 +1,5 @@
 # local imports 
 from BasicPodProtocol       import POD_Basics
-from PodPacketHandling      import POD_Packets
 from PodPacket_Packet       import Packet
 from PodPacket_Standard     import Packet_Standard
 from PodPacket_Binary5      import Packet_Binary5
@@ -274,12 +273,12 @@ class POD_8401HR(POD_Basics) :
             dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
         """
         return({
-            'EXT0' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+            'EXT0' : Packet.ASCIIbytesToInt_Split(ttlByte, 8, 7),
+            'EXT1' : Packet.ASCIIbytesToInt_Split(ttlByte, 7, 6),
+            'TTL4' : Packet.ASCIIbytesToInt_Split(ttlByte, 4, 3),
+            'TTL3' : Packet.ASCIIbytesToInt_Split(ttlByte, 3, 2),
+            'TTL2' : Packet.ASCIIbytesToInt_Split(ttlByte, 2, 1),
+            'TTL1' : Packet.ASCIIbytesToInt_Split(ttlByte, 1, 0)
         })
     
 
@@ -314,12 +313,12 @@ class POD_8401HR(POD_Basics) :
                 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
         """
         # high-pass
-        if(POD_Packets.AsciiBytesToInt(config[0:1]) == 0) : 
+        if(Packet.AsciiBytesToInt(config[0:1]) == 0) : 
             highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
         else: 
             highpass = 0.0 # Bit 0 = 1 for DC Highpass
         # gain 
-        if(POD_Packets.AsciiBytesToInt(config[1:2]) == 0) :
+        if(Packet.AsciiBytesToInt(config[1:2]) == 0) :
             gain = 5 # Bit 1 = 0 for 5x gain
         else : 
             gain = 1 # Bit 1 = 1 for 1x gain
@@ -359,10 +358,10 @@ class POD_8401HR(POD_Basics) :
                 0=Grounded and 1=Connected to Preamp.
         """
         return({
-            'A' : POD_Packets.ASCIIbytesToInt_Split(channels, 4, 3),
-            'B' : POD_Packets.ASCIIbytesToInt_Split(channels, 3, 2),
-            'C' : POD_Packets.ASCIIbytesToInt_Split(channels, 2, 1),
-            'D' : POD_Packets.ASCIIbytesToInt_Split(channels, 1, 0)
+            'A' : Packet.ASCIIbytesToInt_Split(channels, 4, 3),
+            'B' : Packet.ASCIIbytesToInt_Split(channels, 3, 2),
+            'C' : Packet.ASCIIbytesToInt_Split(channels, 2, 1),
+            'D' : Packet.ASCIIbytesToInt_Split(channels, 1, 0)
         })
 
 

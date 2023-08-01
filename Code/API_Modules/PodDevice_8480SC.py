@@ -4,7 +4,6 @@ POD_8480SC handles communication using an 8480-SC POD device.
 
 # local imports 
 from BasicPodProtocol       import POD_Basics
-from PodPacketHandling      import POD_Packets
 from PodPacket_Standard     import Packet_Standard
 
 # authorship
@@ -226,7 +225,7 @@ class POD_8480SC(POD_Basics) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit.
         """
-        return POD_8480SC.DecodeSyncConfigBits(POD_Packets.AsciiBytesToInt( payload[:2]))
+        return POD_8480SC.DecodeSyncConfigBits(Packet_Standard.AsciiBytesToInt( payload[:2]))
 
     @staticmethod
     def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
@@ -238,8 +237,8 @@ class POD_8480SC(POD_Basics) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        return ( POD_8480SC.DecodeTTlConfigBits(POD_Packets.AsciiBytesToInt( payload[0:2] )), # dict
-                 POD_Packets.AsciiBytesToInt( payload[2:4]) ) # int
+        return ( POD_8480SC.DecodeTTlConfigBits(Packet_Standard.AsciiBytesToInt( payload[0:2] )), # dict
+                 Packet_Standard.AsciiBytesToInt( payload[2:4]) ) # int
     
     @staticmethod
     def _Custom109SETTTLSETUP(payload: bytes) -> tuple[int|dict] :
@@ -251,7 +250,7 @@ class POD_8480SC(POD_Basics) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        data: list = [ POD_Packets.AsciiBytesToInt(payload[:2]) ]
+        data: list = [ Packet_Standard.AsciiBytesToInt(payload[:2]) ]
         data.append( POD_8480SC._Custom108GETTTLSETUP(payload[2:]) )
         return tuple(data)
         
@@ -267,5 +266,5 @@ class POD_8480SC(POD_Basics) :
             tuple: Tuple of the translated stimulus payload.
         """
         pld = list(defaultPayload[:-1])
-        pld.append(POD_8480SC.DecodeStimulusConfigBits(POD_Packets.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
+        pld.append(POD_8480SC.DecodeStimulusConfigBits(Packet_Standard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            

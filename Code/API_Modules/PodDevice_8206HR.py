@@ -1,6 +1,5 @@
 # local imports 
 from BasicPodProtocol       import POD_Basics
-from PodPacketHandling      import POD_Packets
 from PodPacket_Packet       import Packet
 from PodPacket_Standard     import Packet_Standard
 from PodPacket_Binary4      import Packet_Binary4
@@ -78,10 +77,10 @@ class POD_8206HR(POD_Basics) :
         """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
         return( {
-            'TTL1' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            'TTL2' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            'TTL3' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            'TTL4' : POD_Packets.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
+            'TTL1' : Packet.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : Packet.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : Packet.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : Packet.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
         } )   
 
 

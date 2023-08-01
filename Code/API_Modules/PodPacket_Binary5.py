@@ -2,7 +2,6 @@
 from typing import Any
 
 # local imports
-from PodPacketHandling  import POD_Packets
 from PodCommands        import POD_Commands
 from PodPacket_Packet   import Packet
 
@@ -155,7 +154,7 @@ class Packet_Binary5(Packet) :
         Returns:
             int: Integer of the packet number.
         """
-        return POD_Packets.BinaryBytesToInt(self.packetNumber)
+        return Packet.BinaryBytesToInt(self.packetNumber)
     
     def Status(self) -> int : 
         """Translates the binary status value into a readable integer
@@ -163,7 +162,7 @@ class Packet_Binary5(Packet) :
         Returns:
             int: Integer status value.
         """
-        return POD_Packets.BinaryBytesToInt(self.status)
+        return Packet.BinaryBytesToInt(self.status)
 
     def Channel(self, c: str) -> float : 
         """Translates the channel data into a voltage.
@@ -178,10 +177,10 @@ class Packet_Binary5(Packet) :
             float: Voltage of the channel in volts (V).
         """
         match c : 
-            case 'A' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[6:9], 18, 0) #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
-            case 'B' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[4:7], 20, 2) #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
-            case 'C' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[2:5], 22, 4) #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
-            case 'D' : chan = POD_Packets.BinaryBytesToInt_Split(self.channels[0:3], 24, 6) #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
+            case 'A' : chan = Packet.BinaryBytesToInt_Split(self.channels[6:9], 18, 0) #  A | 13  CH1 5~0, CH0 17~16 | 14 CH0 15~8  | 15 CH0 7~0            | --> cut top 6              bits
+            case 'B' : chan = Packet.BinaryBytesToInt_Split(self.channels[4:7], 20, 2) #  B | 11  CH2 3~0, CH1 17~14 | 12 CH1 13~6  | 13 CH1 5~0, CH0 17~16 | --> cut top 4 and bottom 2 bits
+            case 'C' : chan = Packet.BinaryBytesToInt_Split(self.channels[2:5], 22, 4) #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
+            case 'D' : chan = Packet.BinaryBytesToInt_Split(self.channels[0:3], 24, 6) #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
             case  _  : raise Exception('Channel '+str(c)+' does not exist.')
         return Packet_Binary5._Voltage_PrimaryChannels(chan, self._ssGain[c], self._preampGain[c])
 
@@ -201,7 +200,7 @@ class Packet_Binary5(Packet) :
             case 0 : ext = self.aEXT0
             case 1 : ext = self.aEXT1
             case _ : raise Exception('AEXT'+str(n)+' does not exist.')
-        return Packet_Binary5._Voltage_SecondaryChannels(POD_Packets.BinaryBytesToInt(ext))
+        return Packet_Binary5._Voltage_SecondaryChannels(Packet.BinaryBytesToInt(ext))
     
     def AnalogTTL(self, n: int) -> float : 
         """Translates the analog TTL value into a voltage.
@@ -221,7 +220,7 @@ class Packet_Binary5(Packet) :
             case 3 : ttl = self.aTTL3
             case 4 : ttl = self.aTTL4
             case _ : raise Exception('ATTL'+str(n)+' does not exist.')
-        return Packet_Binary5._Voltage_SecondaryChannels( POD_Packets.BinaryBytesToInt(ttl) )
+        return Packet_Binary5._Voltage_SecondaryChannels( Packet.BinaryBytesToInt(ttl) )
     
     # ----- Get parts from packet bytes -----
     

@@ -2,7 +2,6 @@
 from typing import Any
 
 # local imports
-from PodPacketHandling  import POD_Packets
 from PodCommands        import POD_Commands
 from PodPacket_Packet   import Packet
 
@@ -75,7 +74,7 @@ class Packet_Binary(Packet) :
         Returns:
             int: Integer of the binary data length.
         """
-        return POD_Packets.AsciiBytesToInt(self.binaryLength)
+        return Packet.AsciiBytesToInt(self.binaryLength)
 
     # ----- Get parts from packet bytes -----
 
@@ -132,6 +131,6 @@ class Packet_Binary(Packet) :
         Packet.CheckIfPacketIsValid(msg) 
         if(len(msg) < Packet_Binary.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard binary packet.')
-        if(msg[11].to_bytes(1,'big') != POD_Packets.ETX()) : 
+        if(msg[11].to_bytes(1,'big') != Packet.ETX()) : 
             raise Exception('A standard binary packet must have an ETX before the binary bytes.')
         

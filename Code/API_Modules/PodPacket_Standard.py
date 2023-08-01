@@ -3,7 +3,6 @@ from typing import Any
 from collections.abc import Callable
 
 # local imports
-from PodPacketHandling  import POD_Packets
 from PodCommands        import POD_Commands
 from PodPacket_Packet   import Packet
 
@@ -119,7 +118,7 @@ class Packet_Standard(Packet) :
         startByte = 0
         for i in range(len(useSizes)) : 
             endByte = startByte + useSizes[i] # count to stop byte
-            pldSplit[i] = POD_Packets.AsciiBytesToInt(self.payload[startByte:endByte]) # get bytes 
+            pldSplit[i] = Packet.AsciiBytesToInt(self.payload[startByte:endByte]) # get bytes 
             startByte = endByte # get new start byte
         return tuple(pldSplit) 
     
