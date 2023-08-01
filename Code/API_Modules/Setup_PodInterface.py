@@ -1,5 +1,6 @@
 # enviornment imports
 import os
+import platform
 from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
@@ -294,18 +295,43 @@ class Setup_Interface :
         # save dict containing information to setup all POD devices
         return(podDict)
 
-
     @staticmethod
-    def _ChoosePort(forbidden:list[str]=[]) -> str : 
-        """Asks the user to select a COM port.
+    def _ChoosePortLinux(forbidden) -> str : 
+        """User picks Serial port in Linux.
 
         Args:
-            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+            forbidden (list[str], optional): List of port names that are already used.
 
         Returns:
             str: String name of the port.
         """
-        # get ports
+        portList = Setup_Interface._GetPortsList()
+        print('Available Serial Ports: '+', '.join(portList))
+        choice = input('Select port: /dev/tty')
+        if(choice == ''):
+            print('[!] Please choose a Serial port.')
+            return(Setup_Interface._ChoosePortLinux(forbidden))
+        else:
+            # search for port in list
+            for port in portList:
+                if port.startswith('COM'+choice):
+                    return(port)
+                if port.startswith('/dev/tty'+choice):
+                    return(port)
+            # if return condition not reached...
+            print('[!] tty'+choice+' does not exist. Try again.')
+            return(Setup_Interface._ChoosePortLinux(forbidden))
+
+    @staticmethod
+    def _ChoosePortWindows(forbidden) -> str :
+        """User picks COM port in Windows.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. 
+
+        Returns:
+            str: String name of the port.
+        """
         portList = Setup_Interface._GetPortsList(forbidden)
         print('Available COM Ports: '+', '.join(portList))
         # request port from user
@@ -323,7 +349,28 @@ class Setup_Interface :
             print('[!] COM'+choice+' does not exist. Try again.')
             return(Setup_Interface._ChoosePort(forbidden))
 
-        
+    @staticmethod
+    def _ChoosePort(forbidden:list[str]=[]) -> str : 
+        """Systems checks user's Operating System, and chooses ports accordingly.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+
+        Returns:
+            str: String name of the port.
+        """
+        # checks user's Operating System.
+        plat = platform.system() 
+        print("plat", plat)
+        if plat == 'Linux':
+            # serial ports for Linux
+            chosenport = Setup_Interface._ChoosePortLinux(forbidden)
+        if plat == 'Windows':
+            # COM ports for Windows
+            chosenport = Setup_Interface._ChoosePortWindows(forbidden)
+        return(chosenport)
+    
+
     @staticmethod
     def _GetPortsList(forbidden:list[str]=[]) -> list[str] : 
         """Gets the names of all available ports.

@@ -19,15 +19,17 @@ __email__       = "sales@pinnaclet.com"
 def ChoosePort() -> str : 
     # get ports
     portList = COM_io.GetCOMportsList()
-    print('Available COM Ports: '+', '.join(portList))
+    print('Available Serial Ports: '+', '.join(portList))
     # request port from user
-    choice = input('Select port: COM')
-    # search for port in list
+    choice = input('Select port: /dev/tty')
+    #search for port in list
     for port in portList:
-        if port.startswith('COM'+choice):
-            return(port)
-    print('[!] COM'+choice+' does not exist. Try again.')
+        if port.startswith('/dev/tty'+choice):
+            name = port.split(' ')[0]
+            return(name)
+    print('[!] tty'+choice+' does not exist. Try again.')
     return(ChoosePort())
+
 
 def Write(pod: POD_8480SC, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
     write = pod.WritePacket(cmd, payload)
@@ -86,4 +88,3 @@ RunCommand(pod, 'GET PREAMP TYPE', ()) # Gets the store preamp value
 print('~~ TTL PULLUPS ~~')
 RunCommand(pod, 'SET TTL PULLUPS', (1)) # Sets whether pullups are enabled on the TTL lines.  0 = pullups disabled, non-zero = pullups enabled
 RunCommand(pod, 'GET TTL PULLUPS', ()) # Gets whether TTL pullups are enabled on the TTL lines.  0 = no pullups, non-zero = pullups enabled
-

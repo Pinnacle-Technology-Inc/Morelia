@@ -1,6 +1,7 @@
 
 
 # enviornment imports 
+import platform     # NOTE this import is unused. remove this.
 import serial.tools.list_ports
 import time
 
@@ -60,9 +61,10 @@ class COM_io :
         self.CloseSerialPort()
 
     # ====== PRIVATE METHODS ======
-
+        
     def __BuildPortName(self, port: str|int) -> str :
-        """Converts the port parameter into the "COM"+<number> format.
+        """Converts the port parameter into the "COM"+<number> format for Windows or \
+        "/dev/tty..."+<number> for Linux.
 
         Args:
             port (str | int): Name of a COM port. Can be an integer or string.
@@ -72,7 +74,7 @@ class COM_io :
         """
         name = None
         # is 'port' the port number? 
-        if (isinstance(port, int)) : 
+        if (isinstance(port, int)) :    # NOTE what if using linux system here?
             # build port name 
             name = 'COM' + str(port)
         elif (isinstance(port, str)): 
@@ -80,6 +82,9 @@ class COM_io :
             if port.startswith('COM'):
                 # assume that 'port' is the full name  
                 name = port.split(' ')[0]
+            elif port.startswith('/dev/tty'):
+                # /dev/tty is for Linux
+                return(port)
             else : 
                 # assume that 'port' is just the number 
                 name = 'COM' + port

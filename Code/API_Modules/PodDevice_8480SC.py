@@ -204,6 +204,7 @@ class POD_8480SC(POD_Basics) :
                     pay_dict.append(cutoff_dict)
                     transdict['Payload'] =  tuple( pay_dict )                    
             return(transdict)
+            
         else:
             return(self.TranslatePODpacket_Standard(msg))
         
