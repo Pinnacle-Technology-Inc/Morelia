@@ -603,7 +603,7 @@ class Setup_Interface :
             r = pod.ReadPODpacket()
         except:   return(False)
         # check that read matches ping write
-        if(w==r): return(True)
+        if(w.rawPacket==r.rawPacket): return(True)
         return(False)
         
 
