@@ -3,7 +3,7 @@ from typing import Any
 from collections.abc import Callable
 
 # local imports
-from PodCommands import POD_Commands
+from Commands    import POD_Commands
 from PodPackets  import Packet
 
 # authorship
