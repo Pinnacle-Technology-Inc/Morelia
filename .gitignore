@@ -2,3 +2,4 @@
 .venv
 .vscode
 testing.py
+*.bkp
