@@ -14,7 +14,8 @@ from Setup_PodInterface  import Setup_Interface
 from PodDevice_8401HR    import POD_8401HR 
 from GetUserInput        import UserInput
 from Setup_PodParameters import Params_8401HR
-
+from PodPacket_Binary5   import Packet_Binary5
+from PodPacket_Standard  import Packet_Standard
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -539,7 +540,7 @@ class Setup_8401HR(Setup_Interface) :
         # packet to mark stop streaming 
         stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
         # start streaming from device  
-        startAt = pod.WritePacket(cmd='STREAM', payload=1)
+        pod.WritePacket(cmd='STREAM', payload=1)
 
         # initialize times
         t_forEDF: int = 0
@@ -566,23 +567,24 @@ class Setup_8401HR(Setup_Interface) :
             # read data for one second
             for i in range(sampleRate):
                 # read once 
-                r = pod.ReadPODpacket()
+                r: Packet_Standard|Packet_Binary5 = pod.ReadPODpacket()
 
                 # stop looping when stop stream command is read 
-                if(r == stopAt) : 
+                if(r.rawPacket == stopAt) : 
                     if(extension=='.edf') : 
                         file.writeAnnotation(t_forEDF, -1, "Stop")
                     file.close()
                     return  ##### END #####
-                # skip if start stream command is read 
-                elif(r == startAt) :
+
+                if(isinstance(r, Packet_Binary5)) : 
+                    # interpret Packet_Binary5 packet
+                    rt: dict = r.TranslateAll()
+                    for d,ch in zip(data, dataColumns) : 
+                        d[i] = self._uV(rt[ch])
+                else : 
+                    # skip standard stream info packets
                     i = i-1
                     continue
-
-                # interpret packet
-                rt = pod.TranslatePODpacket(r)
-                for d,ch in zip(data, dataColumns) : 
-                    d[i] = self._uV(rt[ch])
 
             if(extension=='.csv' or extension=='.txt') :
                 # get average sample period
