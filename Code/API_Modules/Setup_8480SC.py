@@ -9,6 +9,7 @@ from Setup_PodInterface  import Setup_Interface
 from PodDevice_8480SC    import POD_8480SC
 from GetUserInput        import UserInput
 from Setup_PodParameters import Params_8480SC
+from PodPacket_Standard  import Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"
@@ -328,17 +329,14 @@ class Setup_8480SC(Setup_Interface) :
         while(self._streamMode) : 
             try : 
                 # attempt to read packet.         
-                read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=10)) 
+                read: Packet_Standard = pod.ReadPODpacket(timeout_sec=1)
                 # update time by adding (dt = tf - ti)
                 currentTime += (round(time.time(),9)) - t 
                 # build line to write 
-                data = [str(currentTime), str(read['Command Number'])]
-                if('Payload' in read) :
-                    data.append(str(read['Payload']))
-                else :                  
-                    data.append('None')
+                data = [str(currentTime), str(read.CommandNumber())]
+                if(read.HasPayload()) : data.append(str(read.Payload()))
+                else :                  data.append('None')
                 # write to file
-                
                 file.write(','.join(data) + '\n')
                 # update initial time for next loop 
                 t = (round(time.time(),9)) # initial time (sec) 
@@ -347,11 +345,3 @@ class Setup_8480SC(Setup_Interface) :
             # end while 
         # streaming done
         file.close()
-
-
- 
-
-    
-
-    
-
