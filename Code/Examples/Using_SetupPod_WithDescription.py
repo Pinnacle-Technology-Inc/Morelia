@@ -8,7 +8,7 @@ Path.AddAPItoPath()
 
 # local imports
 from Setup_PodDevices    import Setup_PodDevices
-from Setup_PodParameters import Params_8206HR
+from Parameters.Setup_PodParameters import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"

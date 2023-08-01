@@ -8,7 +8,7 @@ import time
 from Setup_PodInterface  import Setup_Interface, UserInput
 from Devices import POD_8229
 from Packets import Packet_Standard
-from Setup_PodParameters import Params_8229
+from Parameters.Setup_PodParameters import Params_8229
 
 # authorship
 __author__      = "Thresa Kelly"

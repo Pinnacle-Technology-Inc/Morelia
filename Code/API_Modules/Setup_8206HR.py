@@ -11,7 +11,7 @@ from   io          import IOBase
 from Setup_PodInterface  import Setup_Interface, UserInput
 from Devices import POD_8206HR
 from Packets import Packet_Standard, Packet_Binary4
-from Setup_PodParameters import Params_8206HR
+from Parameters.Setup_PodParameters import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
