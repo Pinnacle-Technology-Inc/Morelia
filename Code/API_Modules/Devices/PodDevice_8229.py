@@ -2,8 +2,8 @@
 from datetime import datetime
 
 # local imports 
-from PodDevices import POD_Basics
-from Packets    import Packet_Standard
+from Devices import POD_Basics
+from Packets import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

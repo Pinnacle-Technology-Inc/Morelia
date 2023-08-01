@@ -9,10 +9,9 @@ from   datetime   import datetime
 from   time       import gmtime, strftime
 
 # local imports
-from PodDevices.SerialCommunication    import COM_io
-from GetUserInput           import UserInput
-from Setup_PodParameters    import Params_Interface
-from PodDevices       import POD_Basics
+from Devices import COM_io, POD_Basics
+from GetUserInput import UserInput
+from Setup_PodParameters import Params_Interface
 from Packets import Packet, Packet_Standard
 
 # authorship

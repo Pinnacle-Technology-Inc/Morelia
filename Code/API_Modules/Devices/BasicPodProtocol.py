@@ -1,7 +1,7 @@
 # local imports
-from PodDevices     import COM_io
-from Commands       import POD_Commands
-from PodPackets     import Packet, Packet_Standard, Packet_Binary
+from Devices    import COM_io
+from Commands   import POD_Commands
+from Packets    import Packet, Packet_Standard, Packet_Binary
 
 # authorship
 __author__      = "Thresa Kelly"

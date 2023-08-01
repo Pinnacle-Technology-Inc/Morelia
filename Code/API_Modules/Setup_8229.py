@@ -6,7 +6,7 @@ import time
 
 # local imports
 from Setup_PodInterface  import Setup_Interface, UserInput
-from PodDevices import POD_8229
+from Devices import POD_8229
 from Packets import Packet_Standard
 from Setup_PodParameters import Params_8229
 
