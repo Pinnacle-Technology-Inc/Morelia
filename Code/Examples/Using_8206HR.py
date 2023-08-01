@@ -5,6 +5,7 @@ Path.AddAPItoPath()
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
+from PodPacket              import Packet_Standard, Packet_Binary4
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,10 +19,10 @@ __email__       = "sales@pinnaclet.com"
 
 def ChoosePort() -> str : 
     # get ports
-    portList = COM_io.GetCOMportsList()
+    portList: list[str] = COM_io.GetCOMportsList()
     print('Available COM Ports: '+', '.join(portList))
     # request port from user
-    choice = input('Select port: COM')
+    choice: str = input('Select port: COM')
     # search for port in list
     for port in portList:
         if port.startswith('COM'+choice):
@@ -30,14 +31,14 @@ def ChoosePort() -> str :
     return(ChoosePort())
 
 def Write(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
-    write = pod.WritePacket(cmd, payload)
-    write = pod.TranslatePODpacket(write)
-    print('Write:\t', write)
+    write: Packet_Standard = pod.WritePacket(cmd, payload)
+    data:  dict = write.TranslateAll()
+    print('Write:\t', data)
 
 def Read(pod: POD_8206HR) : 
-    read = pod.ReadPODpacket()
-    read = pod.TranslatePODpacket(read)
-    print('Read:\t', read)
+    read: Packet_Standard|Packet_Binary4 = pod.ReadPODpacket()
+    data: dict = read.TranslateAll()
+    print('Read:\t', data)
 
 def RunCommand(pod: POD_8206HR, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
    Write(pod,cmd,payload)
