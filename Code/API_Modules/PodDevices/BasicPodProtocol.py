@@ -1,7 +1,7 @@
 # local imports
-from PodDevices.SerialCommunication    import COM_io
-from PodCommands            import POD_Commands
-from PodPackets             import Packet, Packet_Standard, Packet_Binary
+from PodDevices     import COM_io
+from PodCommands    import POD_Commands
+from PodPackets     import Packet, Packet_Standard, Packet_Binary
 
 # authorship
 __author__      = "Thresa Kelly"
