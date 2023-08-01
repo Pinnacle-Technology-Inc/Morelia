@@ -16,7 +16,6 @@ class UserInput :
 
     # ------------ BASIC INPUT ------------
 
-
     @staticmethod
     def AskForInput(prompt: str, append:str=': ') -> str : 
         """Asks user for input given a prompt. Will append a colon ':' to the end of prompt by default
