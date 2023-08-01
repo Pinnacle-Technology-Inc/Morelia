@@ -43,11 +43,7 @@ class Packet_Binary4(Packet) :
     CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
 
     Attributes:
-        _commands (POD_Commands | None): Available commands for a POD device. 
         _preampGain (int): Preamplifier gain. This should be 10 or 100 for an 8206-HR device.
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
-            and end with ETX.
-        commandNumber (bytes | None): Command number from the Pod packet.
         packetNumber (bytes): Packet number for this POD packet.
         ttl (bytes): TTL data for this packet.
         ch0 (bytes): channel 0 data for this packet.

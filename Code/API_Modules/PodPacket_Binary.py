@@ -20,10 +20,6 @@ class Packet_Binary(Packet) :
     + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes) 
     
     Attributes:
-        _commands (POD_Commands | None): Available commands for a POD device. 
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
-            and end with ETX.
-        commandNumber (bytes | None): Command number from the Pod packet.
         binaryLength (bytes): Number of bytes of binary data from the packet.
         binaryData (bytes): Variable length binary datafrom the packet.
     """

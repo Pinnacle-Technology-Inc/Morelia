@@ -60,14 +60,10 @@ class Packet_Binary5(Packet) :
     + EXT (1 byte)
     
     Attributes:
-        _commands (POD_Commands | None): Available commands for a POD device. 
         _ssGain (dict[str,int|None]): Dictionary with A, B, C, D keys and \
             second stage gain values (1, 5, or None).
         _preampGain (dict[str,int|None]): Dictionary with A, B, C, D keys and \
             preamplifier gain values (10, 100, or None).
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX \
-            and end with ETX.
-        commandNumber (bytes | None): Command number from the Pod packet.
         packetNumber (bytes): Packet number for this POD packet.
         status (bytes): Status for this POD packet.
         channels (bytes): channel A, B, C, and D data for this POD packet.

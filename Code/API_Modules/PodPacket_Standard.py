@@ -20,12 +20,8 @@ class Packet_Standard(Packet) :
     STX (1 byte) + command number (4 bytes) + optional payload (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
     Attributes:
-        _commands (POD_Commands | None): Available commands for a POD device. 
         _customPayload (Callable[[Any],tuple]|None): Optional function to translate the payload. 
         _customPayloadArgs (tuple[Any]|None): Optional arguments for the _customPayload.
-        rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and \
-            end with ETX.
-        commandNumber (bytes): Command number from the packet. 
         payload (bytes): Optional payload from the packet.
     """
     
