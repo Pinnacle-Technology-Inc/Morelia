@@ -9,7 +9,8 @@ from   io          import IOBase
 
 # local imports
 from Setup_PodInterface  import Setup_Interface, UserInput
-from PodDevices.PodDevice_8206HR    import POD_8206HR, Packet_Standard, Packet_Binary4
+from PodDevices    import POD_8206HR
+from Packets import Packet_Standard, Packet_Binary4
 from Setup_PodParameters import Params_8206HR
 
 # authorship

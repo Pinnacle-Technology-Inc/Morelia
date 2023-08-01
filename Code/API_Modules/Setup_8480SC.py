@@ -6,7 +6,8 @@ import time
 
 # local imports
 from Setup_PodInterface  import Setup_Interface, UserInput
-from PodDevices.PodDevice_8480SC    import POD_8480SC, Packet_Standard
+from PodDevices    import POD_8480SC
+from Packets import Packet_Standard
 from Setup_PodParameters import Params_8480SC
 
 # authorship

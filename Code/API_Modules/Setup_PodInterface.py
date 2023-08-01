@@ -12,7 +12,8 @@ from   time       import gmtime, strftime
 from PodDevices.SerialCommunication    import COM_io
 from GetUserInput           import UserInput
 from Setup_PodParameters    import Params_Interface
-from PodDevices.BasicPodProtocol       import POD_Basics, Packet, Packet_Standard
+from PodDevices       import POD_Basics
+from Packets import Packet, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

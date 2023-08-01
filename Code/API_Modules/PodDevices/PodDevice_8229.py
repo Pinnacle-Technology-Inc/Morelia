@@ -3,7 +3,7 @@ from datetime import datetime
 
 # local imports 
 from PodDevices import POD_Basics
-from PodPackets import Packet_Standard
+from Packets    import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

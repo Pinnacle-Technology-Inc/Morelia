@@ -1,6 +1,6 @@
 # local imports 
 from PodDevices import POD_Basics
-from PodPackets import Packet, Packet_Standard, Packet_Binary5
+from Packets    import Packet, Packet_Standard, Packet_Binary5
 
 # authorship
 __author__      = "Thresa Kelly"

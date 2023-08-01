@@ -3,8 +3,8 @@ from typing import Any
 from collections.abc import Callable
 
 # local imports
-from Commands    import POD_Commands
-from PodPackets  import Packet
+from Commands import POD_Commands
+from Packets  import Packet
 
 # authorship
 __author__      = "Thresa Kelly"
