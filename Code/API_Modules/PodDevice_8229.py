@@ -4,7 +4,7 @@ from datetime import datetime
 # local imports 
 from BasicPodProtocol   import POD_Basics
 from PodPacketHandling  import POD_Packets
-from PodPacket          import Packet_Standard
+from PodPacket_Standard import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

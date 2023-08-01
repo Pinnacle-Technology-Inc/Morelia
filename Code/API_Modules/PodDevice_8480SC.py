@@ -5,7 +5,7 @@ POD_8480SC handles communication using an 8480-SC POD device.
 # local imports 
 from BasicPodProtocol       import POD_Basics
 from PodPacketHandling      import POD_Packets
-from PodPacket              import Packet_Standard
+from PodPacket_Standard     import Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"

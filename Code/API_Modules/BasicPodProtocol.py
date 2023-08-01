@@ -2,9 +2,9 @@
 from SerialCommunication    import COM_io
 from PodPacketHandling      import POD_Packets
 from PodCommands            import POD_Commands
-from PodPacket              import Packet
-from PodPacket              import Packet_Standard
-from PodPacket              import Packet_BinaryStandard
+from PodPacket_Packet       import Packet
+from PodPacket_Standard     import Packet_Standard
+from PodPacket_Binary       import Packet_Binary
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -293,7 +293,7 @@ class POD_Basics :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
-            packet: Packet_BinaryStandard = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
+            packet: Packet_Binary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read 
             packet: Packet_Standard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
@@ -390,7 +390,7 @@ class POD_Basics :
         return Packet_Standard(packet, self._commands)
 
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> Packet_BinaryStandard :
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> Packet_Binary :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
@@ -429,4 +429,4 @@ class POD_Basics :
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return Packet_BinaryStandard(packet, self._commands)
+        return Packet_Binary(packet, self._commands)

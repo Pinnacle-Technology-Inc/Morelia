@@ -5,7 +5,8 @@ Path.AddAPItoPath()
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8206HR       import POD_8206HR
-from PodPacket              import Packet_Standard, Packet_Binary4
+from PodPacket_Standard     import Packet_Standard
+from PodPacket_Binary4      import Packet_Binary4
 
 # authorship
 __author__      = "Thresa Kelly"
