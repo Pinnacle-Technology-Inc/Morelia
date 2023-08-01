@@ -104,7 +104,7 @@ class POD_8206HR(POD_Basics) :
         # check for special packets
         if(isinstance(packet, Packet_Standard)) : 
             if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
-                packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, packet.payload)
+                packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
         # return packet
         return packet
             

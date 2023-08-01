@@ -154,7 +154,7 @@ class Packet_Standard(Packet) :
     Attributes:
         _commands (POD_Commands | None): Available commands for a POD device. 
         _customPayload (Callable[[Any],tuple]|None): Optional function to translate the payload. 
-        _customPayloadArgs (Any): Optional arguments for the _customPayload.
+        _customPayloadArgs (tuple[Any]|None): Optional arguments for the _customPayload.
         rawPacket (bytes): Bytes string containing a POD packet. Should begin with STX and \
             end with ETX.
         commandNumber (bytes): Command number from the packet. 
@@ -175,7 +175,7 @@ class Packet_Standard(Packet) :
         super().__init__(pkt,commands)
         self.payload: bytes|None = self.GetPayload(pkt)
         self._customPayload: Callable[[Any],tuple]|None = None
-        self._customPayloadArgs: Any|None = None
+        self._customPayloadArgs: tuple[Any]|None = None
     
     # ----- Packet to dictionary -----
         
@@ -203,15 +203,15 @@ class Packet_Standard(Packet) :
     
     # ----- Customization -----
 
-    def SetCustomPayload(self, func: Callable[[Any],tuple], args: Any = None) -> None :
+    def SetCustomPayload(self, func: Callable[[Any],tuple], args: tuple[Any]|None = None) -> None :
         """Sets a custom function with optional arguments to translate the payload.
 
         Args:
-            func (function): Function to translate the payload.
-            args (optional): Arguments . Defaults to None.
+            func (Callable[[Any],tuple]): Function to translate the payload.
+            args (tuple[Any], optional): Arguments . Defaults to None.
         """
         self._customPayload: Callable[[Any],tuple] = func
-        self._customPayloadArgs: Any = args
+        self._customPayloadArgs: tuple[Any]|None = args
         
     def HasCustomPayload(self) -> bool : 
         """Checks if a custom payload has been set.

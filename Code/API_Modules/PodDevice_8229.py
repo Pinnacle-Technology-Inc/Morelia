@@ -288,12 +288,12 @@ class POD_8229(POD_Basics) :
         # check for special packets
         match packet.CommandNumber()  : 
             case 140 : # 140 SET TIME
-                packet.SetCustomPayload(POD_8229._Custom140SETTIME, packet.DefaultPayload())
+                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
             case 142 : # 142 GET DAY SCHEDULE
                 if(len(packet.payload) > 2 ) : 
-                    packet.SetCustomPayload(POD_8229.DecodeDaySchedule, packet.payload)
+                    packet.SetCustomPayload(POD_8229.DecodeDaySchedule, (packet.payload,))
             case 202 : # 202 LCD SET DAY SCHEDULE 
-                packet.SetCustomPayload(POD_8229.DecodeLCDSchedule, packet.payload)
+                packet.SetCustomPayload(POD_8229.DecodeLCDSchedule, (packet.payload,))
         # return packet
         return packet
     
@@ -317,9 +317,9 @@ class POD_8229(POD_Basics) :
         # check for special commands 
         match packet.CommandNumber() : 
             case 140 : # 140 SET TIME
-                packet.SetCustomPayload(POD_8229._Custom140SETTIME, packet.DefaultPayload())
+                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
             case 141 : # 141 SET DAY SCHEDULE
-                packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, packet.payload)
+                packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, (packet.payload,))
         # returns packet object
         return(packet)
     

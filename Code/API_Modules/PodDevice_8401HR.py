@@ -416,7 +416,7 @@ class POD_8401HR(POD_Basics) :
         # check for special packets
         specialCommands = [127, 129] # 127 SET TTL CONFIG # 129 SET TTL OUTS
         if(packet.CommandNumber() in specialCommands) : 
-            packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, packet.payload)
+            packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, (packet.payload,))
         # returns packet object
         return packet
     
@@ -439,7 +439,7 @@ class POD_8401HR(POD_Basics) :
         # check for special packets
         if(isinstance(packet, Packet_Standard)) : 
             if(packet.CommandNumber() == 128) : # 128 GET TTL CONFIG
-                packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, packet.payload)
+                packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, (packet.payload,))
         # return packet
         return packet
 
