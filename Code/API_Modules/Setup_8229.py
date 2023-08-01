@@ -114,6 +114,7 @@ class Setup_8229(Setup_Interface) :
                 self._podDevices[deviceNum] = pod
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+            else : raise Exception('Could not connect to POD device.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))

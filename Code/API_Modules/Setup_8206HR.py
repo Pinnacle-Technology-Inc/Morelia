@@ -12,6 +12,8 @@ from Setup_PodInterface  import Setup_Interface
 from Setup_PodParameters import Params_8206HR
 from PodDevice_8206HR    import POD_8206HR 
 from GetUserInput        import UserInput
+from PodPacket_Binary4   import Packet_Binary4
+from PodPacket_Standard  import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -88,6 +90,7 @@ class Setup_8206HR(Setup_Interface) :
                 self._podDevices[deviceNum] = pod
                 success = True
                 print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+            else : raise Exception('Could not connect to POD device.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
@@ -296,18 +299,17 @@ class Setup_8206HR(Setup_Interface) :
             # read data for one second
             for i in range(sampleRate):
                 # read once 
-                r = pod.ReadPODpacket()
+                r: Packet_Standard|Packet_Binary4 = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
-                if(r == stopAt) : 
+                if(r.rawPacket == stopAt) : 
                     if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
                     file.close()
                     return  ##### END #####
-                # translate 
-                rt = pod.TranslatePODpacket(r)
-                # save data as uV
-                data0[i] = self._uV(rt['Ch0'])
-                data1[i] = self._uV(rt['Ch1'])
-                data2[i] = self._uV(rt['Ch2'])
+                if(isinstance(r, Packet_Binary4)) :
+                    # save data as uV
+                    data0[i] = self._uV(r.Ch(0)) 
+                    data1[i] = self._uV(r.Ch(1))
+                    data2[i] = self._uV(r.Ch(2))
             # get average sample period
             tf = round(time.time(),9) # final time
             td = tf - ti # time difference 
