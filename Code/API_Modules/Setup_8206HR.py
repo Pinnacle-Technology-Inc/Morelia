@@ -80,17 +80,16 @@ class Setup_8206HR(Setup_Interface) :
             # create POD device 
             pod = POD_8206HR(port=port, preampGain=deviceParams.preamplifierGain)
             # test if connection is successful
-            if(self._TestDeviceConnection(pod)):
-                # write setup parameters
-                pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
-                pod.WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
-                pod.WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
-                pod.WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
-                # successful write if no exceptions raised 
-                self._podDevices[deviceNum] = pod
-                success = True
-                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
-            else : raise Exception('Could not connect to POD device.')
+            if(not self._TestDeviceConnection(pod)) : raise Exception('Could not connect to POD device.')
+            # write setup parameters
+            pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate )
+            pod.WriteRead('SET LOWPASS', (0, deviceParams.EEG1()    ))
+            pod.WriteRead('SET LOWPASS', (1, deviceParams.EEG2()    ))
+            pod.WriteRead('SET LOWPASS', (2, deviceParams.EEG3_EMG()))
+            # successful write if no exceptions raised 
+            self._podDevices[deviceNum] = pod
+            success = True
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))

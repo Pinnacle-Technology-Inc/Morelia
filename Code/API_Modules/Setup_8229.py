@@ -91,30 +91,29 @@ class Setup_8229(Setup_Interface) :
             # create POD device 
             pod = POD_8229(port=port)
             # test if connection is successful
-            if(self._TestDeviceConnection(pod)):
-                # set current computer time 
-                pod.WriteRead('SET TIME', pod.GetCurrentTime())
-                # set mode to PC control and stop motor
-                pod.WriteRead('SET MODE', 1)
-                pod.WriteRead('SET MOTOR STATE', 0)
-                # write setup parameters
-                pod.WriteRead('SET ID',                 deviceParams.systemID)
-                pod.WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
-                pod.WriteRead('SET MOTOR SPEED',        deviceParams.motorSpeed)
-                pod.WriteRead('SET RANDOM REVERSE',     deviceParams.randomReverse)
-                # write conditional params 
-                if(deviceParams.randomReverse) : 
-                    pod.WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
-                if(deviceParams.mode == 2):
-                    for day, hours in deviceParams.schedule.items() :
-                        pod.WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
-                # set mode last
-                pod.WriteRead('SET MODE',               deviceParams.mode)
-                # successful write if no exceptions raised 
-                self._podDevices[deviceNum] = pod
-                success = True
-                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
-            else : raise Exception('Could not connect to POD device.')
+            if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
+            # set current computer time 
+            pod.WriteRead('SET TIME', pod.GetCurrentTime())
+            # set mode to PC control and stop motor
+            pod.WriteRead('SET MODE', 1)
+            pod.WriteRead('SET MOTOR STATE', 0)
+            # write setup parameters
+            pod.WriteRead('SET ID',                 deviceParams.systemID)
+            pod.WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
+            pod.WriteRead('SET MOTOR SPEED',        deviceParams.motorSpeed)
+            pod.WriteRead('SET RANDOM REVERSE',     deviceParams.randomReverse)
+            # write conditional params 
+            if(deviceParams.randomReverse) : 
+                pod.WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
+            if(deviceParams.mode == 2):
+                for day, hours in deviceParams.schedule.items() :
+                    pod.WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
+            # set mode last
+            pod.WriteRead('SET MODE',               deviceParams.mode)
+            # successful write if no exceptions raised 
+            self._podDevices[deviceNum] = pod
+            success = True
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))

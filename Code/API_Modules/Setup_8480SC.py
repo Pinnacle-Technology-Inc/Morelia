@@ -89,23 +89,22 @@ class Setup_8480SC(Setup_Interface) :
             # create POD device 
             pod = POD_8480SC(port=port)
             # test if connection is successful
-            if(self._TestDeviceConnection(pod)):
-            #write setup parameters
-                pod.WriteRead('SET STIMULUS', deviceParams.stimulus)
-                pod.WriteRead('SET PREAMP TYPE', deviceParams.preamp)
-                pod.WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
-                pod.WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
-                pod.WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
-                pod.WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
-                pod.WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
-                pod.WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
-                pod.WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
-                pod.WriteRead('RUN STIMULUS', (0))
-                # successful write if no exceptions raised 
-                self._podDevices[deviceNum] = pod
-                success = True
-                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
-            else : raise Exception('Could not connect to POD device.')
+            if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
+            # write setup parameters
+            pod.WriteRead('SET STIMULUS', deviceParams.stimulus)
+            pod.WriteRead('SET PREAMP TYPE', deviceParams.preamp)
+            pod.WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
+            pod.WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
+            pod.WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
+            pod.WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
+            pod.WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
+            pod.WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
+            pod.WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
+            pod.WriteRead('RUN STIMULUS', (0))
+            # successful write if no exceptions raised 
+            self._podDevices[deviceNum] = pod
+            success = True
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
