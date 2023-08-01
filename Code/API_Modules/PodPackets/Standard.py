@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 # local imports
 from PodCommands        import POD_Commands
-from PodPackets.PodPacket_Packet   import Packet
+from PodPackets.Packet   import Packet
 
 # authorship
 __author__      = "Thresa Kelly"
