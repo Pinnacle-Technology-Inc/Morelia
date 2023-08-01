@@ -8,6 +8,7 @@ import time
 # local imports
 from SerialCommunication    import COM_io
 from PodDevice_8229         import POD_8229
+from PodPacket_Standard     import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -21,10 +22,10 @@ __email__       = "sales@pinnaclet.com"
 
 def ChoosePort() -> str : 
     # get ports
-    portList = COM_io.GetCOMportsList()
+    portList: list[str] = COM_io.GetCOMportsList()
     print('Available COM Ports: '+', '.join(portList))
     # request port from user
-    choice = input('Select port: COM')
+    choice: str = input('Select port: COM')
     # search for port in list
     for port in portList:
         if port.startswith('COM'+choice):
@@ -33,14 +34,14 @@ def ChoosePort() -> str :
     return(ChoosePort())
 
 def Write(pod: POD_8229, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
-    write = pod.WritePacket(cmd, payload)
-    write = pod.TranslatePODpacket(write)
-    print('Write:\t', write)
+    write: Packet_Standard = pod.WritePacket(cmd, payload)
+    data:  dict = write.TranslateAll()
+    print('Write:\t', data)
 
 def Read(pod: POD_8229) : 
-    read = pod.ReadPODpacket(timeout_sec=1)
-    read = pod.TranslatePODpacket(read)
-    print('Read:\t', read)
+    read: Packet_Standard = pod.ReadPODpacket()
+    data: dict = read.TranslateAll()
+    print('Read:\t', data)
 
 def RunCommand(pod: POD_8229, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
    Write(pod,cmd,payload)
@@ -87,7 +88,8 @@ print('~~ MOTOR STATE ~~')
 pod.WriteRead('SET RANDOM REVERSE', 0)
 RunCommand(pod, 'SET MOTOR STATE', 1) # Sets whether the motor is on or off.  1 for On, 0 for Off. 
 RunCommand(pod, 'GET MOTOR STATE') # Gets the motor state
-onTime_sec = 5
+onTime_sec = 3
+print('...moving...')
 time.sleep(onTime_sec)
 RunCommand(pod, 'SET MOTOR STATE', 0) # Sets whether the motor is on or off.  1 for On, 0 for Off. 
 RunCommand(pod, 'GET MOTOR STATE') # Gets the motor state
@@ -103,6 +105,7 @@ RunCommand(pod, 'GET REVERSE PARAMS') # Gets the base and variable times for ran
 testReverse_sec: int = 10
 if(testReverse_sec > 0) : 
     pod.WriteRead('SET MOTOR STATE', 1)
+    print('...moving...')
     time.sleep(testReverse_sec)
     pod.WritePacket('SET MOTOR STATE', 0)
     # print all output

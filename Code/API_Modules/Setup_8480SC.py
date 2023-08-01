@@ -5,9 +5,8 @@ from threading   import Thread
 import time
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
-from PodDevice_8480SC    import POD_8480SC
-from GetUserInput        import UserInput
+from Setup_PodInterface  import Setup_Interface, UserInput
+from PodDevice_8480SC    import POD_8480SC, Packet_Standard
 from Setup_PodParameters import Params_8480SC
 
 # authorship
@@ -89,22 +88,22 @@ class Setup_8480SC(Setup_Interface) :
             # create POD device 
             pod = POD_8480SC(port=port)
             # test if connection is successful
-            if(self._TestDeviceConnection(pod)):
-            #write setup parameters
-                pod.WriteRead('SET STIMULUS', deviceParams.stimulus)
-                pod.WriteRead('SET PREAMP TYPE', deviceParams.preamp)
-                pod.WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
-                pod.WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
-                pod.WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
-                pod.WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
-                pod.WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
-                pod.WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
-                pod.WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
-                pod.WriteRead('RUN STIMULUS', (0))
-                # successful write if no exceptions raised 
-                self._podDevices[deviceNum] = pod
-                success = True
-                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+            if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
+            # write setup parameters
+            pod.WriteRead('SET STIMULUS', deviceParams.stimulus)
+            pod.WriteRead('SET PREAMP TYPE', deviceParams.preamp)
+            pod.WriteRead('SET LED CURRENT', (0, deviceParams.ledCurrent_CH0() ))
+            pod.WriteRead('SET LED CURRENT', (1, deviceParams.ledCurrent_CH1() ))
+            pod.WriteRead('SET TTL PULLUPS', (deviceParams.ttlPullups ))
+            pod.WriteRead('SET ESTIM CURRENT', (0, deviceParams.estimCurrent_CH0() ))
+            pod.WriteRead('SET ESTIM CURRENT', (1, deviceParams.estimCurrent_CH1() ))
+            pod.WriteRead('SET SYNC CONFIG', (deviceParams.syncConfig ))
+            pod.WriteRead('SET TTL SETUP', (deviceParams.ttlSetup ))
+            pod.WriteRead('RUN STIMULUS', (0))
+            # successful write if no exceptions raised 
+            self._podDevices[deviceNum] = pod
+            success = True
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
@@ -328,17 +327,14 @@ class Setup_8480SC(Setup_Interface) :
         while(self._streamMode) : 
             try : 
                 # attempt to read packet.         
-                read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=10)) 
+                read: Packet_Standard = pod.ReadPODpacket(timeout_sec=1)
                 # update time by adding (dt = tf - ti)
                 currentTime += (round(time.time(),9)) - t 
                 # build line to write 
-                data = [str(currentTime), str(read['Command Number'])]
-                if('Payload' in read) :
-                    data.append(str(read['Payload']))
-                else :                  
-                    data.append('None')
+                data = [str(currentTime), str(read.CommandNumber())]
+                if(read.HasPayload()) : data.append(str(read.Payload()))
+                else :                  data.append('None')
                 # write to file
-                
                 file.write(','.join(data) + '\n')
                 # update initial time for next loop 
                 t = (round(time.time(),9)) # initial time (sec) 
@@ -347,11 +343,3 @@ class Setup_8480SC(Setup_Interface) :
             # end while 
         # streaming done
         file.close()
-
-
- 
-
-    
-
-    
-
