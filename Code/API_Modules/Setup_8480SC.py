@@ -8,7 +8,6 @@ import time
 from Setup_PodInterface  import Setup_Interface
 from PodDevice_8480SC    import POD_8480SC
 from GetUserInput        import UserInput
-
 from Setup_PodParameters import Params_8480SC
 
 # authorship

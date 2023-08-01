@@ -1,7 +1,7 @@
 
 
 # enviornment imports 
-import platform
+import platform     # NOTE this import is unused. remove this.
 import serial.tools.list_ports
 import time
 
@@ -63,7 +63,8 @@ class COM_io :
     # ====== PRIVATE METHODS ======
         
     def __BuildPortName(self, port: str|int) -> str :
-        """Converts the port parameter into the "COM"+<number> format, "/dev/tty..."
+        """Converts the port parameter into the "COM"+<number> format for Windows or \
+        "/dev/tty..."+<number> for Linux.
 
         Args:
             port (str | int): Name of a COM port. Can be an integer or string.
@@ -73,7 +74,7 @@ class COM_io :
         """
         name = None
         # is 'port' the port number? 
-        if (isinstance(port, int)) : 
+        if (isinstance(port, int)) :    # NOTE what if using linux system here?
             # build port name 
             name = 'COM' + str(port)
         elif (isinstance(port, str)): 
