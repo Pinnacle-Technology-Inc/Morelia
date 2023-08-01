@@ -4,13 +4,11 @@ from   threading  import Thread
 from   math       import floor 
 
 # local imports
-from Setup_PodInterface     import Setup_Interface
-from Setup_PodParameters    import Params_Interface
+from Setup_PodInterface     import Setup_Interface, UserInput, Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
 from Setup_8480SC           import Setup_8480SC
 from Setup_8229             import Setup_8229
-from GetUserInput           import UserInput
 
 # authorship
 __author__      = "Thresa Kelly"

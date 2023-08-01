@@ -2,7 +2,7 @@
 from typing import Any
 
 # local imports
-from PodCommands        import POD_Commands
+from PodCommands import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"

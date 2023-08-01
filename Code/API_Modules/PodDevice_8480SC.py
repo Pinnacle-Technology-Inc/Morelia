@@ -1,10 +1,5 @@
-"""
-POD_8480SC handles communication using an 8480-SC POD device. 
-"""
-
 # local imports 
-from BasicPodProtocol       import POD_Basics
-from PodPacket_Standard     import Packet_Standard
+from BasicPodProtocol import POD_Basics, Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"

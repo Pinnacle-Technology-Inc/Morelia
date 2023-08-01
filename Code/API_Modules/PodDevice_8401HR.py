@@ -1,7 +1,5 @@
 # local imports 
-from BasicPodProtocol       import POD_Basics
-from PodPacket_Packet       import Packet
-from PodPacket_Standard     import Packet_Standard
+from BasicPodProtocol       import POD_Basics, Packet, Packet_Standard
 from PodPacket_Binary5      import Packet_Binary5
 
 # authorship

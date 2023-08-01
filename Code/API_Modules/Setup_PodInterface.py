@@ -9,9 +9,9 @@ from   time       import gmtime, strftime
 
 # local imports
 from SerialCommunication    import COM_io
-from BasicPodProtocol       import POD_Basics
 from GetUserInput           import UserInput
 from Setup_PodParameters    import Params_Interface
+from BasicPodProtocol       import POD_Basics, Packet, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -599,8 +599,8 @@ class Setup_Interface :
         # returns True when connection is successful, false otherwise
         try:
             pod.FlushPort() # clear out previous packets 
-            w = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
-            r = pod.ReadPODpacket()
+            w: Packet_Standard = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
+            r: Packet = pod.ReadPODpacket()
         except:   return(False)
         # check that read matches ping write
         if(w.rawPacket==r.rawPacket): return(True)

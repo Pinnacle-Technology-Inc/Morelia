@@ -5,11 +5,9 @@ from threading          import Thread
 import time
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
+from Setup_PodInterface  import Setup_Interface, UserInput
+from PodDevice_8229      import POD_8229, Packet_Standard
 from Setup_PodParameters import Params_8229
-from GetUserInput        import UserInput
-from PodDevice_8229      import POD_8229
-from PodPacket_Standard  import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -2,8 +2,7 @@
 from datetime import datetime
 
 # local imports 
-from BasicPodProtocol   import POD_Basics
-from PodPacket_Standard import Packet_Standard
+from BasicPodProtocol import POD_Basics, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

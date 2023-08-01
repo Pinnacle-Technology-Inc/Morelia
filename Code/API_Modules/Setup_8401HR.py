@@ -10,12 +10,10 @@ from   io           import IOBase
 from   pyedflib     import EdfWriter
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
-from PodDevice_8401HR    import POD_8401HR 
-from GetUserInput        import UserInput
+from Setup_PodInterface  import Setup_Interface, UserInput
+from PodDevice_8401HR    import POD_8401HR, Packet_Standard, Packet_Binary5
 from Setup_PodParameters import Params_8401HR
-from PodPacket_Binary5   import Packet_Binary5
-from PodPacket_Standard  import Packet_Standard
+
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
