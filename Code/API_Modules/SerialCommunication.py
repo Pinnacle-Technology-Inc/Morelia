@@ -1,6 +1,7 @@
 
 
 # enviornment imports 
+import platform
 import serial.tools.list_ports
 import time
 
@@ -60,7 +61,7 @@ class COM_io :
         self.CloseSerialPort()
 
     # ====== PRIVATE METHODS ======
-
+        
     def __BuildPortName(self, port: str|int) -> str :
         """Converts the port parameter into the "COM"+<number> format.
 
@@ -80,10 +81,13 @@ class COM_io :
             if port.startswith('COM'):
                 # assume that 'port' is the full name  
                 name = port.split(' ')[0]
+            elif port.startswith('/dev/tty'):
+                return(port)
             else : 
                 # assume that 'port' is just the number 
                 name = 'COM' + port
         # end 
+        # print("NAME", name)
         return(name)
 
     # ====== PUBLIC METHODS ======
@@ -97,6 +101,7 @@ class COM_io :
             bool: True if the COM port is open, False otherwise. 
         """
         # true if serial port is open, false otherwise 
+        #print("@@@",self.__serialInst.isOpen() )
         return(self.__serialInst.isOpen())
 
     def IsSerialClosed(self) -> bool :

@@ -86,3 +86,4 @@ RunCommand(pod, 'GET PREAMP TYPE', ()) # Gets the store preamp value
 print('~~ TTL PULLUPS ~~')
 RunCommand(pod, 'SET TTL PULLUPS', (1)) # Sets whether pullups are enabled on the TTL lines.  0 = pullups disabled, non-zero = pullups enabled
 RunCommand(pod, 'GET TTL PULLUPS', ()) # Gets whether TTL pullups are enabled on the TTL lines.  0 = no pullups, non-zero = pullups enabled
+
