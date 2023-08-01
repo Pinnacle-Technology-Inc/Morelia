@@ -9,6 +9,7 @@ from Setup_PodInterface  import Setup_Interface
 from Setup_PodParameters import Params_8229
 from GetUserInput        import UserInput
 from PodDevice_8229      import POD_8229
+from PodPacket_Standard  import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -308,12 +309,12 @@ class Setup_8229(Setup_Interface) :
         while(self._streamMode) : 
             try : 
                 # attempt to read packet.         vvv An exception will occur HERE if no data can be read 
-                read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=1)) 
+                read: Packet_Standard = pod.ReadPODpacket(timeout_sec=1)
                 # update time by adding (dt = tf - ti)
                 currentTime += (round(time.time(),9)) - t 
                 # build line to write 
-                data = [str(currentTime), str(read['Command Number'])]
-                if('Payload' in read) : data.append(str(read['Payload']))
+                data = [str(currentTime), str(read.CommandNumber())]
+                if(read.HasPayload()) : data.append(str(read.Payload()))
                 else :                  data.append('None')
                 # write to file 
                 file.write(','.join(data) + '\n')
