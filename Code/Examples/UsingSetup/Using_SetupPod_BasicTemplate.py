@@ -7,7 +7,7 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Setup.Setup_PodDevices import Setup_PodDevices
+from Setup import Setup_PodDevices
 
 # authorship
 __author__      = "Thresa Kelly"
