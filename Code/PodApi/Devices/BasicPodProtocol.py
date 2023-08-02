@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Devices.SerialPorts import COM_io
+from PodApi.Devices.SerialPorts import PortIO
 from PodApi.Commands            import POD_Commands
 from PodApi.Packets             import Packet, Packet_Standard, Packet_Binary
 
@@ -36,7 +36,7 @@ class POD_Basics :
                 instance. Default value is 9600.
         """
         # initialize serial port 
-        self._port : COM_io = COM_io(port, baudrate)
+        self._port : PortIO = PortIO(port, baudrate)
         # create object to handle commands 
         self._commands : POD_Commands = POD_Commands()
 
@@ -75,7 +75,7 @@ class POD_Basics :
         Returns:
             str: String name of the port.
         """
-        return COM_io.ChoosePort(forbidden)
+        return PortIO.ChoosePort(forbidden)
 
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 

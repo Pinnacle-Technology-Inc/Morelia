@@ -1,1 +1,1 @@
-from PodApi.Devices.SerialPorts.SerialCommunication import COM_io
+from PodApi.Devices.SerialPorts.SerialComm import PortIO

@@ -1,7 +1,8 @@
 # enviornment imports 
-import serial.tools.list_ports
-import platform
-import time
+from    serial.tools    import list_ports
+from    serial          import Serial
+import  platform
+import  time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -11,7 +12,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class COM_io : 
+class PortIO : 
     """
     COM_io handles serial communication (read/write) using COM ports. 
 
@@ -30,7 +31,7 @@ class COM_io :
             list[str]: List containing the names of available COM ports.
         """
         # get all COM ports in use
-        allPorts = serial.tools.list_ports.comports()
+        allPorts = list_ports.comports()
         # convert COM ports to string list 
         portList = []
         for port in allPorts:
@@ -53,10 +54,10 @@ class COM_io :
         print("plat", plat)
         if plat == 'Linux':
             # serial ports for Linux
-            chosenport = COM_io._ChoosePortLinux(forbidden)
+            chosenport = PortIO._ChoosePortLinux(forbidden)
         if plat == 'Windows':
             # COM ports for Windows
-            chosenport = COM_io._ChoosePortWindows(forbidden)
+            chosenport = PortIO._ChoosePortWindows(forbidden)
         return(chosenport)
 
     @staticmethod
@@ -70,7 +71,7 @@ class COM_io :
             list[str]: List of port names.
         """
         # get port list 
-        portListAll = COM_io.GetCOMportsList()
+        portListAll = PortIO.GetCOMportsList()
         if(forbidden):
             # remove forbidden ports
             portList = [x for x in portListAll if x not in forbidden]
@@ -81,7 +82,7 @@ class COM_io :
             # print error and keep trying to get ports
             print('[!] No COM ports in use. Please plug in POD device.')
             while(len(portList) == 0) : 
-                portListAll = COM_io.GetCOMportsList()
+                portListAll = PortIO.GetCOMportsList()
                 portList = [x for x in portListAll if x not in forbidden]
         # return port
         return(portList)
@@ -96,12 +97,12 @@ class COM_io :
         Returns:
             str: String name of the port.
         """
-        portList = COM_io.GetPortsList()
+        portList = PortIO.GetPortsList()
         print('Available Serial Ports: '+', '.join(portList))
         choice = input('Select port: /dev/tty')
         if(choice == ''):
             print('[!] Please choose a Serial port.')
-            return(COM_io._ChoosePortLinux(forbidden))
+            return(PortIO._ChoosePortLinux(forbidden))
         else:
             # search for port in list
             for port in portList:
@@ -111,7 +112,7 @@ class COM_io :
                     return(port)
             # if return condition not reached...
             print('[!] tty'+choice+' does not exist. Try again.')
-            return(COM_io._ChoosePortLinux(forbidden))
+            return(PortIO._ChoosePortLinux(forbidden))
 
     @staticmethod
     def _ChoosePortWindows(forbidden) -> str :
@@ -123,14 +124,14 @@ class COM_io :
         Returns:
             str: String name of the port.
         """
-        portList = COM_io.GetPortsList(forbidden)
+        portList = PortIO.GetPortsList(forbidden)
         print('Available COM Ports: '+', '.join(portList))
         # request port from user
         choice = input('Select port: COM')
         # choice cannot be an empty string
         if(choice == ''):
             print('[!] Please choose a COM port.')
-            return(COM_io._ChoosePortWindows(forbidden))
+            return(PortIO._ChoosePortWindows(forbidden))
         else:
             # search for port in list
             for port in portList:
@@ -138,7 +139,7 @@ class COM_io :
                     return(port)
             # if return condition not reached...
             print('[!] COM'+choice+' does not exist. Try again.')
-            return(COM_io._ChoosePortWindows(forbidden))
+            return(PortIO._ChoosePortWindows(forbidden))
 
     # ====== DUNDER METHODS ======
 
@@ -151,7 +152,7 @@ class COM_io :
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
         # initialize port 
-        self.__serialInst : serial.Serial = serial.Serial()
+        self.__serialInst : Serial = Serial()
         # open port  
         self.OpenSerialPort(port, baudrate=baudrate)
 
