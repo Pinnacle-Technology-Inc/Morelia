@@ -2,7 +2,7 @@
 from typing import Any
 
 # local imports
-from PodApi.Commands import POD_Commands
+from PodApi.Commands import Commands
 from PodApi.Packets  import Packet
 
 # authorship
@@ -53,7 +53,7 @@ class Packet_Binary4(Packet) :
     def __init__(self, 
                  pkt: bytes, 
                  preampGain: int, 
-                 commands: POD_Commands | None = None
+                 commands: Commands | None = None
                 ) -> None:
         """Sets the class instance variables. 
 

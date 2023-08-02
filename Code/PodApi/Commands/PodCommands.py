@@ -6,7 +6,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_Commands : 
+class Commands : 
     """
     POD_Commands manages a dictionary containing available commands for a POD device.
 
@@ -72,7 +72,7 @@ class POD_Commands :
         """Runs whan an instance is constructed. It sents the commands dictionary to the basic \
         command set.
         """
-        self.__commands : dict[int,list[str|tuple[int]|bool]] = POD_Commands.GetBasicCommands()
+        self.__commands : dict[int,list[str|tuple[int]|bool]] = Commands.GetBasicCommands()
 
 
     # ============ STATIC METHODS ============  ========================================================================================================================
@@ -85,7 +85,7 @@ class POD_Commands :
         Returns:
             int: Value of __NOVALUE.
         """
-        return(POD_Commands.__NOVALUE)
+        return(Commands.__NOVALUE)
 
     @staticmethod
     def U8() -> int : 
@@ -94,7 +94,7 @@ class POD_Commands :
         Returns:
             int: Value of __U8.
         """
-        return(POD_Commands.__U8)
+        return(Commands.__U8)
 
     @staticmethod
     def U16() -> int : 
@@ -103,7 +103,7 @@ class POD_Commands :
         Returns:
             int: Value of __U16.
         """
-        return(POD_Commands.__U16)
+        return(Commands.__U16)
     
     @staticmethod
     def U32() -> int : 
@@ -113,7 +113,7 @@ class POD_Commands :
             int: Value of __U32.
         """
         # returns the no value marker for commands dict 
-        return(POD_Commands.__U32)
+        return(Commands.__U32)
     
 
     @staticmethod
@@ -126,9 +126,9 @@ class POD_Commands :
                 argument ASCII bytes, number of return bytes, binary flag, description) }.
         """
         # constants 
-        U8  = POD_Commands.U8()
-        U16 = POD_Commands.U16()
-        NOVALUE = POD_Commands.NoValue()
+        U8  = Commands.U8()
+        U16 = Commands.U16()
+        NOVALUE = Commands.NoValue()
         # basic standard POD commands 
         basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag, description]), 
             0  : [ 'ACK',               (0,),   (0,),        False,  'Deprecated in favor of responding with the command number received.'                    ],
@@ -167,7 +167,7 @@ class POD_Commands :
     def RestoreBasicCommands(self) -> None : 
         """Sets the current commands (__commands) to the basic POD command set."""
         # set commands to the basic command set 
-        self.__commands = POD_Commands.GetBasicCommands()
+        self.__commands = Commands.GetBasicCommands()
 
 
     def AddCommand(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool, description: str) -> bool:

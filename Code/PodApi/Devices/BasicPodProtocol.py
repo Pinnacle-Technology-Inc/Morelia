@@ -1,6 +1,6 @@
 # local imports
 from PodApi.Devices.SerialPorts import PortIO
-from PodApi.Commands            import POD_Commands
+from PodApi.Commands            import Commands
 from PodApi.Packets             import Packet, Packet_Standard, Packet_Binary
 
 # authorship
@@ -38,7 +38,7 @@ class Pod :
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
         # create object to handle commands 
-        self._commands : POD_Commands = POD_Commands()
+        self._commands : Commands = Commands()
 
 
     # ============ STATIC METHODS ============      ========================================================================================================================
@@ -58,10 +58,10 @@ class Pod :
             int: number of hexadecimal characters for an unsigned u-bit value.
         """
         match u : 
-            case  8: return(POD_Commands.U8())
-            case 16: return(POD_Commands.U16())
-            case 32: return(POD_Commands.U32())
-            case  _: return(POD_Commands.NoValue())
+            case  8: return(Commands.U8())
+            case 16: return(Commands.U16())
+            case 32: return(Commands.U32())
+            case  _: return(Commands.NoValue())
 
     # ------------ PORT ------------   ------------------------------------------------------------------------------------------------------------------------
 

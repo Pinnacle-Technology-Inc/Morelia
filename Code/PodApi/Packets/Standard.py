@@ -3,7 +3,7 @@ from typing import Any
 from collections.abc import Callable
 
 # local imports
-from PodApi.Commands import POD_Commands
+from PodApi.Commands import Commands
 from PodApi.Packets  import Packet
 
 # authorship
@@ -26,7 +26,7 @@ class Packet_Standard(Packet) :
     
     def __init__(self, 
                  pkt: bytes, 
-                 commands: POD_Commands
+                 commands: Commands
                 ) -> None:
         """Sets the class instance variables. 
 
