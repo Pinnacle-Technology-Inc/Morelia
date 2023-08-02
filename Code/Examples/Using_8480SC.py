@@ -32,6 +32,7 @@ def ChoosePort() -> str :
                 return(port)
         print('[!] COM'+choice+' does not exist. Try again.')
         return(ChoosePort())
+    #Linux port
     if plat == 'Linux':
         portList = COM_io.GetCOMportsList()
         print('Available Serial Ports: '+', '.join(portList))
