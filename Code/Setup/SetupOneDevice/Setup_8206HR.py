@@ -12,7 +12,7 @@ from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard, Packet_Binary4
 from PodApi.Devices         import Pod8206HR
-from PodApi.Parameters      import Params_8206HR
+from PodApi.Parameters      import Params8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -40,7 +40,7 @@ class Setup_8206HR(Setup_Interface) :
 
     def __init__(self) -> None:
         super().__init__()
-        self._podParametersDict : dict[int,Params_8206HR] = {}   
+        self._podParametersDict : dict[int,Params8206HR] = {}   
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -62,7 +62,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8206HR) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params8206HR) -> bool : 
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
@@ -99,7 +99,7 @@ class Setup_8206HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
     
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8206HR : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params8206HR : 
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -108,7 +108,7 @@ class Setup_8206HR(Setup_Interface) :
         Returns:
             dict[str,(str|int|dict[str,int])]: Dictionary of device parameters.
         """
-        return(Params_8206HR(
+        return(Params8206HR(
             port             =   self._ChoosePort(forbiddenNames),
             sampleRate       =   UserInput.AskForIntInRange('Set sample rate (Hz)', 100, 2000),
             preamplifierGain =   self._ChoosePreampGain(),
@@ -185,13 +185,13 @@ class Setup_8206HR(Setup_Interface) :
             EdfWriter: Opened file.
         """
         # number of channels 
-        n = len(Params_8206HR.lowPassLabels)
+        n = len(Params8206HR.lowPassLabels)
         # create file
         f = EdfWriter(fname, n) 
         # get info for each channel
         for i in range(n):
             f.setSignalHeader( i, {
-                'label' : Params_8206HR.lowPassLabels[i],
+                'label' : Params8206HR.lowPassLabels[i],
                 'dimension' : 'uV',
                 'sample_rate' : self._podParametersDict[devNum].sampleRate,
                 'physical_max': self._PHYSICAL_BOUND_uV,

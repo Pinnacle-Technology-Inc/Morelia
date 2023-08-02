@@ -9,7 +9,7 @@ from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard
 from PodApi.Devices         import Pod8480SC
-from PodApi.Parameters      import Params_8480SC
+from PodApi.Parameters      import Params8480SC
 
 # authorship
 __author__      = "Sree Kondi"
@@ -33,7 +33,7 @@ class Setup_8480SC(Setup_Interface) :
     
     def __init__(self) -> None :
         super().__init__()
-        self._podParametersDict : dict[int,Params_8480SC] = {} 
+        self._podParametersDict : dict[int,Params8480SC] = {} 
         self._streamMode : bool = False
 
 
@@ -72,7 +72,7 @@ class Setup_8480SC(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8480SC) -> bool :  
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params8480SC) -> bool :  
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
@@ -116,7 +116,7 @@ class Setup_8480SC(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8480SC : 
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params8480SC : 
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -126,7 +126,7 @@ class Setup_8480SC(Setup_Interface) :
             Params_8480SC: Device parameters.
         """
         # ask for port first
-        return(Params_8480SC(
+        return(Params8480SC(
             port              =     self._ChoosePort(forbiddenNames),
             stimulus          =    (UserInput.AskForIntInRange('Choose channel (0 or 1) for Stimulus', 0, 1),
                                     *Setup_8480SC._ChoosePeriod(),

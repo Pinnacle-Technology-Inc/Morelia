@@ -14,7 +14,7 @@ from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard, Packet_Binary5
 from PodApi.Devices         import Pod8401HR
-from PodApi.Parameters      import Params_8401HR
+from PodApi.Parameters      import Params8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -42,7 +42,7 @@ class Setup_8401HR(Setup_Interface) :
 
     def __init__(self) -> None:
         super().__init__()
-        self._podParametersDict : dict[int,Params_8401HR] = {}  
+        self._podParametersDict : dict[int,Params8401HR] = {}  
 
 
     # ============ PUBLIC METHODS ============      ========================================================================================================================
@@ -65,7 +65,7 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8401HR) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params8401HR) -> bool : 
         """Creates a POD_8206HR object and write the setup parameters to it. 
 
         Args:
@@ -152,7 +152,7 @@ class Setup_8401HR(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8401HR :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params8401HR :
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -167,7 +167,7 @@ class Setup_8401HR(Setup_Interface) :
         preampDevice = self._GetPreampDeviceName()
         chmap = Pod8401HR.GetChannelMapForPreampDevice(preampDevice)
         # get all parameters 
-        params = Params_8401HR(
+        params = Params8401HR(
             # get parameters for full device 
             port         = port,
             preampDevice = preampDevice,

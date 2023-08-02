@@ -8,7 +8,7 @@ Path.AddAPIpath()
 
 # local imports
 from Setup import Setup_PodDevices
-from PodApi.Parameters import Params_8206HR
+from PodApi.Parameters import Params8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -55,8 +55,8 @@ elif(runExample == '2'):
     saveFile = { '8206-HR' : r'C:\Users\tkelly\Desktop\TEST\test.csv' }
     # example dictionary with 8206HR POD device setup parameters
     podParametersDict = { '8206-HR' : { 
-        1 : Params_8206HR(port='COM5 - USB EEG/EMG (COM5)', sampleRate=500, preamplifierGain=100, lowPass=(40, 40, 40)) , 
-        2 : Params_8206HR(port='COM4 - USB EEG/EMG (COM4)', sampleRate=500, preamplifierGain=10,  lowPass=(40, 40, 40)) } }
+        1 : Params8206HR(port='COM5 - USB EEG/EMG (COM5)', sampleRate=500, preamplifierGain=100, lowPass=(40, 40, 40)) , 
+        2 : Params8206HR(port='COM4 - USB EEG/EMG (COM4)', sampleRate=500, preamplifierGain=10,  lowPass=(40, 40, 40)) } }
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """

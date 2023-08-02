@@ -9,7 +9,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Params_8206HR(Params) :
+class Params8206HR(Params) :
     """Container class that stores parameters for an 8206-HR POD device.
 
     Attributes:

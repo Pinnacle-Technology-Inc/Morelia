@@ -9,7 +9,7 @@ from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard
 from PodApi.Devices         import Pod8229
-from PodApi.Parameters      import Params_8229
+from PodApi.Parameters      import Params8229
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -35,7 +35,7 @@ class Setup_8229(Setup_Interface) :
         """Initializes the class instance variables.
         """
         super().__init__()
-        self._podParametersDict : dict[int,Params_8229] = {} # correct Param type
+        self._podParametersDict : dict[int,Params8229] = {} # correct Param type
         self._streamMode : bool = False
 
 
@@ -74,7 +74,7 @@ class Setup_8229(Setup_Interface) :
     # ------------ DEVICE CONNECTION ------------
     
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_8229) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params8229) -> bool : 
         """Creates a 8229 POD device object and write the setup parameters to it. 
 
         Args:
@@ -125,7 +125,7 @@ class Setup_8229(Setup_Interface) :
     # ------------ SETUP POD PARAMETERS ------------
     
     
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_8229 :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params8229 :
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -156,7 +156,7 @@ class Setup_8229(Setup_Interface) :
         else:
             schedule = None
         # make param object and return 
-        return(Params_8229(port=port, systemID=systemID, motorDirection=motorDirection, motorSpeed=motorSpeed, 
+        return(Params8229(port=port, systemID=systemID, motorDirection=motorDirection, motorSpeed=motorSpeed, 
                            randomReverse=randomReverse, reverseBaseTime=reverseBaseTime, reverseVarTime=reverseVarTime, 
                            mode=mode, schedule=schedule))
     
@@ -175,10 +175,10 @@ class Setup_8229(Setup_Interface) :
         schedule: dict[str, tuple[int]] = {}
         # for each day in the week...
         print('For each hour, enter \'y\' or \'1\' if the motor should be on and \'n\' or \'0\' if the motor should be off.')
-        for day in Params_8229.week : 
+        for day in Params8229.week : 
             print('Set set motor schedule for '+day+':')
             # ... for each hour... get the motor on/off status 
-            schedule[day] = tuple( [UserInput.AskYN('\tHour '+str(hr), append=': ') for hr in range(Params_8229.hoursPerDay)] )
+            schedule[day] = tuple( [UserInput.AskYN('\tHour '+str(hr), append=': ') for hr in range(Params8229.hoursPerDay)] )
         return(schedule)
 
     

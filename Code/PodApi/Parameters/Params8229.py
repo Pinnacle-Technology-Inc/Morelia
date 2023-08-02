@@ -12,7 +12,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Params_8229(Params) :
+class Params8229(Params) :
     """Container class that stores parameters for an 8229 POD device.
 
     Attributes:
@@ -94,8 +94,8 @@ class Params_8229(Params) :
                 the days of the week. The values are tuples of 24 zeros. 
         """
         schedule = {}
-        for day in Params_8229.week : 
-            schedule[day] = tuple([0]*Params_8229.hoursPerDay)
+        for day in Params8229.week : 
+            schedule[day] = tuple([0]*Params8229.hoursPerDay)
         return(schedule)
 
 
@@ -147,9 +147,9 @@ class Params_8229(Params) :
             raise Exception('The mode must be 0, 1, or 2.')
         
         if(self.schedule != None) : 
-            if(list(self.schedule.keys()).sort() != list(copy.copy(Params_8229.week)).sort() ) : 
-                raise Exception('The schedule must have exactly '+str(Params_8229.week)+' as keys.')
+            if(list(self.schedule.keys()).sort() != list(copy.copy(Params8229.week)).sort() ) : 
+                raise Exception('The schedule must have exactly '+str(Params8229.week)+' as keys.')
             for day in self.schedule.values() : 
-                if(len(day) != Params_8229.hoursPerDay ) : 
-                    raise Exception('There must be '+str(Params_8229.hoursPerDay)+' items in the schedule for each day.')
+                if(len(day) != Params8229.hoursPerDay ) : 
+                    raise Exception('There must be '+str(Params8229.hoursPerDay)+' items in the schedule for each day.')
             
