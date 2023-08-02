@@ -1,6 +1,5 @@
 # enviornment imports
 import os
-import platform
 from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
@@ -12,7 +11,6 @@ from   time       import gmtime, strftime
 from Setup.Inputs       import UserInput
 from PodApi.Packets     import Packet, Packet_Standard
 from PodApi.Devices     import POD_Basics
-from PodApi.SerialPorts import COM_io
 from PodApi.Parameters  import Params_Interface
 
 # authorship
@@ -297,60 +295,6 @@ class Setup_Interface :
         return(podDict)
 
     @staticmethod
-    def _ChoosePortLinux(forbidden) -> str : 
-        """User picks Serial port in Linux.
-
-        Args:
-            forbidden (list[str], optional): List of port names that are already used.
-
-        Returns:
-            str: String name of the port.
-        """
-        portList = Setup_Interface._GetPortsList()
-        print('Available Serial Ports: '+', '.join(portList))
-        choice = input('Select port: /dev/tty')
-        if(choice == ''):
-            print('[!] Please choose a Serial port.')
-            return(Setup_Interface._ChoosePortLinux(forbidden))
-        else:
-            # search for port in list
-            for port in portList:
-                if port.startswith('COM'+choice):
-                    return(port)
-                if port.startswith('/dev/tty'+choice):
-                    return(port)
-            # if return condition not reached...
-            print('[!] tty'+choice+' does not exist. Try again.')
-            return(Setup_Interface._ChoosePortLinux(forbidden))
-
-    @staticmethod
-    def _ChoosePortWindows(forbidden) -> str :
-        """User picks COM port in Windows.
-
-        Args:
-            forbidden (list[str], optional): List of port names that are already used. 
-
-        Returns:
-            str: String name of the port.
-        """
-        portList = Setup_Interface._GetPortsList(forbidden)
-        print('Available COM Ports: '+', '.join(portList))
-        # request port from user
-        choice = input('Select port: COM')
-        # choice cannot be an empty string
-        if(choice == ''):
-            print('[!] Please choose a COM port.')
-            return(Setup_Interface._ChoosePort(forbidden))
-        else:
-            # search for port in list
-            for port in portList:
-                if port.startswith('COM'+choice):
-                    return(port)
-            # if return condition not reached...
-            print('[!] COM'+choice+' does not exist. Try again.')
-            return(Setup_Interface._ChoosePort(forbidden))
-
-    @staticmethod
     def _ChoosePort(forbidden:list[str]=[]) -> str : 
         """Systems checks user's Operating System, and chooses ports accordingly.
 
@@ -360,46 +304,8 @@ class Setup_Interface :
         Returns:
             str: String name of the port.
         """
-        # checks user's Operating System.
-        plat = platform.system() 
-        print("plat", plat)
-        if plat == 'Linux':
-            # serial ports for Linux
-            chosenport = Setup_Interface._ChoosePortLinux(forbidden)
-        if plat == 'Windows':
-            # COM ports for Windows
-            chosenport = Setup_Interface._ChoosePortWindows(forbidden)
-        return(chosenport)
+        return POD_Basics.ChoosePort(forbidden)
     
-
-    @staticmethod
-    def _GetPortsList(forbidden:list[str]=[]) -> list[str] : 
-        """Gets the names of all available ports.
-
-        Args:
-            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
-
-        Returns:
-            list[str]: List of port names.
-        """
-        # get port list 
-        portListAll = COM_io.GetCOMportsList()
-        if(forbidden):
-            # remove forbidden ports
-            portList = [x for x in portListAll if x not in forbidden]
-        else:
-            portList = portListAll
-        # check if the list is empty 
-        if (len(portList) == 0):
-            # print error and keep trying to get ports
-            print('[!] No COM ports in use. Please plug in POD device.')
-            while(len(portList) == 0) : 
-                portListAll = COM_io.GetCOMportsList()
-                portList = [x for x in portListAll if x not in forbidden]
-        # return port
-        return(portList)
-    
-
     # ------------ EDIT POD PARAMETERS ------------
 
 

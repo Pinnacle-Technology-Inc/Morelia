@@ -1,7 +1,7 @@
 # local imports
-from PodApi.SerialPorts import COM_io
-from PodApi.Commands    import POD_Commands
-from PodApi.Packets     import Packet, Packet_Standard, Packet_Binary
+from PodApi.Devices.SerialPorts import COM_io
+from PodApi.Commands            import POD_Commands
+from PodApi.Packets             import Packet, Packet_Standard, Packet_Binary
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -63,6 +63,19 @@ class POD_Basics :
             case 32: return(POD_Commands.U32())
             case  _: return(POD_Commands.NoValue())
 
+    # ------------ PORT ------------   ------------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def ChoosePort(forbidden:list[str]=[]) -> str : 
+        """Systems checks user's Operating System, and chooses ports accordingly.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+
+        Returns:
+            str: String name of the port.
+        """
+        return COM_io.ChoosePort(forbidden)
 
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 

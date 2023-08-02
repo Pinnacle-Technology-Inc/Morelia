@@ -6,7 +6,7 @@ import time
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -37,6 +37,108 @@ class COM_io :
             portList.append(str(port))
         # end
         return(portList)
+
+    @staticmethod
+    def ChoosePort(forbidden:list[str]=[]) -> str : 
+        """Systems checks user's Operating System, and chooses ports accordingly.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+
+        Returns:
+            str: String name of the port.
+        """
+        # checks user's Operating System.
+        plat = platform.system() 
+        print("plat", plat)
+        if plat == 'Linux':
+            # serial ports for Linux
+            chosenport = COM_io._ChoosePortLinux(forbidden)
+        if plat == 'Windows':
+            # COM ports for Windows
+            chosenport = COM_io._ChoosePortWindows(forbidden)
+        return(chosenport)
+
+    @staticmethod
+    def GetPortsList(forbidden:list[str]=[]) -> list[str] : 
+        """Gets the names of all available ports.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+
+        Returns:
+            list[str]: List of port names.
+        """
+        # get port list 
+        portListAll = COM_io.GetCOMportsList()
+        if(forbidden):
+            # remove forbidden ports
+            portList = [x for x in portListAll if x not in forbidden]
+        else:
+            portList = portListAll
+        # check if the list is empty 
+        if (len(portList) == 0):
+            # print error and keep trying to get ports
+            print('[!] No COM ports in use. Please plug in POD device.')
+            while(len(portList) == 0) : 
+                portListAll = COM_io.GetCOMportsList()
+                portList = [x for x in portListAll if x not in forbidden]
+        # return port
+        return(portList)
+
+    @staticmethod
+    def _ChoosePortLinux(forbidden) -> str : 
+        """User picks Serial port in Linux.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used.
+
+        Returns:
+            str: String name of the port.
+        """
+        portList = COM_io.GetPortsList()
+        print('Available Serial Ports: '+', '.join(portList))
+        choice = input('Select port: /dev/tty')
+        if(choice == ''):
+            print('[!] Please choose a Serial port.')
+            return(COM_io._ChoosePortLinux(forbidden))
+        else:
+            # search for port in list
+            for port in portList:
+                if port.startswith('COM'+choice):
+                    return(port)
+                if port.startswith('/dev/tty'+choice):
+                    return(port)
+            # if return condition not reached...
+            print('[!] tty'+choice+' does not exist. Try again.')
+            return(COM_io._ChoosePortLinux(forbidden))
+
+    @staticmethod
+    def _ChoosePortWindows(forbidden) -> str :
+        """User picks COM port in Windows.
+
+        Args:
+            forbidden (list[str], optional): List of port names that are already used. 
+
+        Returns:
+            str: String name of the port.
+        """
+        portList = COM_io.GetPortsList(forbidden)
+        print('Available COM Ports: '+', '.join(portList))
+        # request port from user
+        choice = input('Select port: COM')
+        # choice cannot be an empty string
+        if(choice == ''):
+            print('[!] Please choose a COM port.')
+            return(COM_io._ChoosePortWindows(forbidden))
+        else:
+            # search for port in list
+            for port in portList:
+                if port.startswith('COM'+choice):
+                    return(port)
+            # if return condition not reached...
+            print('[!] COM'+choice+' does not exist. Try again.')
+            return(COM_io._ChoosePortWindows(forbidden))
 
     # ====== DUNDER METHODS ======
 
