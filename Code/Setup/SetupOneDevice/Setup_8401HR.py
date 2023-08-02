@@ -12,9 +12,9 @@ from   pyedflib     import EdfWriter
 # local imports
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
-from Packets                import Packet_Standard, Packet_Binary5
-from Devices                import POD_8401HR
-from Parameters             import Params_8401HR
+from PodApi.Packets         import Packet_Standard, Packet_Binary5
+from PodApi.Devices         import POD_8401HR
+from PodApi.Parameters      import Params_8401HR
 
 # authorship
 __author__      = "Thresa Kelly"

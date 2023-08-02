@@ -7,7 +7,7 @@ Path.AddAPIpath()
 
 # local imports
 import  HelperFunctions as hf
-from    Devices import POD_8206HR
+from    PodApi.Devices  import POD_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"

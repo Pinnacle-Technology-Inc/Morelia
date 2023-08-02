@@ -7,8 +7,8 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Devices import COM_io, POD_Basics
-from Packets import Packet
+from PodApi.Devices import COM_io, POD_Basics
+from PodApi.Packets import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -7,9 +7,9 @@ import time
 # local imports
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
-from Packets                import Packet_Standard
-from Devices                import POD_8229
-from Parameters             import Params_8229
+from PodApi.Packets         import Packet_Standard
+from PodApi.Devices         import POD_8229
+from PodApi.Parameters      import Params_8229
 
 # authorship
 __author__      = "Thresa Kelly"

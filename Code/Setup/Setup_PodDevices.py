@@ -6,7 +6,7 @@ from   math         import floor
 # local imports
 from Setup.Inputs           import UserInput
 from Setup.SetupOneDevice   import Setup_Interface, Setup_8206HR, Setup_8401HR, Setup_8229, Setup_8480SC
-from Parameters             import Params_Interface
+from PodApi.Parameters      import Params_Interface
 
 # authorship
 __author__      = "Thresa Kelly"
