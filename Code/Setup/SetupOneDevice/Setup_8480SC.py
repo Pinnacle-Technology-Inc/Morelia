@@ -7,7 +7,7 @@ import time
 # local imports
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import Packet_Standard
+from PodApi.Packets         import PacketStandard
 from PodApi.Devices         import Pod8480SC
 from PodApi.Parameters      import Params8480SC
 
@@ -329,7 +329,7 @@ class Setup_8480SC(Setup_Interface) :
         while(self._streamMode) : 
             try : 
                 # attempt to read packet.         
-                read: Packet_Standard = pod.ReadPODpacket(timeout_sec=1)
+                read: PacketStandard = pod.ReadPODpacket(timeout_sec=1)
                 # update time by adding (dt = tf - ti)
                 currentTime += (round(time.time(),9)) - t 
                 # build line to write 

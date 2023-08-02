@@ -14,7 +14,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Packet_Standard(Packet) : 
+class PacketStandard(Packet) : 
     """Container class that stores a standard command packet for a POD device. The format is \
     STX (1 byte) + command number (4 bytes) + optional payload (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
@@ -134,7 +134,7 @@ class Packet_Standard(Packet) :
         Returns:
             bytes|None: Bytes string of the payload, if available.
         """
-        if( (len(pkt) - Packet_Standard.GetMinimumLength()) > 0) :
+        if( (len(pkt) - PacketStandard.GetMinimumLength()) > 0) :
             return pkt[5:(len(pkt)-3)]
         return None
     
@@ -171,6 +171,6 @@ class Packet_Standard(Packet) :
             Exception: Packet is too small to be a standard packet.
         """
         Packet.CheckIfPacketIsValid(msg)    
-        if(len(msg) < Packet_Standard.GetMinimumLength()) : 
+        if(len(msg) < PacketStandard.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard packet.')
         

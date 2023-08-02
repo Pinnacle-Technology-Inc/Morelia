@@ -36,7 +36,7 @@ __email__       = "sales@pinnaclet.com"
 # 15    0x03            Binary		ETX
 # ------------------------------------------------------------
 
-class Packet_Binary4(Packet) : 
+class PacketBinary4(Packet) : 
     """Container class that stores a binary4 command packet for a POD device. The format is \
     STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) + \
     CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte). 
@@ -120,7 +120,7 @@ class Packet_Binary4(Packet) :
         Returns:
             dict[str,int]: Dictionary with TTL name keys and TTL data as values.
         """
-        return Packet_Binary4.TranslateBinaryTTLbyte(self.ttl)
+        return PacketBinary4.TranslateBinaryTTLbyte(self.ttl)
 
     def Ch(self, n: int) -> float :
         """Translates the binary channel n bytes into a voltage.
@@ -139,7 +139,7 @@ class Packet_Binary4(Packet) :
             case 1 : ch = self.ch1
             case 2 : ch = self.ch2
             case _ : raise Exception('Channel '+str(n)+' does not exist.')
-        return Packet_Binary4.BinaryBytesToVoltage(ch, self._preampGain)
+        return PacketBinary4.BinaryBytesToVoltage(ch, self._preampGain)
 
     # ----- Get parts from packet bytes -----
 
@@ -211,7 +211,7 @@ class Packet_Binary4(Packet) :
             int: Integer representing the number of binary encoded bytes in a binary4 packet.
         """
         # length minus STX(1), command number(4), checksum(2), ETX(1) || 16 - 8 = 8
-        return( Packet_Binary4.GetMinimumLength() - 8 )
+        return( PacketBinary4.GetMinimumLength() - 8 )
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
@@ -225,7 +225,7 @@ class Packet_Binary4(Packet) :
             Exception: Packet the wrong size to be a binary4 packet.
         """
         Packet.CheckIfPacketIsValid(msg) 
-        if(len(msg) != Packet_Binary4.GetMinimumLength()) : 
+        if(len(msg) != PacketBinary4.GetMinimumLength()) : 
             raise Exception('Packet the wrong size to be a binary4 packet.')
 
     # ----- Conversions -----

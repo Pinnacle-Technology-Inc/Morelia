@@ -10,7 +10,7 @@ from   io           import IOBase
 # local imports
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import Packet_Standard, Packet_Binary4
+from PodApi.Packets         import PacketStandard, PacketBinary4
 from PodApi.Devices         import Pod8206HR
 from PodApi.Parameters      import Params8206HR
 
@@ -297,13 +297,13 @@ class Setup_8206HR(Setup_Interface) :
             # read data for one second
             for i in range(sampleRate):
                 # read once 
-                r: Packet_Standard|Packet_Binary4 = pod.ReadPODpacket()
+                r: PacketStandard|PacketBinary4 = pod.ReadPODpacket()
                 # stop looping when stop stream command is read 
                 if(r.rawPacket == stopAt) : 
                     if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
                     file.close()
                     return  ##### END #####
-                if(isinstance(r, Packet_Binary4)) :
+                if(isinstance(r, PacketBinary4)) :
                     # save data as uV
                     data0[i] = self._uV(r.Ch(0)) 
                     data1[i] = self._uV(r.Ch(1))

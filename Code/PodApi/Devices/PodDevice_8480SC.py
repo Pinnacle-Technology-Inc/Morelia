@@ -1,6 +1,6 @@
 # local imports 
 from PodApi.Devices import Pod
-from PodApi.Packets import Packet_Standard
+from PodApi.Packets import PacketStandard
 
 # authorship
 __author__      = "Sree Kondi"
@@ -164,7 +164,7 @@ class Pod8480SC(Pod) :
     
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet_Standard:
+    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> PacketStandard:
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
@@ -178,7 +178,7 @@ class Pod8480SC(Pod) :
             Packet: POD packet beginning with STX and ending with ETX. This may be a \
                 standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
-        packet: Packet_Standard = super().ReadPODpacket(validateChecksum, timeout_sec)
+        packet: PacketStandard = super().ReadPODpacket(validateChecksum, timeout_sec)
         # check for special packets
         match packet.CommandNumber() : 
             case 126 : # 126 GET SYNC CONFIG
@@ -189,7 +189,7 @@ class Pod8480SC(Pod) :
                 packet.SetCustomPayload(Pod8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
         return packet
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -200,7 +200,7 @@ class Pod8480SC(Pod) :
         Returns:
             Packet_Standard: Packet that was written to the POD device.
         """
-        packet: Packet_Standard = super().WritePacket(cmd, payload)
+        packet: PacketStandard = super().WritePacket(cmd, payload)
         # check for special packets
         match packet.CommandNumber() : 
             case 127: # 127 SET SYNC CONFIG
@@ -221,7 +221,7 @@ class Pod8480SC(Pod) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit.
         """
-        return Pod8480SC.DecodeSyncConfigBits(Packet_Standard.AsciiBytesToInt( payload[:2]))
+        return Pod8480SC.DecodeSyncConfigBits(PacketStandard.AsciiBytesToInt( payload[:2]))
 
     @staticmethod
     def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
@@ -233,8 +233,8 @@ class Pod8480SC(Pod) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        return ( Pod8480SC.DecodeTTlConfigBits(Packet_Standard.AsciiBytesToInt( payload[0:2] )), # dict
-                 Packet_Standard.AsciiBytesToInt( payload[2:4]) ) # int
+        return ( Pod8480SC.DecodeTTlConfigBits(PacketStandard.AsciiBytesToInt( payload[0:2] )), # dict
+                 PacketStandard.AsciiBytesToInt( payload[2:4]) ) # int
     
     @staticmethod
     def _Custom109SETTTLSETUP(payload: bytes) -> tuple[int|dict] :
@@ -246,7 +246,7 @@ class Pod8480SC(Pod) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        data: list = [ Packet_Standard.AsciiBytesToInt(payload[:2]) ]
+        data: list = [ PacketStandard.AsciiBytesToInt(payload[:2]) ]
         data.append( Pod8480SC._Custom108GETTTLSETUP(payload[2:]) )
         return tuple(data)
         
@@ -262,5 +262,5 @@ class Pod8480SC(Pod) :
             tuple: Tuple of the translated stimulus payload.
         """
         pld = list(defaultPayload[:-1])
-        pld.append(Pod8480SC.DecodeStimulusConfigBits(Packet_Standard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
+        pld.append(Pod8480SC.DecodeStimulusConfigBits(PacketStandard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            

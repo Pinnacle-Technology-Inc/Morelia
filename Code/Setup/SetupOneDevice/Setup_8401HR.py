@@ -12,7 +12,7 @@ from   pyedflib     import EdfWriter
 # local imports
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import Packet_Standard, Packet_Binary5
+from PodApi.Packets         import PacketStandard, PacketBinary5
 from PodApi.Devices         import Pod8401HR
 from PodApi.Parameters      import Params8401HR
 
@@ -566,7 +566,7 @@ class Setup_8401HR(Setup_Interface) :
             # read data for one second
             for i in range(sampleRate):
                 # read once 
-                r: Packet_Standard|Packet_Binary5 = pod.ReadPODpacket()
+                r: PacketStandard|PacketBinary5 = pod.ReadPODpacket()
 
                 # stop looping when stop stream command is read 
                 if(r.rawPacket == stopAt) : 
@@ -575,7 +575,7 @@ class Setup_8401HR(Setup_Interface) :
                     file.close()
                     return  ##### END #####
 
-                if(isinstance(r, Packet_Binary5)) : 
+                if(isinstance(r, PacketBinary5)) : 
                     # interpret Packet_Binary5 packet
                     rt: dict = r.TranslateAll()
                     for d,ch in zip(data, dataColumns) : 

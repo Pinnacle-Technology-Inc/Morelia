@@ -13,7 +13,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Packet_Binary(Packet) :     
+class PacketBinary(Packet) :     
     """Container class that stores a standard binary command packet for a POD device. The format is \
     STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes) \
     + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes) 
@@ -36,8 +36,8 @@ class Packet_Binary(Packet) :
                 Defaults to None.
         """       
         super().__init__(pkt, commands)
-        self.binaryLength:  bytes = Packet_Binary.GetBinaryLength(pkt),
-        self.binaryData:    bytes = Packet_Binary.GetBinaryData(pkt)
+        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt),
+        self.binaryData:    bytes = PacketBinary.GetBinaryData(pkt)
        
     # ----- Packet to dictionary -----
  
@@ -129,7 +129,7 @@ class Packet_Binary(Packet) :
             Exception: A standard binary packet must have an ETX before the binary bytes.
         """
         Packet.CheckIfPacketIsValid(msg) 
-        if(len(msg) < Packet_Binary.GetMinimumLength()) : 
+        if(len(msg) < PacketBinary.GetMinimumLength()) : 
             raise Exception('Packet is too small to be a standard binary packet.')
         if(msg[11].to_bytes(1,'big') != Packet.ETX()) : 
             raise Exception('A standard binary packet must have an ETX before the binary bytes.')

@@ -9,7 +9,7 @@ from   datetime   import datetime
 
 # local imports
 from Setup.Inputs       import UserInput
-from PodApi.Packets     import Packet, Packet_Standard
+from PodApi.Packets     import Packet, PacketStandard
 from PodApi.Devices     import Pod
 from PodApi.Parameters  import Params
 
@@ -553,7 +553,7 @@ class Setup_Interface :
         # returns True when connection is successful, false otherwise
         try:
             pod.FlushPort() # clear out previous packets 
-            w: Packet_Standard = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
+            w: PacketStandard = pod.WritePacket(cmd='PING') # NOTE if a future POD device does not have a PING command, overwrite this function in its class
             r: Packet = pod.ReadPODpacket()
         except:   return(False)
         # check that read matches ping write

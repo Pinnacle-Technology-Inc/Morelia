@@ -1,7 +1,7 @@
 # local imports
 from PodApi.Devices.SerialPorts import PortIO
 from PodApi.Commands            import Commands
-from PodApi.Packets             import Packet, Packet_Standard, Packet_Binary
+from PodApi.Packets             import Packet, PacketStandard, PacketBinary
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -223,7 +223,7 @@ class Pod :
         return(r)
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -239,7 +239,7 @@ class Pod :
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
-        return(Packet_Standard(packet, self._commands))
+        return(PacketStandard(packet, self._commands))
 
 
     def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> Packet :
@@ -303,9 +303,9 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
-            packet: Packet_Binary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
+            packet: PacketBinary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read 
-            packet: Packet_Standard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
+            packet: PacketStandard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
         return(packet)
 
@@ -375,7 +375,7 @@ class Pod :
         return(packet)
 
 
-    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> Packet_Standard :
+    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> PacketStandard :
         """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
 
         Args:
@@ -397,10 +397,10 @@ class Pod :
             if( not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for standard POD packet read.')
         # return packet
-        return Packet_Standard(packet, self._commands)
+        return PacketStandard(packet, self._commands)
 
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> Packet_Binary :
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
@@ -423,7 +423,7 @@ class Pod :
         #   includes an ASCII checksum and ETX.        
          
         # read standard POD packet 
-        startPacket: Packet_Standard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
         numOfbinaryBytes: int = Packet.AsciiBytesToInt(startPacket.Payload())
         # read binary packet
@@ -439,4 +439,4 @@ class Pod :
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return Packet_Binary(packet, self._commands)
+        return PacketBinary(packet, self._commands)

@@ -51,7 +51,7 @@ __email__       = "sales@pinnaclet.com"
 # 30	0x03	                        Binary		ETX
 # -----------------------------------------------------------------------------
 
-class Packet_Binary5(Packet) : 
+class PacketBinary5(Packet) : 
     """Container class that stores a binary5 command packet for a POD device. The format is \
     STX (1 byte) + command (4 bytes) + packet number (1 byte) + status (1 byte) \
     + channels (9 bytes) + AEXT0 (2 bytes) + AEXT1 (2 bytes) + ATTL1 (2 bytes) \
@@ -182,7 +182,7 @@ class Packet_Binary5(Packet) :
             case 'C' : chan = Packet.BinaryBytesToInt_Split(self.channels[2:5], 22, 4) #  C |  9  CH3 1~0, CH2 17~12 | 10 CH2 11~4  | 11 CH2 3~0, CH1 17~14 | --> cut top 2 and bottom 4 bits
             case 'D' : chan = Packet.BinaryBytesToInt_Split(self.channels[0:3], 24, 6) #  D |  7  CH3 17~10          |  8 CH3 9~2   |  9 CH3 1~0, CH2 17~12 | --> cut           bottom 6 bits
             case  _  : raise Exception('Channel '+str(c)+' does not exist.')
-        return Packet_Binary5._Voltage_PrimaryChannels(chan, self._ssGain[c], self._preampGain[c])
+        return PacketBinary5._Voltage_PrimaryChannels(chan, self._ssGain[c], self._preampGain[c])
 
     def AnalogEXT(self, n: int) -> float : 
         """Translates the analog EXT value into a voltage. 
@@ -200,7 +200,7 @@ class Packet_Binary5(Packet) :
             case 0 : ext = self.aEXT0
             case 1 : ext = self.aEXT1
             case _ : raise Exception('AEXT'+str(n)+' does not exist.')
-        return Packet_Binary5._Voltage_SecondaryChannels(Packet.BinaryBytesToInt(ext))
+        return PacketBinary5._Voltage_SecondaryChannels(Packet.BinaryBytesToInt(ext))
     
     def AnalogTTL(self, n: int) -> float : 
         """Translates the analog TTL value into a voltage.
@@ -220,7 +220,7 @@ class Packet_Binary5(Packet) :
             case 3 : ttl = self.aTTL3
             case 4 : ttl = self.aTTL4
             case _ : raise Exception('ATTL'+str(n)+' does not exist.')
-        return Packet_Binary5._Voltage_SecondaryChannels( Packet.BinaryBytesToInt(ttl) )
+        return PacketBinary5._Voltage_SecondaryChannels( Packet.BinaryBytesToInt(ttl) )
     
     # ----- Get parts from packet bytes -----
     
@@ -328,7 +328,7 @@ class Packet_Binary5(Packet) :
             int: Integer representing the number of binary encoded bytes in a binary5 packet.
         """
         # length minus STX(1), command number(4), checksum(2), ETX(1) || 31 - 8 = 23
-        return Packet_Binary5.GetMinimumLength() - 8
+        return PacketBinary5.GetMinimumLength() - 8
 
     @staticmethod   
     def CheckIfPacketIsValid(msg: bytes) :
@@ -342,7 +342,7 @@ class Packet_Binary5(Packet) :
             Exception: Packet the wrong size to be a binary5 packet.
         """
         Packet.CheckIfPacketIsValid(msg) 
-        if(len(msg) != Packet_Binary5.GetMinimumLength()) : 
+        if(len(msg) != PacketBinary5.GetMinimumLength()) : 
             raise Exception('Packet the wrong size to be a binary5 packet.')
     
     # ----- Conversions -----
@@ -360,9 +360,9 @@ class Packet_Binary5(Packet) :
             float: Number of the voltage in volts [V]. Returns value if no gain is given (no-connect).
         """
         if(ssGain != None and PreampGain == None) : 
-            return(Packet_Binary5._Voltage_PrimaryChannels_Biosensor(value, ssGain))
+            return(PacketBinary5._Voltage_PrimaryChannels_Biosensor(value, ssGain))
         elif(ssGain != None):
-            return(Packet_Binary5._Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain))
+            return(PacketBinary5._Voltage_PrimaryChannels_EEGEMG(value, ssGain, PreampGain))
         else: 
             return(value) # no connect! this is noise 
 

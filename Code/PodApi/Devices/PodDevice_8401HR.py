@@ -1,6 +1,6 @@
 # local imports 
 from PodApi.Devices import Pod
-from PodApi.Packets import Packet, Packet_Standard, Packet_Binary5
+from PodApi.Packets import Packet, PacketStandard, PacketBinary5
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -73,7 +73,7 @@ class Pod8401HR(Pod) :
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
-        B5  = Packet_Binary5.GetBinaryLength()
+        B5  = PacketBinary5.GetBinaryLength()
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(10) # SAMPLE RATE
@@ -399,7 +399,7 @@ class Pod8401HR(Pod) :
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -411,7 +411,7 @@ class Pod8401HR(Pod) :
             Packet_Standard: Packet that was written to the POD device.
         """
         # write
-        packet: Packet_Standard = super().WritePacket(cmd, payload)
+        packet: PacketStandard = super().WritePacket(cmd, payload)
         # check for special packets
         specialCommands = [127, 129] # 127 SET TTL CONFIG # 129 SET TTL OUTS
         if(packet.CommandNumber() in specialCommands) : 
@@ -436,7 +436,7 @@ class Pod8401HR(Pod) :
         """
         packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
         # check for special packets
-        if(isinstance(packet, Packet_Standard)) : 
+        if(isinstance(packet, PacketStandard)) : 
             if(packet.CommandNumber() == 128) : # 128 GET TTL CONFIG
                 packet.SetCustomPayload(Pod8401HR.DecodeTTLPayload, (packet.payload,))
         # return packet
@@ -495,11 +495,11 @@ class Pod8401HR(Pod) :
         # -----------------------------------------------------------------------------
 
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(Packet_Binary5.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(PacketBinary5.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return Packet_Binary5(packet, self._ssGain, self._preampGain, self._commands)
+        return PacketBinary5(packet, self._ssGain, self._preampGain, self._commands)
  
