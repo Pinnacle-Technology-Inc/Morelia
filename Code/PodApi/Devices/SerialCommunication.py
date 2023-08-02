@@ -1,6 +1,6 @@
 # enviornment imports 
-import platform     # NOTE this import is unused. remove this.
 import serial.tools.list_ports
+import platform
 import time
 
 # authorship
@@ -72,9 +72,12 @@ class COM_io :
         """
         name = None
         # is 'port' the port number? 
-        if (isinstance(port, int)) :    # NOTE what if using linux system here?
-            # build port name 
-            name = 'COM' + str(port)
+        if (isinstance(port, int)) : 
+            # build port name
+            if (platform.system() == 'Windows') :
+                name = 'COM' + str(port)
+            if (platform.system() == 'Linux') :
+                name = '/dev/tty' + str(port)
         elif (isinstance(port, str)): 
             # is 'port' the port name or just the number?
             if port.startswith('COM'):

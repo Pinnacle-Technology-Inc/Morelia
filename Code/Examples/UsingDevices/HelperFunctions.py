@@ -6,6 +6,9 @@
 import Path 
 Path.AddAPIpath()
 
+# enviornment imports
+import platform
+
 # local imports
 from PodApi.Devices import COM_io, POD_Basics
 from PodApi.Packets import Packet
@@ -26,16 +29,31 @@ def ChoosePort() -> str :
         str: String with the COM port name. 
     """
     # get ports
-    portList: list[str] = COM_io.GetCOMportsList()
-    print('Available COM Ports: '+', '.join(portList))
-    # request port from user
-    choice: str = input('Select port: COM')
-    # search for port in list
-    for port in portList:
-        if port.startswith('COM'+choice):
-            return(port)
-    print('[!] COM'+choice+' does not exist. Try again.')
-    return(ChoosePort())
+    plat = platform.system() 
+    if plat == 'Windows':
+        portList = COM_io.GetCOMportsList()
+        print('Available COM Ports: '+', '.join(portList))
+        # request port from user
+        choice = input('Select port: COM')
+         # search for port in list
+        for port in portList:
+            if port.startswith('COM'+choice):
+                return(port)
+        print('[!] COM'+choice+' does not exist. Try again.')
+        return(ChoosePort())
+    if plat == 'Linux':
+        portList = COM_io.GetCOMportsList()
+        print('Available Serial Ports: '+', '.join(portList))
+        # request port from user
+        choice = input('Select port: /dev/tty')
+        #search for port in list
+        for port in portList:
+            if port.startswith('/dev/tty'+choice):
+                name = port.split(' ')[0]
+                return(name)
+        print('[!] tty'+choice+' does not exist. Try again.')
+        return(ChoosePort())
+
 
 def Write(pod: POD_Basics, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
     """Writes a command packet to a POD device and prints the packet.
