@@ -1,3 +1,6 @@
+"""Runs all commands for a 8480-SC POD device.
+"""
+
 # add directory path to code 
 import Path 
 Path.AddAPIpath()

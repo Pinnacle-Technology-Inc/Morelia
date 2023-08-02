@@ -1,3 +1,6 @@
+"""Runs all commands for a 8206-HR POD device.
+"""
+
 # add directory path to code 
 import Path 
 Path.AddAPIpath()

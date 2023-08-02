@@ -1,3 +1,7 @@
+""" This python script contains functions used by the Using_<POD device> \
+    scripts to connect to, write to, and read from a POD device.
+"""
+
 # add directory path to code 
 import Path 
 Path.AddAPIpath()
