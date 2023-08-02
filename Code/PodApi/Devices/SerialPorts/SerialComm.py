@@ -51,7 +51,6 @@ class PortIO :
         """
         # checks user's Operating System.
         plat = platform.system() 
-        print("plat", plat)
         if plat == 'Linux':
             # serial ports for Linux
             chosenport = PortIO._ChoosePortLinux(forbidden)

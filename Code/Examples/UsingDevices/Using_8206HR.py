@@ -19,7 +19,7 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of 8206-HR POD device
 
-port: str = hf.ChoosePort()
+port: str = POD_8206HR.ChoosePort()
 preampGain: int = 10 # can be 10 or 100
 pod = POD_8206HR(port, preampGain)
 

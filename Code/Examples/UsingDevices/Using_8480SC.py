@@ -19,7 +19,7 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of an 8480-SC POD device
 
-port: str = hf.ChoosePort()
+port: str = POD_8480SC.ChoosePort()
 pod = POD_8480SC(port)
 
 # write each command:

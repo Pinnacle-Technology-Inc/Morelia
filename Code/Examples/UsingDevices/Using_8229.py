@@ -22,7 +22,7 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of 8206-HR POD device
 
-port: str = hf.ChoosePort()
+port: str = POD_8229.ChoosePort()
 pod = POD_8229(port)
 
 # write each command:
