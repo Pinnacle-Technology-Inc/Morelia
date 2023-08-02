@@ -1,5 +1,3 @@
-
-
 # enviornment imports 
 import platform
 import serial.tools.list_ports

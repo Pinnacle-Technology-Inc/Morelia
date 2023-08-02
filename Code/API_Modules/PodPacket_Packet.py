@@ -1,4 +1,8 @@
+# enviornment imports
+from typing import Any
 
+# local imports
+from PodCommands import POD_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -8,12 +12,139 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_Packets() : 
+class Packet : 
+    """Container class that stores a command packet for a POD device. The format is \
+    STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte). This class \
+    also collection of methods for creating and interpreting POD packets. 
+    
+    Attributes:
+        _commands (POD_Commands | None): Available commands for a POD device. 
+        rawPacket (bytes): Bytes string containing a POD packet. Should begin with \
+            STX and end with ETX.
+        commandNumber (bytes | None): Command number from the Pod packet.
     """
-    POD_Packets is a collection of methods for creating and interpreting POD packets. 
-    """
+    
+    # ============ PACKET CONTAINER ============      ========================================================================================================================
 
-    # ============ STATIC METHODS ============      ========================================================================================================================
+    def __init__(self, 
+                 pkt: bytes, 
+                 commands: POD_Commands|None = None
+                ) -> None:
+        """Sets the class instance variables. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
+            commands (POD_Commands | None, optional): Available commands for a POD device.\
+                Defaults to None.
+        """
+        self.CheckIfPacketIsValid(pkt)
+        self._commands: POD_Commands|None = commands
+        self.rawPacket: bytes = bytes(pkt)
+        self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
+        
+    # ----- Packet to dictionary -----
+        
+    def UnpackAll(self) -> dict[str,bytes] :
+        """Builds a dictionary containing all parts of the POD packet in bytes. 
+
+        Raises:
+            Exception: Nothing to unpack.
+
+        Returns:
+            dict[str,bytes]: Dictionary with the command number.
+        """
+        if(self.HasCommandNumber()) : 
+            return { 'Command Number' : self.commandNumber }
+        raise Exception('Nothing to unpack.')  
+      
+    def TranslateAll(self) -> dict[str, Any] :
+        """Builds a dictionary containing all parts of the POD packet in readable values. 
+
+        Raises:
+            Exception: Nothing to translate.
+
+        Returns:
+            dict[str,Any]: Dictionary with the command number.
+        """
+        if(self.HasCommandNumber()) : 
+            return { 'Command Number' : self.CommandNumber() }
+        raise Exception('Nothing to translate.')  
+        
+    # ----- Translated parts -----
+
+    def CommandNumber(self) -> int : 
+        """Translate the binary ASCII encoding into a readable integer
+
+        Returns:
+            int: Integer of the command number.
+        """
+        return Packet.AsciiBytesToInt(self.commandNumber)
+
+    # ----- Get parts from packet bytes -----
+
+    @staticmethod
+    def GetCommandNumber(pkt: bytes) -> bytes|None :
+        """Gets the command number bytes from a POD packet. 
+
+        Args:
+            pkt (bytes): Bytes string containing a POD packet. Should begin with STX and \
+                end with ETX.
+
+        Returns:
+            bytes|None: Bytes string of the command number, if available.
+        """
+        if(len(pkt) > Packet.GetMinimumLength() + 4) :
+            return pkt[1:5]
+        return None
+    
+    # ----- Properties -----
+    
+    @staticmethod
+    def GetMinimumLength() -> int : 
+        """Gets the number of bytes in the smallest possible packet; STX (1 byte) + \
+        something + ETX (1 byte). 
+
+        Returns:
+            int: integer representing the minimum length of a generic bytes string.
+        """
+        return 2
+    
+    @staticmethod
+    def CheckIfPacketIsValid(msg: bytes) :
+        """Raises an Exception if the packet is incorrectly formatted. 
+
+        Args:
+            msg (bytes):  Bytes string containing a POD packet. Should begin with STX \
+                and end with ETX.
+
+        Raises:
+            Exception: Packet must begin with STX.
+            Exception: Packet must end in ETX
+        """
+        if(msg[0].to_bytes(1,'big') != Packet.STX()) :
+            raise Exception('Packet must begin with STX.')
+        if(msg[len(msg)-1].to_bytes(1,'big') != Packet.ETX()) : 
+            raise Exception('Packet must end in ETX')
+    
+    def HasCommands(self) -> bool:
+        """Checks if the Packet instance has commands set.
+        
+        Returns:
+            bool: True if the commands have been set, false otherwise.
+        """ 
+        return isinstance(self._commands, POD_Commands) 
+            
+    def HasCommandNumber(self) -> bool :
+        """Checks if the packet has a command number.
+
+        Returns:
+            bool: True if the packet has a command number, False otherwise.
+        """
+        return (self.commandNumber != None)
+    
+    
+    # ============ PACKET HANDLING ============      ========================================================================================================================
 
 
     # ------------ USEFUL VALUES ------------   ------------------------------------------------------------------------------------------------------------------------
@@ -86,7 +217,7 @@ class POD_Packets() :
         """
         # get 2C if signed 
         if(value < 0) : 
-            val = POD_Packets.TwosComplement(value, numChars*4)
+            val = Packet.TwosComplement(value, numChars*4)
         else : 
             val = value
 
@@ -159,7 +290,7 @@ class POD_Packets() :
             nbits = len(msg_str) * 4 
             msb = msg_int >> (nbits-1) # shift out all bits except msb
             if(msb != 0) : 
-                msg_int = POD_Packets.TwosComplement(msg_int,nbits)
+                msg_int = Packet.TwosComplement(msg_int,nbits)
         # return int
         return(msg_int)
     
@@ -195,7 +326,7 @@ class POD_Packets() :
             int: Integer result from the ASCII-encoded bytes message in a given bit range.
         """
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
-        return( ( POD_Packets.AsciiBytesToInt(msg) & (2**keepTopBits - 1) ) >> cutBottomBits)
+        return( ( Packet.AsciiBytesToInt(msg) & (2**keepTopBits - 1) ) >> cutBottomBits)
     
     
     @staticmethod
@@ -215,7 +346,7 @@ class POD_Packets() :
             int: Integer result from the binary-encoded bytes message in a given bit range.
         """
         # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
-        return( ( POD_Packets.BinaryBytesToInt(msg,byteorder,signed) & (2**keepTopBits - 1) ) >> cutBottomBits)
+        return( ( Packet.BinaryBytesToInt(msg,byteorder,signed) & (2**keepTopBits - 1) ) >> cutBottomBits)
 
 
     # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
@@ -239,7 +370,7 @@ class POD_Packets() :
         # invert and get last byte 
         cs  = ~sum & 0xFF
         # convert int into bytes 
-        cs_bytes = POD_Packets.IntToAsciiBytes(cs, 2)
+        cs_bytes = Packet.IntToAsciiBytes(cs, 2)
         # return checksum bytes
         return(cs_bytes)
 
@@ -258,16 +389,16 @@ class POD_Packets() :
             bytes: Bytes string of a complete standard POD packet.
         """
         # prepare components of packet
-        stx = POD_Packets.STX()                              # STX indicating start of packet (1 byte)
-        cmd = POD_Packets.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = POD_Packets.ETX()                              # ETX indicating end of packet (1 byte)
+        stx = Packet.STX()                              # STX indicating start of packet (1 byte)
+        cmd = Packet.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
+        etx = Packet.ETX()                              # ETX indicating end of packet (1 byte)
         # build packet with payload 
         if(payload) :
-            csm = POD_Packets.Checksum(cmd+payload)         # checksum (2 bytes)
+            csm = Packet.Checksum(cmd+payload)         # checksum (2 bytes)
             packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
         # build packet with NO payload 
         else :
-            csm = POD_Packets.Checksum(cmd)                 # checksum (2 bytes)
+            csm = Packet.Checksum(cmd)                 # checksum (2 bytes)
             packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
         # return complete bytes packet
         return(packet)
@@ -297,7 +428,7 @@ class POD_Packets() :
             if( len(argSizes)!=1) : 
                 raise Exception('Payload requires multiple arguments, use a tuple.')
             # convert to bytes of the expected length 
-            pld = POD_Packets.IntToAsciiBytes(payload,sum(argSizes))
+            pld = Packet.IntToAsciiBytes(payload,sum(argSizes))
 
         # if bytes payload is given...
         elif(isinstance(payload, bytes)):
@@ -318,7 +449,7 @@ class POD_Packets() :
             for i in range(len(payload)) : 
                 if(isinstance(payload[i], int)) :
                     # convert to bytes of the expected length 
-                    tempPld[i] = POD_Packets.IntToAsciiBytes(payload[i],argSizes[i])
+                    tempPld[i] = Packet.IntToAsciiBytes(payload[i],argSizes[i])
                 elif(isinstance(payload[i], bytes) and len(payload[i])==argSizes[i]): # each byte is 2 hex characters
                     # accept bytes payload as given
                     tempPld[i] = payload[i]

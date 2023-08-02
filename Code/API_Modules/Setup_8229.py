@@ -5,10 +5,9 @@ from threading          import Thread
 import time
 
 # local imports
-from Setup_PodInterface  import Setup_Interface
+from Setup_PodInterface  import Setup_Interface, UserInput
+from PodDevice_8229      import POD_8229, Packet_Standard
 from Setup_PodParameters import Params_8229
-from GetUserInput        import UserInput
-from PodDevice_8229      import POD_8229
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -91,29 +90,29 @@ class Setup_8229(Setup_Interface) :
             # create POD device 
             pod = POD_8229(port=port)
             # test if connection is successful
-            if(self._TestDeviceConnection(pod)):
-                # set current computer time 
-                pod.WriteRead('SET TIME', pod.GetCurrentTime())
-                # set mode to PC control and stop motor
-                pod.WriteRead('SET MODE', 1)
-                pod.WriteRead('SET MOTOR STATE', 0)
-                # write setup parameters
-                pod.WriteRead('SET ID',                 deviceParams.systemID)
-                pod.WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
-                pod.WriteRead('SET MOTOR SPEED',        deviceParams.motorSpeed)
-                pod.WriteRead('SET RANDOM REVERSE',     deviceParams.randomReverse)
-                # write conditional params 
-                if(deviceParams.randomReverse) : 
-                    pod.WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
-                if(deviceParams.mode == 2):
-                    for day, hours in deviceParams.schedule.items() :
-                        pod.WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
-                # set mode last
-                pod.WriteRead('SET MODE',               deviceParams.mode)
-                # successful write if no exceptions raised 
-                self._podDevices[deviceNum] = pod
-                success = True
-                print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+            if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
+            # set current computer time 
+            pod.WriteRead('SET TIME', pod.GetCurrentTime())
+            # set mode to PC control and stop motor
+            pod.WriteRead('SET MODE', 1)
+            pod.WriteRead('SET MOTOR STATE', 0)
+            # write setup parameters
+            pod.WriteRead('SET ID',                 deviceParams.systemID)
+            pod.WriteRead('SET MOTOR DIRECTION',    deviceParams.motorDirection)
+            pod.WriteRead('SET MOTOR SPEED',        deviceParams.motorSpeed)
+            pod.WriteRead('SET RANDOM REVERSE',     deviceParams.randomReverse)
+            # write conditional params 
+            if(deviceParams.randomReverse) : 
+                pod.WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
+            if(deviceParams.mode == 2):
+                for day, hours in deviceParams.schedule.items() :
+                    pod.WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
+            # set mode last
+            pod.WriteRead('SET MODE',               deviceParams.mode)
+            # successful write if no exceptions raised 
+            self._podDevices[deviceNum] = pod
+            success = True
+            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
@@ -308,12 +307,12 @@ class Setup_8229(Setup_Interface) :
         while(self._streamMode) : 
             try : 
                 # attempt to read packet.         vvv An exception will occur HERE if no data can be read 
-                read = pod.TranslatePODpacket(pod.ReadPODpacket(timeout_sec=1)) 
+                read: Packet_Standard = pod.ReadPODpacket(timeout_sec=1)
                 # update time by adding (dt = tf - ti)
                 currentTime += (round(time.time(),9)) - t 
                 # build line to write 
-                data = [str(currentTime), str(read['Command Number'])]
-                if('Payload' in read) : data.append(str(read['Payload']))
+                data = [str(currentTime), str(read.CommandNumber())]
+                if(read.HasPayload()) : data.append(str(read.Payload()))
                 else :                  data.append('None')
                 # write to file 
                 file.write(','.join(data) + '\n')

@@ -2,8 +2,7 @@
 from datetime import datetime
 
 # local imports 
-from BasicPodProtocol   import POD_Basics
-from PodPacketHandling  import POD_Packets
+from BasicPodProtocol import POD_Basics, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -72,6 +71,7 @@ class POD_8229(POD_Basics) :
 
 
     # ------------ ENCODING ------------           ------------------------------------------------------------------------------------------------------------------------
+
 
     @staticmethod
     def GetCurrentTime() -> tuple[int] : 
@@ -160,9 +160,9 @@ class POD_8229(POD_Basics) :
         for i in range(24) : 
             thisHr = validSchedule[2*i:2*i+2]
             # msb in each byte is a flag for motor on (1) or off (0)
-            hours[i]  = POD_Packets.ASCIIbytesToInt_Split(thisHr, 8, 7) 
+            hours[i]  = Packet_Standard.ASCIIbytesToInt_Split(thisHr, 8, 7) 
             # remaining 7 bits are the speed (0-100)
-            speeds[i] = POD_Packets.ASCIIbytesToInt_Split(thisHr, 7, 0) 
+            speeds[i] = Packet_Standard.ASCIIbytesToInt_Split(thisHr, 7, 0) 
         # check if all speeds are the same 
         if(len(set(speeds)) == 1) : 
             # speeds has all identical elements
@@ -175,7 +175,17 @@ class POD_8229(POD_Basics) :
             'Speed' : speeds
         })
     
-
+    
+    @staticmethod
+    def DecodeDayAndSchedule(dayschedule: bytes) : 
+        U8 = POD_8229.GetU(8)
+        day = Packet_Standard.AsciiBytesToInt(dayschedule[:U8])
+        print(dayschedule[:U8+1], day)
+        schedule = POD_8229.DecodeDaySchedule(dayschedule[U8:])
+        print(schedule)
+        return (day, schedule)
+        
+        
     @staticmethod
     def DecodeLCDSchedule(schedule: bytes) -> dict[str,str|list[int]] : 
         """Interprets the return bytes from the command #202 'LCD SET DAY SCHEDULE'.
@@ -192,19 +202,16 @@ class POD_8229(POD_Basics) :
         # check for valid arguments 
         validSchedule = POD_8229._Validate_Schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = POD_8229.DecodeDayOfWeek( POD_Packets.AsciiBytesToInt( validSchedule[0:2] ) )
+        day = POD_8229.DecodeDayOfWeek( Packet_Standard.AsciiBytesToInt( validSchedule[0:2] ) )
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
         topBit = POD_Basics.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
-            hours.append( POD_Packets.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
+            hours.append( Packet_Standard.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
         # return decoded LCD SET DAY SCHEDULE value
-        return({
-            'Day' : day,
-            'Hours' : hours # Each bit represents the motor state in that hour, 1 for on and 0 for off.
-        })
+        return{'Day' : day, 'Hours' : hours} # Each bit represents the motor state in that hour, 1 for on and 0 for off.
 
 
     @staticmethod
@@ -224,15 +231,15 @@ class POD_8229(POD_Basics) :
                 and 6 for Saturday.
         """
         # Weekday is 0-6, with Sunday being 0
+        match str(day).lower()[:1] : 
+            case 'm'  : return(1) # monday
+            case 'w'  : return(3) # wednesday 
+            case 'f'  : return(5) # friday         
         match str(day).lower()[:2] : 
             case 'su' : return(0) # sunday
             case 'tu' : return(2) # tuesday
             case 'th' : return(4) # thursday
             case 'sa' : return(6) # saturday
-        match str(day).lower()[:1] : 
-            case 'm'  : return(1) # monday
-            case 'w'  : return(3) # wednesday 
-            case 'f'  : return(5) # friday 
         raise Exception('[!] Invalid day of the week: '+str(day))  
     
 
@@ -261,40 +268,33 @@ class POD_8229(POD_Basics) :
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
-    def TranslatePODpacket(self, msg: bytes) -> dict[str,int|dict[str,int]] : 
-        """Overwrites the parent's method. Adds an additional check to handle specially formatted \
-        payloads. 
+    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet_Standard:
+        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+        ending with ETX. Reads first STX and then starts recursion. 
 
         Args:
-            msg (bytes): Bytes string containing a POD packet.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
+            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+                Defaults to 5. 
 
         Returns:
-            dict[str,int|dict[str,int]]: A translated POD packet, which has Command Number and Payload \
-                keys. The payload may formatted uniquely to the command.
+            Packet: POD packet beginning with STX and ending with ETX. This may be a \
+                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
-        # get command number (same for standard and binary packets)
-        cmd = POD_Packets.AsciiBytesToInt(msg[1:5])
-        # these commands have some specific formatting 
-        specialCommands = [140, 142, 202] # 140 SET TIME # 142 GET DAY SCHEDULE # 202 LCD SET DAY SCHEDULE 
-        if(cmd in specialCommands):
-            msgDict = POD_Basics.UnpackPODpacket_Standard(msg)
-            transdict = { 'Command Number' : POD_Packets.AsciiBytesToInt( msgDict['Command Number'] ) }
-            if('Payload' in msgDict) :
-                match cmd : 
-                    case 140 : # 140 SET TIME
-                        transdict['Payload'] = tuple([self._DecodeDecimalAsHex(x) for x in self.TranslatePODpacket_Standard(msg)['Payload']]) 
-                    case 142 : # 142 GET DAY SCHEDULE
-                        if(len(msgDict['Payload']) > 2 ) : 
-                            transdict['Payload'] = self.DecodeDaySchedule(msgDict['Payload']) 
-                        else : 
-                            transdict['Payload'] = POD_Packets.AsciiBytesToInt(msgDict['Payload']) 
-                    case   _ : # 202 LCD SET DAY SCHEDULE 
-                        transdict['Payload'] = self.DecodeLCDSchedule(msgDict['Payload']) 
-            return(transdict)
-        # standard packet 
-        else: 
-            return(self.TranslatePODpacket_Standard(msg))  
-
+        packet: Packet_Standard = super().ReadPODpacket(validateChecksum, timeout_sec)
+        # check for special packets
+        match packet.CommandNumber()  : 
+            case 140 : # 140 SET TIME
+                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
+            case 142 : # 142 GET DAY SCHEDULE
+                if(len(packet.payload) > 2 ) : 
+                    packet.SetCustomPayload(POD_8229.DecodeDaySchedule, (packet.payload,))
+            case 202 : # 202 LCD SET DAY SCHEDULE 
+                packet.SetCustomPayload(POD_8229.DecodeLCDSchedule, (packet.payload,))
+        # return packet
+        return packet
+    
 
     def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         """Builds a POD packet and writes it to the POD device. 
@@ -307,16 +307,18 @@ class POD_8229(POD_Basics) :
         Returns:
             bytes: Bytes string that was written to the POD device.
         """
-        # check for special commands 
+        # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
-            pld = tuple([self._CodeDecimalAsHex(x) for x in payload ])
-            packet = self.GetPODpacket(cmd, pld)
-        else : 
-            # POD packet 
-            packet = self.GetPODpacket(cmd, payload)
-        # write packet to serial port 
-        self._port.Write(packet)
-        # returns packet that was written
+            packet: Packet_Standard = super().WritePacket(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
+        else :
+            packet: Packet_Standard = super().WritePacket(cmd,payload)
+        # check for special commands 
+        match packet.CommandNumber() : 
+            case 140 : # 140 SET TIME
+                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
+            case 141 : # 141 SET DAY SCHEDULE
+                packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, (packet.payload,))
+        # returns packet object
         return(packet)
     
 
@@ -364,6 +366,19 @@ class POD_8229(POD_Basics) :
         return(int(hex(val).replace('0x','')))
 
 
+    @staticmethod
+    def _Custom140SETTIME(payload: tuple[int]) -> tuple[int] : 
+        """Custom function to translate the payload for command #140 SET TIME.
+
+        Args:
+            payload (tuple[int]): Default translated payload.
+
+        Returns:
+            tuple[int]: Tuple of times.
+        """
+        return tuple([POD_8229._DecodeDecimalAsHex(x) for x in payload]) 
+    
+    
     @staticmethod
     def _Validate_Day(day: str|int) -> int : 
         """Raises an exception if the day is incorrectly formatted. If the day is given as \
