@@ -6,10 +6,10 @@ from   math       import floor
 # local imports
 from Setup_PodInterface     import Setup_Interface, UserInput
 from Parameters             import Params_Interface
-from Setup_8206HR           import Setup_8206HR
-from Setup_8401HR           import Setup_8401HR
-from Setup_8480SC           import Setup_8480SC
-from Setup_8229             import Setup_8229
+from Setup.Setup_8206HR           import Setup_8206HR
+from Setup.Setup_8401HR           import Setup_8401HR
+from Setup.Setup_8480SC           import Setup_8480SC
+from Setup.Setup_8229             import Setup_8229
 
 # authorship
 __author__      = "Thresa Kelly"

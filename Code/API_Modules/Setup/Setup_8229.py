@@ -5,7 +5,7 @@ from threading          import Thread
 import time
 
 # local imports
-from Setup_PodInterface  import Setup_Interface, UserInput
+from Setup.Setup_PodInterface  import Setup_Interface, UserInput
 from Devices import POD_8229
 from Packets import Packet_Standard
 from Parameters import Params_8229
