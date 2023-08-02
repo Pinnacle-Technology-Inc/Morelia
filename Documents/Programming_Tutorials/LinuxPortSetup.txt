@@ -8,8 +8,10 @@ This document is to help you access Serial ports on a Linux Operating System.
 /////////////////////////////////
 
 In order for the Pinnacle's Pod Devices to recognized by the computer, the following VID/PID 
-commands have to executed in the terminal. 
+combos have to executed in the terminal. 
 This way the computer system knows what Pod device is connected. 
+
+The format : echo -n VID PID | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
 
 #!/bin/sh -e
 
