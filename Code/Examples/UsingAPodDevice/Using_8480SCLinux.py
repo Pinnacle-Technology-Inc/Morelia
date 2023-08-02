@@ -3,8 +3,8 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from PodDevices.SerialCommunication import COM_io
-from PodDevices.PodDevice_8480SC import POD_8480SC
+from Devices import COM_io, POD_8480SC
+from Packets import Packet_Standard
 
 # authorship
 __author__      = "Sree Kondi"
@@ -30,20 +30,19 @@ def ChoosePort() -> str :
     print('[!] tty'+choice+' does not exist. Try again.')
     return(ChoosePort())
 
-
 def Write(pod: POD_8480SC, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
-    write = pod.WritePacket(cmd, payload)
-    write = pod.TranslatePODpacket(write)
-    print('Write:\t', write)
+    write: Packet_Standard = pod.WritePacket(cmd, payload)
+    data:  dict = write.TranslateAll()
+    print('Write:\t', data)
 
 def Read(pod: POD_8480SC) : 
-    read = pod.ReadPODpacket()
-    read = pod.TranslatePODpacket(read)
-    print('Read:\t', read)
+    read: Packet_Standard = pod.ReadPODpacket()
+    data: dict = read.TranslateAll()
+    print('Read:\t', data)
 
 def RunCommand(pod: POD_8480SC, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
-   Write(pod,cmd,payload)
-   Read(pod)
+    Write(pod,cmd,payload)
+    Read(pod)
 
 # ===============================================================
 

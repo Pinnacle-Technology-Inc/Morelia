@@ -3,10 +3,8 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from PodDevices.SerialCommunication    import COM_io
-from PodDevices.PodDevice_8401HR       import POD_8401HR
-from PodPacket.PodPacket_Standard     import Packet_Standard
-from PodPacket.PodPacket_Binary5      import Packet_Binary5
+from Devices import COM_io, POD_8401HR
+from Packets import Packet_Standard, Packet_Binary5
 
 # authorship
 __author__      = "Thresa Kelly"

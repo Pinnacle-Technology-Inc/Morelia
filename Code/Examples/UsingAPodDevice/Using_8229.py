@@ -6,9 +6,8 @@ Path.AddAPIpath()
 import time
 
 # local imports
-from PodDevices.SerialCommunication    import COM_io
-from PodDevices.PodDevice_8229         import POD_8229
-from PodPacket.PodPacket_Standard     import Packet_Standard
+from Devices import COM_io, POD_8229
+from Packets import Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"
