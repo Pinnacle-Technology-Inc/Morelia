@@ -1,8 +1,8 @@
 
 
 # enviornment imports 
-import platform     # NOTE this import is unused. remove this.
 import serial.tools.list_ports
+import platform
 import time
 
 # authorship

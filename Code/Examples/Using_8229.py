@@ -1,5 +1,7 @@
 # add directory path to code 
 import Path 
+import platform
+ 
 Path.AddAPItoPath()
 
 # enviornment imports
@@ -21,16 +23,30 @@ __email__       = "sales@pinnaclet.com"
 
 def ChoosePort() -> str : 
     # get ports
-    portList = COM_io.GetCOMportsList()
-    print('Available COM Ports: '+', '.join(portList))
-    # request port from user
-    choice = input('Select port: COM')
-    # search for port in list
-    for port in portList:
-        if port.startswith('COM'+choice):
-            return(port)
-    print('[!] COM'+choice+' does not exist. Try again.')
-    return(ChoosePort())
+    plat = platform.system() 
+    if plat == 'Windows':
+        portList = COM_io.GetCOMportsList()
+        print('Available COM Ports: '+', '.join(portList))
+        # request port from user
+        choice = input('Select port: COM')
+         # search for port in list
+        for port in portList:
+            if port.startswith('COM'+choice):
+                return(port)
+        print('[!] COM'+choice+' does not exist. Try again.')
+        return(ChoosePort())
+    if plat == 'Linux':
+        portList = COM_io.GetCOMportsList()
+        print('Available Serial Ports: '+', '.join(portList))
+        # request port from user
+        choice = input('Select port: /dev/tty')
+        #search for port in list
+        for port in portList:
+            if port.startswith('/dev/tty'+choice):
+                name = port.split(' ')[0]
+                return(name)
+        print('[!] tty'+choice+' does not exist. Try again.')
+        return(ChoosePort())
 
 def Write(pod: POD_8229, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
     write = pod.WritePacket(cmd, payload)
