@@ -5,9 +5,9 @@ from threading   import Thread
 import time
 
 # local imports
-from Setup_PodInterface  import Setup_Interface, UserInput
-from Devices import POD_8480SC
-from Packets import Packet_Standard
+from Setup      import Setup_Interface, UserInput
+from Packets    import Packet_Standard
+from Devices    import POD_8480SC
 from Parameters import Params_8480SC
 
 # authorship

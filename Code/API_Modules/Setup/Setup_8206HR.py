@@ -1,16 +1,16 @@
 # enviornment imports
 import os 
 import time
-import numpy       as     np
-from   texttable   import Texttable
-from   threading   import Thread
-from   pyedflib    import EdfWriter
-from   io          import IOBase
+import numpy        as     np
+from   texttable    import Texttable
+from   threading    import Thread
+from   pyedflib     import EdfWriter
+from   io           import IOBase
 
 # local imports
-from Setup_PodInterface  import Setup_Interface, UserInput
-from Devices import POD_8206HR
-from Packets import Packet_Standard, Packet_Binary4
+from Setup      import Setup_Interface, UserInput
+from Packets    import Packet_Standard, Packet_Binary4
+from Devices    import POD_8206HR
 from Parameters import Params_8206HR
 
 # authorship

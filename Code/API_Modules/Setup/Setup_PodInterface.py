@@ -9,10 +9,10 @@ from   datetime   import datetime
 from   time       import gmtime, strftime
 
 # local imports
-from Devices import COM_io, POD_Basics
-from Setup.GetUserInput import UserInput
+from Setup      import UserInput
+from Packets    import Packet, Packet_Standard
+from Devices    import COM_io, POD_Basics
 from Parameters import Params_Interface
-from Packets import Packet, Packet_Standard
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -1,13 +1,13 @@
 # enviornment imports
-from texttable          import Texttable
-from io                 import IOBase
-from threading          import Thread
+from texttable  import Texttable
+from io         import IOBase
+from threading  import Thread
 import time
 
 # local imports
-from Setup.Setup_PodInterface  import Setup_Interface, UserInput
-from Devices import POD_8229
-from Packets import Packet_Standard
+from Setup      import Setup_Interface, UserInput
+from Packets    import Packet_Standard
+from Devices    import POD_8229
 from Parameters import Params_8229
 
 # authorship

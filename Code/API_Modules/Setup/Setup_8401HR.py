@@ -10,9 +10,9 @@ from   io           import IOBase
 from   pyedflib     import EdfWriter
 
 # local imports
-from Setup.Setup_PodInterface  import Setup_Interface, UserInput
-from Devices import POD_8401HR
-from Packets import Packet_Standard, Packet_Binary5
+from Setup      import Setup_Interface, UserInput
+from Packets    import Packet_Standard, Packet_Binary5
+from Devices    import POD_8401HR
 from Parameters import Params_8401HR
 
 # authorship
