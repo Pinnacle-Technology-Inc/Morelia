@@ -1,6 +1,6 @@
 # local imports 
-from Parameters import Params_Interface
-from Devices    import POD_8401HR
+from PodApi.Parameters import Params_Interface
+from PodApi.Devices    import POD_8401HR
 
 # authorship
 __author__      = "Thresa Kelly"

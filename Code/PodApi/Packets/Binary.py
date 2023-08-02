@@ -2,8 +2,8 @@
 from typing import Any
 
 # local imports
-from Commands import POD_Commands
-from Packets  import Packet
+from PodApi.Commands import POD_Commands
+from PodApi.Packets  import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

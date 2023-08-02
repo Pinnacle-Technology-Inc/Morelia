@@ -2,7 +2,7 @@
 import copy
 
 # local imports 
-from Parameters import Params_Interface
+from PodApi.Parameters import Params_Interface
 
 # authorship
 __author__      = "Thresa Kelly"
