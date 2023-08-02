@@ -1,6 +1,6 @@
 # add directory path to code 
 import Path 
-Path.AddAPItoPath()
+Path.AddAPIpath()
 
 # enviornment imports
 import time

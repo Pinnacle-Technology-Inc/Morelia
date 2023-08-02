@@ -1,6 +1,6 @@
 # add directory path to code 
 import Path 
-Path.AddAPItoPath()
+Path.AddAPIpath()
 
 # local imports
 from PodDevices import COM_io, POD_8206HR

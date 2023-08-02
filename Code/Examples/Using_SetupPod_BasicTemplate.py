@@ -4,7 +4,7 @@ Simple example template that runs SetupPodDevices.
 
 # add directory path to code 
 import Path 
-Path.AddAPItoPath()
+Path.AddAPIpath()
 
 # local imports
 from Setup.Setup_PodDevices import Setup_PodDevices

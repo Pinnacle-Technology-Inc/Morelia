@@ -1,5 +1,10 @@
-def AddAPItoPath() : 
-    """add directory path <...>\Python-POD-API<...>\Code\API_Modules to code 
+""" This Python script contains functions to add the Python POD API project modules \
+    directory path to your system. This allows the computer to find and use the API \
+    modules in other Python scripts.
+"""
+
+def AddAPIpath() : 
+    """Add directory path <...>\Python-POD-API<...>\Code\API_Modules to code 
     """
     import sys, os
     # get current path, and split into list surrounding 'Python-POD-API'
@@ -12,3 +17,12 @@ def AddAPItoPath() :
         apiPath += aroundApi[1].split('\\')[0]
     # add api path to system path
     sys.path.insert(0, os.path.join( apiPath, 'Code', 'API_Modules') )
+    
+def AddMyAPIpath():
+    """Directly add your own directory path to API_Modules. 
+    """
+    import sys
+    # define string of the API path here
+    myPath = r'C:\git\Python-POD-API\Code\API_Modules'
+    # add path to system
+    sys.path.append(myPath) 

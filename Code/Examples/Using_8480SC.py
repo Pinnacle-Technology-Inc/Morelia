@@ -1,6 +1,6 @@
 # add directory path to code 
 import Path 
-Path.AddAPItoPath()
+Path.AddAPIpath()
 
 # local imports
 from PodDevices.SerialCommunication    import COM_io
