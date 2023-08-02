@@ -4,7 +4,8 @@ from   threading  import Thread
 from   math       import floor 
 
 # local imports
-from Setup_PodInterface     import Setup_Interface, UserInput, Params_Interface
+from Setup_PodInterface     import Setup_Interface, UserInput
+from Parameters             import Params_Interface
 from Setup_8206HR           import Setup_8206HR
 from Setup_8401HR           import Setup_8401HR
 from Setup_8480SC           import Setup_8480SC

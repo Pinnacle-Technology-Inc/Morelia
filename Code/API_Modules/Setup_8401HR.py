@@ -13,7 +13,7 @@ from   pyedflib     import EdfWriter
 from Setup_PodInterface  import Setup_Interface, UserInput
 from Devices import POD_8401HR
 from Packets import Packet_Standard, Packet_Binary5
-from Parameters.Setup_PodParameters import Params_8401HR
+from Parameters import Params_8401HR
 
 # authorship
 __author__      = "Thresa Kelly"

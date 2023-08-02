@@ -2,7 +2,7 @@
 import copy
 
 # local imports 
-from Parameters.ParamsInterface import Params_Interface
+from Parameters import Params_Interface
 
 # authorship
 __author__      = "Thresa Kelly"

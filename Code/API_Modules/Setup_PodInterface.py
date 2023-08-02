@@ -11,7 +11,7 @@ from   time       import gmtime, strftime
 # local imports
 from Devices import COM_io, POD_Basics
 from GetUserInput import UserInput
-from Parameters.Setup_PodParameters import Params_Interface
+from Parameters import Params_Interface
 from Packets import Packet, Packet_Standard
 
 # authorship
