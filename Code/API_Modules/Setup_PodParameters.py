@@ -580,4 +580,3 @@ class Params_8480SC(Params_Interface) :
             if(channel < 0 or channel > 100) :
                 raise Exception('Estim-Current must be between 0-100.')
 
-    
