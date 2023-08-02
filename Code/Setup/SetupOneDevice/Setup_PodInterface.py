@@ -1,11 +1,11 @@
 # enviornment imports
 import os
+import time
 from   texttable  import Texttable
 from   pyedflib   import EdfWriter
 from   threading  import Thread
 from   io         import IOBase
 from   datetime   import datetime
-from   time       import gmtime, strftime
 
 # local imports
 from Setup.Inputs       import UserInput
@@ -513,7 +513,7 @@ class Setup_Interface :
         # build string 
         header  = (  '#Today\'s date,'+ now.strftime("%d-%B-%Y")) # shows date
         header += ('\n#Time now,'+ current_time) # shows time
-        header += ('\n#GMT,'+ strftime("%I:%M:%S %p %Z", gmtime()) + '\n') # shows GMT time
+        header += ('\n#GMT,'+ time.strftime("%I:%M:%S %p %Z", time.gmtime()) + '\n') # shows GMT time
         return(header)
     
 
