@@ -1,7 +1,7 @@
 # local imports
-from PodApi.Devices    import COM_io
-from PodApi.Commands   import POD_Commands
-from PodApi.Packets    import Packet, Packet_Standard, Packet_Binary
+from PodApi.SerialPorts import COM_io
+from PodApi.Commands    import POD_Commands
+from PodApi.Packets     import Packet, Packet_Standard, Packet_Binary
 
 # authorship
 __author__      = "Thresa Kelly"

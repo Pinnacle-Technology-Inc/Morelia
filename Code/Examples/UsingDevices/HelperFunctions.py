@@ -10,8 +10,9 @@ Path.AddAPIpath()
 import platform
 
 # local imports
-from PodApi.Devices import COM_io, POD_Basics
-from PodApi.Packets import Packet
+from PodApi.SerialPorts import COM_io
+from PodApi.Devices     import POD_Basics
+from PodApi.Packets     import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

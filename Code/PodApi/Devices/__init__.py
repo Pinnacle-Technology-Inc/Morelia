@@ -1,4 +1,3 @@
-from PodApi.Devices.SerialCommunication import COM_io
 from PodApi.Devices.BasicPodProtocol    import POD_Basics
 from PodApi.Devices.PodDevice_8206HR    import POD_8206HR
 from PodApi.Devices.PodDevice_8401HR    import POD_8401HR
