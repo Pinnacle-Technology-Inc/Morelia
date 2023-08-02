@@ -10,7 +10,7 @@ import time
 
 # local imports
 import  HelperFunctions as hf
-from    PodApi.Devices  import POD_8229
+from    PodApi.Devices  import Pod8229
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -22,8 +22,8 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of 8206-HR POD device
 
-port: str = POD_8229.ChoosePort()
-pod = POD_8229(port)
+port: str = Pod8229.ChoosePort()
+pod = Pod8229(port)
 
 # write each command:
 

@@ -11,7 +11,7 @@ from   io           import IOBase
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard, Packet_Binary4
-from PodApi.Devices         import POD_8206HR
+from PodApi.Devices         import Pod8206HR
 from PodApi.Parameters      import Params_8206HR
 
 # authorship
@@ -77,7 +77,7 @@ class Setup_8206HR(Setup_Interface) :
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            pod = POD_8206HR(port=port, preampGain=deviceParams.preamplifierGain)
+            pod = Pod8206HR(port=port, preampGain=deviceParams.preamplifierGain)
             # test if connection is successful
             if(not self._TestDeviceConnection(pod)) : raise Exception('Could not connect to POD device.')
             # write setup parameters
@@ -264,7 +264,7 @@ class Setup_8206HR(Setup_Interface) :
         return(readThreads)
     
     
-    def _StreamUntilStop(self, pod: POD_8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
+    def _StreamUntilStop(self, pod: Pod8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
         """Streams data from a POD device and saves data to file. Stops looking when a stop stream \
         command is read. Calculates average time difference across multiple packets to collect a \
         continuous time series data. 

@@ -2,7 +2,7 @@
 from datetime import datetime
 
 # local imports 
-from PodApi.Devices import POD_Basics
+from PodApi.Devices import Pod
 from PodApi.Packets import Packet_Standard
 
 # authorship
@@ -13,7 +13,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_8229(POD_Basics) : 
+class Pod8229(Pod) : 
     """POD_8229 handles communication using an 8229 POD device.
     """
 
@@ -32,9 +32,9 @@ class POD_8229(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Basics.GetU(8)
-        U16 = POD_Basics.GetU(16)
-        NOVALUE = POD_Basics.GetU(0)
+        U8  = Pod.GetU(8)
+        U16 = Pod.GetU(16)
+        NOVALUE = Pod.GetU(0)
         # remove unimplemented commands 
         self._commands.RemoveCommand( 4) # ERROR
         self._commands.RemoveCommand( 5) # STATUS
@@ -106,9 +106,9 @@ class POD_8229(POD_Basics) :
             tuple[int]: _description_
         """
         # get good value
-        validDay: int = POD_8229._Validate_Day(day)
+        validDay: int = Pod8229._Validate_Day(day)
         # get encoded schedule
-        encodedSched: list = POD_8229.CodeDaySchedule(hours,speed)
+        encodedSched: list = Pod8229.CodeDaySchedule(hours,speed)
         # prepend the day to the schedule  
         return( tuple( [validDay]+encodedSched ) )
 
@@ -129,8 +129,8 @@ class POD_8229(POD_Basics) :
                 are the speed.
         """
         # get good values 
-        validHours = POD_8229._Validate_Hours(hours)
-        validSpeed = POD_8229._Validate_Speed(speed) 
+        validHours = Pod8229._Validate_Hours(hours)
+        validSpeed = Pod8229._Validate_Speed(speed) 
         # modify bits of each hour 
         schedule = [0] * 24
         for i in range(24) : 
@@ -154,7 +154,7 @@ class POD_8229(POD_Basics) :
         """
         # use this for getting the command #argument 
         # check for valid arguments 
-        validSchedule = POD_8229._Validate_Schedule(schedule, 24)
+        validSchedule = Pod8229._Validate_Schedule(schedule, 24)
         # decode each hour
         hours  = [None] * 24
         speeds = [None] * 24
@@ -179,10 +179,10 @@ class POD_8229(POD_Basics) :
     
     @staticmethod
     def DecodeDayAndSchedule(dayschedule: bytes) : 
-        U8 = POD_8229.GetU(8)
+        U8 = Pod8229.GetU(8)
         day = Packet_Standard.AsciiBytesToInt(dayschedule[:U8])
         print(dayschedule[:U8+1], day)
-        schedule = POD_8229.DecodeDaySchedule(dayschedule[U8:])
+        schedule = Pod8229.DecodeDaySchedule(dayschedule[U8:])
         print(schedule)
         return (day, schedule)
         
@@ -201,13 +201,13 @@ class POD_8229(POD_Basics) :
                 motor state in that hour, 1 for on and 0 for off.
         """
         # check for valid arguments 
-        validSchedule = POD_8229._Validate_Schedule(schedule, 4)
+        validSchedule = Pod8229._Validate_Schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = POD_8229.DecodeDayOfWeek( Packet_Standard.AsciiBytesToInt( validSchedule[0:2] ) )
+        day = Pod8229.DecodeDayOfWeek( Packet_Standard.AsciiBytesToInt( validSchedule[0:2] ) )
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
-        topBit = POD_Basics.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
+        topBit = Pod.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
             hours.append( Packet_Standard.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
             topBit -= 1
@@ -287,12 +287,12 @@ class POD_8229(POD_Basics) :
         # check for special packets
         match packet.CommandNumber()  : 
             case 140 : # 140 SET TIME
-                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
+                packet.SetCustomPayload(Pod8229._Custom140SETTIME, (packet.DefaultPayload(),))
             case 142 : # 142 GET DAY SCHEDULE
                 if(len(packet.payload) > 2 ) : 
-                    packet.SetCustomPayload(POD_8229.DecodeDaySchedule, (packet.payload,))
+                    packet.SetCustomPayload(Pod8229.DecodeDaySchedule, (packet.payload,))
             case 202 : # 202 LCD SET DAY SCHEDULE 
-                packet.SetCustomPayload(POD_8229.DecodeLCDSchedule, (packet.payload,))
+                packet.SetCustomPayload(Pod8229.DecodeLCDSchedule, (packet.payload,))
         # return packet
         return packet
     
@@ -316,9 +316,9 @@ class POD_8229(POD_Basics) :
         # check for special commands 
         match packet.CommandNumber() : 
             case 140 : # 140 SET TIME
-                packet.SetCustomPayload(POD_8229._Custom140SETTIME, (packet.DefaultPayload(),))
+                packet.SetCustomPayload(Pod8229._Custom140SETTIME, (packet.DefaultPayload(),))
             case 141 : # 141 SET DAY SCHEDULE
-                packet.SetCustomPayload(POD_8229.DecodeDayAndSchedule, (packet.payload,))
+                packet.SetCustomPayload(Pod8229.DecodeDayAndSchedule, (packet.payload,))
         # returns packet object
         return(packet)
     
@@ -377,7 +377,7 @@ class POD_8229(POD_Basics) :
         Returns:
             tuple[int]: Tuple of times.
         """
-        return tuple([POD_8229._DecodeDecimalAsHex(x) for x in payload]) 
+        return tuple([Pod8229._DecodeDecimalAsHex(x) for x in payload]) 
     
     
     @staticmethod
@@ -396,7 +396,7 @@ class POD_8229(POD_Basics) :
             int: Integer code representing a day of the week.
         """
         if(isinstance(day,str)) : 
-            dayCode = POD_8229.CodeDayOfWeek(day)
+            dayCode = Pod8229.CodeDayOfWeek(day)
         elif(isinstance(day,int)) : 
             if(day < 0 or day > 6) : 
                 raise Exception('[!] The day integer argument must be 0-6.')
@@ -484,6 +484,6 @@ class POD_8229(POD_Basics) :
         """
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
-        if( len(schedule) != size * POD_Basics.GetU(8) ) : 
+        if( len(schedule) != size * Pod.GetU(8) ) : 
             raise Exception('[!] The schedule must have U8x'+str(size)+'.')
         return(schedule)

@@ -8,7 +8,7 @@ import time
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard
-from PodApi.Devices         import POD_8229
+from PodApi.Devices         import Pod8229
 from PodApi.Parameters      import Params_8229
 
 # authorship
@@ -90,7 +90,7 @@ class Setup_8229(Setup_Interface) :
         port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
         try : 
             # create POD device 
-            pod = POD_8229(port=port)
+            pod = Pod8229(port=port)
             # test if connection is successful
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # set current computer time 
@@ -108,7 +108,7 @@ class Setup_8229(Setup_Interface) :
                 pod.WriteRead('SET REVERSE PARAMS', (deviceParams.reverseBaseTime, deviceParams.reverseVarTime) )
             if(deviceParams.mode == 2):
                 for day, hours in deviceParams.schedule.items() :
-                    pod.WriteRead('SET DAY SCHEDULE', POD_8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
+                    pod.WriteRead('SET DAY SCHEDULE', Pod8229.BuildSetDayScheduleArgument(day, hours, deviceParams.motorSpeed))
             # set mode last
             pod.WriteRead('SET MODE',               deviceParams.mode)
             # successful write if no exceptions raised 
@@ -294,7 +294,7 @@ class Setup_8229(Setup_Interface) :
         return(readThreads)
     
 
-    def _StreamUntilStop(self, pod: POD_8229, file: IOBase) -> None :
+    def _StreamUntilStop(self, pod: Pod8229, file: IOBase) -> None :
         """Saves a log of all packets recieved from the 8229 POD device until the user decides \
         to stop streaming.
 

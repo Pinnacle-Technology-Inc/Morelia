@@ -1,6 +1,6 @@
 # local imports 
 from PodApi.Parameters import Params
-from PodApi.Devices    import POD_8401HR
+from PodApi.Devices    import Pod8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -101,7 +101,7 @@ class Params_8401HR(Params) :
         """
         super()._CheckParams() 
 
-        devices = POD_8401HR.GetSupportedPreampDevices()
+        devices = Pod8401HR.GetSupportedPreampDevices()
         if(self.preampDevice not in devices) :
             raise Exception('Mouse/rat preamplifier must be in '+str(devices)+'.')
         

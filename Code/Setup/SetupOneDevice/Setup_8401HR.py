@@ -13,7 +13,7 @@ from   pyedflib     import EdfWriter
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard, Packet_Binary5
-from PodApi.Devices         import POD_8401HR
+from PodApi.Devices         import Pod8401HR
 from PodApi.Parameters      import Params_8401HR
 
 # authorship
@@ -80,7 +80,7 @@ class Setup_8401HR(Setup_Interface) :
             # get port name 
             port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
             # create POD device 
-            pod = POD_8401HR(
+            pod = Pod8401HR(
                 port        = port, 
                 ssGain      = deviceParams.ssGain,
                 preampGain  = deviceParams.preampGain,
@@ -94,10 +94,10 @@ class Setup_8401HR(Setup_Interface) :
             for channel in range(4) : 
                 if(deviceParams.highPass[channel] != None) : pod.WriteRead('SET HIGHPASS', (channel, self._CodeHighpass(deviceParams.highPass[channel])))
                 if(deviceParams.lowPass [channel] != None) : pod.WriteRead('SET LOWPASS',  (channel, deviceParams.lowPass[channel]))
-                if(deviceParams.bias    [channel] != None) : pod.WriteRead('SET BIAS',     (channel, POD_8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
+                if(deviceParams.bias    [channel] != None) : pod.WriteRead('SET BIAS',     (channel, Pod8401HR.CalculateBiasDAC_GetDACValue(deviceParams.bias[channel])))
                 if(deviceParams.dcMode  [channel] != None) : pod.WriteRead('SET DC MODE',  (channel, self._CodeDCmode(deviceParams.dcMode[channel])))
                 if(deviceParams.ssGain  [channel] != None and
-                    deviceParams.highPass[channel] != None) : pod.WriteRead('SET SS CONFIG', (channel, POD_8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
+                    deviceParams.highPass[channel] != None) : pod.WriteRead('SET SS CONFIG', (channel, Pod8401HR.GetSSConfigBitmask(gain=deviceParams.ssGain[channel], highpass=deviceParams.highPass[channel])))
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
@@ -165,7 +165,7 @@ class Setup_8401HR(Setup_Interface) :
         port = self._ChoosePort(forbiddenNames)
         # get channel map for the user's preamplifier 
         preampDevice = self._GetPreampDeviceName()
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(preampDevice)
+        chmap = Pod8401HR.GetChannelMapForPreampDevice(preampDevice)
         # get all parameters 
         params = Params_8401HR(
             # get parameters for full device 
@@ -190,7 +190,7 @@ class Setup_8401HR(Setup_Interface) :
         Returns:
             str: String of the chosen preamplifier.
         """
-        deviceList = POD_8401HR.GetSupportedPreampDevices()
+        deviceList = Pod8401HR.GetSupportedPreampDevices()
         print('Available preamplifiers: '+', '.join(deviceList))
         return( UserInput.AskForStrInList(
             prompt='Set mouse/rat preamplifier',
@@ -352,7 +352,7 @@ class Setup_8401HR(Setup_Interface) :
         # for each device 
         for key,val in self._podParametersDict.items() :
             # get channel mapping for device 
-            chmap = POD_8401HR.GetChannelMapForPreampDevice(val.preampDevice)
+            chmap = Pod8401HR.GetChannelMapForPreampDevice(val.preampDevice)
             # write row to table 
             tab.add_row([
                 key, val.port, val.preampDevice, val.sampleRate,str(val.muxMode),
@@ -408,7 +408,7 @@ class Setup_8401HR(Setup_Interface) :
         # columns names
         cols = 'Time,'
         devnum = int((fname.split('.')[0]).split('_')[-1]) # get device number from filename
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum].preampDevice)
+        chmap = Pod8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devnum].preampDevice)
         for label in chmap.values() : 
             if(label!='NC') : # exclude no-connects 
                 cols += str(label) + ','
@@ -429,7 +429,7 @@ class Setup_8401HR(Setup_Interface) :
         """
         # get all channel names for ABCD, excluding no-connects (NC)
         lables = [x for x 
-                  in list(POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice).values()) 
+                  in list(Pod8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice).values()) 
                   if x != 'NC']
         lables.extend(['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4'])
         # number of channels 
@@ -523,7 +523,7 @@ class Setup_8401HR(Setup_Interface) :
         return(readThreads)
     
 
-    def _StreamUntilStop(self, pod: POD_8401HR, file: IOBase|EdfWriter, sampleRate: int, devNum: int) -> None :
+    def _StreamUntilStop(self, pod: Pod8401HR, file: IOBase|EdfWriter, sampleRate: int, devNum: int) -> None :
         """Streams data from a POD device and saves data to file. Stops looking when a stop \
         stream command is read. Calculates average time difference across multiple packets to \
         collect a continuous time series data. 
@@ -546,7 +546,7 @@ class Setup_8401HR(Setup_Interface) :
         currentTime: float = 0.0 
 
         # exclude no-connects 
-        chmap = POD_8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice)
+        chmap = Pod8401HR.GetChannelMapForPreampDevice(self._podParametersDict[devNum].preampDevice)
         dataColumns = []
         for key,val in chmap.items() : 
             if(val!='NC') : dataColumns.append(key) # ABCD 

@@ -1,5 +1,5 @@
 # local imports 
-from PodApi.Devices import POD_Basics
+from PodApi.Devices import Pod
 from PodApi.Packets import Packet, Packet_Standard, Packet_Binary4
 
 # authorship
@@ -10,7 +10,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_8206HR(POD_Basics) : 
+class Pod8206HR(Pod) : 
     """
     POD_8206HR handles communication using an 8206HR POD device. 
     
@@ -36,8 +36,8 @@ class POD_8206HR(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Basics.GetU(8)
-        U16 = POD_Basics.GetU(16)
+        U8  = Pod.GetU(8)
+        U16 = Pod.GetU(16)
         B4  = Packet_Binary4.GetBinaryLength()
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS

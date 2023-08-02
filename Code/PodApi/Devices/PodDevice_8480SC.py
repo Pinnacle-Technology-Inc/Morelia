@@ -1,5 +1,5 @@
 # local imports 
-from PodApi.Devices import POD_Basics
+from PodApi.Devices import Pod
 from PodApi.Packets import Packet_Standard
 
 # authorship
@@ -10,7 +10,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_8480SC(POD_Basics) : 
+class Pod8480SC(Pod) : 
     """
     POD_8480SC handles communication using an 8480-SC POD device. 
     """
@@ -30,9 +30,9 @@ class POD_8480SC(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Basics.GetU(8)
-        U16 = POD_Basics.GetU(16)
-        U32 = POD_Basics.GetU(32)
+        U8  = Pod.GetU(8)
+        U16 = Pod.GetU(16)
+        U32 = Pod.GetU(32)
         # remove unimplemented commands in POD-device 8480.
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(6)  # STREAM
@@ -182,11 +182,11 @@ class POD_8480SC(POD_Basics) :
         # check for special packets
         match packet.CommandNumber() : 
             case 126 : # 126 GET SYNC CONFIG
-                packet.SetCustomPayload(POD_8480SC._CustomSYNCCONFIG, (packet.payload,))
+                packet.SetCustomPayload(Pod8480SC._CustomSYNCCONFIG, (packet.payload,))
             case 108 : # 108 GET TTL SETUP
-                packet.SetCustomPayload(POD_8480SC._Custom108GETTTLSETUP, (packet.payload,))
+                packet.SetCustomPayload(Pod8480SC._Custom108GETTTLSETUP, (packet.payload,))
             case 101 : # 101 GET STIMULUS
-                packet.SetCustomPayload(POD_8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
+                packet.SetCustomPayload(Pod8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
         return packet
 
     def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> Packet_Standard :
@@ -204,11 +204,11 @@ class POD_8480SC(POD_Basics) :
         # check for special packets
         match packet.CommandNumber() : 
             case 127: # 127 SET SYNC CONFIG
-                packet.SetCustomPayload(POD_8480SC._CustomSYNCCONFIG, (packet.payload,))
+                packet.SetCustomPayload(Pod8480SC._CustomSYNCCONFIG, (packet.payload,))
             case 109 : # 109 SET TTL SETUP
-                packet.SetCustomPayload(POD_8480SC._Custom109SETTTLSETUP, (packet.payload,))
+                packet.SetCustomPayload(Pod8480SC._Custom109SETTTLSETUP, (packet.payload,))
             case 102 : # 102 SET STIMULUS
-                packet.SetCustomPayload(POD_8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
+                packet.SetCustomPayload(Pod8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
         return packet
 
     @staticmethod
@@ -221,7 +221,7 @@ class POD_8480SC(POD_Basics) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit.
         """
-        return POD_8480SC.DecodeSyncConfigBits(Packet_Standard.AsciiBytesToInt( payload[:2]))
+        return Pod8480SC.DecodeSyncConfigBits(Packet_Standard.AsciiBytesToInt( payload[:2]))
 
     @staticmethod
     def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
@@ -233,7 +233,7 @@ class POD_8480SC(POD_Basics) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        return ( POD_8480SC.DecodeTTlConfigBits(Packet_Standard.AsciiBytesToInt( payload[0:2] )), # dict
+        return ( Pod8480SC.DecodeTTlConfigBits(Packet_Standard.AsciiBytesToInt( payload[0:2] )), # dict
                  Packet_Standard.AsciiBytesToInt( payload[2:4]) ) # int
     
     @staticmethod
@@ -247,7 +247,7 @@ class POD_8480SC(POD_Basics) :
             tuple[int|dict]: Tuple of the TTL setup.
         """
         data: list = [ Packet_Standard.AsciiBytesToInt(payload[:2]) ]
-        data.append( POD_8480SC._Custom108GETTTLSETUP(payload[2:]) )
+        data.append( Pod8480SC._Custom108GETTTLSETUP(payload[2:]) )
         return tuple(data)
         
     @staticmethod
@@ -262,5 +262,5 @@ class POD_8480SC(POD_Basics) :
             tuple: Tuple of the translated stimulus payload.
         """
         pld = list(defaultPayload[:-1])
-        pld.append(POD_8480SC.DecodeStimulusConfigBits(Packet_Standard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
+        pld.append(Pod8480SC.DecodeStimulusConfigBits(Packet_Standard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            

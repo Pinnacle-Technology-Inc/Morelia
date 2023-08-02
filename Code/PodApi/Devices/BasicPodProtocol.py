@@ -11,7 +11,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_Basics : 
+class Pod : 
     """
     POD_Basics handles basic communication with a generic POD device, including reading and writing 
     packets and packet interpretation.

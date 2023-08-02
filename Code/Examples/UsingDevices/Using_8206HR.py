@@ -7,7 +7,7 @@ Path.AddAPIpath()
 
 # local imports
 import  HelperFunctions as hf
-from    PodApi.Devices  import POD_8206HR
+from    PodApi.Devices  import Pod8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -19,9 +19,9 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of 8206-HR POD device
 
-port: str = POD_8206HR.ChoosePort()
+port: str = Pod8206HR.ChoosePort()
 preampGain: int = 10 # can be 10 or 100
-pod = POD_8206HR(port, preampGain)
+pod = Pod8206HR(port, preampGain)
 
 # write each command:
 

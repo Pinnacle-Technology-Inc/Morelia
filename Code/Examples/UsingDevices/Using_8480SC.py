@@ -7,7 +7,7 @@ Path.AddAPIpath()
 
 # local imports
 import  HelperFunctions as hf
-from    PodApi.Devices  import POD_8480SC
+from    PodApi.Devices  import Pod8480SC
 
 # authorship
 __author__      = "Sree Kondi"
@@ -19,8 +19,8 @@ __email__       = "sales@pinnaclet.com"
 
 # create instance of an 8480-SC POD device
 
-port: str = POD_8480SC.ChoosePort()
-pod = POD_8480SC(port)
+port: str = Pod8480SC.ChoosePort()
+pod = Pod8480SC(port)
 
 # write each command:
 

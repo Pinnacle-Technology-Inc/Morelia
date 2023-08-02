@@ -1,5 +1,5 @@
 # local imports 
-from PodApi.Devices import POD_Basics
+from PodApi.Devices import Pod
 from PodApi.Packets import Packet, Packet_Standard, Packet_Binary5
 
 # authorship
@@ -10,7 +10,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class POD_8401HR(POD_Basics) : 
+class Pod8401HR(Pod) : 
     """
     POD_8401HR handles communication using an 8401-HR POD device. 
 
@@ -71,8 +71,8 @@ class POD_8401HR(POD_Basics) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate) 
         # get constants for adding commands 
-        U8  = POD_Basics.GetU(8)
-        U16 = POD_Basics.GetU(16)
+        U8  = Pod.GetU(8)
+        U16 = Pod.GetU(16)
         B5  = Packet_Binary5.GetBinaryLength()
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
@@ -195,8 +195,8 @@ class POD_8401HR(POD_Basics) :
             dict[str,str]|None: Dictionary with keys A,B,C,D with values of the channel names. Returns \
                 None if the device name does not exist.
         """
-        if(preampName in POD_8401HR.__CHANNELMAPALL) : 
-            return(POD_8401HR.__CHANNELMAPALL[preampName])
+        if(preampName in Pod8401HR.__CHANNELMAPALL) : 
+            return(Pod8401HR.__CHANNELMAPALL[preampName])
         else : 
             return(None) # no device matched
 
@@ -208,7 +208,7 @@ class POD_8401HR(POD_Basics) :
         Returns:
             list[str]: List of string names of all supported sensors. 
         """
-        return(list(POD_8401HR.__CHANNELMAPALL.keys()))
+        return(list(Pod8401HR.__CHANNELMAPALL.keys()))
 
 
     @staticmethod
@@ -221,7 +221,7 @@ class POD_8401HR(POD_Basics) :
         Returns:
             bool: True if the name exists in __CHANNELMAPALL, false otherwise.
         """
-        return(name in POD_8401HR.__CHANNELMAPALL)    
+        return(name in Pod8401HR.__CHANNELMAPALL)    
 
 
     # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
@@ -257,7 +257,7 @@ class POD_8401HR(POD_Basics) :
         Returns:
             tuple[dict[str, int]]: Tuple with two TTL dictionaries.
         """
-        return ( POD_8401HR.DecodeTTLByte(payload[:2]), POD_8401HR.DecodeTTLByte(payload[2:]))
+        return ( Pod8401HR.DecodeTTLByte(payload[:2]), Pod8401HR.DecodeTTLByte(payload[2:]))
 
 
     @staticmethod
@@ -415,7 +415,7 @@ class POD_8401HR(POD_Basics) :
         # check for special packets
         specialCommands = [127, 129] # 127 SET TTL CONFIG # 129 SET TTL OUTS
         if(packet.CommandNumber() in specialCommands) : 
-            packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, (packet.payload,))
+            packet.SetCustomPayload(Pod8401HR.DecodeTTLPayload, (packet.payload,))
         # returns packet object
         return packet
     
@@ -438,7 +438,7 @@ class POD_8401HR(POD_Basics) :
         # check for special packets
         if(isinstance(packet, Packet_Standard)) : 
             if(packet.CommandNumber() == 128) : # 128 GET TTL CONFIG
-                packet.SetCustomPayload(POD_8401HR.DecodeTTLPayload, (packet.payload,))
+                packet.SetCustomPayload(Pod8401HR.DecodeTTLPayload, (packet.payload,))
         # return packet
         return packet
 

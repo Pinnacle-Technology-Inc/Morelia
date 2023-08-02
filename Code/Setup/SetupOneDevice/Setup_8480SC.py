@@ -8,7 +8,7 @@ import time
 from Setup.SetupOneDevice   import Setup_Interface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import Packet_Standard
-from PodApi.Devices         import POD_8480SC
+from PodApi.Devices         import Pod8480SC
 from PodApi.Parameters      import Params_8480SC
 
 # authorship
@@ -88,7 +88,7 @@ class Setup_8480SC(Setup_Interface) :
         
         try : 
             # create POD device 
-            pod = POD_8480SC(port=port)
+            pod = Pod8480SC(port=port)
             # test if connection is successful
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # write setup parameters
@@ -156,7 +156,7 @@ class Setup_8480SC(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for rising edge triggering, 1 for falling edge)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value for stimulus triggering (0 for TTL event, 1 for TTL inputs as triggers)", 0, 1 )
         bit_7 = UserInput.AskForIntInRange("Enter a value for TTL Input/Sync (0 for normal TTL operation as input, 1 for TTL pin operate as sync ouput)", 0, 1)
-        ttl_value = POD_8480SC.TtlConfigBits(bit_0, bit_1, bit_7)
+        ttl_value = Pod8480SC.TtlConfigBits(bit_0, bit_1, bit_7)
         return(ttl_value)
         
 
@@ -170,7 +170,7 @@ class Setup_8480SC(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for Electrical stimulus, 1 for Optical Stimulus)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value (0 for Monophasic, 1 for Biphasic)", 0, 1)
         bit_2 = UserInput.AskForIntInRange("Enter a value (0 for standard, 1 for simultaneous)", 0, 1)
-        value = POD_8480SC.StimulusConfigBits(bit_0, bit_1, bit_2)
+        value = Pod8480SC.StimulusConfigBits(bit_0, bit_1, bit_2)
         return(value)
 
 
@@ -226,7 +226,7 @@ class Setup_8480SC(Setup_Interface) :
         bit_0 = UserInput.AskForIntInRange("Enter a value (0 for LOW sync line, 1 for HIGH sync line)", 0, 1)
         bit_1 = UserInput.AskForIntInRange("Enter a value for Sync Idle (0 to idle the opposite of active state, 1 to sync to idle tristate)", 0, 1) 
         bit_2 = UserInput.AskForIntInRange("Enter a value for Signal/Trigger (0 for sync to show stimulus is in progress, 1 to have sync as input triggers)", 0, 1) 
-        final_value = POD_8480SC.SyncConfigBits(bit_0, bit_1, bit_2)
+        final_value = Pod8480SC.SyncConfigBits(bit_0, bit_1, bit_2)
         return(final_value)
 
         
@@ -314,7 +314,7 @@ class Setup_8480SC(Setup_Interface) :
         return(readThreads)
         
 
-    def _StreamUntilStop(self, pod: POD_8480SC, file: IOBase) -> None :
+    def _StreamUntilStop(self, pod: Pod8480SC, file: IOBase) -> None :
         """Saves a log of all packets recieved from the 8480 POD device until the user decides \
         to stop streaming.
 

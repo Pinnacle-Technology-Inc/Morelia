@@ -7,7 +7,7 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from PodApi.Devices     import POD_Basics
+from PodApi.Devices     import Pod
 from PodApi.Packets     import Packet
 
 # authorship
@@ -18,7 +18,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-def Write(pod: POD_Basics, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
+def Write(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) : 
     """Writes a command packet to a POD device and prints the packet.
 
     Args:
@@ -31,7 +31,7 @@ def Write(pod: POD_Basics, cmd: str | int, payload: int | bytes | tuple[int | by
     data:  dict = write.TranslateAll()
     print('Write:\t', data)
 
-def Read(pod: POD_Basics) : 
+def Read(pod: Pod) : 
     """Reads and prints a packet from a POD device.
 
     Args:
@@ -41,7 +41,7 @@ def Read(pod: POD_Basics) :
     data: dict = read.TranslateAll()
     print('Read:\t', data)
 
-def RunCommand(pod: POD_Basics, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
+def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
     """Writes and reads a packet from a POD device and prints the results.
 
     Args:

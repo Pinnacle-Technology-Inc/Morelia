@@ -10,7 +10,7 @@ from   datetime   import datetime
 # local imports
 from Setup.Inputs       import UserInput
 from PodApi.Packets     import Packet, Packet_Standard
-from PodApi.Devices     import POD_Basics
+from PodApi.Devices     import Pod
 from PodApi.Parameters  import Params
 
 # authorship
@@ -142,7 +142,7 @@ class Setup_Interface :
 
     def __init__(self) -> None :
         """Initializes the class instance variables."""
-        self._podDevices : dict[int,POD_Basics]  = {}               # dict of pod device objects. MUST have keys as the device number
+        self._podDevices : dict[int,Pod]  = {}               # dict of pod device objects. MUST have keys as the device number
         self._podParametersDict : dict[int,Params] = {}   # dictionary of device information. MUST have keys as the device number
         self._saveFileName : str = ''                               # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
@@ -304,7 +304,7 @@ class Setup_Interface :
         Returns:
             str: String name of the port.
         """
-        return POD_Basics.ChoosePort(forbidden)
+        return Pod.ChoosePort(forbidden)
     
     # ------------ EDIT POD PARAMETERS ------------
 
@@ -541,7 +541,7 @@ class Setup_Interface :
 
 
     @staticmethod
-    def _TestDeviceConnection(pod: POD_Basics) -> bool :
+    def _TestDeviceConnection(pod: Pod) -> bool :
         """Tests if a POD device can be read from or written. Sends a PING command. 
 
         Args:
