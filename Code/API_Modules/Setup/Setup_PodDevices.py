@@ -4,7 +4,12 @@ from   threading    import Thread
 from   math         import floor 
 
 # local imports
-from Setup      import Setup_Interface, UserInput, Setup_8206HR, Setup_8401HR, Setup_8229, Setup_8480SC
+from Setup.GetUserInput import UserInput
+from Setup.Setup_PodInterface import Setup_Interface
+from Setup.Setup_8206HR import Setup_8206HR
+from Setup.Setup_8401HR import Setup_8401HR
+from Setup.Setup_8229 import Setup_8229
+from Setup.Setup_8480SC import Setup_8480SC
 from Parameters import Params_Interface
 
 # authorship

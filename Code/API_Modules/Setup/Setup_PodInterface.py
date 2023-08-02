@@ -9,7 +9,7 @@ from   datetime   import datetime
 from   time       import gmtime, strftime
 
 # local imports
-from Setup      import UserInput
+from Setup.GetUserInput      import UserInput
 from Packets    import Packet, Packet_Standard
 from Devices    import COM_io, POD_Basics
 from Parameters import Params_Interface
