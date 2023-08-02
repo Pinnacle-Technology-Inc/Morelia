@@ -8,11 +8,11 @@ from   pyedflib     import EdfWriter
 from   io           import IOBase
 
 # local imports
-from Setup.SetupOneDevice import Setup_Interface
-from Setup      import UserInput
-from Packets    import Packet_Standard, Packet_Binary4
-from Devices    import POD_8206HR
-from Parameters import Params_8206HR
+from Setup.SetupOneDevice   import Setup_Interface
+from Setup.Inputs           import UserInput
+from Packets                import Packet_Standard, Packet_Binary4
+from Devices                import POD_8206HR
+from Parameters             import Params_8206HR
 
 # authorship
 __author__      = "Thresa Kelly"

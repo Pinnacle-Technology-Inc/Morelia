@@ -4,13 +4,9 @@ from   threading    import Thread
 from   math         import floor 
 
 # local imports
-from Setup.GetUserInput import UserInput
-from Setup.SetupOneDevice.Setup_PodInterface import Setup_Interface
-from Setup.SetupOneDevice.Setup_8206HR import Setup_8206HR
-from Setup.SetupOneDevice.Setup_8401HR import Setup_8401HR
-from Setup.SetupOneDevice.Setup_8229 import Setup_8229
-from Setup.SetupOneDevice.Setup_8480SC import Setup_8480SC
-from Parameters import Params_Interface
+from Setup.Inputs           import UserInput
+from Setup.SetupOneDevice   import Setup_Interface, Setup_8206HR, Setup_8401HR, Setup_8229, Setup_8480SC
+from Parameters             import Params_Interface
 
 # authorship
 __author__      = "Thresa Kelly"
