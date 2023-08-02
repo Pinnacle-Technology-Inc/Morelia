@@ -11,7 +11,7 @@ from   time       import gmtime, strftime
 from Setup.Inputs       import UserInput
 from PodApi.Packets     import Packet, Packet_Standard
 from PodApi.Devices     import POD_Basics
-from PodApi.Parameters  import Params_Interface
+from PodApi.Parameters  import Params
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -60,7 +60,7 @@ class Setup_Interface :
         return(['.csv','.txt','.edf'])
 
 
-    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params_Interface :
+    def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params :
         """Asks the user to input all the device parameters. 
 
         Args:
@@ -72,7 +72,7 @@ class Setup_Interface :
         pass
 
 
-    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params_Interface) -> bool : 
+    def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params) -> bool : 
         """Creates a POD device object and write the setup parameters to it. 
 
         Args:
@@ -143,7 +143,7 @@ class Setup_Interface :
     def __init__(self) -> None :
         """Initializes the class instance variables."""
         self._podDevices : dict[int,POD_Basics]  = {}               # dict of pod device objects. MUST have keys as the device number
-        self._podParametersDict : dict[int,Params_Interface] = {}   # dictionary of device information. MUST have keys as the device number
+        self._podParametersDict : dict[int,Params] = {}   # dictionary of device information. MUST have keys as the device number
         self._saveFileName : str = ''                               # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
@@ -159,7 +159,7 @@ class Setup_Interface :
     # ------------ VALIDATION ------------
     
 
-    def AreDeviceParamsValid(self, paramDict: None|dict[int,Params_Interface]) :
+    def AreDeviceParamsValid(self, paramDict: None|dict[int,Params]) :
         """Checks if the parameters dictionary is valid. 
 
         Args:
@@ -180,7 +180,7 @@ class Setup_Interface :
         for key,value in paramDict.items() : 
             if(not isinstance(key,int)) : 
                 raise Exception('[!] Device keys must be integer type for '+str(self.GetDeviceName())+'.')
-            if(not isinstance(value,Params_Interface)) : 
+            if(not isinstance(value,Params)) : 
                 raise Exception('[!] Device parameters must be Params_Interface type for '+str(self.GetDeviceName())+'.')
         # no exceptions raised
         return(True)
@@ -251,7 +251,7 @@ class Setup_Interface :
     # ------------ SETUP POD PARAMETERS ------------
 
     
-    def SetupPODparameters(self, podParametersDict:dict[int,Params_Interface]|None=None) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[int,Params]|None=None) -> None :
         """Sets the parameters for the POD devices.
 
         Args:
@@ -270,7 +270,7 @@ class Setup_Interface :
         self.ConnectAllPODdevices()
 
 
-    def _GetParam_allPODdevices(self) -> dict[int,Params_Interface] :
+    def _GetParam_allPODdevices(self) -> dict[int,Params] :
         """First gets the number of POD devices, then asks the user for the information \
         for each device.
 

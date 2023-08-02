@@ -2,7 +2,7 @@
 import copy
 
 # local imports 
-from PodApi.Parameters import Params_Interface
+from PodApi.Parameters import Params
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -12,7 +12,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Params_8229(Params_Interface) :
+class Params_8229(Params) :
     """Container class that stores parameters for an 8229 POD device.
 
     Attributes:

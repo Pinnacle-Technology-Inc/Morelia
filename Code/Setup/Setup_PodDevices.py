@@ -6,7 +6,7 @@ from   math         import floor
 # local imports
 from Setup.Inputs           import UserInput
 from Setup.SetupOneDevice   import Setup_Interface, Setup_8206HR, Setup_8401HR, Setup_8229, Setup_8480SC
-from PodApi.Parameters      import Params_Interface
+from PodApi.Parameters      import Params
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -32,7 +32,7 @@ class Setup_PodDevices :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, saveFileDict:dict[str,str]|None=None, podParametersDict:dict[str,dict[int,Params_Interface]|None]|None=None) -> None :
+    def __init__(self, saveFileDict:dict[str,str]|None=None, podParametersDict:dict[str,dict[int,Params]|None]|None=None) -> None :
         """Initializes the class. Sets the default values of the class instance variables. Calls \
         functions to complete the class setup.
 
@@ -110,7 +110,7 @@ class Setup_PodDevices :
     # ------------ CLASS SETUP ------------
 
 
-    def SetupPODparameters(self, podParametersDict:dict[str,dict[int,Params_Interface]|None]) -> None :
+    def SetupPODparameters(self, podParametersDict:dict[str,dict[int,Params]|None]) -> None :
         """Sets up each POD device type. Used in initialization.
 
         Args:

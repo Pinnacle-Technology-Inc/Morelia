@@ -1,5 +1,5 @@
 # local imports 
-from PodApi.Parameters import Params_Interface
+from PodApi.Parameters import Params
 from PodApi.Devices    import POD_8401HR
 
 # authorship
@@ -11,7 +11,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 
-class Params_8401HR(Params_Interface) :
+class Params_8401HR(Params) :
     """Container class that stores parameters for an 8401-HR POD device.
 
     Attributes:

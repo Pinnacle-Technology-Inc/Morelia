@@ -6,7 +6,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Params_Interface :
+class Params :
     """Interface for a container class that stores parameters for a POD device.
 
     Attributes:
