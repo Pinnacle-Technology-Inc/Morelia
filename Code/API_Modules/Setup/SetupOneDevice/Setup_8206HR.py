@@ -8,7 +8,7 @@ from   pyedflib     import EdfWriter
 from   io           import IOBase
 
 # local imports
-from Setup.SetupOneDevice.Setup_PodInterface import Setup_Interface
+from Setup.SetupOneDevice import Setup_Interface
 from Setup      import UserInput
 from Packets    import Packet_Standard, Packet_Binary4
 from Devices    import POD_8206HR
