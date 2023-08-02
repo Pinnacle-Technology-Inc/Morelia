@@ -2,7 +2,7 @@
 from typing import Any
 
 # local imports
-from PodApi.Commands import Commands
+from PodApi.Commands import CommandSet
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -28,7 +28,7 @@ class Packet :
 
     def __init__(self, 
                  pkt: bytes, 
-                 commands: Commands|None = None
+                 commands: CommandSet|None = None
                 ) -> None:
         """Sets the class instance variables. 
 
@@ -39,7 +39,7 @@ class Packet :
                 Defaults to None.
         """
         self.CheckIfPacketIsValid(pkt)
-        self._commands: Commands|None = commands
+        self._commands: CommandSet|None = commands
         self.rawPacket: bytes = bytes(pkt)
         self.commandNumber: bytes|None = self.GetCommandNumber(pkt)
         
@@ -133,7 +133,7 @@ class Packet :
         Returns:
             bool: True if the commands have been set, false otherwise.
         """ 
-        return isinstance(self._commands, Commands) 
+        return isinstance(self._commands, CommandSet) 
             
     def HasCommandNumber(self) -> bool :
         """Checks if the packet has a command number.

@@ -2,7 +2,7 @@
 from typing import Any
 
 # local imports
-from PodApi.Commands import Commands
+from PodApi.Commands import CommandSet
 from PodApi.Packets  import Packet
 
 # authorship
@@ -77,7 +77,7 @@ class PacketBinary5(Packet) :
     def __init__(self, pkt: bytes,                  
                  ssGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: dict[str,int|None] = {'A':None,'B':None,'C':None,'D':None}, 
-                 commands: Commands | None = None
+                 commands: CommandSet | None = None
                 ) -> None:
         """Sets the class instance variables. 
 

@@ -1,1 +1,1 @@
-from PodApi.Commands.PodCommands import Commands
+from PodApi.Commands.PodCommands import CommandSet
