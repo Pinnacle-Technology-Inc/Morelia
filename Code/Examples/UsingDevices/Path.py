@@ -4,7 +4,7 @@
 """
 
 def AddAPIpath() : 
-    """Add directory path <...>\Python-POD-API<...>\Code\API_Modules to code 
+    """Add directory path <...>\Python-POD-API<...>\Code to code 
     """
     import sys, os
     # get current path, and split into list surrounding 'Python-POD-API'
@@ -16,13 +16,13 @@ def AddAPIpath() :
         # add trailing text to the api path
         apiPath += aroundApi[1].split('\\')[0]
     # add api path to system path
-    sys.path.insert(0, os.path.join( apiPath, 'Code', 'API_Modules') )
+    sys.path.insert(0, os.path.join( apiPath, 'Code') )
     
 def AddMyAPIpath():
     """Directly add your own directory path to API_Modules. 
     """
     import sys
     # define string of the API path here
-    myPath = r'C:\git\Python-POD-API\Code\API_Modules'
+    myPath = r'C:\git\Python-POD-API\Code'
     # add path to system
     sys.path.append(myPath) 

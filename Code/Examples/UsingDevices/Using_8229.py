@@ -2,14 +2,14 @@
 """
 
 # add directory path to code 
-import Path 
+import Path
 Path.AddAPIpath()
 
-# enviornment imports
+# local imports
 import time
 
 # local imports
-import  Examples.UsingDevices.HelperFunctions as hf
+import  HelperFunctions as hf
 from    Devices import POD_8229
 
 # authorship
