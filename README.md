@@ -100,7 +100,7 @@ Detailed instructions of all Python packages, modules and methods:
 
 ![Class diagram for the Setup package](/Documents/Diagrams/class-diagrams-Setup.png)
 
-### SetupAllDevice
+### SetupAllDevices
 
 | Class                                                       | Description                                                              |
 |-------------------------------------------------------------|--------------------------------------------------------------------------|
