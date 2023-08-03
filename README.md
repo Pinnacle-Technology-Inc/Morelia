@@ -100,22 +100,24 @@ Detailed instructions of all Python packages, modules and methods:
 
 ![Class diagram for the Setup package](/Documents/Diagrams/class-diagrams-Setup.png)
 
-| Class                                                   | Description                                                              | Docs  |
-|---------------------------------------------------------|--------------------------------------------------------------------------|-------|
-| [Setup_PodDevices.py](/Code/PodApi/Devices/Setup_PodDevices.py)          | Setup_PodDevices      | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X]() |
+### SetupAllDevice
+
+| Class                                                        | Description                                                              | Docs  |
+|--------------------------------------------------------------|--------------------------------------------------------------------------|-------|
+| [SetupAlls](/Code/Setup/SetupAllDevices/Setup_PodDevices.py) | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X]() |
+
+### SetupOneDevice
+
+| Class                                                               | Description                                             | Docs  |
+|---------------------------------------------------------------------|---------------------------------------------------------|-------|
+| [SetupInterface](/Code/Setup/SetupOneDevice/Setup_PodInterface.py) | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. | [X]() |
+| [Setup8206HR](/Code/Setup/SetupOneDevice/Setup_8206HR.py)          | Provides the setup functions for an 8206-HR POD device. | [X]() |
+| [Setup8401HR](/Code/Setup/SetupOneDevice/Setup_8401HR.py)          | Provides the setup functions for an 8401-HR POD device. REQUIRES FIRMWARE 1.0.2 OR HIGHER. | [X]() |
+| [Setup8229](/Code/Setup/SetupOneDevice/Setup_8229.py)              | Provides the setup functions for an 8229 POD device.    | [X]() |
+| [Setup8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. | [X]() |
 
 ### Inputs
 
 | Class                                           | Description                                                           | Docs  |
 |-------------------------------------------------|-----------------------------------------------------------------------|-------|
 | [UserInput](/Code/Setup/Inputs/GetUserInput.py) | Contains several methods for getting user input for POD device setup. | [X]() |
-
-### SetupOneDevice
-
-| Class                                                               | Description                                             | Docs  |
-|---------------------------------------------------------------------|---------------------------------------------------------|-------|
-| [Setup_Interface](/Code/Setup/SetupOneDevice/Setup_PodInterface.py) | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. | [X]() |
-| [Setup_8206HR](/Code/Setup/SetupOneDevice/Setup_8206HR.py)          | Provides the setup functions for an 8206-HR POD device. | [X]() |
-| [Setup_8401HR](/Code/Setup/SetupOneDevice/Setup_8401HR.py)          | Provides the setup functions for an 8401-HR POD device. REQUIRES FIRMWARE 1.0.2 OR HIGHER. | [X]() |
-| [Setup_8229](/Code/Setup/SetupOneDevice/Setup_8229.py)              | Provides the setup functions for an 8229 POD device.    | [X]() |
-| [Setup_8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. | [X]() |
