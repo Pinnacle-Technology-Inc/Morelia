@@ -1,3 +1,4 @@
+# module access
 from PodApi.Packets.Packet     import Packet
 from PodApi.Packets.Standard   import PacketStandard
 from PodApi.Packets.Binary     import PacketBinary
