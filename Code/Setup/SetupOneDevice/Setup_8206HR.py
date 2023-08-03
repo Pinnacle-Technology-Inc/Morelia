@@ -8,7 +8,7 @@ from   pyedflib     import EdfWriter
 from   io           import IOBase
 
 # local imports
-from Setup.SetupOneDevice   import Setup_Interface
+from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import PacketStandard, PacketBinary4
 from PodApi.Devices         import Pod8206HR
@@ -22,7 +22,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8206HR(Setup_Interface) : 
+class Setup8206HR(SetupInterface) : 
     """
     Setup_8206HR provides the setup functions for an 8206-HR POD device.
     """
@@ -129,7 +129,7 @@ class Setup_8206HR(Setup_Interface) :
         if(gain != 10 and gain != 100):
             # prompt again 
             print('[!] Input must be 10 or 100.')
-            return(Setup_8206HR._ChoosePreampGain())
+            return(Setup8206HR._ChoosePreampGain())
         # return preamplifier gain 
         return(gain)    
     

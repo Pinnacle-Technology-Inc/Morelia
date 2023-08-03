@@ -5,7 +5,7 @@ from threading  import Thread
 import time
 
 # local imports
-from Setup.SetupOneDevice   import Setup_Interface
+from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import PacketStandard
 from PodApi.Devices         import Pod8229
@@ -20,7 +20,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 
-class Setup_8229(Setup_Interface) : 
+class Setup8229(SetupInterface) : 
     """Setup_8229 provides the setup functions for an 8229 POD device.
 
     Attributes:

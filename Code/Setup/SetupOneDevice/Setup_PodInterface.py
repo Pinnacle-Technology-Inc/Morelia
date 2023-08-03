@@ -21,7 +21,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_Interface : 
+class SetupInterface : 
     """
     Setup_Interface provides the basic interface of required methods for subclasses to implement. \
     SetupPodDevices.py is designed to handle any of these children.
@@ -205,13 +205,13 @@ class Setup_Interface :
             # number must be positive
             if(n<=0):
                 print('[!] Number must be greater than zero.')
-                return(Setup_Interface._SetNumberOfDevices(name))
+                return(SetupInterface._SetNumberOfDevices(name))
             # return number of POD devices 
             return(n)
         except : 
             # print error and start over
             print('[!] Please enter an integer number.')
-            return(Setup_Interface._SetNumberOfDevices(name))
+            return(SetupInterface._SetNumberOfDevices(name))
         
 
     def ConnectAllPODdevices(self) -> bool : 

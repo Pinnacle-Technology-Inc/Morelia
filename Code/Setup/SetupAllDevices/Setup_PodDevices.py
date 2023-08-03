@@ -5,7 +5,7 @@ from   math         import floor
 
 # local imports
 from Setup.Inputs           import UserInput
-from Setup.SetupOneDevice   import Setup_Interface, Setup_8206HR, Setup_8401HR, Setup_8229, Setup_8480SC
+from Setup.SetupOneDevice   import SetupInterface, Setup8206HR, Setup8401HR, Setup8229, Setup8480SC
 from PodApi.Parameters      import Params
 
 # authorship
@@ -16,7 +16,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_PodDevices :     
+class SetupAll :     
     """
     Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed \
     data is saved to a file.
@@ -43,7 +43,7 @@ class Setup_PodDevices :
                 their respective parameters. Defaults to None.
         """
         # initialize class instance variables
-        self._Setup_PodDevices : dict[str,Setup_Interface] = {} 
+        self._Setup_PodDevices : dict[str,SetupInterface] = {} 
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
             1 : 'Start streaming.',
             2 : 'Show current settings.',
@@ -318,7 +318,7 @@ class Setup_PodDevices :
         # setup parameters
         if(podParametersDict == None) : 
             # return dictionary with POD device names as keys and None as values 
-            params = Setup_PodDevices._AskUserForDevices()
+            params = SetupAll._AskUserForDevices()
         else:
             params = podParametersDict
         # validation 
@@ -332,7 +332,7 @@ class Setup_PodDevices :
     def _AskUserForDevices() : 
         """Asks the user what POD devices they want to use."""
         useParams = {}
-        names = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8229.GetDeviceName(), Setup_8480SC.GetDeviceName()) # NOTE add all supported devices here 
+        names = (Setup8206HR.GetDeviceName(), Setup8401HR.GetDeviceName(), Setup8229.GetDeviceName(), Setup8480SC.GetDeviceName()) # NOTE add all supported devices here 
         print('')
         for name in names:
             if(UserInput.AskYN('Will you be using any '+str(name)+' devices?')) : 
@@ -340,7 +340,7 @@ class Setup_PodDevices :
         # ask again if user responds No to all 
         if(len(useParams) == 0 ) : 
             print('[!] No POD devices selected. Please choose at least one device.')
-            return(Setup_PodDevices._AskUserForDevices())
+            return(SetupAll._AskUserForDevices())
         # return dictionary with POD device names as keys and None as values 
         return(useParams)
     
@@ -368,7 +368,7 @@ class Setup_PodDevices :
             raise Exception('[!] Parameters dictionary is empty.')
         # for each dict entry...
         allGood = True 
-        goodKeys = (Setup_8206HR.GetDeviceName(), Setup_8401HR.GetDeviceName(), Setup_8480SC.GetDeviceName(), Setup_8229.GetDeviceName()) # NOTE add all supported devices here 
+        goodKeys = (Setup8206HR.GetDeviceName(), Setup8401HR.GetDeviceName(), Setup8480SC.GetDeviceName(), Setup8229.GetDeviceName()) # NOTE add all supported devices here 
         for key,value in podParametersDict.items()  :
             # is the key a POD device name?
             if(key not in goodKeys) : # device not supported
@@ -389,18 +389,18 @@ class Setup_PodDevices :
                 and values as None or the respective parameter dictionary.
         """
         # use select devices        
-        name = Setup_8206HR.GetDeviceName()
+        name = Setup8206HR.GetDeviceName()
         if(name in podParametersDict ) : 
-            self._Setup_PodDevices[name] = Setup_8206HR()
-        name = Setup_8401HR.GetDeviceName()
+            self._Setup_PodDevices[name] = Setup8206HR()
+        name = Setup8401HR.GetDeviceName()
         if(name in podParametersDict) : 
-            self._Setup_PodDevices[name] = Setup_8401HR()
-        name = Setup_8229.GetDeviceName()
+            self._Setup_PodDevices[name] = Setup8401HR()
+        name = Setup8229.GetDeviceName()
         if(name in podParametersDict) : 
-            self._Setup_PodDevices[name] = Setup_8229()
-        name = Setup_8480SC.GetDeviceName()
+            self._Setup_PodDevices[name] = Setup8229()
+        name = Setup8480SC.GetDeviceName()
         if(name in podParametersDict) : 
-            self._Setup_PodDevices[name] = Setup_8480SC()
+            self._Setup_PodDevices[name] = Setup8480SC()
         # NOTE add all supported devices here 
 
 
