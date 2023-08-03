@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Devices.SerialPorts import PortIO
+from PodApi.Devices.SerialPorts import PortIO, PortAccess
 from PodApi.Commands            import CommandSet
 from PodApi.Packets             import Packet, PacketStandard, PacketBinary
 
@@ -75,7 +75,7 @@ class Pod :
         Returns:
             str: String name of the port.
         """
-        return PortIO.ChoosePort(forbidden)
+        return PortAccess.ChoosePort(forbidden)
 
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
