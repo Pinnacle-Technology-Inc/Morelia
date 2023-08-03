@@ -7,7 +7,7 @@
 
 The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
 
-The [Setup_PodDevices](/Documents/API_Manuals/Setup_PodDevices-Usage.pdf) Python module is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. Setup_PodDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
+The [SetupAllDevices](/Documents/API_Manuals/SetupAllDevices_Package_Manual.pdf) Python package is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. SetupAllDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
 Currently, the API supports 8206-HR and 8401-HR POD devices. In the future, we will offer support to other Pinnacle devices. 
 
@@ -55,46 +55,46 @@ Detailed instructions of all Python packages, modules and methods:
 
 ### Commands
 
-| Class                                              | Description                                                          | Docs  |
-|----------------------------------------------------|----------------------------------------------------------------------|-------|
-| [CommandSet](/Code/PodApi/Commands/PodCommands.py) | Manages a dictionary containing available commands for a POD device. | [X]() |
+| Class                                              | Description                                                          |
+|----------------------------------------------------|----------------------------------------------------------------------|
+| [CommandSet](/Code/PodApi/Commands/PodCommands.py) | Manages a dictionary containing available commands for a POD device. |
 
 ### Devices
 
-| Class                                                    | Description                                         | Docs |
-|----------------------------------------------------------|-----------------------------------------------------|------|
-| [Pod](/Code/PodApi/Devices/BasicPodProtocol.py)          | Handle basic communication with a POD device, including reading and writing packets and packet interpretation. | [X]() |
-| [Pod8206HR](/Code/PodApi/Devices/PodDevice_8206HR.py.py) | Handles communication using an 8206-HR POD device.  | [X]() |
-| [Pod8401HR](/Code/PodApi/Devices/PodDevice_8401HR.py)    | Handles communication using an 8401-HR POD device.  | [X]() |
-| [Pod8229](/Code/PodApi/Devices/PodDevice_8229.py)        | Handles communication using an 8229 POD device.     | [X]() | 
-| [Pod8480SC](/Code/PodApi/Devices/PodDevice_8480SC.py)    |  Handles communication using an 8480-SC POD device. | [X]() | 
+| Class                                                    | Description                                         |
+|----------------------------------------------------------|-----------------------------------------------------|
+| [Pod](/Code/PodApi/Devices/BasicPodProtocol.py)          | Handle basic communication with a POD device, including reading and writing packets and packet interpretation. |
+| [Pod8206HR](/Code/PodApi/Devices/PodDevice_8206HR.py.py) | Handles communication using an 8206-HR POD device.  |
+| [Pod8401HR](/Code/PodApi/Devices/PodDevice_8401HR.py)    | Handles communication using an 8401-HR POD device.  |
+| [Pod8229](/Code/PodApi/Devices/PodDevice_8229.py)        | Handles communication using an 8229 POD device.     | 
+| [Pod8480SC](/Code/PodApi/Devices/PodDevice_8480SC.py)    |  Handles communication using an 8480-SC POD device. | 
  
 ### SerialPorts
 
-| Class                                                       | Description                                                     | Docs  |
-|-------------------------------------------------------------|-----------------------------------------------------------------|-------|
-| [FindPorts](/Code/PodApi/Devices/SerialPorts/PortAccess.py) | Contains methods for the user to view and select a serial port. | [X]() |
-| [PortIO](/Code/PodApi/Devices/SerialPorts/SerialComm.py)    | Handle serial communication (read/write) using COM ports.       | [X]() |
+| Class                                                       | Description                                                     |
+|-------------------------------------------------------------|-----------------------------------------------------------------|
+| [FindPorts](/Code/PodApi/Devices/SerialPorts/PortAccess.py) | Contains methods for the user to view and select a serial port. |
+| [PortIO](/Code/PodApi/Devices/SerialPorts/SerialComm.py)    | Handle serial communication (read/write) using COM ports.       |
 
 ### Packets
 
-| Class                                              | Description                                                                    | Docs  |
-|----------------------------------------------------|--------------------------------------------------------------------------------|-------|
-| [Packet](/Code/PodApi/Packets/Packet.py)           | Container class that stores a command packet for a POD device. This class also collection of methods for creating and interpreting POD packets. | [X]() |
-| [PacketStandard](/Code/PodApi/Packets/Standard.py) | Container class that stores a standard command packet for a POD device.        | [X]() |
-| [PacketBinary](/Code/PodApi/Packets/Binary.py)     | Container class that stores a standard binary command packet for a POD device. | [X]() |
-| [PacketBinary4](/Code/PodApi/Packets/Binary4.py)   | Container class that stores a binary4 command packet for a POD device.         | [X]() |
-| [PacketBinary5](/Code/PodApi/Packets/Binary5.py)   | Container class that stores a binary5 command packet for a POD device.         | [X]() |
+| Class                                              | Description                                                                    |
+|----------------------------------------------------|--------------------------------------------------------------------------------|
+| [Packet](/Code/PodApi/Packets/Packet.py)           | Container class that stores a command packet for a POD device. This class also collection of methods for creating and interpreting POD packets. |
+| [PacketStandard](/Code/PodApi/Packets/Standard.py) | Container class that stores a standard command packet for a POD device.        |
+| [PacketBinary](/Code/PodApi/Packets/Binary.py)     | Container class that stores a standard binary command packet for a POD device. |
+| [PacketBinary4](/Code/PodApi/Packets/Binary4.py)   | Container class that stores a binary4 command packet for a POD device.         |
+| [PacketBinary5](/Code/PodApi/Packets/Binary5.py)   | Container class that stores a binary5 command packet for a POD device.         |
 
 ### Parameters
 
-| Class                                                   | Description                                                              | Docs  |
-|---------------------------------------------------------|--------------------------------------------------------------------------|-------|
-| [Params](/Code/PodApi/Parameters/ParamsBasic.py)        | Interface for a container class that stores parameters for a POD device. | [X]() | 
-| [Params8206HR](/Code/PodApi/Parameters/Params8206HR.py) | Container class that stores parameters for a 8206-HR POD device.         | [X]() | 
-| [Params8401HR](/Code/PodApi/Parameters/Params8401HR.py) | Container class that stores parameters for a 8401-HR POD device.         | [X]() | 
-| [Params8229](/Code/PodApi/Parameters/Params8229.py)     | Container class that stores parameters for a 8229 POD device.            | [X]() | 
-| [Params8480SC](/Code/PodApi/Parameters/Params8480SC.py) | Container class that stores parameters for a 8480-SC POD device.         | [X]() | 
+| Class                                                   | Description                                                              |
+|---------------------------------------------------------|--------------------------------------------------------------------------|
+| [Params](/Code/PodApi/Parameters/ParamsBasic.py)        | Interface for a container class that stores parameters for a POD device. | 
+| [Params8206HR](/Code/PodApi/Parameters/Params8206HR.py) | Container class that stores parameters for a 8206-HR POD device.         | 
+| [Params8401HR](/Code/PodApi/Parameters/Params8401HR.py) | Container class that stores parameters for a 8401-HR POD device.         | 
+| [Params8229](/Code/PodApi/Parameters/Params8229.py)     | Container class that stores parameters for a 8229 POD device.            | 
+| [Params8480SC](/Code/PodApi/Parameters/Params8480SC.py) | Container class that stores parameters for a 8480-SC POD device.         | 
 
 ## Setup Package
 
@@ -102,22 +102,22 @@ Detailed instructions of all Python packages, modules and methods:
 
 ### SetupAllDevice
 
-| Class                                                        | Description                                                              | Docs  |
-|--------------------------------------------------------------|--------------------------------------------------------------------------|-------|
-| [SetupAlls](/Code/Setup/SetupAllDevices/Setup_PodDevices.py) | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X]() |
+| Class                                                       | Description                                                              |
+|-------------------------------------------------------------|--------------------------------------------------------------------------|
+| [SetupAll](/Code/Setup/SetupAllDevices/Setup_PodDevices.py) | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X]() |
 
 ### SetupOneDevice
 
-| Class                                                               | Description                                             | Docs  |
-|---------------------------------------------------------------------|---------------------------------------------------------|-------|
-| [SetupInterface](/Code/Setup/SetupOneDevice/Setup_PodInterface.py) | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. | [X]() |
-| [Setup8206HR](/Code/Setup/SetupOneDevice/Setup_8206HR.py)          | Provides the setup functions for an 8206-HR POD device. | [X]() |
-| [Setup8401HR](/Code/Setup/SetupOneDevice/Setup_8401HR.py)          | Provides the setup functions for an 8401-HR POD device. REQUIRES FIRMWARE 1.0.2 OR HIGHER. | [X]() |
-| [Setup8229](/Code/Setup/SetupOneDevice/Setup_8229.py)              | Provides the setup functions for an 8229 POD device.    | [X]() |
-| [Setup8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. | [X]() |
+| Class                                                              | Description                                             |
+|--------------------------------------------------------------------|---------------------------------------------------------|
+| [SetupInterface](/Code/Setup/SetupOneDevice/Setup_PodInterface.py) | Provides the basic interface of required methods for subclasses to implement. SetupPodDevices.py is designed to handle any of these children. |
+| [Setup8206HR](/Code/Setup/SetupOneDevice/Setup_8206HR.py)          | Provides the setup functions for an 8206-HR POD device. |
+| [Setup8401HR](/Code/Setup/SetupOneDevice/Setup_8401HR.py)          | Provides the setup functions for an 8401-HR POD device. |
+| [Setup8229](/Code/Setup/SetupOneDevice/Setup_8229.py)              | Provides the setup functions for an 8229 POD device.    |
+| [Setup8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. |
 
 ### Inputs
 
-| Class                                           | Description                                                           | Docs  |
-|-------------------------------------------------|-----------------------------------------------------------------------|-------|
-| [UserInput](/Code/Setup/Inputs/GetUserInput.py) | Contains several methods for getting user input for POD device setup. | [X]() |
+| Class                                           | Description                                                           |
+|-------------------------------------------------|-----------------------------------------------------------------------|
+| [UserInput](/Code/Setup/Inputs/GetUserInput.py) | Contains several methods for getting user input for POD device setup. |
