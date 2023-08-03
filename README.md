@@ -49,7 +49,7 @@ The Setup_PodDevices Python module usage description: [here](/Documents/API_Manu
 Detailed instructions of all Python modules and methods: 
 * Read the Docs website: [here](https://python-pod-api.readthedocs.io/en/latest/)
 * PDF Manual: [here](/Documents/API_Manuals/Python_POD_API_Manual.pdf)
-
+<!-- 
 | Module                                                                | Class                 | Description | Docs | 
 |-----------------------------------------------------------------------|-----------------------|-------------|------|
 | [BasicPodProtocol.py](/Code/API_Modules/BasicPodProtocol.py)          | POD_Basics            | Handle basic communication with a POD device, including reading and writing packets and packet interpretation.  | [X](https://python-pod-api.readthedocs.io/en/latest/BasicPodProtocol.html) |
@@ -77,4 +77,4 @@ Detailed instructions of all Python modules and methods:
 | ^                                                                     | Params_8229           | Container class that stores parameters for a 8229 POD device.    | [X](https://python-pod-api.readthedocs.io/en/latest/Setup_PodParameters.html#Setup_PodParameters.Params_8229) | 
 | ^                                                                     | Params_8480SC           | Container class that stores parameters for a 8480-SC POD device. | [X](https://python-pod-api.readthedocs.io/en/latest/Setup_PodParameters.html#Setup_PodParameters.Params_8480SC) | 
 
-![UML class diagram](/Documents/Diagrams/UML-class-diagram.png)
+![UML class diagram](/Documents/Diagrams/UML-class-diagram.png) -->
