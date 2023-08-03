@@ -7,8 +7,8 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Setup import SetupAllDevices
-from PodApi.Parameters import Params8206HR
+from Setup.SetupAllDevices  import SetupAll
+from PodApi.Parameters      import Params8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -29,7 +29,7 @@ if(runExample == '1'):
     to define the setup parameters for each POD device. Then, it will ask you for a path and 
     filename to save POD streaming data to. 
     """
-    go = SetupAllDevices() # create object to setup 8206HR POD devices.
+    go = SetupAll() # create object to setup 8206HR POD devices.
     """
     After setup is complete, you will be presented with an option menu. If you want to save 
     your current setup, complete option #1 and #6. Save these outputs and use according to 
@@ -60,7 +60,7 @@ elif(runExample == '2'):
     """
     Setting the saveFile and podParametersDict parameters will satisfy the initialization steps. 
     """
-    go = SetupAllDevices(saveFile, podParametersDict) # create object to setup 8206HR POD devices
+    go = SetupAll(saveFile, podParametersDict) # create object to setup 8206HR POD devices
 
     """
     Initialization is automatically completed. You will be presented with an option menu. If you 

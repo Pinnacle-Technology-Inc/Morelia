@@ -7,7 +7,7 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Setup import SetupAllDevices
+from Setup.SetupAllDevices import SetupAll
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -20,5 +20,5 @@ __email__       = "sales@pinnaclet.com"
 # ===============================================================
 
 # setup POD devices for streaming
-go = SetupAllDevices()
+go = SetupAll()
 go.Run()
