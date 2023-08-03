@@ -16,7 +16,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class SetupAllDevices :     
+class SetupAll :     
     """
     Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed \
     data is saved to a file.
@@ -318,7 +318,7 @@ class SetupAllDevices :
         # setup parameters
         if(podParametersDict == None) : 
             # return dictionary with POD device names as keys and None as values 
-            params = SetupAllDevices._AskUserForDevices()
+            params = SetupAll._AskUserForDevices()
         else:
             params = podParametersDict
         # validation 
@@ -340,7 +340,7 @@ class SetupAllDevices :
         # ask again if user responds No to all 
         if(len(useParams) == 0 ) : 
             print('[!] No POD devices selected. Please choose at least one device.')
-            return(SetupAllDevices._AskUserForDevices())
+            return(SetupAll._AskUserForDevices())
         # return dictionary with POD device names as keys and None as values 
         return(useParams)
     
