@@ -5,7 +5,7 @@ from threading   import Thread
 import time
 
 # local imports
-from Setup.SetupOneDevice   import Setup_Interface
+from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import PacketStandard
 from PodApi.Devices         import Pod8480SC
@@ -19,7 +19,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8480SC(Setup_Interface) : 
+class Setup8480SC(SetupInterface) : 
     """
     Setup_8480SC provides the setup functions for an 8480-SC POD device. 
     
@@ -129,19 +129,19 @@ class Setup_8480SC(Setup_Interface) :
         return(Params8480SC(
             port              =     self._ChoosePort(forbiddenNames),
             stimulus          =    (UserInput.AskForIntInRange('Choose channel (0 or 1) for Stimulus', 0, 1),
-                                    *Setup_8480SC._ChoosePeriod(),
-                                    *Setup_8480SC._ChooseWidth(),
+                                    *Setup8480SC._ChoosePeriod(),
+                                    *Setup8480SC._ChooseWidth(),
                                     UserInput.AskForInt('Enter a value for the stimulus repeat count'),
-                                    Setup_8480SC._ChooseStimulusConfig()),
+                                    Setup8480SC._ChooseStimulusConfig()),
             preamp            =     UserInput.AskForIntInRange('\nSet preamp (0-1023)', 0, 1023),
             ledCurrent        =     ( UserInput.AskForIntInRange('\nSet ledCurrent (Hz) for CH0 (0-600)',     0, 600),
                                     UserInput.AskForIntInRange('Set ledCurrent (Hz) for CH1 (0-600)', 0, 600) ),
             ttlPullups        =     UserInput.AskForInt('\nAre the pullups enabled on the TTL lines? (0 for disabled, non-zero for enabled)' ),
             estimCurrent      =     (UserInput.AskForIntInRange('\nSet estimCurrent for Channel0  (0-100)', 0, 100),
                                     UserInput.AskForIntInRange('Set estimCurrent for Channel1  (0-100)', 0, 100)),
-            syncConfig        =     Setup_8480SC._ChooseSyncConfig(),   
+            syncConfig        =     Setup8480SC._ChooseSyncConfig(),   
             ttlSetup          =    (UserInput.AskForIntInRange('\nChoose channel (0 or 1) for TTL Setup', 0, 1),
-                                    Setup_8480SC._TtlSetup(),
+                                    Setup8480SC._TtlSetup(),
                                     UserInput.AskForInt('Enter a debounce value (ms)'))
         ))
         

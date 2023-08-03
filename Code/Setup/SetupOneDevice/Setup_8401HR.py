@@ -10,7 +10,7 @@ from   io           import IOBase
 from   pyedflib     import EdfWriter
 
 # local imports
-from Setup.SetupOneDevice   import Setup_Interface
+from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
 from PodApi.Packets         import PacketStandard, PacketBinary5
 from PodApi.Devices         import Pod8401HR
@@ -24,7 +24,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Setup_8401HR(Setup_Interface) : 
+class Setup8401HR(SetupInterface) : 
     """
     Setup_8401HR provides the setup functions for an 8206-HR POD device. \
     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
