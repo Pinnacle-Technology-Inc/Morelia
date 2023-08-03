@@ -11,6 +11,8 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class FindPorts : 
+    """Contains methods for the user to view and select a serial port.
+    """
 
     @staticmethod
     def GetAllPortNames() -> list[str] : 

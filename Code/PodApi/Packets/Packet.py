@@ -15,7 +15,7 @@ __email__       = "sales@pinnaclet.com"
 class Packet : 
     """Container class that stores a command packet for a POD device. The format is \
     STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte). This class \
-    also collection of methods for creating and interpreting POD packets. 
+    also has a collection of methods for creating and interpreting POD packets. 
     
     Attributes:
         _commands (POD_Commands | None): Available commands for a POD device. 
