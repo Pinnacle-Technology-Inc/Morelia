@@ -3,9 +3,8 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import os
-import sys
-sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'API_Modules') )
+import sys, os
+sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code'))
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -13,7 +12,7 @@ sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'API_Modules') )
 project = 'Python POD API'
 copyright = '2023, Thresa Kelly'
 author = 'Thresa Kelly'
-release = 'v1.3.1'
+release = 'v1.4.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

@@ -45,7 +45,7 @@ Update Sphinx configuration:
 
         import os
         import sys
-        sys.path.insert(0, os.path.join( <add path here> )
+        sys.path.insert(0, os.path.join( <add path here> ))
 
         extensions = ['sphinx.ext.autodoc', <any other extensions>]
 
@@ -53,9 +53,9 @@ Update Sphinx configuration:
 
     For the Python POD API project: 
 
-        import os
-        import sys
-        sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'API_Modules') )
+        import sys, os
+        sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'PodApi') )
+        sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'Setup' ) )
 
         extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
 
@@ -68,7 +68,7 @@ Adding modules to Sphinx project:
     >> sphinx-apidoc -o <path to output> <path to code modules>
 
     For the Python POD API project: 
-        >> sphinx-apidoc -o .\SphinxDocs .\Code\API_Modules\
+        >> sphinx-apidoc -o .\SphinxDocs .\Code\
 
 
 Build Sphinx documents:

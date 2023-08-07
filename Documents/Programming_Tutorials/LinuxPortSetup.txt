@@ -1,0 +1,62 @@
+/////////////////////////////////
+Name:   Sree Kondi
+Date:   08/02/2023
+/////////////////////////////////
+
+This document is to help you access Serial ports on a Linux Operating System.
+
+/////////////////////////////////
+
+In order for the Pinnacle's Pod Devices to recognized by the computer, the following VID/PID 
+combos have to executed in the terminal. 
+This way the computer system knows what Pod device is connected. 
+
+The format : echo -n VID PID | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+
+#!/bin/sh -e
+
+echo -n 0403 FE28 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE29 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2A | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2B | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2C | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2D | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2E | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 FE2F | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+
+echo -n 0403 A010 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A011 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A012 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A013 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A014 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A015 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A016 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 A017 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+
+echo -n 0403 73A0 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A1 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A2 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A3 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A4 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A5 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A6 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+echo -n 0403 73A7 | tee /sys/bus/usb-serial/drivers/ftdi_sio/new_id
+
+
+/////////////////////////////////
+
+After you attempt to connect to a Serial Port, and it says 'Permission denied', follow the steps. 
+
+1. Type this in your terminal to see the ownership of the port. format: ls -l /dev/tty* (* represents the desired serial port number).
+ls -l /dev/ttyUSB0
+
+
+2. If it returns the underneath line, it means there are no users on the port.
+crw-rw----. 1 root dialout 188, 0 August 2 3:00 /dev/ttyUSB0
+
+
+3. TO change this, add your username (used to login) to the port.
+sudo usermod -a $(username) -G dialout
+
+
+4. Now, try connecting to the port once again. 
