@@ -55,11 +55,15 @@ Detailed instructions of all Python packages, modules and methods:
 
 ### Commands
 
+* PodApi.Commands package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Commands.html)
+
 | Class                                              | Description                                                          |
 |----------------------------------------------------|----------------------------------------------------------------------|
 | [CommandSet](/Code/PodApi/Commands/PodCommands.py) | Manages a dictionary containing available commands for a POD device. |
 
 ### Devices
+
+* PodApi.Devices package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Devices.html)
 
 | Class                                                    | Description                                         |
 |----------------------------------------------------------|-----------------------------------------------------|
@@ -71,12 +75,16 @@ Detailed instructions of all Python packages, modules and methods:
  
 ### SerialPorts
 
+* PodApi.SerialPorts package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Devices.SerialPorts.html)
+
 | Class                                                       | Description                                                     |
 |-------------------------------------------------------------|-----------------------------------------------------------------|
 | [FindPorts](/Code/PodApi/Devices/SerialPorts/PortAccess.py) | Contains methods for the user to view and select a serial port. |
 | [PortIO](/Code/PodApi/Devices/SerialPorts/SerialComm.py)    | Handle serial communication (read/write) using COM ports.       |
 
 ### Packets
+
+* PodApi.Packets package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Packets.html)
 
 | Class                                              | Description                                                                    |
 |----------------------------------------------------|--------------------------------------------------------------------------------|
@@ -87,6 +95,8 @@ Detailed instructions of all Python packages, modules and methods:
 | [PacketBinary5](/Code/PodApi/Packets/Binary5.py)   | Container class that stores a binary5 command packet for a POD device.         |
 
 ### Parameters
+
+* PodApi.Parameters package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Parameters.html)
 
 | Class                                                   | Description                                                              |
 |---------------------------------------------------------|--------------------------------------------------------------------------|
@@ -102,11 +112,15 @@ Detailed instructions of all Python packages, modules and methods:
 
 ### SetupAllDevices
 
+* Setup.SetupAllDevices package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.SetupAllDevices.html)
+
 | Class                                                       | Description                                                              |
 |-------------------------------------------------------------|--------------------------------------------------------------------------|
 | [SetupAll](/Code/Setup/SetupAllDevices/Setup_PodDevices.py) | Allows a user to set up and stream from any number of POD devices. The streamed data is saved to a file. | [X]() |
 
 ### SetupOneDevice
+
+* Setup.SetupOneDevice package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.SetupOneDevice.html)
 
 | Class                                                              | Description                                             |
 |--------------------------------------------------------------------|---------------------------------------------------------|
@@ -117,6 +131,8 @@ Detailed instructions of all Python packages, modules and methods:
 | [Setup8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. |
 
 ### Inputs
+
+* Setup.Inputs package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.Inputs.html)
 
 | Class                                           | Description                                                           |
 |-------------------------------------------------|-----------------------------------------------------------------------|
