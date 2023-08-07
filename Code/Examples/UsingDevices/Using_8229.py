@@ -1,4 +1,4 @@
-"""Runs all commands for a 8229 POD device.
+"""Runs all commands for an 8229 POD device.
 """
 
 # add directory path to code 
