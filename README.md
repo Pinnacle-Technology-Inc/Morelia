@@ -56,6 +56,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### Commands
 
 * PodApi.Commands package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Commands.html)
+* Import clases: ``from PodApi.Commands import PodCommands``
 
 | Class                                              | Description                                                          |
 |----------------------------------------------------|----------------------------------------------------------------------|
@@ -64,6 +65,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### Devices
 
 * PodApi.Devices package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Devices.html)
+* Import clases: ``from PodApi.Devices import BasicPodProtocol, Pod8206HR, Pod8401HR, Pod8229, Pod8480SC``
 
 | Class                                                    | Description                                         |
 |----------------------------------------------------------|-----------------------------------------------------|
@@ -76,6 +78,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### SerialPorts
 
 * PodApi.SerialPorts package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Devices.SerialPorts.html)
+* Import clases: ``from PodApi.Devices.SerialPorts import SerialComm``
 
 | Class                                                       | Description                                                     |
 |-------------------------------------------------------------|-----------------------------------------------------------------|
@@ -85,6 +88,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### Packets
 
 * PodApi.Packets package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Packets.html)
+* Import clases: ``from PodApi.Packets import Packet, Standard, Binary, Binary4, Binary5``
 
 | Class                                              | Description                                                                    |
 |----------------------------------------------------|--------------------------------------------------------------------------------|
@@ -97,6 +101,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### Parameters
 
 * PodApi.Parameters package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Parameters.html)
+* Import clases: ``from PodApi.Parameters import Params, Params8206HR, Params8401HR, Params8229, Params8480SC``
 
 | Class                                                   | Description                                                              |
 |---------------------------------------------------------|--------------------------------------------------------------------------|
@@ -113,6 +118,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### SetupAllDevices
 
 * Setup.SetupAllDevices package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.SetupAllDevices.html)
+* Import clases: ``from Setup.SetupAllDevices import SetupAll``
 
 | Class                                                       | Description                                                              |
 |-------------------------------------------------------------|--------------------------------------------------------------------------|
@@ -121,6 +127,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### SetupOneDevice
 
 * Setup.SetupOneDevice package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.SetupOneDevice.html)
+* Import clases: ``from Setup.SetupOneDevice import SetupInterface, Setup8206HR, Setup8401HR, Setup8229, Setup8480SC``
 
 | Class                                                              | Description                                             |
 |--------------------------------------------------------------------|---------------------------------------------------------|
@@ -133,6 +140,7 @@ Detailed instructions of all Python packages, modules and methods:
 ### Inputs
 
 * Setup.Inputs package docs: [here](https://python-pod-api.readthedocs.io/en/latest/Setup.Inputs.html)
+* Import clases: ``from Setup.Inputs import UserInput``
 
 | Class                                           | Description                                                           |
 |-------------------------------------------------|-----------------------------------------------------------------------|
