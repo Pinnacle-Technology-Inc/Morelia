@@ -3,3 +3,4 @@
 .vscode
 testing.py
 *.bkp
+*.dtmp
