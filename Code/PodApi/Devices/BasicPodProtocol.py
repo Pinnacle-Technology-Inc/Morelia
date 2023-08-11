@@ -108,14 +108,132 @@ class Pod :
         msgPacket = msg[1:packetBytes-3]
         msgCsm = msg[packetBytes-3:packetBytes-1]
         # calculate checksum from content packet  
-        csmValid = Packet.Checksum(msgPacket)
+        csmValid = Pod.Checksum(msgPacket)
         # return True if checksums match 
         if(msgCsm == csmValid) :
             return(True)
         else:
             return(False)
 
-        
+
+    # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
+ 
+
+    @staticmethod
+    def Checksum(bytesIn: bytes) -> bytes:
+        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the \
+        message, inverting, and taking the last byte.
+
+        Args:
+            bytesIn (bytes): Bytes message containing POD packet data.
+
+        Returns:
+            bytes: Two ASCII-encoded bytes containing the checksum for bytesIn.
+        """
+        # sum together all bytes in byteArr
+        sum = 0
+        for b in bytesIn : 
+            sum = sum + b
+        # invert and get last byte 
+        cs  = ~sum & 0xFF
+        # convert int into bytes 
+        cs_bytes = Packet.IntToAsciiBytes(cs, 2)
+        # return checksum bytes
+        return(cs_bytes)
+
+
+    @staticmethod
+    def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
+        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
+        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
+
+        Args:
+            commandNumber (int): Integer representing the command number. This will be converted into \
+                a 4 byte long ASCII-encoded bytes string.
+            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
+
+        Returns:
+            bytes: Bytes string of a complete standard POD packet.
+        """
+        # prepare components of packet
+        stx = Packet.STX()                              # STX indicating start of packet (1 byte)
+        cmd = Packet.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
+        etx = Packet.ETX()                              # ETX indicating end of packet (1 byte)
+        # build packet with payload 
+        if(payload) :
+            csm = Pod.Checksum(cmd+payload)         # checksum (2 bytes)
+            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
+        # build packet with NO payload 
+        else :
+            csm = Pod.Checksum(cmd)                 # checksum (2 bytes)
+            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
+        # return complete bytes packet
+        return(packet)
+
+    
+    @staticmethod
+    def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
+        """Converts a payload into a bytes string.
+
+        Args:
+            payload (int | bytes | tuple[int | bytes]): Integer, bytes, or tuple containing the payload.
+            argSizes (tuple[int]): Tuple of the argument sizes.
+
+        Raises:
+            Exception: Payload requires multiple arguments, use a tuple.
+            Exception: Payload is the wrong size.
+            Exception: Payload has an incorrect number of items.
+            Exception: Payload has invalid values.
+            Exception: Payload is an invalid type.
+
+        Returns:
+            bytes: Bytes string of the payload.
+        """
+        # if integer payload is given ... 
+        if(isinstance(payload,int)):
+            # check that command only uses one argument 
+            if( len(argSizes)!=1) : 
+                raise Exception('Payload requires multiple arguments, use a tuple.')
+            # convert to bytes of the expected length 
+            pld = Packet.IntToAsciiBytes(payload,sum(argSizes))
+
+        # if bytes payload is given...
+        elif(isinstance(payload, bytes)):
+            # throw error if payload is the wrong size  
+            if( len(payload) != sum(argSizes)) : # each byte is 2 hex characters
+                raise Exception('Payload is the wrong size.')
+            # otherwise, accept payload as given. 
+            else:
+                pld = payload
+
+        # if tuple payload is given...
+        elif(isinstance(payload, tuple)):
+            # check that there are the correct number of arguments
+            if(len(payload) != len(argSizes)) : 
+                raise Exception('Payload has an incorrect number of items.')
+            # build list of bytes payload parts 
+            tempPld = [None]*len(payload)
+            for i in range(len(payload)) : 
+                if(isinstance(payload[i], int)) :
+                    # convert to bytes of the expected length 
+                    tempPld[i] = Packet.IntToAsciiBytes(payload[i],argSizes[i])
+                elif(isinstance(payload[i], bytes) and len(payload[i])==argSizes[i]): # each byte is 2 hex characters
+                    # accept bytes payload as given
+                    tempPld[i] = payload[i]
+                else:
+                    raise Exception('Payload has invalid values.')
+            # concatenate list items
+            pld = tempPld[0]
+            for i in range(len(tempPld)-1):
+                pld += tempPld[i+1]
+
+        # bad type given 
+        else :
+            raise Exception('Payload is an invalid type.')
+
+        # return payload as bytes
+        return(pld)
+            
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
@@ -162,34 +280,6 @@ class Pod :
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
-    @staticmethod
-    def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
-        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
-        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
-
-        Args:
-            commandNumber (int): Integer representing the command number. This will be converted into \
-                a 4 byte long ASCII-encoded bytes string.
-            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
-
-        Returns:
-            bytes: Bytes string of a complete standard POD packet.
-        """
-        # prepare components of packet
-        stx = Packet.STX()                              # STX indicating start of packet (1 byte)
-        cmd = Packet.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = Packet.ETX()                              # ETX indicating end of packet (1 byte)
-        # build packet with payload 
-        if(payload) :
-            csm = Packet.Checksum(cmd+payload)         # checksum (2 bytes)
-            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
-        # build packet with NO payload 
-        else :
-            csm = Packet.Checksum(cmd)                 # checksum (2 bytes)
-            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
-        # return complete bytes packet
-        return(packet)
-    
     def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         """Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give, \
         the method will convert it into a bytes string of the length expected by the command. If a bytes \
@@ -223,11 +313,11 @@ class Pod :
             if(payload == None):
                 raise Exception('POD command requires a payload.')
             # get payload in bytes
-            pld = Packet.PayloadToBytes(payload, argSizes)
+            pld = Pod.PayloadToBytes(payload, argSizes)
         else :
             pld = None
         # build POD packet 
-        packet = self.BuildPODpacket_Standard(cmdNum, payload=pld)
+        packet = Pod.BuildPODpacket_Standard(cmdNum, payload=pld)
         # return complete packet 
         return(packet)
     
@@ -462,7 +552,7 @@ class Pod :
         packet = startPacket.rawPacket + binaryMsg + binaryEnd
         # check if checksum is correct 
         if(validateChecksum):
-            csmCalc = Packet.Checksum(binaryMsg)
+            csmCalc = Pod.Checksum(binaryMsg)
             csm = binaryEnd[0:2]
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
