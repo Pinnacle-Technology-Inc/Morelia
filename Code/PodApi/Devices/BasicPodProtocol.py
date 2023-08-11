@@ -173,64 +173,37 @@ class Pod :
     
     @staticmethod
     def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
-        """Converts a payload into a bytes string.
+        """Converts a payload into a bytes string (assuming that the payload is for a valid command).
 
         Args:
             payload (int | bytes | tuple[int | bytes]): Integer, bytes, or tuple containing the payload.
             argSizes (tuple[int]): Tuple of the argument sizes.
-
-        Raises:
-            Exception: Payload requires multiple arguments, use a tuple.
-            Exception: Payload is the wrong size.
-            Exception: Payload has an incorrect number of items.
-            Exception: Payload has invalid values.
-            Exception: Payload is an invalid type.
 
         Returns:
             bytes: Bytes string of the payload.
         """
         # if integer payload is given ... 
         if(isinstance(payload,int)):
-            # check that command only uses one argument 
-            if( len(argSizes)!=1) : 
-                raise Exception('Payload requires multiple arguments, use a tuple.')
             # convert to bytes of the expected length 
             pld = Packet.IntToAsciiBytes(payload,sum(argSizes))
-
         # if bytes payload is given...
         elif(isinstance(payload, bytes)):
-            # throw error if payload is the wrong size  
-            if( len(payload) != sum(argSizes)) : # each byte is 2 hex characters
-                raise Exception('Payload is the wrong size.')
-            # otherwise, accept payload as given. 
-            else:
-                pld = payload
-
+            pld = payload
         # if tuple payload is given...
-        elif(isinstance(payload, tuple)):
-            # check that there are the correct number of arguments
-            if(len(payload) != len(argSizes)) : 
-                raise Exception('Payload has an incorrect number of items.')
+        else: 
             # build list of bytes payload parts 
             tempPld = [None]*len(payload)
             for i in range(len(payload)) : 
                 if(isinstance(payload[i], int)) :
                     # convert to bytes of the expected length 
                     tempPld[i] = Packet.IntToAsciiBytes(payload[i],argSizes[i])
-                elif(isinstance(payload[i], bytes) and len(payload[i])==argSizes[i]): # each byte is 2 hex characters
+                else : 
                     # accept bytes payload as given
                     tempPld[i] = payload[i]
-                else:
-                    raise Exception('Payload has invalid values.')
             # concatenate list items
             pld = tempPld[0]
             for i in range(len(tempPld)-1):
                 pld += tempPld[i+1]
-
-        # bad type given 
-        else :
-            raise Exception('Payload is an invalid type.')
-
         # return payload as bytes
         return(pld)
             
@@ -302,16 +275,15 @@ class Pod :
             raise Exception('POD command does not exist.')
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self._commands.CommandNumberFromName(cmd)
+            cmdNum : int = self._commands.CommandNumberFromName(cmd)
         else: 
-            cmdNum = cmd
+            cmdNum : int = cmd
         # get length of expected paylaod 
         argSizes = self._commands.ArgumentHexChar(cmdNum)
         # check if command requires a payload
         if( sum(argSizes) > 0 ): 
-            # check to see if a payload was given 
-            if(payload == None):
-                raise Exception('POD command requires a payload.')
+            # raise exception if command is invalid
+            self._commands.ValidateCommand(cmdNum, payload)
             # get payload in bytes
             pld = Pod.PayloadToBytes(payload, argSizes)
         else :
