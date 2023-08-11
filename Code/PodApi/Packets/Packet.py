@@ -376,35 +376,6 @@ class Packet :
 
 
     @staticmethod
-    def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
-        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
-        + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
-
-        Args:
-            commandNumber (int): Integer representing the command number. This will be converted into \
-                a 4 byte long ASCII-encoded bytes string.
-            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
-
-        Returns:
-            bytes: Bytes string of a complete standard POD packet.
-        """
-        # prepare components of packet
-        stx = Packet.STX()                              # STX indicating start of packet (1 byte)
-        cmd = Packet.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = Packet.ETX()                              # ETX indicating end of packet (1 byte)
-        # build packet with payload 
-        if(payload) :
-            csm = Packet.Checksum(cmd+payload)         # checksum (2 bytes)
-            packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
-        # build packet with NO payload 
-        else :
-            csm = Packet.Checksum(cmd)                 # checksum (2 bytes)
-            packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
-        # return complete bytes packet
-        return(packet)
-
-    
-    @staticmethod
     def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
         """Converts a payload into a bytes string.
 
