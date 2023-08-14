@@ -253,6 +253,31 @@ class Pod :
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
+    def TestConnection(self, pingCmd:str|int='PING') -> bool :
+        """Tests if a POD device can be read from or written. Sends a PING command. 
+
+        Args:
+            pingCmd (str | int, optional): Command name or number to ping. Defaults to 'PING'.
+
+        Returns:
+            bool: True for successful connection, false otherwise.
+            
+        Raises:
+            Exception: Ping command does not exist for this POD device.
+        """
+        if(not self._commands.DoesCommandExist(pingCmd)) : 
+            raise Exception('[!] Ping command \''+str(pingCmd)+'\' does not exist for this POD device.')
+        # returns True when connection is successful, false otherwise
+        try:
+            self.FlushPort() # clear out any unread packets 
+            w: PacketStandard = self.WritePacket(cmd=pingCmd)
+            r: Packet = self.ReadPODpacket()
+        except:   return(False)
+        # check that read matches ping write
+        if(w.rawPacket==r.rawPacket): return(True)
+        return(False)
+    
+
     def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         """Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give, \
         the method will convert it into a bytes string of the length expected by the command. If a bytes \

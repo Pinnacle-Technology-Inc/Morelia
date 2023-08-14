@@ -30,16 +30,15 @@ class Hose :
         # set variables 
         self.sampleRate  : int   = int(sampleRate)
         self.deviceValve : Valve = Valve(podDevice, streamCmd, streamPldStart, streamPldStop)
-        
-        self.data: list[Packet|None]|None = None
-        self.timestamps: list[float]|None = None
-        self.numFlowLoops: int = 0
+        self.data: list[Packet|None] = []
+        self.timestamps: list[float] = []
+        self.numDrops: int = 0
         
     def StartStream(self) : 
         # check for good connection 
-        if(not self.TestDeviceConnection(self.deviceValve.podDevice)): 
+        if(not self.deviceValve.podDevice.TestConnection()): 
             raise Exception('Could not connect to this POD device.')
-        stream = Thread( target = self.Flow )
+        stream = Thread( target = self._Flow )
         # start streaming (program will continue until .join() or streaming ends)
         stream.start() 
         return(stream)
@@ -48,13 +47,14 @@ class Hose :
         # stop streaming
         self.deviceValve.Close()
         
-    def Flow(self) :         
+    def _Flow(self) :  
+        # initialize       
         stopAt: bytes = self.deviceValve.podDevice.GetPODpacket(
             cmd=self.deviceValve.streamCmd,
             payload=self.deviceValve.streamPldStop
         )
         currentTime : float = 0.0 
-
+        # start streaming data 
         self.deviceValve.Open()
         while(True) : 
             # initialize
@@ -62,49 +62,34 @@ class Hose :
             ti = (round(time.time(),9)) # initial time (sec)
             # read data for one second
             i: int = 0
-            while (i < self.sampleRate) : 
-                # read data
+            while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
                 try : 
+                    # read data (vv exception raised here if bad checksum vv)
                     r: Packet = self.deviceValve.podDevice.ReadPODpacket()
+                    # check stop condition 
+                    if(r.rawPacket == stopAt) : 
+                        # finish up
+                        currentTime = self._Drop(currentTime, ti, data)
+                        return # NOTE this is only exit for while(True) 
+                    # save binary packet data and ignore standard packets
+                    if( not isinstance(r,PacketStandard)) : 
+                        data[i] = r
+                        i += 1 # update looping condition 
                 except : 
-                    continue # bad checksum / corrupted data 
-                # check stop condition 
-                if(r.rawPacket == stopAt) : 
-                    return
-                # save binary packet data
-                if( not isinstance(r,PacketStandard)) : # ignore standard packets
-                    data[i] = r
-                    i += 1 # update looping condition 
-            # get times 
-            nextTime = currentTime + (round(time.time(),9) - ti)
-            # update trackers before looping again
-            self.timestamps = np.linspace( # evenly spaced numbers over interval.
-                currentTime,    # start time
-                nextTime,       # stop time
-                self.sampleRate # number of items 
-            ).tolist()
-            self.data = data
-            currentTime = nextTime
-            self.numFlowLoops += 1
+                    # corrupted data here, leave None in data[i]
+                    i += 1 # update looping condition                 
+            currentTime = self._Drop(currentTime, ti, data)
 
-            
-    @staticmethod
-    def TestDeviceConnection(pod: Pod, pingCmd:str|int='PING') -> bool :
-        """Tests if a POD device can be read from or written. Sends a PING command. 
-
-        Args:
-            pod (POD_Basics): POD device to read to and write from.
-            pingCmd (str | int, optional): Command name or number to ping. Defaults to 'PING'.
-
-        Returns:
-            bool: True for successful connection, false otherwise.
-        """
-        # returns True when connection is successful, false otherwise
-        try:
-            pod.FlushPort() # clear out any unread packets 
-            w: PacketStandard = pod.WritePacket(cmd=pingCmd)
-            r: Packet = pod.ReadPODpacket()
-        except:   return(False)
-        # check that read matches ping write
-        if(w.rawPacket==r.rawPacket): return(True)
-        return(False)
+    def _Drop(self, currentTime: float, ti: float, data) : 
+        # get times 
+        nextTime = currentTime + (round(time.time(),9) - ti)
+        # update trackers before looping again
+        self.timestamps = np.linspace( # evenly spaced numbers over interval.
+            currentTime,    # start time
+            nextTime,       # stop time
+            self.sampleRate # number of items 
+        ).tolist()
+        self.data = data
+        self.numDrops += 1
+        # finish
+        return nextTime
