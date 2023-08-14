@@ -1,4 +1,5 @@
 from PodApi.Devices import Pod
+from PodApi.DataStream import Valve
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -17,11 +18,5 @@ class Hose :
                  streamPldStart: int|bytes|tuple[int|bytes], 
                  streamPldStop: int|bytes|tuple[int|bytes]) -> None:
         
-
+        self.deviceValve = Valve(streamCmd, streamPldStart, streamPldStop)
         self.podDevice : Pod = podDevice
-        
-        if( podDevice._commands.DoesCommandExist(streamCmd) ) :
-            self.streamCmd : str|int = streamCmd
-        else : 
-            raise Exception('[!] Command '+str(streamCmd)+' does not exist.')
-        

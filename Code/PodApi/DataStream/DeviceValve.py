@@ -9,7 +9,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Valve : 
-    """Container class to start and stop streaming data from a POD device
+    """Simple class to start and stop streaming data from a POD device
     
     Attributes: 
             podDevice (Pod): POD device, such as an 8206-HR or 8401-HR.
