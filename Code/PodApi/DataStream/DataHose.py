@@ -31,6 +31,10 @@ class Hose :
         self.sampleRate  : int   = int(sampleRate)
         self.deviceValve : Valve = Valve(podDevice, streamCmd, streamPldStart, streamPldStop)
         
+        self.data: list[Packet|None]|None = None
+        self.timestamps: list[float]|None = None
+        self.numFlowLoops: int = 0
+        
     def StartStream(self) : 
         # check for good connection 
         if(not self.TestDeviceConnection(self.deviceValve.podDevice)): 
@@ -43,7 +47,6 @@ class Hose :
     def StopStream(self) : 
         # stop streaming
         self.deviceValve.Close()
-        print('!!!! STOP')
         
     def Flow(self) :         
         stopAt: bytes = self.deviceValve.podDevice.GetPODpacket(
@@ -54,32 +57,35 @@ class Hose :
 
         self.deviceValve.Open()
         while(True) : 
-            # initialize data array 
+            # initialize
             data = [None] * self.sampleRate
             ti = (round(time.time(),9)) # initial time (sec)
-
             # read data for one second
-            for i in range(self.sampleRate):
+            i: int = 0
+            while (i < self.sampleRate) : 
                 # read data
-                try : r: Packet = self.deviceValve.podDevice.ReadPODpacket()
-                except : continue # bad checksum / corrupted data 
+                try : 
+                    r: Packet = self.deviceValve.podDevice.ReadPODpacket()
+                except : 
+                    continue # bad checksum / corrupted data 
                 # check stop condition 
                 if(r.rawPacket == stopAt) : 
                     return
-                # look for binary data packet
-                if(not isinstance(r,PacketStandard)) : 
-                    # save binary packet data
-                    data[i] = r 
-                else: 
-                    # skip standard stream info packets
-                    i = i-1
-                    continue
-                
-            tf = round(time.time(),9) # final time
-            td = tf - ti # time difference 
-            # average_td = (round((td/self.sampleRate), 9)) # time between samples 
-            currentTime += td
-            print(currentTime)
+                # save binary packet data
+                if( not isinstance(r,PacketStandard)) : # ignore standard packets
+                    data[i] = r
+                    i += 1 # update looping condition 
+            # get times 
+            nextTime = currentTime + (round(time.time(),9) - ti)
+            # update trackers before looping again
+            self.timestamps = np.linspace( # evenly spaced numbers over interval.
+                currentTime,    # start time
+                nextTime,       # stop time
+                self.sampleRate # number of items 
+            ).tolist()
+            self.data = data
+            currentTime = nextTime
+            self.numFlowLoops += 1
 
             
     @staticmethod
