@@ -52,5 +52,4 @@ class Valve :
     def Close(self):
         """Write command to stop streaming 
         """
-        self.podDevice.WritePacket(self.streamCmd, self.streamPldStop)
-                
+        self.podDevice.WritePacket(self.streamCmd, self.streamPldStop)                
