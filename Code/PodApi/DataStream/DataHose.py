@@ -94,9 +94,7 @@ class Hose :
         Streaming will continue until a "stop streaming" packet is recieved. 
         """
         # initialize       
-        stopAt: bytes = self.deviceValve.podDevice.GetPODpacket(
-            cmd     = self.deviceValve.streamCmd,
-            payload = self.deviceValve.streamPldStop            )
+        stopAt: bytes = self.deviceValve.GetStopBytes()
         currentTime : float = 0.0 
         # start streaming data 
         self.deviceValve.Open()
@@ -109,15 +107,15 @@ class Hose :
             while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
                 try : 
                     # read data (vv exception raised here if bad checksum vv)
-                    r: Packet = self.deviceValve.podDevice.ReadPODpacket()
+                    drip: Packet = self.deviceValve.Drip()
                     # check stop condition 
-                    if(r.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
+                    if(drip.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
                         return 
                     # save binary packet data and ignore standard packets
-                    if( not isinstance(r,PacketStandard)) : 
-                        data[i] = r
+                    if( not isinstance(drip,PacketStandard)) : 
+                        data[i] = drip
                         i += 1 # update looping condition 
                 except : 
                     # corrupted data here, leave None in data[i]

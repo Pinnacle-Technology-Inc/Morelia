@@ -1,4 +1,6 @@
+# local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
+from PodApi.Packets import Packet
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -53,4 +55,32 @@ class Valve :
         """Write command to stop streaming 
         """
         # write command without checking connection, which flushes all packets
-        self.podDevice.WritePacket(self.streamCmd, self.streamPldStop)                
+        self.podDevice.WritePacket(self.streamCmd, self.streamPldStop)
+
+    def Drip(self) -> Packet : 
+        """Reads one packet from the POD device.
+
+        Returns:
+            Packet: POD packet beginning with STX and ending with ETX. \
+                This may be a standard packet, binary packet, or an \
+                unformatted packet (STX+something+ETX).
+        """
+        return self.podDevice.ReadPODpacket()
+
+    def GetStartBytes(self) -> bytes : 
+        """Gets the bytes string represeting a "start streaming data" packet.
+
+        Returns:
+            bytes: Bytes string for a self.streamCmd command and a \
+                self.streamPldStart payload.
+        """
+        return self.podDevice.GetPODpacket( cmd=self.streamCmd, payload=self.streamPldStart)
+    
+    def GetStopBytes(self) -> bytes : 
+        """Gets the bytes string represeting a "stop streaming data" packet.
+
+        Returns:
+            bytes: Bytes string for a self.streamCmd command and a \
+                self.streamPldStop payload.
+        """
+        return self.podDevice.GetPODpacket( cmd=self.streamCmd, payload=self.streamPldStop)
