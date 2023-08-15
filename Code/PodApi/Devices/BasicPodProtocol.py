@@ -319,7 +319,7 @@ class Pod :
         return(packet)
     
 
-    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> bytes :
+    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
         Args:
@@ -330,7 +330,7 @@ class Pod :
                     validation. Defaults to True.
 
         Returns:
-            bytes: Bytes string containing a POD packet beginning with STX and ending with ETX. This may \
+            Packet: POD packet beginning with STX and ending with ETX. This may \
                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         self.WritePacket(cmd, payload)
