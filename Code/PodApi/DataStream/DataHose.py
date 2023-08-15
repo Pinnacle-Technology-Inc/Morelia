@@ -4,7 +4,7 @@ import numpy as np
 import time
 
 # local imports
-from PodApi.Devices import Pod
+from PodApi.Devices import Pod8206HR, Pod8401HR
 from PodApi.Packets import Packet, PacketStandard
 from PodApi.DataStream import Valve
 
@@ -18,27 +18,34 @@ __email__       = "sales@pinnaclet.com"
 
 class Hose : 
     
-    def __init__(self, 
-                 podDevice: Pod, 
-                 streamCmd: str|int, 
-                 streamPldStart: int|bytes|tuple[int|bytes], 
-                 streamPldStop: int|bytes|tuple[int|bytes],
-                 sampleRate: int) -> None:
-        # check for valid parameters
-        if(sampleRate < 1) : 
-            raise Exception('[!] The sample rate mus be greater than zero.')
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR) -> None:
         # set variables 
-        self.sampleRate : int   = int(sampleRate)
-        self.deviceValve: Valve = Valve(podDevice, streamCmd, streamPldStart, streamPldStop)
+        self.sampleRate : int   = Hose.GetSampleRate(podDevice)
+        self.deviceValve: Valve = Valve(podDevice)
         self.data       : list[Packet] = []
         self.timestamps : list[float] = []
         self.numDrops   : int = 0
         self.corruptedPointsRemoved: int = 0
         
+    @staticmethod
+    def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
+        # Device  ::: cmd, command name,    args, ret, description
+        # ----------------------------------------------------------------------------------------------
+        # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
+        # 8401-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
+        # ----------------------------------------------------------------------------------------------
+        # NOTE both 8206HR and 8401HR use the same command to start streaming. 
+        # If there is a new device that uses a different command, add a method 
+        # to check what type the device is (i.e isinstance(podDevice, PodClass)) 
+        # and set the self.stream* instance variables accordingly.
+        if(not podDevice._commands.ValidateCommand('GET SAMPLE RATE')) : 
+            raise Exception('[!] Cannot get the sample rate for this POD device.')
+        if(not podDevice.TestConnection()) : 
+            raise Exception('[!] Could not connect to this POD device.')
+        pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
+        return int(pkt.Payload()[0]) 
+
     def StartStream(self) : 
-        # check for good connection 
-        if(not self.deviceValve.podDevice.TestConnection()): 
-            raise Exception('Could not connect to this POD device.')
         stream = Thread( target = self._Flow )
         # start streaming (program will continue until .join() or streaming ends)
         stream.start() 
@@ -51,9 +58,8 @@ class Hose :
     def _Flow(self) :  
         # initialize       
         stopAt: bytes = self.deviceValve.podDevice.GetPODpacket(
-            cmd=self.deviceValve.streamCmd,
-            payload=self.deviceValve.streamPldStop
-        )
+            cmd     = self.deviceValve.streamCmd,
+            payload = self.deviceValve.streamPldStop            )
         currentTime : float = 0.0 
         # start streaming data 
         self.deviceValve.Open()
@@ -68,10 +74,10 @@ class Hose :
                     # read data (vv exception raised here if bad checksum vv)
                     r: Packet = self.deviceValve.podDevice.ReadPODpacket()
                     # check stop condition 
-                    if(r.rawPacket == stopAt) : 
+                    if(r.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
-                        return # NOTE this is only exit for while(True) 
+                        return 
                     # save binary packet data and ignore standard packets
                     if( not isinstance(r,PacketStandard)) : 
                         data[i] = r
