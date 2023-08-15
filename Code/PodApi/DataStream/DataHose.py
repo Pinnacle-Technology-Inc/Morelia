@@ -42,7 +42,7 @@ class Hose :
         # set variables 
         self.sampleRate : int   = Hose.GetSampleRate(podDevice)
         self.deviceValve: Valve = Valve(podDevice)
-        self.data       : list[Packet] = []
+        self.data       : list[Packet|None] = []
         self.timestamps : list[float] = []
         self.numDrops   : int = 0
         self.corruptedPointsRemoved: int = 0
