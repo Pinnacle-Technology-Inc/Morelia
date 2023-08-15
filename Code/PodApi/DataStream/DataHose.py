@@ -87,9 +87,17 @@ class Hose :
         pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
         return int(pkt.Payload()[0]) 
 
+    def EmptyHose(self) : 
+        # reset to default
+        self.data       : list[Packet|None] = []
+        self.timestamps : list[float] = []
+        self.numDrops   : int = 0
+        self.corruptedPointsRemoved: int = 0
+
     def StartStream(self) : 
         """Start a thread to start streaming data from the POD device.
         """
+        self.EmptyHose()
         stream = Thread( target = self._Flow )
         # start streaming (program will continue until .join() or streaming ends)
         stream.start() 

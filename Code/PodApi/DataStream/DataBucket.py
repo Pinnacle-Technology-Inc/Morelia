@@ -1,3 +1,7 @@
+# enviornment imports
+import time
+from threading import Thread
+
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
 from PodApi.Packets import Packet, PacketStandard, PacketBinary4, PacketBinary5
@@ -19,7 +23,33 @@ class Bucket :
         
         self.allData: list[list[Packet|None]] = []
         self.allTimestamps: list[list[float]] = []
+        self.dropsCollected: int = 0
                 
+    def StartCollecting(self, duration_sec: float) : 
+        # start streaming data
+        t: Thread = self.dataHose.StartStream()
+        # collect data for the duration set
+        ti: float = time.time()
+        while( (time.time() - ti ) < duration_sec) :
+            if(self.IsDropAvailable()) :
+                self.CollectDrop()
+            else : 
+                time.sleep(0.25)
+        # signal to stop streaming 
+        self.dataHose.StopStream()
+        # clear out remaining data
+        while(self.IsDropAvailable()) : 
+            self.CollectDrop()
+        
+    def CollectDrop(self) : 
+        # add data to lists 
+        self.allData.append(self.dataHose.data)
+        self.allTimestamps.append(self.dataHose.timestamps)
+        # increment counter
+        self.dropsCollected += 1
+                
+    def IsDropAvailable(self) -> bool: 
+        return ( self.dropsCollected < self.dataHose.numDrops ) 
                 
     @staticmethod
     def Split(data : list[Packet|None]) : 
