@@ -23,15 +23,17 @@ class Hose :
     Attributes: 
         sampleRate (int): Sample rate of the POD device.
         deviceValve (Valve): To open or close the data stream. 
-        data (list[Packet]): List of streaming binary data packets. 
+        data (list[Packet|None]): List of streaming binary data packets. 
         timestamps (list[float]: List of timestamps for each data packet.
         numDrops (int): Number of drops, or number of times the data and \
             timestamps have been updated. 
         corruptedPointsRemoved (int): Total number of corrupted data points \
             removed from the data and timestamps lists.
+        useFilter (bool): Flag to remove corrupted data and timestamps when True; \
+            does not remove points when False. Defaults to True.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
         """Set instance variables.
 
         Args:
@@ -44,6 +46,16 @@ class Hose :
         self.timestamps : list[float] = []
         self.numDrops   : int = 0
         self.corruptedPointsRemoved: int = 0
+        self.useFilter  : bool = bool(useFilter)
+        
+    def SetUseFilter(self, useFilter: bool) : 
+        """Sets the flag to remove corrupted data and timestamps when True; \
+        does not remove points when False.
+
+        Args:
+            useFilter (bool): True or False.
+        """
+        self.useFilter = bool(useFilter)
         
     @staticmethod
     def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
@@ -142,7 +154,8 @@ class Hose :
             self.sampleRate # number of items 
         ).tolist()
         # clean out corrupted data
-        self._Filter(data,timestamps)
+        if(self.useFilter) : 
+            self._Filter(data,timestamps)
         # update trackers before looping again
         self.timestamps = timestamps
         self.data = data
