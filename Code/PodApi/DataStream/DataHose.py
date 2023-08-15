@@ -1,12 +1,12 @@
 # enviornment imports
-from threading import Thread
+from   threading import Thread
 import numpy as np
 import time
 
 # local imports
-from PodApi.Devices import Pod8206HR, Pod8401HR
-from PodApi.Packets import Packet, PacketStandard
-from PodApi.DataStream import Valve
+from PodApi.Devices     import Pod8206HR, Pod8401HR
+from PodApi.Packets     import Packet, PacketStandard
+from PodApi.DataStream  import Valve
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -17,8 +17,26 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Hose : 
+    """Collects streaming data from an 8206-HR or 8401-HR POD device. The data \
+    and timestamps are updated about every 1 second when streaming.
+    
+    Attributes: 
+        sampleRate (int): Sample rate of the POD device.
+        deviceValve (Valve): To open or close the data stream. 
+        data (list[Packet]): List of streaming binary data packets. 
+        timestamps (list[float]: List of timestamps for each data packet.
+        numDrops (int): Number of drops, or number of times the data and \
+            timestamps have been updated. 
+        corruptedPointsRemoved (int): Total number of corrupted data points \
+            removed from the data and timestamps lists.
+    """
     
     def __init__(self, podDevice: Pod8206HR|Pod8401HR) -> None:
+        """Set instance variables.
+
+        Args:
+            podDevice (Pod8206HR | Pod8401HR): Pod device to stream data from.
+        """
         # set variables 
         self.sampleRate : int   = Hose.GetSampleRate(podDevice)
         self.deviceValve: Valve = Valve(podDevice)
@@ -29,6 +47,18 @@ class Hose :
         
     @staticmethod
     def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
+        """Writes a command to the POD device to get its sample rate in Hz.
+
+        Args:
+            podDevice (Pod8206HR | Pod8401HR): POD device to get the sample rate for.
+
+        Raises:
+            Exception: Cannot get the sample rate for this POD device.
+            Exception: Could not connect to this POD device.
+
+        Returns:
+            int: Sample rate in Hz.
+        """
         # Device  ::: cmd, command name,    args, ret, description
         # ----------------------------------------------------------------------------------------------
         # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
@@ -46,16 +76,23 @@ class Hose :
         return int(pkt.Payload()[0]) 
 
     def StartStream(self) : 
+        """Start a thread to start streaming data from the POD device.
+        """
         stream = Thread( target = self._Flow )
         # start streaming (program will continue until .join() or streaming ends)
         stream.start() 
         return(stream)
             
     def StopStream(self) : 
+        """Writes a command to the POD device to stop streaming data.
+        """
         # stop streaming
         self.deviceValve.Close()
         
-    def _Flow(self) :  
+    def _Flow(self) : 
+        """Streams data from the POD device. The data drops about every 1 second. \
+        Streaming will continue until a "stop streaming" packet is recieved. 
+        """
         # initialize       
         stopAt: bytes = self.deviceValve.podDevice.GetPODpacket(
             cmd     = self.deviceValve.streamCmd,
@@ -87,7 +124,18 @@ class Hose :
                     i += 1 # update looping condition          
             currentTime = self._Drop(currentTime, ti, data)
 
-    def _Drop(self, currentTime: float, ti: float, data: list[Packet|None]) : 
+    def _Drop(self, currentTime: float, ti: float, data: list[Packet|None]) -> float : 
+        """Updates the instance variables that store the streaming data. \
+        The data drops about every 1 second.
+
+        Args:
+            currentTime (float): Current start time in seconds.
+            ti (float): Computer clock time at the start of the ~1 second drop. 
+            data (list[Packet | None]): Packets recieved when streaming.
+
+        Returns:
+            float: updated current time in seconds for the next drop.
+        """
         # get times 
         nextTime = currentTime + (round(time.time(),9) - ti)
         timestamps: list[float] = np.linspace( # evenly spaced numbers over interval.
@@ -105,6 +153,12 @@ class Hose :
         return nextTime
     
     def _Filter(self, data: list[Packet|None], timestamps: list[float]) : 
+        """Removes any corrupted points from the data and timestamp lists.
+
+        Args:
+            data (list[Packet | None]): List of Packets recieved when streaming or None for corrupted data.
+            timestamps (list[float]): Timestamp in seconds of each packet.
+        """
         # remove all corrupted data from lists
         while(None in data) : 
             # find where None is in the data list
