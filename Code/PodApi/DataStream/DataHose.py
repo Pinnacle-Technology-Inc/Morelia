@@ -81,8 +81,7 @@ class Hose :
         # If there is a new device that uses a different command, add a method 
         # to check what type the device is (i.e isinstance(podDevice, PodClass)) 
         # and set the self.stream* instance variables accordingly.
-        if(not podDevice._commands.ValidateCommand('GET SAMPLE RATE')) : 
-            raise Exception('[!] Cannot get the sample rate for this POD device.')
+        podDevice._commands.ValidateCommand('GET SAMPLE RATE')        
         if(not podDevice.TestConnection()) : 
             raise Exception('[!] Could not connect to this POD device.')
         pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')

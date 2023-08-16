@@ -352,10 +352,12 @@ class CommandSet :
             raise Exception('[!] Command '+str(cmd)+' does not exist.')
 
         # get argument lengths  
-        args: tuple[int]|None = self.ArgumentHexChar(cmd)
+        args: tuple[int] = self.ArgumentHexChar(cmd)
         
         # check if no payload is needed
-        if(args == None and pld != None) : 
+        if(sum(args) == 0) : 
+            if(pld == None) : 
+                return
             raise Exception('[!] This command does not take a payload.')
         
         # check type of payload 
