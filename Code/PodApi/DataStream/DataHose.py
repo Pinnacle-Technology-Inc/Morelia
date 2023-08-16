@@ -47,6 +47,7 @@ class Hose :
         self.numDrops   : int = 0
         self.corruptedPointsRemoved: int = 0
         self.useFilter  : bool = bool(useFilter)
+        self.isOpen     : bool = False
         
     def SetUseFilter(self, useFilter: bool) : 
         """Sets the flag to remove corrupted data and timestamps when True; \
@@ -97,7 +98,10 @@ class Hose :
     def StartStream(self) : 
         """Start a thread to start streaming data from the POD device.
         """
+        # initialize class instance
         self.EmptyHose()
+        self.isOpen = True
+        # threading 
         stream = Thread( target = self._Flow )
         # start streaming (program will continue until .join() or streaming ends)
         stream.start() 
@@ -132,6 +136,7 @@ class Hose :
                     if(drip.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
+                        self.isOpen = False
                         return 
                     # save binary packet data and ignore standard packets
                     if( not isinstance(drip,PacketStandard)) : 
