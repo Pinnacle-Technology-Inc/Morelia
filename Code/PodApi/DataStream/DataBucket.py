@@ -21,9 +21,10 @@ class Bucket :
     def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
         # set instance variables 
         self.dataHose: Hose = Hose(podDevice,useFilter)
-        self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple with 1 sec of timestamps and data. 
+        self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple (x,y) with 1 sec of timestamps (x) and data (y) 
         self.totalDropsCollected: int = 0 # rolling counter
-
+        self.isCollecting: bool = False
+        
     def GetNumberOfDrops(self) -> int : 
         return self.drops.qsize()
 
@@ -46,6 +47,7 @@ class Bucket :
     def StartCollecting(self, duration_sec: float|None = None ) -> Thread : 
         self.EmptyBucket()
         # start streaming data
+        self.isCollecting = True
         self.dataHose.StartStream()
         # collect streaming data 
         if(duration_sec == None) : 
@@ -57,13 +59,14 @@ class Bucket :
     
     def _CollectWhileOpen(self) : 
         # collect data while the device is streaming 
-        while(self.dataHose.isOpen) : 
+        while(self.dataHose.isOpen or self._IsDropAvailable()) : 
             # check for new data
             if(self._IsDropAvailable()) :
                 self._CollectDrop()
             else : 
                 # wait for new data 
                 time.sleep(0.25)
+        self.isCollecting = False                
                   
     def _CollectForDuration(self, duration_sec: float) : 
         # collect data for the duration set
@@ -74,14 +77,15 @@ class Bucket :
                 self._CollectDrop()
             else : 
                 # check if streaming has stopped
-                if(not self.dataHose.isOpen) : return
+                if(not self.dataHose.isOpen) : 
+                    self.isCollecting = False
+                    return
                 # wait for new data 
                 time.sleep(0.25)
         # signal to stop streaming 
         self.StopCollecting()
         # clear out remaining data
-        while(self._IsDropAvailable()) : 
-            self._CollectDrop()
+        self._CollectWhileOpen()
         
     def _CollectDrop(self) : 
         # add data to lists 
