@@ -38,6 +38,8 @@ class Hose :
 
         Args:
             podDevice (Pod8206HR | Pod8401HR): Pod device to stream data from.
+            useFilter (bool): Flag to remove corrupted data and timestamps when True; \
+                does not remove points when False. Defaults to True.
         """
         # set variables 
         self.sampleRate : int   = Hose.GetSampleRate(podDevice)

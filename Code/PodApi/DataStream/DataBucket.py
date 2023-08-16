@@ -17,8 +17,24 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Bucket : 
+    """Class to collect the data and timestamps when streaming from a POD device.
+    
+    Attributes:
+        dataHose (Hose): Hose used to stream data from the POD device.
+        drops (Queue[ tuple[ list[float], list[Packet|None] ] ]): Queue of the drops \
+            (timestamps and data) collected from the Hose.
+        totalDropsCollected (int): Counts the total number of Drops collected from the Hose.
+        isCollecting (bool): True when collecting drops from the Hose, False otherwise.
+    """
     
     def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
+        """Set class instance variables.
+
+        Args:
+            podDevice (Pod8206HR | Pod8401HR): POD device to stream data from.
+            useFilter (bool): Flag to remove corrupted data and timestamps when True; \
+                does not remove points when False. Defaults to True.
+        """
         # set instance variables 
         self.dataHose: Hose = Hose(podDevice,useFilter)
         self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple (x,y) with 1 sec of timestamps (x) and data (y) 
@@ -26,25 +42,50 @@ class Bucket :
         self.isCollecting: bool = False
         
     def EmptyBucket(self) : 
+        """Resets the class.
+        """
         self.dataHose.EmptyHose()
         # reset all 
         self.drops = Queue()
         self.totalDropsCollected = 0
         
     def GetNumberOfDrops(self) -> int : 
+        """Get the number of data drops currently in the queue.
+
+        Returns:
+            int: Size of the drops queue.
+        """
         return self.drops.qsize()
 
     def DequeueDrop(self) -> tuple[ list[float], list[Packet|None] ]: 
+        """Gets the first point (timestamp, data) in the drops queue.
+
+        Raises:
+            Exception: No drops left to dequeue.
+
+        Returns:
+            tuple[ list[float], list[Packet|None] ]: _description_
+        """
         if(not self.drops.empty() ) :
             return self.drops.get()
         else :
             raise Exception('[!] No drops left to dequeue.')
 
     def StopCollecting(self) : 
+        """Tells the POD device to stop streaming data.
+        """
         # signal to stop streaming 
         self.dataHose.StopStream()    
 
     def StartCollecting(self, duration_sec: float|None = None ) -> Thread : 
+        """Start collecting stream data into the Bucket.
+
+        Args:
+            duration_sec (float | None, optional): How long to stream data in seconds. Defaults to None.
+
+        Returns:
+            Thread: Started Thread for data collection.
+        """
         self.EmptyBucket()
         # start streaming data
         self.isCollecting = True
@@ -54,10 +95,12 @@ class Bucket :
             collect: Thread = Thread(target=self._CollectWhileOpen)
         else : 
             collect: Thread = Thread(target=self._CollectForDuration, args=(float(duration_sec),))
-        collect.start()
-        return collect
+        collect.start() 
+        return collect # call collect.join() to pause program until thread finishes
     
     def _CollectWhileOpen(self) : 
+        """Collect streaming data until the Hose is finished dripping.
+        """
         # collect data while the device is streaming 
         while(self.dataHose.isOpen or self._IsDropAvailable()) : 
             # check for new data
@@ -69,6 +112,11 @@ class Bucket :
         self.isCollecting = False                
                   
     def _CollectForDuration(self, duration_sec: float) : 
+        """Collect streaming data for a given duration.
+
+        Args:
+            duration_sec (float): How long to stream data in seconds.
+        """
         # collect data for the duration set
         ti: float = time.time()
         while( (time.time() - ti ) < duration_sec) :
@@ -87,17 +135,40 @@ class Bucket :
         # clear out remaining data
         self._CollectWhileOpen()
         
-    def _CollectDrop(self) : 
+    def _CollectDrop(self) :
+        """Adds a point to the drops queue. Each point is a tuple (x,y) of the \
+        timestamps list (x) and the data list (y) for one drop (values from \
+        ~1 sec of streaming, or the number of values approximatly equal to \
+        the sample rate).
+        """ 
         # add data to lists 
         self.drops.put( (self.dataHose.timestamps, self.dataHose.data) )
         # increment counter
         self.totalDropsCollected += 1
                 
     def _IsDropAvailable(self) -> bool: 
+        """Checks if the Hose has any uncollected drops.
+
+        Returns:
+            bool: True if there is a drop to be collected, False otherwise.
+        """
         return ( self.totalDropsCollected < self.dataHose.numDrops ) 
                 
     @staticmethod
     def Split(data : list[Packet|None]) : 
+        """Splits a Packet into a list of each of its components.
+
+        Args:
+            data (list[Packet | None]): List of Packets.
+
+        Raises:
+            Exception: Packet must be a binary 4 or 5 to be split.
+
+        Returns:
+            list[list[int|float|None]] : List where each item is a \
+                list of a component of the Packet, such as the packet 
+                number of channel voltage.
+        """
         if(isinstance(data[0], PacketBinary4)) : 
             return Bucket.SplitBinary4(data)
         if(isinstance(data[0], PacketBinary5)) : 
@@ -105,21 +176,44 @@ class Bucket :
         raise Exception('[!] Packet must be a binary 4 or 5 to be split.')
     
     @staticmethod
-    def SplitBinary4(data : list[PacketBinary4|None]) : 
-        return [    [ None if (pkt == None) else pkt.packetNumber   for pkt in data],
-                    [ None if (pkt == None) else pkt.ttl            for pkt in data],
-                    [ None if (pkt == None) else pkt.ch0            for pkt in data],
-                    [ None if (pkt == None) else pkt.ch1            for pkt in data],
-                    [ None if (pkt == None) else pkt.ch2            for pkt in data]    ]
+    def SplitBinary4(data : list[PacketBinary4|None]) -> list[list[int|float|None]] : 
+        """Splits a binary4 packet into a list of each of its components.
+
+        Args:
+            data (list[PacketBinary4 | None]): List of Packets.
+
+        Returns:
+            list[list[int|float|None]]: List where each item is a \
+                list of a component of the Packet, such as the packet 
+                number of channel voltage.
+        """
+        return [    [ None if (pkt == None) else pkt.PacketNumber() for pkt in data],
+                    [ None if (pkt == None) else pkt.Ttl()          for pkt in data],
+                    [ None if (pkt == None) else pkt.Ch(0)          for pkt in data],
+                    [ None if (pkt == None) else pkt.Ch(1)          for pkt in data],
+                    [ None if (pkt == None) else pkt.Ch(2)          for pkt in data]    ]
 
     @staticmethod
-    def SplitBinary5(data : list[PacketBinary5|None]) : 
-        return [    [ None if (pkt == None) else pkt.packetNumber   for pkt in data],
-                    [ None if (pkt == None) else pkt.status         for pkt in data],
-                    [ None if (pkt == None) else pkt.channels       for pkt in data],
-                    [ None if (pkt == None) else pkt.aEXT0          for pkt in data],
-                    [ None if (pkt == None) else pkt.aEXT1          for pkt in data],
-                    [ None if (pkt == None) else pkt.aTTL1          for pkt in data],
-                    [ None if (pkt == None) else pkt.aTTL2          for pkt in data],
-                    [ None if (pkt == None) else pkt.aTTL3          for pkt in data],
-                    [ None if (pkt == None) else pkt.aTTL4          for pkt in data]    ]
+    def SplitBinary5(data : list[PacketBinary5|None]) -> list[list[int|float|None]] : 
+        """Splits a binary5 packet into a list of each of its components.
+
+        Args:
+            data (list[PacketBinary4 | None]): List of Packets.
+
+        Returns:
+            list[list[int|float|None]]: List where each item is a \
+                list of a component of the Packet, such as the packet 
+                number of channel voltage.
+        """
+        return [    [ None if (pkt == None) else pkt.PacketNumber() for pkt in data],
+                    [ None if (pkt == None) else pkt.Status()       for pkt in data],
+                    [ None if (pkt == None) else pkt.Channel('A')   for pkt in data],
+                    [ None if (pkt == None) else pkt.Channel('B')   for pkt in data],
+                    [ None if (pkt == None) else pkt.Channel('C')   for pkt in data],
+                    [ None if (pkt == None) else pkt.Channel('D')   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogEXT(0)   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogEXT(1)   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogTTL(1)   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogTTL(2)   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogTTL(3)   for pkt in data],
+                    [ None if (pkt == None) else pkt.AnalogTTL(4)   for pkt in data]    ]
