@@ -67,6 +67,11 @@ class Valve :
         """
         return self.podDevice.ReadPODpacket()
 
+    def EmptyValve(self) :
+        """Reset the serial port buffer.
+        """ 
+        self.podDevice.FlushPort()
+        
     def GetStartBytes(self) -> bytes : 
         """Gets the bytes string represeting a "start streaming data" packet.
 

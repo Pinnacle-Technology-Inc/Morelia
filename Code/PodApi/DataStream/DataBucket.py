@@ -25,6 +25,12 @@ class Bucket :
         self.totalDropsCollected: int = 0 # rolling counter
         self.isCollecting: bool = False
         
+    def EmptyBucket(self) : 
+        self.dataHose.EmptyHose()
+        # reset all 
+        self.drops = Queue()
+        self.totalDropsCollected = 0
+        
     def GetNumberOfDrops(self) -> int : 
         return self.drops.qsize()
 
@@ -34,12 +40,6 @@ class Bucket :
         else :
             raise Exception('[!] No drops left to dequeue.')
 
-    def EmptyBucket(self) : 
-        # reset all 
-        self.dataHose.EmptyHose()
-        self.drops = Queue()
-        self.totalDropsCollected = 0
-        
     def StopCollecting(self) : 
         # signal to stop streaming 
         self.dataHose.StopStream()    
@@ -65,7 +65,7 @@ class Bucket :
                 self._CollectDrop()
             else : 
                 # wait for new data 
-                time.sleep(0.25)
+                time.sleep(0.1)
         self.isCollecting = False                
                   
     def _CollectForDuration(self, duration_sec: float) : 
@@ -75,13 +75,13 @@ class Bucket :
             # check for new data
             if(self._IsDropAvailable()) :
                 self._CollectDrop()
-            else : 
-                # check if streaming has stopped
-                if(not self.dataHose.isOpen) : 
-                    self.isCollecting = False
-                    return
-                # wait for new data 
-                time.sleep(0.25)
+            # check if streaming has stopped from external cause
+            elif(not self.dataHose.isOpen) : 
+                self.isCollecting = False
+                return
+            # wait for new data 
+            else :
+                time.sleep(0.1)
         # signal to stop streaming 
         self.StopCollecting()
         # clear out remaining data

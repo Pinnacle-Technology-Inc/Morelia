@@ -88,6 +88,7 @@ class Hose :
         return int(pkt.Payload()[0]) 
 
     def EmptyHose(self) : 
+        self.deviceValve.EmptyValve()
         # reset to default
         self.data       : list[Packet|None] = []
         self.timestamps : list[float] = []
