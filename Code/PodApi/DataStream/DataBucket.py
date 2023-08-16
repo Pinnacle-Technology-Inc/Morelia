@@ -18,33 +18,67 @@ __email__       = "sales@pinnaclet.com"
 class Bucket : 
     
     def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
-        
+        # set instance variables 
         self.dataHose: Hose = Hose(podDevice,useFilter)
-        
-        self.allData: list[list[Packet|None]] = []
-        self.allTimestamps: list[list[float]] = []
+        self.dataCollected: list[list[Packet|None]] = []
+        self.timestampsCollected: list[list[float]] = []
         self.dropsCollected: int = 0
-                
-    def StartCollecting(self, duration_sec: float) : 
+
+    def EmptyBucket(self) : 
+        # reset all 
+        self.dataHose.EmptyHose()
+        self.dataCollected = []
+        self.timestampsCollected = []
+        self.dropsCollected = 0
+        
+    def StopCollecting(self) : 
+        # signal to stop streaming 
+        self.dataHose.StopStream()    
+
+    def StartCollecting(self, duration_sec: float|None = None ) -> Thread : 
+        self.EmptyBucket()
         # start streaming data
-        t: Thread = self.dataHose.StartStream()
-        # collect data for the duration set
-        ti: float = time.time()
-        while( (time.time() - ti ) < duration_sec) :
+        self.dataHose.StartStream()
+        # collect streaming data 
+        if(duration_sec == None) : 
+            collect: Thread = Thread(target=self._CollectWhileOpen)
+        else : 
+            collect: Thread = Thread(target=self._CollectForDuration, args=(float(duration_sec),))
+        collect.start()
+        return collect
+    
+    def _CollectWhileOpen(self) : 
+        # collect data while the device is streaming 
+        while(self.dataHose.isOpen) : 
+            # check for new data
             if(self.IsDropAvailable()) :
                 self.CollectDrop()
             else : 
+                # wait for new data 
+                time.sleep(0.25)
+                  
+    def _CollectForDuration(self, duration_sec: float) : 
+        # collect data for the duration set
+        ti: float = time.time()
+        while( (time.time() - ti ) < duration_sec) :
+            # check for new data
+            if(self.IsDropAvailable()) :
+                self.CollectDrop()
+            else : 
+                # check if streaming has stopped
+                if(not self.dataHose.isOpen) : return
+                # wait for new data 
                 time.sleep(0.25)
         # signal to stop streaming 
-        self.dataHose.StopStream()
+        self.StopCollecting()
         # clear out remaining data
         while(self.IsDropAvailable()) : 
             self.CollectDrop()
         
     def CollectDrop(self) : 
         # add data to lists 
-        self.allData.append(self.dataHose.data)
-        self.allTimestamps.append(self.dataHose.timestamps)
+        self.dataCollected.append(self.dataHose.data)
+        self.timestampsCollected.append(self.dataHose.timestamps)
         # increment counter
         self.dropsCollected += 1
                 
@@ -56,7 +90,7 @@ class Bucket :
         if(isinstance(data[0], PacketBinary4)) : 
             return Bucket.SplitBinary4(data)
         if(isinstance(data[0], PacketBinary5)) : 
-            return Bucket.PacketBinary5(data)
+            return Bucket.SplitBinary5(data)
         raise Exception('[!] Packet must be a binary 4 or 5 to be split.')
     
     @staticmethod
