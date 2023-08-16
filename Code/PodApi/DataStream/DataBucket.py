@@ -1,10 +1,11 @@
 # enviornment imports
 import time
 from threading import Thread
+from queue import Queue
 
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
-from PodApi.Packets import Packet, PacketStandard, PacketBinary4, PacketBinary5
+from PodApi.Packets import Packet, PacketBinary4, PacketBinary5
 from PodApi.DataStream import Hose
 
 # authorship
@@ -20,16 +21,23 @@ class Bucket :
     def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
         # set instance variables 
         self.dataHose: Hose = Hose(podDevice,useFilter)
-        self.dataCollected: list[list[Packet|None]] = []
-        self.timestampsCollected: list[list[float]] = []
-        self.dropsCollected: int = 0
+        self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple with 1 sec of timestamps and data. 
+        self.totalDropsCollected: int = 0 # rolling counter
+
+    def GetNumberOfDrops(self) -> int : 
+        return self.drops.qsize()
+
+    def DequeueDrop(self) -> tuple[ list[float], list[Packet|None] ]: 
+        if(not self.drops.empty() ) :
+            return self.drops.get()
+        else :
+            raise Exception('[!] No drops left to dequeue.')
 
     def EmptyBucket(self) : 
         # reset all 
         self.dataHose.EmptyHose()
-        self.dataCollected = []
-        self.timestampsCollected = []
-        self.dropsCollected = 0
+        self.drops = Queue()
+        self.totalDropsCollected = 0
         
     def StopCollecting(self) : 
         # signal to stop streaming 
@@ -51,8 +59,8 @@ class Bucket :
         # collect data while the device is streaming 
         while(self.dataHose.isOpen) : 
             # check for new data
-            if(self.IsDropAvailable()) :
-                self.CollectDrop()
+            if(self._IsDropAvailable()) :
+                self._CollectDrop()
             else : 
                 # wait for new data 
                 time.sleep(0.25)
@@ -62,8 +70,8 @@ class Bucket :
         ti: float = time.time()
         while( (time.time() - ti ) < duration_sec) :
             # check for new data
-            if(self.IsDropAvailable()) :
-                self.CollectDrop()
+            if(self._IsDropAvailable()) :
+                self._CollectDrop()
             else : 
                 # check if streaming has stopped
                 if(not self.dataHose.isOpen) : return
@@ -72,18 +80,17 @@ class Bucket :
         # signal to stop streaming 
         self.StopCollecting()
         # clear out remaining data
-        while(self.IsDropAvailable()) : 
-            self.CollectDrop()
+        while(self._IsDropAvailable()) : 
+            self._CollectDrop()
         
-    def CollectDrop(self) : 
+    def _CollectDrop(self) : 
         # add data to lists 
-        self.dataCollected.append(self.dataHose.data)
-        self.timestampsCollected.append(self.dataHose.timestamps)
+        self.drops.put( (self.dataHose.timestamps, self.dataHose.data) )
         # increment counter
-        self.dropsCollected += 1
+        self.totalDropsCollected += 1
                 
-    def IsDropAvailable(self) -> bool: 
-        return ( self.dropsCollected < self.dataHose.numDrops ) 
+    def _IsDropAvailable(self) -> bool: 
+        return ( self.totalDropsCollected < self.dataHose.numDrops ) 
                 
     @staticmethod
     def Split(data : list[Packet|None]) : 
