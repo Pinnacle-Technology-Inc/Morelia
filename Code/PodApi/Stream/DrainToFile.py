@@ -1,5 +1,5 @@
 # local imports
-from PodApi.DataStream import Bucket
+from PodApi.Stream import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
