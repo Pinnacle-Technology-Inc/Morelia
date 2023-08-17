@@ -1,3 +1,5 @@
+# local imports
+from PodApi.DataStream import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -8,4 +10,6 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Drain : 
-    pass 
+
+    def __init__(self, dataBucket: Bucket) -> None:
+        pass
