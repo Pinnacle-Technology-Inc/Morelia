@@ -47,7 +47,7 @@ class Hose :
         self.data       : list[Packet|None] = []
         self.timestamps : list[float] = []
         self.numDrops   : int = 0
-        self.corruptedPointsRemoved: int = 0
+        self.corruptedPointsRemoved : int = 0
         self.useFilter  : bool = bool(useFilter)
         self.isOpen     : bool = False
         
@@ -83,7 +83,7 @@ class Hose :
         # If there is a new device that uses a different command, add a method 
         # to check what type the device is (i.e isinstance(podDevice, PodClass)) 
         # and set the self.stream* instance variables accordingly.
-        podDevice._commands.ValidateCommand('GET SAMPLE RATE')        
+        podDevice._commands.ValidateCommand('GET SAMPLE RATE')
         if(not podDevice.TestConnection()) : 
             raise Exception('[!] Could not connect to this POD device.')
         pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
