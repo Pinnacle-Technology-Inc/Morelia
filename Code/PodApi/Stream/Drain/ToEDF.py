@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Stream.Drain    import DrainToFile, DrainToTXT
+from PodApi.Stream.Drain    import DrainToFile
 from PodApi.Stream          import Bucket
 
 # authorship
@@ -16,3 +16,5 @@ class DrainToEDF(DrainToFile) :
         super().__init__(dataBucket, fileName, preampDevice)
         if( DrainToEDF.GetExtension(self.fileName) != '.edf' ) : 
             raise DrainToEDF('[!] DrainToTXT only accepts the .edf extension.')
+        
+    # TODO this class 

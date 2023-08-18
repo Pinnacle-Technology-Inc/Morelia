@@ -26,7 +26,7 @@ class DrainToFile : # interface class
     def GetExtension(fileName) : 
         return os.path.splitext(fileName)[1]
     
-    # interface methods 
+    # interface methods to implement 
     def OpenFile(self) : pass
     def CloseFile(self) : pass
     def DrainDropToFile(self) : pass

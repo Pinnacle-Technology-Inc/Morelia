@@ -4,9 +4,10 @@ from datetime   import datetime
 from io         import TextIOWrapper
 
 # local imports
-from PodApi.Stream.Drain    import DrainToFile, Drain8206HR, Drain8401HR
-from PodApi.Stream          import Bucket
-from PodApi.Devices         import Pod8206HR, Pod8401HR
+from PodApi.Stream.Drain.PodHandler import Drain8206HR, Drain8401HR
+from PodApi.Stream.Drain            import DrainToFile
+from PodApi.Stream                  import Bucket
+from PodApi.Devices                 import Pod8206HR, Pod8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -46,7 +47,7 @@ class DrainToTXT(DrainToFile) :
         # open file and write column names 
         self.file = open(self.fileName, 'w')
         # write time
-        self.file.write(self._GetTimeHeader_forTXT()) 
+        self.file.write(self._GetTimeHeader()) 
         # columns names
         self.file.write(self.deviceHandle.GetDeviceColNames())
 
@@ -54,7 +55,7 @@ class DrainToTXT(DrainToFile) :
         if(self.file != None) : self.file.close()
         
     @staticmethod
-    def _GetTimeHeader_forTXT() -> str : 
+    def _GetTimeHeader() -> str : 
         """Builds a string containing the current date and time to be written to the text file header.
 
         Returns:
