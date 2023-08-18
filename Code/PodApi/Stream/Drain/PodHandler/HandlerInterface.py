@@ -3,6 +3,7 @@ import pandas as pd
 
 # local imports
 from PodApi.Packets import Packet
+from PodApi.Stream  import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -13,6 +14,10 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class DrainDeviceHandler() : # interface class
+    
+    @staticmethod
+    def GetPodFromBucket(bkt: Bucket) : 
+        return bkt.dataHose.deviceValve.podDevice
     
     # interface methods to implement 
     def GetDeviceColNames(self) -> str : pass

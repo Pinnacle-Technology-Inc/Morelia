@@ -4,10 +4,8 @@ from datetime   import datetime
 from io         import TextIOWrapper
 
 # local imports
-from PodApi.Stream.Drain.PodHandler import Drain8206HR, Drain8401HR
-from PodApi.Stream.Drain            import DrainToFile
-from PodApi.Stream                  import Bucket
-from PodApi.Devices                 import Pod8206HR, Pod8401HR
+from PodApi.Stream.Drain    import DrainToFile
+from PodApi.Stream          import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -25,11 +23,6 @@ class DrainToTXT(DrainToFile) :
         # check for valid file extension 
         if( DrainToTXT.GetExtension(self.fileName) not in ['.txt', '.csv'] ) : 
             raise Exception('[!] DrainToTXT only accepts .txt or .csv extensions.')
-        # determine device in use 
-        device = self.dataBucket.dataHose.deviceValve.podDevice
-        if(   isinstance(device, Pod8206HR) ) : self.deviceHandle = Drain8206HR()
-        elif( isinstance(device, Pod8401HR) ) : self.deviceHandle = Drain8401HR(preampDevice)
-        else: raise Exception('[!] POD Device is not supported.')
         # init
         self.file: TextIOWrapper|None = None
     
