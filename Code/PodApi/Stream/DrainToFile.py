@@ -74,24 +74,32 @@ class DrainToTXT(DrainToFile) :
         # columns names
         self.file.write(self._GetColNames())
 
+    def CloseFile(self) : 
+        if(self.file != None) : 
+            self.file.close()
+
     def _GetColNames(self) -> str : 
         device = self.dataBucket.dataHose.deviceValve.podDevice
         print(type(device))
-        if( isinstance(device, Pod8206HR) ) : 
-            return ('Time,TTL,CH0,CH1,CH2\n')
-        if( isinstance(device, Pod8401HR)) : 
-            cols = 'Time,'
-            if(self.preampDevice != None and Pod8401HR.IsPreampDeviceSupported(self.preampDevice)) : 
-                channelNames = Pod8401HR.GetChannelMapForPreampDevice(str(self.preampDevice)).values()
-                for label in channelNames : 
-                    if(label!='NC') : # exclude no-connects 
-                        cols += str(label) + ','
-            else : 
-                cols += 'A,B,C,D,'
-            cols += 'Analog EXT0,Analog EXT1,Analog TTL1,Analog TTL2,Analog TTL3,Analog TTL4\n'
-            return cols
+        if( isinstance(device, Pod8206HR) ) : return self._GetColNames_Pod8206HR()
+        if( isinstance(device, Pod8401HR) ) : return self._GetColNames_Pod8401HR()
         raise Exception('[!] POD Device is not supported.')
             
+    def _GetColNames_Pod8206HR(self) -> str :
+        return ('Time,TTL,CH0,CH1,CH2\n')
+
+    def _GetColNames_Pod8401HR(self) -> str :
+        cols = 'Time,'
+        if(self.preampDevice != None and Pod8401HR.IsPreampDeviceSupported(self.preampDevice)) : 
+            channelNames = Pod8401HR.GetChannelMapForPreampDevice(str(self.preampDevice)).values()
+            for label in channelNames : 
+                if(label!='NC') : # exclude no-connects 
+                    cols += str(label) + ','
+        else : 
+            cols += 'A,B,C,D,'
+        cols += 'Analog EXT0,Analog EXT1,Analog TTL1,Analog TTL2,Analog TTL3,Analog TTL4\n'
+        return cols
+        
     @staticmethod
     def _GetTimeHeader_forTXT() -> str : 
         """Builds a string containing the current date and time to be written to the text file header.
