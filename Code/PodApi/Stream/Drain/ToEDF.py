@@ -66,4 +66,9 @@ class DrainToEDF(DrainToFile) :
                 'transducer'    : '', 
                 'prefilter'     : ''            
             } )
-            
+
+    def CloseFile(self) : 
+        """Closes the file that data is saved to.
+        """
+        if(self.file != None) : 
+            self.file.close()
