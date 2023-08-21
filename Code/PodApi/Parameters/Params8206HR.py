@@ -19,7 +19,7 @@ class Params8206HR(Params) :
         lowPass (tuple[int]): Low-pass for EEG/EMG in 11-500 Hz range. 
     """
 
-    lowPassLabels: tuple[str]  = ('EEG1', 'EEG2', 'EEG/EMG')
+    lowPassLabels: tuple[str]  = ('EEG1', 'EEG2', 'EEG3/EMG')
     """Tuple describing the items in the lowPass."""
 
     def __init__(self, 
