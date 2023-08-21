@@ -27,13 +27,18 @@ class Drain8206HR(DrainDeviceHandler) :
         """
         return ','.join(self.GetDeviceColNamesList()) + '\n'
     
-    def GetDeviceColNamesList(self) -> list[str] : 
+    def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 
         """Gets a list of all collumn titles.
+
+        Args:
+            includeTime (bool, optional): Flag to include 'Time' in the columns list. \
+                Defaults to True. 
 
         Returns:
             list[str]: List of columns.
         """
-        return ['Time','CH0','CH1','CH2']
+        if(includeTime) : return ['Time','EEG1','EEG2','EEG3/EMG']
+        return ['EEG1','EEG2','EEG3/EMG']
     
     def DropToDf(self, timestamps: list[float], data: list[Packet | None]) -> pd.DataFrame : 
         """Converts the timestamps and data into a Pandas DataFrame. The columns should \

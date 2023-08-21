@@ -40,13 +40,18 @@ class Drain8401HR(DrainDeviceHandler) :
         cols.remove('NC')
         return ','.join(cols) + '\n'
     
-    def GetDeviceColNamesList(self) -> list[str] : 
+    def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 
         """Gets a list of all collumn titles.
+
+        Args:
+            includeTime (bool, optional): Flag to include 'Time' in the columns list. \
+                Defaults to True. 
 
         Returns:
             list[str]: List of columns.
         """
-        cols = ['Time']
+        cols: list[str] = []
+        if(includeTime) : cols += ['Time']
         if(self.preampDevice != None and Pod8401HR.IsPreampDeviceSupported(self.preampDevice)) : 
             for label in Pod8401HR.GetChannelMapForPreampDevice(str(self.preampDevice)).values() : 
                 cols.append(label)

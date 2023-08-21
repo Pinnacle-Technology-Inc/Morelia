@@ -32,16 +32,24 @@ class DrainDeviceHandler() : # interface class
     
     # vvvvv      interface methods to implement      vvvvv
     
-    def GetDeviceColNames(self) -> str : 
-        """Gets a string of the column names formatter for a text file.
+    def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 
+        """Gets a list of all collumn titles.
+
+        Args:
+            includeTime (bool, optional): Flag to include 'Time' in the columns list. \
+                Defaults to True. 
 
         Returns:
-            str: String of the filenames separated by commas and ending in a newline.
+            list[str]: List of columns.
         """
         pass
     
-    def GetDeviceColNamesList(self) -> list[str] : 
+    def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 
         """Gets a list of all collumn titles.
+
+        Args:
+            includeTime (bool, optional): Flag to include 'Time' in the columns list. \
+                Defaults to True. 
 
         Returns:
             list[str]: List of columns.
