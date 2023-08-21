@@ -1,6 +1,7 @@
 # enviornment imports
 from pyedflib import EdfWriter
 from typing import Literal
+import numpy as np
 
 # local imports
 from PodApi.Stream.Drain    import DrainToFile
@@ -56,15 +57,15 @@ class DrainToEDF(DrainToFile) :
         # set header for each channel
         for i in range(n) :
             self.file.setSignalHeader( i, {
-                'label'         : allChannels[i],
-                'dimension'     : 'uV',
-                'sample_rate'   : DrainToEDF.SampleRate(),
-                'physical_max'  : DrainToEDF.PhysicalBound(),
+                'label'         :  allChannels[i],
+                'dimension'     :  'uV',
+                'sample_rate'   :  self.dataBucket.dataHose.sampleRate,
+                'physical_max'  :  DrainToEDF.PhysicalBound(),
                 'physical_min'  : -DrainToEDF.PhysicalBound(), 
-                'digital_max'   : DrainToEDF.DigitalMax(), 
-                'digital_min'   : DrainToEDF.DigitalMin(), 
-                'transducer'    : '', 
-                'prefilter'     : ''            
+                'digital_max'   :  DrainToEDF.DigitalMax(), 
+                'digital_min'   :  DrainToEDF.DigitalMin(), 
+                'transducer'    :  '', 
+                'prefilter'     :  ''            
             } )
 
     def CloseFile(self) : 
@@ -72,3 +73,14 @@ class DrainToEDF(DrainToFile) :
         """
         if(self.file != None) : 
             self.file.close()
+            
+    def DrainDropToFile(self) : 
+        """Write one drop of data to the save file.
+        """
+        # checks 
+        if(self.dataBucket.GetNumberOfDrops() <= 0 ) : return
+        if(self.file == None) : return
+        # get data 
+        timestamps, data = self.dataBucket.DequeueDrop()
+        # TODO 
+
