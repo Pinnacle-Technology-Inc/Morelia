@@ -1,7 +1,8 @@
 # enviornment imports
-from   threading import Thread
-import numpy as np
-import time
+from    typing      import Callable, Any
+from    threading   import Thread
+import  numpy       as     np
+import  time
 
 # local imports
 from PodApi.Devices     import Pod8206HR, Pod8401HR
@@ -29,36 +30,36 @@ class Hose :
             timestamps have been updated. 
         corruptedPointsRemoved (int): Total number of corrupted data points \
             removed from the data and timestamps lists.
-        useFilter (bool): Flag to remove corrupted data and timestamps when True; \
-            does not remove points when False. Defaults to True.
+        filterMethod (str): Method used to filter out corrupted data. 
+        filterInsert (Any): Value to replace corrupted data with if using \
+            the 'InsertValue' filter method. Defaults to np.nan.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'DoNothing', filterInsert: Any = np.nan) -> None:
         """Set instance variables.
 
         Args:
             podDevice (Pod8206HR | Pod8401HR): Pod device to stream data from.
             useFilter (bool): Flag to remove corrupted data and timestamps when True; \
                 does not remove points when False. Defaults to True.
+            filterMethod (str, optional): Method used to filter out corrupted data. \
+                Defaults to 'DoNothing'.
+            filterInsert (Any, optional): Value to replace corrupted data with if using \
+                the 'InsertValue' filter method. Defaults to np.nan.
         """
-        # set variables 
-        self.sampleRate : int   = Hose.GetSampleRate(podDevice)
-        self.deviceValve: Valve = Valve(podDevice)
-        self.data       : list[Packet|None] = []
+        # properties 
+        self.sampleRate   : int   = Hose.GetSampleRate(podDevice)
+        self.deviceValve  : Valve = Valve(podDevice)
+        self.isOpen       : bool = False
+        self.filterMethod : Callable = self.SetFilterMethod(filterMethod)
+        self.filterInsert : Any = filterInsert
+        # drops 
+        self.data       : list[Packet|Any] = []
         self.timestamps : list[float] = []
-        self.numDrops   : int = 0
+        # counters
+        self.numDrops : int = 0
         self.corruptedPointsRemoved : int = 0
-        self.useFilter  : bool = bool(useFilter)
-        self.isOpen     : bool = False
-        
-    def SetUseFilter(self, useFilter: bool) : 
-        """Sets the flag to remove corrupted data and timestamps when True; \
-        does not remove points when False.
 
-        Args:
-            useFilter (bool): True or False.
-        """
-        self.useFilter = bool(useFilter)
         
     @staticmethod
     def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
@@ -169,28 +170,79 @@ class Hose :
             self.sampleRate # number of items 
         ).tolist()
         # clean out corrupted data
-        if(self.useFilter) : 
-            self._Filter(data,timestamps)
-        # update trackers before looping again
-        self.timestamps = timestamps
-        self.data = data
-        self.numDrops += 1
+        if(self._Filter(data,timestamps)) :
+            # update trackers before looping again
+            self.timestamps = timestamps
+            self.data = data
+            self.numDrops += 1
         # finish
         return nextTime
-    
-    def _Filter(self, data: list[Packet|None], timestamps: list[float]) : 
-        """Removes any corrupted points from the data and timestamp lists.
 
-        Args:
-            data (list[Packet | None]): List of Packets recieved when streaming or None for corrupted data.
-            timestamps (list[float]): Timestamp in seconds of each packet.
-        """
+    def SetFilterMethod(self, filterMethod: str) : 
+        match str(filterMethod) : 
+            case 'RemoveEntry'  : self.filterMethod = self._Filter_RemoveEntry
+            case 'InsertValue'  : self.filterMethod = self._Filter_InsertValue
+            case 'TakePast'     : self.filterMethod = self._Filter_TakePast
+            case 'TakeFuture'   : self.filterMethod = self._Filter_TakeFuture
+            case  _             : self.filterMethod = self._Filter_DoNothing
+                 
+    def SetFilterInsertValue(self, insert: Any) : 
+        self.filterInsert : Any = insert
+
+    def _Filter(self, data: list[Packet|None], timestamps: list[float]) -> bool : 
+        # edge case, list cannot contain only None
+        if(data.count(None) == len(data)) :
+            return False 
         # remove all corrupted data from lists
         while(None in data) : 
             # find where None is in the data list
             i = data.index(None)
-            # remove data and timestamp where there is corrupted data
-            data.pop(i)
-            timestamps.pop(i)
+            # filter data point
+            self.filterMethod(i,data,timestamps)
             # update counter
-            self.corruptedPointsRemoved += 1
+            self.corruptedPointsRemoved += 1       
+        return True 
+            
+    def _Filter_RemoveEntry(self, i: int, data: list[Packet|None], timestamps: list[float] ) :
+        # remove item from list
+        data.pop(i)
+        timestamps.pop(i)
+    
+    def _Filter_InsertValue(self, i: int, timestamps: list[float], data: list[Packet|None] ) : 
+        # set value to default
+        data[i] = self.filterInsert
+        
+    def _Filter_TakePast(self, i: int, data: list[Packet|None], timestamps: list[float] )  :
+        # i is not the first value in the list 
+        if(i>0) : 
+            # data at previous index will never be None as data.index(None) finds the first instance of None
+            data[i] = data[i-1]
+        # i is the first value in list. Cannot take a past value.
+        else : 
+            self._Filter_TakeFuture(i,data,timestamps)
+    
+    def _Filter_TakeFuture(self, i: int, data: list[Packet|None], timestamps: list[float] ) :
+        # get maximum index from the list
+        iMax = len(data) - 1
+        # i is not the last value in list 
+        if(i < iMax ) : 
+            # index of next value
+            iGood = i + 1
+            # search for non-corrupted packet 
+            while( iGood <= iMax and data[iGood] == None ) : 
+                iGood += 1
+            # edge case, no good future data to take 
+            if(iGood > iMax ) : 
+                self._Filter_TakePast(i,data,timestamps)
+            # fix corrupted packets
+            goodData: Packet = data[iGood]
+            while(iGood - i > 0) : 
+                data[i] = goodData
+                i += 1
+        # i is the last value in the list. Cannot take a future value.
+        else :
+            self._Filter_TakePast(i,data,timestamps)
+    
+    def _Filter_DoNothing(self, i: int, data: list[Packet|None], timestamps: list[float] ) : 
+        # dont make any changes to the lusts 
+        pass
