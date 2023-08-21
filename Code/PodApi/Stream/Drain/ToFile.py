@@ -43,6 +43,17 @@ class DrainToFile : # interface class
         self.preampDevice   : str|None  = preampDevice
         self.deviceHandler  : Drain8206HR|Drain8401HR = DrainToFile.GetHandlerForBucket(dataBucket,preampDevice)
 
+    def SampleRate(self) : 
+        """Writes a command to the POD device to get its sample rate in Hz.
+
+        Returns:
+            int: Sample rate in Hz.
+        """
+        return self.dataBucket.dataHose.GetSampleRate(
+            DrainDeviceHandler.GetPodFromBucket(
+                self.dataBucket))
+        
+        
     @staticmethod
     def GetHandlerForBucket(bkt: Bucket, preampDevice:str|None=None) -> Drain8206HR|Drain8401HR: 
         """Selects the proper POD device handler for a given Bucket.

@@ -1,3 +1,7 @@
+# enviornment imports
+from pyedflib import EdfWriter
+from typing import Literal
+
 # local imports
 from PodApi.Stream.Drain    import DrainToFile
 from PodApi.Stream          import Bucket
@@ -26,5 +30,40 @@ class DrainToEDF(DrainToFile) :
         super().__init__(dataBucket, fileName, preampDevice)
         if( DrainToEDF.GetExtension(self.fileName) != '.edf' ) : 
             raise DrainToEDF('[!] DrainToTXT only accepts the \'.edf\' extension.')
-        
-    # TODO this class 
+        # init
+        self.file: EdfWriter|None = None
+
+    @staticmethod
+    def PhysicalBound() -> Literal[2046] :
+        return 2046 # max/-min stream value in uV
+
+    @staticmethod
+    def DigitalMax() -> Literal[32767] :
+        return 32767
+    
+    @staticmethod
+    def DigitalMin() -> Literal[-32768] : 
+        return -32768
+
+    def OpenFile(self) : 
+        """Opens and initializes a file using the fileName to save data to. 
+        """
+        # get signals/channels 
+        allChannels = self.deviceHandler.GetDeviceColNamesList(False)
+        n = len(allChannels)
+        # create file 
+        self.file = EdfWriter(self.fileName, n)
+        # set header for each channel
+        for i in range(n) :
+            self.file.setSignalHeader( i, {
+                'label'         : allChannels[i],
+                'dimension'     : 'uV',
+                'sample_rate'   : DrainToEDF.SampleRate(),
+                'physical_max'  : DrainToEDF.PhysicalBound(),
+                'physical_min'  : -DrainToEDF.PhysicalBound(), 
+                'digital_max'   : DrainToEDF.DigitalMax(), 
+                'digital_min'   : DrainToEDF.DigitalMin(), 
+                'transducer'    : '', 
+                'prefilter'     : ''            
+            } )
+            
