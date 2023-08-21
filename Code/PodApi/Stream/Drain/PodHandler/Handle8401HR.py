@@ -76,12 +76,12 @@ class Drain8401HR(DrainDeviceHandler) :
         # channels
         for idx,ch in zip([1,2,3,4], ['A','B','C','D']) : 
             if(cols[idx] != 'NC') : 
-                dfPrep[cols[idx]] = [ pkt.Channel(ch) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+                dfPrep[cols[idx]] = [ self._uV(pkt.Channel(   ch)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
         # EXT
         for idx,ext in zip([5,6], [0,1]) : 
-            dfPrep[cols[idx]] = [ pkt.AnalogEXT(ext) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+            dfPrep[cols[idx]] =     [ self._uV(pkt.AnalogEXT(ext)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
         # TTL
         for idx,ttl in zip([7,8,9,10], [1,2,3,4]) : 
-            dfPrep[cols[idx]] = [ pkt.AnalogTTL(ttl) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+            dfPrep[cols[idx]] =     [ self._uV(pkt.AnalogTTL(ttl)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
         # build df 
         return pd.DataFrame(dfPrep)

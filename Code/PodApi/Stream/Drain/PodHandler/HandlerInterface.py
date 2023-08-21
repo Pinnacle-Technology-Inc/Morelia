@@ -30,6 +30,19 @@ class DrainDeviceHandler() : # interface class
         """
         return bkt.dataHose.deviceValve.podDevice
     
+    @staticmethod
+    def _uV(voltage: float|int) -> float :
+        """Converts volts to microVolts, rounded to 6 decimal places.
+
+        Args:
+            voltage (float | int): number of volts.
+
+        Returns:
+            float: voltage in of uV.
+        """
+        # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
+        return ( round(voltage * 1E-6, 6 ) + 0.0 )
+    
     # vvvvv      interface methods to implement      vvvvv
     
     def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 

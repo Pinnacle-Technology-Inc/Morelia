@@ -53,7 +53,7 @@ class Drain8206HR(DrainDeviceHandler) :
         """
         return pd.DataFrame({
             'Time' : timestamps,
-            'CH0'  : [ pkt.Ch(0) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
-            'CH1'  : [ pkt.Ch(1) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
-            'CH2'  : [ pkt.Ch(2) if (isinstance(pkt, PacketBinary4)) else None for pkt in data]
+            'CH0'  : [ self._uV(pkt.Ch(0)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
+            'CH1'  : [ self._uV(pkt.Ch(1)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
+            'CH2'  : [ self._uV(pkt.Ch(2)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data]
         })
