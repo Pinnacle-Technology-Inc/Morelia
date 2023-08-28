@@ -1,5 +1,6 @@
 # enviornment imports
 import pandas as pd
+import numpy  as np
 
 # local imports
 from PodApi.Devices import Pod8401HR
@@ -76,12 +77,42 @@ class Drain8401HR(DrainDeviceHandler) :
         # channels
         for idx,ch in zip([1,2,3,4], ['A','B','C','D']) : 
             if(cols[idx] != 'NC') : 
-                dfPrep[cols[idx]] = [ self._uV(pkt.Channel(   ch)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+                dfPrep[cols[idx]] = [ self._uV(pt.Channel(   ch)) if (isinstance(pt, PacketBinary5)) else pt for pt in data]
         # EXT
         for idx,ext in zip([5,6], [0,1]) : 
-            dfPrep[cols[idx]] =     [ self._uV(pkt.AnalogEXT(ext)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+            dfPrep[cols[idx]] =     [ self._uV(pt.AnalogEXT(ext)) if (isinstance(pt, PacketBinary5)) else pt for pt in data]
         # TTL
         for idx,ttl in zip([7,8,9,10], [1,2,3,4]) : 
-            dfPrep[cols[idx]] =     [ self._uV(pkt.AnalogTTL(ttl)) if (isinstance(pkt, PacketBinary5)) else None for pkt in data]
+            dfPrep[cols[idx]] =     [ self._uV(pt.AnalogTTL(ttl)) if (isinstance(pt, PacketBinary5)) else pt for pt in data]
         # build df 
         return pd.DataFrame(dfPrep)
+
+    def DropToListOfArrays(self, data: list[Packet | float]) -> list[np.array] : 
+        """Unpacks the data Packets into a list of np.arrays formatted to write to an EDF file.
+
+        Args:
+            data (list[Packet | float]): List of streaming binary data packets. 
+
+        Returns:
+            list[np.array]: List of np.arrays for each Packet part.
+        """
+        # get columns names
+        cols = self.GetDeviceColNamesList()
+        # start building lists
+        dlist_list : list[list[float]] = []
+        # channels
+        for idx,ch in zip([1,2,3,4], ['A','B','C','D']) : 
+            if(cols[idx] != 'NC') : # exclude no connects 
+                dlist_list.append(  [ self._uV(pt.Channel(   ch)) if (isinstance(pt, PacketBinary5)) else pt for pt in data] )
+        # EXT
+        for ext in [0,1] : 
+            dlist_list.append(      [ self._uV(pt.AnalogEXT(ext)) if (isinstance(pt, PacketBinary5)) else pt for pt in data] )
+        # TTL
+        for ttl in [1,2,3,4] : 
+            dlist_list.append(      [ self._uV(pt.AnalogTTL(ttl)) if (isinstance(pt, PacketBinary5)) else pt for pt in data] )
+        # convert to np arrays
+        dlist_arr = []
+        for l in dlist_list : 
+            dlist_arr.append( np.array(l) )
+        # finish
+        return dlist_arr

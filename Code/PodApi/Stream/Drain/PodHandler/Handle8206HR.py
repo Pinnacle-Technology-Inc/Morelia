@@ -1,5 +1,6 @@
 # enviornment imports
 import pandas as pd
+import numpy  as np
 
 # local imports
 from PodApi.Packets import Packet, PacketBinary4
@@ -39,10 +40,10 @@ class Drain8206HR(DrainDeviceHandler) :
         """
         if(includeTime) : return ['Time','EEG1','EEG2','EEG3/EMG']
         return ['EEG1','EEG2','EEG3/EMG']
-    
+        
     def DropToDf(self, timestamps: list[float], data: list[Packet | None]) -> pd.DataFrame : 
         """Converts the timestamps and data into a Pandas DataFrame. The columns should \
-            match GetDeviceColNames().
+        match GetDeviceColNames().
 
         Args:
             timestamps (list[float]): List of timestamps in seconds for each data packet.
@@ -53,7 +54,31 @@ class Drain8206HR(DrainDeviceHandler) :
         """
         return pd.DataFrame({
             'Time' : timestamps,
-            'CH0'  : [ self._uV(pkt.Ch(0)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
-            'CH1'  : [ self._uV(pkt.Ch(1)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data],
-            'CH2'  : [ self._uV(pkt.Ch(2)) if (isinstance(pkt, PacketBinary4)) else None for pkt in data]
+            'CH0'  : [ self._uV(pt.Ch(0)) if (isinstance(pt, PacketBinary4)) else pt for pt in data],
+            'CH1'  : [ self._uV(pt.Ch(1)) if (isinstance(pt, PacketBinary4)) else pt for pt in data],
+            'CH2'  : [ self._uV(pt.Ch(2)) if (isinstance(pt, PacketBinary4)) else pt for pt in data]
         })
+        
+    def DropToListOfArrays(self, data: list[Packet|float]) -> list[np.array] : 
+        """Unpacks the data Packets into a list of np.arrays formatted to write to an EDF file.
+
+        Args:
+            data (list[Packet | float]): List of streaming binary data packets. 
+
+        Returns:
+            list[np.array]: List of np.arrays for each Packet part.
+        """
+        # unpack binary Packet
+        dlist_list : list[list[float]] = [
+            [ self._uV(pt.Ch(0)) if (isinstance(pt, PacketBinary4)) else pt for pt in data],
+            [ self._uV(pt.Ch(1)) if (isinstance(pt, PacketBinary4)) else pt for pt in data],
+            [ self._uV(pt.Ch(2)) if (isinstance(pt, PacketBinary4)) else pt for pt in data]
+        ]
+        # convert to np arrays
+        dlist_arr = []
+        for l in dlist_list : 
+            dlist_arr.append( np.array(l) )
+        # finish
+        return dlist_arr
+        
+        

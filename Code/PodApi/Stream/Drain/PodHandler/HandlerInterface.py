@@ -1,5 +1,6 @@
 # enviornment imports
 import pandas as pd
+import numpy  as np
 
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
@@ -79,6 +80,17 @@ class DrainDeviceHandler() : # interface class
 
         Returns:
             pd.DataFrame: DataFrame containing the timestamps and packet data.
+        """
+        pass
+    
+    def DropToListOfArrays(self, data: list[Packet | float]) -> list[np.array] : 
+        """Unpacks the data Packets into a list of np.arrays formatted to write to an EDF file.
+
+        Args:
+            data (list[Packet | float]): List of streaming binary data packets. 
+
+        Returns:
+            list[np.array]: List of np.arrays for each Packet part.
         """
         pass
     
