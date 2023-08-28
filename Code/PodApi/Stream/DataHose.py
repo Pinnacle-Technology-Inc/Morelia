@@ -179,6 +179,14 @@ class Hose :
         return nextTime
 
     def SetFilterMethod(self, filterMethod: str) : 
+        """Set the method used to filter corrupted data when streaming. The filter methods \
+        include 'RemoveEntry', 'InsertValue', 'TakePast', 'TakeFuture', or 'DoNothing'.  \
+        The default method is 'DoNothing'.
+
+        Args:
+            filterMethod (str): Filter method, which can be 'RemoveEntry', 
+                'InsertValue', 'TakePast', 'TakeFuture', or 'DoNothing'/other.
+        """
         match str(filterMethod) : 
             case 'RemoveEntry'  : self.filterMethod = self._Filter_RemoveEntry
             case 'InsertValue'  : self.filterMethod = self._Filter_InsertValue
@@ -187,9 +195,27 @@ class Hose :
             case  _             : self.filterMethod = self._Filter_DoNothing
                  
     def SetFilterInsertValue(self, insert: Any) : 
+        """Sets the value to insert in place of currupted data. This is only used if \ 
+        the filter method is 'InsertValue', which can be set by SetFilterMethod('InsertValue').
+
+        Args:
+            insert (Any): Any value to insert.
+        """
         self.filterInsert : Any = insert
 
     def _Filter(self, data: list[Packet|None], timestamps: list[float]) -> bool : 
+        """Searches the data list for corrupted points, and deals with them \
+        according to the set filter method. 
+
+        Args:
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+
+        Returns:
+            bool: True when the corrupted data is filtered, False otherwise. A list \
+                containing only None cannot be filtered.
+        """
         # edge case, list cannot contain only None
         if(data.count(None) == len(data)) :
             return False 
@@ -204,15 +230,40 @@ class Hose :
         return True 
             
     def _Filter_RemoveEntry(self, i: int, data: list[Packet|None], timestamps: list[float] ) :
+        """Removes a datapoint at index i from the data and timestamps lists.
+
+        Args:
+            i (int): Index of corrupted data.
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+        """
         # remove item from list
         data.pop(i)
         timestamps.pop(i)
     
     def _Filter_InsertValue(self, i: int, timestamps: list[float], data: list[Packet|None] ) : 
+        """Replaces the data value at index i with a set value (class defaults to np.nan). 
+
+        Args:
+            i (int): Index of corrupted data.
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+        """
         # set value to default
         data[i] = self.filterInsert
         
     def _Filter_TakePast(self, i: int, data: list[Packet|None], timestamps: list[float] )  :
+        """Replaces the data value at index i with the previous Packet. If the index points \
+        to the first value in the data list, the data will be replaced with the next Packet instead.
+
+        Args:
+            i (int): Index of corrupted data.
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+        """
         # i is not the first value in the list 
         if(i>0) : 
             # data at previous index will never be None as data.index(None) finds the first instance of None
@@ -222,6 +273,17 @@ class Hose :
             self._Filter_TakeFuture(i,data,timestamps)
     
     def _Filter_TakeFuture(self, i: int, data: list[Packet|None], timestamps: list[float] ) :
+        """Replaces the data value at index i with the next Packet. If the index points \
+        to the last value in the data list, the data will be replaced with the previous \
+        Packet instead. If there are multiple currupted points in a row (data value is \
+        None), then all points will be replaced with the same future Packet.
+
+        Args:
+            i (int): Index of corrupted data.
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+        """
         # get maximum index from the list
         iMax = len(data) - 1
         # i is not the last value in list 
@@ -244,5 +306,13 @@ class Hose :
             self._Filter_TakePast(i,data,timestamps)
     
     def _Filter_DoNothing(self, i: int, data: list[Packet|None], timestamps: list[float] ) : 
-        # dont make any changes to the lusts 
+        """Does nothing to the data and timestamps lists.
+
+        Args:
+            i (int): Index of corrupted data.
+            data (list[Packet | None]): List of Packets read from the POD device.
+            timestamps (list[float]): List of timestamps in seconds for each Packet \
+                in the data list. 
+        """
+        # dont make any changes to the lists 
         pass
