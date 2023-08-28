@@ -31,11 +31,11 @@ class Hose :
         corruptedPointsRemoved (int): Total number of corrupted data points \
             removed from the data and timestamps lists.
         filterMethod (str): Method used to filter out corrupted data. 
-        filterInsert (Any): Value to replace corrupted data with if using \
+        filterInsert (float): Value to replace corrupted data with if using \
             the 'InsertValue' filter method. Defaults to np.nan.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'DoNothing', filterInsert: Any = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'DoNothing', filterInsert: float = np.nan) -> None:
         """Set instance variables.
 
         Args:
@@ -44,15 +44,15 @@ class Hose :
                 does not remove points when False. Defaults to True.
             filterMethod (str, optional): Method used to filter out corrupted data. \
                 Defaults to 'DoNothing'.
-            filterInsert (Any, optional): Value to replace corrupted data with if using \
+            filterInsert (float, optional): Value to replace corrupted data with if using \
                 the 'InsertValue' filter method. Defaults to np.nan.
         """
         # properties 
         self.sampleRate   : int   = Hose.GetSampleRate(podDevice)
         self.deviceValve  : Valve = Valve(podDevice)
         self.isOpen       : bool = False
-        self.filterMethod : Callable = self.SetFilterMethod(filterMethod)
-        self.filterInsert : Any = filterInsert
+        self.filterMethod : Callable = self.PickFilterMethod(filterMethod)
+        self.filterInsert : float = float(filterInsert)
         # drops 
         self.data       : list[Packet|Any] = []
         self.timestamps : list[float] = []
@@ -178,7 +178,7 @@ class Hose :
         # finish
         return nextTime
 
-    def SetFilterMethod(self, filterMethod: str) : 
+    def PickFilterMethod(self, filterMethod: str) : 
         """Set the method used to filter corrupted data when streaming. The filter methods \
         include 'RemoveEntry', 'InsertValue', 'TakePast', 'TakeFuture', or 'DoNothing'.  \
         The default method is 'DoNothing'.
@@ -194,14 +194,14 @@ class Hose :
             case 'TakeFuture'   : self.filterMethod = self._Filter_TakeFuture
             case  _             : self.filterMethod = self._Filter_DoNothing
                  
-    def SetFilterInsertValue(self, insert: Any) : 
+    def SetFilterInsertValue(self, insert: float) : 
         """Sets the value to insert in place of currupted data. This is only used if \ 
-        the filter method is 'InsertValue', which can be set by SetFilterMethod('InsertValue').
+        the filter method is 'InsertValue'.
 
         Args:
-            insert (Any): Any value to insert.
+            insert (float): Numerical value to insert.
         """
-        self.filterInsert : Any = insert
+        self.filterInsert : float = float(insert)
 
     def _Filter(self, data: list[Packet|None], timestamps: list[float]) -> bool : 
         """Searches the data list for corrupted points, and deals with them \
