@@ -74,8 +74,12 @@ class DrainToEDF(DrainToFile) :
         if(self.file != None) : 
             self.file.close()
             
-    def DrainDropToFile(self) : 
+    def DrainDropToFile(self) :
         """Write one drop of data to the save file.
+
+        Raises:
+            Exception: Can only save data to EDF if the hose is filtered \
+                with InsertValue, TakePast, or TakeFuture.
         """
         # checks 
         if(self.dataBucket.GetNumberOfDrops() <= 0 ) : return
