@@ -66,7 +66,7 @@ class DrainToTXT(DrainToFile) :
         timestamps, data = self.dataBucket.DripDrop()
         df = self.deviceHandler.DropToDf(timestamps, data)
         # remove column names from csv table string by splitting at first '\n'
-        self.file.write( df.to_csv().split('\n',1) [1] )
+        self.file.write( df.to_csv(index=False).split('\n',1) [1] )
         
     @staticmethod
     def _GetTimeHeader() -> str : 
