@@ -16,6 +16,11 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class DrainToEDF(DrainToFile) : 
+    """Class to to drain, or save, the data drops collected by a Bucket into an EDF file.
+
+    Attributes:
+        file (EdfWriter|None): Text file where streaming data is saved to.
+    """
     
     def __init__(self, dataBucket: Bucket, fileName: str, preampDevice: str|None = None) -> None:
         """Set class instance variables.
