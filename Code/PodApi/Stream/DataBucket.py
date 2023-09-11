@@ -111,7 +111,7 @@ class Bucket :
             else : 
                 # wait for new data 
                 time.sleep(0.1)
-        self.isCollecting = False                
+        self.isCollecting = False
                   
     def _CollectForDuration(self, duration_sec: float) : 
         """Collect streaming data for a given duration.

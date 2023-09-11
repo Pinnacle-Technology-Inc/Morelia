@@ -58,7 +58,7 @@ class Hose :
         self.timestamps : list[float] = []
         # counters
         self.numDrops : int = 0
-        self.corruptedPointsRemoved : int = 0
+        self.corruptedPoints : int = 0
 
         
     @staticmethod
@@ -96,7 +96,8 @@ class Hose :
         self.data       : list[Packet|None] = []
         self.timestamps : list[float] = []
         self.numDrops   : int = 0
-        self.corruptedPointsRemoved: int = 0
+        self.corruptedPoints: int = 0
+        self.isOpen = False
 
     def StartStream(self) : 
         """Start a thread to start streaming data from the POD device.
@@ -145,7 +146,7 @@ class Hose :
                     if( not isinstance(drip,PacketStandard)) : 
                         data[i] = drip
                         i += 1 # update looping condition 
-                except : 
+                except Exception as e : 
                     # corrupted data here, leave None in data[i]
                     i += 1 # update looping condition          
             currentTime = self._Drop(currentTime, ti, data)
@@ -188,11 +189,11 @@ class Hose :
                 'InsertValue', 'TakePast', 'TakeFuture', or 'DoNothing'/other.
         """
         match str(filterMethod) : 
-            case 'RemoveEntry'  : self.filterMethod = self._Filter_RemoveEntry
-            case 'InsertValue'  : self.filterMethod = self._Filter_InsertValue
-            case 'TakePast'     : self.filterMethod = self._Filter_TakePast
-            case 'TakeFuture'   : self.filterMethod = self._Filter_TakeFuture
-            case  _             : self.filterMethod = self._Filter_DoNothing
+            case 'RemoveEntry'  : return self._Filter_RemoveEntry
+            case 'InsertValue'  : return self._Filter_InsertValue
+            case 'TakePast'     : return self._Filter_TakePast
+            case 'TakeFuture'   : return self._Filter_TakeFuture
+            case  _             : return self._Filter_DoNothing
                  
     def SetFilterInsertValue(self, insert: float) : 
         """Sets the value to insert in place of currupted data. This is only used if \ 
@@ -219,14 +220,13 @@ class Hose :
         # edge case, list cannot contain only None
         if(data.count(None) == len(data)) :
             return False 
-        # remove all corrupted data from lists
-        while(None in data) : 
-            # find where None is in the data list
-            i = data.index(None)
-            # filter data point
-            self.filterMethod(i,data,timestamps)
-            # update counter
-            self.corruptedPointsRemoved += 1       
+        # check if there is any corrupted data
+        if(None in data) : 
+            # get list of all indices where there is corrupted data
+            allIndices = [index for (index, item) in enumerate(data) if item == None]
+            for i in allIndices: 
+                # fix this datapoint 
+                self.filterMethod(i,data,timestamps)
         return True 
             
     def _Filter_RemoveEntry(self, i: int, data: list[Packet|None], timestamps: list[float] ) :
@@ -241,7 +241,9 @@ class Hose :
         # remove item from list
         data.pop(i)
         timestamps.pop(i)
-    
+        # update counter
+        self.corruptedPoints += 1       
+
     def _Filter_InsertValue(self, i: int, timestamps: list[float], data: list[Packet|None] ) : 
         """Replaces the data value at index i with a set value (class defaults to np.nan). 
 
@@ -253,6 +255,8 @@ class Hose :
         """
         # set value to default
         data[i] = self.filterInsert
+        # update counter
+        self.corruptedPoints += 1
         
     def _Filter_TakePast(self, i: int, data: list[Packet|None], timestamps: list[float] )  :
         """Replaces the data value at index i with the previous Packet. If the index points \
@@ -268,6 +272,8 @@ class Hose :
         if(i>0) : 
             # data at previous index will never be None as data.index(None) finds the first instance of None
             data[i] = data[i-1]
+            # update counter
+            self.corruptedPoints += 1
         # i is the first value in list. Cannot take a past value.
         else : 
             self._Filter_TakeFuture(i,data,timestamps)
@@ -301,6 +307,8 @@ class Hose :
             while(iGood - i > 0) : 
                 data[i] = goodData
                 i += 1
+                # update counter
+                self.corruptedPoints += 1
         # i is the last value in the list. Cannot take a future value.
         else :
             self._Filter_TakePast(i,data,timestamps)
