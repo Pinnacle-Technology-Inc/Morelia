@@ -82,13 +82,13 @@ class DrainToEDF(DrainToFile) :
                 with InsertValue, TakePast, or TakeFuture.
         """
         # checks 
-        if(self.dataBucket.GetNumberOfDrops() <= 0 ) : return
+        if(self.dataBucket.GetVolumeOfDrops() <= 0 ) : return
         if(self.file == None) : return
         if(self.dataBucket.dataHose.filterMethod not in ['InsertValue','TakePast','TakeFuture' ]) : 
             # data must be list with a number of items equal to the sample rate. The values must be a Packet or float.
             raise Exception('[!] Can only save data to EDF if the hose is filtered with InsertValue, TakePast, or TakeFuture.')
         # get data 
-        timestamps, data = self.dataBucket.DequeueDrop()
+        timestamps, data = self.dataBucket.DripDrop()
         dataArrs = self.deviceHandler.DropToListOfArrays(data)
         # write data to EDF file 
         self.file.writeSamples(dataArrs)

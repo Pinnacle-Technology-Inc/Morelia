@@ -48,8 +48,9 @@ class Bucket :
         # reset all 
         self.drops = Queue()
         self.totalDropsCollected = 0
+        self.isCollecting = False
         
-    def GetNumberOfDrops(self) -> int : 
+    def GetVolumeOfDrops(self) -> int : 
         """Get the number of data drops currently in the queue.
 
         Returns:
@@ -57,14 +58,15 @@ class Bucket :
         """
         return self.drops.qsize()
 
-    def DequeueDrop(self) -> tuple[ list[float], list[Packet|None] ]: 
-        """Gets the first point (timestamp, data) in the drops queue.
+    def DripDrop(self) -> tuple[ list[float], list[Packet|None] ]: 
+        """Dequeues the first point (timestamp, data) in the drops queue.
 
         Raises:
             Exception: No drops left to dequeue.
 
         Returns:
-            tuple[ list[float], list[Packet|None] ]: _description_
+            tuple[ list[float], list[Packet|None] ]: Tuple (x,y) with ~1 sec of \
+                timestamps (x) and data (y) .
         """
         if(not self.drops.empty() ) :
             return self.drops.get()
@@ -102,9 +104,9 @@ class Bucket :
         """Collect streaming data until the Hose is finished dripping.
         """
         # collect data while the device is streaming 
-        while(self.dataHose.isOpen or self._IsDropAvailable()) : 
+        while(self.dataHose.isOpen or self._IsDropAvailableInHose()) : 
             # check for new data
-            if(self._IsDropAvailable()) :
+            if(self._IsDropAvailableInHose()) :
                 self._CollectDrop()
             else : 
                 # wait for new data 
@@ -121,7 +123,7 @@ class Bucket :
         ti: float = time.time()
         while( (time.time() - ti ) < duration_sec) :
             # check for new data
-            if(self._IsDropAvailable()) :
+            if(self._IsDropAvailableInHose()) :
                 self._CollectDrop()
             # check if streaming has stopped from external cause
             elif(not self.dataHose.isOpen) : 
@@ -146,7 +148,7 @@ class Bucket :
         # increment counter
         self.totalDropsCollected += 1
                 
-    def _IsDropAvailable(self) -> bool: 
+    def _IsDropAvailableInHose(self) -> bool: 
         """Checks if the Hose has any uncollected drops.
 
         Returns:
