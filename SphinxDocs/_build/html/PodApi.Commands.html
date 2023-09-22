@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodApi.Commands package &mdash; Python POD API v1.4.0 documentation</title>
+  <title>PodApi.Commands package &mdash; Python POD API v1.5.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -51,6 +51,7 @@
 <li class="toctree-l4"><a class="reference internal" href="PodApi.Devices.html">PodApi.Devices package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="PodApi.Packets.html">PodApi.Packets package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="PodApi.Parameters.html">PodApi.Parameters package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="PodApi.Stream.html">PodApi.Stream package</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="PodApi.html#module-PodApi">Module contents</a></li>
@@ -359,6 +360,33 @@
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodApi.Commands.PodCommands.CommandSet.ValidateCommand">
+<span class="sig-name descname"><span class="pre">ValidateCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pld</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodApi.Commands.PodCommands.CommandSet.ValidateCommand" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the command and its payload are invalid for this POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command name or number.</p></li>
+<li><p><strong>pld</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – Standard command packet payload. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Command ‘+str(cmd)+’ does not exist.</p></li>
+<li><p><strong>Exception</strong> – This command does not take a payload.</p></li>
+<li><p><strong>Exception</strong> – This command requires a payload.</p></li>
+<li><p><strong>Exception</strong> – Command needs more than one argument in the payload. Use a tuple of values.</p></li>
+<li><p><strong>Exception</strong> – Payload must have ‘+str(sum(args))+’ bytes.</p></li>
+<li><p><strong>Exception</strong> – Payload must have ‘+str(len(args))+’ integer items in the tuple.</p></li>
+<li><p><strong>Exception</strong> – Bytes in the payload are the wrong sizes. The sizes must be ‘+str(args)+’.’</p></li>
+<li><p><strong>Exception</strong> – The payload tuple must only contain int or bytes items.</p></li>
+<li><p><strong>Exception</strong> – Payload is of incorrect type. It must be an int, bytes, or tuple of int/bytes.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
