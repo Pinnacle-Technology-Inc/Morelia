@@ -11,6 +11,7 @@ Subpackages
    PodApi.Devices
    PodApi.Packets
    PodApi.Parameters
+   PodApi.Stream
 
 Module contents
 ---------------
