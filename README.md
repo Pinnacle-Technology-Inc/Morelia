@@ -42,7 +42,7 @@ Here are some useful documents for setting up your coding environment to use the
 * PodApi package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.html)
 * Import package: ``import PodApi``
 
-The **PodApi** package is used to operate POD devices. It contains four sub-packages: Devices, Packets, Commands, and Parameters. The **Devices** package is used to create a Pod device object that is connected to a physical device. Devices has a sub-package, **SerialPorts**, which facilitates communication to a POD device through a serial port; this allows the user to read and write data to a POD device. The **Packets** package contains container classes to store serial data packets that are written to or read from a POD device. The **Commands** package stores all the types of commands and their respective information that a POD device can interpret. Lastly, the **Parameters** package consists of container classes used to store information about the various POD devices; this class is independent of any physical POD device. 
+The **PodApi** package is used to operate POD devices. It contains four sub-packages: Devices, Packets, Commands, and Parameters. The **Devices** package is used to create a Pod device object that is connected to a physical device. Devices has a sub-package, **SerialPorts**, which facilitates communication to a POD device through a serial port; this allows the user to read and write data to a POD device. The **Packets** package contains container classes to store serial data packets that are written to or read from a POD device. The **Commands** package stores all the types of commands and their respective information that a POD device can interpret. The **Parameters** package consists of container classes used to store information about the various POD devices; this class is independent of any physical POD device. Lastly, the **Stream** package contains tools to stream and save data from a POD device to a local file; Stream has **Drain** as a sub package, which handles writing to a file (this also has a sub-package, **PodHander**, which interprets streaming data for different POD devices).
 
 The class diagram of the PodApi package is shown below.
 
@@ -50,12 +50,13 @@ The class diagram of the PodApi package is shown below.
 
 ## Examples & Usage 
 
-| Module                                                         | Description                                  |
-|----------------------------------------------------------------|----------------------------------------------|
-| [Using_8206HR.py](/Code/Examples/UsingDevices/Using_8206HR.py) | Runs all commands for an 8206-HR POD device. |
-| [Using_8401HR.py](/Code/Examples/UsingDevices/Using_8401HR.py) | Runs all commands for an 8401-HR POD device. |
-| [Using_8229.py](/Code/Examples/UsingDevices/Using_8229.py)     | Runs all commands for an 8229 POD device.    |
-| [Using_8480SC.py](/Code/Examples/UsingDevices/Using_8480SC.py) | Runs all commands for an 8480-SC POD device. |
+| Module                                                        | Description                                  |
+|---------------------------------------------------------------|----------------------------------------------|
+| [Using_8206HR.py](/Code/Examples/UsingPodApi/Using_8206HR.py) | Runs all commands for an 8206-HR POD device. |
+| [Using_8401HR.py](/Code/Examples/UsingPodApi/Using_8401HR.py) | Runs all commands for an 8401-HR POD device. |
+| [Using_8229.py](/Code/Examples/UsingPodApi/Using_8229.py)     | Runs all commands for an 8229 POD device.    |
+| [Using_8480SC.py](/Code/Examples/UsingPodApi/Using_8480SC.py) | Runs all commands for an 8480-SC POD device. |
+| [Using_Stream.py](/Code/Examples/UsingPodApi/Using_Stream.py) | demonstrates how to use PodApi.Stream to save streaming data to a file from a 8206-HR POD device. | 
 
 ## Sub-packages
 
@@ -116,6 +117,40 @@ The class diagram of the PodApi package is shown below.
 | [Params8401HR](/Code/PodApi/Parameters/Params8401HR.py) | Container class that stores parameters for a 8401-HR POD device.         | 
 | [Params8229](/Code/PodApi/Parameters/Params8229.py)     | Container class that stores parameters for a 8229 POD device.            | 
 | [Params8480SC](/Code/PodApi/Parameters/Params8480SC.py) | Container class that stores parameters for a 8480-SC POD device.         | 
+
+### Stream
+
+* PodApi.Stream package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Stream.html)
+* Import clases: ``from PodApi.Stream import Bucket, Valve, Hose, Bucket, DrainBucket``
+
+| Class                                             | Description                                                                                                   |
+|---------------------------------------------------|---------------------------------------------------------------------------------------------------------------|
+| [Bucket](/Code/PodApi/Stream/DataBucket.py)       | Class to collect the data and timestamps when streaming from a POD device.                                    | 
+| [Hose](/Code/PodApi/Stream/DataHose.py)           | Collects streaming data from an 8206-HR or 8401-HR POD device. The data and timestamps are updated about every 1 second when streaming. | 
+| [Valve](/Code/PodApi/Stream/DeviceValve.py)       | Simple class to start and stop streaming data from a POD device.                                              |
+| [DrainBucket](/Code/PodApi/Stream/DrainToFile.py) | This class is used to save the streaming data from a POD device that was collected by a Bucket into a file.   | 
+
+### Drain
+
+* PodApi.Stream.Drain package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Stream.Drain.html)
+* Import clases: ``from PodApi.Stream.Drain import DrainToFile, DrainToTXT, DrainToEDF``
+
+| Class                                              | Description                                                                              |
+|----------------------------------------------------|------------------------------------------------------------------------------------------|
+| [DrainToEDF](/Code/PodApi/Stream/Drain/ToEDF.py)   | Class to to drain, or save, the data drops collected by a Bucket into an EDF file.       | 
+| [DrainToFile](/Code/PodApi/Stream/Drain/ToFile.py) | Interface class to to drain, or save, the data drops collected by a Bucket into a file.  | 
+| [DrainToTXT](/Code/PodApi/Stream/Drain/ToText.py)  | Class to to drain, or save, the data drops collected by a Bucket into a text file.       | 
+
+### PodHandler
+
+* PodApi.Stream.Drain.PodHandler package docs: [here](https://python-pod-api.readthedocs.io/en/latest/PodApi.Stream.Drain.PodHandler.html)
+* Import clases: ``from PodApi.Stream.Drain.PodHandler import DrainDeviceHandler, Drain8206HR, Drain8401HR``
+
+| Class                                                                          | Description                                                              |
+|--------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| [Drain8206HR](/Code/PodApi/Stream/Drain/PodHandler/Handle8206HR.py)            | Class to help handle 8206-HR POD devices for the Drain classes.          | 
+| [Drain8401HR](/Code/PodApi/Stream/Drain/PodHandler/Handle8401HR.py)            | Class to help handle 8206-HR POD devices for the Drain classes.          |
+| [DrainDeviceHandler](/Code/PodApi/Stream/Drain/PodHandler/HandlerInterface.py) | Interface class for the POD device handlers used by the Drain classes.   |
 
 ## Setup Package
 
