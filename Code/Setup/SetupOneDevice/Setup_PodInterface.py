@@ -127,11 +127,13 @@ class SetupInterface :
         pass
     
 
-    def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+    def _StreamThreading(self) -> tuple[dict[int,Thread]] | dict[int,Thread] :
+        """Start streaming from each POD device and save each to a file. 
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            tuple[dict[int,Thread]] | dict[int,Thread]: Dictionary with keys as the device number and \
+                values as the started Thread. If a tuple, the first item is the Bucket and second is the \
+                BucketDrain Threads. 
         """
         # each POD device has its own thread 
         pass
@@ -527,7 +529,9 @@ class SetupInterface :
             Exception: Test connection failed.
 
         Returns:
-            dict[int,Thread]: Dictionary with integer device number keys and Thread values. 
+            tuple[dict[int,Thread]] | dict[int,Thread]: Dictionary with keys as the device number and \
+                values as the started Thread. If a tuple, the first item is the Bucket and second is the \
+                BucketDrain Threads. 
         """
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 

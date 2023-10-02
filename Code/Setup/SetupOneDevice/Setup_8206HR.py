@@ -1,16 +1,10 @@
 # enviornment imports
-import os 
-import time
-import numpy        as     np
 from   texttable    import Texttable
 from   threading    import Thread
-from   pyedflib     import EdfWriter
-from   io           import IOBase
 
 # local imports
 from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import PacketStandard, PacketBinary4
 from PodApi.Devices         import Pod8206HR
 from PodApi.Parameters      import Params8206HR
 from PodApi.Stream          import Bucket, DrainBucket
@@ -26,6 +20,10 @@ __email__       = "sales@pinnaclet.com"
 class Setup8206HR(SetupInterface) : 
     """
     Setup_8206HR provides the setup functions for an 8206-HR POD device.
+    
+    Attributes:
+        _bucketAccess (dict[int,Bucket]): Dictionary with device number keys and Bucket values. \
+            This is updated in _StreamThreading() and cleared in StopStream().
     """
 
     # ============ GLOBAL CONSTANTS ============      ========================================================================================================================
@@ -154,90 +152,16 @@ class Setup8206HR(SetupInterface) :
         return(tab)
     
 
-    # ------------ FILE HANDLING ------------
-
-
-    def _OpenSaveFile_TXT(self, fname: str) -> IOBase : 
-        """Opens a text file and writes the column names. Writes the current date/time at the top of \
-        the txt file.
-
-        Args:
-            fname (str): String filename.
-
-        Returns:
-            IOBase: Opened file.
-        """
-        # open file and write column names 
-        f = open(fname, 'w')
-        # write time
-        f.write( self._GetTimeHeader_forTXT() ) 
-        # columns names
-        f.write('\nTime,CH0,CH1,CH2\n')
-        return(f)
-    
-
-    def _OpenSaveFile_EDF(self, fname: str, devNum: int) -> EdfWriter :
-        """Opens EDF file and write header.
-
-        Args:
-            fname (str): String filename.
-            devNum (int): Integer device number.
-
-        Returns:
-            EdfWriter: Opened file.
-        """
-        # number of channels 
-        n = len(Params8206HR.lowPassLabels)
-        # create file
-        f = EdfWriter(fname, n) 
-        # get info for each channel
-        for i in range(n):
-            f.setSignalHeader( i, {
-                'label' : Params8206HR.lowPassLabels[i],
-                'dimension' : 'uV',
-                'sample_rate' : self._podParametersDict[devNum].sampleRate,
-                'physical_max': self._PHYSICAL_BOUND_uV,
-                'physical_min': -self._PHYSICAL_BOUND_uV, 
-                'digital_max': 32767, 
-                'digital_min': -32768, 
-                'transducer': '', 
-                'prefilter': ''            
-            } )
-        return(f)
-
-
-    @staticmethod
-    def _WriteDataToFile_TXT(file: IOBase, data: list[np.ndarray],  t: np.ndarray) : 
-        """Writes data to an open text file.
-
-        Args:
-            file (IOBase): opened write file.
-            data (list[np.ndarray]): List of 3 items, one for each channel.
-            t (np.ndarray): list with the time stamps (in seconds).
-        """
-        for i in range(len(t)) : 
-            line = [t[i], data[0][i], data[1][i], data[2][i] ]
-            # convert data into comma separated string
-            line = ','.join(str(x) for x in line) + '\n'
-            # write data to file 
-            file.write(line)
-
-
-    @staticmethod
-    def _WriteDataToFile_EDF(file: EdfWriter, data: list[np.ndarray]) : 
-        """Writes data to an open EDF file.
-
-        Args:
-            file (EdfWriter): opened EDF file.
-            data (list[np.ndarray]): List of 3 items, one for each channel.
-        """
-        # write data to EDF file 
-        file.writeSamples(data)
-
-
     # ------------ STREAM ------------ 
 
+
     def _StreamThreading(self) -> tuple[dict[int,Thread]] :
+        """Start streaming from each POD device and save each to a file.
+
+        Returns:
+            tuple[dict[int,Thread]]: Tuple of two items, the first is for the bucket and the second is the drain. \
+                Each item is a dictionary with device number keys and started Thread items.
+        """
         # create objects to collect and save streaming data 
         allBuckets : dict[int,Bucket]       = { devNum : Bucket(pod) for devNum,pod in self._podDevices.items() }
         allDrains  : dict[int,DrainBucket]  = { devNum : DrainBucket(bkt, self._BuildFileName(devNum)) for devNum,bkt in allBuckets.items() }
@@ -254,98 +178,5 @@ class Setup8206HR(SetupInterface) :
         # signal for each bucket to stop collecting data, which writes command to stop streaming to the POD device
         for bkt in self._bucketAccess.values() : 
             bkt.StopCollecting()
-
-    # def _StreamThreading(self) -> dict[int,Thread] :
-    #     """Opens a save file, then creates a thread for each device to stream and write data from. 
-
-    #     Returns:
-    #         dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
-    #     """
-    #     # create save files for pod devices
-    #     podFiles = {devNum: self._OpenSaveFile(devNum) for devNum in self._podDevices.keys()}
-    #     # make threads for reading 
-    #     readThreads = {
-    #         # create thread to _StreamUntilStop() to dictionary entry devNum
-    #         devNum : Thread(
-    #                 target = self._StreamUntilStop, 
-    #                 args = ( pod, file, params.sampleRate ))
-    #         # for each device 
-    #         for devNum,params,pod,file in 
-    #             zip(
-    #                 self._podParametersDict.keys(),     # devNum
-    #                 self._podParametersDict.values(),   # params
-    #                 self._podDevices.values(),          # pod
-    #                 podFiles.values() )                 # file
-    #     }
-    #     for t in readThreads.values() : 
-    #         # start streaming (program will continue until .join() or streaming ends)
-    #         t.start()
-    #     return(readThreads)
-    
-    
-    # def _StreamUntilStop(self, pod: Pod8206HR, file: IOBase|EdfWriter, sampleRate: int) -> None :
-    #     """Streams data from a POD device and saves data to file. Stops looking when a stop stream \
-    #     command is read. Calculates average time difference across multiple packets to collect a \
-    #     continuous time series data. 
-
-    #     Args:
-    #         pod (POD_8206HR): POD device to read from.
-    #         file (IOBase | EdfWriter): open file.
-    #         sampleRate (int): Integer sample rate in Hz.
-    #     """
-    #     # get file type
-    #     name, ext = os.path.splitext(self._saveFileName)
-    #     # packet to mark stop streaming 
-    #     stopAt = pod.GetPODpacket(cmd='STREAM', payload=0)  
-    #     # start streaming from device  
-    #     pod.WriteRead(cmd='STREAM', payload=1)
-    #     # initialize times
-    #     t_forEDF: int = 0
-    #     currentTime :float = 0.0 
-    #     times = np.zeros(sampleRate)
-    #     # annotate start
-    #     if(ext == '.edf') : file.writeAnnotation(t_forEDF, -1, "Start")
-    #     # start reading
-    #     while(True):
-    #         # initialize data array 
-    #         data0 = np.zeros(sampleRate)
-    #         data1 = np.zeros(sampleRate)
-    #         data2 = np.zeros(sampleRate)
-    #         # track time (second)
-    #         ti = (round(time.time(),9)) # initial time 
-    #         # read data for one second
-    #         for i in range(sampleRate):
-    #             # read once 
-    #             r: PacketStandard|PacketBinary4 = pod.ReadPODpacket()
-    #             # stop looping when stop stream command is read 
-    #             if(r.rawPacket == stopAt) : 
-    #                 if(ext=='.edf') : file.writeAnnotation(t_forEDF, -1, "Stop")
-    #                 file.close()
-    #                 return  ##### END #####
-    #             if(isinstance(r, PacketBinary4)) :
-    #                 # save data as uV
-    #                 data0[i] = self._uV(r.Ch(0)) 
-    #                 data1[i] = self._uV(r.Ch(1))
-    #                 data2[i] = self._uV(r.Ch(2))
-    #         # get average sample period
-    #         tf = round(time.time(),9) # final time
-    #         td = tf - ti # time difference 
-    #         average_td = (round((td/sampleRate), 9)) # time between samples
-    #         # increment time for each sample
-    #         for i in range(sampleRate):
-    #             times[i] = (round(currentTime, 9))
-    #             currentTime += average_td  #adding avg time differences + CurrentTime = CurrentTime
-    #         # save to file 
-    #         if(ext=='.csv' or ext=='.txt') : self._WriteDataToFile_TXT(file, [data0,data1,data2], times)
-    #         elif(ext=='.edf') :              self._WriteDataToFile_EDF(file, [data0,data1,data2])
-    #         # increment edf time by 1 sec
-    #         t_forEDF += 1
-    #     # end while 
-            
-            
-    # def StopStream(self) -> None :
-    #     """Write a command to stop streaming data to all POD devices."""
-    #     # tell devices to stop streaming 
-    #     for pod in self._podDevices.values() : 
-    #         if(pod != None) : pod.WritePacket(cmd='STREAM', payload=0)
-
+        # clear class variable
+        self._bucketAccess = {}
