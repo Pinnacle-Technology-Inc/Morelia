@@ -90,8 +90,12 @@ class SetupAll :
         return(allInitParams)
 
 
-    def GetSaveFileNames(self) -> str:
+    def GetSaveFileNames(self) -> dict[str]:
+        """Gets a dictionary of the save files names for all connected POD devices.
 
+        Returns:
+            dict[str]: Dictionary of the save file name and path for all devices.
+        """
         fileNames = {}
         for key,val in self._Setup_PodDevices.items() : 
             fileNames[key] = val.GetSaveFileName()
@@ -295,7 +299,7 @@ class SetupAll :
             '\n' + 
             'saveFileDicts = ' + str(self.GetSaveFileNames()) + '\n' + 
             'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 
-            'go = Setup_PodDevices(saveFileDicts, podParametersDict)'  + '\n' + 
+            'go = SetupAll(saveFileDicts, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
 

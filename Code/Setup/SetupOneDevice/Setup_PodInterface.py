@@ -142,9 +142,9 @@ class SetupInterface :
 
     def __init__(self) -> None :
         """Initializes the class instance variables."""
-        self._podDevices : dict[int,Pod]  = {}               # dict of pod device objects. MUST have keys as the device number
-        self._podParametersDict : dict[int,Params] = {}   # dictionary of device information. MUST have keys as the device number
-        self._saveFileName : str = ''                               # string filename: <path>/file.ext # the device name and number will be appended to the filename 
+        self._podDevices : dict[int,Pod]  = {}  # dict of pod device objects. MUST have keys as the device number
+        self._podParametersDict : dict[int,Params] = {} # dictionary of device information. MUST have keys as the device number
+        self._saveFileName : str = ''   # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
     def __del__(self) -> None :
