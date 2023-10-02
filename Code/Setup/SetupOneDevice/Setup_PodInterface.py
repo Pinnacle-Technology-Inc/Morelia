@@ -520,7 +520,7 @@ class SetupInterface :
     # ------------ STREAM ------------ 
 
 
-    def Stream(self) -> dict[int,Thread] : 
+    def Stream(self) -> tuple[dict[int,Thread]] | dict[int,Thread] : 
         """Tests that all devices are connected then starts streaming data.
 
         Raises:
