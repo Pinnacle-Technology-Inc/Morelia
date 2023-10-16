@@ -133,6 +133,7 @@ class Setup8206HR(SetupInterface) :
         # return preamplifier gain 
         return(gain)    
     
+    
     # ------------ DISPLAY POD PARAMETERS ------------
 
 
