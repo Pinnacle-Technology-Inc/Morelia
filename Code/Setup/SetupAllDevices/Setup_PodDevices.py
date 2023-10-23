@@ -297,9 +297,11 @@ class SetupAll :
         """
         print(
             '\n' + 
+            'import PodApi\n' +
+            'import Setup\n' + 
             'saveFileDicts = ' + str(self.GetSaveFileNames()) + '\n' + 
             'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 
-            'go = SetupAll(saveFileDicts, podParametersDict)'  + '\n' + 
+            'go = Setup.SetupAllDevices.SetupAll(saveFileDicts, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
 

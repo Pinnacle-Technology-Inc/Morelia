@@ -99,9 +99,9 @@ class PacketBinary4(Packet) :
         data: dict = super().TranslateAll()
         data['Packet #'] = self.PacketNumber()
         data['TTL'] = self.Ttl() 
-        data['Ch0'] = self.ch0
-        data['Ch1'] = self.ch1
-        data['Ch2'] = self.ch2
+        data['Ch0'] = self.Ch(0)
+        data['Ch1'] = self.Ch(1)
+        data['Ch2'] = self.Ch(2)
         return data
     
     # ----- Translated parts -----

@@ -65,7 +65,7 @@
 
 \title{Python POD API}
 \date{Oct 23, 2023}
-\release{v1.5.1}
+\release{v1.5.2}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -8823,7 +8823,7 @@ Starts a thread that starts draining data drops into the save file.
 
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-\_description\_
+Started thread where data is being saved to a file.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
@@ -8885,7 +8885,7 @@ bool
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_DrainDropToFile}}}{\sphinxparam{\DUrole{n,n}{timeoutTicker}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{float}}, \sphinxparam{\DUrole{n,n}{timeout\_sec}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{float}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{10.0}}, \sphinxparam{\DUrole{n,n}{sleep}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{float}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{0.25}}}{{ $\rightarrow$ float}}
 \pysigstopsignatures
 \sphinxAtStartPar
-\_summary\_
+When data is available in the bucket, write one drop of data to the save file.
 \begin{quote}\begin{description}
 \sphinxlineitem{Parameters}\begin{itemize}
 \item {} 

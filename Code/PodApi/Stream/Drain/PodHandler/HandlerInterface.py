@@ -42,7 +42,7 @@ class DrainDeviceHandler() : # interface class
             float: voltage in of uV.
         """
         # round to 6 decimal places... add 0.0 to prevent negative zeros when rounding
-        return ( round(voltage * 1E-6, 6 ) + 0.0 )
+        return ( round(voltage * 1E6, 12 ) + 0.0 )
     
     # vvvvv      interface methods to implement      vvvvv
     

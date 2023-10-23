@@ -1,6 +1,6 @@
 [project]
 name = "Python-POD-API"
-version = "v1.5.1"
+version = "v1.5.2"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.md"}

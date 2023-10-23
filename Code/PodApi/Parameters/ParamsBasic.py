@@ -42,7 +42,7 @@ class Params :
         Returns:
             str: String that represents the Params constructor.
         """
-        return('Params(port=\''+self.port+'\')')
+        return('PodApi.Parameters.Params(port=\''+self.port+'\')')
         # NOTE Overwrite this in child class.
 
 

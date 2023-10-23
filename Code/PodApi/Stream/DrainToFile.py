@@ -68,7 +68,7 @@ class DrainBucket :
                 collect more data before checking agian. Defaults to 0.25.
 
         Returns:
-            Thread: _description_
+            Thread: Started thread where data is being saved to a file.
         """
         t: Thread = Thread(target=self._ThreadedDrainBucketToFile, args=(timeout_sec,sleep))
         t.start()
@@ -98,7 +98,7 @@ class DrainBucket :
         self.drainToFile.CloseFile()
     
     def _DrainDropToFile(self, timeoutTicker: float, timeout_sec: float=10.0, sleep: float=0.25) -> float : 
-        """_summary_
+        """When data is available in the bucket, write one drop of data to the save file. 
 
         Args:
             timeoutTicker (float): Counts the amout of time passed since the last drop was recieved.
