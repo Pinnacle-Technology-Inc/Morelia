@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code'))
 project = 'Python POD API'
 copyright = '2023, Thresa Kelly'
 author = 'Thresa Kelly'
-release = 'v1.5.0'
+release = 'v1.5.1'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
