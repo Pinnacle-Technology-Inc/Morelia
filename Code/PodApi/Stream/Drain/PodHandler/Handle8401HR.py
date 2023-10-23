@@ -38,7 +38,11 @@ class Drain8401HR(DrainDeviceHandler) :
             str: String of the filenames separated by commas and ending in a newline.
         """
         cols = self.GetDeviceColNamesList()
-        cols.remove('NC')
+        print(cols)
+        while('NC' in cols) : 
+            cols.remove('NC')
+            print('removed')
+        
         return ','.join(cols) + '\n'
     
     def GetDeviceColNamesList(self, includeTime: bool = True) -> list[str] : 
