@@ -65,6 +65,9 @@ class DrainToTXT(DrainToFile) :
         # get data 
         timestamps, data = self.dataBucket.DripDrop()
         df = self.deviceHandler.DropToDf(timestamps, data)
+        
+        # print(df)
+        
         # remove column names from csv table string by splitting at first '\n'
         self.file.write( df.to_csv(index=False).split('\n',1) [1] )
         
