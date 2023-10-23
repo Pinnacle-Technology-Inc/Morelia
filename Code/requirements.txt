@@ -3,3 +3,5 @@ pandas==2.0.3
 pyEDFlib==0.1.30
 pyserial==3.5
 texttable==1.6.7
+sphinx==6.2.1
+sphinx-rtd-theme==1.2.2
