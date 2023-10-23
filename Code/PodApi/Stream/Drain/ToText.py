@@ -58,16 +58,13 @@ class DrainToTXT(DrainToFile) :
         
     def DrainDropToFile(self) : 
         """Write one drop of data to the save file.
-        """
+        """       
         # checks 
         if(self.dataBucket.GetVolumeOfDrops() <= 0 ) : return
         if(self.file == None) : return
         # get data 
         timestamps, data = self.dataBucket.DripDrop()
-        df = self.deviceHandler.DropToDf(timestamps, data)
-        
-        # print(df)
-        
+        df = self.deviceHandler.DropToDf(timestamps, data)        
         # remove column names from csv table string by splitting at first '\n'
         self.file.write( df.to_csv(index=False).split('\n',1) [1] )
         
