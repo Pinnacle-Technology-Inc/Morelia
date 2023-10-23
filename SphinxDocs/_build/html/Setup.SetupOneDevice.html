@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup.SetupOneDevice package &mdash; Python POD API v1.5.0 documentation</title>
+  <title>Setup.SetupOneDevice package &mdash; Python POD API v1.5.1 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -97,6 +97,17 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup.SetupOneDevice.Setup_8206HR.</span></span><span class="sig-name descname"><span class="pre">Setup8206HR</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface" title="Setup.SetupOneDevice.Setup_PodInterface.SetupInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SetupInterface</span></code></a></p>
 <p>Setup_8206HR provides the setup functions for an 8206-HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._bucketAccess">
+<span class="sig-name descname"><span class="pre">_bucketAccess</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._bucketAccess" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary with device number keys and Bucket values.             This is updated in _StreamThreading() and cleared in StopStream().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.html#PodApi.Stream.DataBucket.Bucket" title="PodApi.Stream.DataBucket.Bucket">Bucket</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR.GetDeviceName">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR.GetDeviceName" title="Permalink to this definition"></a></dt>
@@ -182,43 +193,6 @@
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_EDF">
-<span class="sig-name descname"><span class="pre">_OpenSaveFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">EdfWriter</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_EDF" title="Permalink to this definition"></a></dt>
-<dd><p>Opens EDF file and write header.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<em>str</em>) – String filename.</p></li>
-<li><p><strong>devNum</strong> (<em>int</em>) – Integer device number.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Opened file.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>EdfWriter</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_TXT">
-<span class="sig-name descname"><span class="pre">_OpenSaveFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_TXT" title="Permalink to this definition"></a></dt>
-<dd><p>Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – String filename.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Opened file.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>IOBase</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._PHYSICAL_BOUND_uV">
 <span class="sig-name descname"><span class="pre">_PHYSICAL_BOUND_uV</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2046</span></em><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._PHYSICAL_BOUND_uV" title="Permalink to this definition"></a></dt>
@@ -227,58 +201,14 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamThreading">
-<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamThreading" title="Permalink to this definition"></a></dt>
-<dd><p>Opens a save file, then creates a thread for each device to stream and write data from.</p>
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamThreading" title="Permalink to this definition"></a></dt>
+<dd><p>Start streaming from each POD device and save each to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary with keys as the device number and values as the started Thread.</p>
+<dd class="field-odd"><p>Tuple of two items, the first is for the bucket and the second is the drain.                 Each item is a dictionary with device number keys and started Thread items.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict[int,Thread]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamUntilStop">
-<span class="sig-name descname"><span class="pre">_StreamUntilStop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="PodApi.Devices.html#PodApi.Devices.PodDevice_8206HR.Pod8206HR" title="PodApi.Devices.PodDevice_8206HR.Pod8206HR"><span class="pre">Pod8206HR</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamUntilStop" title="Permalink to this definition"></a></dt>
-<dd><p>Streams data from a POD device and saves data to file. Stops looking when a stop stream         command is read. Calculates average time difference across multiple packets to collect a         continuous time series data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pod</strong> (<em>POD_8206HR</em>) – POD device to read from.</p></li>
-<li><p><strong>file</strong> (<em>IOBase</em><em> | </em><em>EdfWriter</em>) – open file.</p></li>
-<li><p><strong>sampleRate</strong> (<em>int</em>) – Integer sample rate in Hz.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_EDF">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_EDF" title="Permalink to this definition"></a></dt>
-<dd><p>Writes data to an open EDF file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file</strong> (<em>EdfWriter</em>) – opened EDF file.</p></li>
-<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List of 3 items, one for each channel.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_TXT">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_TXT" title="Permalink to this definition"></a></dt>
-<dd><p>Writes data to an open text file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file</strong> (<em>IOBase</em>) – opened write file.</p></li>
-<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List of 3 items, one for each channel.</p></li>
-<li><p><strong>t</strong> (<em>np.ndarray</em>) – list with the time stamps (in seconds).</p></li>
-</ul>
+<dd class="field-even"><p>tuple[dict[int,Thread]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -478,6 +408,17 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup.SetupOneDevice.Setup_8401HR.</span></span><span class="sig-name descname"><span class="pre">Setup8401HR</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface" title="Setup.SetupOneDevice.Setup_PodInterface.SetupInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SetupInterface</span></code></a></p>
 <p>Setup_8401HR provides the setup functions for an 8206-HR POD device.     REQUIRES FIRMWARE 1.0.2 OR HIGHER.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._bucketAccess">
+<span class="sig-name descname"><span class="pre">_bucketAccess</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._bucketAccess" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary with device number keys and Bucket values.             This is updated in _StreamThreading() and cleared in StopStream().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.html#PodApi.Stream.DataBucket.Bucket" title="PodApi.Stream.DataBucket.Bucket">Bucket</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR.GetDeviceName">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR.GetDeviceName" title="Permalink to this definition"></a></dt>
@@ -623,43 +564,6 @@
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_EDF">
-<span class="sig-name descname"><span class="pre">_OpenSaveFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">EdfWriter</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_EDF" title="Permalink to this definition"></a></dt>
-<dd><p>Opens EDF file and write header.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>fname</strong> (<em>str</em>) – String filename.</p></li>
-<li><p><strong>devNum</strong> (<em>int</em>) – Integer device number.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Opened file.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>EdfWriter</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_TXT">
-<span class="sig-name descname"><span class="pre">_OpenSaveFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_TXT" title="Permalink to this definition"></a></dt>
-<dd><p>Opens a text file and writes the column names. Writes the current date/time at         the top of the txt file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – String filename.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Opened file.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>IOBase</p>
-</dd>
-</dl>
-</dd></dl>
-
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._PHYSICAL_BOUND_uV">
 <span class="sig-name descname"><span class="pre">_PHYSICAL_BOUND_uV</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2046</span></em><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._PHYSICAL_BOUND_uV" title="Permalink to this definition"></a></dt>
@@ -791,58 +695,14 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamThreading">
-<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamThreading" title="Permalink to this definition"></a></dt>
-<dd><p>Opens a save file, then creates a thread for each device to stream and write         data from.</p>
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamThreading" title="Permalink to this definition"></a></dt>
+<dd><p>Start streaming from each POD device and save each to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary with keys as the device number and values as                 the started Thread.</p>
+<dd class="field-odd"><p>Tuple of two items, the first is for the bucket and the second is the drain.                 Each item is a dictionary with device number keys and started Thread items.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict[int,Thread]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamUntilStop">
-<span class="sig-name descname"><span class="pre">_StreamUntilStop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="PodApi.Devices.html#PodApi.Devices.PodDevice_8401HR.Pod8401HR" title="PodApi.Devices.PodDevice_8401HR.Pod8401HR"><span class="pre">Pod8401HR</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamUntilStop" title="Permalink to this definition"></a></dt>
-<dd><p>Streams data from a POD device and saves data to file. Stops looking when a stop         stream command is read. Calculates average time difference across multiple packets to         collect a continuous time series data.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>pod</strong> (<em>POD_8206HR</em>) – POD device to read from.</p></li>
-<li><p><strong>file</strong> (<em>IOBase</em><em> | </em><em>EdfWriter</em>) – open file.</p></li>
-<li><p><strong>sampleRate</strong> (<em>int</em>) – Integer sample rate in Hz.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_EDF">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EdfWriter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_EDF" title="Permalink to this definition"></a></dt>
-<dd><p>Writes data to an open EDF file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file</strong> (<em>EdfWriter</em>) – opened EDF file.</p></li>
-<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List with one item for each channel.</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_TXT">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_WriteDataToFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">IOBase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_TXT" title="Permalink to this definition"></a></dt>
-<dd><p>Writes data to an open text file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>file</strong> (<em>IOBase</em>) – opened write file.</p></li>
-<li><p><strong>data</strong> (<em>list</em><em>[</em><em>np.ndarray</em><em>]</em>) – List with one item for each channel.</p></li>
-<li><p><strong>t</strong> (<em>np.ndarray</em>) – list with the time stamps (in seconds).</p></li>
-</ul>
+<dd class="field-even"><p>tuple[dict[int,Thread]]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1270,17 +1130,17 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.Stream">
-<span class="sig-name descname"><span class="pre">Stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.Stream" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.Stream" title="Permalink to this definition"></a></dt>
 <dd><p>Tests that all devices are connected then starts streaming data.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Raises<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>Exception</strong> – Test connection failed.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictionary with integer device number keys and Thread values.</p>
+<dd class="field-even"><p>Dictionary with keys as the device number and                 values as the started Thread. If a tuple, the first item is the Bucket and second is the                 BucketDrain Threads.</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[int,Thread]</p>
+<dd class="field-odd"><p>tuple[dict[int,Thread]] | dict[int,Thread]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1540,14 +1400,14 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._StreamThreading">
-<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._StreamThreading" title="Permalink to this definition"></a></dt>
-<dd><p>Opens a save file, then creates a thread for each device to stream and write data from.</p>
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._StreamThreading" title="Permalink to this definition"></a></dt>
+<dd><p>Start streaming from each POD device and save each to a file.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary with keys as the device number and values as the started Thread.</p>
+<dd class="field-odd"><p>Dictionary with keys as the device number and                 values as the started Thread. If a tuple, the first item is the Bucket and second is the                 BucketDrain Threads.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict[int,Thread]</p>
+<dd class="field-even"><p>tuple[dict[int,Thread]] | dict[int,Thread]</p>
 </dd>
 </dl>
 </dd></dl>

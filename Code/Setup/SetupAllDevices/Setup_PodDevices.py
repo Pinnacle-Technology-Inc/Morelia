@@ -90,8 +90,12 @@ class SetupAll :
         return(allInitParams)
 
 
-    def GetSaveFileNames(self) -> str:
+    def GetSaveFileNames(self) -> dict[str]:
+        """Gets a dictionary of the save files names for all connected POD devices.
 
+        Returns:
+            dict[str]: Dictionary of the save file name and path for all devices.
+        """
         fileNames = {}
         for key,val in self._Setup_PodDevices.items() : 
             fileNames[key] = val.GetSaveFileName()
@@ -295,7 +299,7 @@ class SetupAll :
             '\n' + 
             'saveFileDicts = ' + str(self.GetSaveFileNames()) + '\n' + 
             'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 
-            'go = Setup_PodDevices(saveFileDicts, podParametersDict)'  + '\n' + 
+            'go = SetupAll(saveFileDicts, podParametersDict)'  + '\n' + 
             'go.Run()'
         )
 
@@ -412,7 +416,7 @@ class SetupAll :
         Data is saved to file. Uses threading.
         """
         # start streaming from all devices 
-        allThreads: dict[str, dict[int, Thread]] = {}
+        allThreads: dict[str, tuple[dict[int, Thread]] | dict[int, Thread]] = {}
         for key, podType in self._Setup_PodDevices.items() :
             try : 
                 allThreads[key] = podType.Stream()
@@ -425,9 +429,14 @@ class SetupAll :
             userThread.start()
             # wait for threads to finish 
             userThread.join()
-            for threadDict in allThreads.values() : # for each device type...
-                for thread in threadDict.values() : # for each POD device...
-                    thread.join()
+            for streamThreads in allThreads.values() : # for each device type...
+                if(isinstance(streamThreads,tuple)) : 
+                    for threadDict in streamThreads :  # for (Bucket,BucketDrain) threads
+                        for thread in threadDict.values() : # for each POD device...
+                            thread.join()
+                elif(isinstance(streamThreads,dict)) : 
+                    for thread in streamThreads.values() : # for each POD device...
+                        thread.join()
             print('Save complete!')
         
 

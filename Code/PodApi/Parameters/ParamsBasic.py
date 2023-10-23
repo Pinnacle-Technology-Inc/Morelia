@@ -12,7 +12,7 @@ class Params :
     Attributes:
         port (str): Name of the COM port.
     """
-    # NOTE Address all NOTE's when making a child of Params_Interface.
+    # NOTE Address all NOTE's when making a child of Params.
 
 
     def __init__(self, 
@@ -36,18 +36,18 @@ class Params :
 
 
     def GetInit(self) -> str : 
-        """Builds a string that represents the Params_Interface constructor with the \
+        """Builds a string that represents the Params constructor with the \
         arguments set to the values of this class instance. 
 
         Returns:
-            str: String that represents the Params_Interface constructor.
+            str: String that represents the Params constructor.
         """
-        return('Params_Interface(port=\''+self.port+'\')')
+        return('Params(port=\''+self.port+'\')')
         # NOTE Overwrite this in child class.
 
 
     def _CheckParams(self) -> None : 
-        """Throws an exception if Params_Interface instance variable is an invalid value.
+        """Throws an exception if Params instance variable is an invalid value.
 
         Raises:
             Exception: The port name must begin with COM.

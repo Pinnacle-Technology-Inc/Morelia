@@ -80,7 +80,7 @@ class Params8206HR(Params) :
         Returns:
             str: String that represents the Params_8206HR constructor.
         """
-        return('Params_8206HR(port=\''+self.port+'\', sampleRate='+str(self.sampleRate)+
+        return('Params8206HR(port=\''+self.port+'\', sampleRate='+str(self.sampleRate)+
                ', preamplifierGain='+str(self.preamplifierGain)+', lowPass='+str(self.lowPass)+')')
 
 

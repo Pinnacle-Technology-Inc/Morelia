@@ -64,8 +64,8 @@
 
 
 \title{Python POD API}
-\date{Sep 22, 2023}
-\release{v1.5.0}
+\date{Oct 23, 2023}
+\release{v1.5.1}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -6909,11 +6909,11 @@ str
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{GetInit}}}{}{{ $\rightarrow$ str}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Builds a string that represents the Params\_Interface constructor with the         arguments set to the values of this class instance.
+Builds a string that represents the Params constructor with the         arguments set to the values of this class instance.
 \begin{quote}\begin{description}
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-String that represents the Params\_Interface constructor.
+String that represents the Params constructor.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
@@ -6931,7 +6931,7 @@ str
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_CheckParams}}}{}{{ $\rightarrow$ None}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Throws an exception if Params\_Interface instance variable is an invalid value.
+Throws an exception if Params instance variable is an invalid value.
 \begin{quote}\begin{description}
 \sphinxlineitem{Raises}
 \sphinxAtStartPar
@@ -9736,8 +9736,21 @@ Sets up each POD device type. Used in initialization.
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{Setup.SetupAllDevices:Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetSaveFileNames}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{GetSaveFileNames}}}{}{{ $\rightarrow$ str}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{GetSaveFileNames}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}str\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
+\sphinxAtStartPar
+Gets a dictionary of the save files names for all connected POD devices.
+\begin{quote}\begin{description}
+\sphinxlineitem{Returns}
+\sphinxAtStartPar
+Dictionary of the save file name and path for all devices.
+
+\sphinxlineitem{Return type}
+\sphinxAtStartPar
+dict{[}str{]}
+
+\end{description}\end{quote}
+
 \end{fulllineitems}
 
 \index{Run() (Setup.SetupAllDevices.Setup\_PodDevices.SetupAll method)@\spxentry{Run()}\spxextra{Setup.SetupAllDevices.Setup\_PodDevices.SetupAll method}}
@@ -10158,6 +10171,24 @@ Bases: {\hyperref[\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_Po
 
 \sphinxAtStartPar
 Setup\_8206HR provides the setup functions for an 8206\sphinxhyphen{}HR POD device.
+\index{\_bucketAccess (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR attribute)@\spxentry{\_bucketAccess}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._bucketAccess}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_bucketAccess}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Dictionary with device number keys and Bucket values.             This is updated in \_StreamThreading() and cleared in StopStream().
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+dict{[}int,{\hyperref[\detokenize{PodApi.Stream:PodApi.Stream.DataBucket.Bucket}]{\sphinxcrossref{Bucket}}}{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{GetDeviceName() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method)@\spxentry{GetDeviceName()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method}}
 
 \begin{fulllineitems}
@@ -10295,65 +10326,6 @@ dict{[}str,(str|int|dict{[}str,int{]}){]}
 
 \end{fulllineitems}
 
-\index{\_OpenSaveFile\_EDF() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_EDF}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ EdfWriter}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Opens EDF file and write header.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number.
-
-\end{itemize}
-
-\sphinxlineitem{Returns}
-\sphinxAtStartPar
-Opened file.
-
-\sphinxlineitem{Return type}
-\sphinxAtStartPar
-EdfWriter
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_OpenSaveFile\_TXT() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._OpenSaveFile_TXT}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Opens a text file and writes the column names. Writes the current date/time at the top of         the txt file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
-
-\sphinxlineitem{Returns}
-\sphinxAtStartPar
-Opened file.
-
-\sphinxlineitem{Return type}
-\sphinxAtStartPar
-IOBase
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_PHYSICAL\_BOUND\_uV (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR attribute}}
 
 \begin{fulllineitems}
@@ -10371,101 +10343,18 @@ Class\sphinxhyphen{}level integer representing the max/\sphinxhyphen{}min physic
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamThreading}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Opens a save file, then creates a thread for each device to stream and write data from.
+Start streaming from each POD device and save each to a file.
 \begin{quote}\begin{description}
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-Dictionary with keys as the device number and values as the started Thread.
+Tuple of two items, the first is for the bucket and the second is the drain.                 Each item is a dictionary with device number keys and started Thread items.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-dict{[}int,Thread{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_StreamUntilStop() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method)@\spxentry{\_StreamUntilStop()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamUntilStop}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamUntilStop}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodApi.Devices:PodApi.Devices.PodDevice_8206HR.Pod8206HR}]{\sphinxcrossref{Pod8206HR}}}}}, \sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }EdfWriter}}, \sphinxparam{\DUrole{n,n}{sampleRate}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Streams data from a POD device and saves data to file. Stops looking when a stop stream         command is read. Calculates average time difference across multiple packets to collect a         continuous time series data.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{pod}} (\sphinxstyleliteralemphasis{\sphinxupquote{POD\_8206HR}}) \textendash{} POD device to read from.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} open file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{sampleRate}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer sample rate in Hz.
-
-\end{itemize}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_WriteDataToFile\_EDF() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method)@\spxentry{\_WriteDataToFile\_EDF()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_EDF}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{EdfWriter}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}}{}
-\pysigstopsignatures
-\sphinxAtStartPar
-Writes data to an open EDF file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} opened EDF file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of 3 items, one for each channel.
-
-\end{itemize}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_WriteDataToFile\_TXT() (Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method)@\spxentry{\_WriteDataToFile\_TXT()}\spxextra{Setup.SetupOneDevice.Setup\_8206HR.Setup8206HR static method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._WriteDataToFile_TXT}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{t}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{ndarray}}}{}
-\pysigstopsignatures
-\sphinxAtStartPar
-Writes data to an open text file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}) \textendash{} opened write file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List of 3 items, one for each channel.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{t}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}) \textendash{} list with the time stamps (in seconds).
-
-\end{itemize}
+tuple{[}dict{[}int,Thread{]}{]}
 
 \end{description}\end{quote}
 
@@ -10791,6 +10680,24 @@ Bases: {\hyperref[\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_Po
 
 \sphinxAtStartPar
 Setup\_8401HR provides the setup functions for an 8206\sphinxhyphen{}HR POD device.     REQUIRES FIRMWARE 1.0.2 OR HIGHER.
+\index{\_bucketAccess (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR attribute)@\spxentry{\_bucketAccess}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR attribute}}
+
+\begin{fulllineitems}
+\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._bucketAccess}}
+\pysigstartsignatures
+\pysigline{\sphinxbfcode{\sphinxupquote{\_bucketAccess}}}
+\pysigstopsignatures
+\sphinxAtStartPar
+Dictionary with device number keys and Bucket values.             This is updated in \_StreamThreading() and cleared in StopStream().
+\begin{quote}\begin{description}
+\sphinxlineitem{Type}
+\sphinxAtStartPar
+dict{[}int,{\hyperref[\detokenize{PodApi.Stream:PodApi.Stream.DataBucket.Bucket}]{\sphinxcrossref{Bucket}}}{]}
+
+\end{description}\end{quote}
+
+\end{fulllineitems}
+
 \index{GetDeviceName() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method)@\spxentry{GetDeviceName()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method}}
 
 \begin{fulllineitems}
@@ -11021,65 +10928,6 @@ str
 
 \end{fulllineitems}
 
-\index{\_OpenSaveFile\_EDF() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method)@\spxentry{\_OpenSaveFile\_EDF()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_EDF}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ EdfWriter}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Opens EDF file and write header.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{devNum}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer device number.
-
-\end{itemize}
-
-\sphinxlineitem{Returns}
-\sphinxAtStartPar
-Opened file.
-
-\sphinxlineitem{Return type}
-\sphinxAtStartPar
-EdfWriter
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_OpenSaveFile\_TXT() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method)@\spxentry{\_OpenSaveFile\_TXT()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._OpenSaveFile_TXT}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_OpenSaveFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{fname}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{str}}}{{ $\rightarrow$ IOBase}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Opens a text file and writes the column names. Writes the current date/time at         the top of the txt file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{fname}} (\sphinxstyleliteralemphasis{\sphinxupquote{str}}) \textendash{} String filename.
-
-\sphinxlineitem{Returns}
-\sphinxAtStartPar
-Opened file.
-
-\sphinxlineitem{Return type}
-\sphinxAtStartPar
-IOBase
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
 \index{\_PHYSICAL\_BOUND\_uV (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR attribute)@\spxentry{\_PHYSICAL\_BOUND\_uV}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR attribute}}
 
 \begin{fulllineitems}
@@ -11290,101 +11138,18 @@ int
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamThreading}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Opens a save file, then creates a thread for each device to stream and write         data from.
+Start streaming from each POD device and save each to a file.
 \begin{quote}\begin{description}
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-Dictionary with keys as the device number and values as                 the started Thread.
+Tuple of two items, the first is for the bucket and the second is the drain.                 Each item is a dictionary with device number keys and started Thread items.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-dict{[}int,Thread{]}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_StreamUntilStop() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method)@\spxentry{\_StreamUntilStop()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamUntilStop}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamUntilStop}}}{\sphinxparam{\DUrole{n,n}{pod}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodApi.Devices:PodApi.Devices.PodDevice_8401HR.Pod8401HR}]{\sphinxcrossref{Pod8401HR}}}}}, \sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }EdfWriter}}, \sphinxparam{\DUrole{n,n}{sampleRate}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{devNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}}{{ $\rightarrow$ None}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Streams data from a POD device and saves data to file. Stops looking when a stop         stream command is read. Calculates average time difference across multiple packets to         collect a continuous time series data.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{pod}} (\sphinxstyleliteralemphasis{\sphinxupquote{POD\_8206HR}}) \textendash{} POD device to read from.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}\sphinxstyleliteralemphasis{\sphinxupquote{ | }}\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} open file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{sampleRate}} (\sphinxstyleliteralemphasis{\sphinxupquote{int}}) \textendash{} Integer sample rate in Hz.
-
-\end{itemize}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_WriteDataToFile\_EDF() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method)@\spxentry{\_WriteDataToFile\_EDF()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_EDF}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_EDF}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{EdfWriter}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}}{}
-\pysigstopsignatures
-\sphinxAtStartPar
-Writes data to an open EDF file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{EdfWriter}}) \textendash{} opened EDF file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List with one item for each channel.
-
-\end{itemize}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_WriteDataToFile\_TXT() (Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method)@\spxentry{\_WriteDataToFile\_TXT()}\spxextra{Setup.SetupOneDevice.Setup\_8401HR.Setup8401HR static method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._WriteDataToFile_TXT}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{static\DUrole{w,w}{  }}}\sphinxbfcode{\sphinxupquote{\_WriteDataToFile\_TXT}}}{\sphinxparam{\DUrole{n,n}{file}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{IOBase}}, \sphinxparam{\DUrole{n,n}{data}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{list\DUrole{p,p}{{[}}numpy.ndarray\DUrole{p,p}{{]}}}}, \sphinxparam{\DUrole{n,n}{t}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{ndarray}}}{}
-\pysigstopsignatures
-\sphinxAtStartPar
-Writes data to an open text file.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{file}} (\sphinxstyleliteralemphasis{\sphinxupquote{IOBase}}) \textendash{} opened write file.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{data}} (\sphinxstyleliteralemphasis{\sphinxupquote{list}}\sphinxstyleliteralemphasis{\sphinxupquote{{[}}}\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}\sphinxstyleliteralemphasis{\sphinxupquote{{]}}}) \textendash{} List with one item for each channel.
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{t}} (\sphinxstyleliteralemphasis{\sphinxupquote{np.ndarray}}) \textendash{} list with the time stamps (in seconds).
-
-\end{itemize}
+tuple{[}dict{[}int,Thread{]}{]}
 
 \end{description}\end{quote}
 
@@ -12093,7 +11858,7 @@ Write a command to stop streaming data to all POD devices.
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.Stream}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{Stream}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{Stream}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
 Tests that all devices are connected then starts streaming data.
@@ -12104,11 +11869,11 @@ Tests that all devices are connected then starts streaming data.
 
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-Dictionary with integer device number keys and Thread values.
+Dictionary with keys as the device number and                 values as the started Thread. If a tuple, the first item is the Bucket and second is the                 BucketDrain Threads.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-dict{[}int,Thread{]}
+tuple{[}dict{[}int,Thread{]}{]} | dict{[}int,Thread{]}
 
 \end{description}\end{quote}
 
@@ -12525,18 +12290,18 @@ int
 \begin{fulllineitems}
 \phantomsection\label{\detokenize{Setup.SetupOneDevice:Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._StreamThreading}}
 \pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
+\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_StreamThreading}}}{}{{ $\rightarrow$ tuple\DUrole{p,p}{{[}}dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}\DUrole{p,p}{{]}}\DUrole{w,w}{  }\DUrole{p,p}{|}\DUrole{w,w}{  }dict\DUrole{p,p}{{[}}int\DUrole{p,p}{,}\DUrole{w,w}{  }threading.Thread\DUrole{p,p}{{]}}}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Opens a save file, then creates a thread for each device to stream and write data from.
+Start streaming from each POD device and save each to a file.
 \begin{quote}\begin{description}
 \sphinxlineitem{Returns}
 \sphinxAtStartPar
-Dictionary with keys as the device number and values as the started Thread.
+Dictionary with keys as the device number and                 values as the started Thread. If a tuple, the first item is the Bucket and second is the                 BucketDrain Threads.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-dict{[}int,Thread{]}
+tuple{[}dict{[}int,Thread{]}{]} | dict{[}int,Thread{]}
 
 \end{description}\end{quote}
 
