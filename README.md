@@ -37,6 +37,8 @@ Here are some useful documents for setting up your coding environment to use the
 * Tips for installing your Python environment: [here](/Documents/Programming_Tutorials/PythonEnviornmentTips.txt)
 
 * Python libraries required for this project: [here](/Code/requirements.txt)
+   * Run ``pip install -r ./requirements.txt`` in terminal in the PodApi/Code directory. 
+
 
 # PodApi Package
 
