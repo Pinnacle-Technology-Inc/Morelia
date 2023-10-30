@@ -7,8 +7,7 @@ from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
 from PodApi.Devices         import Pod8206HR
 from PodApi.Parameters      import Params8206HR
-from PodApi.Stream.Collect  import Bucket
-from PodApi.Stream.Drain    import DrainBucket
+from PodApi.Stream.Collect  import Bucket, DrainBucket
 
 # authorship
 __author__      = "Thresa Kelly"
