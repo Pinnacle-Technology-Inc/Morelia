@@ -5,7 +5,7 @@ import numpy  as np
 # local imports
 from PodApi.Devices import Pod8401HR
 from PodApi.Packets import Packet, PacketBinary5
-from PodApi.Stream.Drain.PodHandler import DrainDeviceHandler
+from PodApi.Stream.PodHandler import DrainDeviceHandler
 
 # authorship
 __author__      = "Thresa Kelly"

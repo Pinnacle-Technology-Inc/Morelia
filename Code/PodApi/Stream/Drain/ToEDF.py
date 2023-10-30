@@ -5,7 +5,7 @@ import numpy as np
 
 # local imports
 from PodApi.Stream.Drain    import DrainToFile
-from PodApi.Stream          import Bucket
+from PodApi.Stream.Collect  import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
