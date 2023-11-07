@@ -3,7 +3,7 @@ import time
 from threading import Thread
 
 # local imports
-from PodApi.Stream import Bucket
+from PodApi.Stream.Collect import Bucket
 from PodApi.Stream.Drain import DrainToFile, DrainToTXT, DrainToEDF
 
 # authorship

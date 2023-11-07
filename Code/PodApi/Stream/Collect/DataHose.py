@@ -7,7 +7,7 @@ import  time
 # local imports
 from PodApi.Devices     import Pod8206HR, Pod8401HR
 from PodApi.Packets     import Packet, PacketStandard
-from PodApi.Stream      import Valve
+from PodApi.Stream.Collect import Valve
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -6,7 +6,7 @@ from queue import Queue
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
 from PodApi.Packets import Packet
-from PodApi.Stream  import Hose
+from PodApi.Stream.Collect import Hose
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -5,7 +5,7 @@ import numpy  as np
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR
 from PodApi.Packets import Packet
-from PodApi.Stream  import Bucket
+from PodApi.Stream.Collect  import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
