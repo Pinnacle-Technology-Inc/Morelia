@@ -52,12 +52,15 @@ class Drain8401HR(DrainDeviceHandler) :
             list[str]: List of columns.
         """
         cols: list[str] = []
+        # append time as first item 
         if(includeTime) : cols += ['Time']
+        # append each channel name 
         if(self.preampDevice != None and Pod8401HR.IsPreampDeviceSupported(self.preampDevice)) : 
             for label in Pod8401HR.GetChannelMapForPreampDevice(str(self.preampDevice)).values() : 
                 cols.append(label)
         else : 
             cols += ['A','B','C','D']
+        # add extra channels 
         cols += ['Analog EXT0','Analog EXT1','Analog TTL1','Analog TTL2','Analog TTL3','Analog TTL4']
         return cols
                     

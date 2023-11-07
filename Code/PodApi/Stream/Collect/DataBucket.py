@@ -1,5 +1,6 @@
 # enviornment imports
 import time
+import numpy as np
 from threading import Thread
 from queue import Queue
 
@@ -27,7 +28,7 @@ class Bucket :
         isCollecting (bool): True when collecting drops from the Hose, False otherwise.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, useFilter: bool = True) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set class instance variables.
 
         Args:
@@ -36,7 +37,7 @@ class Bucket :
                 does not remove points when False. Defaults to True.
         """
         # set instance variables 
-        self.dataHose: Hose = Hose(podDevice,useFilter)
+        self.dataHose: Hose = Hose(podDevice,filterMethod,filterInsert)
         self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple (x,y) with 1 sec of timestamps (x) and data (y) 
         self.totalDropsCollected: int = 0 # rolling counter
         self.isCollecting: bool = False

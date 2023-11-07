@@ -54,8 +54,8 @@ class DrainToEDF(DrainToFile) :
     def OpenFile(self) : 
         """Opens and initializes a file using the fileName to save data to. 
         """
-        # get signals/channels 
-        allChannels = self.deviceHandler.GetDeviceColNamesList(False)
+        # get signals/channels but remove no-connects (NC)
+        allChannels = [x for x in self.deviceHandler.GetDeviceColNamesList(includeTime=False) if x!='NC']
         n = len(allChannels)
         # create file 
         self.file = EdfWriter(self.fileName, n)
@@ -89,11 +89,12 @@ class DrainToEDF(DrainToFile) :
         # checks 
         if(self.dataBucket.GetVolumeOfDrops() <= 0 ) : return
         if(self.file == None) : return
-        if(self.dataBucket.dataHose.filterMethod not in ['InsertValue','TakePast','TakeFuture' ]) : 
+        if(self.dataBucket.dataHose.filterMethod not in [ self.dataBucket.dataHose.PickFilterMethod(x) for x in ['InsertValue','TakePast','TakeFuture']]) : 
             # data must be list with a number of items equal to the sample rate. The values must be a Packet or float.
             raise Exception('[!] Can only save data to EDF if the hose is filtered with InsertValue, TakePast, or TakeFuture.')
         # get data 
         timestamps, data = self.dataBucket.DripDrop()
         dataArrs = self.deviceHandler.DropToListOfArrays(data)
         # write data to EDF file 
+        print('L:', len(dataArrs))
         self.file.writeSamples(dataArrs)
