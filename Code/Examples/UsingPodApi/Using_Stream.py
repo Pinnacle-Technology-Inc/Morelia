@@ -10,7 +10,7 @@ Path.AddAPIpath()
 # local imports
 from PodApi.Devices import Pod8206HR
 from PodApi.Packets import PacketStandard
-from PodApi.Stream import Bucket, DrainBucket
+from PodApi.Stream.Collect import Bucket, DrainBucket
 
 # enviornment imports
 from threading import Thread

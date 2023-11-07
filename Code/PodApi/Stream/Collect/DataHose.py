@@ -7,7 +7,7 @@ import  time
 # local imports
 from PodApi.Devices     import Pod8206HR, Pod8401HR
 from PodApi.Packets     import Packet, PacketStandard
-from PodApi.Stream      import Valve
+from PodApi.Stream.Collect import Valve
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -35,7 +35,7 @@ class Hose :
             the 'InsertValue' filter method. Defaults to np.nan.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'DoNothing', filterInsert: float = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set instance variables.
 
         Args:
