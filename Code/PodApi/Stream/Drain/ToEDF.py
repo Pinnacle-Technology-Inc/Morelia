@@ -96,5 +96,4 @@ class DrainToEDF(DrainToFile) :
         timestamps, data = self.dataBucket.DripDrop()
         dataArrs = self.deviceHandler.DropToListOfArrays(data)
         # write data to EDF file 
-        print('L:', len(dataArrs))
         self.file.writeSamples(dataArrs)
