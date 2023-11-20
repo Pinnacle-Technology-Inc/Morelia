@@ -139,7 +139,7 @@ class PortIO :
             bool: True if the baudrate was set, False otherwise.
         """
         # port must be open 
-        if(self.IsSerialOpen) : 
+        if(self.IsSerialOpen()) : 
             # set baudrate 
             self.__serialInst.baudrate = baudrate
             return(True) 
@@ -152,7 +152,7 @@ class PortIO :
         Returns:
             bool: True of the buffers are flushed, False otherwise.
         """
-        if(self.IsSerialOpen) : 
+        if(self.IsSerialOpen()) : 
             self.__serialInst.reset_input_buffer()
             self.__serialInst.reset_output_buffer()
             return(True) 
