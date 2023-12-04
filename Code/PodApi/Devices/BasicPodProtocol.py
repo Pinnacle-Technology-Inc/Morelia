@@ -201,6 +201,7 @@ class Pod :
         # build POD packet 
         packet = Packet.BuildPODpacket_Standard(cmdNum, payload=pld)
         # return complete packet 
+        print("....", packet)
         return(packet)
     
 
@@ -220,6 +221,20 @@ class Pod :
         """
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum)
+        print(cmd)
+        if cmd == 'LOCAL SCAN':
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            #print("***", data['Payload'][1:7])
+            return(data['Payload'][1:7])
+        if cmd == 'SET SAMPLE RATE':
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("***", data)
+        if cmd == 'DISCONNECT ALL':
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("***", data)
         return(r)
 
 
@@ -237,6 +252,7 @@ class Pod :
         # POD packet 
         packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
+        print("&&&", packet)
         self._port.Write(packet)
         # returns packet that was written
         return(PacketStandard(packet, self._commands))
@@ -392,6 +408,8 @@ class Pod :
         """
         # read until ETX 
         packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
+        print("Pre", prePacket)
+        print("POST", packet, '\n')
         # check for valid  
         if(validateChecksum) :
             if( not self._ValidateChecksum(packet) ) :

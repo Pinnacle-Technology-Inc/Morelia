@@ -264,3 +264,4 @@ class Pod8480SC(Pod) :
         pld = list(defaultPayload[:-1])
         pld.append(Pod8480SC.DecodeStimulusConfigBits(PacketStandard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            
+        

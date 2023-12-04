@@ -400,7 +400,9 @@ class Packet :
         else :
             csm = Packet.Checksum(cmd)                 # checksum (2 bytes)
             packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
+            #print("CHECK", csm)
         # return complete bytes packet
+        #print("PACKET", packet)
         return(packet)
 
     
