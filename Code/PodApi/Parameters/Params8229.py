@@ -106,7 +106,7 @@ class Params8229(Params) :
         Returns:
             str: String that represents the Params_Interface constructor.
         """
-        return('Params_8229(port=\''+self.port+'\', systemID='+str(self.systemID)+
+        return('PodApi.Parameters.Params8229(port=\''+self.port+'\', systemID='+str(self.systemID)+
                ', motorDirection='+str(self.motorDirection)+', motorSpeed='+
                str(self.motorSpeed)+', randomReverse='+str(self.randomReverse)+
                ', reverseBaseTime='+str(self.reverseBaseTime)+', reverseVarTime='+

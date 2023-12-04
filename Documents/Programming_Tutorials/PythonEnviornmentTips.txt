@@ -60,9 +60,10 @@ Install all required packages while in env:
 
 Get list of required packages for project:
 
-    >> pip install pipreqs
     >> pipreqs <path>\Python-POD-API\Code
-    
+
+    or navigate to the directory of interest:
+    >> pipreqs --encoding utf-8 "./"    
 
 Get list of packages in enviornment:
 

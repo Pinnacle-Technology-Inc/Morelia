@@ -19,7 +19,7 @@ class Params8206HR(Params) :
         lowPass (tuple[int]): Low-pass for EEG/EMG in 11-500 Hz range. 
     """
 
-    lowPassLabels: tuple[str]  = ('EEG1', 'EEG2', 'EEG/EMG')
+    lowPassLabels: tuple[str]  = ('EEG1', 'EEG2', 'EEG3/EMG')
     """Tuple describing the items in the lowPass."""
 
     def __init__(self, 
@@ -80,7 +80,7 @@ class Params8206HR(Params) :
         Returns:
             str: String that represents the Params_8206HR constructor.
         """
-        return('Params_8206HR(port=\''+self.port+'\', sampleRate='+str(self.sampleRate)+
+        return('PodApi.Parameters.Params8206HR(port=\''+self.port+'\', sampleRate='+str(self.sampleRate)+
                ', preamplifierGain='+str(self.preamplifierGain)+', lowPass='+str(self.lowPass)+')')
 
 

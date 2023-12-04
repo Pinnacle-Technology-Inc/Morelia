@@ -79,7 +79,7 @@ class Params8401HR(Params) :
         Returns:
             str: String that represents the Params_8401HR constructor.
         """
-        return('Params_8401HR(port=\''+self.port+'\', preampDevice=\''+str(self.preampDevice)+
+        return('PodApi.Parameters.Params8401HR(port=\''+self.port+'\', preampDevice=\''+str(self.preampDevice)+
                '\', sampleRate='+str(self.sampleRate)+', muxMode='+str(self.muxMode)+
                ', preampGain='+str(self.preampGain)+', ssGain='+str(self.ssGain)+
                ', highPass='+str(self.highPass)+', lowPass='+str(self.lowPass)+

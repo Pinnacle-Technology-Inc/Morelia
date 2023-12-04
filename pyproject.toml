@@ -1,6 +1,6 @@
 [project]
 name = "Python-POD-API"
-version = "v1.3.2"
+version = "v1.5.2"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.md"}
@@ -8,7 +8,7 @@ authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"},{name = "Seth Gabbert"
 maintainers = [{name = "Thresa Kelly"}]
 
 [tool.setuptools]
-package-dir = {"" = "Code/API_Modules"}
+package-dir = {"" = "Code"}
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]

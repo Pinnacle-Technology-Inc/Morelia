@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Setup package &mdash; Python POD API v1.3.2 documentation</title>
+  <title>Setup package &mdash; Python POD API v1.5.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -20,7 +20,7 @@
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Setup.Inputs package" href="Setup.Inputs.html" />
-    <link rel="prev" title="PodApi.Parameters package" href="PodApi.Parameters.html" /> 
+    <link rel="prev" title="PodApi.Stream.Drain.PodHandler package" href="PodApi.Stream.Drain.PodHandler.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -49,12 +49,8 @@
 <li class="toctree-l2 current"><a class="current reference internal" href="#">Setup package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#subpackages">Subpackages</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="Setup.Inputs.html">Setup.Inputs package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html">Setup.SetupAllDevices package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html">Setup.SetupOneDevice package</a></li>
-</ul>
-</li>
-<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#module-Setup.Setup_PodDevices">Setup.Setup_PodDevices module</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#Setup.Setup_PodDevices.Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">Setup_PodDevices</span></code></a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#module-Setup">Module contents</a></li>
@@ -125,137 +121,167 @@
 <li class="toctree-l2"><a class="reference internal" href="Setup.Inputs.html#module-Setup.Inputs">Module contents</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Setup.SetupAllDevices.html">Setup.SetupAllDevices package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Setup.SetupAllDevices.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.SetupAllDevices.html#module-Setup.SetupAllDevices.Setup_PodDevices">Setup.SetupAllDevices.Setup_PodDevices module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll"><code class="docutils literal notranslate"><span class="pre">SetupAll</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">SetupAll._Setup_PodDevices</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._options"><code class="docutils literal notranslate"><span class="pre">SetupAll._options</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetOptions"><code class="docutils literal notranslate"><span class="pre">SetupAll.GetOptions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetPODparametersInit"><code class="docutils literal notranslate"><span class="pre">SetupAll.GetPODparametersInit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetSaveFileNames"><code class="docutils literal notranslate"><span class="pre">SetupAll.GetSaveFileNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.Run"><code class="docutils literal notranslate"><span class="pre">SetupAll.Run()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupPODparameters"><code class="docutils literal notranslate"><span class="pre">SetupAll.SetupPODparameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupSaveFile"><code class="docutils literal notranslate"><span class="pre">SetupAll.SetupSaveFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskOption"><code class="docutils literal notranslate"><span class="pre">SetupAll._AskOption()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskToStopStream"><code class="docutils literal notranslate"><span class="pre">SetupAll._AskToStopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskUserForDevices"><code class="docutils literal notranslate"><span class="pre">SetupAll._AskUserForDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._CheckForValidParams"><code class="docutils literal notranslate"><span class="pre">SetupAll._CheckForValidParams()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ConnectNewDevice"><code class="docutils literal notranslate"><span class="pre">SetupAll._ConnectNewDevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._DoOption"><code class="docutils literal notranslate"><span class="pre">SetupAll._DoOption()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditCheckConnect"><code class="docutils literal notranslate"><span class="pre">SetupAll._EditCheckConnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditSaveFilePath"><code class="docutils literal notranslate"><span class="pre">SetupAll._EditSaveFilePath()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetChosenDeviceType"><code class="docutils literal notranslate"><span class="pre">SetupAll._GetChosenDeviceType()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetParams"><code class="docutils literal notranslate"><span class="pre">SetupAll._GetParams()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintInitCode"><code class="docutils literal notranslate"><span class="pre">SetupAll._PrintInitCode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintOptions"><code class="docutils literal notranslate"><span class="pre">SetupAll._PrintOptions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Reconnect"><code class="docutils literal notranslate"><span class="pre">SetupAll._Reconnect()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._RemoveDevice"><code class="docutils literal notranslate"><span class="pre">SetupAll._RemoveDevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Set_Setup_PodDevices"><code class="docutils literal notranslate"><span class="pre">SetupAll._Set_Setup_PodDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ShowCurrentSettings"><code class="docutils literal notranslate"><span class="pre">SetupAll._ShowCurrentSettings()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Stream"><code class="docutils literal notranslate"><span class="pre">SetupAll._Stream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._StreamAllDevices"><code class="docutils literal notranslate"><span class="pre">SetupAll._StreamAllDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupAllDevices.html#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._TimeFunc"><code class="docutils literal notranslate"><span class="pre">SetupAll._TimeFunc()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.SetupAllDevices.html#module-Setup.SetupAllDevices">Module contents</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="Setup.SetupOneDevice.html">Setup.SetupOneDevice package</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#submodules">Submodules</a></li>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#module-Setup.SetupOneDevice.Setup_8206HR">Setup.SetupOneDevice.Setup_8206HR module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR.GetDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR.StopStream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._ChoosePreampGain"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._ChoosePreampGain()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._ConnectPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._GetPODdeviceParameterTable()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._GetParam_onePODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._OpenSaveFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._OpenSaveFile_TXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._PHYSICAL_BOUND_uV"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._PHYSICAL_BOUND_uV</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._StreamThreading()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._StreamUntilStop()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._WriteDataToFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._WriteDataToFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup_8206HR._WriteDataToFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8206HR._WriteDataToFile_TXT()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR"><code class="docutils literal notranslate"><span class="pre">Setup8206HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._bucketAccess"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._bucketAccess</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup8206HR.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup8206HR.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._ChoosePreampGain"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._ChoosePreampGain()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._PHYSICAL_BOUND_uV"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._PHYSICAL_BOUND_uV</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8206HR.Setup8206HR._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup8206HR._StreamThreading()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#module-Setup.SetupOneDevice.Setup_8229">Setup.SetupOneDevice.Setup_8229 module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229"><code class="docutils literal notranslate"><span class="pre">Setup_8229</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._streamMode"><code class="docutils literal notranslate"><span class="pre">Setup_8229._streamMode</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8229.GetDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup_8229.GetSupportedFileExtensions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8229.StopStream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8229._ConnectPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8229._GetPODdeviceParameterTable()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8229._GetParam_onePODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._GetScheduleForWeek"><code class="docutils literal notranslate"><span class="pre">Setup_8229._GetScheduleForWeek()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8229._OpenSaveFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8229._OpenSaveFile_TXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8229._StreamThreading()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup_8229._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8229._StreamUntilStop()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229"><code class="docutils literal notranslate"><span class="pre">Setup8229</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._streamMode"><code class="docutils literal notranslate"><span class="pre">Setup8229._streamMode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup8229.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup8229.GetSupportedFileExtensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup8229.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8229._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup8229._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8229._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._GetScheduleForWeek"><code class="docutils literal notranslate"><span class="pre">Setup8229._GetScheduleForWeek()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup8229._OpenSaveFile_EDF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup8229._OpenSaveFile_TXT()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup8229._StreamThreading()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8229.Setup8229._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup8229._StreamUntilStop()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#module-Setup.SetupOneDevice.Setup_8401HR">Setup.SetupOneDevice.Setup_8401HR module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR.GetDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR.StopStream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._CodeDCmode"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._CodeDCmode()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._CodeHighpass"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._CodeHighpass()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._ConnectPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._GetPODdeviceParameterTable()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._GetParam_onePODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._GetPreampDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._GetPreampDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._NiceABCDtableText"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._NiceABCDtableText()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._OpenSaveFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._OpenSaveFile_TXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._PHYSICAL_BOUND_uV"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._PHYSICAL_BOUND_uV</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetBias"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetBias()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetDCMode"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetDCMode()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetForMappedChannels"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetForMappedChannels()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetHighpass"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetHighpass()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetLowpass"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetLowpass()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetPreampGain"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetPreampGain()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._SetSSGain"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._SetSSGain()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._StreamThreading()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._StreamUntilStop()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._WriteDataToFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._WriteDataToFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup_8401HR._WriteDataToFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8401HR._WriteDataToFile_TXT()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR"><code class="docutils literal notranslate"><span class="pre">Setup8401HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._bucketAccess"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._bucketAccess</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup8401HR.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup8401HR.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._CodeDCmode"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._CodeDCmode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._CodeHighpass"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._CodeHighpass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._GetPreampDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._GetPreampDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._NiceABCDtableText"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._NiceABCDtableText()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._PHYSICAL_BOUND_uV"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._PHYSICAL_BOUND_uV</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetBias"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetBias()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetDCMode"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetDCMode()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetForMappedChannels"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetForMappedChannels()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetHighpass"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetHighpass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetLowpass"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetLowpass()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetPreampGain"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetPreampGain()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._SetSSGain"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._SetSSGain()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8401HR.Setup8401HR._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup8401HR._StreamThreading()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#module-Setup.SetupOneDevice.Setup_8480SC">Setup.SetupOneDevice.Setup_8480SC module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._streamMode"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._streamMode</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.GetDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.GetSupportedFileExtensions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC.StopStream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ChoosePeriod"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChoosePeriod()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ChooseRepeat"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseRepeat()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ChooseStimulusConfig"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseStimulusConfig()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ChooseSyncConfig"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseSyncConfig()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ChooseWidth"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ChooseWidth()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._ConnectPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._GetPODdeviceParameterTable()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._GetParam_onePODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._OpenSaveFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._OpenSaveFile_TXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._StreamThreading()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._StreamUntilStop()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup_8480SC._TtlSetup"><code class="docutils literal notranslate"><span class="pre">Setup_8480SC._TtlSetup()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC"><code class="docutils literal notranslate"><span class="pre">Setup8480SC</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._streamMode"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._streamMode</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup8480SC.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup8480SC.GetSupportedFileExtensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup8480SC.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ChoosePeriod"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ChoosePeriod()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ChooseRepeat"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ChooseRepeat()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ChooseStimulusConfig"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ChooseStimulusConfig()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ChooseSyncConfig"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ChooseSyncConfig()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ChooseWidth"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ChooseWidth()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._OpenSaveFile_EDF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._OpenSaveFile_TXT()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._StreamThreading()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._StreamUntilStop"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._StreamUntilStop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_8480SC.Setup8480SC._TtlSetup"><code class="docutils literal notranslate"><span class="pre">Setup8480SC._TtlSetup()</span></code></a></li>
 </ul>
 </li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="Setup.SetupOneDevice.html#module-Setup.SetupOneDevice.Setup_PodInterface">Setup.SetupOneDevice.Setup_PodInterface module</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface"><code class="docutils literal notranslate"><span class="pre">Setup_Interface</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._podDevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._podDevices</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._podParametersDict"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._podParametersDict</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._saveFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._saveFileName</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.AddPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.AddPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.AreDeviceParamsValid"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.AreDeviceParamsValid()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.ConnectAllPODdevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.ConnectAllPODdevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.DisplayPODdeviceParameters"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.DisplayPODdeviceParameters()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.GetDeviceName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.GetPODparametersInit"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.GetPODparametersInit()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.GetSaveFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.GetSaveFileName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.GetSupportedFileExtensions()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.PrintSaveFile"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.PrintSaveFile()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.SetupFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.SetupFileName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.SetupPODparameters"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.SetupPODparameters()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.StopStream"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.StopStream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.Stream"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.Stream()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface.ValidateParams"><code class="docutils literal notranslate"><span class="pre">Setup_Interface.ValidateParams()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._BuildFileName"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._BuildFileName()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._ChoosePort"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._ChoosePort()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._ConnectPODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._DisconnectAllPODdevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._DisconnectAllPODdevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._EditParams"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._EditParams()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._GetForbiddenNames"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetForbiddenNames()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetPODdeviceParameterTable()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._GetParam_allPODdevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetParam_allPODdevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetParam_onePODdevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._GetTimeHeader_forTXT"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._GetTimeHeader_forTXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._OpenSaveFile"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile_EDF()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._OpenSaveFile_TXT()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._PrintDeviceNumber"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._PrintDeviceNumber()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._RemoveDevice"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._RemoveDevice()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._SelectDeviceFromDict"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._SelectDeviceFromDict()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._SetNumberOfDevices"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._SetNumberOfDevices()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._StreamThreading"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._StreamThreading()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._TestDeviceConnection"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._TestDeviceConnection()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._TestDeviceConnection_All"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._TestDeviceConnection_All()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.Setup_Interface._uV"><code class="docutils literal notranslate"><span class="pre">Setup_Interface._uV()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface"><code class="docutils literal notranslate"><span class="pre">SetupInterface</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._podDevices"><code class="docutils literal notranslate"><span class="pre">SetupInterface._podDevices</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._podParametersDict"><code class="docutils literal notranslate"><span class="pre">SetupInterface._podParametersDict</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._saveFileName"><code class="docutils literal notranslate"><span class="pre">SetupInterface._saveFileName</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.AddPODdevice"><code class="docutils literal notranslate"><span class="pre">SetupInterface.AddPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.AreDeviceParamsValid"><code class="docutils literal notranslate"><span class="pre">SetupInterface.AreDeviceParamsValid()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.ConnectAllPODdevices"><code class="docutils literal notranslate"><span class="pre">SetupInterface.ConnectAllPODdevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.DisplayPODdeviceParameters"><code class="docutils literal notranslate"><span class="pre">SetupInterface.DisplayPODdeviceParameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.GetDeviceName"><code class="docutils literal notranslate"><span class="pre">SetupInterface.GetDeviceName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.GetPODparametersInit"><code class="docutils literal notranslate"><span class="pre">SetupInterface.GetPODparametersInit()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.GetSaveFileName"><code class="docutils literal notranslate"><span class="pre">SetupInterface.GetSaveFileName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.GetSupportedFileExtensions"><code class="docutils literal notranslate"><span class="pre">SetupInterface.GetSupportedFileExtensions()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.PrintSaveFile"><code class="docutils literal notranslate"><span class="pre">SetupInterface.PrintSaveFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.SetupFileName"><code class="docutils literal notranslate"><span class="pre">SetupInterface.SetupFileName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.SetupPODparameters"><code class="docutils literal notranslate"><span class="pre">SetupInterface.SetupPODparameters()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.StopStream"><code class="docutils literal notranslate"><span class="pre">SetupInterface.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.Stream"><code class="docutils literal notranslate"><span class="pre">SetupInterface.Stream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface.ValidateParams"><code class="docutils literal notranslate"><span class="pre">SetupInterface.ValidateParams()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._BuildFileName"><code class="docutils literal notranslate"><span class="pre">SetupInterface._BuildFileName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._ChoosePort"><code class="docutils literal notranslate"><span class="pre">SetupInterface._ChoosePort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._ConnectPODdevice"><code class="docutils literal notranslate"><span class="pre">SetupInterface._ConnectPODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._DisconnectAllPODdevices"><code class="docutils literal notranslate"><span class="pre">SetupInterface._DisconnectAllPODdevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._EditParams"><code class="docutils literal notranslate"><span class="pre">SetupInterface._EditParams()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._GetForbiddenNames"><code class="docutils literal notranslate"><span class="pre">SetupInterface._GetForbiddenNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._GetPODdeviceParameterTable"><code class="docutils literal notranslate"><span class="pre">SetupInterface._GetPODdeviceParameterTable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._GetParam_allPODdevices"><code class="docutils literal notranslate"><span class="pre">SetupInterface._GetParam_allPODdevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._GetParam_onePODdevice"><code class="docutils literal notranslate"><span class="pre">SetupInterface._GetParam_onePODdevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._GetTimeHeader_forTXT"><code class="docutils literal notranslate"><span class="pre">SetupInterface._GetTimeHeader_forTXT()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._OpenSaveFile"><code class="docutils literal notranslate"><span class="pre">SetupInterface._OpenSaveFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._OpenSaveFile_EDF"><code class="docutils literal notranslate"><span class="pre">SetupInterface._OpenSaveFile_EDF()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._OpenSaveFile_TXT"><code class="docutils literal notranslate"><span class="pre">SetupInterface._OpenSaveFile_TXT()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._PrintDeviceNumber"><code class="docutils literal notranslate"><span class="pre">SetupInterface._PrintDeviceNumber()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._RemoveDevice"><code class="docutils literal notranslate"><span class="pre">SetupInterface._RemoveDevice()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._SelectDeviceFromDict"><code class="docutils literal notranslate"><span class="pre">SetupInterface._SelectDeviceFromDict()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._SetNumberOfDevices"><code class="docutils literal notranslate"><span class="pre">SetupInterface._SetNumberOfDevices()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._StreamThreading"><code class="docutils literal notranslate"><span class="pre">SetupInterface._StreamThreading()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._TestDeviceConnection"><code class="docutils literal notranslate"><span class="pre">SetupInterface._TestDeviceConnection()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._TestDeviceConnection_All"><code class="docutils literal notranslate"><span class="pre">SetupInterface._TestDeviceConnection_All()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface._uV"><code class="docutils literal notranslate"><span class="pre">SetupInterface._uV()</span></code></a></li>
 </ul>
 </li>
 </ul>
@@ -266,296 +292,6 @@
 </ul>
 </div>
 </section>
-<section id="submodules">
-<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
-</section>
-<section id="module-Setup.Setup_PodDevices">
-<span id="setup-setup-poddevices-module"></span><h2>Setup.Setup_PodDevices module<a class="headerlink" href="#module-Setup.Setup_PodDevices" title="Permalink to this heading"></a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup.Setup_PodDevices.</span></span><span class="sig-name descname"><span class="pre">Setup_PodDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="PodApi.Parameters.html#PodApi.Parameters.ParamsBasic.Params" title="PodApi.Parameters.ParamsBasic.Params"><span class="pre">PodApi.Parameters.ParamsBasic.Params</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed     data is saved to a file.</p>
-<p>REQUIRES FIRMWARE 1.0.2 OR HIGHER.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._Setup_PodDevices">
-<span class="sig-name descname"><span class="pre">_Setup_PodDevices</span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._Setup_PodDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Dictionary containing the Setup_Interface             subclasses for each POD device.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,dict[int,Params_Interface]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py attribute">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._options">
-<span class="sig-name descname"><span class="pre">_options</span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._options" title="Permalink to this definition"></a></dt>
-<dd><p>Dictionary listing the different options for the user to complete.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[int,str]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.GetOptions">
-<span class="sig-name descname"><span class="pre">GetOptions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.GetOptions" title="Permalink to this definition"></a></dt>
-<dd><p>Gets the dictionary of setup options.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictionary listing the different options for the user to complete (_options).</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>dict[int,str]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.GetPODparametersInit">
-<span class="sig-name descname"><span class="pre">GetPODparametersInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.GetPODparametersInit" title="Permalink to this definition"></a></dt>
-<dd><p>Sets up each POD device type. Used in initialization.
-:returns: String representing a dictionary of all POD devices initialization. The keys are the                 device name and the entries are the initialization dictionaries.
-:rtype: str</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.GetSaveFileNames">
-<span class="sig-name descname"><span class="pre">GetSaveFileNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.GetSaveFileNames" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.Run">
-<span class="sig-name descname"><span class="pre">Run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.Run" title="Permalink to this definition"></a></dt>
-<dd><p>Prints the options and askes the user what to do. Loops until ‘Quit” is chosen.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.SetupPODparameters">
-<span class="sig-name descname"><span class="pre">SetupPODparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="PodApi.Parameters.html#PodApi.Parameters.ParamsBasic.Params" title="PodApi.Parameters.ParamsBasic.Params"><span class="pre">PodApi.Parameters.ParamsBasic.Params</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.SetupPODparameters" title="Permalink to this definition"></a></dt>
-<dd><p>Sets up each POD device type. Used in initialization.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em>[</em><em>int</em><em>,</em><em>Params_Interface</em><em>] </em><em>| </em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices.SetupSaveFile">
-<span class="sig-name descname"><span class="pre">SetupSaveFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices.SetupSaveFile" title="Permalink to this definition"></a></dt>
-<dd><p>Gets the path/file name from the user and stores it. Used in initialization.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>saveFile</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>|</em><em>None</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – String of the save file, which includes the directory path,                 filename, and file extension. Defaults to None.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._AskOption">
-<span class="sig-name descname"><span class="pre">_AskOption</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._AskOption" title="Permalink to this definition"></a></dt>
-<dd><p>Asks user which option to do.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Integer number representing an option key.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>int</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._AskToStopStream">
-<span class="sig-name descname"><span class="pre">_AskToStopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._AskToStopStream" title="Permalink to this definition"></a></dt>
-<dd><p>Asks user to press enter to stop streaming. The program will then prompt all POD         devices to end stream.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._AskUserForDevices">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_AskUserForDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._AskUserForDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user what POD devices they want to use.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._CheckForValidParams">
-<span class="sig-name descname"><span class="pre">_CheckForValidParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._CheckForValidParams" title="Permalink to this definition"></a></dt>
-<dd><p>Checks if the parameters are correctly formatted.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>None</em><em> | </em><em>dict</em><em>]</em>) – Dictionary with keys as the device names and                 values as None or the respective parameter dictionary.</p>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>Exception</strong> – Parameters must be dictionary type.</p></li>
-<li><p><strong>Exception</strong> – Parameters dictionary is empty.</p></li>
-<li><p><strong>Exception</strong> – Invalid device name in paramater dictionary.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>True if the parameters are correctly formatted.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._ConnectNewDevice">
-<span class="sig-name descname"><span class="pre">_ConnectNewDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._ConnectNewDevice" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user for the POD device type, then it sets up that device.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._DoOption">
-<span class="sig-name descname"><span class="pre">_DoOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">choice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._DoOption" title="Permalink to this definition"></a></dt>
-<dd><p>Performs the methods associated with the user selected option.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>choice</strong> (<em>int</em>) – Integer number representing an option key.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._EditCheckConnect">
-<span class="sig-name descname"><span class="pre">_EditCheckConnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._EditCheckConnect" title="Permalink to this definition"></a></dt>
-<dd><p>Displays the POD devices parameters, asks the user to edit the device, and then reconnects         the device for each POD device type.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._EditSaveFilePath">
-<span class="sig-name descname"><span class="pre">_EditSaveFilePath</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._EditSaveFilePath" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user for the POD device type, then asks the user for a new file name and path,         then sets the value to the POD devices.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._GetChosenDeviceType">
-<span class="sig-name descname"><span class="pre">_GetChosenDeviceType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._GetChosenDeviceType" title="Permalink to this definition"></a></dt>
-<dd><p>Asks the user which type of POD device they want.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>question</strong> (<em>str</em>) – Question to ask the user.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>String of the user input (may be invalid POD device type).</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>str</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._GetParams">
-<span class="sig-name descname"><span class="pre">_GetParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._GetParams" title="Permalink to this definition"></a></dt>
-<dd><p>If no parameters are give, this asks user which types of POD devices they want to use.         Then it checks if the parameters are valid.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>None</em><em> | </em><em>dict</em><em>[</em><em>str</em><em>,</em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Dictionary whose keys are the POD device name, and value the setup                 dictionary.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[str,dict|None]</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._PrintInitCode">
-<span class="sig-name descname"><span class="pre">_PrintInitCode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._PrintInitCode" title="Permalink to this definition"></a></dt>
-<dd><p>Prints code that can be used to initialize and run SetupPodDevices with the         current parameters.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._PrintOptions">
-<span class="sig-name descname"><span class="pre">_PrintOptions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._PrintOptions" title="Permalink to this definition"></a></dt>
-<dd><p>Prints options available for user.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._Reconnect">
-<span class="sig-name descname"><span class="pre">_Reconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._Reconnect" title="Permalink to this definition"></a></dt>
-<dd><p>Reconnects all POD devices.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Bool that is true if all devices were successfully connected. False otherwise.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>bool</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._RemoveDevice">
-<span class="sig-name descname"><span class="pre">_RemoveDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._RemoveDevice" title="Permalink to this definition"></a></dt>
-<dd><p>Displays the POD devices parameters, asks the user which device ro remove, and then         deletes that POD device.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._Set_Setup_PodDevices">
-<span class="sig-name descname"><span class="pre">_Set_Setup_PodDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._Set_Setup_PodDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Sets the _Setup_PodDevices varaible to have keys as the POD device name and values         as the setup class.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em> | </em><em>None</em><em>]</em>) – Dictionary with keys as the device names                 and values as None or the respective parameter dictionary.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._ShowCurrentSettings">
-<span class="sig-name descname"><span class="pre">_ShowCurrentSettings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._ShowCurrentSettings" title="Permalink to this definition"></a></dt>
-<dd><p>Displays the POD device settings for all devices, and then prints the save file name.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._Stream">
-<span class="sig-name descname"><span class="pre">_Stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._Stream" title="Permalink to this definition"></a></dt>
-<dd><p>Streams data from all POD devices and prints the execution time.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Float of the execution time in seconds.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._StreamAllDevices">
-<span class="sig-name descname"><span class="pre">_StreamAllDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._StreamAllDevices" title="Permalink to this definition"></a></dt>
-<dd><p>Streams data from all the devices. User is asked to click enter to stop streaming.         Data is saved to file. Uses threading.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Setup.Setup_PodDevices.Setup_PodDevices._TimeFunc">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TimeFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Setup.Setup_PodDevices.Setup_PodDevices._TimeFunc" title="Permalink to this definition"></a></dt>
-<dd><p>Runs a function and gets the calculated execultion time.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>func</strong> (<em>function</em>) – Function/method name.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Float of the execution time in seconds rounded to 3 decimal places.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>float</p>
-</dd>
-</dl>
-</dd></dl>
-
-</dd></dl>
-
-</section>
 <section id="module-Setup">
 <span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Setup" title="Permalink to this heading"></a></h2>
 </section>
@@ -565,7 +301,7 @@
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="PodApi.Parameters.html" class="btn btn-neutral float-left" title="PodApi.Parameters package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="PodApi.Stream.Drain.PodHandler.html" class="btn btn-neutral float-left" title="PodApi.Stream.Drain.PodHandler package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
         <a href="Setup.Inputs.html" class="btn btn-neutral float-right" title="Setup.Inputs package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 

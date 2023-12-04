@@ -326,3 +326,64 @@ class CommandSet :
         # no match
         if(idx !=None) :    return(None) 
         else:               return(False)
+        
+        
+    def ValidateCommand(self, cmd: str|int, pld: int|bytes|tuple[int|bytes]|None=None) : 
+        """Raises an exception if the command and its payload are invalid for this POD device. 
+
+        Args:
+            cmd (str | int): Command name or number.
+            pld (int | bytes | tuple[int | bytes] | None, optional): Standard command packet payload. Defaults to None.
+
+        Raises:
+            Exception: Command '+str(cmd)+' does not exist.
+            Exception: This command does not take a payload.
+            Exception: This command requires a payload.
+            Exception: Command needs more than one argument in the payload. Use a tuple of values.
+            Exception: Payload must have '+str(sum(args))+' bytes.
+            Exception: Payload must have '+str(len(args))+' integer items in the tuple.
+            Exception: Bytes in the payload are the wrong sizes. The sizes must be '+str(args)+'.'
+            Exception: The payload tuple must only contain int or bytes items.
+            Exception: Payload is of incorrect type. It must be an int, bytes, or tuple of int/bytes.
+        """
+        
+        # check if command exists first 
+        if( not self.DoesCommandExist(cmd) ) :
+            raise Exception('[!] Command '+str(cmd)+' does not exist.')
+
+        # get argument lengths  
+        args: tuple[int] = self.ArgumentHexChar(cmd)
+        
+        # check if no payload is needed
+        if(sum(args) == 0) : 
+            if(pld == None) : 
+                return
+            raise Exception('[!] This command does not take a payload.')
+        
+        # check type of payload 
+        match pld : 
+            case None : 
+                raise Exception('[!] This command requires a payload.')
+            
+            case int() : 
+                # pld has only one argument 
+                if(len(args) != 1 ) :
+                    raise Exception('[!] Command needs more than one argument in the payload. Use a tuple of values.')
+                
+            case bytes() : 
+                if( len(pld) != sum(args)) :
+                    raise Exception('[!] Payload must have '+str(sum(args))+' bytes.')
+                
+            case tuple() : 
+                # check lengths 
+                if(len(pld) != len(args)) : 
+                    raise Exception('Payload must have '+str(len(args))+' integer items in the tuple.')  
+                # check each item in the payload tuple
+                for i in range(len(pld)) : 
+                    if(isinstance(pld[i], bytes) and len(pld[i])!=args[i]) : 
+                        raise Exception('[!] Bytes in the payload are the wrong sizes. The sizes must be '+str(args)+'.')
+                    elif(not isinstance(pld[i],int)) : 
+                        raise Exception('[!] The payload tuple must only contain int or bytes items.')
+                    
+            case _ :
+                raise Exception('[!] Payload is of incorrect type. It must be an int, bytes, or tuple of int/bytes.')

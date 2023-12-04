@@ -66,7 +66,7 @@ class Params8480SC(Params) :
         Returns:
             str: String that represents the Params_8480SC constructor.
         """
-        return('Params_8401HR(port=\''+self.port+'\', preamp=\''+str(self.preamp)+
+        return('PodApi.Parameters.Params8401HR(port=\''+self.port+'\', preamp=\''+str(self.preamp)+
                '\', ledCurrent='+str(self.ledCurrent)+', ttlPullups='+str(self.ttlPullups)+
                ', estimCurrent='+str(self.estimCurrent)+', syncConfig='+str(self.syncConfig)+
                ', ttlSetup='+str(self.ttlSetup)+')')

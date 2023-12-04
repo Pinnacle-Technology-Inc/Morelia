@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodApi.Packets package &mdash; Python POD API v1.3.2 documentation</title>
+  <title>PodApi.Packets package &mdash; Python POD API v1.5.2 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -51,6 +51,7 @@
 <li class="toctree-l4"><a class="reference internal" href="PodApi.Devices.html">PodApi.Devices package</a></li>
 <li class="toctree-l4 current"><a class="current reference internal" href="#">PodApi.Packets package</a></li>
 <li class="toctree-l4"><a class="reference internal" href="PodApi.Parameters.html">PodApi.Parameters package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="PodApi.Stream.html">PodApi.Stream package</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="PodApi.html#module-PodApi">Module contents</a></li>
@@ -990,7 +991,7 @@
 <dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodApi.Packets.Packet.</span></span><span class="sig-name descname"><span class="pre">Packet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="PodApi.Commands.html#PodApi.Commands.PodCommands.CommandSet" title="PodApi.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodApi.Packets.Packet.Packet" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
-<p>Container class that stores a command packet for a POD device. The format is     STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte). This class     also collection of methods for creating and interpreting POD packets.</p>
+<p>Container class that stores a command packet for a POD device. The format is     STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte). This class     also has a collection of methods for creating and interpreting POD packets.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet._commands">
 <span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#PodApi.Packets.Packet.Packet._commands" title="Permalink to this definition"></a></dt>
@@ -1110,26 +1111,6 @@
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet.BuildPODpacket_Standard">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildPODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">commandNumber</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodApi.Packets.Packet.Packet.BuildPODpacket_Standard" title="Permalink to this definition"></a></dt>
-<dd><p>Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes)         + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>commandNumber</strong> (<em>int</em>) – Integer representing the command number. This will be converted into                 a 4 byte long ASCII-encoded bytes string.</p></li>
-<li><p><strong>payload</strong> (<em>bytes</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – bytes string containing the payload. Defaults to None.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Bytes string of a complete standard POD packet.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bytes</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
 <dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet.CheckIfPacketIsValid">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodApi.Packets.Packet.Packet.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
 <dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
@@ -1142,23 +1123,6 @@
 <li><p><strong>Exception</strong> – Packet must begin with STX.</p></li>
 <li><p><strong>Exception</strong> – Packet must end in ETX</p></li>
 </ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet.Checksum">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Checksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytesIn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodApi.Packets.Packet.Packet.Checksum" title="Permalink to this definition"></a></dt>
-<dd><p>Calculates the checksum of a given bytes message. This is achieved by summing each byte in the         message, inverting, and taking the last byte.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>bytesIn</strong> (<em>bytes</em>) – Bytes message containing POD packet data.</p>
-</dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>Two ASCII-encoded bytes containing the checksum for bytesIn.</p>
-</dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>bytes</p>
 </dd>
 </dl>
 </dd></dl>
@@ -1268,35 +1232,6 @@
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>bytes</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet.PayloadToBytes">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PayloadToBytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argSizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodApi.Packets.Packet.Packet.PayloadToBytes" title="Permalink to this definition"></a></dt>
-<dd><p>Converts a payload into a bytes string.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em>) – Integer, bytes, or tuple containing the payload.</p></li>
-<li><p><strong>argSizes</strong> (<em>tuple</em><em>[</em><em>int</em><em>]</em>) – Tuple of the argument sizes.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><ul class="simple">
-<li><p><strong>Exception</strong> – Payload requires multiple arguments, use a tuple.</p></li>
-<li><p><strong>Exception</strong> – Payload is the wrong size.</p></li>
-<li><p><strong>Exception</strong> – Payload has an incorrect number of items.</p></li>
-<li><p><strong>Exception</strong> – Payload has invalid values.</p></li>
-<li><p><strong>Exception</strong> – Payload is an invalid type.</p></li>
-</ul>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Bytes string of the payload.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>bytes</p>
 </dd>
 </dl>
 </dd></dl>

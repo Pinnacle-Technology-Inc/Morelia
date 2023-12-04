@@ -127,11 +127,13 @@ class SetupInterface :
         pass
     
 
-    def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write data from. 
+    def _StreamThreading(self) -> tuple[dict[int,Thread]] | dict[int,Thread] :
+        """Start streaming from each POD device and save each to a file. 
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the started Thread.
+            tuple[dict[int,Thread]] | dict[int,Thread]: Dictionary with keys as the device number and \
+                values as the started Thread. If a tuple, the first item is the Bucket and second is the \
+                BucketDrain Threads. 
         """
         # each POD device has its own thread 
         pass
@@ -142,9 +144,9 @@ class SetupInterface :
 
     def __init__(self) -> None :
         """Initializes the class instance variables."""
-        self._podDevices : dict[int,Pod]  = {}               # dict of pod device objects. MUST have keys as the device number
-        self._podParametersDict : dict[int,Params] = {}   # dictionary of device information. MUST have keys as the device number
-        self._saveFileName : str = ''                               # string filename: <path>/file.ext # the device name and number will be appended to the filename 
+        self._podDevices : dict[int,Pod]  = {}  # dict of pod device objects. MUST have keys as the device number
+        self._podParametersDict : dict[int,Params] = {} # dictionary of device information. MUST have keys as the device number
+        self._saveFileName : str = ''   # string filename: <path>/file.ext # the device name and number will be appended to the filename 
 
 
     def __del__(self) -> None :
@@ -525,14 +527,16 @@ class SetupInterface :
     # ------------ STREAM ------------ 
 
 
-    def Stream(self) -> dict[int,Thread] : 
+    def Stream(self) -> tuple[dict[int,Thread]] | dict[int,Thread] : 
         """Tests that all devices are connected then starts streaming data.
 
         Raises:
             Exception: Test connection failed.
 
         Returns:
-            dict[int,Thread]: Dictionary with integer device number keys and Thread values. 
+            tuple[dict[int,Thread]] | dict[int,Thread]: Dictionary with keys as the device number and \
+                values as the started Thread. If a tuple, the first item is the Bucket and second is the \
+                BucketDrain Threads. 
         """
         # check for good connection 
         if(not self._TestDeviceConnection_All()): 

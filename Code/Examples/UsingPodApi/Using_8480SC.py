@@ -1,4 +1,4 @@
-"""Runs all commands for a 8480-SC POD device.
+"""Runs all commands for an 8480-SC POD device.
 """
 
 # add directory path to code 
