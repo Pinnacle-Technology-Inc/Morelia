@@ -14,7 +14,7 @@ def RunTests() :
     # collect all tests
     tests = {
         "1. Match Init:\t"  : Test1_MatchInit,
-        "2. Bad Path:\t"    : Test2_BadPath
+        "2. Check Port:\t"    : Test2_BadPort
     }
     tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
     # show results 
@@ -42,9 +42,9 @@ def Test1_MatchInit() -> tuple[bool,str] :
     paraminits = param.GetInit()
     # check that result matches expected 
     if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\nExpected: "+OUTexpectedInitStr+" \nRecieved: "+str(paraminits) )
+    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
-def Test2_BadPath() : 
+def Test2_BadPort() : 
     """Tests if the Params object correctly raises an Exception when it recieves a bad 'port' string argument. 
 
     Returns:
