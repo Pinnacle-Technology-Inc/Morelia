@@ -9,24 +9,34 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-def RunTests() : 
-    print("== Testing: PodApi.Parameters.Params8206HR ==")
+def RunTests(printTests: bool = True) -> tuple[int,int]: 
+    """Run all tests on PodApi.Parameters.Params
+
+    Args:
+        printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
+    
+    Returns:
+        tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
+    """
     # collect all tests
     tests = {
-       "1. Match Init:\t"   : Test1_MatchInit,
-       "2. Check Port:\t"     : Test2_BadPort,
+       "1. Match Init:\t\t"   : Test1_MatchInit,
+       "2. Check Port:\t\t"     : Test2_BadPort,
        "3. Check Sample Rate:\t" : Test3_BadSampleRate,
        "4. Check Preamp Gain:\t" : Test4_BadPreamp,
        "5. Check Low Pass:\t" : Test5_BadLowPass,
     }
+    # run all 
     tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
+    # get total status 
+    passed = sum([int(x[0]) for x in tests.values()])
+    total = len(tests.keys())
     # show results 
-    passed: int = 0
-    for key,val in tests.items() : 
-        print(key, val[0], val[1])
-        passed += int(val[0]) # increment by 1 if passed 
-    # show total status 
-    print("Passed "+str(passed)+" of "+str(len(tests.keys())))
+    if(printTests) : 
+        print("== Testing: PodApi.Parameters.Params ==")
+        [print(key, val[0], val[1]) for (key,val) in tests.items()]
+        print("Passed "+str(passed)+" of "+str(total))
+    return (passed, total)  
 
 def _ErrorWrap(function) : 
     try : 

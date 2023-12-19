@@ -12,8 +12,9 @@ __email__       = "sales@pinnaclet.com"
 
 
 
-from T_PodApi.T_Parameters import T_ParamsBasic
-from T_PodApi.T_Parameters import T_Params8206HR
 
-T_ParamsBasic.RunTests()
-T_Params8206HR.RunTests()
+from Testing.T_PodApi import T_Parameters
+
+T_Parameters.TestAllParams.RunTests()
+# T_Parameters.T_ParamsBasic.RunTests()
+# T_Parameters.T_Params8206HR.RunTests()
