@@ -1,9 +1,5 @@
-# add directory path to code 
-import Path
-Path.AddAPIpath()
-
 # enviornment imports
-from Testing.T_PodApi import T_Parameters
+from Testing.T_PodApi import T_Parameters, T_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -13,5 +9,6 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-
-T_Parameters.TestAllParams.RunTests(True, True)
+def RunTests() : 
+    T_Parameters.TestAllParams.RunTests(True, True)
+    # T_Commands.T_PodCommands.RunTests()

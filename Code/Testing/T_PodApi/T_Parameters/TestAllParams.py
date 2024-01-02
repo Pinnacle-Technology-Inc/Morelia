@@ -22,18 +22,17 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     # show header 
     if(printThisTest) : print("==== PodApi.Parameters ====")
     # list all tests
-    sub = printSubTests and printThisTest # is false if either are false
     tests = [
-        T_Parameters.T_ParamsBasic.RunTests(sub),
-        T_Parameters.T_Params8206HR.RunTests(sub),
-        T_Parameters.T_Params8401HR.RunTests(sub),
-        T_Parameters.T_Params8229.RunTests(sub),
-        T_Parameters.T_Params8480SC.RunTests(sub),
+        T_Parameters.T_ParamsBasic.RunTests(printSubTests),
+        T_Parameters.T_Params8206HR.RunTests(printSubTests),
+        T_Parameters.T_Params8401HR.RunTests(printSubTests),
+        T_Parameters.T_Params8229.RunTests(printSubTests),
+        T_Parameters.T_Params8480SC.RunTests(printSubTests),
     ]
     # count totals
     passed = sum([x[0] for x in tests])
     total  = sum([x[1] for x in tests])
     # show passed total 
-    if(printThisTest) : print("== Passed "+str(passed)+" of "+str(total)+" ==")
+    if(printThisTest) : print("==== Passed "+str(passed)+" of "+str(total)+" ====")
     # finish
     return (passed, total)   

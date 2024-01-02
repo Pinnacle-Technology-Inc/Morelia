@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8206HR
+from Testing.T_PodApi.TestProtocol import RunningTests
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -26,23 +27,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
        "4. Check Preamp Gain:\t" : Test4_BadPreamp,
        "5. Check Low Pass:\t" : Test5_BadLowPass,
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params8206HR ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)  
-
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
+    return RunningTests.RunTests(tests, 'Params8206HR', printTests=printTests)
 
 def Test1_MatchInit() : 
     """Tests if the port argument given to a Params8206HR object is correctly reflected in its GetInit() result. 

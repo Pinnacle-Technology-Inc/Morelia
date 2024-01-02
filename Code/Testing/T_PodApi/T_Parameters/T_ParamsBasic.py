@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params
+from Testing.T_PodApi.TestProtocol import RunningTests
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,22 +19,13 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
+    
     # collect all tests
     tests = {
         "1. Match Init:\t\t"    : Test1_MatchInit,
         "2. Check Port:\t\t"    : Test2_BadPort
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)   
+    return RunningTests.RunTests(tests, 'Params', printTests=printTests)
     
 def Test1_MatchInit() -> tuple[bool,str] : 
     """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
@@ -70,9 +62,3 @@ def Test2_BadPort() :
         return (False, " - Params did not notice the invalid 'port' argument.")
     except Exception as e : 
         return(True, '')    
-    
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))

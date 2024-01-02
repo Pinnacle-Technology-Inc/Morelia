@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8229
+from Testing.T_PodApi.TestProtocol import RunningTests
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -30,24 +31,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "7. Check Var Time:\t"      : Test7_BadReverseVarTime,
         "8. Check Schedule:\t"      : Test8_BadSchedule,
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params8229 ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)  
-
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
-    
+    return RunningTests.RunTests(tests, 'Params8229', printTests=printTests)    
 
 def Test1_EmptySched() : 
     # write expected schedule: keys are the 7 days of the week and values a a tuple of 24 False items (one for each hour)
