@@ -1,5 +1,5 @@
 # local imports
-import PodApi
+from PodApi.Parameters import Params8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -33,7 +33,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     total = len(tests.keys())
     # show results 
     if(printTests) : 
-        print("== Testing: PodApi.Parameters.Params8206HR ==")
+        print("== Testing: Params8206HR ==")
         [print(key, val[0], val[1]) for (key,val) in tests.items()]
         print("Passed "+str(passed)+" of "+str(total))
     return (passed, total)  
@@ -52,7 +52,7 @@ def Test1_MatchInit() :
             The string is an optional message. 
     """
     # create instance of Params8206HR with valid arguments 
-    param = PodApi.Parameters.Params8206HR(
+    param = Params8206HR(
             port = 'COM1',
             sampleRate = 500,
             preamplifierGain = 10,
@@ -75,7 +75,7 @@ def Test2_BadPort() :
     """
     try : 
         # create instance of Params8206HR
-        param = PodApi.Parameters.Params8206HR(
+        param = Params8206HR(
                     port = 'BAD_PORT', # !
                     sampleRate = 500,
                     preamplifierGain = 10,
@@ -95,7 +95,7 @@ def Test3_BadSampleRate() :
     """
     try : 
         # create instance of Params8206HR
-        param = PodApi.Parameters.Params8206HR(
+        param = Params8206HR(
                     port = 'COM1',
                     sampleRate = 0, # !
                     preamplifierGain = 10,
@@ -117,7 +117,7 @@ def Test4_BadPreamp() :
     # identify inputs and outputs from Params class 
     try : 
         # create instance of Params8206HR
-        param = PodApi.Parameters.Params8206HR(
+        param = Params8206HR(
                     port = 'COM1',
                     sampleRate = 500, 
                     preamplifierGain = 0, # !
@@ -138,7 +138,7 @@ def Test5_BadLowPass() :
     """
     try : 
         # create instance of Params8206HR
-        param = PodApi.Parameters.Params8206HR(
+        param = Params8206HR(
                     port = 'COM1',
                     sampleRate = 500, 
                     preamplifierGain = 0,

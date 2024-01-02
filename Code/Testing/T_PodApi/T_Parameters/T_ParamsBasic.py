@@ -1,5 +1,5 @@
 # local imports
-import PodApi
+from PodApi.Parameters import Params
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -10,7 +10,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Parameters.Params
+    """Run all tests on Params
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
@@ -30,7 +30,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     total = len(tests.keys())
     # show results 
     if(printTests) : 
-        print("== Testing: PodApi.Parameters.Params ==")
+        print("== Testing: Params ==")
         [print(key, val[0], val[1]) for (key,val) in tests.items()]
         print("Passed "+str(passed)+" of "+str(total))
     return (passed, total)   
@@ -47,7 +47,7 @@ def Test1_MatchInit() -> tuple[bool,str] :
     INcheckForValidParams: bool = False
     OUTexpectedInitStr: str = "PodApi.Parameters.Params(port='"+INport+"')"
     # create instance of params
-    param = PodApi.Parameters.Params(INport, INcheckForValidParams)
+    param = Params(INport, INcheckForValidParams)
     # get init build string
     paraminits = param.GetInit()
     # check that result matches expected 
@@ -66,7 +66,7 @@ def Test2_BadPort() :
     INcheckForValidParams: bool = True
     try : 
         # create instance of params. this should raise an Exception 
-        param = PodApi.Parameters.Params(INport, INcheckForValidParams)
+        param = Params(INport, INcheckForValidParams)
         return (False, " - Params did not notice the invalid 'port' argument.")
     except Exception as e : 
         return(True, '')    
