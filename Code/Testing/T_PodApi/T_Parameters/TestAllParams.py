@@ -19,6 +19,8 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
+    # show header 
+    if(printThisTest) : print("==== PodApi.Parameters ====")
     # list all tests
     sub = printSubTests and printThisTest # is false if either are false
     tests = [
@@ -31,8 +33,7 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     # count totals
     passed = sum([x[0] for x in tests])
     total  = sum([x[1] for x in tests])
-    # show output
-    if(printThisTest) : 
-        print("==== PodApi.Parameters ====")
-        print("== Passed "+str(passed)+" of "+str(total)+" ==")
+    # show passed total 
+    if(printThisTest) : print("== Passed "+str(passed)+" of "+str(total)+" ==")
+    # finish
     return (passed, total)   

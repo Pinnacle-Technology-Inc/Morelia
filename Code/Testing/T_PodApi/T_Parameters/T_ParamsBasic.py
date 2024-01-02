@@ -20,8 +20,8 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     """
     # collect all tests
     tests = {
-        "1. Match Init:\t"  : Test1_MatchInit,
-        "2. Check Port:\t"    : Test2_BadPort
+        "1. Match Init:\t\t"    : Test1_MatchInit,
+        "2. Check Port:\t\t"    : Test2_BadPort
     }
     # run all 
     tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
