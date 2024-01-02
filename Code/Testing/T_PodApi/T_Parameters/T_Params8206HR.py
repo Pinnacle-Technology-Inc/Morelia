@@ -33,7 +33,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     total = len(tests.keys())
     # show results 
     if(printTests) : 
-        print("== Testing: PodApi.Parameters.Params ==")
+        print("== Testing: PodApi.Parameters.Params8206HR ==")
         [print(key, val[0], val[1]) for (key,val) in tests.items()]
         print("Passed "+str(passed)+" of "+str(total))
     return (passed, total)  

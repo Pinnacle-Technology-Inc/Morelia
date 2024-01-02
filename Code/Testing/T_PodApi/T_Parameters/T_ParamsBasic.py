@@ -10,7 +10,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Parameters.Params8206HR
+    """Run all tests on PodApi.Parameters.Params
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
