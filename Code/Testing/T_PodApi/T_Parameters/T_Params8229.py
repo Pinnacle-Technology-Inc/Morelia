@@ -1,6 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8229
-from Testing.T_PodApi.TestProtocol import RunningTests
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -47,13 +47,13 @@ def Test1_EmptySched() :
     recieved: dict = Params8229.BuildEmptySchedule()
     # check schedule keys
     if(expected.keys() != recieved.keys()): 
-        return (False, ' - Schedule days-of-the-week keys are unexpected.')
+        return TestResult(False, ' - Schedule days-of-the-week keys are unexpected.')
     # check schedule values 
     for day, hours in expected.items() : 
         if(hours != recieved[day]) :
-            return (False, ' - Hours for '+str(day)+' are unexpected.')
+            return TestResult(False, ' - Hours for '+str(day)+' are unexpected.')
     # no issues 
-    return (True, '')
+    return TestResult(True, '')
     
     
 def Test2_MatchInit() : 
@@ -80,8 +80,8 @@ def Test2_MatchInit() :
     paraminits = param.GetInit()
     # check that result matches expected 
     OUTexpectedInitStr: str = "PodApi.Parameters.Params8229(port='COM1', systemID=1, motorDirection=1, motorSpeed=50, randomReverse=False, reverseBaseTime=5, reverseVarTime=10, mode=0, schedule={'Sunday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Monday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Tuesday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Wednesday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Thursday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Friday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False), 'Saturday': (False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False, False)})"
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
 
 def Test3_BadSystemID() : 
@@ -105,9 +105,9 @@ def Test3_BadSystemID() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'systemID' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'systemID' argument.")
     except Exception as e : 
-        return(True, '')   
+        return TestResult(True, '')   
     
 def Test4_BadMotorSpeed() : 
     """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'motorSpeed' argument. 
@@ -130,9 +130,9 @@ def Test4_BadMotorSpeed() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'motorSpeed' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'motorSpeed' argument.")
     except Exception as e : 
-        return(True, '') 
+        return TestResult(True, '') 
     
 def Test5_BadMode() : 
     """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'mode' argument. 
@@ -155,9 +155,9 @@ def Test5_BadMode() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'mode' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'mode' argument.")
     except Exception as e : 
-        return(True, '') 
+        return TestResult(True, '') 
     
   
 def Test6_BadReverseBaseTime() : 
@@ -181,9 +181,9 @@ def Test6_BadReverseBaseTime() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'reverseBaseTime' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'reverseBaseTime' argument.")
     except Exception as e : 
-        return(True, '') 
+        return TestResult(True, '') 
     
   
 def Test7_BadReverseVarTime() : 
@@ -207,9 +207,9 @@ def Test7_BadReverseVarTime() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'reverseVarTime' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'reverseVarTime' argument.")
     except Exception as e : 
-        return(True, '') 
+        return TestResult(True, '') 
     
 def Test8_BadSchedule() : 
     """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'schedule' argument. 
@@ -232,7 +232,7 @@ def Test8_BadSchedule() :
             schedule        = {'Bad' : (False,True)}, 
             checkForValidParams = True
         )
-        return (False, " - Params8229 did not notice the invalid 'schedule' argument.")
+        return TestResult(False, "Params8229 did not notice the invalid 'schedule' argument.")
     except Exception as e : 
-        return(True, '') 
+        return TestResult(True, '') 
     

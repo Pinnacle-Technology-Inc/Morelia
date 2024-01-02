@@ -1,6 +1,6 @@
 # local imports
 from PodApi.Parameters import Params
-from Testing.T_PodApi.TestProtocol import RunningTests
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -27,7 +27,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     }
     return RunningTests.RunTests(tests, 'Params', printTests=printTests)
     
-def Test1_MatchInit() -> tuple[bool,str] : 
+def Test1_MatchInit() -> TestResult : 
     """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
 
     Returns:
@@ -43,10 +43,10 @@ def Test1_MatchInit() -> tuple[bool,str] :
     # get init build string
     paraminits = param.GetInit()
     # check that result matches expected 
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
-def Test2_BadPort() : 
+def Test2_BadPort() -> TestResult: 
     """Tests if the Params object correctly raises an Exception when it recieves a bad 'port' string argument. 
 
     Returns:
@@ -59,6 +59,6 @@ def Test2_BadPort() :
     try : 
         # create instance of params. this should raise an Exception 
         param = Params(INport, INcheckForValidParams)
-        return (False, " - Params did not notice the invalid 'port' argument.")
+        return TestResult(False, "Params did not notice the invalid 'port' argument.")
     except Exception as e : 
-        return(True, '')    
+        return TestResult(True, '')    

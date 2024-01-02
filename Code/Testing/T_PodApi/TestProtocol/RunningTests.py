@@ -1,5 +1,8 @@
-# local imports
+# enviornment imports
 from typing import Callable
+
+# local imports
+from Testing.T_PodApi.TestProtocol import TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -19,14 +22,14 @@ def RunTests(tests: dict[str, Callable], headerTitle: str, headerWrap: str = '==
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
     # run all 
-    runtests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
+    runtests: dict[str,TestResult] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
     # get total status 
-    passed = sum([int(x[0]) for x in runtests.values()])
+    passed = sum([int(x.result) for x in runtests.values()])
     total = len(runtests.keys())
     # show results 
     if(printTests) : 
         print(str(headerWrap)+" Testing: "+str(headerTitle)+" "+str(headerWrap))
-        [print(key, val[0], val[1]) for (key,val) in runtests.items()]
+        [print(key, val.Result(), val.Note()) for (key,val) in runtests.items()]
         print(str(headerWrap)+" Passed "+str(passed)+" of "+str(total)+" "+str(headerWrap))
     return (passed, total)  
 
@@ -34,4 +37,4 @@ def _ErrorWrap(function) :
     try : 
         return (function())
     except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
+        return (False, "Unexpected Exception: "+str(e))

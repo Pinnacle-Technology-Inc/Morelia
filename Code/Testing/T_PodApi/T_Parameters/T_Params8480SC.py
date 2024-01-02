@@ -1,6 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8480SC
-from Testing.T_PodApi.TestProtocol import RunningTests
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -52,8 +52,8 @@ def Test1_MatchInit() :
     paraminits = param.GetInit()
     # check that result matches expected 
     OUTexpectedInitStr: str = "PodApi.Parameters.Params8401HR(port='COM1', preamp='1', ledCurrent=(25, 30), ttlPullups=0, estimCurrent=(25, 50), syncConfig=5, ttlSetup=(0, 0))"
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
 def Test2_BadPreamp() : 
     """Tests if the Params8480SC object correctly raises an Exception when it recieves a bad 'preamp' argument. 
@@ -75,9 +75,9 @@ def Test2_BadPreamp() :
             ttlSetup = (0, 0),       
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'preamp' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'preamp' argument.")
     except Exception as e : 
-        return(True, '')
+        return TestResult(True, '')
     
 def Test3_BadLedCurrent() : 
     """Tests if the Params8480SC object correctly raises an Exception when it recieves a bad 'ledCurrent' argument. 
@@ -99,9 +99,9 @@ def Test3_BadLedCurrent() :
             ttlSetup = (0, 0),       
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'ledCurrent' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'ledCurrent' argument.")
     except Exception as e : 
-        return(True, '')
+        return TestResult(True, '')
     
 def Test4_BadEstimCurrent() : 
     """Tests if the Params8480SC object correctly raises an Exception when it recieves a bad 'estimCurrent' argument. 
@@ -123,6 +123,6 @@ def Test4_BadEstimCurrent() :
             ttlSetup = (0, 0),       
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'estimCurrent' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'estimCurrent' argument.")
     except Exception as e : 
-        return(True, '')
+        return TestResult(True, '')
