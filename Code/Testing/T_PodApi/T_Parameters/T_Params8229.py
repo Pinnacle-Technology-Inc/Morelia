@@ -73,13 +73,13 @@ def Test1_EmptySched() :
     
     
 def Test2_MatchInit() : 
-    """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
+    """Tests if the port argument given to a Params8229 object is correctly reflected in its GetInit() result. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
-    # create instance of Params8206HR with valid arguments 
+    # create instance of Params8229 with valid arguments 
     param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -101,14 +101,14 @@ def Test2_MatchInit() :
 
 
 def Test3_BadSystemID() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'systemID' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'systemID' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = -1, # 1, 
@@ -121,19 +121,19 @@ def Test3_BadSystemID() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'systemID' argument.")
+        return (False, " - Params8229 did not notice the invalid 'systemID' argument.")
     except Exception as e : 
         return(True, '')   
     
 def Test4_BadMotorSpeed() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'motorSpeed' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'motorSpeed' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -146,19 +146,19 @@ def Test4_BadMotorSpeed() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'motorSpeed' argument.")
+        return (False, " - Params8229 did not notice the invalid 'motorSpeed' argument.")
     except Exception as e : 
         return(True, '') 
     
 def Test5_BadMode() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'mode' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'mode' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -171,20 +171,20 @@ def Test5_BadMode() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'mode' argument.")
+        return (False, " - Params8229 did not notice the invalid 'mode' argument.")
     except Exception as e : 
         return(True, '') 
     
   
 def Test6_BadReverseBaseTime() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'reverseBaseTime' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'reverseBaseTime' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -197,20 +197,20 @@ def Test6_BadReverseBaseTime() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'reverseBaseTime' argument.")
+        return (False, " - Params8229 did not notice the invalid 'reverseBaseTime' argument.")
     except Exception as e : 
         return(True, '') 
     
   
 def Test7_BadReverseVarTime() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'reverseVarTime' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'reverseVarTime' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -223,19 +223,19 @@ def Test7_BadReverseVarTime() :
             schedule        = Params8229.BuildEmptySchedule(), 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'reverseVarTime' argument.")
+        return (False, " - Params8229 did not notice the invalid 'reverseVarTime' argument.")
     except Exception as e : 
         return(True, '') 
     
 def Test8_BadSchedule() : 
-    """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'schedule' argument. 
+    """Tests if the Params8229 object correctly raises an Exception when it recieves a bad 'schedule' argument. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
     try : 
-        # create instance of Params8401HR
+        # create instance of Params8229
         param = Params8229(
             port            = 'COM1', 
             systemID        = 1, 
@@ -248,7 +248,7 @@ def Test8_BadSchedule() :
             schedule        = {'Bad' : (False,True)}, 
             checkForValidParams = True
         )
-        return (False, " - Params8401HR did not notice the invalid 'schedule' argument.")
+        return (False, " - Params8229 did not notice the invalid 'schedule' argument.")
     except Exception as e : 
         return(True, '') 
     

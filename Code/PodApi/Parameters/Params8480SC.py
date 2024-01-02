@@ -118,7 +118,7 @@ class Params8480SC(Params) :
         """
         super()._CheckParams() 
 
-        if(self.preamp < 0 and self.preamp > 1023 ) : 
+        if(self.preamp < 0 or self.preamp > 1023 ) : 
             raise Exception('The preamp must be between 0-1023.')
 
         for channel in self.ledCurrent : 

@@ -10,7 +10,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Parameters.Params
+    """Run all tests on PodApi.Parameters.Params8206HR
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
@@ -45,7 +45,7 @@ def _ErrorWrap(function) :
         return (False, ' - Unexpected Exception: '+str(e))
 
 def Test1_MatchInit() : 
-    """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
+    """Tests if the port argument given to a Params8206HR object is correctly reflected in its GetInit() result. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
@@ -114,7 +114,7 @@ def Test4_BadPreamp() :
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\
             The string is an optional message. 
     """
-    # identify inputs and outputs from Params class 
+    # identify inputs and outputs from Params8206HR class 
     try : 
         # create instance of Params8206HR
         param = Params8206HR(

@@ -52,7 +52,7 @@ def _ErrorWrap(function) :
     
 
 def Test1_MatchInit() : 
-    """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
+    """Tests if the port argument given to a Params8401HR object is correctly reflected in its GetInit() result. 
 
     Returns:
         tuple[bool,str]: Bool is true when the test passes, false otherwise. \\

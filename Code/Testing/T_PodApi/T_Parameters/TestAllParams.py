@@ -26,6 +26,7 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
         T_Parameters.T_Params8206HR.RunTests(sub),
         T_Parameters.T_Params8401HR.RunTests(sub),
         T_Parameters.T_Params8229.RunTests(sub),
+        T_Parameters.T_Params8480SC.RunTests(sub),
     ]
     # count totals
     passed = sum([x[0] for x in tests])
