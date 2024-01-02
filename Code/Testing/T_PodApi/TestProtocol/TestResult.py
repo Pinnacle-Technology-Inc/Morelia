@@ -11,15 +11,15 @@ class TestResult :
     
     Attributes: 
         result (bool): True for passed test, False otherwise. 
-        note (str | None, optional): Note for test result, typically an error message.
+        note (str, optional): Note for test result, typically an error message.
     """
     
-    def __init__(self, result: bool, note: str | None = None) : 
+    def __init__(self, result: bool, note: str = '') : 
         """Sets the class instance variables.
 
         Args:
             result (bool): True for passed test, False otherwise. 
-            note (str | None, optional): Note for test result, typically an error message. Defaults to None.
+            note (str, optional): Note for test result, typically an error message. Defaults to ''.
         """
         # set class instance variables  
         self.result = bool(result)
@@ -44,10 +44,7 @@ class TestResult :
         Returns:
             str: _description_
         """
-        if(   self.note == None # empty
-           or self.note == ''   # empty
-           or self.note.startswith(prefix) # check if it already has prefix
-           ) : 
+        if(self.note == '' or self.note.startswith(prefix) ) : 
             return self.note # return note as is 
         else :
             return str(prefix)+self.note # append prefix to note 

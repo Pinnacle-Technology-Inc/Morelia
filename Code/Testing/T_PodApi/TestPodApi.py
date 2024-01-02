@@ -10,6 +10,5 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests() : 
-    T_Parameters.TestAllParams.RunTests(True, True)
-    
-    # T_Commands.T_PodCommands.RunTests()
+    # T_Parameters.TestAllParams.RunTests(True, False)
+    T_Commands.T_PodCommands.RunTests()
