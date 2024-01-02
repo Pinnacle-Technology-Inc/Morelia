@@ -15,9 +15,10 @@ __email__       = "sales@pinnaclet.com"
 
 
 # # top
-T_Parameters.TestAllParams.RunTests()
+T_Parameters.TestAllParams.RunTests(True, False)
 
 # # individual 
 # T_Parameters.T_ParamsBasic.RunTests()
 # T_Parameters.T_Params8206HR.RunTests()
 # T_Parameters.T_Params8401HR.RunTests()
+# T_Parameters.T_Params8229.RunTests()

@@ -1,5 +1,5 @@
 # local imports
-from Testing.T_PodApi.T_Parameters import T_ParamsBasic, T_Params8206HR, T_Params8401HR
+from Testing.T_PodApi import T_Parameters
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -9,14 +9,29 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-def RunTests(printTests: bool = True) : 
-    print("==== PodApi.Parameters ====")
+def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[int,int] :
+    """Run all tests for PodApi.Parameters
+
+    Args:
+        printThisTest (bool, optional): Prints a header and number of total tests passed when True. Defaults to False.
+        printSubTests (bool, optional): Prints a header and number of tests passed for each sub-test when True. Defaults to True.
+
+    Returns:
+        tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
+    """
+    # list all tests
+    sub = printSubTests and printThisTest # is false if either are false
     tests = [
-        T_ParamsBasic.RunTests(printTests),
-        T_Params8206HR.RunTests(printTests),
-        T_Params8401HR.RunTests(printTests),
+        T_Parameters.T_ParamsBasic.RunTests(sub),
+        T_Parameters.T_Params8206HR.RunTests(sub),
+        T_Parameters.T_Params8401HR.RunTests(sub),
+        T_Parameters.T_Params8229.RunTests(sub),
     ]
     # count totals
     passed = sum([x[0] for x in tests])
     total  = sum([x[1] for x in tests])
-    print("== Passed "+str(passed)+" of "+str(total)+" ==")
+    # show output
+    if(printThisTest) : 
+        print("==== PodApi.Parameters ====")
+        print("== Passed "+str(passed)+" of "+str(total)+" ==")
+    return (passed, total)   
