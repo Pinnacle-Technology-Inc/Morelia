@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8401HR
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -32,23 +33,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
        "9. Check Bias:\t\t"      : Test9_BadBias,
        "10. Check DC Mode:\t"    : Test10_BadDcMode
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params8401HR ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)  
-
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
+    return RunningTests.RunTests(tests, 'Params8401HR', printTests=printTests)
     
 
 def Test1_MatchInit() : 
@@ -76,8 +61,8 @@ def Test1_MatchInit() :
     paraminits = param.GetInit()
     # check that result matches expected 
     OUTexpectedInitStr: str = "PodApi.Parameters.Params8401HR(port='COM1', preampDevice='8407-SE', sampleRate=3000, muxMode=False, preampGain=(None, 10, 100, None), ssGain=(1, 1, 5, 5), highPass=(0.0, 0.5, 1.0, 10.0), lowPass=(100, 1000, 10000, 15000), bias=(0.6, -0.6, 1.0, -1.0), dcMode=('VBIAS', 'AGND', 'VBIAS', 'AGND'))"
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
 
 def Test2_BadPort() : 
@@ -102,9 +87,9 @@ def Test2_BadPort() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'port' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'port' argument.")
     except Exception as e : 
-        return(True, '')   
+        return TestResult(True, '')   
     
 
 def Test3_BadPreampDev() : 
@@ -129,9 +114,9 @@ def Test3_BadPreampDev() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'preampDevice' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'preampDevice' argument.")
     except Exception as e : 
-        return(True, '')  
+        return TestResult(True, '')  
     
      
 def Test4_BadSampleRate() : 
@@ -156,9 +141,9 @@ def Test4_BadSampleRate() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'sampleRate' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'sampleRate' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
 
 def Test5_BadPreampGain() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'preampGain' argument. 
@@ -182,9 +167,9 @@ def Test5_BadPreampGain() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'preampGain' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'preampGain' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
     
 def Test6_BadSsGain() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'ssGain' argument. 
@@ -208,9 +193,9 @@ def Test6_BadSsGain() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'ssGain' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'ssGain' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
     
 def Test7_BadHighPass() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'lowPass' argument. 
@@ -234,9 +219,9 @@ def Test7_BadHighPass() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'lowPass' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'lowPass' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
     
 def Test8_BadLowPass() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'lowPass' argument. 
@@ -260,9 +245,9 @@ def Test8_BadLowPass() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'lowPass' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'lowPass' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
     
 def Test9_BadBias() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'bias' argument. 
@@ -286,9 +271,9 @@ def Test9_BadBias() :
                 dcMode          = ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'bias' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'bias' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
 
 def Test10_BadDcMode() : 
     """Tests if the Params8401HR object correctly raises an Exception when it recieves a bad 'dcMode' argument. 
@@ -312,6 +297,6 @@ def Test10_BadDcMode() :
                 dcMode          = ('uh', 'oh', 'vas', 'agn'), # ('VBIAS', 'AGND', 'VBIAS', 'AGND'),   
                 checkForValidParams = True
             )
-        return (False, " - Params8401HR did not notice the invalid 'dcMode' argument.")
+        return TestResult(False, "Params8401HR did not notice the invalid 'dcMode' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')

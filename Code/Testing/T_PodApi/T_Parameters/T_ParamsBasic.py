@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,24 +19,15 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
+    
     # collect all tests
     tests = {
-        "1. Match Init:\t"  : Test1_MatchInit,
-        "2. Check Port:\t"    : Test2_BadPort
+        "1. Match Init:\t\t"    : Test1_MatchInit,
+        "2. Check Port:\t\t"    : Test2_BadPort
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)   
+    return RunningTests.RunTests(tests, 'Params', printTests=printTests)
     
-def Test1_MatchInit() -> tuple[bool,str] : 
+def Test1_MatchInit() -> TestResult : 
     """Tests if the port argument given to a Params object is correctly reflected in its GetInit() result. 
 
     Returns:
@@ -51,10 +43,10 @@ def Test1_MatchInit() -> tuple[bool,str] :
     # get init build string
     paraminits = param.GetInit()
     # check that result matches expected 
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
-def Test2_BadPort() : 
+def Test2_BadPort() -> TestResult: 
     """Tests if the Params object correctly raises an Exception when it recieves a bad 'port' string argument. 
 
     Returns:
@@ -67,12 +59,6 @@ def Test2_BadPort() :
     try : 
         # create instance of params. this should raise an Exception 
         param = Params(INport, INcheckForValidParams)
-        return (False, " - Params did not notice the invalid 'port' argument.")
+        return TestResult(False, "Params did not notice the invalid 'port' argument.")
     except Exception as e : 
-        return(True, '')    
-    
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
+        return TestResult(True, '')    

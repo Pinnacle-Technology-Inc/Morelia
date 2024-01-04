@@ -1,5 +1,6 @@
 # local imports
 from PodApi.Parameters import Params8206HR
+from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -26,23 +27,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
        "4. Check Preamp Gain:\t" : Test4_BadPreamp,
        "5. Check Low Pass:\t" : Test5_BadLowPass,
     }
-    # run all 
-    tests: dict[str,tuple[bool,str]] = {key : _ErrorWrap(val) for (key,val) in tests.items()}
-    # get total status 
-    passed = sum([int(x[0]) for x in tests.values()])
-    total = len(tests.keys())
-    # show results 
-    if(printTests) : 
-        print("== Testing: Params8206HR ==")
-        [print(key, val[0], val[1]) for (key,val) in tests.items()]
-        print("Passed "+str(passed)+" of "+str(total))
-    return (passed, total)  
-
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
-    except Exception as e :
-        return (False, ' - Unexpected Exception: '+str(e))
+    return RunningTests.RunTests(tests, 'Params8206HR', printTests=printTests)
 
 def Test1_MatchInit() : 
     """Tests if the port argument given to a Params8206HR object is correctly reflected in its GetInit() result. 
@@ -63,8 +48,8 @@ def Test1_MatchInit() :
     paraminits = param.GetInit()
     # check that result matches expected 
     OUTexpectedInitStr: str = "PodApi.Parameters.Params8206HR(port='COM1', sampleRate=500, preamplifierGain=10, lowPass=(400, 400, 400))"
-    if(paraminits == OUTexpectedInitStr) :  return (True, '')
-    return ( False, " - GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
+    if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
+    return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 
 def Test2_BadPort() : 
     """Tests if the Params8206HR object correctly raises an Exception when it recieves a bad 'port' string argument. 
@@ -82,9 +67,9 @@ def Test2_BadPort() :
                     lowPass = (400,400,400),
                     checkForValidParams = True
                 )
-        return (False, " - Params8206HR did not notice the invalid 'port' argument.")
+        return TestResult(False, "Params8206HR did not notice the invalid 'port' argument.")
     except Exception as e : 
-        return(True, '')   
+        return TestResult(True, '')   
     
 def Test3_BadSampleRate() : 
     """Tests if the Params8206HR object correctly raises an Exception when it recieves a bad 'sampleRate' integer argument. 
@@ -102,9 +87,9 @@ def Test3_BadSampleRate() :
                     lowPass = (400,400,400),
                     checkForValidParams = True
                 )
-        return (False, " - Params8206HR did not notice the invalid 'sampleRate' argument.")
+        return TestResult(False, "Params8206HR did not notice the invalid 'sampleRate' argument.")
     except Exception as e : 
-        return (True, '')
+        return TestResult(True, '')
     
     
 def Test4_BadPreamp() : 
@@ -124,9 +109,9 @@ def Test4_BadPreamp() :
                     lowPass = (400,400,400),
                     checkForValidParams = True
                 )
-        return (False, " - Params8206HR did not notice the invalid 'preamplifierGain' argument.")
+        return TestResult(False, "Params8206HR did not notice the invalid 'preamplifierGain' argument.")
     except Exception as e : 
-        return(True, '')   
+        return TestResult(True, '')   
     
 
 def Test5_BadLowPass() : 
@@ -145,6 +130,6 @@ def Test5_BadLowPass() :
                     lowPass = (0,9,600), # !
                     checkForValidParams = True
                 )
-        return (False, " - Params8206HR did not notice the invalid 'lowPass' argument.")
+        return TestResult(False, "Params8206HR did not notice the invalid 'lowPass' argument.")
     except Exception as e : 
-        return(True, '')   
+        return TestResult(True, '')   
