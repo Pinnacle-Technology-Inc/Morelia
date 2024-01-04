@@ -12,6 +12,36 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
+
+def RunAllTests(
+        testModules   : list, 
+        headerModule  : str = '', 
+        printThisTest : bool = False, 
+        printSubTests : bool = True
+    ) -> tuple[int,int] :
+    """Run all tests for a given API module.
+
+    Args:
+        testModules (list): List of test modules to call RunTests() on.
+        headerModule (str, optional): Text to print as the section header (i.e. 'PodApi.Parameters').
+        printThisTest (bool, optional): Prints a header and number of total tests passed when True. Defaults to False.
+        printSubTests (bool, optional): Prints a header and number of tests passed for each sub-test when True. Defaults to True.
+
+    Returns:
+        tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
+    """
+    # show header 
+    if(printThisTest) : print("==== "+str(headerModule)+" ====")
+    # list all tests
+    tests = [ x.RunTests(printSubTests) for x in testModules ]
+    # count totals
+    passed = sum([x[0] for x in tests])
+    total  = sum([x[1] for x in tests])
+    # show passed total 
+    if(printThisTest) : print("==== Passed "+str(passed)+" of "+str(total)+" ====")
+    # finish
+    return (passed, total)   
+
 def RunTests(tests: dict[str, Callable], headerTitle: str, headerWrap: str = '==', printTests: bool = True) -> tuple[int,int]: 
     """Run all tests on a given class.
 

@@ -1,6 +1,6 @@
 # local imports
 from Testing.T_PodApi.TestProtocol import RunningTests
-from Testing.T_PodApi import T_Parameters
+from Testing.T_PodApi import T_Commands
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -11,7 +11,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[int,int] :
-    """Run all tests for PodApi.Parameters
+    """Run all tests for PodApi.Commands
 
     Args:
         printThisTest (bool, optional): Prints a header and number of total tests passed when True. Defaults to False.
@@ -22,13 +22,9 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     """
     return RunningTests.RunAllTests(
         testModules   = [
-                T_Parameters.T_ParamsBasic,
-                T_Parameters.T_Params8206HR,
-                T_Parameters.T_Params8401HR,
-                T_Parameters.T_Params8229,
-                T_Parameters.T_Params8480SC,
+                T_Commands.T_PodCommands,
             ], 
-        headerModule  = 'PodApi.Parameters', 
+        headerModule  = 'PodApi.Commands', 
         printThisTest = printThisTest, 
         printSubTests = printSubTests
     )

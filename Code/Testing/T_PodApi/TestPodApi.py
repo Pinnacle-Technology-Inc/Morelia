@@ -1,5 +1,5 @@
 # enviornment imports
-from Testing.T_PodApi import T_Parameters, T_Commands
+from Testing import T_PodApi
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -10,5 +10,6 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests() : 
-    # T_Parameters.TestAllParams.RunTests(True, False)
-    T_Commands.T_PodCommands.RunTests()
+    T_PodApi.T_Parameters.TestAllParams  .RunTests( True, False )
+    T_PodApi.T_Commands.TestAllParams    .RunTests( True, False )
+
