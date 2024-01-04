@@ -2,9 +2,9 @@
 from PodApi.Parameters import Params
 
 # authorship
-__author__      = "Thresa Kelly"
-__maintainer__  = "Thresa Kelly"
-__credits__     = ["Sree Kondi", "Thresa Kelly", "Seth Gabbert"]
+__author__      = "Sree Kondi"
+__maintainer__  = "Sree Kondi"
+__credits__     = ["Sree Kondi","Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -16,12 +16,13 @@ class Params8274D(Params) :
         localScan = int,    
         #deviceList = int,  
         connectAdd = str,           
-        #connect = str,     
+       #channelScan = int,
         sampleRate =  int,   
         name = str,
         disconnect = str,  
         period = int, 
-        #stimulus    = tuple,           
+        # waveform = var,
+
         checkForValidParams: bool = True
         ) -> None:
         """Sets the member variables of each 8274D parameter. Checks if the arguments are \
@@ -39,7 +40,9 @@ class Params8274D(Params) :
         self.name:           int  =    str(name)
         self.disconnect:     int  =    str(disconnect)
         self.period:         int  =    int(period)
-        #self.stimulus:      int  =    int(stimulus)
+        #self.channelScan:    int  =    int(channelScan)
+        #self.waveform:      int  =    int(waveform)
+
         super().__init__(port,checkForValidParams)
 
 

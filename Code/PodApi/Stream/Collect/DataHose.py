@@ -5,7 +5,7 @@ import  numpy       as     np
 import  time
 
 # local imports
-from PodApi.Devices     import Pod8206HR, Pod8401HR
+from PodApi.Devices     import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets     import Packet, PacketStandard
 from PodApi.Stream.Collect import Valve
 
@@ -35,7 +35,7 @@ class Hose :
             the 'InsertValue' filter method. Defaults to np.nan.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set instance variables.
 
         Args:
@@ -62,7 +62,7 @@ class Hose :
 
         
     @staticmethod
-    def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
+    def GetSampleRate(podDevice: Pod8206HR|Pod8401HR|Pod8274D) -> int : 
         """Writes a command to the POD device to get its sample rate in Hz.
 
         Args:

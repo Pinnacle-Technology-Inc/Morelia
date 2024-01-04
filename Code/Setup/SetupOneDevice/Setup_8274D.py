@@ -10,6 +10,7 @@ from Setup.Inputs           import UserInput
 from PodApi.Packets         import PacketStandard
 from PodApi.Devices         import Pod8274D
 from PodApi.Parameters      import Params8274D
+from PodApi.Stream.Collect  import Bucket, DrainBucket
 
 # authorship
 __author__      = "Sree Kondi"
@@ -47,7 +48,6 @@ class Setup8274D(SetupInterface) :
         Returns:
             str: String of _NAME.
         """
-        print("8")
         return('8274D')
     
 
@@ -97,19 +97,15 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
+           # pod.WriteRead('STREAM', (1))
             pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+            #pod.WriteRead('GET SAMPLE RATE')
+            pod.WriteRead('SET PERIOD', deviceParams.period)
+            #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
             pod.WriteRead('GET NAME', deviceParams.name)
-            pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect)
-            ####testing
-            address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
-            #print("address", address)
-            pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
-            pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
-            #pod.WriteRead('SET PERIOD', deviceParams.period)
-            ###testing
-            #pod.WriteRead('SET STIMULUS', deviceParams.sampleRate)
-            #pod.WriteRead('GET MODEL NUMBER') #dont' think it needs a input
-            #pod.WriteRead('CONNECT', 1, deviceParams.connect)
+            #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect)
+
+
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
@@ -133,10 +129,10 @@ class Setup8274D(SetupInterface) :
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames),
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
-            #deviceList         =     UserInput.AskForIntInRange('\nSet a device Slot', 0, 1),
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
-            period            =     UserInput.AskForInput('\nSet Period ')
-            #stimulus          =     UserInput. 
+            period            =     UserInput.AskForInput('\nSet Period '),
+            #channelScan       =     UserInput.AskForIntInRange('\nChannel Scan', 0, 1),
+            #waveform         =     UserInput.AskForInput('\nSet Waveform ')
         ))
         
     def _GetPODdeviceParameterTable(self) -> Texttable :
@@ -190,75 +186,32 @@ class Setup8274D(SetupInterface) :
         f.write('\nTime (s),Command Number,Payload\n')
         return(f)
 
-    def StopStream(self) -> None: 
-        """Update the state flag to signal to stop streaming data.
-        """
-        self._streamMode = False
 
+#----------------------------------streaming---------------
+    
 
-    def _StreamThreading(self) -> dict[int,Thread] :
-        """Opens a save file, then creates a thread for each device to stream and write \
-        data from. 
+    def _StreamThreading(self) -> tuple[dict[int,Thread]] :
+        """Start streaming from each POD device and save each to a file.
 
         Returns:
-            dict[int,Thread]: Dictionary with keys as the device number and values as the \
-                started Thread.
+            tuple[dict[int,Thread]]: Tuple of two items, the first is for the bucket and the second is the drain. \
+                Each item is a dictionary with device number keys and started Thread items.
         """
-        print("###")
-        # set state 
-        self._streamMode = True
-        # create save files for pod devices
-        podFiles = {devNum: self._OpenSaveFile(f"file_{devNum}.txt") for devNum in self._podDevices.keys()}
-        # make threads for reading 
-        readThreads = {
-            # create thread to _StreamUntilStop() to dictionary entry devNum
-            devNum : Thread(
-                    target = self._StreamUntilStop, 
-                    args   = (pod, file))
-            # for each device 
-            for devNum,pod,file in 
-                zip(
-                    self._podParametersDict.keys(),     # devNum
-                    self._podDevices.values(),          # pod
-                    podFiles.values() )                 # file
-        }
-        for t in readThreads.values() : 
-            # start streaming (program will continue until .join() or streaming ends)
-            t.start()
-        return(readThreads)
+        # create objects to collect and save streaming data 
+        allBuckets : dict[int,Bucket]       = { devNum : Bucket(pod) for devNum,pod in self._podDevices.items() }
+        allDrains  : dict[int,DrainBucket]  = { devNum : DrainBucket(bkt, self._BuildFileName(devNum)) for devNum,bkt in allBuckets.items() }
+        # start collecting data and saving to file 
+        bucketThreads : dict[int,Thread] = { devNum : bkt.StartCollecting()   for devNum, bkt in allBuckets.items() } # thread started inside StartCollecting
+        drainThreads  : dict[int,Thread] = { devNum : drn.DrainBucketToFile() for devNum, drn in allDrains.items()  } # thread started inside DrainBucketToFile
+        # set class variable 
+        self._bucketAccess = allBuckets
+        # return started threads
+        return ( bucketThreads, drainThreads )
         
-
-    def _StreamUntilStop(self, pod: Pod8274D, file: IOBase) -> None :
-        """Saves a log of all packets recieved from the 8480 POD device until the user decides \
-        to stop streaming.
-
-        Args:
-            pod (POD_8480): POD device to read from. 
-            file (IOBase): Opened text file to save data to.
-        """
-        # initialize
-        currentTime : float = 0.0
-        t : float = (round(time.time(),9)) # initial time (sec)          
-        print("!!!")
-        # start waiting for data   
-        while(self._streamMode) : 
-            try : 
-                # attempt to read packet.         
-                read: PacketStandard = pod.ReadPODpacket(timeout_sec=1)
-                # update time by adding (dt = tf - ti)
-                currentTime += (round(time.time(),9)) - t 
-                # build line to write 
-                data = [str(currentTime), str(read.CommandNumber())]
-                if(read.HasPayload()) : data.append(str(read.Payload()))
-                else :                  data.append('None')
-                # write to file
-                file.write(','.join(data) + '\n')
-                # update initial time for next loop 
-                t = (round(time.time(),9)) # initial time (sec) 
-            except : 
-                continue # keep looping 
-            # end while 
-        # streaming done
-        file.close()
-
-    
+    def StopStream(self) -> None :
+        """Write a command to stop streaming data to all POD devices."""
+        # signal for each bucket to stop collecting data, which writes command to stop streaming to the POD device
+        for bkt in self._bucketAccess.values() : 
+            bkt.StopCollecting()
+        # clear class variable
+        self._bucketAccess = {}

@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Devices import Pod8206HR, Pod8401HR
+from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
 
 # authorship
@@ -20,14 +20,14 @@ class Valve :
             streamPldStop (int | bytes | tuple[int | bytes]): Payload to stop streaming data.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR ) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D ) -> None:
         """Set instance variables.
 
         Args:
             podDevice (Pod8206HR|Pod8401HR): 8206-HR or 8401-HR POD device to stream data from.
         """
         # set instance variables 
-        self.podDevice : Pod8206HR|Pod8401HR = podDevice
+        self.podDevice : Pod8206HR|Pod8401HR|Pod8274D = podDevice
         self.streamCmd : str|int = 'STREAM' 
         self.streamPldStart : int|bytes|tuple[int|bytes] = 1
         self.streamPldStop  : int|bytes|tuple[int|bytes] = 0

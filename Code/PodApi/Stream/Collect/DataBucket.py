@@ -5,7 +5,7 @@ from threading import Thread
 from queue import Queue
 
 # local imports
-from PodApi.Devices import Pod8206HR, Pod8401HR
+from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
 from PodApi.Stream.Collect import Hose
 
@@ -28,7 +28,7 @@ class Bucket :
         isCollecting (bool): True when collecting drops from the Hose, False otherwise.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set class instance variables.
 
         Args:

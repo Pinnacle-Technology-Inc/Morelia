@@ -93,9 +93,12 @@ class PacketStandard(Packet) :
             tuple|None: Translated payload, if available.
         """
         # check for payload 
-        if(not self.HasPayload()):   return None
-        if(self.HasCustomPayload()): return self._customPayload(*self._customPayloadArgs)
-        else:                        return self.DefaultPayload()
+        if(not self.HasPayload()):   
+            return None
+        if(self.HasCustomPayload()): 
+            return self._customPayload(*self._customPayloadArgs)
+        else:     
+            return self.DefaultPayload()
         
     def DefaultPayload(self) -> tuple[int] :
         """Splits the payload up into its components and translates the binary ASCII encoding \

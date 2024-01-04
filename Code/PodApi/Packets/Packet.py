@@ -281,6 +281,7 @@ class Packet :
         Returns:
             int: Integer result from the ASCII-encoded byte conversion.
         """
+        print("test0", msg_b) #, type(msg_b))
         # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
         msg_str = str(msg_b) [2 : len(str(msg_b))-1]
         # convert string into base 16 int (reads string as hex number, returns decimal int)

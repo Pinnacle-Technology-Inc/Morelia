@@ -3,9 +3,9 @@
 import os   
 
 # local imports
-from PodApi.Devices             import Pod8206HR, Pod8401HR
+from PodApi.Devices             import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Stream.Collect      import Bucket
-from PodApi.Stream.PodHandler   import DrainDeviceHandler, Drain8206HR, Drain8401HR
+from PodApi.Stream.PodHandler   import DrainDeviceHandler, Drain8206HR, Drain8401HR, Drain8274D
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -22,7 +22,7 @@ class DrainToFile : # interface class
         dataBucket (Bucket): Bucket to collect streaming data.
         fileName (str): Name (with optional file path) of the file to save data to.
         preampDevice (str | None): Optional preamplifier for the 8401-HR.
-        deviceHandler (Drain8206HR | Drain8401HR): Class to help handle different POD device types.
+        deviceHandler (Drain8206HR | Drain8401HR | Drain8274D): Class to help handle different POD device types.
     """
     
     def __init__(self, dataBucket: Bucket, fileName: str, preampDevice: str|None = None) -> None:
@@ -41,11 +41,11 @@ class DrainToFile : # interface class
         self.dataBucket     : Bucket    = dataBucket
         self.fileName       : str       = str(fileName)
         self.preampDevice   : str|None  = preampDevice
-        self.deviceHandler  : Drain8206HR|Drain8401HR = DrainToFile.GetHandlerForBucket(dataBucket,preampDevice)
+        self.deviceHandler  : Drain8206HR|Drain8401HR|Drain8274D = DrainToFile.GetHandlerForBucket(dataBucket,preampDevice)
         
         
     @staticmethod
-    def GetHandlerForBucket(bkt: Bucket, preampDevice:str|None=None) -> Drain8206HR|Drain8401HR: 
+    def GetHandlerForBucket(bkt: Bucket, preampDevice:str|None=None) -> Drain8206HR|Drain8401HR|Drain8274D: 
         """Selects the proper POD device handler for a given Bucket.
 
         Args:
@@ -61,6 +61,7 @@ class DrainToFile : # interface class
         # pick handler according to POD device type
         device = DrainDeviceHandler.GetPodFromBucket(bkt)
         if(   isinstance(device, Pod8206HR) ) : return Drain8206HR()
+        elif(   isinstance(device, Pod8274D) ) : return Drain8274D()
         elif( isinstance(device, Pod8401HR) ) : return Drain8401HR(preampDevice)
         else: raise Exception('[!] POD Device is not supported.')
 

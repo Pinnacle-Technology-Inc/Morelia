@@ -31,12 +31,14 @@ def Write(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = 
     data:  dict = write.TranslateAll()
     print('Write:\t', data)
 
+
 def Read(pod: Pod, cmd) : 
     """Reads and prints a packet from a POD device.
 
     Args:
         pod (POD_Basics): _description_
     """
+    print("cmd", cmd)
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
     print('Read:\t', data)
@@ -52,15 +54,13 @@ def Read(pod: Pod, cmd) :
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
         print('Read:\t', data)
-    if (cmd == 'GET STIMULUS'): 
-        read: Packet = pod.ReadPODpacket()
-        data: dict = read.TranslateAll()
-        print('Read:\t', data)
-   
-    
-    
-    
-    
+    if (cmd == 'STREAM'): 
+        while True:
+            read: Packet = pod.ReadPODpacket()
+            data: dict = read.TranslateAll()
+            print('Read:\t', data)
+
+
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
     """Writes and reads a packet from a POD device and prints the results.
 

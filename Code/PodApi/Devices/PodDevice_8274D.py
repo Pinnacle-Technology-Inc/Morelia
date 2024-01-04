@@ -33,9 +33,6 @@ class Pod8274D(Pod) :
         U16 = Pod.GetU(16)
         U32 = Pod.GetU(32)
         NOVALUE = Pod.GetU(0)
-        # remove unimplemented commands 
-        self._commands.RemoveCommand( 4) # ERROR
-        self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
         self._commands.AddCommand(100, 'LOCAL SCAN',                (U8,),       (U16,),              False, 'Enables or disables scan.  1 enables, 0 disables.  Returns SL_STATUS_T status code, 0x0000 is success, all others are error codes.')
         self._commands.AddCommand(101, 'DEVICE LIST INFO',          (U8,),       tuple([U8]*24),      False, 'Information string about a scanned device - includes advertising index, bluetooth address, and device name.')

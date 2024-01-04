@@ -3,7 +3,7 @@ import pandas as pd
 import numpy  as np
 
 # local imports
-from PodApi.Devices import Pod8206HR, Pod8401HR
+from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
 from PodApi.Stream.Collect  import Bucket
 
@@ -20,7 +20,7 @@ class DrainDeviceHandler() : # interface class
     """
     
     @staticmethod
-    def GetPodFromBucket(bkt: Bucket) -> Pod8206HR | Pod8401HR: 
+    def GetPodFromBucket(bkt: Bucket) -> Pod8206HR | Pod8401HR | Pod8274D: 
         """Gets the POD device contained in the Bucket.
 
         Args:

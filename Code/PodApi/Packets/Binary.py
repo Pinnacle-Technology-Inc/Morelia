@@ -36,9 +36,9 @@ class PacketBinary(Packet) :
                 Defaults to None.
         """       
         super().__init__(pkt, commands)
-        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt),
+        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt)
         self.binaryData:    bytes = PacketBinary.GetBinaryData(pkt)
-       
+               
     # ----- Packet to dictionary -----
  
     def UnpackAll(self) -> dict[str, bytes]:

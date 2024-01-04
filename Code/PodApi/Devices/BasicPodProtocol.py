@@ -334,15 +334,29 @@ class Pod :
             Packet: POD packet beginning with STX and ending with ETX. This may \
                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
+        print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum)
-        print(cmd)
-        if cmd == 'LOCAL SCAN':
+        if cmd == 'LOCAL SCAN': 
             x = self.ReadPODpacket(validateChecksum)
             data: dict = x.TranslateAll()
-            #print("***", data['Payload'][1:7])
+            print("***", data['Payload'][1:7]) # handling payload to give to 'connect address'
             return(data['Payload'][1:7])
-        if cmd == 'SET SAMPLE RATE':
+        if cmd == 'CONNECT BY ADDRESS': #you can't have it re-reading the Device for 8206
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("***", data)
+        if cmd == 'GET NAME': 
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("DATA", data)
+            print("***", data['Payload'][1:7])
+            return(data['Payload'][1:7])
+        if cmd == 'SET SAMPLE RATE': #you can't have it re-reading the Device for 8206
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("***", data)
+        if cmd == 'GET SAMPLE RATE': #you can't have it re-reading the Device for 8206
             x = self.ReadPODpacket(validateChecksum)
             data: dict = x.TranslateAll()
             print("***", data)
@@ -350,6 +364,18 @@ class Pod :
             x = self.ReadPODpacket(validateChecksum)
             data: dict = x.TranslateAll()
             print("***", data)
+        if cmd == 'CHANNEL SCAN':
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("Read: ", data)
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("Read: ", data)
+        if (cmd == 'STREAM'): 
+            while True:
+                x = self.ReadPODpacket(validateChecksum)
+                data: dict = x.TranslateAll()
+                print("***", data)
         return(r)
 
 
@@ -523,8 +549,6 @@ class Pod :
         """
         # read until ETX 
         packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
-        print("Pre", prePacket)
-        print("POST", packet, '\n')
         # check for valid  
         if(validateChecksum) :
             if( not self._ValidateChecksum(packet) ) :
@@ -558,7 +582,7 @@ class Pod :
         # read standard POD packet 
         startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
-        numOfbinaryBytes: int = Packet.AsciiBytesToInt(startPacket.Payload())
+        numOfbinaryBytes: int = startPacket.Payload() [0]
         # read binary packet
         binaryMsg = self._port.Read(numOfbinaryBytes)
         # read csm and etx
