@@ -177,10 +177,10 @@ class Packet :
 
     @staticmethod
     def TwosComplement(val: int, nbits: int) -> int :
-        """Gets the 2's complement of the argument value.
+        """Gets the 2's complement of the argument value (negative int).
 
         Args:
-            val (int): Value to be complemented.
+            val (int): Negative value to be complemented.
             nbits (int): Number of bits in the value.
 
         Returns:
