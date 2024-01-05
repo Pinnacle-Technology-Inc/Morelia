@@ -11,6 +11,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
+# ---------------------------------------------------------------------------------------------------------
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
     """Run all tests on PodApi.Packets.Packet
 
@@ -38,8 +39,14 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "14. Binary split:\t" : BinarySplit,
     }
     return RunningTests.RunTests(tests, 'Packet', printTests=printTests)
+# ---------------------------------------------------------------------------------------------------------
 
 def MatchInit() -> TestResult : 
+    """Check to see if the Packet object correctly stores values in its class instance variables. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # store expected 
     cmd = bytes(b'000C')
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
@@ -54,6 +61,11 @@ def MatchInit() -> TestResult :
         return TestResult(True)
     
 def Unpack() -> TestResult : 
+    """Check to see if the class can unpack the command number from a raw bytes packet.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # store expected 
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     expected = { 'Command Number' : bytes(b'000C') }
@@ -65,6 +77,11 @@ def Unpack() -> TestResult :
         return TestResult(True)
     
 def Trans() -> TestResult : 
+    """Check to see if the class can translate the command number from a raw bytes packet.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # store expected 
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     expected = { 'Command Number' : 12 }
@@ -77,6 +94,11 @@ def Trans() -> TestResult :
         return TestResult(True)
     
 def Command() -> TestResult : 
+    """Check to see if the class can extract the command number. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # store expected 
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     expected = 12
@@ -89,6 +111,11 @@ def Command() -> TestResult :
         return TestResult(True)
         
 def GetCmd() -> TestResult : 
+    """Check to see if the static class can get the command number from a bytes packet. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # store expected 
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     # get command 
@@ -98,6 +125,11 @@ def GetCmd() -> TestResult :
         return TestResult(True)
     
 def ValidPkt() -> TestResult :
+    """Check to see if the class can correctly determine if a bytes packet is correctly formatted.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # good packet
     try : 
         Packet.CheckIfPacketIsValid( bytes(b'\x02000C01000003A8\x03') )             
@@ -117,6 +149,11 @@ def ValidPkt() -> TestResult :
     return TestResult(True)
     
 def HasCommands() -> TestResult :
+    """Check to see if a class can store an optional CommandSet.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     # make Packets with and without commands 
     pktYes = Packet(raw, CommandSet())
@@ -130,6 +167,11 @@ def HasCommands() -> TestResult :
         return TestResult(True)
     
 def HasCmdNum() -> TestResult : 
+    """Check to see if the class stores a command number from a packet when it has one. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # make Packets with and without commands 
     pktYes = Packet(bytes(b'\x02000C01000003A8\x03'))
     pktNo = Packet(bytes(b'\x020C\x03'))
@@ -142,6 +184,11 @@ def HasCmdNum() -> TestResult :
         return TestResult(True)
     
 def TwosC() -> TestResult : 
+    """Calculate the twos complement of a negative integer.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # start  -> 101 = uint 5
     # invert -> 010
     # add 1  -> 011 = uint 3
@@ -150,6 +197,11 @@ def TwosC() -> TestResult :
     return TestResult(True)
     
 def IntAscii() -> TestResult : 
+    """Convert an integer into ASCII encoded bytes. 
+
+    Returns:
+        TestResult: _description_
+    """
     #             255   -- dec
     #           F   F   -- hex char
     #         x46 x46   -- ASCII code for 'F' (use table ie. https://www.asciitable.com/ )
@@ -160,6 +212,11 @@ def IntAscii() -> TestResult :
     return TestResult(True)    
     
 def AsciiInt() -> TestResult :
+    """Decode ASCII encoded bytes into an integer.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     #         b'00FF'   -- bytes
     # x30 x30 x46 x46   -- to ASCII code
     #   0   0   F   F   -- to hex character
@@ -169,6 +226,11 @@ def AsciiInt() -> TestResult :
     return TestResult(True)
 
 def BinaryInt() -> TestResult : 
+    """Convert a binary encoded bytes string into an integer. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # bytes -> 1
     # to ASCII code -> 49 dec
     if(49 != Packet.BinaryBytesToInt(b'1')) : 
@@ -176,6 +238,11 @@ def BinaryInt() -> TestResult :
     return TestResult(True)
     
 def AsciiSplit() -> TestResult :
+    """Get the ASCII bytes for certaian range of bits. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     #   b'EF' -> 1110 1111
     #   1110 1111
     # & 0001 1111 == keep 5 bits
@@ -187,6 +254,11 @@ def AsciiSplit() -> TestResult :
     return TestResult(True)
 
 def BinarySplit() -> TestResult : 
+    """Get the binary bytes for certaian range of bits.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # b'1' --> to ASCII code x31 --> 00110001
     #   0011 0001
     #   0001 1111 == keep 5 bits

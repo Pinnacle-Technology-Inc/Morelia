@@ -10,7 +10,10 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests() : 
-    # T_PodApi.T_Parameters.TestAll .RunTests( True, False )
-    # T_PodApi.T_Commands.TestAll   .RunTests( True, False )
+    T_PodApi.T_Parameters.TestAll .RunTests( True, True )
+    T_PodApi.T_Commands.TestAll   .RunTests( True, True )
     T_PodApi.T_Packets.TestAll    .RunTests( True, True )
 
+#  TODO
+#  add comments to T_Packets
+#  print total of the RunTests here
