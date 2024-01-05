@@ -25,7 +25,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "1. Match Init:\t\t"        : MatchInit,
         "2. Unpack:\t\t"            : Unpack,
         "3. Translate:\t\t"         : Trans,
-        "4. Static packeds:\t"      : Stat,
+        "4. Static packets:\t"      : Stat,
         "5. TTL bytes:\t\t"         : TtlBytes,
         "6. Voltage:\t\t"           : Voltage,
     }
