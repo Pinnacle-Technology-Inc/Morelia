@@ -2,7 +2,7 @@
 from typing import Callable
 
 # local imports
-from Testing.T_PodApi.TestProtocol import TestResult
+from Testing.T_PodApi.TestProtocol.TestResult import TestResult
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -30,10 +30,11 @@ def RunAllTests(
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
+    print(3)
     # show header 
     if(printThisTest) : print("==== "+str(headerModule)+" ====")
     # list all tests
-    tests = [ x.RunTests(printSubTests) for x in testModules ]
+    tests = [ mod.RunTests(printSubTests) for mod in testModules ]
     # count totals
     passed = sum([x[0] for x in tests])
     total  = sum([x[1] for x in tests])
@@ -63,8 +64,8 @@ def RunTests(tests: dict[str, Callable], headerTitle: str, headerWrap: str = '==
         print(str(headerWrap)+" Passed "+str(passed)+" of "+str(total)+" "+str(headerWrap))
     return (passed, total)  
 
-def _ErrorWrap(function) : 
-    try : 
-        return (function())
+def _ErrorWrap(function) -> TestResult : 
+    try :
+        return function()
     except Exception as e :
-        return (False, "Unexpected Exception: "+str(e))
+        return TestResult(False, "Unexpected Exception: "+str(e))
