@@ -34,6 +34,11 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
 # ---------------------------------------------------------------------------------------------------------
 
 def MatchInit() -> TestResult : 
+    """Check to see if the PacketStandard object correctly stores values in its class instance variables. 
+
+    Returns:
+        TestResult: Result of the test.
+    """
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     # make Packet 
     pkt = PacketStandard(raw, CommandSet())
@@ -44,7 +49,7 @@ def MatchInit() -> TestResult :
     return TestResult(True)
 
 def Unpack() -> TestResult : 
-    """Check to see if the class can unpack the command number from a raw bytes packet.
+    """Check to see if the class can unpack the raw bytes packet.
 
     Returns:
         TestResult: Result of the test.
@@ -58,7 +63,7 @@ def Unpack() -> TestResult :
     return TestResult(True)
     
 def Trans() -> TestResult : 
-    """Check to see if the class can translate the command number from a raw bytes packet.
+    """Check to see if the class can translate the raw bytes packet.
 
     Returns:
         TestResult: Result of the test.
