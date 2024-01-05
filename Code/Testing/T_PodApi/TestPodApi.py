@@ -9,7 +9,18 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-def RunTests() : 
-    T_PodApi.T_Parameters.TestAllParams  .RunTests( True, False )
-    T_PodApi.T_Commands.TestAllParams    .RunTests( True, False )
-
+def RunTests(printThisTest = True) -> tuple[int,int]: 
+    if(printThisTest) : print("====== PodApi ======")
+    # run all tests 
+    tests : list[tuple[int,int]] = [
+        T_PodApi.T_Parameters.TestAll .RunTests( True, True ),
+        T_PodApi.T_Commands.TestAll   .RunTests( True, True ),
+        T_PodApi.T_Packets.TestAll    .RunTests( True, True ),
+    ]
+    # count totals
+    passed = sum([x[0] for x in tests])
+    total  = sum([x[1] for x in tests])
+    # show passed total 
+    if(printThisTest) : print("====== Passed "+str(passed)+" of "+str(total)+" ======")
+    # finish
+    return (passed, total)   
