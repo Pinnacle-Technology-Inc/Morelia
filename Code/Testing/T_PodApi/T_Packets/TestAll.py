@@ -22,10 +22,10 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     """
     return RunningTests.RunAllTests(
         testModules   = [
-            # T_Packets.T_Packet,
-            # T_Packets.T_Standard,
-            # T_Packets.T_Binary,
-            # T_Packets.T_Binary4,
+            T_Packets.T_Packet,
+            T_Packets.T_Standard,
+            T_Packets.T_Binary,
+            T_Packets.T_Binary4,
             T_Packets.T_Binary5,
         ], 
         headerModule  = 'PodApi.Packets', 

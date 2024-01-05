@@ -30,7 +30,6 @@ def RunAllTests(
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
-    print(3)
     # show header 
     if(printThisTest) : print("==== "+str(headerModule)+" ====")
     # list all tests
