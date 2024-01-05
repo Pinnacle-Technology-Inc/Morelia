@@ -3,6 +3,7 @@ from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 from PodApi.Packets import PacketStandard
 from PodApi.Commands import CommandSet
 from PodApi.Devices import Pod8206HR
+
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -11,10 +12,9 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-
 # ---------------------------------------------------------------------------------------------------------
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Packets.Packet
+    """Run all tests on PodApi.Packets.PacketStandard
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
@@ -30,7 +30,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "4. Default payload:\t" : DefaultPld,
         "5. Custom payload:\t"  : CustomPld,
     }
-    return RunningTests.RunTests(tests, 'Packet', printTests=printTests)
+    return RunningTests.RunTests(tests, 'PacketStandard', printTests=printTests)
 # ---------------------------------------------------------------------------------------------------------
 
 def MatchInit() -> TestResult : 
@@ -42,7 +42,6 @@ def MatchInit() -> TestResult :
     if(bytes(b'000C') != pkt.commandNumber) :   return TestResult(False, "PacketStandard has incorrect command number.")
     if(bytes(b'01000003') != pkt.payload) :     return TestResult(False, "PacketStandard has incorrect packet.")
     return TestResult(True)
-    
 
 def Unpack() -> TestResult : 
     """Check to see if the class can unpack the command number from a raw bytes packet.
@@ -74,6 +73,11 @@ def Trans() -> TestResult :
     return TestResult(True)
     
 def DefaultPld() -> TestResult :
+    """Check to see if the PacketStandard can handle and interpret packets with and without payloads.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # bytes packets
     rayNoP = bytes(b'\x0200023D\x03') # STX \x02, COMMAND 0002, CSM 3D, ETX \x03
     rawPld = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
@@ -87,6 +91,11 @@ def DefaultPld() -> TestResult :
     return TestResult(True)
     
 def CustomPld() -> TestResult : 
+    """Check to see if the PacketStandard can handle and interpret packets with and without custom payloads.
+
+    Returns:
+        TestResult: Result of the test.
+    """
     # define custom payload function 
     def ExCustomPld(ttlByte: bytes) -> dict[str,int] : return Pod8206HR._TranslateTTLbyte_ASCII(ttlByte) 
     # expected packet
