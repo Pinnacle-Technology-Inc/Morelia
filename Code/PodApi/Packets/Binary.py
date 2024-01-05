@@ -36,7 +36,7 @@ class PacketBinary(Packet) :
                 Defaults to None.
         """       
         super().__init__(pkt, commands)
-        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt),
+        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt)
         self.binaryData:    bytes = PacketBinary.GetBinaryData(pkt)
        
     # ----- Packet to dictionary -----
@@ -90,6 +90,7 @@ class PacketBinary(Packet) :
         """
         return pkt[5:9] # 4 bytes after command number
     
+    @staticmethod
     def GetBinaryData(pkt: bytes) -> bytes : 
         """Gets the binary data from a POD packet.
 
@@ -105,8 +106,7 @@ class PacketBinary(Packet) :
 
     @staticmethod
     def GetMinimumLength() -> int : 
-        """Gets the number of bytes in the smallest possible packet; \
-        STX (1 byte) + something + ETX (1 byte). 
+        """Gets the number of bytes in the smallest possible packet.
 
         Returns:
             int: integer representing the minimum length of a binary POD \
