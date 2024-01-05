@@ -2,7 +2,7 @@
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 from PodApi.Packets import PacketStandard
 from PodApi.Commands import CommandSet
-
+from PodApi.Devices import Pod8206HR
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -27,6 +27,8 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "1. Match Init:\t\t"    : MatchInit,
         "2. Unpack:\t\t"        : Unpack,
         "3. Translate:\t\t"     : Trans,
+        "4. Default payload:\t" : DefaultPld,
+        "5. Custom payload:\t"  : CustomPld,
     }
     return RunningTests.RunTests(tests, 'Packet', printTests=printTests)
 # ---------------------------------------------------------------------------------------------------------
@@ -36,14 +38,10 @@ def MatchInit() -> TestResult :
     # make Packet 
     pkt = PacketStandard(raw, CommandSet())
     # check if in matches out 
-    if(raw != pkt.rawPacket) : 
-        return TestResult(False, "PacketStandard does not contain correct raw bytes packet.")
-    elif(bytes(b'000C') != pkt.commandNumber) : 
-        return TestResult(False, "PacketStandard has incorrect command number.")
-    elif(bytes(b'01000003') != pkt.payload):
-        return TestResult(False, "PacketStandard has incorrect packet.")
-    else:
-        return TestResult(True)
+    if(raw != pkt.rawPacket) :                  return TestResult(False, "PacketStandard does not contain correct raw bytes packet.")
+    if(bytes(b'000C') != pkt.commandNumber) :   return TestResult(False, "PacketStandard has incorrect command number.")
+    if(bytes(b'01000003') != pkt.payload) :     return TestResult(False, "PacketStandard has incorrect packet.")
+    return TestResult(True)
     
 
 def Unpack() -> TestResult : 
@@ -57,10 +55,8 @@ def Unpack() -> TestResult :
     expected = { 'Command Number' : bytes(b'000C'), 'Payload' : bytes(b'01000003') }
     # make Packet 
     pkt = PacketStandard(raw, CommandSet())
-    if(expected != pkt.UnpackAll() ) : 
-        return TestResult(False, "Could not unpack the Packet.")
-    else : 
-        return TestResult(True)
+    if(expected != pkt.UnpackAll() ) : return TestResult(False, "Could not unpack the Packet.")
+    return TestResult(True)
     
 def Trans() -> TestResult : 
     """Check to see if the class can translate the command number from a raw bytes packet.
@@ -72,11 +68,34 @@ def Trans() -> TestResult :
     raw = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
     expected = { 'Command Number' : 12, 'Payload': (1, 0, 3) }
     # make Packet 
-    # pkt = PacketStandard(raw, CommandSet())
-    pkt = PacketStandard(raw)
+    pkt = PacketStandard(raw, CommandSet())
     # check 
-    if(expected != pkt.TranslateAll() ) : 
-        print(pkt.TranslateAll())
-        return TestResult(False, "Could not translate the Packet.")
-    else : 
-        return TestResult(True)
+    if(expected != pkt.TranslateAll() ) : return TestResult(False, "Could not translate the Packet.")
+    return TestResult(True)
+    
+def DefaultPld() -> TestResult :
+    # bytes packets
+    rayNoP = bytes(b'\x0200023D\x03') # STX \x02, COMMAND 0002, CSM 3D, ETX \x03
+    rawPld = bytes(b'\x02000C01000003A8\x03') # STX \x02, COMMAND 000C, PAYLOAD 01000003, CSM A8, ETX \x03
+    # make Packet 
+    pktNoP = PacketStandard(rayNoP, CommandSet())
+    pktPld = PacketStandard(rawPld, CommandSet())
+    # test
+    if(pktNoP.payload != None) :            return TestResult(False, "Packet without payload stores a value as a payload.")
+    if(pktPld.payload != b'01000003') :     return TestResult(False, "Packet with payload does not store a value as a payload.")
+    if(pktPld.Payload() != (1, 0, 3) ) :    return TestResult(False, "Could not translate the given payload.")
+    return TestResult(True)
+    
+def CustomPld() -> TestResult : 
+    # define custom payload function 
+    def ExCustomPld(ttlByte: bytes) -> dict[str,int] : return Pod8206HR._TranslateTTLbyte_ASCII(ttlByte) 
+    # expected packet
+    raw = b'\x02006AF0B2\x03'
+    pld = {'TTL1': 1, 'TTL2': 1, 'TTL3': 1, 'TTL4': 1}
+    # make packet and set custom payload
+    pkt = PacketStandard(raw, CommandSet())
+    pkt.SetCustomPayload(ExCustomPld, (pkt.payload,))   
+    # test
+    if(not pkt.HasCustomPayload()) :    return TestResult(False, "Could not recognize it was given a custom payload function.")
+    if(pld != pkt.Payload()) :          return TestResult(False, "Could not translate the custom payload.")
+    return TestResult(True)
