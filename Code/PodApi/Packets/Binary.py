@@ -100,6 +100,24 @@ class PacketBinary(Packet) :
             bytes: Bytes string containg binary data.
         """
         return pkt[12:(len(pkt)-3)] # bytes after 1st ETX
+    
+
+    def ret(self, n: int) -> float :
+        """Translates the binary channel n bytes into a voltage.
+
+        Args:
+            n (int): Channel number. Should be 0, 1, or 2.
+
+        Raises:
+            Exception: Channel does not exist.
+
+        Returns:
+            float: Voltage of channel n in Volts.
+        """
+        match n :
+            case 0 : len = self.binaryLength
+            case 1 : data = self.binaryData
+            case _ : raise Exception('Channel '+str(n)+' does not exist.')
                 
     # ----- Properties -----
 

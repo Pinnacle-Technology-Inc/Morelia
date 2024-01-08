@@ -554,6 +554,7 @@ class Pod :
             if( not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for standard POD packet read.')
         # return packet
+        print("POSTREAD", packet)
         return PacketStandard(packet, self._commands)
 
 

@@ -293,6 +293,7 @@ class Packet :
             if(msb != 0) : 
                 msg_int = Packet.TwosComplement(msg_int,nbits)
         # return int
+        print("testint", msg_int) #, type(msg_b))
         return(msg_int)
     
 

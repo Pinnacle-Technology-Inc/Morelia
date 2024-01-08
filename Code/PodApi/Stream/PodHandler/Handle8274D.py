@@ -4,7 +4,7 @@ import numpy  as np
 
 # local imports
 from PodApi.Devices import Pod8401HR
-from PodApi.Packets import Packet, PacketBinary4
+from PodApi.Packets import Packet, PacketBinary
 from PodApi.Stream.PodHandler import DrainDeviceHandler
 
 # authorship
@@ -41,4 +41,44 @@ class Drain8274D(DrainDeviceHandler) :
         """
         if(includeTime) : return ['Time','Length','Data']
         return ['Length','Data']
+        
+    
+    def DropToDf(self, timestamps: list[float], data: list[Packet | None]) -> pd.DataFrame : 
+        """Converts the timestamps and data into a Pandas DataFrame. The columns should \
+        match GetDeviceColNames().
+
+        Args:
+            timestamps (list[float]): List of timestamps in seconds for each data packet.
+            data (list[Packet | None]): List of streaming binary data packets. 
+
+        Returns:
+            pd.DataFrame: DataFrame containing the timestamps and packet data.
+        """
+        print("HELLO")
+        return pd.DataFrame({
+            'Time' : timestamps,
+            'LengthBytes'  : [ pt.ret(0) if (isinstance(pt, PacketBinary)) else pt for pt in data],
+            'Data'  : [ pt.ret(1) if (isinstance(pt, PacketBinary)) else pt for pt in data]
+        })
+        
+    def DropToListOfArrays(self, data: list[Packet|float]) -> list[np.array] : 
+        """Unpacks the data Packets into a list of np.arrays formatted to write to an EDF file.
+
+        Args:
+            data (list[Packet | float]): List of streaming binary data packets. 
+
+        Returns:
+            list[np.array]: List of np.arrays for each Packet part.
+        """
+        # unpack binary Packet
+        dlist_list : list[list[float]] = [
+            [ (pt.ret(0)) if (isinstance(pt, PacketBinary)) else pt for pt in data],
+            [ (pt.ret(1)) if (isinstance(pt, PacketBinary)) else pt for pt in data]
+        ]
+        # convert to np arrays
+        dlist_arr = []
+        for l in dlist_list : 
+            dlist_arr.append( np.array(l) )
+        # finish
+        return dlist_arr
         

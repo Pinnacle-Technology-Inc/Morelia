@@ -69,6 +69,6 @@ hf.RunCommand(pod, 'STREAM', (0,))
 # hf.RunCommand(pod, 'CHANNEL SCAN', (1)) 
 
 
-print('~~DISCONNECT ~~')
-hf.RunCommand(pod, 'DISCONNECT ALL', ()) 
+# print('~~DISCONNECT ~~')
+# hf.RunCommand(pod, 'DISCONNECT ALL', ()) 
 
