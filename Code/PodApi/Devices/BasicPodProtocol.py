@@ -319,7 +319,6 @@ class Pod :
         print("....", packet)
         return(packet)
     
-
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
@@ -334,48 +333,8 @@ class Pod :
             Packet: POD packet beginning with STX and ending with ETX. This may \
                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
-        print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum)
-        if cmd == 'LOCAL SCAN': 
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("***", data['Payload'][1:7]) # handling payload to give to 'connect address'
-            return(data['Payload'][1:7])
-        if cmd == 'CONNECT BY ADDRESS': #you can't have it re-reading the Device for 8206
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("***", data)
-        if cmd == 'GET NAME': 
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("DATA", data)
-            print("***", data['Payload'][1:7])
-            return(data['Payload'][1:7])
-        if cmd == 'SET SAMPLE RATE': #you can't have it re-reading the Device for 8206
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("***", data)
-        if cmd == 'GET SAMPLE RATE': #you can't have it re-reading the Device for 8206
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("***", data)
-        if cmd == 'DISCONNECT ALL':
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("***", data)
-        if cmd == 'CHANNEL SCAN':
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("Read: ", data)
-            x = self.ReadPODpacket(validateChecksum)
-            data: dict = x.TranslateAll()
-            print("Read: ", data)
-        if (cmd == 'STREAM'): 
-            while True:
-                x = self.ReadPODpacket(validateChecksum)
-                data: dict = x.TranslateAll()
-                print("***", data)
         return(r)
 
 

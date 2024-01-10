@@ -97,13 +97,13 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
-           # pod.WriteRead('STREAM', (1))
             pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             #pod.WriteRead('GET SAMPLE RATE')
             pod.WriteRead('SET PERIOD', deviceParams.period)
             #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
             pod.WriteRead('GET NAME', deviceParams.name)
-            #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect)
+            # pod.WriteRead('STREAM', (1)) -- looks like streaming is working
+            #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
 
 
             # successful write if no exceptions raised 

@@ -42,15 +42,18 @@ pod = Pod8274D(port)
 print('~~ CONNECT BY ADDRESS ~~')
 hf.RunCommand(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
 
-print('~~ STREAM ~~')
-hf.RunCommand(pod, 'STREAM', (1,)) 
-hf.RunCommand(pod, 'STREAM', (0,)) 
+print('~~ GET NAME ~~')
+hf.RunCommand(pod, 'GET NAME', ()) 
 
-# print('~~ SET SAMPLE RATE ~~')
-# hf.RunCommand(pod, 'SET SAMPLE RATE', (2)) 
+# print('~~ STREAM ~~')
+# hf.RunCommand(pod, 'STREAM', (1,)) 
+# hf.RunCommand(pod, 'STREAM', (0,)) 
 
-# print('~~ GET SAMPLE RATE ~~')
-# hf.RunCommand(pod, 'GET SAMPLE RATE', ()) 
+print('~~ SET SAMPLE RATE ~~')
+hf.RunCommand(pod, 'SET SAMPLE RATE', (2)) 
+
+print('~~ GET SAMPLE RATE ~~')
+hf.RunCommand(pod, 'GET SAMPLE RATE', ()) 
 
 # print('~~ SET PERIOD ~~')
 # hf.RunCommand(pod, 'SET PERIOD', (3)) 

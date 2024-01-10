@@ -39,7 +39,8 @@ class Drain8274D(DrainDeviceHandler) :
         Returns:
             list[str]: List of columns.
         """
-        if(includeTime) : return ['Time','Length','Data']
+        print("TEST")
+        if(includeTime) : return ['Time', 'LengthBytes', 'Data']
         return ['Length','Data']
         
     
