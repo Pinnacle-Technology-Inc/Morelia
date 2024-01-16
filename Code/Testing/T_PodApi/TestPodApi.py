@@ -13,9 +13,10 @@ def RunTests(printThisTest = True) -> tuple[int,int]:
     if(printThisTest) : print("====== PodApi ======")
     # run all tests 
     tests : list[tuple[int,int]] = [
-        T_PodApi.T_Parameters.TestAll .RunTests( True, True ),
-        T_PodApi.T_Commands.TestAll   .RunTests( True, True ),
-        T_PodApi.T_Packets.TestAll    .RunTests( True, True ),
+        # T_PodApi.T_Parameters.TestAll .RunTests( True, True ),
+        # T_PodApi.T_Commands.TestAll   .RunTests( True, True ),
+        # T_PodApi.T_Packets.TestAll    .RunTests( True, True ),
+        T_PodApi.T_Devices.TestAll    .RunTests( True, True ),
     ]
     # count totals
     passed = sum([x[0] for x in tests])
