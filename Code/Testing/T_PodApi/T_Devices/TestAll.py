@@ -22,7 +22,7 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     """
     return RunningTests.RunAllTests(
         testModules   = [
-            T_Devices.T_PodDevice_8206HR,
+            T_Devices.T_PodDevice_8206HR.T_Pod8206HR('COM9 - USB Serial Port (COM9)'),
         ], 
         headerModule  = 'PodApi.Devices', 
         printThisTest = printThisTest, 
