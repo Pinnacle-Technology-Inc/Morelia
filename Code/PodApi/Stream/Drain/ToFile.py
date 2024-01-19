@@ -61,7 +61,7 @@ class DrainToFile : # interface class
         # pick handler according to POD device type
         device = DrainDeviceHandler.GetPodFromBucket(bkt)
         if(   isinstance(device, Pod8206HR) ) : return Drain8206HR()
-        elif(   isinstance(device, Pod8274D) ) : return Drain8274D()
+        elif( isinstance(device, Pod8274D) )  : return Drain8274D()
         elif( isinstance(device, Pod8401HR) ) : return Drain8401HR(preampDevice)
         else: raise Exception('[!] POD Device is not supported.')
 

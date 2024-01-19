@@ -39,7 +39,6 @@ class Drain8274D(DrainDeviceHandler) :
         Returns:
             list[str]: List of columns.
         """
-        print("TEST")
         if(includeTime) : return ['Time', 'LengthBytes', 'Data']
         return ['Length','Data']
         
@@ -55,7 +54,6 @@ class Drain8274D(DrainDeviceHandler) :
         Returns:
             pd.DataFrame: DataFrame containing the timestamps and packet data.
         """
-        print("HELLO")
         return pd.DataFrame({
             'Time' : timestamps,
             'LengthBytes'  : [ pt.ret(0) if (isinstance(pt, PacketBinary)) else pt for pt in data],

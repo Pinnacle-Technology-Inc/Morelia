@@ -45,15 +45,18 @@ hf.RunCommand(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150))
 print('~~ GET NAME ~~')
 hf.RunCommand(pod, 'GET NAME', ()) 
 
-# print('~~ STREAM ~~')
-# hf.RunCommand(pod, 'STREAM', (1,)) 
-# hf.RunCommand(pod, 'STREAM', (0,)) 
-
-print('~~ SET SAMPLE RATE ~~')
-hf.RunCommand(pod, 'SET SAMPLE RATE', (2)) 
-
 print('~~ GET SAMPLE RATE ~~')
 hf.RunCommand(pod, 'GET SAMPLE RATE', ()) 
+
+print('~~ STREAM ~~')
+hf.RunCommand(pod, 'STREAM', (1,)) 
+hf.RunCommand(pod, 'STREAM', (0,)) 
+
+# print('~~ SET SAMPLE RATE ~~')
+# hf.RunCommand(pod, 'SET SAMPLE RATE', (2)) 
+
+# print('~~ GET SAMPLE RATE ~~')
+# hf.RunCommand(pod, 'GET SAMPLE RATE', ()) 
 
 # print('~~ SET PERIOD ~~')
 # hf.RunCommand(pod, 'SET PERIOD', (3)) 

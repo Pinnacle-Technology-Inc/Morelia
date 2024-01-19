@@ -50,10 +50,10 @@ def Read(pod: Pod, cmd) :
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
         print('Read:\t', data)
-    # if (cmd == 'GET SAMPLE RATE'):
-    #     read: Packet = pod.ReadPODpacket()
-    #     data: dict = read.TranslateAll()
-    #     print('Read:\t', data)
+    if (cmd == 'GET SAMPLE RATE'):
+        read: Packet = pod.ReadPODpacket()
+        data: dict = read.TranslateAll()
+        print('Read:\t', data)
     if (cmd == 'GET PERIOD'): 
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()

@@ -84,11 +84,24 @@ class Hose :
         # If there is a new device that uses a different command, add a method 
         # to check what type the device is (i.e isinstance(podDevice, PodClass)) 
         # and set the self.stream* instance variables accordingly.
-        podDevice._commands.ValidateCommand('GET SAMPLE RATE')
-        if(not podDevice.TestConnection()) : 
-            raise Exception('[!] Could not connect to this POD device.')
-        pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
-        return int(pkt.Payload()[0]) 
+        if( not isinstance(podDevice, Pod8274D)) : 
+            podDevice._commands.ValidateCommand('GET SAMPLE RATE')
+            if(not podDevice.TestConnection()) : 
+                raise Exception('[!] Could not connect to this POD device.')
+            pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
+            return int(pkt.Payload()[0]) 
+        else :  
+            if(not podDevice.TestConnection()) : 
+                raise Exception ('[!] Could not connect to this POD device.')
+            print("!HELLO")
+            #pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
+            return 2
+            
+            #return 0 # temp
+        ## TODO here is the problem! this neds to return a usable sample rate. 
+        # if is Pod8274D r
+        # get the sample rate. 
+        # GET SAMPLE RATE REPLY gives a key, translate this to a sample rate --> But do this using a static method in device class. 
 
     def EmptyHose(self) : 
         self.deviceValve.EmptyValve()
@@ -102,6 +115,7 @@ class Hose :
     def StartStream(self) : 
         """Start a thread to start streaming data from the POD device.
         """
+        print("!!! TK !!! --- 2")
         # initialize class instance
         self.EmptyHose()
         self.isOpen = True
@@ -121,12 +135,14 @@ class Hose :
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
         """
+        print("!!! TK !!! --- 10")
         # initialize       
         stopAt: bytes = self.deviceValve.GetStopBytes()
         currentTime : float = 0.0 
         # start streaming data 
         self.deviceValve.Open()
         while(True) : 
+            print("!!! TK !!! --- 101", self.sampleRate)
             # initialize
             data: list[Packet|None] = [None] * self.sampleRate
             ti = (round(time.time(),9)) # initial time (sec)
@@ -134,10 +150,12 @@ class Hose :
             i: int = 0
             while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
                 try : 
+                    print("!!! TK !!! --- 11")
                     # read data (vv exception raised here if bad checksum vv)
                     drip: Packet = self.deviceValve.Drip()
                     # check stop condition 
                     if(drip.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
+                        print("!!! TK !!! --- 11 stop")
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
                         self.isOpen = False
@@ -146,7 +164,9 @@ class Hose :
                     if( not isinstance(drip,PacketStandard)) : 
                         data[i] = drip
                         i += 1 # update looping condition 
+                    else : print("!!! TK !!! --- 12 uh oh!")
                 except Exception as e : 
+                    print("!!! TK !!! --- 13", e)
                     # corrupted data here, leave None in data[i]
                     i += 1 # update looping condition          
             currentTime = self._Drop(currentTime, ti, data)

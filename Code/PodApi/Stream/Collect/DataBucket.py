@@ -89,6 +89,7 @@ class Bucket :
         Returns:
             Thread: Started Thread for data collection.
         """
+        print("!!! TK !!! --- 1")
         self.EmptyBucket()
         # start streaming data
         self.isCollecting = True
@@ -123,15 +124,19 @@ class Bucket :
         # collect data for the duration set
         ti: float = time.time()
         while( (time.time() - ti ) < duration_sec) :
+            print('!!! TK !!! --- 7')
             # check for new data
             if(self._IsDropAvailableInHose()) :
+                print('!!! TK !!! --- 8y')
                 self._CollectDrop()
             # check if streaming has stopped from external cause
             elif(not self.dataHose.isOpen) : 
+                print('!!! TK !!! --- 8n1')
                 self.isCollecting = False
                 return
             # wait for new data 
             else :
+                print('!!! TK !!! --- 8n2')
                 time.sleep(0.1)
         # signal to stop streaming 
         self.StopCollecting()
@@ -155,4 +160,5 @@ class Bucket :
         Returns:
             bool: True if there is a drop to be collected, False otherwise.
         """
+        #print("Drops in Bkt/Hos:\t", self.totalDropsCollected, self.dataHose.numDrops)
         return ( self.totalDropsCollected < self.dataHose.numDrops ) 

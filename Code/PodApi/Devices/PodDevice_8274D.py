@@ -1,6 +1,5 @@
 # local imports 
 from PodApi.Devices import Pod
-from PodApi.Packets import PacketStandard
 from PodApi.Packets import Packet, PacketStandard, PacketBinary
 
 # authorship
@@ -12,7 +11,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Pod8274D(Pod) : 
-    """POD_8229 handles communication using an 8229 POD device.
+    """POD_8274D handles communication using an 8274D POD device.
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
@@ -34,6 +33,7 @@ class Pod8274D(Pod) :
         U16 = Pod.GetU(16)
         U32 = Pod.GetU(32)
         NOVALUE = Pod.GetU(0)
+       # B  = PacketBinary.GetBinaryLength()
         # add device specific commands
         self._commands.AddCommand(100, 'LOCAL SCAN',                (U8,),       (U16,),              False, 'Enables or disables scan.  1 enables, 0 disables.  Returns SL_STATUS_T status code, 0x0000 is success, all others are error codes.')
         self._commands.AddCommand(101, 'DEVICE LIST INFO',          (U8,),       tuple([U8]*24),      False, 'Information string about a scanned device - includes advertising index, bluetooth address, and device name.')
@@ -89,6 +89,176 @@ class Pod8274D(Pod) :
         # port: str = Pod8229.ChoosePort()
         # pod = Pod8229(port)
 
-    
+    # def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
+    #     """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+    #     ending with ETX. Reads first STX and then starts recursion. 
 
+    #     Args:
+    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+    #             skip validation. Defaults to True.
+    #         timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+    #             Defaults to 5. 
+
+    #     Returns:
+    #         Packet: POD packet beginning with STX and ending with ETX. This may be a \
+    #             standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+    #     """
+    #     packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
+    #     # check for special packets
+    #     # if(isinstance(packet, PacketStandard)) : 
+    #     #     if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
+    #     #         packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
+    #     # return packet
+    #     return packet
         
+            
+
+    # def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
+    #     """After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX \
+    #     (checksum+ETX). 
+
+    #     Args:
+    #         prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+    #             + command number (4 bytes).
+    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+    #             skip validation. Defaults to True.
+
+    #     Raises:
+    #         Exception: Bad checksum for binary POD packet read.
+
+    #     Returns:
+    #         Packet_Binary4: Binary4 POD packet.
+    #     """
+
+    #     # ----------------------------------------------------------
+        
+    #     # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
+    #     packet = prePacket + self._port.Read(PacketBinary.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
+    #     # check if checksum is correct 
+    #     if(validateChecksum):
+    #         if(not self._ValidateChecksum(packet) ) :
+    #             raise Exception('Bad checksum for binary POD packet read.')
+    #     # return complete variable length binary packet
+    #     return PacketBinary(packet, self._commands)
+
+
+
+    #------------------------OVERWRITE---------------------------------------------#
+        
+    # def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
+    #     """Writes a command with optional payload to POD device, then reads (once) the device response.
+
+    #     Args:
+    #         cmd (str | int): Command number. 
+    #         payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
+    #             is a payload, set to an integer value or a bytes string. Defaults to None.
+    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+    #                 validation. Defaults to True.
+
+    #     Returns:
+    #         Packet: POD packet beginning with STX and ending with ETX. This may \
+    #             be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+    #     """
+    #     print(cmd)
+    #     self.WritePacket(cmd, payload)
+    #     r = self.ReadPODpacket(validateChecksum)       
+    #     print("READ", data)
+    #     if cmd == 'LOCAL SCAN': 
+    #         #x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = r.TranslateAll()
+    #         print("***", data['Payload'][1:7]) # handling payload to give to 'connect address'
+    #         return(data['Payload'][1:7])
+    #     if cmd == 'CONNECT BY ADDRESS': #you can't have it re-reading the Device for 8206
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("***", data)
+    #     if cmd == 'GET NAME': #GET
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("DATA", data)
+    #         print("***", data['Payload'][1:7])
+    #         return(data['Payload'][1:7])
+    #     if cmd == 'SET SAMPLE RATE': #you can't have it re-reading the Device for 8206
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("***", data)
+    #     if cmd == 'GET SAMPLE RATE': #you can't have it re-reading the Device for 8206
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("***", data)
+    #     if cmd == 'DISCONNECT ALL':
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("***", data)
+    #     if cmd == 'CHANNEL SCAN':
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("Read: ", data)
+    #         x = self.ReadPODpacket(validateChecksum)
+    #         data: dict = x.TranslateAll()
+    #         print("Read: ", data)
+    #     if (cmd == 'STREAM'): 
+    #         while True:
+    #             x = self.ReadPODpacket(validateChecksum)
+    #             data: dict = x.TranslateAll()
+    #             print("***", data)
+    #     return(r)
+        
+    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
+        print(cmd)
+        self.WritePacket(cmd, payload)
+        r = self.ReadPODpacket(validateChecksum)
+        print("Read1", r)
+        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL', 'CHANNEL SCAN']:
+            x = self.ReadPODpacket(validateChecksum)
+            data: dict = x.TranslateAll()
+            print("Read2", data)
+
+            if cmd in ['LOCAL SCAN', 'GET NAME']:
+                return data['Payload'][1:7]
+        elif cmd == 'STREAM':
+            while True:
+                x = self.ReadPODpacket(validateChecksum)
+                data: dict = x.TranslateAll()
+                print("Read3", data)
+        return r
+        
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
+        """Reads the remaining part of the variable-length binary packet. It first reads the standard \
+        packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
+        payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
+        checksum+ETX. 
+
+        Args:
+            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+                + command number (4 bytes)
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+                skip validation. Defaults to True.
+
+        Raises:
+            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
+
+        Returns:
+            Packet_BinaryStandard: Variable-length binary POD packet.
+        """
+        # Variable binary packet: contain a normal POD packet with the binary command, 
+        #   and the payload is the length of the binary portion. The binary portion also 
+        #   includes an ASCII checksum and ETX. 
+        # read standard POD packet 
+        startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        # get length of binary packet 
+        numOfbinaryBytes: int = startPacket.Payload() [0]
+        # read binary packet
+        binaryMsg = self._port.Read(numOfbinaryBytes)
+        # read csm and etx
+        binaryEnd = self._Read_ToETX(validateChecksum=validateChecksum)
+        # build complete message
+        packet = startPacket.rawPacket + binaryMsg + binaryEnd
+        # check if checksum is correct 
+        if(validateChecksum):
+            csmCalc = Pod.Checksum(binaryMsg)
+            csm = binaryEnd[0:2]
+            if(csm != csmCalc) : 
+                raise Exception('Bad checksum for binary POD packet read.')
+        # return complete variable length binary packet
+        return PacketBinary(packet, self._commands)

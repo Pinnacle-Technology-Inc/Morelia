@@ -102,7 +102,7 @@ class Setup8274D(SetupInterface) :
             pod.WriteRead('SET PERIOD', deviceParams.period)
             #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
             pod.WriteRead('GET NAME', deviceParams.name)
-            # pod.WriteRead('STREAM', (1)) -- looks like streaming is working
+            #pod.WriteRead('STREAM', (1)) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
 
 

@@ -405,6 +405,7 @@ class Pod :
                 (STX+something+ETX). 
         """
         # start packet with STX
+        print("()")
         packet: bytes = Packet.STX()
         # read next 4 bytes of the command number 
         cmd: bytes = self._Read_GetCommand(validateChecksum=validateChecksum)
@@ -538,7 +539,7 @@ class Pod :
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
-         
+        print("$$$")
         # read standard POD packet 
         startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
