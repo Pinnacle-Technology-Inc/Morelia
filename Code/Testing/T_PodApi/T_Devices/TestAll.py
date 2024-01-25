@@ -20,10 +20,12 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     Returns:
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
+    testModulesList = []
+    testModulesList.append(T_Devices.T_PodDevice_8206HR.T_Pod8206HR())
+    testModulesList.append(T_Devices.T_PodDevice_8401HR.T_Pod8401HR(forbidden=[testModulesList[0].port]))
+
     return RunningTests.RunAllTests(
-        testModules   = [
-            T_Devices.T_PodDevice_8206HR.T_Pod8206HR(),
-        ], 
+        testModules   = testModulesList, 
         headerModule  = 'PodApi.Devices', 
         printThisTest = printThisTest, 
         printSubTests = printSubTests

@@ -13,12 +13,16 @@ __email__       = "sales@pinnaclet.com"
 
 class T_Pod8206HR : 
     
-    def __init__(self, port: str = '', preampGain: int = 10 ) -> None :
+    def __init__(self, port: str = '', preampGain: int = 10, forbidden: list[str] = [] ) -> None :
         # get port from user 
-        if(port == '') : useport: str = Pod8206HR.ChoosePort()
-        else :           useport = port
+        if(port == '') : 
+            print('~~~~~~~~~~ 8206HR ~~~~~~~~~~')
+            self.port: str = Pod8206HR.ChoosePort(forbidden)
+            print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+        else : 
+            self.port = port
         # create pod device object 
-        self.pod: Pod8206HR = Pod8206HR(useport, preampGain)
+        self.pod: Pod8206HR = Pod8206HR(self.port, preampGain)
 
     # ---------------------------------------------------------------------------------------------------------
     def RunTests(self, printTests: bool = True) -> tuple[int,int]: 
