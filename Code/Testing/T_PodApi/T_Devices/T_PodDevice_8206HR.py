@@ -1,7 +1,7 @@
 # local imports
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 from PodApi.Devices import Pod8206HR
-from PodApi.Packets import Packet, PacketStandard
+from PodApi.Packets import Packet, PacketStandard, PacketBinary4
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -39,7 +39,8 @@ class T_Pod8206HR :
             "4. Sample rate:\t\t"   : self.SampRat,
             "5. Low pass:\t\t"      : self.LowP,
             "6. TTL:\t\t\t"         : self.Ttl,
-            "7. Filter Config:\t\t" : self.FiltConf,
+            "7. Filter Config:\t"   : self.FiltConf,
+            "8. Stream:\t\t"        : self.Stream,
         }
         return RunningTests.RunTests(tests, 'Pod8206HR', printTests=printTests)
     # ---------------------------------------------------------------------------------------------------------
@@ -140,6 +141,33 @@ class T_Pod8206HR :
         return TestResult(True)
     
     def FiltConf(self) -> TestResult : 
-        
+        # call command
+        r = self.pod.WriteRead('GET FILTER CONFIG') # 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 107     ) :      return TestResult(False, 'Packet has an incorrect command number.')
+        elif(not isinstance(r.Payload(), tuple)) :  return TestResult(False, 'Packet is missing a payload.')
+        elif(len(r.Payload()) > 1) :                return TestResult(False, 'Packet is incorrect size.')
+        elif(r.Payload()[0] not in [0,1,2]) :  return TestResult(False, 'Packet has incorrect payload.')
+        # otherwise good 
+        return TestResult(True)
+    
+    def Stream(self) -> TestResult :
+        # call command
+        r = self.pod.WriteRead('STREAM', 1) 
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 6     ) :        return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()        != (1,) ) :         return TestResult(False, 'Packet has incorrect payload.')
+        # stop streaming 
+        self.pod.WritePacket('STREAM', 0) 
+        # next read packet should be stream data
+        r = self.pod.ReadPODpacket()
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Stream did not return a packet')
+        elif(not isinstance(r,PacketBinary4)) :     return TestResult(False, 'Command did not return a binary4 packet')
+        # clean out data 
+        self.pod.FlushPort()
         # otherwise good 
         return TestResult(True)
