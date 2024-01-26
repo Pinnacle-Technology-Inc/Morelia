@@ -64,7 +64,7 @@ ext0 = 0
 hf.RunCommand(pod, 'SET EXT0', ext0) # Sets the digital value of EXT0, 0 or 1
 hf.RunCommand(pod, 'GET EXT0 VALUE') # Reads the analog value on the EXT0 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify preamps.  Note that this function takes some time and blocks, so it should not be called during data acquisition if possible
 ext1 = 1 
-hf.RunCommand(pod, 'SET EXT1', ext0) # Sets the digital value of EXT1, 0 or 1
+hf.RunCommand(pod, 'SET EXT1', ext1) # Sets the digital value of EXT1, 0 or 1
 hf.RunCommand(pod, 'GET EXT1 VALUE') # Reads the analog value on the EXT1 pin.  Returns an unsigned 12-bit value, representing a 3.3V input.  This is normally used to identify if an 8480 is present.  Similar caveat re blocking as GET EXT0 VALUE
 
 print('~~ GROUND ~~')

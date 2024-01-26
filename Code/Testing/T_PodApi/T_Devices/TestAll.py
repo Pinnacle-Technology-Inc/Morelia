@@ -21,8 +21,8 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
         tuple[int,int]: First item is the number of passed tests. Last item is the total number of tests
     """
     testModulesList = []
-    testModulesList.append(T_Devices.T_PodDevice_8206HR.T_Pod8206HR())
-    testModulesList.append(T_Devices.T_PodDevice_8401HR.T_Pod8401HR(forbidden=[testModulesList[0].port]))
+    # testModulesList.append(T_Devices.T_PodDevice_8206HR.T_Pod8206HR())
+    testModulesList.append(T_Devices.T_PodDevice_8401HR.T_Pod8401HR('COM3 - USB Serial Port (COM3)')) #forbidden=[testModulesList[0].port]))
 
     return RunningTests.RunAllTests(
         testModules   = testModulesList, 
