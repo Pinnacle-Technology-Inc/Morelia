@@ -281,7 +281,6 @@ class Packet :
         Returns:
             int: Integer result from the ASCII-encoded byte conversion.
         """
-        print("test0", msg_b) #, type(msg_b))
         # convert bytes to str and remove byte wrap (b'XXXX' --> XXXX)
         msg_str = str(msg_b) [2 : len(str(msg_b))-1]
         # convert string into base 16 int (reads string as hex number, returns decimal int)
@@ -293,7 +292,6 @@ class Packet :
             if(msb != 0) : 
                 msg_int = Packet.TwosComplement(msg_int,nbits)
         # return int
-        print("testint", msg_int) #, type(msg_b))
         return(msg_int)
     
 

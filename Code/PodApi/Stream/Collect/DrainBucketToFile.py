@@ -70,7 +70,6 @@ class DrainBucket :
         Returns:
             Thread: Started thread where data is being saved to a file.
         """
-        print("!!! TK !!! --- 3")
         t: Thread = Thread(target=self._ThreadedDrainBucketToFile, args=(timeout_sec,sleep))
         t.start()
         return t 
@@ -85,7 +84,6 @@ class DrainBucket :
             sleep (float, optional): Time duration in seconds to wait for the Bucket to \
                 collect more data before checking agian. Defaults to 0.25.
         """
-        print("!!! TK !!! --- 4")
         timeoutTicker: float = 0
         # open file to save streaming data to 
         self.drainToFile.OpenFile()
@@ -117,7 +115,6 @@ class DrainBucket :
         """
         # delay if there is no data to save
         if(self.IsDataAvailable()) : 
-            print("!!! TK !!! --- 6a")
             # stop saving data if no drops
             if(timeoutTicker == timeout_sec) : 
                 raise Exception('[!] Timeout ('+str(timeoutTicker)+'sec'+'): no data found to be saved to file.')
@@ -126,7 +123,6 @@ class DrainBucket :
             return timeoutTicker+sleep
         # otherwise, save data to file 
         else:
-            print("!!! TK !!! --- 6b")
             self.drainToFile.DrainDropToFile()
             return 0 # reset ticker 
                         

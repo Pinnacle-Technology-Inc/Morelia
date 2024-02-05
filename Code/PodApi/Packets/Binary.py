@@ -49,7 +49,7 @@ class PacketBinary(Packet) :
             dict[str,bytes]: Dictionary with the command number, binary packet length, \
                 and binary data.
         """
-        print("2&&")
+        print("2&&") #doesn't enter this function?
         data: dict = super().UnpackAll()
         data['Binary Packet Length'] = self.binaryLength
         data['Binary Data']          = self.binaryData
@@ -62,7 +62,7 @@ class PacketBinary(Packet) :
             dict[str,Any]: Dictionary with the command number, binary packet length, \
                 and binary data.
         """
-        print("3&&")
+        print("3&&") #doesn't enter this function?
         data: dict =  super().TranslateAll()
         data['Binary Packet Length'] = self.BinaryLength()
         data['Binary Data']          = self.binaryData

@@ -17,7 +17,7 @@ class Params8274D(Params) :
         #deviceList = int,  
         connectAdd = str,           
        #channelScan = int,
-        sampleRate =  int,   
+        #sampleRate =  int,   
         name = str,
         disconnect = str,  
         period = int, 
@@ -36,7 +36,7 @@ class Params8274D(Params) :
         #self.deviceList:    int  =    int(deviceList)
         self.connectAdd:     str  =    str(connectAdd)
         #self.connect:       str  =    str(connect)
-        self.sampleRate:     int  =    int(sampleRate)
+        #self.sampleRate:     int  =    int(sampleRate)
         self.name:           int  =    str(name)
         self.disconnect:     int  =    str(disconnect)
         self.period:         int  =    int(period)

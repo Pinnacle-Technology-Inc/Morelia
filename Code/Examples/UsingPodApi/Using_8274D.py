@@ -38,9 +38,9 @@ pod = Pod8274D(port)
 
 # print('\n')
 
-
 print('~~ CONNECT BY ADDRESS ~~')
 hf.RunCommand(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
+
 
 print('~~ GET NAME ~~')
 hf.RunCommand(pod, 'GET NAME', ()) 

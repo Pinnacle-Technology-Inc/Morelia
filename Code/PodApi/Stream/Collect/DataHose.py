@@ -6,7 +6,7 @@ import  time
 
 # local imports
 from PodApi.Devices     import Pod8206HR, Pod8401HR, Pod8274D
-from PodApi.Packets     import Packet, PacketStandard
+from PodApi.Packets     import Packet, PacketStandard, PacketBinary
 from PodApi.Stream.Collect import Valve
 
 # authorship
@@ -60,7 +60,13 @@ class Hose :
         self.numDrops : int = 0
         self.corruptedPoints : int = 0
 
-        
+    def SampleKey(num: int) -> int : 
+        match num :
+            case 0 : return 1024
+            case 1 : return 512
+            case 2 : return 256
+            case 3 : return 128
+            
     @staticmethod
     def GetSampleRate(podDevice: Pod8206HR|Pod8401HR|Pod8274D) -> int : 
         """Writes a command to the POD device to get its sample rate in Hz.
@@ -89,13 +95,15 @@ class Hose :
             if(not podDevice.TestConnection()) : 
                 raise Exception('[!] Could not connect to this POD device.')
             pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
+            print("here", int(pkt.Payload()[0]))
             return int(pkt.Payload()[0]) 
         else :  
             if(not podDevice.TestConnection()) : 
                 raise Exception ('[!] Could not connect to this POD device.')
-            print("!HELLO")
-            #pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
-            return 2
+            pkt: PacketBinary = podDevice.WriteRead('GET SAMPLE RATE')
+            print("here2", int(pkt))
+            return pkt
+            #return 2  #why is it working if the input is 2 but not with 256, so why can't we just leave the input as 2?
             
             #return 0 # temp
         ## TODO here is the problem! this neds to return a usable sample rate. 
@@ -115,7 +123,6 @@ class Hose :
     def StartStream(self) : 
         """Start a thread to start streaming data from the POD device.
         """
-        print("!!! TK !!! --- 2")
         # initialize class instance
         self.EmptyHose()
         self.isOpen = True
@@ -135,7 +142,6 @@ class Hose :
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
         """
-        print("!!! TK !!! --- 10")
         # initialize       
         stopAt: bytes = self.deviceValve.GetStopBytes()
         currentTime : float = 0.0 
@@ -148,8 +154,10 @@ class Hose :
             ti = (round(time.time(),9)) # initial time (sec)
             # read data for one second
             i: int = 0
+            print("sample", self.sampleRate)
             while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
-                try : 
+                try :
+                    print("Ice", i)
                     print("!!! TK !!! --- 11")
                     # read data (vv exception raised here if bad checksum vv)
                     drip: Packet = self.deviceValve.Drip()
@@ -163,12 +171,14 @@ class Hose :
                     # save binary packet data and ignore standard packets
                     if( not isinstance(drip,PacketStandard)) : 
                         data[i] = drip
+                        print("drop")
                         i += 1 # update looping condition 
+                        print("increment", i)
                     else : print("!!! TK !!! --- 12 uh oh!")
                 except Exception as e : 
                     print("!!! TK !!! --- 13", e)
                     # corrupted data here, leave None in data[i]
-                    i += 1 # update looping condition          
+                    i += 1 # update looping condition        
             currentTime = self._Drop(currentTime, ti, data)
 
     def _Drop(self, currentTime: float, ti: float, data: list[Packet|None]) -> float : 

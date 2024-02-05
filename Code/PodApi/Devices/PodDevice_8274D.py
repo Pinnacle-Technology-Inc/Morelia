@@ -86,6 +86,19 @@ class Pod8274D(Pod) :
 
 
         
+    #---------------------------------------------------------------------------------------------
+    @staticmethod
+    def SampleKey(num: int) -> int : 
+        print("krish")
+        if num == 0 :
+            return 1024
+        if num == 1 :
+            return 512
+        if num == 2 :
+            return 256
+        if num == 3 :
+            return 128
+
         # port: str = Pod8229.ChoosePort()
         # pod = Pod8229(port)
 
@@ -213,7 +226,8 @@ class Pod8274D(Pod) :
             x = self.ReadPODpacket(validateChecksum)
             data: dict = x.TranslateAll()
             print("Read2", data)
-
+            if cmd == 'GET SAMPLE RATE':
+                return data['Payload'][0]
             if cmd in ['LOCAL SCAN', 'GET NAME']:
                 return data['Payload'][1:7]
         elif cmd == 'STREAM':
@@ -222,6 +236,7 @@ class Pod8274D(Pod) :
                 data: dict = x.TranslateAll()
                 print("Read3", data)
         return r
+    
         
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
@@ -245,7 +260,8 @@ class Pod8274D(Pod) :
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX. 
         # read standard POD packet 
-        startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        #startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        startPacket: PacketBinary = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
         numOfbinaryBytes: int = startPacket.Payload() [0]
         # read binary packet

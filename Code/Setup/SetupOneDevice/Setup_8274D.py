@@ -97,7 +97,7 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
-            pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+           # pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             #pod.WriteRead('GET SAMPLE RATE')
             pod.WriteRead('SET PERIOD', deviceParams.period)
             #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
@@ -129,7 +129,7 @@ class Setup8274D(SetupInterface) :
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames),
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
-            sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
+           # sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
             period            =     UserInput.AskForInput('\nSet Period '),
             #channelScan       =     UserInput.AskForIntInRange('\nChannel Scan', 0, 1),
             #waveform         =     UserInput.AskForInput('\nSet Waveform ')
@@ -144,13 +144,13 @@ class Setup8274D(SetupInterface) :
         # setup table 
         tab = Texttable(160)
         # write column names
-        tab.header(['Device #','Port','Local Scan', 'Sample Rate', 'Period'])
+        tab.header(['Device #','Port','Local Scan', 'Period'])
         # write rows
         for key,val in self._podParametersDict.items() :
             localScan_str = f" Local Scan: {val.localScan}\n  "
-            sampleRate_str = f" Sample Rate: {val.sampleRate}\n  "
+            # sampleRate_str = f" Sample Rate: {val.sampleRate}\n  "
             period_str = f" Period: {val.period}\n  "
-            tab.add_row([key, val.port, localScan_str, sampleRate_str, period_str])
+            tab.add_row([key, val.port, localScan_str, period_str])
         return(tab)
     
 
