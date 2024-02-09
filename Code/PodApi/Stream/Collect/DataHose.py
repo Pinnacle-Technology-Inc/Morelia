@@ -174,7 +174,8 @@ class Hose :
                         print("drop")
                         i += 1 # update looping condition 
                         print("increment", i)
-                    else : print("!!! TK !!! --- 12 uh oh!")
+                    # else : print("!!! TK !!! --- 12 uh oh!")
+                    else : print("PRINT,", isinstance(drip,PacketStandard))
                 except Exception as e : 
                     print("!!! TK !!! --- 13", e)
                     # corrupted data here, leave None in data[i]

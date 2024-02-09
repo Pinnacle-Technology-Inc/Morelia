@@ -59,10 +59,10 @@ def Read(pod: Pod, cmd) :
         data: dict = read.TranslateAll()
         print('Read:\t', data)
     if (cmd == 'STREAM'): 
-        while True:
-            read: Packet = pod.ReadPODpacket()
-            data: dict = read.TranslateAll()
-            print('Read:\t', data)
+        # while True:
+        read: Packet = pod.ReadPODpacket()
+        data: dict = read.TranslateAll()
+        print('Read:\t', data)
 
 
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :

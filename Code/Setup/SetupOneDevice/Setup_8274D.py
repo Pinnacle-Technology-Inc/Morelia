@@ -7,7 +7,6 @@ import time
 # local imports
 from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import PacketStandard
 from PodApi.Devices         import Pod8274D
 from PodApi.Parameters      import Params8274D
 from PodApi.Stream.Collect  import Bucket, DrainBucket
@@ -97,11 +96,11 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
-           # pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+            # pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             #pod.WriteRead('GET SAMPLE RATE')
-            pod.WriteRead('SET PERIOD', deviceParams.period)
+            pod.WriteRead('SET PERIOD', deviceParams.period) 
             #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
-            pod.WriteRead('GET NAME', deviceParams.name)
+            pod.WriteRead('GET NAME', deviceParams.name) 
             #pod.WriteRead('STREAM', (1)) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
 
