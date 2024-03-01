@@ -133,92 +133,42 @@ class Hose :
         return(stream)
             
 
-
     def StopStream(self) : 
         """Writes a command to the POD device to stop streaming data.
         """
         # stop streaming
         self.deviceValve.Close()
 
-        
-    # def _Flow(self, duration_sec) : 
-    #     """Streams data from the POD device. The data drops about every 1 second. \
-    #     Streaming will continue until a "stop streaming" packet is recieved. 
-    #     """
-    #     # initialize       
-    #     stopAt: bytes = self.deviceValve.GetStopBytes()
-    #     currentTime : float = 0.0 
-    #     # start streaming data 
-    #     self.deviceValve.Open()
-    #     while(True) : 
-    #         print("!!! TK !!! --- 101", self.sampleRate)
-    #         # initialize
-    #         data: list[Packet|None] = [None] * self.sampleRate
-    #         ti = (round(time.time(),9)) # initial time (sec)
-    #         # read data for one second
-    #         i: int = 0
-    #         print("sample", self.sampleRate)
-    #         while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
-    #             try :
-    #                 print("Ice", i)
-    #                 print("!!! TK !!! --- 11")
-    #                 # read data (vv exception raised here if bad checksum vv)
-    #                 drip: Packet = self.deviceValve.Drip()
-    #                 # check stop condition 
-    #                 print("!!", drip.rawPacket, 'Is it?', stopAt, '=', drip.rawPacket == stopAt)
-    #                 # if(drip.rawPacket == stopAt or (drip.rawPacket == b'\x020006000079\x03')) : # NOTE this is only exit for while(True) 
-    #                 if(drip.rawPacket == stopAt or ((drip.rawPacket == b'\x020006000079\x03') and duration_sec))
-    #                     print("!!! TK !!! --- 11 stop")
-    #                     # finish up
-    #                     currentTime = self._Drop(currentTime, ti, data)
-    #                     self.isOpen = False
-    #                     return 
-    #                 # save binary packet data and ignore standard packets
-    #                 if( not isinstance(drip,PacketStandard)) : 
-    #                     data[i] = drip
-    #                     print("drop")
-    #                     i += 1 # update looping condition 
-    #                     print("increment", i)
-    #                 # else : print("!!! TK !!! --- 12 uh oh!")
-    #                 else : print("PRINT,", isinstance(drip,PacketStandard))
-    #             except Exception as e : 
-    #                 print("!!! TK !!! --- 13", e)
-    #                 # corrupted data here, leave None in data[i]
-    #                 i += 1 # update looping condition        
-    #         currentTime = self._Drop(currentTime, ti, data)
-        
 
-    def _Flow(self) : 
+    def _Flow(self, stopAfterXfails: int = 3) : 
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
         """
         # initialize       
+        successiveFailCount: int = 0
         stopAt: bytes = self.deviceValve.GetStopBytes()
         currentTime : float = 0.0 
-        start_time = time.time()
         # start streaming data 
         self.deviceValve.Open()
         while(True) : 
-            print("!!! TK !!! --- 101", self.sampleRate)
             # initialize
             data: list[Packet|None] = [None] * self.sampleRate
             ti = (round(time.time(),9)) # initial time (sec)
             # read data for one second
             i: int = 0
-            print("sample", self.sampleRate)
             while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
                 try :
-                    print("Ice", i)
-                    print("!!! TK !!! --- 11")
-                    # read data (vv exception raised here if bad checksum vv)
+                    # check for too many failed packets 
+                    if(successiveFailCount > stopAfterXfails) : 
+                        # finish up
+                        currentTime = self._Drop(currentTime, ti, data)
+                        self.isOpen = False
+                        return 
+                    # read data (vv exception raised here if bad checksum or packet read timeout vv)
                     drip: Packet = self.deviceValve.Drip()
                     # check stop condition 
-                    print("!!", drip.rawPacket, 'Is it?', stopAt, '=', drip.rawPacket == stopAt)
-                    # if(drip.rawPacket == stopAt or (drip.rawPacket == b'\x020006000079\x03')) : # NOTE this is only exit for while(True) 
                     currentTime = time.time()
-                    # if(drip.rawPacket == stopAt or ((drip.rawPacket == b'\x020006000079\x03') and ((currentTime - start_time) > duration_sec))):
                     if(drip.rawPacket == stopAt):
-                        print("!!! TK !!! --- 11 stop")
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
                         self.isOpen = False
@@ -226,15 +176,13 @@ class Hose :
                     # save binary packet data and ignore standard packets
                     if( not isinstance(drip,PacketStandard)) : 
                         data[i] = drip
-                        print("drop")
                         i += 1 # update looping condition 
-                        print("increment", i)
-                    # else : print("!!! TK !!! --- 12 uh oh!")
-                    else : print("PRINT,", isinstance(drip,PacketStandard))
+                        successiveFailCount = 0 # reset after succsessful loop 
                 except Exception as e : 
-                    print("!!! TK !!! --- 13", e)
                     # corrupted data here, leave None in data[i]
                     i += 1 # update looping condition        
+                    successiveFailCount += 1
+            # drop data 
             currentTime = self._Drop(currentTime, ti, data)
         
     

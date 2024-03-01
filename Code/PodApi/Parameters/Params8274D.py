@@ -51,8 +51,9 @@ class Params8274D(Params) :
         return( 'PodApi.Parameters.Params8274D('
                + 'port=\'' + self.port 
                + '\', localScan=\'' + str(self.localScan) 
+               + '\', sampleRate=\'' + str(self.sampleRate)
                + '\', period=\'' + str(self.period) 
-               +')')
+               +'\')')
 
     
 

@@ -65,7 +65,7 @@ class Valve :
                 This may be a standard packet, binary packet, or an \
                 unformatted packet (STX+something+ETX).
         """
-        return self.podDevice.ReadPODpacket()
+        return self.podDevice.ReadPODpacket(timeout_sec=1)
 
     def EmptyValve(self) :
         """Reset the serial port buffer.
