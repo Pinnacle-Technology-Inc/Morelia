@@ -316,7 +316,6 @@ class Pod :
         # build POD packet 
         packet = Pod.BuildPODpacket_Standard(cmdNum, payload=pld)
         # return complete packet 
-        print("....", packet)
         return(packet)
     
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
@@ -352,7 +351,6 @@ class Pod :
         # POD packet 
         packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
-        print("&&&", packet)
         self._port.Write(packet)
         # returns packet that was written
         return(PacketStandard(packet, self._commands))
@@ -419,10 +417,8 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
-            print("binary")
             packet: PacketBinary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read
-            print("standard")
             packet: PacketStandard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
         return(packet)
@@ -515,7 +511,6 @@ class Pod :
             if( not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for standard POD packet read.')
         # return packet
-        print("POSTREAD", packet)
         return PacketStandard(packet, self._commands)
 
 

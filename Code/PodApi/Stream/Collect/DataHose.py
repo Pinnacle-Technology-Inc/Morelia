@@ -34,7 +34,7 @@ class Hose :
         filterInsert (float): Value to replace corrupted data with if using \
             the 'InsertValue' filter method. Defaults to np.nan.
     """
-    
+
     def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set instance variables.
 
@@ -59,13 +59,6 @@ class Hose :
         # counters
         self.numDrops : int = 0
         self.corruptedPoints : int = 0
-
-    # def SampleKey(num: int) -> int : 
-    #     match num :
-    #         case 0 : return 1024
-    #         case 1 : return 512
-    #         case 2 : return 256
-    #         case 3 : return 128
             
     @staticmethod
     def GetSampleRate(podDevice: Pod8206HR|Pod8401HR|Pod8274D) -> int : 
@@ -132,13 +125,11 @@ class Hose :
         stream.start() 
         return(stream)
             
-
     def StopStream(self) : 
         """Writes a command to the POD device to stop streaming data.
         """
         # stop streaming
         self.deviceValve.Close()
-
 
     def _Flow(self, stopAfterXfails: int = 3) : 
         """Streams data from the POD device. The data drops about every 1 second. \

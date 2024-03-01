@@ -35,7 +35,6 @@ class PacketBinary(Packet) :
             commands (POD_Commands | None, optional): Available commands for a POD device. \
                 Defaults to None.
         """       
-        print("1&&")
         super().__init__(pkt, commands)
         self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt)
         self.binaryData:    bytes = PacketBinary.GetBinaryData(pkt)
@@ -49,7 +48,6 @@ class PacketBinary(Packet) :
             dict[str,bytes]: Dictionary with the command number, binary packet length, \
                 and binary data.
         """
-        print("2&&") #doesn't enter this function?
         data: dict = super().UnpackAll()
         data['Binary Packet Length'] = self.binaryLength
         data['Binary Data']          = self.binaryData
@@ -62,7 +60,6 @@ class PacketBinary(Packet) :
             dict[str,Any]: Dictionary with the command number, binary packet length, \
                 and binary data.
         """
-        print("3&&") #doesn't enter this function?
         data: dict =  super().TranslateAll()
         data['Binary Packet Length'] = self.BinaryLength()
         data['Binary Data']          = self.binaryData

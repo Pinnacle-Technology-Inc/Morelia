@@ -42,7 +42,6 @@ class SetupAll :
             podParametersDict (dict[int, Params_Interface] | None] | None, optional): Dictionary of POD devices and \
                 their respective parameters. Defaults to None.
         """
-        print("1")
         # initialize class instance variables
         self._Setup_PodDevices : dict[str,SetupInterface] = {} 
         self._options : dict[int,str] = { # NOTE if you change this, be sure to update _DoOption()
@@ -57,7 +56,6 @@ class SetupAll :
             9 : 'Quit.'
         }
         # setup devices  
-        print("2")
         self.SetupPODparameters(self._GetParams(podParametersDict))
         self.SetupSaveFile(saveFileDict)
 
@@ -323,7 +321,6 @@ class SetupAll :
             dict[str,dict|None]: Dictionary whose keys are the POD device name, and value the setup \
                 dictionary. 
         """
-        print("3")
         # setup parameters
         if(podParametersDict == None) : 
             # return dictionary with POD device names as keys and None as values 
@@ -351,7 +348,6 @@ class SetupAll :
             print('[!] No POD devices selected. Please choose at least one device.')
             return(SetupAll._AskUserForDevices())
         # return dictionary with POD device names as keys and None as values 
-        print("4")
         return(useParams)
     
         
@@ -384,7 +380,6 @@ class SetupAll :
             if(key not in goodKeys) : # device not supported
                 raise Exception('[!] Invalid device name in paramater dictionary: '+str(key)+'.')
             # is the value correct for the device?
-            print("***")
             thisGood = self._Setup_PodDevices[key].AreDeviceParamsValid(value)
             allGood = allGood and thisGood # becomes false if any device is invalid 
         # should return true if no exceptions raised  
