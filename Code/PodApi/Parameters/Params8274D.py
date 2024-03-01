@@ -13,15 +13,13 @@ class Params8274D(Params) :
 
     def __init__(self,
         port:  str,
-        localScan = int,    
-        #deviceList = int,  
-        connectAdd = str,           
-       #channelScan = int,
-        #sampleRate =  int,   
-        name = str,
-        disconnect = str,  
-        period = int, 
-        # waveform = var,
+        localScan : int,     
+        #connectAdd : str,           
+        sampleRate :  int,   
+        #name : str,
+        #disconnect : str,  
+        period : int , 
+        
 
         checkForValidParams: bool = True
         ) -> None:
@@ -33,28 +31,29 @@ class Params8274D(Params) :
             local scan(int) : 
         """
         self.localScan:      int  =    int(localScan)
-        #self.deviceList:    int  =    int(deviceList)
-        self.connectAdd:     str  =    str(connectAdd)
+       # self.connectAdd:     str  =    str(connectAdd)
         #self.connect:       str  =    str(connect)
-        #self.sampleRate:     int  =    int(sampleRate)
-        self.name:           int  =    str(name)
-        self.disconnect:     int  =    str(disconnect)
+        self.sampleRate:     int  =    int(sampleRate)
+        #self.name:           int  =    str(name)
+        #self.disconnect:     int  =    str(disconnect)
         self.period:         int  =    int(period)
-        #self.channelScan:    int  =    int(channelScan)
-        #self.waveform:      int  =    int(waveform)
 
         super().__init__(port,checkForValidParams)
 
 
-    # def GetInit(self) -> str : 
-    #     """Builds a string that represents the Params_8274D constructor with the \
-    #     arguments set to the values of this class instance. 
+    def GetInit(self) -> str : 
+        """Builds a string that represents the Params_8274D constructor with the \
+        arguments set to the values of this class instance. 
 
-    #     Returns:
-    #         str: String that represents the Params_8274D constructor.
-    #     """
-    #     return('Params_8274D(port=\''+self.port+'\', localScan=\''+str(self.localScan))
-    
+        Returns:
+            str: String that represents the Params_8274D constructor.
+        """
+        return( 'PodApi.Parameters.Params8274D('
+               + 'port=\'' + self.port 
+               + '\', localScan=\'' + str(self.localScan) 
+               + '\', period=\'' + str(self.period) 
+               +')')
+
     
 
     

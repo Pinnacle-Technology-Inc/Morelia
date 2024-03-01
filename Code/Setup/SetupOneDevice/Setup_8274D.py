@@ -95,12 +95,12 @@ class Setup8274D(SetupInterface) :
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
-            pod.WriteRead('CONNECT BY ADDRESS', (address), deviceParams.connectAdd)
+            pod.WriteRead('CONNECT BY ADDRESS', (address))
             # pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             #pod.WriteRead('GET SAMPLE RATE')
             pod.WriteRead('SET PERIOD', deviceParams.period) 
             #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
-            pod.WriteRead('GET NAME', deviceParams.name) 
+            #pod.WriteRead('GET NAME', deviceParams.name) 
             #pod.WriteRead('STREAM', (1)) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
 
@@ -128,10 +128,10 @@ class Setup8274D(SetupInterface) :
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames),
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
-           # sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
+            sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
             period            =     UserInput.AskForInput('\nSet Period '),
-            #channelScan       =     UserInput.AskForIntInRange('\nChannel Scan', 0, 1),
-            #waveform         =     UserInput.AskForInput('\nSet Waveform ')
+           
+            # channelScan       =     UserInput.AskForIntInRange('\nChannel Scan', 0, 1),
         ))
         
     def _GetPODdeviceParameterTable(self) -> Texttable :

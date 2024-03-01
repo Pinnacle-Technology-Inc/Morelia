@@ -41,29 +41,28 @@ def Read(pod: Pod, cmd) :
     print("cmd", cmd)
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
-    print('Read:\t', data)
+    print('Read1:\t', data)
     print('\n')
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
-    print('Read:\t', data)
+    print('Read2:\t', data)
     if (cmd == 'GET NAME'):
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
-        print('Read:\t', data)
+        print('Read3:\t', data)
     if (cmd == 'GET SAMPLE RATE'):
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
-        print('Read:\t', data)
+        print('Read3:\t', data)
     if (cmd == 'GET PERIOD'): 
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
-        print('Read:\t', data)
+        print('Read3:\t', data)
     if (cmd == 'STREAM'): 
-        # while True:
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
-        print('Read:\t', data)
-
+        print('Read3:\t', data)
+        
 
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
     """Writes and reads a packet from a POD device and prints the results.

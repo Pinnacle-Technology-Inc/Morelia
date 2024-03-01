@@ -88,17 +88,16 @@ class Pod8274D(Pod) :
 
         
     #---------------------------------------------------------------------------------------------
-    @staticmethod
-    def SampleKey(num: int) -> int : 
-        print("krish")
-        if num == 0 :
-            return 1024
-        if num == 1 :
-            return 512
-        if num == 2 :
-            return 256
-        if num == 3 :
-            return 128
+    # @staticmethod
+    # def SampleKey(num: int) -> int : 
+    #     if num == 0 :
+    #         return 1024
+    #     if num == 1 :
+    #         return 512
+    #     if num == 2 :
+    #         return 256
+    #     if num == 3 :
+    #         return 128
 
         # port: str = Pod8229.ChoosePort()
         # pod = Pod8229(port)
@@ -212,7 +211,33 @@ class Pod8274D(Pod) :
                 data: dict = x.TranslateAll()
                 print("Read3", data)
         return r
-        
+  
+  
+    # def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> PacketStandard :
+    #     """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
+
+    #     Args:
+    #         prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
+    #             + command number (4 bytes).
+    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+    #             skip validation. Defaults to True.
+
+    #     Raises:
+    #         Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
+
+    #     Returns:
+    #         Packet_Standard: Complete standard POD packet.
+    #     """
+    #     # read until ETX 
+    #     packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
+    #     # check for valid  
+    #     if(validateChecksum) :
+    #         if( not self._ValidateChecksum(packet) ) :
+    #             raise Exception('Bad checksum for standard POD packet read.')
+    #     # return packet
+    #     print("POSTREAD", packet)
+    #     return PacketStandard(packet, self._commands)
+
         
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
