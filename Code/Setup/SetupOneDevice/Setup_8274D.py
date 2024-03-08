@@ -96,12 +96,8 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
-            # pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
-            #pod.WriteRead('GET SAMPLE RATE')
             pod.WriteRead('SET PERIOD', deviceParams.period) 
-            #pod.WriteRead('CHANNEL SCAN', deviceParams.channelScan)
             #pod.WriteRead('GET NAME', deviceParams.name) 
-            #pod.WriteRead('STREAM', (1)) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
 
 
@@ -130,8 +126,6 @@ class Setup8274D(SetupInterface) :
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
             period            =     UserInput.AskForInput('\nSet Period '),
-           
-            # channelScan       =     UserInput.AskForIntInRange('\nChannel Scan', 0, 1),
         ))
         
     def _GetPODdeviceParameterTable(self) -> Texttable :
@@ -143,13 +137,13 @@ class Setup8274D(SetupInterface) :
         # setup table 
         tab = Texttable(160)
         # write column names
-        tab.header(['Device #','Port','Local Scan', 'Period'])
+        tab.header(['Device #','Port','Local Scan', 'Period', 'Sample Rate'])
         # write rows
         for key,val in self._podParametersDict.items() :
             localScan_str = f" Local Scan: {val.localScan}\n  "
-            # sampleRate_str = f" Sample Rate: {val.sampleRate}\n  "
             period_str = f" Period: {val.period}\n  "
-            tab.add_row([key, val.port, localScan_str, period_str])
+            samplerate_str = f" Sample Rate: {val.sampleRate}"
+            tab.add_row([key, val.port, localScan_str, period_str, samplerate_str])
         return(tab)
     
 
