@@ -86,49 +86,7 @@ class Pod8274D(Pod) :
         self._commands.AddCommand(223, 'SERVICE DISCOVERY',        (0,),                          (U16,),                                             False, 'Returns SL_STATUS_T, and then will start generating characteristic responses.  Those are currently unhandled. Likely this command wont be exposed in the long run ')
 
 
-        
-    #---------------------------------------------------------------------------------------------
-    # @staticmethod
-    # def SampleKey(num: int) -> int : 
-    #     if num == 0 :
-    #         return 1024
-    #     if num == 1 :
-    #         return 512
-    #     if num == 2 :
-    #         return 256
-    #     if num == 3 :
-    #         return 128
-
-        # port: str = Pod8229.ChoosePort()
-        # pod = Pod8229(port)
-
-    # def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
-    #     """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-    #     ending with ETX. Reads first STX and then starts recursion. 
-
-    #     Args:
-    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-    #             skip validation. Defaults to True.
-    #         timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-    #             Defaults to 5. 
-
-    #     Returns:
-    #         Packet: POD packet beginning with STX and ending with ETX. This may be a \
-    #             standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-    #     """
-    #     packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
-    #     # check for special packets
-    #     # if(isinstance(packet, PacketStandard)) : 
-    #     #     if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
-    #     #         packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
-    #     # return packet
-    #     return packet
-        
-            
-
-
-
-
+    
     #------------------------OVERWRITE---------------------------------------------#
         
     # def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
@@ -193,18 +151,19 @@ class Pod8274D(Pod) :
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
         print(cmd)
         self.WritePacket(cmd, payload)
-        r = self.ReadPODpacket(validateChecksum)
+        r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
         print("Read1", data)
-        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL', 'CHANNEL SCAN']:
-            read: Packet = self.ReadPODpacket(validateChecksum)
+        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL']:
+            read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
             print("Read2", data)
+            if cmd == 'GET NAME':
+                return data['Payload']
             if cmd == 'GET SAMPLE RATE':
                 return data['Payload'][0]
-            #if cmd in ['LOCAL SCAN', 'GET NAME']:
             if cmd in ['LOCAL SCAN']:
-                return data['Payload'][1:7]
+                return data['Payload'][1:7] 
         elif cmd == 'STREAM':
             while True:
                 x = self.ReadPODpacket(validateChecksum)
@@ -212,32 +171,6 @@ class Pod8274D(Pod) :
                 print("Read3", data)
         return r
   
-  
-    # def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> PacketStandard :
-    #     """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
-
-    #     Args:
-    #         prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
-    #             + command number (4 bytes).
-    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-    #             skip validation. Defaults to True.
-
-    #     Raises:
-    #         Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
-
-    #     Returns:
-    #         Packet_Standard: Complete standard POD packet.
-    #     """
-    #     # read until ETX 
-    #     packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
-    #     # check for valid  
-    #     if(validateChecksum) :
-    #         if( not self._ValidateChecksum(packet) ) :
-    #             raise Exception('Bad checksum for standard POD packet read.')
-    #     # return packet
-    #     print("POSTREAD", packet)
-    #     return PacketStandard(packet, self._commands)
-
         
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \

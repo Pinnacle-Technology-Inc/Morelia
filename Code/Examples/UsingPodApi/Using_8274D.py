@@ -36,7 +36,6 @@ pod = Pod8274D(port)
 # print('~~ device list ~~')
 # hf.RunCommand(pod, 'DEVICE LIST INFO', (0))
 
-# print('\n')
 
 print('~~ CONNECT BY ADDRESS ~~')
 hf.RunCommand(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 

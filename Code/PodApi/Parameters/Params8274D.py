@@ -31,11 +31,11 @@ class Params8274D(Params) :
             local scan(int) : 
         """
         self.localScan:      int  =    int(localScan)
-       # self.connectAdd:     str  =    str(connectAdd)
+        #self.connectAdd:    str  =    str(connectAdd)
         #self.connect:       str  =    str(connect)
         self.sampleRate:     int  =    int(sampleRate)
-        #self.name:           int  =    str(name)
-        #self.disconnect:     int  =    str(disconnect)
+        #self.name:          int  =    str(name)
+        #self.disconnect:    int  =    str(disconnect)
         self.period:         int  =    int(period)
 
         super().__init__(port,checkForValidParams)
@@ -52,7 +52,8 @@ class Params8274D(Params) :
                + 'port=\'' + self.port 
                + '\', localScan=\'' + str(self.localScan) 
                + '\', sampleRate=\'' + str(self.sampleRate)
-               + '\', period=\'' + str(self.period) 
+               + '\', period=\'' + str(self.period)
+               #+ '\', name=\'' + str(self.name)
                +'\')')
 
     

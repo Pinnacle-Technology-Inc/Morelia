@@ -67,7 +67,15 @@ class Setup8274D(SetupInterface) :
     
      
     # ============ PRIVATE METHODS ============      ========================================================================================================================
-    
+    def dec_to_asci(name) :
+        """Returns the corresponding ascii values. 
+
+        Returns:
+            string
+        """
+        print("Device name: ")
+        for each in name :
+            print(chr(each), end='')
     
     # ------------ DEVICE CONNECTION ------------
 
@@ -82,7 +90,6 @@ class Setup8274D(SetupInterface) :
         Returns:
             bool: True if connection was successful, false otherwise.
         """
-        print("11")
         success = False 
         # get port name 
         port = deviceParams.port.split(' ')[0] # isolate COM# from rest of string
@@ -96,11 +103,10 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
+            name = pod.WriteRead('GET NAME') 
+            print(Setup8274D.dec_to_asci(name))
             pod.WriteRead('SET PERIOD', deviceParams.period) 
-            #pod.WriteRead('GET NAME', deviceParams.name) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
-
-
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
@@ -110,6 +116,7 @@ class Setup8274D(SetupInterface) :
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
         # return True when connection successful, false otherwise
         return(success)
+    
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params8274D : 
         """Asks the user to input all the device parameters. 
@@ -122,7 +129,7 @@ class Setup8274D(SetupInterface) :
         """
         # ask for port first
         return(Params8274D(
-            port              =     self._ChoosePort(forbiddenNames),
+            port              =     self._ChoosePort(forbiddenNames), 
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
             period            =     UserInput.AskForInput('\nSet Period '),
@@ -143,6 +150,7 @@ class Setup8274D(SetupInterface) :
             localScan_str = f" Local Scan: {val.localScan}\n  "
             period_str = f" Period: {val.period}\n  "
             samplerate_str = f" Sample Rate: {val.sampleRate}"
+            #name_str = f" name: {val.name}"
             tab.add_row([key, val.port, localScan_str, period_str, samplerate_str])
         return(tab)
     
