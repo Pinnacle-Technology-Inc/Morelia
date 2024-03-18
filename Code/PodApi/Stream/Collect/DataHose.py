@@ -39,7 +39,7 @@ class Hose :
         """Set instance variables.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): Pod device to stream data from.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): Pod device to stream data from.
             useFilter (bool): Flag to remove corrupted data and timestamps when True; \
                 does not remove points when False. Defaults to True.
             filterMethod (str, optional): Method used to filter out corrupted data. \
@@ -65,7 +65,7 @@ class Hose :
         """Writes a command to the POD device to get its sample rate in Hz.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): POD device to get the sample rate for.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): POD device to get the sample rate for.
 
         Raises:
             Exception: Cannot get the sample rate for this POD device.
@@ -74,6 +74,9 @@ class Hose :
         Returns:
             int: Sample rate in Hz.
         """
+        # NOTE TK --
+        # update the big block comment below to include Pod8274D info
+        
         # Device  ::: cmd, command name,    args, ret, description
         # ----------------------------------------------------------------------------------------------
         # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
@@ -99,12 +102,19 @@ class Hose :
             #return 2  #why is it working if the input is 2 but not with 256, so why can't we just leave the input as 2?
             
             #return 0 # temp
+        
+        # NOTE TK --
+        # was the TODO below resolved?
+            
         ## TODO here is the problem! this neds to return a usable sample rate. 
         # if is Pod8274D r
         # get the sample rate. 
         # GET SAMPLE RATE REPLY gives a key, translate this to a sample rate --> But do this using a static method in device class. 
 
     def EmptyHose(self) : 
+        # NOTE TK --
+        # add docstring here 
+        
         self.deviceValve.EmptyValve()
         # reset to default
         self.data       : list[Packet|None] = []
@@ -135,6 +145,9 @@ class Hose :
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
         """
+        # NOTE TK --
+        # The above docstring is not correctly formatted. It needs Args: stopAfterXfails
+        
         # initialize       
         successiveFailCount: int = 0
         stopAt: bytes = self.deviceValve.GetStopBytes()
@@ -176,9 +189,6 @@ class Hose :
             # drop data 
             currentTime = self._Drop(currentTime, ti, data)
         
-    
-   
-
 
     def _Drop(self, currentTime: float, ti: float, data: list[Packet|None]) -> float : 
         """Updates the instance variables that store the streaming data. \

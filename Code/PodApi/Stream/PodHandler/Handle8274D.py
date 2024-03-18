@@ -55,9 +55,9 @@ class Drain8274D(DrainDeviceHandler) :
             pd.DataFrame: DataFrame containing the timestamps and packet data.
         """
         return pd.DataFrame({
-            'Time' : timestamps,
-            'LengthBytes'  : [ pt.ret(0) if (isinstance(pt, PacketBinary)) else pt for pt in data],
-            'Data'  : [ pt.ret(1) if (isinstance(pt, PacketBinary)) else pt for pt in data]
+            'Time'          : timestamps,
+            'LengthBytes'   : [ pt.ret(0) if (isinstance(pt, PacketBinary)) else pt for pt in data], # NOTE TK -- change pt.ret(0) to pt.binaryLength
+            'Data'          : [ pt.ret(1) if (isinstance(pt, PacketBinary)) else pt for pt in data]  # NOTE TK -- change pt.ret(0) to pt.binaryData
         })
         
     def DropToListOfArrays(self, data: list[Packet|float]) -> list[np.array] : 
@@ -71,8 +71,8 @@ class Drain8274D(DrainDeviceHandler) :
         """
         # unpack binary Packet
         dlist_list : list[list[float]] = [
-            [ (pt.ret(0)) if (isinstance(pt, PacketBinary)) else pt for pt in data],
-            [ (pt.ret(1)) if (isinstance(pt, PacketBinary)) else pt for pt in data]
+            [ (pt.ret(0)) if (isinstance(pt, PacketBinary)) else pt for pt in data], # NOTE TK -- change pt.ret(0) to pt.binaryLength
+            [ (pt.ret(1)) if (isinstance(pt, PacketBinary)) else pt for pt in data]  # NOTE TK -- change pt.ret(0) to pt.binaryData
         ]
         # convert to np arrays
         dlist_arr = []

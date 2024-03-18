@@ -58,6 +58,8 @@ class Setup8274D(SetupInterface) :
             list[str]: List of string file extensions.
         """
         return(['.txt','.csv'])
+        # NOTE TK --
+        # why no EDF? Is there a reason?
 
 
     def StopStream(self) -> None: 
@@ -67,11 +69,32 @@ class Setup8274D(SetupInterface) :
     
      
     # ============ PRIVATE METHODS ============      ========================================================================================================================
-    def dec_to_asci(name) :
+    
+    # NOTE TK -- 
+    # We want to keep all function names formatted in capital camel case.
+    # So this should be DecToAscii
+    # NOTE TK -- 
+    # is this a static method? If so be sure to use @staticmethod decorator. 
+    # If you don't, 'name' may be interpreted as a 'self'.
+    # NOTE TK --
+    # Also be sure to use a an annotation for the function argument and return
+    # Such as the following
+    #   @staticmethod
+    #   def DecToAscii(name: str) -> str:    
+    # # NOTE TK -- 
+    # Can you add more detail to the docstring description? I dont really know
+    # what this function is for. 
+    # NOTE TK -- 
+    # Returns: in the docstring are not correctly formatted. Strings should be 
+    # 'str' and you need to add 'str: type description here'.
+    # NOTE TK -- 
+    # docstring needs an 'Args: ' component. 
+    
+    def dec_to_asci(name) : 
         """Returns the corresponding ascii values. 
 
         Returns:
-            string
+            string 
         """
         print("Device name: ")
         for each in name :
@@ -102,8 +125,8 @@ class Setup8274D(SetupInterface) :
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
-            # name = pod.WriteRead('GET NAME') 
-            # print(Setup8274D.dec_to_asci(name))
+            name = pod.WriteRead('GET NAME') 
+            print(Setup8274D.dec_to_asci(name)) # NOTE TK -- why are you printing here? is this for debug?
             pod.WriteRead('SET PERIOD', deviceParams.period) 
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
@@ -128,8 +151,25 @@ class Setup8274D(SetupInterface) :
         # ask for port first
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames), 
+            
+            # NOTE TK -- 
+            # What does Local Scan (0 or 1) mean? It would be better to be more descriptive when asking 
+            # for user input. Such as the following:
+            #       UserInput.AskYN(question="Enable Local Scan")
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan (0 or 1)', 0, 1),
+            
+            # NOTE TK -- 
+            # Similar problem here. What does Sample Rate (0,1,2,3) mean? I can see that it is 
+            # 0 = 1024, 1 = 512, 2 = 256, 3 = 128 in the spreadsheet, but the user should not 
+            # have to look at the spreadsheet to use this code. 
+            # So make this user input request more clear
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
+            
+            # NOTE TK -- 
+            # The 'AskForInput' function is too general for this, as the user can respond with any 
+            # string. This is very error prone. Period needs to be a number. Use AskForIntInRange
+            # or AskForFloatInRange instead. For example, you can set the minimum range as zero 
+            # to prevent negative numbers 
             period            =     UserInput.AskForInput('\nSet Period '),
         ))
         
@@ -145,6 +185,14 @@ class Setup8274D(SetupInterface) :
         tab.header(['Device #','Port','Local Scan', 'Period', 'Sample Rate'])
         # write rows
         for key,val in self._podParametersDict.items() :
+            # NOTE TK --
+            # This is a pretty minor comment here. But you could be more efficient by doing this all in 
+            # one line. This a little memory on the computer I think. But no problem your way though!
+            # tab.add_row([ key, 
+            #               val.port, 
+            #               f" Local Scan: {val.localScan}\n  ", 
+            #               f" Period: {val.period}\n  ", 
+            #               f" Sample Rate: {val.sampleRate}"])
             localScan_str = f" Local Scan: {val.localScan}\n  "
             period_str = f" Period: {val.period}\n  "
             samplerate_str = f" Sample Rate: {val.sampleRate}"
@@ -185,8 +233,8 @@ class Setup8274D(SetupInterface) :
         return(f)
 
 
-#----------------------------------streaming---------------
-    
+# ------------ STREAM ------------
+
 
     def _StreamThreading(self) -> tuple[dict[int,Thread]] :
         """Start streaming from each POD device and save each to a file.
@@ -205,6 +253,7 @@ class Setup8274D(SetupInterface) :
         self._bucketAccess = allBuckets
         # return started threads
         return ( bucketThreads, drainThreads )
+        
         
     def StopStream(self) -> None :
         """Write a command to stop streaming data to all POD devices."""

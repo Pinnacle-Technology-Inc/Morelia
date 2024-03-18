@@ -47,6 +47,12 @@ class Params8274D(Params) :
                + '\', sampleRate=\'' + str(self.sampleRate)
                + '\', period=\'' + str(self.period)
                +'\')')
+        
+        
+    # NOTE TK --
+    # need to implement to be a proper interface class: 
+    #   def _CheckParams(self) -> None :
+
 
     
 
