@@ -14,8 +14,7 @@ class Params8274D(Params) :
     def __init__(self,
         port:  str,
         localScan : int,                
-        sampleRate :  int,   
-        #disconnect : str,  
+        sampleRate :  int,    
         period : int , 
         
 
@@ -30,7 +29,6 @@ class Params8274D(Params) :
         """
         self.localScan:      int  =    int(localScan)
         self.sampleRate:     int  =    int(sampleRate)
-        #self.disconnect:    int  =    str(disconnect)
         self.period:         int  =    int(period)
 
         super().__init__(port,checkForValidParams)

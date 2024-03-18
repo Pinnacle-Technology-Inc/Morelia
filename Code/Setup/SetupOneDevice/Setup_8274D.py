@@ -101,12 +101,10 @@ class Setup8274D(SetupInterface) :
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
-            #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
-            # name = pod.WriteRead('GET NAME') 
-            # print(Setup8274D.dec_to_asci(name))
+            name = pod.WriteRead('GET NAME') 
+            print(Setup8274D.dec_to_asci(name))
             pod.WriteRead('SET PERIOD', deviceParams.period) 
-            #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
