@@ -56,13 +56,13 @@ class DrainToFile : # interface class
             Exception: POD Device is not supported.
 
         Returns:
-            Drain8206HR | Drain8401HR: POD Device Handler.
+            Drain8206HR | Drain8401HR | Drain8274D : POD Device Handler.
         """
         # pick handler according to POD device type
         device = DrainDeviceHandler.GetPodFromBucket(bkt)
         if(   isinstance(device, Pod8206HR) ) : return Drain8206HR()
-        elif( isinstance(device, Pod8274D) )  : return Drain8274D()
         elif( isinstance(device, Pod8401HR) ) : return Drain8401HR(preampDevice)
+        elif( isinstance(device, Pod8274D) )  : return Drain8274D()
         else: raise Exception('[!] POD Device is not supported.')
 
     @staticmethod

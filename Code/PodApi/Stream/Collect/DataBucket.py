@@ -155,5 +155,4 @@ class Bucket :
         Returns:
             bool: True if there is a drop to be collected, False otherwise.
         """
-        #print("Drops in Bkt/Hos:\t", self.totalDropsCollected, self.dataHose.numDrops)
         return ( self.totalDropsCollected < self.dataHose.numDrops ) 
