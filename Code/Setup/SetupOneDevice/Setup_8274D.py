@@ -102,8 +102,8 @@ class Setup8274D(SetupInterface) :
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
-            name = pod.WriteRead('GET NAME') 
-            print(Setup8274D.dec_to_asci(name))
+            # name = pod.WriteRead('GET NAME') 
+            # print(Setup8274D.dec_to_asci(name))
             pod.WriteRead('SET PERIOD', deviceParams.period) 
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod

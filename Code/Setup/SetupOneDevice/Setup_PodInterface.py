@@ -280,7 +280,6 @@ class SetupInterface :
             dict[int,Params_Interface]: Dictionary with device numbers for keys and parameters for values.
         """
         # get the number of devices 
-        print("6")
         numDevices = self._SetNumberOfDevices(self.GetDeviceName())
         # initialize 
         portNames = [None] * numDevices

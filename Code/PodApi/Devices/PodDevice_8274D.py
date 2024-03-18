@@ -90,14 +90,16 @@ class Pod8274D(Pod) :
     #------------------------OVERWRITE---------------------------------------------#
         
 
-        
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
+        print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
+        print("read1:", data)
         if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL']:
             read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
+            print("read2:", data)
             if cmd == 'GET NAME':
                 return data['Payload']
             if cmd == 'GET SAMPLE RATE':
