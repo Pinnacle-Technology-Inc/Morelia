@@ -89,75 +89,15 @@ class Pod8274D(Pod) :
     
     #------------------------OVERWRITE---------------------------------------------#
         
-    # def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
-    #     """Writes a command with optional payload to POD device, then reads (once) the device response.
 
-    #     Args:
-    #         cmd (str | int): Command number. 
-    #         payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
-    #             is a payload, set to an integer value or a bytes string. Defaults to None.
-    #         validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
-    #                 validation. Defaults to True.
-
-    #     Returns:
-    #         Packet: POD packet beginning with STX and ending with ETX. This may \
-    #             be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-    #     """
-    #     print(cmd)
-    #     self.WritePacket(cmd, payload)
-    #     r = self.ReadPODpacket(validateChecksum)       
-    #     print("READ", data)
-    #     if cmd == 'LOCAL SCAN': 
-    #         #x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = r.TranslateAll()
-    #         print("***", data['Payload'][1:7]) # handling payload to give to 'connect address'
-    #         return(data['Payload'][1:7])
-    #     if cmd == 'CONNECT BY ADDRESS': #you can't have it re-reading the Device for 8206
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("***", data)
-    #     if cmd == 'GET NAME': #GET
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("DATA", data)
-    #         print("***", data['Payload'][1:7])
-    #         return(data['Payload'][1:7])
-    #     if cmd == 'SET SAMPLE RATE': #you can't have it re-reading the Device for 8206
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("***", data)
-    #     if cmd == 'GET SAMPLE RATE': #you can't have it re-reading the Device for 8206
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("***", data)
-    #     if cmd == 'DISCONNECT ALL':
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("***", data)
-    #     if cmd == 'CHANNEL SCAN':
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("Read: ", data)
-    #         x = self.ReadPODpacket(validateChecksum)
-    #         data: dict = x.TranslateAll()
-    #         print("Read: ", data)
-    #     if (cmd == 'STREAM'): 
-    #         while True:
-    #             x = self.ReadPODpacket(validateChecksum)
-    #             data: dict = x.TranslateAll()
-    #             print("***", data)
-    #     return(r)
         
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
-        print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
-        print("Read1", data)
         if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL']:
             read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
-            print("Read2", data)
             if cmd == 'GET NAME':
                 return data['Payload']
             if cmd == 'GET SAMPLE RATE':
@@ -168,7 +108,6 @@ class Pod8274D(Pod) :
             while True:
                 x = self.ReadPODpacket(validateChecksum)
                 data: dict = x.TranslateAll()
-                print("Read3", data)
         return r
   
         

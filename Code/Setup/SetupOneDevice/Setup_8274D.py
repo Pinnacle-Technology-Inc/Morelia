@@ -103,8 +103,8 @@ class Setup8274D(SetupInterface) :
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
             #print("address", address)
             pod.WriteRead('CONNECT BY ADDRESS', (address))
-            name = pod.WriteRead('GET NAME') 
-            print(Setup8274D.dec_to_asci(name))
+            # name = pod.WriteRead('GET NAME') 
+            # print(Setup8274D.dec_to_asci(name))
             pod.WriteRead('SET PERIOD', deviceParams.period) 
             #pod.WriteRead('DISCONNECT ALL', deviceParams.disconnect) 
             # successful write if no exceptions raised 
@@ -130,7 +130,7 @@ class Setup8274D(SetupInterface) :
         # ask for port first
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames), 
-            localScan         =     UserInput.AskForIntInRange('\nSet Local Scan', 0, 1),
+            localScan         =     UserInput.AskForIntInRange('\nSet Local Scan (0 or 1)', 0, 1),
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
             period            =     UserInput.AskForInput('\nSet Period '),
         ))
@@ -150,7 +150,6 @@ class Setup8274D(SetupInterface) :
             localScan_str = f" Local Scan: {val.localScan}\n  "
             period_str = f" Period: {val.period}\n  "
             samplerate_str = f" Sample Rate: {val.sampleRate}"
-            #name_str = f" name: {val.name}"
             tab.add_row([key, val.port, localScan_str, period_str, samplerate_str])
         return(tab)
     

@@ -173,7 +173,6 @@ class SetupInterface :
             Exception: Device parameters must be dictionary type.
             Exception: Device parameters dictionary is empty.
         """
-       # print("!!!", paramDict)
         if(paramDict == None) : 
             return(True)
         # is params a dict?
@@ -229,7 +228,6 @@ class SetupInterface :
         print('\nConnecting '+self.GetDeviceName()+' devices...')
         # setup each POD device
         areAllGood = True
-        print("10")
         for key,val in self._podParametersDict.items():
            # areAllGood is false if any device fails
            areAllGood = areAllGood and self._ConnectPODdevice(key,val)
@@ -262,7 +260,6 @@ class SetupInterface :
             podParametersDict (dict[int,Params_Interface] | None, optional): dictionary of the device parameters \
                 for all devices. Defaults to None.
         """
-        print("5")
         # get dictionary of POD device parameters
         if(podParametersDict==None):
             # get setup parameters for all POD devices
@@ -272,7 +269,6 @@ class SetupInterface :
         else:
             self._podParametersDict = podParametersDict
         # connect and initialize all POD devices
-        print("9")
         self.ConnectAllPODdevices()
 
 

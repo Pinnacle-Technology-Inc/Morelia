@@ -13,10 +13,8 @@ class Params8274D(Params) :
 
     def __init__(self,
         port:  str,
-        localScan : int,     
-        #connectAdd : str,           
+        localScan : int,                
         sampleRate :  int,   
-        #name : str,
         #disconnect : str,  
         period : int , 
         
@@ -31,10 +29,7 @@ class Params8274D(Params) :
             local scan(int) : 
         """
         self.localScan:      int  =    int(localScan)
-        #self.connectAdd:    str  =    str(connectAdd)
-        #self.connect:       str  =    str(connect)
         self.sampleRate:     int  =    int(sampleRate)
-        #self.name:          int  =    str(name)
         #self.disconnect:    int  =    str(disconnect)
         self.period:         int  =    int(period)
 
@@ -53,7 +48,6 @@ class Params8274D(Params) :
                + '\', localScan=\'' + str(self.localScan) 
                + '\', sampleRate=\'' + str(self.sampleRate)
                + '\', period=\'' + str(self.period)
-               #+ '\', name=\'' + str(self.name)
                +'\')')
 
     
