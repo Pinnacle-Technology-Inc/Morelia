@@ -14,7 +14,7 @@ class Valve :
     """Simple class to start and stop streaming data from a POD device.
     
     Attributes: 
-            podDevice (Pod8206HR | Pod8401HR | Pod8274D): POD device, such as an 8206-HR or 8401-HR.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): POD device, such as an 8206-HR/8401-HR/8274D.
             streamCmd (str | int): Command name/number for streaming data.
             streamPldStart (int | bytes | tuple[int | bytes]): Payload to start streaming data.
             streamPldStop (int | bytes | tuple[int | bytes]): Payload to stop streaming data.
@@ -24,7 +24,7 @@ class Valve :
         """Set instance variables.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR | Pod8274D): 8206-HR or 8401-HR POD device to stream data from.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): 8206-HR/8401-HR/8274D POD device to stream data from.
         """
         # set instance variables 
         self.podDevice : Pod8206HR|Pod8401HR|Pod8274D = podDevice

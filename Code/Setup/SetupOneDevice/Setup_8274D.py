@@ -128,6 +128,7 @@ class Setup8274D(SetupInterface) :
             name = pod.WriteRead('GET NAME') 
             print(Setup8274D.dec_to_asci(name)) # NOTE TK -- why are you printing here? is this for debug?
             pod.WriteRead('SET PERIOD', deviceParams.period) 
+            pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
@@ -151,19 +152,18 @@ class Setup8274D(SetupInterface) :
         # ask for port first
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames), 
-            
             # NOTE TK -- 
             # What does Local Scan (0 or 1) mean? It would be better to be more descriptive when asking 
             # for user input. Such as the following:
             #       UserInput.AskYN(question="Enable Local Scan")
-            localScan         =     UserInput.AskForIntInRange('\nSet Local Scan (0 or 1)', 0, 1),
+            localScan         =     UserInput.AskForIntInRange('\nSet Local Scan (1 enables, 0 disables)', 0, 1),
             
             # NOTE TK -- 
             # Similar problem here. What does Sample Rate (0,1,2,3) mean? I can see that it is 
             # 0 = 1024, 1 = 512, 2 = 256, 3 = 128 in the spreadsheet, but the user should not 
             # have to look at the spreadsheet to use this code. 
             # So make this user input request more clear
-            sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0,1,2,3)', [0,1,2,3]),
+            sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0 for 1024, 1 for 512, 2 for 256, 3 for 128)', [0,1,2,3]),
             
             # NOTE TK -- 
             # The 'AskForInput' function is too general for this, as the user can respond with any 

@@ -32,7 +32,7 @@ class Bucket :
         """Set class instance variables.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): POD device to stream data from.
+            podDevice (Pod8206HR | Pod8401HR | 8274D): POD device to stream data from.
             useFilter (bool): Flag to remove corrupted data and timestamps when True; \
                 does not remove points when False. Defaults to True.
         """

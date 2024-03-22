@@ -89,17 +89,39 @@ class Pod8274D(Pod) :
     # This function needs a docstring. also write comments on 'why' you have
     # special conditions for different commands, and what they mean 
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
+        """Writes a command with optional payload to POD device, then reads (once) the device response.
+        8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
+        Pod Device, in order to get the right payload back. Each Get and Set Command will generate a Procedure Complete (command 211) indicating a successful write/read.
+
+
+        Args:
+            cmd (str | int): Command number. 
+            payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
+                is a payload, set to an integer value or a bytes string. Defaults to None.
+            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+                    validation. Defaults to True.
+
+        Returns:
+            Packet: POD packet beginning with STX and ending with ETX. This may \
+                be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+                There are some conditions for some commands. For example, if cmd is Local Scan, it returns Payload[1:7]
+                because that will be the bluetooth address that can be used to connect to the device.
+        """
         print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
         print("read1:", data)
-        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'DISCONNECT ALL']:
+        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
             read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
             print("read2:", data)
             if cmd == 'GET NAME':
-                return data['Payload']
+                name = data['Payload']
+                read: Packet = self.ReadPODpacket()
+                data: dict = read.TranslateAll()
+                print("read3:", data)
+                return name
             if cmd == 'GET SAMPLE RATE':
                 return data['Payload'][0]
             if cmd in ['LOCAL SCAN']:

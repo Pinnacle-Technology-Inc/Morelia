@@ -81,6 +81,7 @@ class Hose :
         # ----------------------------------------------------------------------------------------------
         # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
         # 8401-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
+        # 8274D   ::: 256, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
         # ----------------------------------------------------------------------------------------------
         # NOTE both 8206HR and 8401HR use the same command to start streaming. 
         # If there is a new device that uses a different command, add a method 
@@ -94,14 +95,12 @@ class Hose :
             print("here", int(pkt.Payload()[0]))
             return int(pkt.Payload()[0]) 
         else :  
-            if(not podDevice.TestConnection()) : 
+            if(not podDevice.TestConnection()) :  
                 raise Exception ('[!] Could not connect to this POD device.')
             pkt: PacketBinary = podDevice.WriteRead('GET SAMPLE RATE')
             print("here2", int(pkt))
             return pkt
-            #return 2  #why is it working if the input is 2 but not with 256, so why can't we just leave the input as 2?
             
-            #return 0 # temp
         
         # NOTE TK --
         # was the TODO below resolved?
@@ -114,6 +113,8 @@ class Hose :
     def EmptyHose(self) : 
         # NOTE TK --
         # add docstring here 
+        """Empties the hose and resets the attributes.
+        """
         
         self.deviceValve.EmptyValve()
         # reset to default
@@ -144,6 +145,9 @@ class Hose :
     def _Flow(self, stopAfterXfails: int = 3) : 
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
+
+        Args: 
+             stopAfterXfails (int): The number of successive failed attempts of reading data before stopping the streaming.
         """
         # NOTE TK --
         # The above docstring is not correctly formatted. It needs Args: stopAfterXfails

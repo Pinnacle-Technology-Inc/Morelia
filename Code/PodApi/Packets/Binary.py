@@ -104,7 +104,7 @@ class PacketBinary(Packet) :
     # NOTE TK --
     #  the name of this function does not describe what the function does. 
     # I dont quite understand what this function is for. Why not just access 
-    # binaryLength and binaryData from the class instance wqhen you need it?
+    # binaryLength and binaryData from the class instance when you need it?
     # binaryLength and binaryData are NOT private member variables. They are
     # public.
     # It looks like this function is only used in Handle8274D.py. So it 
@@ -120,7 +120,7 @@ class PacketBinary(Packet) :
 
         Returns:
             float: Voltage of channel n in Volts.
-        """
+        """ 
         match n :
             case 0 : return self.binaryLength
             case 1 : return self.binaryData
