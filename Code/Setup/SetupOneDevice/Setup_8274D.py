@@ -57,48 +57,32 @@ class Setup8274D(SetupInterface) :
         Returns:
             list[str]: List of string file extensions.
         """
-        return(['.txt','.csv'])
+        return(['.txt','.csv', '.edf'])
         # NOTE TK --
         # why no EDF? Is there a reason?
+    
+    @staticmethod
+    def NameDecode(name: str) -> str:
+        """Converts decimal valued name into more understandable ascii values. 
 
-
+        Args:
+            name (str): This represents the name of the device(which is in decimal value.)
+        
+        Returns:
+            str: returns name of the device in ascii values. 
+        """
+        decoded_name = ""
+        for each in name :
+            decoded_name += chr(int(each))
+        return decoded_name
+    
     def StopStream(self) -> None: 
         """Update the state flag to signal to stop streaming data.
         """
         self._streamMode = False
-    
      
     # ============ PRIVATE METHODS ============      ========================================================================================================================
     
-    # NOTE TK -- 
-    # We want to keep all function names formatted in capital camel case.
-    # So this should be DecToAscii
-    # NOTE TK -- 
-    # is this a static method? If so be sure to use @staticmethod decorator. 
-    # If you don't, 'name' may be interpreted as a 'self'.
-    # NOTE TK --
-    # Also be sure to use a an annotation for the function argument and return
-    # Such as the following
-    #   @staticmethod
-    #   def DecToAscii(name: str) -> str:    
-    # # NOTE TK -- 
-    # Can you add more detail to the docstring description? I dont really know
-    # what this function is for. 
-    # NOTE TK -- 
-    # Returns: in the docstring are not correctly formatted. Strings should be 
-    # 'str' and you need to add 'str: type description here'.
-    # NOTE TK -- 
-    # docstring needs an 'Args: ' component. 
-    
-    def dec_to_asci(name) : 
-        """Returns the corresponding ascii values. 
-
-        Returns:
-            string 
-        """
-        print("Device name: ")
-        for each in name :
-            print(chr(each), end='')
     
     # ------------ DEVICE CONNECTION ------------
 
@@ -124,19 +108,23 @@ class Setup8274D(SetupInterface) :
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
-            pod.WriteRead('CONNECT BY ADDRESS', (address))
-            name = pod.WriteRead('GET NAME') 
-            print(Setup8274D.dec_to_asci(name)) # NOTE TK -- why are you printing here? is this for debug?
-            pod.WriteRead('SET PERIOD', deviceParams.period) 
+            #name = pod.WriteRead('DEVICE LIST INFO') 
+            time.sleep(5)
+            pod.WriteRead('CONNECT BY ADDRESS', (address)) 
+            time.sleep(1)
             pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
+            time.sleep(1)
+            pod.WriteRead('SET PERIOD', deviceParams.period)
+            time.sleep(1)
+            name = pod.WriteRead('GET NAME') 
             # successful write if no exceptions raised 
             self._podDevices[deviceNum] = pod
             success = True
-            print('Successfully connected device #'+str(deviceNum)+' to '+port+'.')
+            print('Successfully connected '+ Setup8274D.NameDecode(name)+ ' device #' +str(deviceNum)+' to '+port+'.')
         except Exception as e :
             self._podDevices[deviceNum] = False # fill entry with bad value
             print('[!] Failed to connect device #'+str(deviceNum)+' to '+port+': '+str(e))
-        # return True when connection successful, false otherwise
+        # return True when connection successful, false otherwise 
         return(success)
     
 
@@ -152,25 +140,9 @@ class Setup8274D(SetupInterface) :
         # ask for port first
         return(Params8274D(
             port              =     self._ChoosePort(forbiddenNames), 
-            # NOTE TK -- 
-            # What does Local Scan (0 or 1) mean? It would be better to be more descriptive when asking 
-            # for user input. Such as the following:
-            #       UserInput.AskYN(question="Enable Local Scan")
             localScan         =     UserInput.AskForIntInRange('\nSet Local Scan (1 enables, 0 disables)', 0, 1),
-            
-            # NOTE TK -- 
-            # Similar problem here. What does Sample Rate (0,1,2,3) mean? I can see that it is 
-            # 0 = 1024, 1 = 512, 2 = 256, 3 = 128 in the spreadsheet, but the user should not 
-            # have to look at the spreadsheet to use this code. 
-            # So make this user input request more clear
             sampleRate        =     UserInput.AskForIntInList('\nSet Sample Rate (0 for 1024, 1 for 512, 2 for 256, 3 for 128)', [0,1,2,3]),
-            
-            # NOTE TK -- 
-            # The 'AskForInput' function is too general for this, as the user can respond with any 
-            # string. This is very error prone. Period needs to be a number. Use AskForIntInRange
-            # or AskForFloatInRange instead. For example, you can set the minimum range as zero 
-            # to prevent negative numbers 
-            period            =     UserInput.AskForInput('\nSet Period '),
+            period            =     UserInput.AskForInt('\nSet Period (greater than or equal to 0)'),
         ))
         
     def _GetPODdeviceParameterTable(self) -> Texttable :
@@ -185,18 +157,11 @@ class Setup8274D(SetupInterface) :
         tab.header(['Device #','Port','Local Scan', 'Period', 'Sample Rate'])
         # write rows
         for key,val in self._podParametersDict.items() :
-            # NOTE TK --
-            # This is a pretty minor comment here. But you could be more efficient by doing this all in 
-            # one line. This a little memory on the computer I think. But no problem your way though!
-            # tab.add_row([ key, 
-            #               val.port, 
-            #               f" Local Scan: {val.localScan}\n  ", 
-            #               f" Period: {val.period}\n  ", 
-            #               f" Sample Rate: {val.sampleRate}"])
-            localScan_str = f" Local Scan: {val.localScan}\n  "
-            period_str = f" Period: {val.period}\n  "
-            samplerate_str = f" Sample Rate: {val.sampleRate}"
-            tab.add_row([key, val.port, localScan_str, period_str, samplerate_str])
+            tab.add_row([ key, 
+                          val.port, 
+                          f" Local Scan: {val.localScan}\n  ", 
+                          f" Period: {val.period}\n  ", 
+                          f" Sample Rate: {val.sampleRate}"])
         return(tab)
     
 

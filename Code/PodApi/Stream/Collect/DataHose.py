@@ -89,7 +89,7 @@ class Hose :
         # and set the self.stream* instance variables accordingly.
         if( not isinstance(podDevice, Pod8274D)) : 
             podDevice._commands.ValidateCommand('GET SAMPLE RATE')
-            if(not podDevice.TestConnection()) : 
+            if(not podDevice.TestConnection()) :
                 raise Exception('[!] Could not connect to this POD device.')
             pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
             print("here", int(pkt.Payload()[0]))

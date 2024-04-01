@@ -1,4 +1,5 @@
 # local imports 
+import time
 import PodApi
 from PodApi.Devices import Pod
 from PodApi.Packets import Packet, PacketStandard, PacketBinary
@@ -112,20 +113,32 @@ class Pod8274D(Pod) :
         r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
         print("read1:", data)
-        if cmd in ['LOCAL SCAN', 'CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
+        if cmd in ['LOCAL SCAN'] :
+            max_retries = 3  # Maximum number of retries
+            retries = 0
+            while retries < max_retries:
+                r = self.ReadPODpacket()
+                if not r:
+                    print("No response from device. Waiting for 5 seconds before retrying...")
+                    time.sleep(5)  # Wait for 5 seconds
+                    retries += 1
+                    continue
+                data: dict = r.TranslateAll()
+                print("read:", data)
+                if data['Command Number'] == 101 and len(data['Payload']) > 1:
+                    return data['Payload'][1:7]  # Assuming the payload contains the address to connect
+        if cmd in ['CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
             read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
-            print("read2:", data)
+            print("read3:", data)
             if cmd == 'GET NAME':
-                name = data['Payload']
                 read: Packet = self.ReadPODpacket()
                 data: dict = read.TranslateAll()
+                name = data['Payload']
                 print("read3:", data)
                 return name
             if cmd == 'GET SAMPLE RATE':
                 return data['Payload'][0]
-            if cmd in ['LOCAL SCAN']:
-                return data['Payload'][1:7] 
         elif cmd == 'STREAM':
             while True:
                 x = self.ReadPODpacket(validateChecksum)

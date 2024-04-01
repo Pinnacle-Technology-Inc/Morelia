@@ -73,18 +73,35 @@ port: str = Pod8274D.ChoosePort()
 pod = Pod8274D(port)
 
 
+print('~~ BASICS ~~')
+
+hf.RunCommand_8274D(pod, 'PING') # Used to verify device is present and communicating
+hf.RunCommand_8274D(pod, 'TYPE') # Returns the device type value.  This is a unique value for each device.  For the 8041-HR it is 0x31
+hf.RunCommand_8274D(pod, 'ID') # Returns the device ID value 
+hf.RunCommand_8274D(pod, 'FIRMWARE VERSION') # Returns the device firmware version as 3 values.  So 1.0.10 would come back as 0x31, 0x30, 0x00, 0x41
+
+hf.RunCommand_8274D(pod, 'LOCAL SCAN', (1))
+
 print('~~ CONNECT BY ADDRESS ~~')
-hf.RunCommand(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
+hf.RunCommand_8274D(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
 
 
-print('~~ GET NAME ~~')
-hf.RunCommand(pod, 'GET NAME', ()) 
+
 
 print('~~ GET SAMPLE RATE ~~')
-hf.RunCommand(pod, 'GET SAMPLE RATE', ()) 
+hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ()) 
+
+print('~~ GET PERIOD ~~')
+hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ())
+
+print('~~ GET PERIOD ~~')
+hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ())
+
+print('~~ GET NAME ~~')
+hf.RunCommand_8274D(pod, 'GET NAME', ()) 
 
 print('~~ STREAM ~~')
-hf.RunCommand(pod, 'STREAM', (1,)) 
-hf.RunCommand(pod, 'STREAM', (0,)) 
+hf.RunCommand_8274D(pod, 'STREAM', (1,)) 
+# hf.RunCommand(pod, 'STREAM', (0,)) 
 
 

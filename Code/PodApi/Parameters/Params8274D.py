@@ -49,10 +49,24 @@ class Params8274D(Params) :
                +'\')')
         
         
-    # NOTE TK --
-    # need to implement to be a proper interface class: 
-    #   def _CheckParams(self) -> None :
+    def _CheckParams(self) -> None :
+            """Throws an exception if Params_8206HR instance variable is an invalid value.
 
+            Raises:
+                Exception: Sample rate must be between 100-2000 Hz.
+                Exception: Preamplidier gain must be 10x or 100x.
+                Exception: Low-pass EEG/EMG must be between 11-500 Hz.
+            """
+            super()._CheckParams() 
+
+            if(self.localScan != 0 and self.localScan != 1 ) : 
+                raise Exception('Local Scan value must be 0 or 1 (0 disables, 1 enables). ')
+            
+            if(self.sampleRate < 0 or self.sampleRate > 3 ) : 
+                raise Exception('Sample Rate must be 0, 1 , 2 or 3.')
+            
+            if(self.period < 0 ) : 
+                raise Exception('Period must be greater than or equal to 0. ')
 
     
 
