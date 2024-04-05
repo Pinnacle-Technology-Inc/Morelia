@@ -52,25 +52,30 @@ def Read_8274D(pod: Pod, cmd) :
     data: dict = read.TranslateAll()
     print('Read1:\t', data)
     print('\n')
-    # read: Packet = pod.ReadPODpacket()
-    # data: dict = read.TranslateAll()
-    # print('Read2:\t', data)
-    if (cmd == 'GET NAME' or cmd == 'LOCAL SCAN'):
+    if (cmd == 'LOCAL SCAN' or cmd == 'CONNECT BY ADDRESS'):
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
         print('Read2:\t', data)
-    if (cmd == 'GET SAMPLE RATE'):
-        read: Packet = pod.ReadPODpacket()
-        data: dict = read.TranslateAll()
-        print('Read3:\t', data)
-    if (cmd == 'GET PERIOD'): 
-        read: Packet = pod.ReadPODpacket()
-        data: dict = read.TranslateAll()
-        print('Read3:\t', data)
-    if (cmd == 'STREAM'): 
-        read: Packet = pod.ReadPODpacket()
-        data: dict = read.TranslateAll()
-        print('Read3:\t', data)
+    if (cmd.startswith('GET')|cmd.startswith('SET')) and cmd != 'SET BAUD RATE' :
+        while True:
+            read: Packet = pod.ReadPODpacket()
+            data: dict = read.TranslateAll()
+            print('Read:\t', data)
+            if data.get('Command Number') == 211:
+                break  # Exit the loop when Command Number is 211
+    if cmd == 'CHANNEL SCAN':
+            read: Packet = pod.ReadPODpacket()
+            data: dict = read.TranslateAll()
+            print('Read:\t', data)
+    if cmd == 'STREAM':
+            read: Packet = pod.ReadPODpacket()
+            data: dict = read.TranslateAll()
+            print('StreamRead:\t', data)
+            read: Packet = pod.ReadPODpacket()
+            data: dict = read.TranslateAll()
+            print('StreamRead:\t', data)
+     
+    
 
 
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :

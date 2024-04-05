@@ -53,6 +53,7 @@
 
 # add directory path to code 
 import Path 
+import time
 Path.AddAPIpath()
 
 # local imports
@@ -81,27 +82,58 @@ hf.RunCommand_8274D(pod, 'ID') # Returns the device ID value
 hf.RunCommand_8274D(pod, 'FIRMWARE VERSION') # Returns the device firmware version as 3 values.  So 1.0.10 would come back as 0x31, 0x30, 0x00, 0x41
 
 hf.RunCommand_8274D(pod, 'LOCAL SCAN', (1))
+time.sleep(5)
 
 print('~~ CONNECT BY ADDRESS ~~')
 hf.RunCommand_8274D(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
+time.sleep(5) # added a delay here because pod device is continuing to read for 'CONNECT BY ADDRESS' for the next commands.
 
+print('~~ LOCAL CONNECTION STATUS ~~')
+hf.RunCommand_8274D(pod, 'LOCAL CONNECTION STATUS', ()) 
 
+print('~~ SET BAUD RATE ~~')
+hf.RunCommand_8274D(pod, 'SET BAUD RATE', (2)) 
 
+print('~~ CHANNEL SCAN ~~')
+hf.RunCommand_8274D(pod, 'CHANNEL SCAN', (1)) 
+
+print('~~ SET SAMPLE RATE ~~')
+hf.RunCommand_8274D(pod, 'SET SAMPLE RATE', (2)) 
 
 print('~~ GET SAMPLE RATE ~~')
 hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ()) 
 
-print('~~ GET PERIOD ~~')
-hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ())
+print('~~ SET PERIOD ~~')
+hf.RunCommand_8274D(pod, 'SET PERIOD', (3)) 
 
 print('~~ GET PERIOD ~~')
-hf.RunCommand_8274D(pod, 'GET SAMPLE RATE', ())
+hf.RunCommand_8274D(pod, 'GET PERIOD', ()) 
+
+
+print('~~ GET FW VERSION ~~')
+hf.RunCommand_8274D(pod, 'GET FW VERSION', ()) 
+
+
+print('~~ GET HW REV ~~')
+hf.RunCommand_8274D(pod, 'GET HW REV', ()) 
+
+print('~~ GET SERIAL NUMBER ~~')
+hf.RunCommand_8274D(pod, 'GET SERIAL NUMBER', ()) 
+
+print('~~ GET MODEL NUMBER ~~')
+hf.RunCommand_8274D(pod, 'GET MODEL NUMBER', ()) 
 
 print('~~ GET NAME ~~')
 hf.RunCommand_8274D(pod, 'GET NAME', ()) 
 
 print('~~ STREAM ~~')
 hf.RunCommand_8274D(pod, 'STREAM', (1,)) 
-# hf.RunCommand(pod, 'STREAM', (0,)) 
 
+print('~~ DISCONNECT ~~')
+hf.RunCommand_8274D(pod, 'DISCONNECT ALL', (1,)) 
+
+
+# NOTE: didn't add waveform, stimulus, GET HW INFO, SERVICE DISCOVERY because they are not properly implemented. asked seth about waveform and stiumuls
+#and he said not to worry about those commands.
+# didn't specifically add a 'COMMAND REPLY' command because, for example, GET SERIAL NUMBER returns the GET SERIAL NUMBER REPLY.
 
