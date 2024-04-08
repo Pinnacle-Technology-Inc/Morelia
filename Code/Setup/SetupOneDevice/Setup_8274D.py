@@ -58,8 +58,6 @@ class Setup8274D(SetupInterface) :
             list[str]: List of string file extensions.
         """
         return(['.txt','.csv', '.edf'])
-        # NOTE TK --
-        # why no EDF? Is there a reason?
     
     @staticmethod
     def NameDecode(name: str) -> str:
@@ -108,7 +106,6 @@ class Setup8274D(SetupInterface) :
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
-            #name = pod.WriteRead('DEVICE LIST INFO') 
             time.sleep(5)
             pod.WriteRead('CONNECT BY ADDRESS', (address)) 
             time.sleep(1)

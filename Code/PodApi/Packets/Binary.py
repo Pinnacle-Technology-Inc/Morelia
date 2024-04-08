@@ -100,33 +100,6 @@ class PacketBinary(Packet) :
             bytes: Bytes string containg binary data.
         """
         return pkt[12:(len(pkt)-3)] # bytes after 1st ETX
-    
-    # NOTE TK --
-    #  the name of this function does not describe what the function does. 
-    # I dont quite understand what this function is for. Why not just access 
-    # binaryLength and binaryData from the class instance when you need it?
-    # binaryLength and binaryData are NOT private member variables. They are
-    # public.
-    # It looks like this function is only used in Handle8274D.py. So it 
-    # it shoudn't be too hard to fix.
-    # def ret(self, n: int) -> float :
-    #     """Translates the binary channel n bytes into a voltage.
-
-    #     Args:
-    #         n (int): Channel number. Should be 0, 1, or 2.
-
-    #     Raises:
-    #         Exception: Channel does not exist.
-
-    #     Returns:
-    #         float: Voltage of channel n in Volts.
-    #     """
-    #     match n :
-    #         case 0 : return self.binaryLength
-    #         case 1 : return self.binaryData
-    #         case _ : raise Exception('Channel '+str(n)+' does not exist.')
-                
-    # ----- Properties -----
 
     @staticmethod
     def GetMinimumLength() -> int : 

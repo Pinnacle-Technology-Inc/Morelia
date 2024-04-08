@@ -74,8 +74,6 @@ class Hose :
         Returns:
             int: Sample rate in Hz.
         """
-        # NOTE TK --
-        # update the big block comment below to include Pod8274D info
         
         # Device  ::: cmd, command name,    args, ret, description
         # ----------------------------------------------------------------------------------------------
@@ -101,18 +99,8 @@ class Hose :
             print("here2", int(pkt))
             return pkt
             
-        
-        # NOTE TK --
-        # was the TODO below resolved?
-            
-        ## TODO here is the problem! this neds to return a usable sample rate. 
-        # if is Pod8274D r
-        # get the sample rate. 
-        # GET SAMPLE RATE REPLY gives a key, translate this to a sample rate --> But do this using a static method in device class. 
 
     def EmptyHose(self) : 
-        # NOTE TK --
-        # add docstring here 
         """Empties the hose and resets the attributes.
         """
         
@@ -149,8 +137,6 @@ class Hose :
         Args: 
              stopAfterXfails (int): The number of successive failed attempts of reading data before stopping the streaming.
         """
-        # NOTE TK --
-        # The above docstring is not correctly formatted. It needs Args: stopAfterXfails
         
         # initialize       
         successiveFailCount: int = 0

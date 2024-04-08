@@ -28,11 +28,11 @@ def Read_8274D(pod: Pod, cmd) :
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
     print('Read1:\t', data)
-    if (cmd == 'LOCAL SCAN' or cmd == 'CONNECT BY ADDRESS'):
+    if (cmd == 'LOCAL SCAN' or cmd == 'CONNECT BY ADDRESS' or cmd == 'SET BAUD RATE'):
         read: Packet = pod.ReadPODpacket()
         data: dict = read.TranslateAll()
         print('Read2:\t', data)
-    if (cmd.startswith('GET')|cmd.startswith('SET')) and cmd != 'SET BAUD RATE' :
+    if (cmd.startswith('GET')|cmd.startswith('SET')) and cmd != 'SET BAUD RATE' and not cmd.endswith('REPLY') :
         while True:
             read: Packet = pod.ReadPODpacket()
             data: dict = read.TranslateAll()
@@ -83,13 +83,15 @@ RunCommand_8274D(pod, 'LOCAL SCAN', (1))
 print("Waiting 5 sec...")
 time.sleep(5) 
 
+print('~~ DEVICE LIST INFO ~~')
+RunCommand_8274D(pod, 'DEVICE LIST INFO', (1))
+
 print('~~ CONNECT BY ADDRESS ~~')
-RunCommand_8274D(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) 
+RunCommand_8274D(pod, 'CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150)) # payload is the blue tooth address, as shown here 
+
 print("Waiting 5 sec...")
 time.sleep(5) # added a delay here because pod device is continuing to read for 'CONNECT BY ADDRESS' for the next commands.
 
-print('~~ LOCAL CONNECTION STATUS ~~')
-RunCommand_8274D(pod, 'LOCAL CONNECTION STATUS', ()) 
 
 print('~~ SET BAUD RATE ~~')
 RunCommand_8274D(pod, 'SET BAUD RATE', (2)) 
@@ -97,20 +99,36 @@ RunCommand_8274D(pod, 'SET BAUD RATE', (2))
 print('~~ CHANNEL SCAN ~~')
 RunCommand_8274D(pod, 'CHANNEL SCAN', (1)) 
 
+print('~~ LOCAL CONNECTION STATUS ~~')
+RunCommand_8274D(pod, 'LOCAL CONNECTION STATUS', ()) 
+
+print('~~ LOCAL CONNECTION INFO ~~')
+RunCommand_8274D(pod, 'LOCAL CONNECTION INFO', (0)) 
+
 print('~~ SET SAMPLE RATE ~~')
 RunCommand_8274D(pod, 'SET SAMPLE RATE', (2)) 
 
 print('~~ GET SAMPLE RATE ~~')
 RunCommand_8274D(pod, 'GET SAMPLE RATE', ()) 
 
+print('~~ GET SAMPLE RATE REPLY~~')
+RunCommand_8274D(pod, 'GET SAMPLE RATE REPLY', ()) 
+
+ 
 print('~~ SET PERIOD ~~')
 RunCommand_8274D(pod, 'SET PERIOD', (3)) 
 
 print('~~ GET PERIOD ~~')
 RunCommand_8274D(pod, 'GET PERIOD', ()) 
 
+print('~~ GET PERIOD REPLY ~~')
+RunCommand_8274D(pod, 'GET PERIOD REPLY', ()) 
+
 print('~~ GET FW VERSION ~~')
 RunCommand_8274D(pod, 'GET FW VERSION', ()) 
+
+print('~~ GET FW VERSION REPLY~~')
+RunCommand_8274D(pod, 'GET FW VERSION REPLY', ()) 
 
 print('~~ GET HW REV ~~')
 RunCommand_8274D(pod, 'GET HW REV', ()) 
@@ -118,17 +136,39 @@ RunCommand_8274D(pod, 'GET HW REV', ())
 print('~~ GET SERIAL NUMBER ~~')
 RunCommand_8274D(pod, 'GET SERIAL NUMBER', ()) 
 
+print('~~ GET SERIAL NUMBER REPLY ~~')
+RunCommand_8274D(pod, 'GET SERIAL NUMBER REPLY', ()) 
+
 print('~~ GET MODEL NUMBER ~~')
 RunCommand_8274D(pod, 'GET MODEL NUMBER', ()) 
+
+print('~~ GET MODEL NUMBER REPLY ~~')
+RunCommand_8274D(pod, 'GET MODEL NUMBER REPLY', ()) 
 
 print('~~ GET NAME ~~')
 RunCommand_8274D(pod, 'GET NAME', ()) 
 
-print('~~ STREAM ~~')
-RunCommand_8274D(pod, 'STREAM', (1,)) 
+print('~~ GET NAME REPLY ~~')
+RunCommand_8274D(pod, 'GET NAME REPLY', ()) 
 
-print('~~ DISCONNECT ~~')
+print('~~ PROCEDURE COMPLETE ~~')
+RunCommand_8274D(pod, 'PROCEDURE COMPLETE', ()) 
+
+print("Waiting 5 sec...")
+time.sleep(5)
+
+print('~~ STREAM ~~')
+RunCommand_8274D(pod, 'STREAM', (1,))
+ 
+
+print('~~ DISCONNECT~~')
+RunCommand_8274D(pod, 'DISCONNECT', (0,)) 
+
+print('~~ DISCONNECT ALL ~~')
 RunCommand_8274D(pod, 'DISCONNECT ALL', (1,)) 
+
+print('~~ DISCONNECT REPLY~~')
+RunCommand_8274D(pod, 'DISCONNECT REPLY', ()) 
 
 
 # NOTE: didn't add waveform, stimulus, GET HW INFO, SERVICE DISCOVERY because they are 
@@ -143,29 +183,11 @@ RunCommand_8274D(pod, 'DISCONNECT ALL', (1,))
 # available to the device, not just  what is needed for streaming. 
 # Implement as many of the following as you can:
 
-# 101	DEVICE LIST INFO
-# 102	LOCAL CONNECTION INFO
-# 103	LOCAL CONNECTION STATUS
-# 104	DISCONNECT ALL
-# 105	SET BAUD RATE
-# 131	GET PERIOD
-# 132	GET PERIOD REPLY
-# 133	SET PERIOD
+
+
 # 200	CONNECT
 # 201	CONNECT REPLY
-# 202	DISCONNECT
-# 203	DISCONNECT REPLY
-# 204	GET SERIAL NUMBER
-# 205	GET SERIAL NUMBER REPLY
-# 206	GET MODEL NUMBER
-# 207	GET MODEL NUMBER REPLY
-# 208	GET SAMPLE RATE
-# 209	GET SAMPLE RATE REPLY
-# 210	SET SAMPLE RATE
-# 211	PROCEDURE COMPLETE
-# 212	GET RSSI
-# 213	GET RSSI REPLY
-# 214	GET FW VERSION
-# 215	GET FW VERSION REPLY
-# 220	GET NAME
-# 221	GET NAME REPLY
+
+
+
+
