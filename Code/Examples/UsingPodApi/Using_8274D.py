@@ -114,7 +114,9 @@ RunCommand_8274D(pod, 'GET SAMPLE RATE', ())
 print('~~ GET SAMPLE RATE REPLY~~')
 RunCommand_8274D(pod, 'GET SAMPLE RATE REPLY', ()) 
 
- 
+print('~~ STREAM ~~')
+RunCommand_8274D(pod, 'STREAM', (1,)) 
+
 print('~~ SET PERIOD ~~')
 RunCommand_8274D(pod, 'SET PERIOD', (3)) 
 
@@ -153,12 +155,6 @@ RunCommand_8274D(pod, 'GET NAME REPLY', ())
 
 print('~~ PROCEDURE COMPLETE ~~')
 RunCommand_8274D(pod, 'PROCEDURE COMPLETE', ()) 
-
-print("Waiting 5 sec...")
-time.sleep(5)
-
-print('~~ STREAM ~~')
-RunCommand_8274D(pod, 'STREAM', (1,))
  
 
 print('~~ DISCONNECT~~')
@@ -169,25 +165,4 @@ RunCommand_8274D(pod, 'DISCONNECT ALL', (1,))
 
 print('~~ DISCONNECT REPLY~~')
 RunCommand_8274D(pod, 'DISCONNECT REPLY', ()) 
-
-
-# NOTE: didn't add waveform, stimulus, GET HW INFO, SERVICE DISCOVERY because they are 
-# not properly implemented. asked seth about waveform and stiumuls
-# and he said not to worry about those commands.
-# didn't specifically add a 'COMMAND REPLY' command because, for example, 
-# GET SERIAL NUMBER returns the GET SERIAL NUMBER REPLY.
-
-
-# NOTE TK -- 
-# This Python script is supposed to demonstrate every single command 
-# available to the device, not just  what is needed for streaming. 
-# Implement as many of the following as you can:
-
-
-
-# 200	CONNECT
-# 201	CONNECT REPLY
-
-
-
 
