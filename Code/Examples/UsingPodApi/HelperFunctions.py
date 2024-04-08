@@ -39,43 +39,7 @@ def Read(pod: Pod) :
     """
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
-    print('Read:\t', data)
-
-
-def Read_8274D(pod: Pod, cmd) : 
-    """Reads and prints a packet from a POD device.
-
-    Args:
-        pod (POD_Basics): _description_
-    """
-    read: Packet = pod.ReadPODpacket()
-    data: dict = read.TranslateAll()
-    print('Read1:\t', data)
-    print('\n')
-    if (cmd == 'LOCAL SCAN' or cmd == 'CONNECT BY ADDRESS'):
-        read: Packet = pod.ReadPODpacket()
-        data: dict = read.TranslateAll()
-        print('Read2:\t', data)
-    if (cmd.startswith('GET')|cmd.startswith('SET')) and cmd != 'SET BAUD RATE' :
-        while True:
-            read: Packet = pod.ReadPODpacket()
-            data: dict = read.TranslateAll()
-            print('Read:\t', data)
-            if data.get('Command Number') == 211:
-                break  # Exit the loop when Command Number is 211
-    if cmd == 'CHANNEL SCAN':
-            read: Packet = pod.ReadPODpacket()
-            data: dict = read.TranslateAll()
-            print('Read:\t', data)
-    if cmd == 'STREAM':
-            read: Packet = pod.ReadPODpacket()
-            data: dict = read.TranslateAll()
-            print('StreamRead:\t', data)
-            read: Packet = pod.ReadPODpacket()
-            data: dict = read.TranslateAll()
-            print('StreamRead:\t', data)
-     
-    
+    print('Read:\t', data)  
 
 
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
@@ -89,16 +53,3 @@ def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | byte
     """
     Write(pod,cmd,payload)
     Read(pod,cmd )
-
-
-def RunCommand_8274D(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
-    """Writes and reads a packet from a POD device and prints the results.
-
-    Args:
-        pod (POD_Basics): POD device. 
-        cmd (str | int): Command name or number.
-        payload (int | bytes | tuple[int  |  bytes], optional): Optional payload for the \
-            command. Defaults to None.
-    """
-    Write(pod,cmd,payload)
-    Read_8274D(pod,cmd )
