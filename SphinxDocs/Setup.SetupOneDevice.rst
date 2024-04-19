@@ -20,6 +20,14 @@ Setup.SetupOneDevice.Setup\_8229 module
    :undoc-members:
    :show-inheritance:
 
+Setup.SetupOneDevice.Setup\_8274D module
+----------------------------------------
+
+.. automodule:: Setup.SetupOneDevice.Setup_8274D
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Setup.SetupOneDevice.Setup\_8401HR module
 -----------------------------------------
 
