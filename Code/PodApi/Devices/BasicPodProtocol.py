@@ -530,7 +530,7 @@ class Pod :
             Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
 
         Returns:
-            Packet_BinaryStandard: Variable-length binary POD packet.
+            PacketBinary: Variable-length binary POD packet.
         """
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
