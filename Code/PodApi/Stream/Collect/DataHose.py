@@ -5,8 +5,8 @@ import  numpy       as     np
 import  time
 
 # local imports
-from PodApi.Devices     import Pod8206HR, Pod8401HR
-from PodApi.Packets     import Packet, PacketStandard
+from PodApi.Devices     import Pod8206HR, Pod8401HR, Pod8274D
+from PodApi.Packets     import Packet, PacketStandard, PacketBinary
 from PodApi.Stream.Collect import Valve
 
 # authorship
@@ -34,12 +34,12 @@ class Hose :
         filterInsert (float): Value to replace corrupted data with if using \
             the 'InsertValue' filter method. Defaults to np.nan.
     """
-    
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
+
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set instance variables.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): Pod device to stream data from.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): Pod device to stream data from.
             useFilter (bool): Flag to remove corrupted data and timestamps when True; \
                 does not remove points when False. Defaults to True.
             filterMethod (str, optional): Method used to filter out corrupted data. \
@@ -59,14 +59,13 @@ class Hose :
         # counters
         self.numDrops : int = 0
         self.corruptedPoints : int = 0
-
-        
+            
     @staticmethod
-    def GetSampleRate(podDevice: Pod8206HR|Pod8401HR) -> int : 
+    def GetSampleRate(podDevice: Pod8206HR|Pod8401HR|Pod8274D) -> int : 
         """Writes a command to the POD device to get its sample rate in Hz.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): POD device to get the sample rate for.
+            podDevice (Pod8206HR | Pod8401HR | Pod8274D): POD device to get the sample rate for.
 
         Raises:
             Exception: Cannot get the sample rate for this POD device.
@@ -75,22 +74,36 @@ class Hose :
         Returns:
             int: Sample rate in Hz.
         """
+        
         # Device  ::: cmd, command name,    args, ret, description
         # ----------------------------------------------------------------------------------------------
         # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
         # 8401-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
+        # 8274D   ::: 256, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
         # ----------------------------------------------------------------------------------------------
         # NOTE both 8206HR and 8401HR use the same command to start streaming. 
         # If there is a new device that uses a different command, add a method 
         # to check what type the device is (i.e isinstance(podDevice, PodClass)) 
         # and set the self.stream* instance variables accordingly.
-        podDevice._commands.ValidateCommand('GET SAMPLE RATE')
-        if(not podDevice.TestConnection()) : 
-            raise Exception('[!] Could not connect to this POD device.')
-        pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
-        return int(pkt.Payload()[0]) 
+        if( not isinstance(podDevice, Pod8274D)) : 
+            podDevice._commands.ValidateCommand('GET SAMPLE RATE')
+            if(not podDevice.TestConnection()) :
+                raise Exception('[!] Could not connect to this POD device.')
+            pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
+            print("here", int(pkt.Payload()[0]))
+            return int(pkt.Payload()[0]) 
+        else :  
+            if(not podDevice.TestConnection()) :  
+                raise Exception ('[!] Could not connect to this POD device.')
+            pkt: PacketBinary = podDevice.WriteRead('GET SAMPLE RATE')
+            print("here2", int(pkt))
+            return pkt
+            
 
     def EmptyHose(self) : 
+        """Empties the hose and resets the attributes.
+        """
+        
         self.deviceValve.EmptyValve()
         # reset to default
         self.data       : list[Packet|None] = []
@@ -116,12 +129,17 @@ class Hose :
         """
         # stop streaming
         self.deviceValve.Close()
-        
-    def _Flow(self) : 
+
+    def _Flow(self, stopAfterXfails: int = 3) : 
         """Streams data from the POD device. The data drops about every 1 second. \
         Streaming will continue until a "stop streaming" packet is recieved. 
+
+        Args: 
+             stopAfterXfails (int): The number of successive failed attempts of reading data before stopping the streaming.
         """
+        
         # initialize       
+        successiveFailCount: int = 0
         stopAt: bytes = self.deviceValve.GetStopBytes()
         currentTime : float = 0.0 
         # start streaming data 
@@ -133,11 +151,18 @@ class Hose :
             # read data for one second
             i: int = 0
             while (i < self.sampleRate) : # operates like 'for i in range(sampleRate)'
-                try : 
-                    # read data (vv exception raised here if bad checksum vv)
+                try :
+                    # check for too many failed packets 
+                    if(successiveFailCount > stopAfterXfails) : 
+                        # finish up
+                        currentTime = self._Drop(currentTime, ti, data)
+                        self.isOpen = False
+                        return 
+                    # read data (vv exception raised here if bad checksum or packet read timeout vv)
                     drip: Packet = self.deviceValve.Drip()
                     # check stop condition 
-                    if(drip.rawPacket == stopAt) : # NOTE this is only exit for while(True) 
+                    currentTime = time.time()
+                    if(drip.rawPacket == stopAt):
                         # finish up
                         currentTime = self._Drop(currentTime, ti, data)
                         self.isOpen = False
@@ -146,10 +171,14 @@ class Hose :
                     if( not isinstance(drip,PacketStandard)) : 
                         data[i] = drip
                         i += 1 # update looping condition 
+                        successiveFailCount = 0 # reset after succsessful loop 
                 except Exception as e : 
                     # corrupted data here, leave None in data[i]
-                    i += 1 # update looping condition          
+                    i += 1 # update looping condition        
+                    successiveFailCount += 1
+            # drop data 
             currentTime = self._Drop(currentTime, ti, data)
+        
 
     def _Drop(self, currentTime: float, ti: float, data: list[Packet|None]) -> float : 
         """Updates the instance variables that store the streaming data. \

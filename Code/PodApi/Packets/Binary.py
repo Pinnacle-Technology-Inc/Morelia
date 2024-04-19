@@ -36,9 +36,9 @@ class PacketBinary(Packet) :
                 Defaults to None.
         """       
         super().__init__(pkt, commands)
-        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt),
+        self.binaryLength:  bytes = PacketBinary.GetBinaryLength(pkt)
         self.binaryData:    bytes = PacketBinary.GetBinaryData(pkt)
-       
+               
     # ----- Packet to dictionary -----
  
     def UnpackAll(self) -> dict[str, bytes]:
@@ -100,8 +100,6 @@ class PacketBinary(Packet) :
             bytes: Bytes string containg binary data.
         """
         return pkt[12:(len(pkt)-3)] # bytes after 1st ETX
-                
-    # ----- Properties -----
 
     @staticmethod
     def GetMinimumLength() -> int : 
