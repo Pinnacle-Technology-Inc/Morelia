@@ -59,6 +59,7 @@ The class diagram of the PodApi package is shown below.
 | [Using_8401HR.py](/Code/Examples/UsingPodApi/Using_8401HR.py) | Runs all commands for an 8401-HR POD device. |
 | [Using_8229.py](/Code/Examples/UsingPodApi/Using_8229.py)     | Runs all commands for an 8229 POD device.    |
 | [Using_8480SC.py](/Code/Examples/UsingPodApi/Using_8480SC.py) | Runs all commands for an 8480-SC POD device. |
+| [Using_8274D.py](/Code/Examples/UsingPodApi/Using_8274D.py)  | Runs all commands for an 8274-D POD device. |
 | [Using_Stream.py](/Code/Examples/UsingPodApi/Using_Stream.py) | demonstrates how to use PodApi.Stream to save streaming data to a file from a 8206-HR POD device. | 
 
 ## Sub-packages
