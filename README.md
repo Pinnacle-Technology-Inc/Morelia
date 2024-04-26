@@ -59,7 +59,7 @@ The class diagram of the PodApi package is shown below.
 | [Using_8401HR.py](/Code/Examples/UsingPodApi/Using_8401HR.py) | Runs all commands for an 8401-HR POD device. |
 | [Using_8229.py](/Code/Examples/UsingPodApi/Using_8229.py)     | Runs all commands for an 8229 POD device.    |
 | [Using_8480SC.py](/Code/Examples/UsingPodApi/Using_8480SC.py) | Runs all commands for an 8480-SC POD device. |
-| [Using_8274D.py](/Code/Examples/UsingPodApi/Using_8274D.py)  | Runs all commands for an 8274-D POD device. |
+| [Using_8274D.py](/Code/Examples/UsingPodApi/Using_8274D.py)   | Runs all commands for an 8274-D POD device.  |
 | [Using_Stream.py](/Code/Examples/UsingPodApi/Using_Stream.py) | demonstrates how to use PodApi.Stream to save streaming data to a file from a 8206-HR POD device. | 
 
 ## Sub-packages
@@ -76,6 +76,7 @@ The class diagram of the PodApi package is shown below.
 | [Pod8401HR](/Code/PodApi/Devices/PodDevice_8401HR.py)    | Handles communication using an 8401-HR POD device.  |
 | [Pod8229](/Code/PodApi/Devices/PodDevice_8229.py)        | Handles communication using an 8229 POD device.     | 
 | [Pod8480SC](/Code/PodApi/Devices/PodDevice_8480SC.py)    | Handles communication using an 8480-SC POD device.  | 
+| [Pod8274D](/Code/PodApi/Devices/PodDevice_8274D.py)      | Handles communication using an 8274-D POD device.   | 
  
 ### SerialPorts
 
@@ -120,7 +121,8 @@ The class diagram of the PodApi package is shown below.
 | [Params8206HR](/Code/PodApi/Parameters/Params8206HR.py) | Container class that stores parameters for a 8206-HR POD device.         | 
 | [Params8401HR](/Code/PodApi/Parameters/Params8401HR.py) | Container class that stores parameters for a 8401-HR POD device.         | 
 | [Params8229](/Code/PodApi/Parameters/Params8229.py)     | Container class that stores parameters for a 8229 POD device.            | 
-| [Params8480SC](/Code/PodApi/Parameters/Params8480SC.py) | Container class that stores parameters for a 8480-SC POD device.         | 
+| [Params8480SC](/Code/PodApi/Parameters/Params8480SC.py) | Container class that stores parameters for a 8480-SC POD device.         |
+| [Params8274D](/Code/PodApi/Parameters/Params8274D.py)   | Container class that stores parameters for a 8274-D POD device.         | 
 
 ### Stream
 
@@ -154,6 +156,7 @@ The class diagram of the PodApi package is shown below.
 |--------------------------------------------------------------------------------|--------------------------------------------------------------------------|
 | [Drain8206HR](/Code/PodApi/Stream/Drain/PodHandler/Handle8206HR.py)            | Class to help handle 8206-HR POD devices for the Drain classes.          | 
 | [Drain8401HR](/Code/PodApi/Stream/Drain/PodHandler/Handle8401HR.py)            | Class to help handle 8206-HR POD devices for the Drain classes.          |
+| [Drain8274D](/Code/PodApi/Stream/Drain/PodHandler/Handle8274D.py)              | Class to help handle 8274D POD devices for the Drain classes.            |
 | [DrainDeviceHandler](/Code/PodApi/Stream/Drain/PodHandler/HandlerInterface.py) | Interface class for the POD device handlers used by the Drain classes.   |
 
 ## Setup Package
@@ -196,6 +199,7 @@ The class diagram of the Setup package is shown below.
 | [Setup8401HR](/Code/Setup/SetupOneDevice/Setup_8401HR.py)          | Provides the setup functions for an 8401-HR POD device. |
 | [Setup8229](/Code/Setup/SetupOneDevice/Setup_8229.py)              | Provides the setup functions for an 8229 POD device.    |
 | [Setup8480SC](/Code/Setup/SetupOneDevice/Setup_8480SC.py)          | Provides the setup functions for an 8480-SC POD device. |
+| [Setup8274D](/Code/Setup/SetupOneDevice/Setup_8274D.py)            | Provides the setup functions for an 8274-D POD device.  |
 
 ### Inputs
 
