@@ -1,14 +1,6 @@
 PodApi.Stream.Drain package
 ===========================
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   PodApi.Stream.Drain.PodHandler
-
 Submodules
 ----------
 

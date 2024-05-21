@@ -20,6 +20,14 @@ PodApi.Parameters.Params8229 module
    :undoc-members:
    :show-inheritance:
 
+PodApi.Parameters.Params8274D module
+------------------------------------
+
+.. automodule:: PodApi.Parameters.Params8274D
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 PodApi.Parameters.Params8401HR module
 -------------------------------------
 

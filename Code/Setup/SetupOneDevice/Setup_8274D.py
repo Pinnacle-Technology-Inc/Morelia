@@ -86,7 +86,7 @@ class Setup8274D(SetupInterface) :
 
 
     def _ConnectPODdevice(self, deviceNum: int, deviceParams: Params8274D) -> bool :  
-        """Creates a POD_8206HR object and write the setup parameters to it. 
+        """Creates a POD_8274D object and write the setup parameters to it. 
 
         Args:
             deviceNum (int): Integer of the device's number.

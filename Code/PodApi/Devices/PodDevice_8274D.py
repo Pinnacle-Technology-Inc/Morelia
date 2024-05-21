@@ -1,6 +1,5 @@
 # local imports 
 import time
-import PodApi
 from PodApi.Devices import Pod
 from PodApi.Packets import Packet, PacketStandard, PacketBinary
 
@@ -76,10 +75,9 @@ class Pod8274D(Pod) :
         self._commands.AddCommand(221, 'GET NAME REPLY',           (0,),                    tuple([U8]*13),      False, 'The name in characters.')
         self._commands.AddCommand(222, 'CONNECT BY ADDRESS',       tuple([U8]*6),           (U16,),              False, 'Requires a BT address to connect to directly, returns SL_STATUS_T ')
         # self._commands.AddCommand(223, 'SERVICE DISCOVERY',      (0,),                    (U16,),              False, 'Returns SL_STATUS_T, and then will start generating characteristic responses.  Those are currently unhandled. Likely this command wont be exposed in the long run ')
-
-
     
     #------------------------OVERWRITE---------------------------------------------#
+    
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
         """Writes a command with optional payload to POD device, then reads (once) the device response.
         8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
@@ -134,47 +132,3 @@ class Pod8274D(Pod) :
                 x = self.ReadPODpacket(validateChecksum)
                 data: dict = x.TranslateAll()
         return r
-  
-        
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
-        """Reads the remaining part of the variable-length binary packet. It first reads the standard \
-        packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
-        payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
-        checksum+ETX. 
-
-        Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
-                + command number (4 bytes)
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-
-        Raises:
-            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
-
-        Returns:
-            Packet_BinaryStandard: Variable-length binary POD packet.
-        """
-        # Variable binary packet: contain a normal POD packet with the binary command, 
-        #   and the payload is the length of the binary portion. The binary portion also 
-        #   includes an ASCII checksum and ETX. 
-        # read standard POD packet 
-        #startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
-        startPacket: PacketBinary = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
-        # get length of binary packet 
-        numOfbinaryBytes: int = startPacket.Payload() [0]
-        # read binary packet
-        binaryMsg = self._port.Read(numOfbinaryBytes)
-        # read csm and etx
-        binaryEnd = self._Read_ToETX(validateChecksum=validateChecksum)
-        # build complete message
-        packet = startPacket.rawPacket + binaryMsg + binaryEnd
-        # check if checksum is correct 
-        if(validateChecksum):
-            csmCalc = Pod.Checksum(binaryMsg)
-            csm = binaryEnd[0:2]
-            if(csm != csmCalc) : 
-                raise Exception('Bad checksum for binary POD packet read.')
-        # return complete variable length binary packet
-        return PacketBinary(packet, self._commands)
-
-

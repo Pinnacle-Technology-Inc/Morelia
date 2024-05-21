@@ -103,7 +103,7 @@
 <dd><p>Dictionary with device number keys and Bucket values.             This is updated in _StreamThreading() and cleared in StopStream().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.html#PodApi.Stream.DataBucket.Bucket" title="PodApi.Stream.DataBucket.Bucket">Bucket</a>]</p>
+<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.Collect.html#PodApi.Stream.Collect.DataBucket.Bucket" title="PodApi.Stream.Collect.DataBucket.Bucket">Bucket</a>]</p>
 </dd>
 </dl>
 </dd></dl>
@@ -401,6 +401,177 @@
 </dd></dl>
 
 </section>
+<section id="module-Setup.SetupOneDevice.Setup_8274D">
+<span id="setup-setuponedevice-setup-8274d-module"></span><h2>Setup.SetupOneDevice.Setup_8274D module<a class="headerlink" href="#module-Setup.SetupOneDevice.Setup_8274D" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup.SetupOneDevice.Setup_8274D.</span></span><span class="sig-name descname"><span class="pre">Setup8274D</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Setup.SetupOneDevice.Setup_PodInterface.SetupInterface" title="Setup.SetupOneDevice.Setup_PodInterface.SetupInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SetupInterface</span></code></a></p>
+<p>Setup_8480SC provides the setup functions for an 8480-SC POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._streamMode">
+<span class="sig-name descname"><span class="pre">_streamMode</span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._streamMode" title="Permalink to this definition"></a></dt>
+<dd><p>Set to True when the user wants to start streaming data from             an 8480 POD device, False otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D.GetDeviceName">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetDeviceName</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D.GetDeviceName" title="Permalink to this definition"></a></dt>
+<dd><p>Returns the name of the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String of _NAME.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D.GetSupportedFileExtensions">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSupportedFileExtensions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D.GetSupportedFileExtensions" title="Permalink to this definition"></a></dt>
+<dd><p>Returns a list containing valid file extensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of string file extensions.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D.NameDecode">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NameDecode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D.NameDecode" title="Permalink to this definition"></a></dt>
+<dd><p>Converts decimal valued name into more understandable ascii values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – This represents the name of the device(which is in decimal value.)</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>returns name of the device in ascii values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D.StopStream">
+<span class="sig-name descname"><span class="pre">StopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D.StopStream" title="Permalink to this definition"></a></dt>
+<dd><p>Write a command to stop streaming data to all POD devices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._ConnectPODdevice">
+<span class="sig-name descname"><span class="pre">_ConnectPODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">deviceNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deviceParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="PodApi.Parameters.html#PodApi.Parameters.Params8274D.Params8274D" title="PodApi.Parameters.Params8274D.Params8274D"><span class="pre">Params8274D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._ConnectPODdevice" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a POD_8206HR object and write the setup parameters to it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>deviceNum</strong> (<em>int</em>) – Integer of the device’s number.</p></li>
+<li><p><strong>deviceParams</strong> (<em>Params_8274D</em>) – Device parameters.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if connection was successful, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._GetPODdeviceParameterTable">
+<span class="sig-name descname"><span class="pre">_GetPODdeviceParameterTable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Texttable</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._GetPODdeviceParameterTable" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a table containing the parameters for all POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Texttable containing all parameters.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Texttable</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._GetParam_onePODdevice">
+<span class="sig-name descname"><span class="pre">_GetParam_onePODdevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbiddenNames</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="PodApi.Parameters.html#PodApi.Parameters.Params8274D.Params8274D" title="PodApi.Parameters.Params8274D.Params8274D"><span class="pre">Params8274D</span></a></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._GetParam_onePODdevice" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user to input all the device parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbiddenNames</strong> (<em>list</em><em>[</em><em>str</em><em>]</em>) – List of port names already used by other devices.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Device parameters.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Params_8480SC</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._OpenSaveFile_EDF">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_EDF</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">devNum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._OpenSaveFile_EDF" title="Permalink to this definition"></a></dt>
+<dd><p>EDF files are not supported for 8480 POD devices. Overwrites the         parent’s method, which would open an EDF file and write the header.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fname</strong> (<em>str</em>) – String filename. Not used.</p></li>
+<li><p><strong>devNum</strong> (<em>int</em>) – Integer device number. Not used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – EDF filetype is not supported for 8480 POD devices.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._OpenSaveFile_TXT">
+<span class="sig-name descname"><span class="pre">_OpenSaveFile_TXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fname</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">IOBase</span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._OpenSaveFile_TXT" title="Permalink to this definition"></a></dt>
+<dd><p>Opens a text file and writes the column names. Writes the current date/time             at the top of the txt file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>fname</strong> (<em>str</em>) – String filename.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Opened file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>IOBase</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupOneDevice.Setup_8274D.Setup8274D._StreamThreading">
+<span class="sig-name descname"><span class="pre">_StreamThreading</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">threading.Thread</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupOneDevice.Setup_8274D.Setup8274D._StreamThreading" title="Permalink to this definition"></a></dt>
+<dd><p>Start streaming from each POD device and save each to a file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of two items, the first is for the bucket and the second is the drain.                 Each item is a dictionary with device number keys and started Thread items.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[dict[int,Thread]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="module-Setup.SetupOneDevice.Setup_8401HR">
 <span id="setup-setuponedevice-setup-8401hr-module"></span><h2>Setup.SetupOneDevice.Setup_8401HR module<a class="headerlink" href="#module-Setup.SetupOneDevice.Setup_8401HR" title="Permalink to this heading"></a></h2>
 <dl class="py class">
@@ -414,7 +585,7 @@
 <dd><p>Dictionary with device number keys and Bucket values.             This is updated in _StreamThreading() and cleared in StopStream().</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.html#PodApi.Stream.DataBucket.Bucket" title="PodApi.Stream.DataBucket.Bucket">Bucket</a>]</p>
+<dd class="field-odd"><p>dict[int,<a class="reference internal" href="PodApi.Stream.Collect.html#PodApi.Stream.Collect.DataBucket.Bucket" title="PodApi.Stream.Collect.DataBucket.Bucket">Bucket</a>]</p>
 </dd>
 </dl>
 </dd></dl>

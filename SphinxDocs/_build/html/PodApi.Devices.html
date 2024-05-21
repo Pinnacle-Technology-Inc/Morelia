@@ -943,6 +943,67 @@ from the data matches the checksum written in the packet.</p>
 </dd></dl>
 
 </section>
+<section id="module-PodApi.Devices.PodDevice_8274D">
+<span id="podapi-devices-poddevice-8274d-module"></span><h2>PodApi.Devices.PodDevice_8274D module<a class="headerlink" href="#module-PodApi.Devices.PodDevice_8274D" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="PodApi.Devices.PodDevice_8274D.Pod8274D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodApi.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">921600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodApi.Devices.PodDevice_8274D.Pod8274D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PodApi.Devices.BasicPodProtocol.Pod" title="PodApi.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8274D handles communication using an 8274D POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="PodApi.Devices.PodDevice_8274D.Pod8274D.WriteRead">
+<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Packet.Packet" title="PodApi.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#PodApi.Devices.PodDevice_8274D.Pod8274D.WriteRead" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command with optional payload to POD device, then reads (once) the device response.
+8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
+Pod Device, in order to get the right payload back. Each Get and Set Command will generate a Procedure Complete (command 211) indicating a successful write/read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>|</em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value or a bytes string. Defaults to None.</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                     validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</dt><dd><p>There are some conditions for some commands. For example, if cmd is Local Scan, it returns Payload[1:7]
+because that will be the bluetooth address that can be used to connect to the device.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Packet.Packet" title="PodApi.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodApi.Devices.PodDevice_8274D.Pod8274D._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Binary.PacketBinary" title="PodApi.Packets.Binary.PacketBinary"><span class="pre">PacketBinary</span></a></span></span><a class="headerlink" href="#PodApi.Devices.PodDevice_8274D.Pod8274D._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Variable-length binary POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet_BinaryStandard</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
 <section id="module-PodApi.Devices.PodDevice_8401HR">
 <span id="podapi-devices-poddevice-8401hr-module"></span><h2>PodApi.Devices.PodDevice_8401HR module<a class="headerlink" href="#module-PodApi.Devices.PodDevice_8401HR" title="Permalink to this heading"></a></h2>
 <dl class="py class">
