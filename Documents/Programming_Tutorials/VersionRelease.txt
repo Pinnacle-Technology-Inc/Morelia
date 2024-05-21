@@ -71,5 +71,7 @@ Date:   05/21/2024
         9. Click "Publish Release"
 
 10. Update the new version release in JIRA
-        1. Make a new version entry in JIRA with status UNRELEASED
-        2. Add all new issues to this version. 
+        1. Make a new version entry in JIRA with status UNRELEASED if it does not already exist.
+        2. Add all appropriate issues to this version (stories, bugs, tasks, epics, etc.).
+        3. Change version JIRA status to RELEASE and set the appropriate release data. This version will now appear
+            on the calendar and timeline. 
