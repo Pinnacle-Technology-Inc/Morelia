@@ -250,7 +250,6 @@ class T_Pod8401HR :
         result = TestResult(True)
         for i in range(3) : 
             r = self.pod.ReadPODpacket()
-            print(r.TranslateAll())
             if(isinstance(r,PacketStandard)) : 
                 if(r.CommandNumber() != 6 ) :        
                     result = TestResult(False, 'Packet has an incorrect command number.')

@@ -24,4 +24,5 @@ def RunTests(printThisTest = True) -> tuple[int,int]:
     # show passed total 
     if(printThisTest) : print("====== Passed "+str(passed)+" of "+str(total)+" ======")
     # finish
+    print("====== DONE ======")
     return (passed, total)   
