@@ -43,7 +43,6 @@ class FindPorts :
         Returns:
             list[str]: List of port names.
         """
-        print("get port names")
         # remove forbidden ports
         portList = [x for x in FindPorts.GetAllPortNames() if x not in forbidden]
         # check if the list is empty 
