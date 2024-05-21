@@ -52,4 +52,4 @@ def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | byte
             command. Defaults to None.
     """
     Write(pod,cmd,payload)
-    Read(pod,cmd )
+    Read(pod)
