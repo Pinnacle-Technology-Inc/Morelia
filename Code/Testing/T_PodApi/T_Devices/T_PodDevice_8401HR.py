@@ -16,7 +16,7 @@ class T_Pod8401HR :
     def __init__(self, port: str = '', forbidden: list[str] = [] ) -> None :
         # get port from user 
         if(port == '') : 
-            print('~~~~~~~~~~ 8206HR ~~~~~~~~~~')
+            print('~~~~~~~~~~ 8401HR ~~~~~~~~~~')
             useport: str = Pod8401HR.ChoosePort(forbidden)
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         else :
@@ -250,7 +250,6 @@ class T_Pod8401HR :
         result = TestResult(True)
         for i in range(3) : 
             r = self.pod.ReadPODpacket()
-            print(r.TranslateAll())
             if(isinstance(r,PacketStandard)) : 
                 if(r.CommandNumber() != 6 ) :        
                     result = TestResult(False, 'Packet has an incorrect command number.')
