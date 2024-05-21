@@ -318,7 +318,6 @@ class Pod :
         # return complete packet 
         return(packet)
     
-
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
@@ -419,7 +418,7 @@ class Pod :
         # then check if it is standard or binary
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
             packet: PacketBinary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
-        else : # standard read 
+        else : # standard read
             packet: PacketStandard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
         return(packet)
@@ -531,16 +530,15 @@ class Pod :
             Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
 
         Returns:
-            Packet_BinaryStandard: Variable-length binary POD packet.
+            PacketBinary: Variable-length binary POD packet.
         """
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
-         
         # read standard POD packet 
         startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
-        numOfbinaryBytes: int = Packet.AsciiBytesToInt(startPacket.Payload())
+        numOfbinaryBytes: int = startPacket.Payload() [0]
         # read binary packet
         binaryMsg = self._port.Read(numOfbinaryBytes)
         # read csm and etx

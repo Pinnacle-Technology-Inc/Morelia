@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodApi.Packets package &mdash; Python POD API v1.5.2 documentation</title>
+  <title>PodApi.Packets package &mdash; Python POD API v1.6.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -155,7 +155,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="PodApi.Packets.Binary.PacketBinary.GetBinaryData">
-<span class="sig-name descname"><span class="pre">GetBinaryData</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodApi.Packets.Binary.PacketBinary.GetBinaryData" title="Permalink to this definition"></a></dt>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBinaryData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#PodApi.Packets.Binary.PacketBinary.GetBinaryData" title="Permalink to this definition"></a></dt>
 <dd><p>Gets the binary data from a POD packet.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -190,7 +190,7 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="PodApi.Packets.Binary.PacketBinary.GetMinimumLength">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodApi.Packets.Binary.PacketBinary.GetMinimumLength" title="Permalink to this definition"></a></dt>
-<dd><p>Gets the number of bytes in the smallest possible packet;         STX (1 byte) + something + ETX (1 byte).</p>
+<dd><p>Gets the number of bytes in the smallest possible packet.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>integer representing the minimum length of a binary POD                 command packet. Format is STX (1 byte) + command number (4 bytes) + length                 of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH                 bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
@@ -1270,11 +1270,11 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="PodApi.Packets.Packet.Packet.TwosComplement">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TwosComplement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#PodApi.Packets.Packet.Packet.TwosComplement" title="Permalink to this definition"></a></dt>
-<dd><p>Gets the 2’s complement of the argument value.</p>
+<dd><p>Gets the 2’s complement of the argument value (negative int).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>val</strong> (<em>int</em>) – Value to be complemented.</p></li>
+<li><p><strong>val</strong> (<em>int</em>) – Negative value to be complemented.</p></li>
 <li><p><strong>nbits</strong> (<em>int</em>) – Number of bits in the value.</p></li>
 </ul>
 </dd>

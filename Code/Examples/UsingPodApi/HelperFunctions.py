@@ -39,7 +39,8 @@ def Read(pod: Pod) :
     """
     read: Packet = pod.ReadPODpacket()
     data: dict = read.TranslateAll()
-    print('Read:\t', data)
+    print('Read:\t', data)  
+
 
 def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | bytes] = None) :
     """Writes and reads a packet from a POD device and prints the results.
@@ -51,4 +52,4 @@ def RunCommand(pod: Pod, cmd: str | int, payload: int | bytes | tuple[int | byte
             command. Defaults to None.
     """
     Write(pod,cmd,payload)
-    Read(pod)
+    Read(pod,cmd )

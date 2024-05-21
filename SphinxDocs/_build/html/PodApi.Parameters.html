@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodApi.Parameters package &mdash; Python POD API v1.5.2 documentation</title>
+  <title>PodApi.Parameters package &mdash; Python POD API v1.6.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -387,6 +387,44 @@
 <dt class="sig sig-object py" id="PodApi.Parameters.Params8229.Params8229.week">
 <span class="sig-name descname"><span class="pre">week</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('Sunday',</span> <span class="pre">'Monday',</span> <span class="pre">'Tuesday',</span> <span class="pre">'Wednesday',</span> <span class="pre">'Thursday',</span> <span class="pre">'Friday',</span> <span class="pre">'Saturday')</span></em><a class="headerlink" href="#PodApi.Parameters.Params8229.Params8229.week" title="Permalink to this definition"></a></dt>
 <dd><p>Tuple containing strings of the 7 days of the week.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-PodApi.Parameters.Params8274D">
+<span id="podapi-parameters-params8274d-module"></span><h2>PodApi.Parameters.Params8274D module<a class="headerlink" href="#module-PodApi.Parameters.Params8274D" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="PodApi.Parameters.Params8274D.Params8274D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">PodApi.Parameters.Params8274D.</span></span><span class="sig-name descname"><span class="pre">Params8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">localScan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#PodApi.Parameters.Params8274D.Params8274D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#PodApi.Parameters.ParamsBasic.Params" title="PodApi.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="PodApi.Parameters.Params8274D.Params8274D.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#PodApi.Parameters.Params8274D.Params8274D.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8274D constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_8274D constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="PodApi.Parameters.Params8274D.Params8274D._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#PodApi.Parameters.Params8274D.Params8274D._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8206HR instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – Sample rate must be between 100-2000 Hz.</p></li>
+<li><p><strong>Exception</strong> – Preamplidier gain must be 10x or 100x.</p></li>
+<li><p><strong>Exception</strong> – Low-pass EEG/EMG must be between 11-500 Hz.</p></li>
+</ul>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>

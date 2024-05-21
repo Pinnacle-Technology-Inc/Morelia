@@ -5,7 +5,7 @@ from threading import Thread
 from queue import Queue
 
 # local imports
-from PodApi.Devices import Pod8206HR, Pod8401HR
+from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
 from PodApi.Stream.Collect import Hose
 
@@ -28,11 +28,11 @@ class Bucket :
         isCollecting (bool): True when collecting drops from the Hose, False otherwise.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
         """Set class instance variables.
 
         Args:
-            podDevice (Pod8206HR | Pod8401HR): POD device to stream data from.
+            podDevice (Pod8206HR | Pod8401HR | 8274D): POD device to stream data from.
             useFilter (bool): Flag to remove corrupted data and timestamps when True; \
                 does not remove points when False. Defaults to True.
         """

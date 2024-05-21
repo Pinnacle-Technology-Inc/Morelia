@@ -36,6 +36,14 @@ PodApi.Devices.PodDevice\_8229 module
    :undoc-members:
    :show-inheritance:
 
+PodApi.Devices.PodDevice\_8274D module
+--------------------------------------
+
+.. automodule:: PodApi.Devices.PodDevice_8274D
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 PodApi.Devices.PodDevice\_8401HR module
 ---------------------------------------
 
