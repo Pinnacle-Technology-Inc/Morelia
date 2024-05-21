@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PodApi.Devices package &mdash; Python POD API v1.5.2 documentation</title>
+  <title>PodApi.Devices package &mdash; Python POD API v1.6.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -446,7 +446,7 @@ packets and packet interpretation.</p>
 <dd class="field-odd"><p>Variable-length binary POD packet.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Packet_BinaryStandard</p>
+<dd class="field-even"><p><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Binary.PacketBinary" title="PodApi.Packets.Binary.PacketBinary">PacketBinary</a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -974,29 +974,6 @@ because that will be the bluetooth address that can be used to connect to the de
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Packet.Packet" title="PodApi.Packets.Packet.Packet">Packet</a></p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="PodApi.Devices.PodDevice_8274D.Pod8274D._Read_Binary">
-<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="PodApi.Packets.html#PodApi.Packets.Binary.PacketBinary" title="PodApi.Packets.Binary.PacketBinary"><span class="pre">PacketBinary</span></a></span></span><a class="headerlink" href="#PodApi.Devices.PodDevice_8274D.Pod8274D._Read_Binary" title="Permalink to this definition"></a></dt>
-<dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)</p></li>
-<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Raises<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
-</dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Variable-length binary POD packet.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>Packet_BinaryStandard</p>
 </dd>
 </dl>
 </dd></dl>

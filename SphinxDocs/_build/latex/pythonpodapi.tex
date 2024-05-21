@@ -64,8 +64,8 @@
 
 
 \title{Python POD API}
-\date{Apr 19, 2024}
-\release{v1.5.2}
+\date{May 21, 2024}
+\release{v1.6.0}
 \author{Thresa Kelly}
 \newcommand{\sphinxlogo}{\vbox{}}
 \renewcommand{\releasename}{Release}
@@ -1714,7 +1714,7 @@ Variable\sphinxhyphen{}length binary POD packet.
 
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
-Packet\_BinaryStandard
+{\hyperref[\detokenize{PodApi.Packets:PodApi.Packets.Binary.PacketBinary}]{\sphinxcrossref{PacketBinary}}}
 
 \end{description}\end{quote}
 
@@ -2569,43 +2569,6 @@ because that will be the bluetooth address that can be used to connect to the de
 \sphinxlineitem{Return type}
 \sphinxAtStartPar
 {\hyperref[\detokenize{PodApi.Packets:PodApi.Packets.Packet.Packet}]{\sphinxcrossref{Packet}}}
-
-\end{description}\end{quote}
-
-\end{fulllineitems}
-
-\index{\_Read\_Binary() (PodApi.Devices.PodDevice\_8274D.Pod8274D method)@\spxentry{\_Read\_Binary()}\spxextra{PodApi.Devices.PodDevice\_8274D.Pod8274D method}}
-
-\begin{fulllineitems}
-\phantomsection\label{\detokenize{PodApi.Devices:PodApi.Devices.PodDevice_8274D.Pod8274D._Read_Binary}}
-\pysigstartsignatures
-\pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_Read\_Binary}}}{\sphinxparam{\DUrole{n,n}{prePacket}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bytes}}, \sphinxparam{\DUrole{n,n}{validateChecksum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{bool}\DUrole{w,w}{  }\DUrole{o,o}{=}\DUrole{w,w}{  }\DUrole{default_value}{True}}}{{ $\rightarrow$ {\hyperref[\detokenize{PodApi.Packets:PodApi.Packets.Binary.PacketBinary}]{\sphinxcrossref{PacketBinary}}}}}
-\pysigstopsignatures
-\sphinxAtStartPar
-Reads the remaining part of the variable\sphinxhyphen{}length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.
-\begin{quote}\begin{description}
-\sphinxlineitem{Parameters}\begin{itemize}
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{prePacket}} (\sphinxstyleliteralemphasis{\sphinxupquote{bytes}}) \textendash{} Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)
-
-\item {} 
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{validateChecksum}} (\sphinxstyleliteralemphasis{\sphinxupquote{bool}}\sphinxstyleliteralemphasis{\sphinxupquote{, }}\sphinxstyleliteralemphasis{\sphinxupquote{optional}}) \textendash{} Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.
-
-\end{itemize}
-
-\sphinxlineitem{Raises}
-\sphinxAtStartPar
-\sphinxstyleliteralstrong{\sphinxupquote{Exception}} \textendash{} An exception is raised if the checksum is invalid (only if validateChecksum=True).
-
-\sphinxlineitem{Returns}
-\sphinxAtStartPar
-Variable\sphinxhyphen{}length binary POD packet.
-
-\sphinxlineitem{Return type}
-\sphinxAtStartPar
-Packet\_BinaryStandard
 
 \end{description}\end{quote}
 
@@ -11094,7 +11057,7 @@ Write a command to stop streaming data to all POD devices.
 \pysiglinewithargsret{\sphinxbfcode{\sphinxupquote{\_ConnectPODdevice}}}{\sphinxparam{\DUrole{n,n}{deviceNum}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{int}}, \sphinxparam{\DUrole{n,n}{deviceParams}\DUrole{p,p}{:}\DUrole{w,w}{  }\DUrole{n,n}{{\hyperref[\detokenize{PodApi.Parameters:PodApi.Parameters.Params8274D.Params8274D}]{\sphinxcrossref{Params8274D}}}}}}{{ $\rightarrow$ bool}}
 \pysigstopsignatures
 \sphinxAtStartPar
-Creates a POD\_8206HR object and write the setup parameters to it.
+Creates a POD\_8274D object and write the setup parameters to it.
 \begin{quote}\begin{description}
 \sphinxlineitem{Parameters}\begin{itemize}
 \item {} 

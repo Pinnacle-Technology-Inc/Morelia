@@ -1,0 +1,52 @@
+
+/////////////////////////////////
+Name:   Thresa Kelly
+Date:   05/21/2024
+/////////////////////////////////
+
+. Merge all feature branches (i.e. [PA-##]) into the develop branch. 
+. Ensure that all classes, and methods have been correctly documented using Google style docstrings. 
+. Update all approptriate class diagrams
+. Update the README.md with any changes
+. Update Sphinx (see steps below)
+
+        Steps for updating Sphinx for a new version releases: 
+
+        1. Open Python-POD-API\SphinxDocs\conf.py
+        2. Edit line 15 with current version number (i.e. ''' release = 'v1.6.0' ''')
+        3. Save and close conf.py
+        4. Enter python enviornment: i.e. 
+            >>  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+            >>  & C:/git/Python-POD-API/.venv/Scripts/Activate.ps1
+        5. Go to Python-POD-API directory: i.e. 
+            >>  cd C:\git\Python-POD-API
+        6. Delete old Sphinx files:
+            >>  cd .\SphinxDocs\
+            >>  .\make clean 
+        7. Add new python modules as Sphinx *.rst files:
+            >> cd C:\git\Python-POD-API
+            >> sphinx-apidoc -o .\SphinxDocs .\Code\
+                    This will output the following:
+                        File .\SphinxDocs\PodApi.rst already exists, skipping.
+                        File .\SphinxDocs\PodApi.Commands.rst already exists, skipping.
+                        ...
+        8. Open the *.rst files to check that all modules and sub-modules have been added. 
+            NOTE: if the *.rst already exists, it may not update with new classes. You can delete the 
+            module *.rst file and then try step #7 again. 
+        9. Make the new Sphinx docs
+            >>  cd .\SphinxDocs\
+            >>  .\make html
+            >>  .\make latex
+
+. Make a PDF manual using the Sphinx LaTeX output. I do this by making a copy of 
+Python-POD-API\SphinxDocs\_build\latex and compressing it to a *.zip file. I then open LaTeX Overleaf 
+(https://www.overleaf.com/project), click New Project > Upload Project, and then upload the *.zip. Open 
+the project and compile pythonpodapi.tex. Then download the PDF. Rename the downloaded file as
+Python_POD_API_Manual.pdf
+. Upload the Python_POD_API_Manual.pdf to GitHub here: \Python-POD-API\Documents\API_Manuals\
+
+
+For internal version releases:
+
+. Make a new version entry in JIRA with status UNRELEASED
+. Add all new issues to this version. 
