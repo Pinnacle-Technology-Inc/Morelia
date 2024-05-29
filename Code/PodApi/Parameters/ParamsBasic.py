@@ -52,8 +52,8 @@ class Params :
         Raises:
             Exception: The port name must begin with COM.
         """
-        if(not self.port.startswith('COM')) : 
-            raise Exception('The port name must begin with COM.')
+        if(not (self.port.startswith('COM') or self.port.startswith('/dev/tty') )) : 
+            raise Exception('The port name must begin with COM or /dev/tty.')
         # NOTE Call super()._CheckParams() at the TOP of the _CheckParams() in the 
         #      child class.
 
