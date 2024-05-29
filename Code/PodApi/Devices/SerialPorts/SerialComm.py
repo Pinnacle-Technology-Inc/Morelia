@@ -1,12 +1,12 @@
 # enviornment imports 
-from    serial import Serial
+from    serial import Serial, serial_for_url
 import  platform
 import  time
 
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert"]
+__credits__     = ["Thresa Kelly", "Sree Kondi", "Seth Gabbert", "James Hurd"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
@@ -29,10 +29,17 @@ class PortIO :
             port (str | int): String of the serial port to be opened. 
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
-        # initialize port 
-        self.__serialInst : Serial = Serial()
-        # open port  
-        self.OpenSerialPort(port, baudrate=baudrate)
+
+        if (port == 'TEST') :
+
+            self.__serialInst : Serial = serial_for_url('loop://')
+
+        else:
+
+            # initialize port 
+            self.__serialInst : Serial = Serial()
+            # open port  
+            self.OpenSerialPort(port, baudrate=baudrate)
 
     def __del__(self) -> None :
         """Runs when the object is destructed. It closes the serial port, if open."""
@@ -66,7 +73,8 @@ class PortIO :
                 name = port.split(' ')[0]
             elif port.startswith('/dev/tty'):
                 # /dev/tty is for Linux
-                return(port)
+                # assume that 'port' is the full name  
+                name = port.split(' ')[0]
             else : 
                 # assume that 'port' is just the number 
                 name = 'COM' + port
