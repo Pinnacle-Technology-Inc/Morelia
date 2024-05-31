@@ -1,5 +1,7 @@
 # Python-POD-API Project
 
+<center><img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
+
 ## Introduction 
 
 ![GitHub license](https://img.shields.io/github/license/Pinnacle-Technology-Inc/Python-POD-API)
