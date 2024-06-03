@@ -17,12 +17,12 @@ class T_Pod8401HR :
         # get port from user 
         if(port == '') : 
             print('~~~~~~~~~~ 8401HR ~~~~~~~~~~')
-            useport: str = Pod8401HR.ChoosePort(forbidden)
+            self.port: str = Pod8401HR.ChoosePort(forbidden)
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         else :
-            useport = port
+            self.port = port
         # create pod device object 
-        self.pod: Pod8401HR = Pod8401HR(useport)
+        self.pod: Pod8401HR = Pod8401HR(self.port)
         
     # ---------------------------------------------------------------------------------------------------------
     def RunTests(self, printTests: bool = True) -> tuple[int,int]: 
