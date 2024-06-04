@@ -14,7 +14,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class PacketStandard(Packet) : 
+class  PacketStandard(Packet) : 
     """Container class that stores a standard command packet for a POD device. The format is \
     STX (1 byte) + command number (4 bytes) + optional payload (? bytes) + checksum (2 bytes) + ETX (1 bytes)
     
