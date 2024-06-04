@@ -3,7 +3,7 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Testing.T_PodApi import TestPodApi
+from Testing.T_Morelia import TestPodApi
 
 # authorship
 __author__      = "Thresa Kelly"
