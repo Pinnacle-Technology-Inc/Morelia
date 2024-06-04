@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morelia.Devices package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia.Devices.SerialPorts package" href="Morelia.Devices.SerialPorts.html" />
+    <link rel="prev" title="Morelia.Commands package" href="Morelia.Commands.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Morelia.html">Morelia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Commands.html">Morelia.Commands package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Morelia.Devices package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Packets.html">Morelia.Packets package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Parameters.html">Morelia.Parameters package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.html">Morelia.Stream package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.html">Setup package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.html">Morelia package</a></li>
+      <li class="breadcrumb-item active">Morelia.Devices package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Morelia.Devices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="morelia-devices-package">
+<h1>Morelia.Devices package<a class="headerlink" href="#morelia-devices-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Morelia.Devices.SerialPorts.html">Morelia.Devices.SerialPorts package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#module-Morelia.Devices.SerialPorts.PortAccess">Morelia.Devices.SerialPorts.PortAccess module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts"><code class="docutils literal notranslate"><span class="pre">FindPorts</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts.ChoosePort"><code class="docutils literal notranslate"><span class="pre">FindPorts.ChoosePort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts.GetAllPortNames"><code class="docutils literal notranslate"><span class="pre">FindPorts.GetAllPortNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts.GetSelectPortNames"><code class="docutils literal notranslate"><span class="pre">FindPorts.GetSelectPortNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts._ChoosePortLinux"><code class="docutils literal notranslate"><span class="pre">FindPorts._ChoosePortLinux()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.PortAccess.FindPorts._ChoosePortWindows"><code class="docutils literal notranslate"><span class="pre">FindPorts._ChoosePortWindows()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#module-Morelia.Devices.SerialPorts.SerialComm">Morelia.Devices.SerialPorts.SerialComm module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO"><code class="docutils literal notranslate"><span class="pre">PortIO</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.__serialInst"><code class="docutils literal notranslate"><span class="pre">PortIO.__serialInst</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.CloseSerialPort"><code class="docutils literal notranslate"><span class="pre">PortIO.CloseSerialPort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.Flush"><code class="docutils literal notranslate"><span class="pre">PortIO.Flush()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.GetPortName"><code class="docutils literal notranslate"><span class="pre">PortIO.GetPortName()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.IsSerialClosed"><code class="docutils literal notranslate"><span class="pre">PortIO.IsSerialClosed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.IsSerialOpen"><code class="docutils literal notranslate"><span class="pre">PortIO.IsSerialOpen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.OpenSerialPort"><code class="docutils literal notranslate"><span class="pre">PortIO.OpenSerialPort()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.Read"><code class="docutils literal notranslate"><span class="pre">PortIO.Read()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.ReadLine"><code class="docutils literal notranslate"><span class="pre">PortIO.ReadLine()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.ReadUntil"><code class="docutils literal notranslate"><span class="pre">PortIO.ReadUntil()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.SetBaudrate"><code class="docutils literal notranslate"><span class="pre">PortIO.SetBaudrate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.Write"><code class="docutils literal notranslate"><span class="pre">PortIO.Write()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.__BuildPortName"><code class="docutils literal notranslate"><span class="pre">PortIO.__BuildPortName()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#module-Morelia.Devices.SerialPorts">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-Morelia.Devices.BasicPodProtocol">
+<span id="morelia-devices-basicpodprotocol-module"></span><h2>Morelia.Devices.BasicPodProtocol module<a class="headerlink" href="#module-Morelia.Devices.BasicPodProtocol" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">Pod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>POD_Basics handles basic communication with a generic POD device, including reading and writing
+packets and packet interpretation.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._port">
+<span class="sig-name descname"><span class="pre">_port</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._port" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level COM_io object, which handles the COM port</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>COM_io</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._commands">
+<span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._commands" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level POD_Commands object, which stores information about             the commands available to this POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>POD_Commands</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.BuildPODpacket_Standard">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildPODpacket_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">commandNumber</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.BuildPODpacket_Standard" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes)         + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>commandNumber</strong> (<em>int</em>) – Integer representing the command number. This will be converted into                 a 4 byte long ASCII-encoded bytes string.</p></li>
+<li><p><strong>payload</strong> (<em>bytes</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – bytes string containing the payload. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of a complete standard POD packet.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.Checksum">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Checksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytesIn</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.Checksum" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the checksum of a given bytes message. This is achieved by summing each byte in the         message, inverting, and taking the last byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bytesIn</strong> (<em>bytes</em>) – Bytes message containing POD packet data.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Two ASCII-encoded bytes containing the checksum for bytesIn.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.ChoosePort">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ChoosePort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.ChoosePort" title="Permalink to this definition"></a></dt>
+<dd><p>Systems checks user’s Operating System, and chooses ports accordingly.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>forbidden</strong> (<em>list</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – List of port names that are already used. Defaults to [].</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>String name of the port.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.FlushPort">
+<span class="sig-name descname"><span class="pre">FlushPort</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.FlushPort" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the input and output serial port buffer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True of the buffers are flushed, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.GetDeviceCommands">
+<span class="sig-name descname"><span class="pre">GetDeviceCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.GetDeviceCommands" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the dictionary containing the class instance’s available POD commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary containing the available commands and their                 information.Formatted as key(command number) : value([command name, number of argument                 ASCII bytes, number of return bytes, binary flag ])</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int, list[str|tuple[int]|bool]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.GetPODpacket">
+<span class="sig-name descname"><span class="pre">GetPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.GetPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give,         the method will convert it into a bytes string of the length expected by the command. If a bytes         payload is given, it must be the correct length.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – POD command does not exist.</p></li>
+<li><p><strong>Exception</strong> – POD command requires a payload.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string of the POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.GetU">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetU</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.GetU" title="Permalink to this definition"></a></dt>
+<dd><p>number of hexadecimal characters for an unsigned u-bit value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>u</strong> (<em>int</em>) – 8, 16, or 32 bits. Enter any other number for NOVALUE.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>number of hexadecimal characters for an unsigned u-bit value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.PayloadToBytes">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">PayloadToBytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argSizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.PayloadToBytes" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a payload into a bytes string (assuming that the payload is for a valid command).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em>) – Integer, bytes, or tuple containing the payload.</p></li>
+<li><p><strong>argSizes</strong> (<em>tuple</em><em>[</em><em>int</em><em>]</em>) – Tuple of the argument sizes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the payload.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may be a                 standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.SetBaudrateOfDevice">
+<span class="sig-name descname"><span class="pre">SetBaudrateOfDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.SetBaudrateOfDevice" title="Permalink to this definition"></a></dt>
+<dd><p>If the port is open, it will change the baud rate to the parameter’s value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>baudrate</strong> (<em>int</em>) – Baud rate to set for the open serial port.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if successful at setting the baud rate, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.TestConnection">
+<span class="sig-name descname"><span class="pre">TestConnection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pingCmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'PING'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.TestConnection" title="Permalink to this definition"></a></dt>
+<dd><p>Tests if a POD device can be read from or written. Sends a PING command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pingCmd</strong> (<em>str</em><em> | </em><em>int</em><em>, </em><em>optional</em>) – Command name or number to ping. Defaults to ‘PING’.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True for successful connection, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Ping command does not exist for this POD device.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Packet_Standard</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.WriteRead">
+<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.WriteRead" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command with optional payload to POD device, then reads (once) the device response.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>|</em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value or a bytes string. Defaults to None.</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                     validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._ReadPODpacket_Recursive">
+<span class="sig-name descname"><span class="pre">_ReadPODpacket_Recursive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._ReadPODpacket_Recursive" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the command number. If the command number ends in ETX, the packet is returned.         Next, it checks if the command is allowed. Then, it checks if the command is standard or         binary and reads accordingly, then returns the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Cannot read an invalid command.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>POD packet beginning with STX and ending                 with ETX. This may be a standard packet, binary packet, or an unformatted packet                 (STX+something+ETX).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a>|Packet_Standard|Packet_BinaryStandard</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Binary.PacketBinary" title="Morelia.Packets.Binary.PacketBinary"><span class="pre">PacketBinary</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the remaining part of the variable-length binary packet. It first reads the standard         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the         checksum+ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes)</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Variable-length binary POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Binary.PacketBinary" title="Morelia.Packets.Binary.PacketBinary">PacketBinary</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._Read_GetCommand">
+<span class="sig-name descname"><span class="pre">_Read_GetCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._Read_GetCommand" title="Permalink to this definition"></a></dt>
+<dd><p>Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or         (3) continue building the command number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>4 byte long string containing the ASCII-encoded command number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._Read_Standard">
+<span class="sig-name descname"><span class="pre">_Read_Standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._Read_Standard" title="Permalink to this definition"></a></dt>
+<dd><p>Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – An exception is raised if the checksum is invalid (only if validateChecksum=True).</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Complete standard POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet_Standard</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._Read_ToETX">
+<span class="sig-name descname"><span class="pre">_Read_ToETX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._Read_ToETX" title="Permalink to this definition"></a></dt>
+<dd><p>Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX         is found anywhere.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                 validation. Defaults to True.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string ending with ETX.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod._ValidateChecksum">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateChecksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod._ValidateChecksum" title="Permalink to this definition"></a></dt>
+<dd><p>Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum
+from the data matches the checksum written in the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum                 (2 bytes) + ETX (1 byte).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the checksum is correct, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – msg does not begin with STX or end with ETX.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices.PodDevice_8206HR">
+<span id="morelia-devices-poddevice-8206hr-module"></span><h2>Morelia.Devices.PodDevice_8206HR module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8206HR" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8206HR.</span></span><span class="sig-name descname"><span class="pre">Pod8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8206HR handles communication using an 8206HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR._preampGain">
+<span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR._preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level integer (10 or 100) preamplifier gain.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may be a                 standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Binary4.PacketBinary4" title="Morelia.Packets.Binary4.PacketBinary4"><span class="pre">PacketBinary4</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX         (checksum+ETX).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Bad checksum for binary POD packet read.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Binary4 POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet_Binary4</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR._TranslateTTLbyte_ASCII">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TranslateTTLbyte_ASCII</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR._TranslateTTLbyte_ASCII" title="Permalink to this definition"></a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a ASCII encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (ASCII encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices.PodDevice_8229">
+<span id="morelia-devices-poddevice-8229-module"></span><h2>Morelia.Devices.PodDevice_8229 module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8229" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8229.</span></span><span class="sig-name descname"><span class="pre">Pod8229</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">19200</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8229 handles communication using an 8229 POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.BuildSetDayScheduleArgument">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildSetDayScheduleArgument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.BuildSetDayScheduleArgument" title="Permalink to this definition"></a></dt>
+<dd><p>Appends the day of the week code to the front of the encoded hourly schedule. this tuple is         formatted to be used as the #141 ‘SET DAY SCHEDULE’ argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>day</strong> (<em>str</em><em> | </em><em>int</em>) – Day of the week. Can be either the name of the day (i.e. Sunday, Monday, etc.)                 or the 0-6 day code (0 for Sunday increacing to 6 for Saturday).</p></li>
+<li><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array of 24 items. The value is 1 for motor on and 0 for                 motor off.</p></li>
+<li><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Speed of the motor (0-100). This is an integer of all hours                 are the same speed. If there are multiple speeds, this should be an array of 24 items.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>_description_</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.CodeDayOfWeek">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CodeDayOfWeek</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.CodeDayOfWeek" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the day of the week to an integer code understandable by the POD device. The day         is determined by the first 1-2 characters of the string, which supports multiple abbreviations         for days of the week.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>str</em>) – Day of the week.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Invalid day of the week.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Code for the day of the week. Values are 0-6, with 0 for Saturday, 1 for Monday, …,                 and 6 for Saturday.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.CodeDaySchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.CodeDaySchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this         for getting the command #141 ‘SET DAY SCHEDULE’ U8x24 argument component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array of 24 items. The value is 1 for motor on and 0 for                 motor off.</p></li>
+<li><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Speed of the motor (0-100). This is an integer of all hours                 are the same speed. If there are multiple speeds, this should be an array of 24 items.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits                 are the speed.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.DecodeDayAndSchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDayAndSchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dayschedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.DecodeDayAndSchedule" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.DecodeDayOfWeek">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDayOfWeek</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.DecodeDayOfWeek" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the integer code for a day of the week to a human-readable string.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>int</em>) – Day of the week code must be 0-6.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Day of the week (‘Sunday’, ‘Monday’, etc.).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.DecodeDaySchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeDaySchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.DecodeDaySchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets the return bytes from the command #142 ‘GET DAY SCHEDULE’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schedule</strong> (<em>bytes</em>) – 24 byte long bitstring with one U8 per hour in a day.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with ‘Hour’ as a tuple of 24 0/1 values (0 is motor off and                 1 is motor on) and ‘Speed’ as the motor speed (0-100). If the motor speed is the same                 every hour, ‘Speed’ will be an integer; otherwise, ‘Speed’ will be a tuple of 24 items.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|tuple[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.DecodeLCDSchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeLCDSchedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.DecodeLCDSchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets the return bytes from the command #202 ‘LCD SET DAY SCHEDULE’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>schedule</strong> (<em>bytes</em>) – 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7,                 Byte 1 is hours 8-15, and byte 0 is hours 16-23.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with Day as the day of the week, and Hours                 containing a list of 24 0/1 values (one for each hour). Each bit represents the                 motor state in that hour, 1 for on and 0 for off.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|list[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.GetCurrentTime">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetCurrentTime</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.GetCurrentTime" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year                 (without century, so 23 for 2023), Weekday (0 for Sunday))</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may be a                 standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard">PacketStandard</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._CodeDecimalAsHex">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_CodeDecimalAsHex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._CodeDecimalAsHex" title="Permalink to this definition"></a></dt>
+<dd><p>Builds an integer that equals the val argument when converted into hexadecimal.         All integers are converted to hexadecimal ASCII encoded bytes. Some commands         (i.e. 8229 #140) need decimal ASCII encoded bytes; to do this, give the return         value of _CodeDecimalAsHex() as the payload. Example: I want a number that is         equal to 16 in hex. 1*16^1 + 6*16^0 = 22. Calling _CodeDecimalAsHex(16) will         return 22.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>int</em>) – Unsigned integer number.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>integer that equals the val argument when converted into hexadecimal.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._Custom140SETTIME">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Custom140SETTIME</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._Custom140SETTIME" title="Permalink to this definition"></a></dt>
+<dd><p>Custom function to translate the payload for command #140 SET TIME.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>payload</strong> (<em>tuple</em><em>[</em><em>int</em><em>]</em>) – Default translated payload.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of times.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._DecodeDecimalAsHex">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_DecodeDecimalAsHex</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._DecodeDecimalAsHex" title="Permalink to this definition"></a></dt>
+<dd><p>Interprets an integer that was converted to a hexadecimal representation of a         decimal value. In other words, this method reverses _CodeDecimalAsHex().</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>val</strong> (<em>int</em>) – Unsigned integer that was converted to a hexadecimal representation of a                 decimal value.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Unsigned integer as a true decimal number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._Validate_Day">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Day</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._Validate_Day" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the day is incorrectly formatted. If the day is given as         a string, it will be converted to its integer code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>day</strong> (<em>str</em><em> | </em><em>int</em>) – String day of the week or its repsective integer code.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The day integer argument must be 0-6.</p></li>
+<li><p><strong>Exception</strong> – The day argument must be a str or int.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer code representing a day of the week.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._Validate_Hours">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Hours</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._Validate_Hours" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the hours is incorrectly formatted. Converts the hours         into a list before returning it.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>hours</strong> (<em>list</em><em> | </em><em>tuple</em><em>[</em><em>bool</em><em> | </em><em>int</em><em>]</em>) – Array with 24 items with values of 1/0                 representing each hour</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The hours argument must be a list or tuple.</p></li>
+<li><p><strong>Exception</strong> – The hours argument must have exactly 24 items.</p></li>
+<li><p><strong>Exception</strong> – The hours items must be 0 or 1.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List with 24 items for each hour. The values are 1/0.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[bool|int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._Validate_Schedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._Validate_Schedule" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the schedule is incorrectly formatted</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schedule</strong> (<em>bytes</em>) – Bytes string containing the day schedule.</p></li>
+<li><p><strong>size</strong> (<em>int</em>) – Number of U8 bytes.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The schedule must be bytes.</p></li>
+<li><p><strong>Exception</strong> – The schedule is the incorrect size</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Same as the schedule argument.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229._Validate_Speed">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Validate_Speed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">speed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229._Validate_Speed" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an exception if the speed is incorrectly formatted. If an integer speed         is given, it will convert it to a list.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>speed</strong> (<em>int</em><em> | </em><em>list</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>]</em>) – Motor speed (0-100). This can either be an                 integer or a tuple/list of 24 speeds.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The speed argument must be an int, list, or tuple.</p></li>
+<li><p><strong>Exception</strong> – The speed must be between 0 and 100.</p></li>
+<li><p><strong>Exception</strong> – The speed argument must have exactly 24 items as a list/tuple.</p></li>
+<li><p><strong>Exception</strong> – The speed must be between 0 and 100 for every list/tuple item.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List containing 24 motor speeds.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices.PodDevice_8274D">
+<span id="morelia-devices-poddevice-8274d-module"></span><h2>Morelia.Devices.PodDevice_8274D module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8274D" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">921600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8274D handles communication using an 8274D POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D.WriteRead">
+<span class="sig-name descname"><span class="pre">WriteRead</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D.WriteRead" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command with optional payload to POD device, then reads (once) the device response.
+8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
+Pod Device, in order to get the right payload back. Each Get and Set Command will generate a Procedure Complete (command 211) indicating a successful write/read.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em>|</em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value or a bytes string. Defaults to None.</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to skip                     validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>POD packet beginning with STX and ending with ETX. This may                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX).</dt><dd><p>There are some conditions for some commands. For example, if cmd is Local Scan, it returns Payload[1:7]
+because that will be the bluetooth address that can be used to connect to the device.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices.PodDevice_8401HR">
+<span id="morelia-devices-poddevice-8401hr-module"></span><h2>Morelia.Devices.PodDevice_8401HR module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8401HR" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8401HR.</span></span><span class="sig-name descname"><span class="pre">Pod8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8401HR handles communication using an 8401-HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._ssGain">
+<span class="sig-name descname"><span class="pre">_ssGain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._ssGain" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level dictionary storing the second-stage gain for all             four channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._preampGain">
+<span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Instance-level dictionary storing the pramplifier gain for             all four channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.CalculateBiasDAC_GetDACValue">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CalculateBiasDAC_GetDACValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.CalculateBiasDAC_GetDACValue" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the DAC value given the output voltage. Used for ‘GET/SET BIAS’ commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>vout</strong> (<em>int</em><em> | </em><em>float</em>) – Output voltage (+/- 2.048 V).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer of the DAC value (16 bit 2’s complement).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.CalculateBiasDAC_GetVout">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CalculateBiasDAC_GetVout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.CalculateBiasDAC_GetVout" title="Permalink to this definition"></a></dt>
+<dd><p>Calculates the output voltage given the DAC value. Used for ‘GET/SET BIAS’ commands.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>int</em>) – DAC value (16 bit 2’s complement).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Float of the output bias voltage [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeChannelBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeChannelBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeChannelBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the channel bitmask byte to a dictionary with each channel value.         Use for ‘GET INPUT GROUND’ command payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>channels</strong> (<em>bytes</em>) – U8 byte containing the channel configuration.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with the channels as keys and values as the state.                 0=Grounded and 1=Connected to Preamp.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeSSConfigBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeSSConfigBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeSSConfigBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain.         Use for ‘GET SS CONFIG’ command payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>bytes</em>) – U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass,                 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeTTLByte">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeTTLByte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeTTLByte" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the TTL bytes argument into a dictionary of integer TTL values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – U8 byte containing the TTL bitmask.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictinoary with TTL name keys and integer TTL values.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeTTLPayload">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeTTLPayload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.DecodeTTLPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Decodes a paylaod with the two TTL bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>payload</strong> (<em>bytes</em>) – Bytes string of the POD packet payload.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple with two TTL dictionaries.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[dict[str, int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetChannelBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetChannelBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetChannelBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a bitmask, represented by an unsigned integer, used for ‘SET INPUT GROUND’ command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>a</strong> (<em>bool</em>) – State for channel A, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>b</strong> (<em>bool</em>) – State for channel B, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>c</strong> (<em>bool</em>) – State for channel C, 0=Grounded and 1=Connected to Preamp.</p></li>
+<li><p><strong>d</strong> (<em>bool</em>) – State for channel D, 0=Grounded and 1=Connected to Preamp.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer representing a bitmask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetChannelMapForPreampDevice">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetChannelMapForPreampDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preampName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetChannelMapForPreampDevice" title="Permalink to this definition"></a></dt>
+<dd><p>Get the channel mapping (channel labels for A,B,C,D) for a given device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>preampName</strong> (<em>str</em>) – String for the device/sensor name.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with keys A,B,C,D with values of the channel names. Returns                 None if the device name does not exist.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,str]|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetSSConfigBitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSSConfigBitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetSSConfigBitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a bitmask, represented by an unsigned integer, used for ‘SET SS CONFIG’ command.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>gain</strong> (<em>int</em>) – 1 for 1x gain. else for 5x gain.</p></li>
+<li><p><strong>highpass</strong> (<em>float</em>) – 0 for DC highpass, else for 0.5Hz highpass.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer representing a bitmask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetSupportedPreampDevices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSupportedPreampDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetSupportedPreampDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a list of device/sensor names used for channel mapping.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>List of string names of all supported sensors.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>list[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetTTLbitmask">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetTTLbitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext0</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl4</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl3</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.GetTTLbitmask" title="Permalink to this definition"></a></dt>
+<dd><p>Builds an integer, which represents a binary mask, that can be used for TTL command arguments.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ext0</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ext0. Defaults to 0.</p></li>
+<li><p><strong>ext1</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ext1. Defaults to 0.</p></li>
+<li><p><strong>ttl4</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ttl4. Defaults to 0.</p></li>
+<li><p><strong>ttl3</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ttl3. Defaults to 0.</p></li>
+<li><p><strong>ttl2</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ttl2. Defaults to 0.</p></li>
+<li><p><strong>ttl1</strong> (<em>bool</em><em>, </em><em>optional</em>) – boolean bit for ttl1. Defaults to 0.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer number to be used as a bit mask.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.IsPreampDeviceSupported">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IsPreampDeviceSupported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.IsPreampDeviceSupported" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the argument exists in channel map for all preamp sensors.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – name of the device</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True if the name exists in __CHANNELMAPALL, false otherwise.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may be a                 standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Packet_Standard</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._FixABCDtype">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_FixABCDtype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">info</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thisIs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._FixABCDtype" title="Permalink to this definition"></a></dt>
+<dd><p>Converts the info argument into a dictionary with A, B, C, and D as keys.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>info</strong> (<em>tuple</em><em> | </em><em>list</em><em> | </em><em>dict</em>) – Variable to be converted into a dictionary.</p></li>
+<li><p><strong>thisIs</strong> (<em>str</em><em>, </em><em>optional</em>) – Description of the info argument, which is used in                 Exception statements. Defaults to ‘’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – The dictionary has improper keys; keys must be [‘A’,’B’,’C’,’D’].</p></li>
+<li><p><strong>Exception</strong> – The argument must have only four values.</p></li>
+<li><p><strong>Exception</strong> – The argument must be a tuple, list, or dict.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The info argument converted to a dictionary with A, B, C, and D as keys.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._Read_Binary">
+<span class="sig-name descname"><span class="pre">_Read_Binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prePacket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._Read_Binary" title="Permalink to this definition"></a></dt>
+<dd><p>After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prePacket</strong> (<em>bytes</em>) – Bytes string containing the beginning of a POD packet: STX (1 byte)                 + command number (4 bytes).</p></li>
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Bad checksum for binary POD packet read.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._ValidatePreampGain">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidatePreampGain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._ValidatePreampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Checks that the preamplifier gain dictionary has proper values (10, 100, or None).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>preampGain</strong> (<em>dict</em>) – preamplifier gain dictionary.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR._ValidateSsGain">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_ValidateSsGain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ssgain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR._ValidateSsGain" title="Permalink to this definition"></a></dt>
+<dd><p>Checks that the second stage gain dictionary has proper values (1, 5, or None).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ssgain</strong> (<em>dict</em>) – Second stage gain dictionary.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – The ssGain must be 1 or 5; set ssGain to None if no-connect.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.__CHANNELMAPALL">
+<span class="sig-name descname"><span class="pre">__CHANNELMAPALL</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'8406-2BIO':</span> <span class="pre">{'A':</span> <span class="pre">'Bio1',</span> <span class="pre">'B':</span> <span class="pre">'Bio2',</span> <span class="pre">'C':</span> <span class="pre">'NC',</span> <span class="pre">'D':</span> <span class="pre">'NC'},</span> <span class="pre">'8406-BIO':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'NC',</span> <span class="pre">'C':</span> <span class="pre">'NC',</span> <span class="pre">'D':</span> <span class="pre">'NC'},</span> <span class="pre">'8406-EEG2BIO':</span> <span class="pre">{'A':</span> <span class="pre">'Bio1',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'Bio2'},</span> <span class="pre">'8406-SE':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8406-SE3':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EEG3',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8406-SE31M':</span> <span class="pre">{'A':</span> <span class="pre">'EMG',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EEG3',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8406-SE4':</span> <span class="pre">{'A':</span> <span class="pre">'EEG4',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EEG3',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8406-SL':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SE':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SE-2BIO':</span> <span class="pre">{'A':</span> <span class="pre">'Bio1',</span> <span class="pre">'B':</span> <span class="pre">'Bio2',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SE3':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EEG3',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SE31M':</span> <span class="pre">{'A':</span> <span class="pre">'EEG3',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SE4':</span> <span class="pre">{'A':</span> <span class="pre">'EEG4',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EEG3',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SL':</span> <span class="pre">{'A':</span> <span class="pre">'Bio',</span> <span class="pre">'B':</span> <span class="pre">'EEG1',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'},</span> <span class="pre">'8407-SL-2BIO':</span> <span class="pre">{'A':</span> <span class="pre">'Bio1',</span> <span class="pre">'B':</span> <span class="pre">'Bio2',</span> <span class="pre">'C':</span> <span class="pre">'EMG',</span> <span class="pre">'D':</span> <span class="pre">'EEG2'}}</span></em><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.__CHANNELMAPALL" title="Permalink to this definition"></a></dt>
+<dd><p>Class-level dictionary containing the channel map for     all preamplifier devices.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices.PodDevice_8480SC">
+<span id="morelia-devices-poddevice-8480sc-module"></span><h2>Morelia.Devices.PodDevice_8480SC module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8480SC" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8480SC.</span></span><span class="sig-name descname"><span class="pre">Pod8480SC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
+<p>POD_8480SC handles communication using an 8480-SC POD device.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeStimulusConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeStimulusConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeStimulusConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>int</em>) – an integer is passed in, and it represents the Config Flag byte.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keys as the names of the bits, the values representing values at each bit.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeSyncConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeSyncConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeSyncConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>int</em>) – an integer is passed in, and it represents the Sync Config Flag byte.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keys as the names of the bits, the values representing values at each bit.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeTTlConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">DecodeTTlConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.DecodeTTlConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<em>int</em>) – an integer is passed in, and it represents the TTL Setup Config Flag Byte.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keys as the names of the bits, the values representing values at each bit.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.ReadPODpacket">
+<span class="sig-name descname"><span class="pre">ReadPODpacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">validateChecksum</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.ReadPODpacket" title="Permalink to this definition"></a></dt>
+<dd><p>Reads a complete POD packet, either in standard or binary format, beginning with STX and         ending with ETX. Reads first STX and then starts recursion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>validateChecksum</strong> (<em>bool</em><em>, </em><em>optional</em>) – Set to True to validate the checksum. Set to False to                 skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>int</em><em>|</em><em>float</em><em>, </em><em>optional</em>) – Time in seconds to wait for serial data.                 Defaults to 5.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may be a                 standard packet, binary packet, or an unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.StimulusConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StimulusConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optoElec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monoBiphasic</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Simul</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.StimulusConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload         to command #102 ‘SET STIMULUS’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>optoElec</strong> (<em>bool</em>) – Bit  is Opto/Electrical.</p></li>
+<li><p><strong>monoBiphasic</strong> (<em>bool</em>) – Bit 1 is Monophasic/Biphasic.</p></li>
+<li><p><strong>Simul</strong> (<em>bool</em>) – Bit 2 is Simultaneous.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>which represents the Config flag byte in the Stimulus Command.                 The return value is the seventh item in the payload for command ‘SET STIMULUS’.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.SyncConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">SyncConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sync_level</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sync_idle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_trigger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.SyncConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Incoming inputs are bitmasked into an integer value. This value is later given         as the payload to command #127 ‘SET SYNC CONFIG’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sync_level</strong> (<em>bool</em>) – Bit 0 is Sync Level.</p></li>
+<li><p><strong>sync_idle</strong> (<em>bool</em>) – Bit 1 is Stimulus Triggering.</p></li>
+<li><p><strong>signal_trigger</strong> (<em>bool</em>) – Bit 2 is Signal/Trigger.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>which represents the Sync Config Bits format value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.TtlConfigBits">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TtlConfigBits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trigger</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stimtrig</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_sync</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.TtlConfigBits" title="Permalink to this definition"></a></dt>
+<dd><p>Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to         command #109 ‘SET TTL SETUP’. This commands accepts 3 items in the payload, and the return value of this function         is given as the second item.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>trigger</strong> (<em>bool</em>) – Bit 0 is 0 for rising edge, 1 for falling edge.</p></li>
+<li><p><strong>stimtrig</strong> (<em>bool</em>) – Bit 1 is  0 for TTL event notifications, 1 for TTL inputs as triggers.</p></li>
+<li><p><strong>input_sync</strong> (<em>bool</em>) – Bit 7 is 0 for normal TTL operation, 1 for TTL pin operates as a sync output.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>which represents the TTL Config Bits Format value.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.WritePacket">
+<span class="sig-name descname"><span class="pre">WritePacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Standard.PacketStandard" title="Morelia.Packets.Standard.PacketStandard"><span class="pre">PacketStandard</span></a></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.WritePacket" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a POD packet and writes it to the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>cmd</strong> (<em>str</em><em> | </em><em>int</em>) – Command number.</p></li>
+<li><p><strong>payload</strong> (<em>int</em><em> | </em><em>bytes</em><em> | </em><em>tuple</em><em>[</em><em>int</em><em> | </em><em>bytes</em><em>]</em><em>, </em><em>optional</em>) – None when there is no payload. If there                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Packet that was written to the POD device.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Packet_Standard</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC._Custom108GETTTLSETUP">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Custom108GETTTLSETUP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC._Custom108GETTTLSETUP" title="Permalink to this definition"></a></dt>
+<dd><p>Custom function to translate the TTL setup for command #108 GET TTL SETUP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>payload</strong> (<em>bytes</em>) – Bytes string of the POD packet payload.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of the TTL setup.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int|dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC._Custom109SETTTLSETUP">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Custom109SETTTLSETUP</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC._Custom109SETTTLSETUP" title="Permalink to this definition"></a></dt>
+<dd><p>Custom function to translate the TTL setup for command #109 SET TTL SETUP.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>payload</strong> (<em>bytes</em>) – Bytes string of the POD packet payload.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of the TTL setup.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int|dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC._CustomSTIMULUS">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_CustomSTIMULUS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">defaultPayload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC._CustomSTIMULUS" title="Permalink to this definition"></a></dt>
+<dd><p>_summary_</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>payload</strong> (<em>bytes</em>) – Bytes string of the POD packet payload.</p></li>
+<li><p><strong>defaultPayload</strong> (<em>tuple</em>) – Default translated payload.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple of the translated stimulus payload.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC._CustomSYNCCONFIG">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_CustomSYNCCONFIG</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC._CustomSYNCCONFIG" title="Permalink to this definition"></a></dt>
+<dd><p>Custom function to translate the sync config.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>payload</strong> (<em>bytes</em>) – Bytes string of the POD packet payload.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Keys as the names of the bits, the values representing values at each bit.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Devices">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Devices" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Morelia.Commands.html" class="btn btn-neutral float-left" title="Morelia.Commands package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Morelia.Devices.SerialPorts.html" class="btn btn-neutral float-right" title="Morelia.Devices.SerialPorts package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
