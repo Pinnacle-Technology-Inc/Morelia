@@ -18,12 +18,12 @@ class T_Pod8480SC :
         # get port from user 
         if(port == '') : 
             print('~~~~~~~~~~ 8480SC ~~~~~~~~~~')
-            useport: str = Pod8480SC.ChoosePort(forbidden)
+            self.port: str = Pod8480SC.ChoosePort(forbidden)
             print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         else :
-            useport = port
+            self.port = port
         # create pod device object 
-        self.pod: Pod8480SC = Pod8480SC(useport)
+        self.pod: Pod8480SC = Pod8480SC(self.port)
 
         # ---------------------------------------------------------------------------------------------------------
     def RunTests(self, printTests: bool = True) -> tuple[int,int]: 
@@ -42,7 +42,7 @@ class T_Pod8480SC :
                 "2. Type:\t\t"              : self.Type,
                 "3. Firmware:\t\t"          : self.FirmVer,
                 "4. Led Current:\t\t"       : self.LedCurrent,
-                "5. Estim Current:\t\t"     : self.EstimCurrent,
+                "5. Estim Current:\t"       : self.EstimCurrent,
                 "5. PreAmp:\t\t"            : self.PreAmp,
                 "6. TtlPullups:\t\t"        : self.TtlPullups,
                 "7. SynConfig:\t\t"         : self.SynConfig,

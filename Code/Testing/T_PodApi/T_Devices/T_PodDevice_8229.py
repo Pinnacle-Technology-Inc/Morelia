@@ -11,7 +11,6 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-type BasicTestResult = TestResult | ( tuple | None)
 
 class T_Pod8229 :
 
