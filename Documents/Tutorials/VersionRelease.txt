@@ -1,0 +1,76 @@
+
+/////////////////////////////////
+Name:   Thresa Kelly
+Date:   05/21/2024
+/////////////////////////////////
+
+1. Merge all feature branches (i.e. [PA-##]) into the develop branch. 
+
+2. Ensure that all classes, and methods have been correctly documented using Google style docstrings. 
+
+3. Update all appropriate class diagrams. Save a *.drawio and *.png version.
+
+4. Update the README.md with any changes
+
+5. Update Sphinx:
+        1. Open Morelia\pyproject.toml. Edit line 3 with current verion number (i.e. ''' version = "v1.6.1" ''').
+        2. Open Morelia\SphinxDocs\conf.py. Edit line 15 with current version number (i.e. ''' release = 'v1.6.1' ''')
+        3. Enter python enviornment: i.e. 
+            >>  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+            >>  & C:/git/Morelia/.venv/Scripts/Activate.ps1
+        4. Go to Morelia directory: i.e. 
+            >>  cd C:\git\Morelia
+        5. Delete old Sphinx files:
+            >>  cd .\SphinxDocs\
+            >>  .\make clean 
+        6. Add new python modules as Sphinx *.rst files:
+            >> cd C:\git\Morelia
+            >> sphinx-apidoc -o .\SphinxDocs .\Code\
+                    This will output something like the following:
+                        Creating file .\SphinxDocs\Morelia.Commands.rst.
+                        File .\SphinxDocs\Morelia.Devices.rst already exists, skipping.
+                        ...
+        7. Open the *.rst files to check that all modules and sub-modules have been added. 
+            NOTE: if the *.rst already exists, it may not update with new classes. You can delete the 
+            module *.rst file and then try step #7 again. 
+        8. Make the new Sphinx docs
+            >>  cd .\SphinxDocs\
+            >>  .\make html
+            >>  .\make latex
+
+6. Update the PDF manual using the Sphinx LaTeX output: Morelia\SphinxDocs\_build\latex. I do this by... 
+        1. making a copy of Morelia\SphinxDocs\_build\latex and compressing it to a *.zip file. 
+        2. Open LaTeX Overleaf (https://www.overleaf.com/project), click New Project > Upload Project, and then upload the *.zip. 
+        3. Open the Overleaf project and compile pythonpodapi.tex. 
+        4. Then download the PDF. Rename the file as Python_POD_API_Manual.pdf
+        5. Upload the Python_POD_API_Manual.pdf to GitHub here: \Morelia\Documents\API_Manuals\
+
+7. Merge the develop branch into integration
+
+8. Update the ReadTheDocs webpage
+        1. Log into to ReadTheDocs and go to the Python POD API project: https://readthedocs.org/projects/Morelia/
+        2. Click "Build Version". This will read the files in Morelia\SphinxDocs\_build\latex from the integration branch 
+            and will create an html webpage. 
+        3. After it is finished building, open the ReadTheDocs Python POD API documentation documentation page and
+            verify that it is up to date: https://Morelia.readthedocs.io/en/latest/
+
+9. Publish a new version release on GitHub 
+        1. Log in to GitHub and open the Python Pod API project: https://github.com/Pinnacle-Technology-Inc/Morelia
+        2. Click "Releases" on the right side of the page. 
+        3. Click "Draft a new release"
+        4. Click "Choose a tag" and create a new version tag (i.e. v1.5.4)
+        5. Keep the Target as integration
+        6. Add a short descriptive release title 
+        7. Write a summary of all added featrues and bug fixes. i.e.
+                ### Update Summary
+                1. Removed miscellaneous text output. 
+                2. Fixed check for serial port
+                3. Fixed Stream module to save data to EDF file.
+        8. Uncheck "Set as a pre-release", check "Set as the latest release", and check "Create a discussion for this release".
+        9. Click "Publish Release"
+
+10. Update the new version release in JIRA
+        1. Make a new version entry in JIRA with status UNRELEASED if it does not already exist.
+        2. Add all appropriate issues to this version (stories, bugs, tasks, epics, etc.).
+        3. Change version JIRA status to RELEASE and set the appropriate release data. This version will now appear
+            on the calendar and timeline. 

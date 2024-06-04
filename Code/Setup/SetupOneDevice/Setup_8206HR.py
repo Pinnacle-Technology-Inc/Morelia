@@ -5,9 +5,9 @@ from   threading    import Thread
 # local imports
 from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
-from PodApi.Devices         import Pod8206HR
-from PodApi.Parameters      import Params8206HR
-from PodApi.Stream.Collect  import Bucket, DrainBucket
+from Morelia.Devices        import Pod8206HR
+from Morelia.Parameters     import Params8206HR
+from Morelia.Stream.Collect import Bucket, DrainBucket
 
 # authorship
 __author__      = "Thresa Kelly"

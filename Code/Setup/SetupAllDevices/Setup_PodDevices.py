@@ -6,7 +6,7 @@ from   math         import floor
 # local imports
 from Setup.Inputs           import UserInput
 from Setup.SetupOneDevice   import SetupInterface, Setup8206HR, Setup8401HR, Setup8229, Setup8480SC, Setup8274D
-from PodApi.Parameters      import Params
+from Morelia.Parameters     import Params
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -297,7 +297,7 @@ class SetupAll :
         """
         print(
             '\n' + 
-            'import PodApi\n' +
+            'import Morelia\n' +
             'import Setup\n' + 
             'saveFileDicts = ' + str(self.GetSaveFileNames()) + '\n' + 
             'podParametersDict = ' + str(self.GetPODparametersInit())  + '\n' + 

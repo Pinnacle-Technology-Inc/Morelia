@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morelia.Stream.Collect package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia.Stream.Drain package" href="Morelia.Stream.Drain.html" />
+    <link rel="prev" title="Morelia.Stream package" href="Morelia.Stream.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Morelia.html">Morelia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Commands.html">Morelia.Commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.html">Morelia.Devices package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Packets.html">Morelia.Packets package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Parameters.html">Morelia.Parameters package</a></li>
+<li class="toctree-l4 current"><a class="reference internal" href="Morelia.Stream.html">Morelia.Stream package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.html">Setup package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.html">Morelia package</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.Stream.html">Morelia.Stream package</a></li>
+      <li class="breadcrumb-item active">Morelia.Stream.Collect package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Morelia.Stream.Collect.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="morelia-stream-collect-package">
+<h1>Morelia.Stream.Collect package<a class="headerlink" href="#morelia-stream-collect-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-Morelia.Stream.Collect.DataBucket">
+<span id="morelia-stream-collect-databucket-module"></span><h2>Morelia.Stream.Collect.DataBucket module<a class="headerlink" href="#module-Morelia.Stream.Collect.DataBucket" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.Collect.DataBucket.</span></span><span class="sig-name descname"><span class="pre">Bucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR"><span class="pre">Pod8206HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR"><span class="pre">Pod8401HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D"><span class="pre">Pod8274D</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filterMethod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TakePast'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filterInsert</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Class to collect the data and timestamps when streaming from a POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.dataHose">
+<span class="sig-name descname"><span class="pre">dataHose</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.dataHose" title="Permalink to this definition"></a></dt>
+<dd><p>Hose used to stream data from the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#Morelia.Stream.Collect.DataHose.Hose" title="Morelia.Stream.Collect.DataHose.Hose">Hose</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.drops">
+<span class="sig-name descname"><span class="pre">drops</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.drops" title="Permalink to this definition"></a></dt>
+<dd><p>Queue of the drops             (timestamps and data) collected from the Hose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Queue[ tuple[ list[float], list[<a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a>|None] ] ]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.totalDropsCollected">
+<span class="sig-name descname"><span class="pre">totalDropsCollected</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.totalDropsCollected" title="Permalink to this definition"></a></dt>
+<dd><p>Counts the total number of Drops collected from the Hose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.isCollecting">
+<span class="sig-name descname"><span class="pre">isCollecting</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.isCollecting" title="Permalink to this definition"></a></dt>
+<dd><p>True when collecting drops from the Hose, False otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.DripDrop">
+<span class="sig-name descname"><span class="pre">DripDrop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.DripDrop" title="Permalink to this definition"></a></dt>
+<dd><p>Dequeues the first point (timestamp, data) in the drops queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – No drops left to dequeue.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple (x,y) with ~1 sec of                 timestamps (x) and data (y) .</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[ list[float], list[<a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a>|None] ]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.EmptyBucket">
+<span class="sig-name descname"><span class="pre">EmptyBucket</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.EmptyBucket" title="Permalink to this definition"></a></dt>
+<dd><p>Resets the class.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.GetVolumeOfDrops">
+<span class="sig-name descname"><span class="pre">GetVolumeOfDrops</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.GetVolumeOfDrops" title="Permalink to this definition"></a></dt>
+<dd><p>Get the number of data drops currently in the queue.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Size of the drops queue.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.StartCollecting">
+<span class="sig-name descname"><span class="pre">StartCollecting</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Thread</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.StartCollecting" title="Permalink to this definition"></a></dt>
+<dd><p>Start collecting stream data into the Bucket.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>duration_sec</strong> (<em>float</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – How long to stream data in seconds. Defaults to None.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Started Thread for data collection.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Thread</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket.StopCollecting">
+<span class="sig-name descname"><span class="pre">StopCollecting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket.StopCollecting" title="Permalink to this definition"></a></dt>
+<dd><p>Tells the POD device to stop streaming data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket._CollectDrop">
+<span class="sig-name descname"><span class="pre">_CollectDrop</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket._CollectDrop" title="Permalink to this definition"></a></dt>
+<dd><p>Adds a point to the drops queue. Each point is a tuple (x,y) of the         timestamps list (x) and the data list (y) for one drop (values from         ~1 sec of streaming, or the number of values approximatly equal to         the sample rate).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket._CollectForDuration">
+<span class="sig-name descname"><span class="pre">_CollectForDuration</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">duration_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket._CollectForDuration" title="Permalink to this definition"></a></dt>
+<dd><p>Collect streaming data for a given duration.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>duration_sec</strong> (<em>float</em>) – How long to stream data in seconds.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket._CollectWhileOpen">
+<span class="sig-name descname"><span class="pre">_CollectWhileOpen</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket._CollectWhileOpen" title="Permalink to this definition"></a></dt>
+<dd><p>Collect streaming data until the Hose is finished dripping.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataBucket.Bucket._IsDropAvailableInHose">
+<span class="sig-name descname"><span class="pre">_IsDropAvailableInHose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataBucket.Bucket._IsDropAvailableInHose" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the Hose has any uncollected drops.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if there is a drop to be collected, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Stream.Collect.DataHose">
+<span id="morelia-stream-collect-datahose-module"></span><h2>Morelia.Stream.Collect.DataHose module<a class="headerlink" href="#module-Morelia.Stream.Collect.DataHose" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.Collect.DataHose.</span></span><span class="sig-name descname"><span class="pre">Hose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR"><span class="pre">Pod8206HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR"><span class="pre">Pod8401HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D"><span class="pre">Pod8274D</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">filterMethod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TakePast'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filterInsert</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">nan</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Collects streaming data from an 8206-HR or 8401-HR POD device. The data     and timestamps are updated about every 1 second when streaming.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.sampleRate">
+<span class="sig-name descname"><span class="pre">sampleRate</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.sampleRate" title="Permalink to this definition"></a></dt>
+<dd><p>Sample rate of the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.deviceValve">
+<span class="sig-name descname"><span class="pre">deviceValve</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.deviceValve" title="Permalink to this definition"></a></dt>
+<dd><p>To open or close the data stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#Morelia.Stream.Collect.DeviceValve.Valve" title="Morelia.Stream.Collect.DeviceValve.Valve">Valve</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.data" title="Permalink to this definition"></a></dt>
+<dd><p>List of streaming binary data packets.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[<a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a>|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">timestamps</span> <span class="pre">(list[float]</span></span></dt>
+<dd><p>List of timestamps for each data packet.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.numDrops">
+<span class="sig-name descname"><span class="pre">numDrops</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.numDrops" title="Permalink to this definition"></a></dt>
+<dd><p>Number of drops, or number of times the data and             timestamps have been updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.corruptedPointsRemoved">
+<span class="sig-name descname"><span class="pre">corruptedPointsRemoved</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.corruptedPointsRemoved" title="Permalink to this definition"></a></dt>
+<dd><p>Total number of corrupted data points             removed from the data and timestamps lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.filterMethod">
+<span class="sig-name descname"><span class="pre">filterMethod</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.filterMethod" title="Permalink to this definition"></a></dt>
+<dd><p>Method used to filter out corrupted data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.filterInsert">
+<span class="sig-name descname"><span class="pre">filterInsert</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.filterInsert" title="Permalink to this definition"></a></dt>
+<dd><p>Value to replace corrupted data with if using             the ‘InsertValue’ filter method. Defaults to np.nan.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.EmptyHose">
+<span class="sig-name descname"><span class="pre">EmptyHose</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.EmptyHose" title="Permalink to this definition"></a></dt>
+<dd><p>Empties the hose and resets the attributes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.GetSampleRate">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetSampleRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR"><span class="pre">Pod8206HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR"><span class="pre">Pod8401HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D"><span class="pre">Pod8274D</span></a></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.GetSampleRate" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command to the POD device to get its sample rate in Hz.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podDevice</strong> (<a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR"><em>Pod8206HR</em></a><em> | </em><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR"><em>Pod8401HR</em></a><em> | </em><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D"><em>Pod8274D</em></a>) – POD device to get the sample rate for.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Cannot get the sample rate for this POD device.</p></li>
+<li><p><strong>Exception</strong> – Could not connect to this POD device.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Sample rate in Hz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.PickFilterMethod">
+<span class="sig-name descname"><span class="pre">PickFilterMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filterMethod</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.PickFilterMethod" title="Permalink to this definition"></a></dt>
+<dd><p>Set the method used to filter corrupted data when streaming. The filter methods         include ‘RemoveEntry’, ‘InsertValue’, ‘TakePast’, ‘TakeFuture’, or ‘DoNothing’.          The default method is ‘DoNothing’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>filterMethod</strong> (<em>str</em>) – Filter method, which can be ‘RemoveEntry’,
+‘InsertValue’, ‘TakePast’, ‘TakeFuture’, or ‘DoNothing’/other.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.SetFilterInsertValue">
+<span class="sig-name descname"><span class="pre">SetFilterInsertValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">insert</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.SetFilterInsertValue" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the value to insert in place of currupted data. This is only used if the filter method is ‘InsertValue’.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>insert</strong> (<em>float</em>) – Numerical value to insert.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.StartStream">
+<span class="sig-name descname"><span class="pre">StartStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.StartStream" title="Permalink to this definition"></a></dt>
+<dd><p>Start a thread to start streaming data from the POD device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose.StopStream">
+<span class="sig-name descname"><span class="pre">StopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose.StopStream" title="Permalink to this definition"></a></dt>
+<dd><p>Writes a command to the POD device to stop streaming data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Drop">
+<span class="sig-name descname"><span class="pre">_Drop</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">currentTime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ti</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Drop" title="Permalink to this definition"></a></dt>
+<dd><p>Updates the instance variables that store the streaming data.         The data drops about every 1 second.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>currentTime</strong> (<em>float</em>) – Current start time in seconds.</p></li>
+<li><p><strong>ti</strong> (<em>float</em>) – Computer clock time at the start of the ~1 second drop.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – Packets recieved when streaming.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>updated current time in seconds for the next drop.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter">
+<span class="sig-name descname"><span class="pre">_Filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter" title="Permalink to this definition"></a></dt>
+<dd><p>Searches the data list for corrupted points, and deals with them         according to the set filter method.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>True when the corrupted data is filtered, False otherwise. A list                 containing only None cannot be filtered.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter_DoNothing">
+<span class="sig-name descname"><span class="pre">_Filter_DoNothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter_DoNothing" title="Permalink to this definition"></a></dt>
+<dd><p>Does nothing to the data and timestamps lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – Index of corrupted data.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter_InsertValue">
+<span class="sig-name descname"><span class="pre">_Filter_InsertValue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter_InsertValue" title="Permalink to this definition"></a></dt>
+<dd><p>Replaces the data value at index i with a set value (class defaults to np.nan).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – Index of corrupted data.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter_RemoveEntry">
+<span class="sig-name descname"><span class="pre">_Filter_RemoveEntry</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter_RemoveEntry" title="Permalink to this definition"></a></dt>
+<dd><p>Removes a datapoint at index i from the data and timestamps lists.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – Index of corrupted data.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter_TakeFuture">
+<span class="sig-name descname"><span class="pre">_Filter_TakeFuture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter_TakeFuture" title="Permalink to this definition"></a></dt>
+<dd><p>Replaces the data value at index i with the next Packet. If the index points         to the last value in the data list, the data will be replaced with the previous         Packet instead. If there are multiple currupted points in a row (data value is         None), then all points will be replaced with the same future Packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – Index of corrupted data.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Filter_TakePast">
+<span class="sig-name descname"><span class="pre">_Filter_TakePast</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">i</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Morelia.Packets.Packet.Packet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Filter_TakePast" title="Permalink to this definition"></a></dt>
+<dd><p>Replaces the data value at index i with the previous Packet. If the index points         to the first value in the data list, the data will be replaced with the next Packet instead.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>i</strong> (<em>int</em>) – Index of corrupted data.</p></li>
+<li><p><strong>data</strong> (<em>list</em><em>[</em><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><em>Packet</em></a><em> | </em><em>None</em><em>]</em>) – List of Packets read from the POD device.</p></li>
+<li><p><strong>timestamps</strong> (<em>list</em><em>[</em><em>float</em><em>]</em>) – List of timestamps in seconds for each Packet                 in the data list.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DataHose.Hose._Flow">
+<span class="sig-name descname"><span class="pre">_Flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stopAfterXfails</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DataHose.Hose._Flow" title="Permalink to this definition"></a></dt>
+<dd><p>Streams data from the POD device. The data drops about every 1 second.         Streaming will continue until a “stop streaming” packet is recieved.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>stopAfterXfails</strong> (<em>int</em>) – The number of successive failed attempts of reading data before stopping the streaming.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Stream.Collect.DeviceValve">
+<span id="morelia-stream-collect-devicevalve-module"></span><h2>Morelia.Stream.Collect.DeviceValve module<a class="headerlink" href="#module-Morelia.Stream.Collect.DeviceValve" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.Collect.DeviceValve.</span></span><span class="sig-name descname"><span class="pre">Valve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR"><span class="pre">Pod8206HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR"><span class="pre">Pod8401HR</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D"><span class="pre">Pod8274D</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Simple class to start and stop streaming data from a POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.podDevice">
+<span class="sig-name descname"><span class="pre">podDevice</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.podDevice" title="Permalink to this definition"></a></dt>
+<dd><p>POD device, such as an 8206-HR/8401-HR/8274D.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Morelia.Devices.PodDevice_8206HR.Pod8206HR">Pod8206HR</a> | <a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR">Pod8401HR</a> | <a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Morelia.Devices.PodDevice_8274D.Pod8274D">Pod8274D</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.streamCmd">
+<span class="sig-name descname"><span class="pre">streamCmd</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.streamCmd" title="Permalink to this definition"></a></dt>
+<dd><p>Command name/number for streaming data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str | int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.streamPldStart">
+<span class="sig-name descname"><span class="pre">streamPldStart</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.streamPldStart" title="Permalink to this definition"></a></dt>
+<dd><p>Payload to start streaming data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int | bytes | tuple[int | bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.streamPldStop">
+<span class="sig-name descname"><span class="pre">streamPldStop</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.streamPldStop" title="Permalink to this definition"></a></dt>
+<dd><p>Payload to stop streaming data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int | bytes | tuple[int | bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.Close">
+<span class="sig-name descname"><span class="pre">Close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.Close" title="Permalink to this definition"></a></dt>
+<dd><p>Write command to stop streaming</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.Drip">
+<span class="sig-name descname"><span class="pre">Drip</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><span class="pre">Packet</span></a></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.Drip" title="Permalink to this definition"></a></dt>
+<dd><p>Reads one packet from the POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>POD packet beginning with STX and ending with ETX.                 This may be a standard packet, binary packet, or an                 unformatted packet (STX+something+ETX).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="Morelia.Packets.html#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet">Packet</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.EmptyValve">
+<span class="sig-name descname"><span class="pre">EmptyValve</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.EmptyValve" title="Permalink to this definition"></a></dt>
+<dd><p>Reset the serial port buffer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.GetStartBytes">
+<span class="sig-name descname"><span class="pre">GetStartBytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.GetStartBytes" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the bytes string represeting a “start streaming data” packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a self.streamCmd command and a                 self.streamPldStart payload.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.GetStopBytes">
+<span class="sig-name descname"><span class="pre">GetStopBytes</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.GetStopBytes" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the bytes string represeting a “stop streaming data” packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string for a self.streamCmd command and a                 self.streamPldStop payload.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DeviceValve.Valve.Open">
+<span class="sig-name descname"><span class="pre">Open</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DeviceValve.Valve.Open" title="Permalink to this definition"></a></dt>
+<dd><p>Write command to start streaming.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Could not connect to this POD device.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Stream.Collect.DrainBucketToFile">
+<span id="morelia-stream-collect-drainbuckettofile-module"></span><h2>Morelia.Stream.Collect.DrainBucketToFile module<a class="headerlink" href="#module-Morelia.Stream.Collect.DrainBucketToFile" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.Collect.DrainBucketToFile.</span></span><span class="sig-name descname"><span class="pre">DrainBucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataBucket</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#Morelia.Stream.Collect.DataBucket.Bucket" title="Morelia.Stream.Collect.DataBucket.Bucket"><span class="pre">Bucket</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">fileName</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>This class is used to save the streaming data from a POD device that was     collected by a Bucket into a file.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.self.drainToFile">
+<span class="sig-prename descclassname"><span class="pre">self.</span></span><span class="sig-name descname"><span class="pre">drainToFile</span></span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.self.drainToFile" title="Permalink to this definition"></a></dt>
+<dd><p>Class to to drain the data drops             collected by a Bucket into a text or EDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT" title="Morelia.Stream.Drain.ToText.DrainToTXT">DrainToTXT</a>, <a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF" title="Morelia.Stream.Drain.ToEDF.DrainToEDF">DrainToEDF</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.DrainBucketToFile">
+<span class="sig-name descname"><span class="pre">DrainBucketToFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Thread</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.DrainBucketToFile" title="Permalink to this definition"></a></dt>
+<dd><p>Starts a thread that starts draining data drops into the save file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeout_sec</strong> (<em>float</em><em>, </em><em>optional</em>) – Quit saving data if no new data is recieved                 after timeout_sec time (in seconds). Defaults to 10.0.</p></li>
+<li><p><strong>sleep</strong> (<em>float</em><em>, </em><em>optional</em>) – Time duration in seconds to wait for the Bucket to                 collect more data before checking agian. Defaults to 0.25.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Started thread where data is being saved to a file.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Thread</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsCollecting">
+<span class="sig-name descname"><span class="pre">IsCollecting</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsCollecting" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the Bucket is collected data from the Hose.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the Bucket is collecting data, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsDataAvailable">
+<span class="sig-name descname"><span class="pre">IsDataAvailable</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsDataAvailable" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if data is available in the Bucket.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if there are any drops in the Bucket, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._DrainDropToFile">
+<span class="sig-name descname"><span class="pre">_DrainDropToFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeoutTicker</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._DrainDropToFile" title="Permalink to this definition"></a></dt>
+<dd><p>When data is available in the bucket, write one drop of data to the save file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeoutTicker</strong> (<em>float</em>) – Counts the amout of time passed since the last drop was recieved.</p></li>
+<li><p><strong>timeout_sec</strong> (<em>float</em><em>, </em><em>optional</em>) – Quit saving data if no new data is recieved                 after timeout_sec time (in seconds). Defaults to 10.0.</p></li>
+<li><p><strong>sleep</strong> (<em>float</em><em>, </em><em>optional</em>) – Time duration in seconds to wait for the Bucket to                 collect more data before checking agian. Defaults to 0.25.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Timeout: no data found to be saved to file.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Updated timeoutTicker.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._ThreadedDrainBucketToFile">
+<span class="sig-name descname"><span class="pre">_ThreadedDrainBucketToFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.25</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._ThreadedDrainBucketToFile" title="Permalink to this definition"></a></dt>
+<dd><p>Opens a save file and starts saving data to it. The file is updated about every 1 sec.         After the POD device stops streaming data, the file will close.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>timeout_sec</strong> (<em>float</em><em>, </em><em>optional</em>) – Quit saving data if no new data is recieved                 after timeout_sec time (in seconds). Defaults to 10.0.</p></li>
+<li><p><strong>sleep</strong> (<em>float</em><em>, </em><em>optional</em>) – Time duration in seconds to wait for the Bucket to                 collect more data before checking agian. Defaults to 0.25.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Stream.Collect">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Stream.Collect" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Morelia.Stream.html" class="btn btn-neutral float-left" title="Morelia.Stream package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Morelia.Stream.Drain.html" class="btn btn-neutral float-right" title="Morelia.Stream.Drain package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

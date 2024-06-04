@@ -9,9 +9,9 @@ from   datetime   import datetime
 
 # local imports
 from Setup.Inputs       import UserInput
-from PodApi.Packets     import Packet, PacketStandard
-from PodApi.Devices     import Pod
-from PodApi.Parameters  import Params
+from Morelia.Packets    import Packet, PacketStandard
+from Morelia.Devices    import Pod
+from Morelia.Parameters import Params
 
 # authorship
 __author__      = "Thresa Kelly"
