@@ -1,6 +1,11 @@
 # Morelia
 
-<center><img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
+<!DOCTYPE html>
+<html lang=”en”>
+   <div style="text-align: center;">
+      <img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
+   </div>
+</html>
 
 ## Introduction 
 
@@ -51,7 +56,7 @@ The **PodApi** package is used to operate POD devices. It contains four sub-pack
 
 The class diagram of the PodApi package is shown below.
 
-![Class diagram for the PodApi package](/Documents/Diagrams/class-diagrams-PodApi.png)
+![Class diagram for the PodApi package](/Documents/Diagrams/class-diagrams-Morelia.png)
 
 ## Examples & Usage 
 
