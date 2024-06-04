@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morelia.Packets package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia.Parameters package" href="Morelia.Parameters.html" />
+    <link rel="prev" title="Morelia.Devices.SerialPorts package" href="Morelia.Devices.SerialPorts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Morelia.html">Morelia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Commands.html">Morelia.Commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.html">Morelia.Devices package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Morelia.Packets package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Parameters.html">Morelia.Parameters package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.html">Morelia.Stream package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.html">Setup package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.html">Morelia package</a></li>
+      <li class="breadcrumb-item active">Morelia.Packets package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Morelia.Packets.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="morelia-packets-package">
+<h1>Morelia.Packets package<a class="headerlink" href="#morelia-packets-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-Morelia.Packets.Binary">
+<span id="morelia-packets-binary-module"></span><h2>Morelia.Packets.Binary module<a class="headerlink" href="#module-Morelia.Packets.Binary" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Packets.Binary.</span></span><span class="sig-name descname"><span class="pre">PacketBinary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Packet</span></code></a></p>
+<p>Container class that stores a standard binary command packet for a POD device. The format is     STX (1 byte) + command number (4 bytes) + length of binary (4 bytes) + checksum (2 bytes)     + ETX (1 bytes) + binary (LENGTH bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.binaryLength">
+<span class="sig-name descname"><span class="pre">binaryLength</span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.binaryLength" title="Permalink to this definition"></a></dt>
+<dd><p>Number of bytes of binary data from the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.binaryData">
+<span class="sig-name descname"><span class="pre">binaryData</span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.binaryData" title="Permalink to this definition"></a></dt>
+<dd><p>Variable length binary datafrom the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.BinaryLength">
+<span class="sig-name descname"><span class="pre">BinaryLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.BinaryLength" title="Permalink to this definition"></a></dt>
+<dd><p>Translate the binary ASCII encoding of the binary data length         into a readable integer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer of the binary data length.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.CheckIfPacketIsValid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX                 and end with ETX.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Packet is too small to be a standard packet.</p></li>
+<li><p><strong>Exception</strong> – A standard binary packet must have an ETX before the binary bytes.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.GetBinaryData">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBinaryData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.GetBinaryData" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the binary data from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string containg binary data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.GetBinaryLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBinaryLength</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.GetBinaryLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the length, or number of bytes, of the binary data in a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the length of the binary data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.GetMinimumLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.GetMinimumLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes in the smallest possible packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer representing the minimum length of a binary POD                 command packet. Format is STX (1 byte) + command number (4 bytes) + length                 of binary (4 bytes) + checksum (2 bytes) + ETX (1 bytes) + binary (LENGTH                 bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.TranslateAll">
+<span class="sig-name descname"><span class="pre">TranslateAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.TranslateAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in readable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, binary packet length,                 and binary data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary.PacketBinary.UnpackAll">
+<span class="sig-name descname"><span class="pre">UnpackAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary.PacketBinary.UnpackAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, binary packet length,                 and binary data.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Packets.Binary4">
+<span id="morelia-packets-binary4-module"></span><h2>Morelia.Packets.Binary4 module<a class="headerlink" href="#module-Morelia.Packets.Binary4" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Packets.Binary4.</span></span><span class="sig-name descname"><span class="pre">PacketBinary4</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Packet</span></code></a></p>
+<p>Container class that stores a binary4 command packet for a POD device. The format is     STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) +     CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4._preampGain">
+<span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4._preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Preamplifier gain. This should be 10 or 100 for an 8206-HR device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.packetNumber">
+<span class="sig-name descname"><span class="pre">packetNumber</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.packetNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Packet number for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.ttl">
+<span class="sig-name descname"><span class="pre">ttl</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.ttl" title="Permalink to this definition"></a></dt>
+<dd><p>TTL data for this packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.ch0">
+<span class="sig-name descname"><span class="pre">ch0</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.ch0" title="Permalink to this definition"></a></dt>
+<dd><p>channel 0 data for this packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.ch1">
+<span class="sig-name descname"><span class="pre">ch1</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.ch1" title="Permalink to this definition"></a></dt>
+<dd><p>channel 1 data for this packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.ch2">
+<span class="sig-name descname"><span class="pre">ch2</span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.ch2" title="Permalink to this definition"></a></dt>
+<dd><p>channel 2 data for this packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.BinaryBytesToVoltage">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BinaryBytesToVoltage</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.BinaryBytesToVoltage" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a binary bytes value read from POD device and converts it to the         real voltage value at the preamplifier input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>bytes</em>) – Bytes string containing voltage measurement.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A number containing the voltage in Volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.Ch">
+<span class="sig-name descname"><span class="pre">Ch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.Ch" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the binary channel n bytes into a voltage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>int</em>) – Channel number. Should be 0, 1, or 2.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Channel does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Voltage of channel n in Volts.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.CheckIfPacketIsValid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX                 and end with ETX.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Packet the wrong size to be a binary4 packet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.GetBinaryLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBinaryLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.GetBinaryLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes of binary data in a binary4 packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer representing the number of binary encoded bytes in a binary4 packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.GetCh">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetCh</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.GetCh" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the channel n bytes from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – Channel number. Should be 0, 1, or 2.</p></li>
+<li><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the channel 0 data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Channel does not exist.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.GetMinimumLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.GetMinimumLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes in the smallest possible binary4 packet;         STX (1 byte) + command (4 bytes) + packet number (1 byte) + TTL (1 byte) +         CH0 (2 bytes) + CH1 (2 bytes) + CH2 (2 bytes) + checksum (2 bytes) + ETX (1 byte).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer representing the minimum length of a binary4 POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.GetPacketNumber">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetPacketNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.GetPacketNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the packet number in bytes from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the packet number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.GetTTL">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetTTL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.GetTTL" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the TTL bytes from a POD packet</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the TTL data.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.PacketNumber">
+<span class="sig-name descname"><span class="pre">PacketNumber</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.PacketNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the binary packet number into a readable integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer of the packet number.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.TranslateAll">
+<span class="sig-name descname"><span class="pre">TranslateAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.TranslateAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in readable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, packet number, TTL                 and channels 0, 1, and 2.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.TranslateBinaryTTLbyte">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TranslateBinaryTTLbyte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttlByte</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.TranslateBinaryTTLbyte" title="Permalink to this definition"></a></dt>
+<dd><p>Separates the bits of each TTL (0-3) from a binary encoded byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ttlByte</strong> (<em>bytes</em>) – One byte string for the TTL (binary encoded).</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary of the TTLs. Values are 1 when input, 0 when output.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.Ttl">
+<span class="sig-name descname"><span class="pre">Ttl</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.Ttl" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the binary TTL bytes into a dictionary containing each TTL value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with TTL name keys and TTL data as values.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary4.PacketBinary4.UnpackAll">
+<span class="sig-name descname"><span class="pre">UnpackAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary4.PacketBinary4.UnpackAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, packet number, TTL                 and channels 0, 1, and 2.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Packets.Binary5">
+<span id="morelia-packets-binary5-module"></span><h2>Morelia.Packets.Binary5 module<a class="headerlink" href="#module-Morelia.Packets.Binary5" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Packets.Binary5.</span></span><span class="sig-name descname"><span class="pre">PacketBinary5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">{'A':</span> <span class="pre">None,</span> <span class="pre">'B':</span> <span class="pre">None,</span> <span class="pre">'C':</span> <span class="pre">None,</span> <span class="pre">'D':</span> <span class="pre">None}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Packet</span></code></a></p>
+<p>Container class that stores a binary5 command packet for a POD device. The format is     STX (1 byte) + command (4 bytes) + packet number (1 byte) + status (1 byte)     + channels (9 bytes) + AEXT0 (2 bytes) + AEXT1 (2 bytes) + ATTL1 (2 bytes)     + ATTL2 (2 bytes) + ATTL3 (2 bytes) + ATTL4 (2 bytes) + checksum (2 bytes)     + EXT (1 byte)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._ssGain">
+<span class="sig-name descname"><span class="pre">_ssGain</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._ssGain" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary with A, B, C, D keys and             second stage gain values (1, 5, or None).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._preampGain">
+<span class="sig-name descname"><span class="pre">_preampGain</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary with A, B, C, D keys and             preamplifier gain values (10, 100, or None).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,int|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.packetNumber">
+<span class="sig-name descname"><span class="pre">packetNumber</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.packetNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Packet number for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.status">
+<span class="sig-name descname"><span class="pre">status</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.status" title="Permalink to this definition"></a></dt>
+<dd><p>Status for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.channels">
+<span class="sig-name descname"><span class="pre">channels</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.channels" title="Permalink to this definition"></a></dt>
+<dd><p>channel A, B, C, and D data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aEXT0">
+<span class="sig-name descname"><span class="pre">aEXT0</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aEXT0" title="Permalink to this definition"></a></dt>
+<dd><p>Analog EXT0 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aEXT1">
+<span class="sig-name descname"><span class="pre">aEXT1</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aEXT1" title="Permalink to this definition"></a></dt>
+<dd><p>Analog EXT1 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aTTL1">
+<span class="sig-name descname"><span class="pre">aTTL1</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aTTL1" title="Permalink to this definition"></a></dt>
+<dd><p>Analog TTL1 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aTTL2">
+<span class="sig-name descname"><span class="pre">aTTL2</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aTTL2" title="Permalink to this definition"></a></dt>
+<dd><p>Analog TTL2 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aTTL3">
+<span class="sig-name descname"><span class="pre">aTTL3</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aTTL3" title="Permalink to this definition"></a></dt>
+<dd><p>Analog TTL3 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.aTTL4">
+<span class="sig-name descname"><span class="pre">aTTL4</span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.aTTL4" title="Permalink to this definition"></a></dt>
+<dd><p>Analog TTL4 data for this POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.AnalogEXT">
+<span class="sig-name descname"><span class="pre">AnalogEXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.AnalogEXT" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the analog EXT value into a voltage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>int</em>) – Analog EXT number. Should be 0 or 1.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – AEXT does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Analog EXT voltage in volts (V).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.AnalogTTL">
+<span class="sig-name descname"><span class="pre">AnalogTTL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.AnalogTTL" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the analog TTL value into a voltage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>n</strong> (<em>int</em>) – Analog TTL number. Should be 1, 2, 3, or 4.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – ATTL does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Analog TTL voltage in volts (v).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.Channel">
+<span class="sig-name descname"><span class="pre">Channel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">c</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.Channel" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the channel data into a voltage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>c</strong> (<em>str</em>) – Channel character. Should be A, B, C, or D.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Channel does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Voltage of the channel in volts (V).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.CheckIfPacketIsValid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX                 and end with ETX.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Packet the wrong size to be a binary5 packet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetAnalogEXT">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetAnalogEXT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetAnalogEXT" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the analog EXT from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – Analog EXT number. Should be 0 or 1.</p></li>
+<li><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – AEXT does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string of the AEXT.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetAnalogTTL">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetAnalogTTL</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetAnalogTTL" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the analog TTL from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> (<em>int</em>) – Analog TTL number. Should be 1, 2, 3, or 4.</p></li>
+<li><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – ATTL does not exist.</p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes string of the ATTL.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetBinaryLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBinaryLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetBinaryLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes of binary data in a binary5 packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer representing the number of binary encoded bytes in a binary5 packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetChannels">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetChannels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetChannels" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the channel bytes for channels A, B, C, and D together from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the channels A, B, C, and D together.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetMinimumLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetMinimumLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes in the smallest possible binary4 packet;         STX (1 byte) + command (4 bytes) + packet number (1 byte) + status (1 byte)         + channels (9 bytes) + AEXT0 (2 bytes) + AEXT1 (2 bytes) + ATTL1 (2 bytes)         + ATTL2 (2 bytes) + ATTL3 (2 bytes) + ATTL4 (2 bytes) + checksum (2 bytes)         + EXT (1 byte)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer representing the minimum length of a binary5 POD packet.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetPacketNumber">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetPacketNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetPacketNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the packet number in bytes from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the packet number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.GetStatus">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.GetStatus" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the status value in bytes from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the status.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.PacketNumber">
+<span class="sig-name descname"><span class="pre">PacketNumber</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.PacketNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the binary packet number into a readable integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer of the packet number.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.Status">
+<span class="sig-name descname"><span class="pre">Status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.Status" title="Permalink to this definition"></a></dt>
+<dd><p>Translates the binary status value into a readable integer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer status value.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.TranslateAll">
+<span class="sig-name descname"><span class="pre">TranslateAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.TranslateAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in readable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, packet number, status,                 channels, analog EXT, and analog TTL.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5.UnpackAll">
+<span class="sig-name descname"><span class="pre">UnpackAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5.UnpackAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number, packet number, status,                 channels, analog EXT, and analog TTL.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Voltage_PrimaryChannels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PreampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a value to a voltage for a primary channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em>) – Value to be converted to voltage.</p></li>
+<li><p><strong>ssGain</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – Second stage gain. Defaults to None.</p></li>
+<li><p><strong>PreampGain</strong> (<em>int</em><em> | </em><em>None</em><em>, </em><em>optional</em>) – Preamplifier gain. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of the voltage in volts [V]. Returns value if no gain is given (no-connect).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels_Biosensor">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Voltage_PrimaryChannels_Biosensor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels_Biosensor" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a value to a voltage for a biosensor primary channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em>) – Value to be converted to voltage.</p></li>
+<li><p><strong>ssGain</strong> (<em>int</em>) – Second stage gain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of the voltage in volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels_EEGEMG">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Voltage_PrimaryChannels_EEGEMG</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">PreampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._Voltage_PrimaryChannels_EEGEMG" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a value to a voltage for an EEG/EMG primary channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em>) – Value to be converted to voltage.</p></li>
+<li><p><strong>ssGain</strong> (<em>int</em>) – Second stage gain.</p></li>
+<li><p><strong>PreampGain</strong> (<em>int</em>) – Preamplifier gain.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of the voltage in volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Binary5.PacketBinary5._Voltage_SecondaryChannels">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_Voltage_SecondaryChannels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Morelia.Packets.Binary5.PacketBinary5._Voltage_SecondaryChannels" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a value to a voltage for a secondary channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>value</strong> (<em>int</em>) – Value to be converted to voltage.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Number of the voltage in volts [V].</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Packets.Packet">
+<span id="morelia-packets-packet-module"></span><h2>Morelia.Packets.Packet module<a class="headerlink" href="#module-Morelia.Packets.Packet" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Packets.Packet.</span></span><span class="sig-name descname"><span class="pre">Packet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Packet.Packet" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container class that stores a command packet for a POD device. The format is     STX (1 byte) + command number (4 bytes) + data (? bytes) + ETX (1 byte). This class     also has a collection of methods for creating and interpreting POD packets.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet._commands">
+<span class="sig-name descname"><span class="pre">_commands</span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet._commands" title="Permalink to this definition"></a></dt>
+<dd><p>Available commands for a POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>POD_Commands | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.rawPacket">
+<span class="sig-name descname"><span class="pre">rawPacket</span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.rawPacket" title="Permalink to this definition"></a></dt>
+<dd><p>Bytes string containing a POD packet. Should begin with             STX and end with ETX.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.commandNumber">
+<span class="sig-name descname"><span class="pre">commandNumber</span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.commandNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Command number from the Pod packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.ASCIIbytesToInt_Split">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ASCIIbytesToInt_Split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepTopBits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutBottomBits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.ASCIIbytesToInt_Split" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a specific bit range in an ASCII-encoded bytes object to an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>bytes</em>) – Bytes message holding binary information to be converted into an integer.</p></li>
+<li><p><strong>keepTopBits</strong> (<em>int</em>) – Integer position of the msb of desired bit range.</p></li>
+<li><p><strong>cutBottomBits</strong> (<em>int</em>) – Integer number of lsb to remove.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer result from the ASCII-encoded bytes message in a given bit range.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.AsciiBytesToInt">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AsciiBytesToInt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg_b</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.AsciiBytesToInt" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a ASCII-encoded bytes message into an integer.  It does this using a base-16         conversion. If the message is signed and the msb is ‘1’, the integer will be converted to         it’s negative 2’s complement.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg_b</strong> (<em>bytes</em>) – Bytes message to be converted to an integer. The bytes must be base-16 or                 the conversion will fail.</p></li>
+<li><p><strong>signed</strong> (<em>bool</em><em>, </em><em>optional</em>) – True if the message is signed, false if unsigned. Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer result from the ASCII-encoded byte conversion.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.BinaryBytesToInt">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BinaryBytesToInt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">byteorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'big'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.BinaryBytesToInt" title="Permalink to this definition"></a></dt>
+<dd><p>Converts binary-encoded bytes into an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>bytes</em>) – Bytes message holding binary information to be converted into an integer.</p></li>
+<li><p><strong>byteorder</strong> (<em>str</em><em>, </em><em>optional</em>) – Ordering of bytes. ‘big’ for big endian and ‘little’ for little                 endian. Defaults to ‘big’.</p></li>
+<li><p><strong>signed</strong> (<em>bool</em><em>, </em><em>optional</em>) – Boolean flag to mark if the msg is signed (True) or unsigned (False).                 Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer result from the binary-encoded bytes message.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.BinaryBytesToInt_Split">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BinaryBytesToInt_Split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepTopBits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutBottomBits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">byteorder</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'big'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.BinaryBytesToInt_Split" title="Permalink to this definition"></a></dt>
+<dd><p>Converts a specific bit range in a binary-encoded bytes object to an integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg</strong> (<em>bytes</em>) – Bytes message holding binary information to be converted into an integer.</p></li>
+<li><p><strong>keepTopBits</strong> (<em>int</em>) – Integer position of the msb of desired bit range.</p></li>
+<li><p><strong>cutBottomBits</strong> (<em>int</em>) – Integer number of lsb to remove.</p></li>
+<li><p><strong>byteorder</strong> (<em>str</em><em>, </em><em>optional</em>) – Ordering of bytes. ‘big’ for big endian and ‘little’ for little                 endian. Defaults to ‘big’.</p></li>
+<li><p><strong>signed</strong> (<em>bool</em><em>, </em><em>optional</em>) – Boolean flag to mark if the msg is signed (True) or unsigned (False).                 Defaults to False.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer result from the binary-encoded bytes message in a given bit range.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.CheckIfPacketIsValid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX                 and end with ETX.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Packet must begin with STX.</p></li>
+<li><p><strong>Exception</strong> – Packet must end in ETX</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.CommandNumber">
+<span class="sig-name descname"><span class="pre">CommandNumber</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.CommandNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Translate the binary ASCII encoding into a readable integer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer of the command number.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.ETX">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ETX</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.ETX" title="Permalink to this definition"></a></dt>
+<dd><p>Get end-of-transmission (ETX) character in bytes. ETX marks the end byte of a POD Packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes for ETX(0x03).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.GetCommandNumber">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetCommandNumber</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.GetCommandNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the command number bytes from a POD packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the command number, if available.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.GetMinimumLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.GetMinimumLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes in the smallest possible packet; STX (1 byte) +         something + ETX (1 byte).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer representing the minimum length of a generic bytes string.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.HasCommandNumber">
+<span class="sig-name descname"><span class="pre">HasCommandNumber</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.HasCommandNumber" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the packet has a command number.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the packet has a command number, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.HasCommands">
+<span class="sig-name descname"><span class="pre">HasCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.HasCommands" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the Packet instance has commands set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the commands have been set, false otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.IntToAsciiBytes">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">IntToAsciiBytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">numChars</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.IntToAsciiBytes" title="Permalink to this definition"></a></dt>
+<dd><p>Converts an integer value into ASCII-encoded bytes.</p>
+<p>First, it converts the integer value into a usable uppercase hexadecimal string. Then it converts         the ASCII code for each character into bytes. Lastly, it ensures that the final message is the         desired length.</p>
+<p>Example: if value=2 and numBytes=4, the returned ASCII will show b’0002’, which is         ‘0x30 0x30 0x30 0x32’ in bytes. Uses the 2’s complement if the val is negative.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>value</strong> (<em>int</em>) – Integer value to be converted into ASCII-encoded bytes.</p></li>
+<li><p><strong>numChars</strong> (<em>int</em>) – Number characters to be the length of the ASCII-encoded message.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes that are ASCII-encoded conversions of the value parameter.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.STX">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">STX</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.STX" title="Permalink to this definition"></a></dt>
+<dd><p>Get start-of-transmission (STX) character in bytes. STX marks the starting byte of a POD Packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bytes for STX (0x02).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.TranslateAll">
+<span class="sig-name descname"><span class="pre">TranslateAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.TranslateAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in readable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Nothing to translate.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with the command number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.TwosComplement">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TwosComplement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbits</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.TwosComplement" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the 2’s complement of the argument value (negative int).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>val</strong> (<em>int</em>) – Negative value to be complemented.</p></li>
+<li><p><strong>nbits</strong> (<em>int</em>) – Number of bits in the value.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Integer of the 2’s complement for the val.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Packet.Packet.UnpackAll">
+<span class="sig-name descname"><span class="pre">UnpackAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Packet.Packet.UnpackAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – Nothing to unpack.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary with the command number.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Packets.Standard">
+<span id="morelia-packets-standard-module"></span><h2>Morelia.Packets.Standard module<a class="headerlink" href="#module-Morelia.Packets.Standard" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Packets.Standard.</span></span><span class="sig-name descname"><span class="pre">PacketStandard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><span class="pre">CommandSet</span></a></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Packets.Packet.Packet" title="Morelia.Packets.Packet.Packet"><code class="xref py py-class docutils literal notranslate"><span class="pre">Packet</span></code></a></p>
+<p>Container class that stores a standard command packet for a POD device. The format is     STX (1 byte) + command number (4 bytes) + optional payload (? bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard._customPayload">
+<span class="sig-name descname"><span class="pre">_customPayload</span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard._customPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Optional function to translate the payload.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Callable[[Any],tuple]|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard._customPayloadArgs">
+<span class="sig-name descname"><span class="pre">_customPayloadArgs</span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard._customPayloadArgs" title="Permalink to this definition"></a></dt>
+<dd><p>Optional arguments for the _customPayload.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[Any]|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.payload">
+<span class="sig-name descname"><span class="pre">payload</span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.payload" title="Permalink to this definition"></a></dt>
+<dd><p>Optional payload from the packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.CheckIfPacketIsValid">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">CheckIfPacketIsValid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.CheckIfPacketIsValid" title="Permalink to this definition"></a></dt>
+<dd><p>Raises an Exception if the packet is incorrectly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>msg</strong> (<em>bytes</em>) – Bytes string containing a POD packet. Should begin with STX and                 end with ETX.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>Exception</strong> – Packet is too small to be a standard packet.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.DefaultPayload">
+<span class="sig-name descname"><span class="pre">DefaultPayload</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.DefaultPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Splits the payload up into its components and translates the binary ASCII encoding         into a readable integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Tuple with integer values for each component of the payload.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.GetMinimumLength">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetMinimumLength</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.GetMinimumLength" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the number of bytes in the smallest possible packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>integer representing the minimum length of a standard                 POD command packet. Format is STX (1 byte) + command number (4 bytes)                 + optional packet (? bytes) + checksum (2 bytes) + ETX (1 bytes)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.GetPayload">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetPayload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pkt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.GetPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the payload from a POD packet, if available.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pkt</strong> (<em>bytes</em>) – Bytes string containing a POD packet.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Bytes string of the payload, if available.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bytes|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.HasCustomPayload">
+<span class="sig-name descname"><span class="pre">HasCustomPayload</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.HasCustomPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if a custom payload has been set.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if there is a custom payload, False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.HasPayload">
+<span class="sig-name descname"><span class="pre">HasPayload</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.HasPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if this Packet_Standard instance has a payload.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if there is a payload, false otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.Payload">
+<span class="sig-name descname"><span class="pre">Payload</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.Payload" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the payload as a readable tuple of values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Translated payload, if available.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>tuple|None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.SetCustomPayload">
+<span class="sig-name descname"><span class="pre">SetCustomPayload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">args</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.SetCustomPayload" title="Permalink to this definition"></a></dt>
+<dd><p>Sets a custom function with optional arguments to translate the payload.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>func</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>]</em><em>,</em><em>tuple</em><em>]</em>) – Function to translate the payload.</p></li>
+<li><p><strong>args</strong> (<em>tuple</em><em>[</em><em>Any</em><em>]</em><em>, </em><em>optional</em>) – Arguments . Defaults to None.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.TranslateAll">
+<span class="sig-name descname"><span class="pre">TranslateAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.TranslateAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in readable values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number and payload.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Packets.Standard.PacketStandard.UnpackAll">
+<span class="sig-name descname"><span class="pre">UnpackAll</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">bytes</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Packets.Standard.PacketStandard.UnpackAll" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a dictionary containing all parts of the POD packet in bytes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary with the command number and payload.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str,bytes]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Packets">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Packets" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Morelia.Devices.SerialPorts.html" class="btn btn-neutral float-left" title="Morelia.Devices.SerialPorts package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Morelia.Parameters.html" class="btn btn-neutral float-right" title="Morelia.Parameters package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

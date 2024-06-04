@@ -1,8 +1,8 @@
-Python POD API Project
-======================
+Morelia Python POD API Project
+==============================
 
 .. toctree::
    :maxdepth: 4
 
-   PodApi
+   Morelia
    Setup

@@ -3,7 +3,7 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from Testing.T_PodApi import TestPodApi
+from Testing.T_Morelia import TestMorelia
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -14,4 +14,4 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 
-TestPodApi.RunTests()
+TestMorelia.RunTests()

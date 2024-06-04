@@ -1,10 +1,10 @@
 [project]
-name = "Python-POD-API"
-version = "v1.5.2"
+name = "Morelia"
+version = "v1.6.1"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.md"}
-authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"},{name = "Seth Gabbert"}]
+authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}, {name = "Seth Gabbert"}]
 maintainers = [{name = "Thresa Kelly"}]
 
 [tool.setuptools]
@@ -15,4 +15,4 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project.urls]
-repository = "https://github.com/Pinnacle-Technology-Inc/Python-POD-API"
+repository = "https://github.com/Pinnacle-Technology-Inc/Morelia"

@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morelia.Parameters package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia.Stream package" href="Morelia.Stream.html" />
+    <link rel="prev" title="Morelia.Packets package" href="Morelia.Packets.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Morelia.html">Morelia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Commands.html">Morelia.Commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.html">Morelia.Devices package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Packets.html">Morelia.Packets package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Morelia.Parameters package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.html">Morelia.Stream package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.html">Setup package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.html">Morelia package</a></li>
+      <li class="breadcrumb-item active">Morelia.Parameters package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Morelia.Parameters.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="morelia-parameters-package">
+<h1>Morelia.Parameters package<a class="headerlink" href="#morelia-parameters-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-Morelia.Parameters.Params8206HR">
+<span id="morelia-parameters-params8206hr-module"></span><h2>Morelia.Parameters.Params8206HR module<a class="headerlink" href="#module-Morelia.Parameters.Params8206HR" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.Params8206HR.</span></span><span class="sig-name descname"><span class="pre">Params8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamplifierGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lowPass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<p>Container class that stores parameters for an 8206-HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.port">
+<span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.port" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.sampleRate">
+<span class="sig-name descname"><span class="pre">sampleRate</span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.sampleRate" title="Permalink to this definition"></a></dt>
+<dd><p>Sample rate in 100-2000 Hz range.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.preamplifierGain">
+<span class="sig-name descname"><span class="pre">preamplifierGain</span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.preamplifierGain" title="Permalink to this definition"></a></dt>
+<dd><p>Preamplifier gain. Should be 10x or 100x.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.lowPass">
+<span class="sig-name descname"><span class="pre">lowPass</span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.lowPass" title="Permalink to this definition"></a></dt>
+<dd><p>Low-pass for EEG/EMG in 11-500 Hz range.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.EEG1">
+<span class="sig-name descname"><span class="pre">EEG1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.EEG1" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the filter value of EEG1 in Hz from the low-pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>EEG1 low-pass filter in Hz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.EEG2">
+<span class="sig-name descname"><span class="pre">EEG2</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.EEG2" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the filter value of EEG2 in Hz from the low-pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>EEG2 low-pass filter in Hz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.EEG3_EMG">
+<span class="sig-name descname"><span class="pre">EEG3_EMG</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.EEG3_EMG" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the filter value of EEG3/EMG in Hz from the low-pass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>EEG3/EMG low-pass filter in Hz.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8206HR constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_8206HR constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8206HR instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – Sample rate must be between 100-2000 Hz.</p></li>
+<li><p><strong>Exception</strong> – Preamplidier gain must be 10x or 100x.</p></li>
+<li><p><strong>Exception</strong> – Low-pass EEG/EMG must be between 11-500 Hz.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8206HR.Params8206HR.lowPassLabels">
+<span class="sig-name descname"><span class="pre">lowPassLabels</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('EEG1',</span> <span class="pre">'EEG2',</span> <span class="pre">'EEG3/EMG')</span></em><a class="headerlink" href="#Morelia.Parameters.Params8206HR.Params8206HR.lowPassLabels" title="Permalink to this definition"></a></dt>
+<dd><p>Tuple describing the items in the lowPass.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters.Params8229">
+<span id="morelia-parameters-params8229-module"></span><h2>Morelia.Parameters.Params8229 module<a class="headerlink" href="#module-Morelia.Parameters.Params8229" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.Params8229.</span></span><span class="sig-name descname"><span class="pre">Params8229</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">systemID</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motorDirection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">motorSpeed</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">randomReverse</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverseBaseTime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reverseVarTime</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schedule</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<p>Container class that stores parameters for an 8229 POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.port">
+<span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.port" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.systemID">
+<span class="sig-name descname"><span class="pre">systemID</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.systemID" title="Permalink to this definition"></a></dt>
+<dd><p>ID of this 8229 POD system. Must be a positive integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.motorDirection">
+<span class="sig-name descname"><span class="pre">motorDirection</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.motorDirection" title="Permalink to this definition"></a></dt>
+<dd><p>False for clockwise and true for counterclockwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.motorSpeed">
+<span class="sig-name descname"><span class="pre">motorSpeed</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.motorSpeed" title="Permalink to this definition"></a></dt>
+<dd><p>Motor speed as a percentage 0-100%.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.randomReverse">
+<span class="sig-name descname"><span class="pre">randomReverse</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.randomReverse" title="Permalink to this definition"></a></dt>
+<dd><p>True to enable random reverse, False otherwise. The random reverse time will             be reverseBaseTime + random value in reverseVarTime range.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.reverseBaseTime">
+<span class="sig-name descname"><span class="pre">reverseBaseTime</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.reverseBaseTime" title="Permalink to this definition"></a></dt>
+<dd><p>Base time for a random reverse in seconds. Must be a positive integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.reverseVarTime">
+<span class="sig-name descname"><span class="pre">reverseVarTime</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.reverseVarTime" title="Permalink to this definition"></a></dt>
+<dd><p>Variable time for a random reverse in seconds. Must be a positive integer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.mode">
+<span class="sig-name descname"><span class="pre">mode</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.mode" title="Permalink to this definition"></a></dt>
+<dd><p>System mode; 0 = Manual, 1 = PC Control, and 2 = Internal Schedule.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.schedule">
+<span class="sig-name descname"><span class="pre">schedule</span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.schedule" title="Permalink to this definition"></a></dt>
+<dd><p>Schedule for a week. The keys are the weekdays (Sunday-Saturday).             The values are a tuple of 24 bools that are either 1 for motor on or 0 for motor off</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, tuple[int]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.BuildEmptySchedule">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BuildEmptySchedule</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.BuildEmptySchedule" title="Permalink to this definition"></a></dt>
+<dd><p>Creates a schedule where the motor is off for all hours of every day.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of the empty schedule. The keys are                 the days of the week. The values are tuples of 24 zeros.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str, tuple[bool]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8229 constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_Interface constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8229 instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – The system ID must be a positive integer.</p></li>
+<li><p><strong>Exception</strong> – The motor speed must be between 0-100%.</p></li>
+<li><p><strong>Exception</strong> – The reverse base time (sec) must be a positive integer.</p></li>
+<li><p><strong>Exception</strong> – The reverse variable time (sec) must be a positive integer.</p></li>
+<li><p><strong>Exception</strong> – The mode must be 0, 1, or 2.</p></li>
+<li><p><strong>Exception</strong> – The schedule must have exactly (‘Sunday’,’Monday’,’Tuesday’,                ‘Wednesday’,’Thursday’,’Friday’,’Saturday’) as keys.</p></li>
+<li><p><strong>Exception</strong> – There must be 24 items in the schedule for each day.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.hoursPerDay">
+<span class="sig-name descname"><span class="pre">hoursPerDay</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">24</span></em><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.hoursPerDay" title="Permalink to this definition"></a></dt>
+<dd><p>Integer storing the number of hours in a day.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8229.Params8229.week">
+<span class="sig-name descname"><span class="pre">week</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('Sunday',</span> <span class="pre">'Monday',</span> <span class="pre">'Tuesday',</span> <span class="pre">'Wednesday',</span> <span class="pre">'Thursday',</span> <span class="pre">'Friday',</span> <span class="pre">'Saturday')</span></em><a class="headerlink" href="#Morelia.Parameters.Params8229.Params8229.week" title="Permalink to this definition"></a></dt>
+<dd><p>Tuple containing strings of the 7 days of the week.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters.Params8274D">
+<span id="morelia-parameters-params8274d-module"></span><h2>Morelia.Parameters.Params8274D module<a class="headerlink" href="#module-Morelia.Parameters.Params8274D" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8274D.Params8274D">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.Params8274D.</span></span><span class="sig-name descname"><span class="pre">Params8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">localScan</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">period</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.Params8274D.Params8274D" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8274D.Params8274D.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8274D.Params8274D.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8274D constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_8274D constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8274D.Params8274D._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8274D.Params8274D._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8206HR instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – Sample rate must be between 100-2000 Hz.</p></li>
+<li><p><strong>Exception</strong> – Preamplidier gain must be 10x or 100x.</p></li>
+<li><p><strong>Exception</strong> – Low-pass EEG/EMG must be between 11-500 Hz.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters.Params8401HR">
+<span id="morelia-parameters-params8401hr-module"></span><h2>Morelia.Parameters.Params8401HR module<a class="headerlink" href="#module-Morelia.Parameters.Params8401HR" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.Params8401HR.</span></span><span class="sig-name descname"><span class="pre">Params8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampDevice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sampleRate</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muxMode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preampGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ssGain</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highPass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lowPass</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dcMode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<p>Container class that stores parameters for an 8401-HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.port">
+<span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.port" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.preampDevice">
+<span class="sig-name descname"><span class="pre">preampDevice</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.preampDevice" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the mouse/rat preamplifier device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.sampleRate">
+<span class="sig-name descname"><span class="pre">sampleRate</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.sampleRate" title="Permalink to this definition"></a></dt>
+<dd><p>Sample rate (2000-20000 Hz).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.muxMode">
+<span class="sig-name descname"><span class="pre">muxMode</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.muxMode" title="Permalink to this definition"></a></dt>
+<dd><p>Using mux mode when True, false otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.preampGain">
+<span class="sig-name descname"><span class="pre">preampGain</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.preampGain" title="Permalink to this definition"></a></dt>
+<dd><p>Preamplifier gain (1, 10, or 100) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.ssGain">
+<span class="sig-name descname"><span class="pre">ssGain</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.ssGain" title="Permalink to this definition"></a></dt>
+<dd><p>Second stage gain (1 or 5) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.highPass">
+<span class="sig-name descname"><span class="pre">highPass</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.highPass" title="Permalink to this definition"></a></dt>
+<dd><p>High-pass filter (0, 0.5, 1, or 10 Hz) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.lowPass">
+<span class="sig-name descname"><span class="pre">lowPass</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.lowPass" title="Permalink to this definition"></a></dt>
+<dd><p>Low-pass filter (21-15000 Hz) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.bias">
+<span class="sig-name descname"><span class="pre">bias</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.bias" title="Permalink to this definition"></a></dt>
+<dd><p>Bias voltage (+/- 2.048 V) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.dcMode">
+<span class="sig-name descname"><span class="pre">dcMode</span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.dcMode" title="Permalink to this definition"></a></dt>
+<dd><p>DC mode (VBIAS or AGND) for all channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8401HR constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_8401HR constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8401HR instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – Mouse/rat preamplifier does not exist.</p></li>
+<li><p><strong>Exception</strong> – Sample rate must be between 2000-20000 Hz.</p></li>
+<li><p><strong>Exception</strong> – EEG/EMG preamplifier gain must be 10x or 100x. For biosensors, the preampGain is None.</p></li>
+<li><p><strong>Exception</strong> – The second stage gain must be 1x or 5x; set gain to None if no-connect.</p></li>
+<li><p><strong>Exception</strong> – The high-pass filter must be 0.5, 1, or 10 Hz. If the channel is DC, input 0.</p></li>
+<li><p><strong>Exception</strong> – The low-pass filter must be between 21-15000 Hz.</p></li>
+<li><p><strong>Exception</strong> – The bias voltage must be +/- 2.048 V.</p></li>
+<li><p><strong>Exception</strong> – The DC mode must be VBIAS or AGND.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8401HR.Params8401HR.channelLabels">
+<span class="sig-name descname"><span class="pre">channelLabels</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('A',</span> <span class="pre">'B',</span> <span class="pre">'C',</span> <span class="pre">'D')</span></em><a class="headerlink" href="#Morelia.Parameters.Params8401HR.Params8401HR.channelLabels" title="Permalink to this definition"></a></dt>
+<dd><p>Tuple listing the four channel characters in order.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters.Params8480SC">
+<span id="morelia-parameters-params8480sc-module"></span><h2>Morelia.Parameters.Params8480SC module<a class="headerlink" href="#module-Morelia.Parameters.Params8480SC" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.Params8480SC.</span></span><span class="sig-name descname"><span class="pre">Params8480SC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">port:</span> <span class="pre">str,</span> <span class="pre">stimulus=tuple[int],</span> <span class="pre">preamp=&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">ledCurrent=tuple[int],</span> <span class="pre">ttlPullups=&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">estimCurrent=tuple[int],</span> <span class="pre">syncConfig=&lt;class</span> <span class="pre">'int'&gt;,</span> <span class="pre">ttlSetup=tuple[int],</span> <span class="pre">checkForValidParams:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><code class="xref py py-class docutils literal notranslate"><span class="pre">Params</span></code></a></p>
+<p>Container class that stores parameters for an 8401-HR POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.port">
+<span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.port" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.stimulus">
+<span class="sig-name descname"><span class="pre">stimulus</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.stimulus" title="Permalink to this definition"></a></dt>
+<dd><p>Stimulus configuration on selected channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.preamp">
+<span class="sig-name descname"><span class="pre">preamp</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.preamp" title="Permalink to this definition"></a></dt>
+<dd><p>Preamp value (0-1023).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent">
+<span class="sig-name descname"><span class="pre">ledCurrent</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent" title="Permalink to this definition"></a></dt>
+<dd><p>Led-Current (0-600 mA) for both channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.ttlPUllups">
+<span class="sig-name descname"><span class="pre">ttlPUllups</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.ttlPUllups" title="Permalink to this definition"></a></dt>
+<dd><p>TTL Pullups disabled for value 0, pullups enabled for values that are non-zero.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent">
+<span class="sig-name descname"><span class="pre">estimCurrent</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent" title="Permalink to this definition"></a></dt>
+<dd><p>Estim-Current (0-100 %) for both channels.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.syncConfig">
+<span class="sig-name descname"><span class="pre">syncConfig</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.syncConfig" title="Permalink to this definition"></a></dt>
+<dd><p>Sets Sync-Config byte.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.ttlSetup">
+<span class="sig-name descname"><span class="pre">ttlSetup</span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.ttlSetup" title="Permalink to this definition"></a></dt>
+<dd><p>TTL-Setup for selected channel.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[int]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params_8480SC constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params_8480SC constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params_8206HR member variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Exception</strong> – The preamp must be between 0-1023.</p></li>
+<li><p><strong>Exception</strong> – Led-Curent must be between 0-600.</p></li>
+<li><p><strong>Exception</strong> – Estim-Current must be between 0-100.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent_CH0">
+<span class="sig-name descname"><span class="pre">estimCurrent_CH0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent_CH0" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the estimCurrent value for Channel 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Channel 0 estimCurrent in percentage.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent_CH1">
+<span class="sig-name descname"><span class="pre">estimCurrent_CH1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.estimCurrent_CH1" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the estimCurrent value for Channel 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Channel 1 estimCurrent in percentage.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent_CH0">
+<span class="sig-name descname"><span class="pre">ledCurrent_CH0</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent_CH0" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the ledCurrent value for Channel 0.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Channel 0 ledCurrent in mA.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent_CH1">
+<span class="sig-name descname"><span class="pre">ledCurrent_CH1</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Morelia.Parameters.Params8480SC.Params8480SC.ledCurrent_CH1" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the ledCurrent value for Channel 1.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Channel 1 ledCurrent in mA.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters.ParamsBasic">
+<span id="morelia-parameters-paramsbasic-module"></span><h2>Morelia.Parameters.ParamsBasic module<a class="headerlink" href="#module-Morelia.Parameters.ParamsBasic" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Parameters.ParamsBasic.Params">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Parameters.ParamsBasic.</span></span><span class="sig-name descname"><span class="pre">Params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">checkForValidParams</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Parameters.ParamsBasic.Params" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Interface for a container class that stores parameters for a POD device.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Parameters.ParamsBasic.Params.port">
+<span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Parameters.ParamsBasic.Params.port" title="Permalink to this definition"></a></dt>
+<dd><p>Name of the COM port.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.ParamsBasic.Params.GetInit">
+<span class="sig-name descname"><span class="pre">GetInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Morelia.Parameters.ParamsBasic.Params.GetInit" title="Permalink to this definition"></a></dt>
+<dd><p>Builds a string that represents the Params constructor with the         arguments set to the values of this class instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>String that represents the Params constructor.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.ParamsBasic.Params._CheckParams">
+<span class="sig-name descname"><span class="pre">_CheckParams</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Morelia.Parameters.ParamsBasic.Params._CheckParams" title="Permalink to this definition"></a></dt>
+<dd><p>Throws an exception if Params instance variable is an invalid value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>Exception</strong> – The port name must begin with COM.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Parameters.ParamsBasic.Params._FixTypeInTuple">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_FixTypeInTuple</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">tuple</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">itemType</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">type</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="s"><span class="pre">'type'</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Morelia.Parameters.ParamsBasic.Params._FixTypeInTuple" title="Permalink to this definition"></a></dt>
+<dd><p>Retypes each item of the arr arguemnt to itemType.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>tuple</em>) – Tuple of items to be re-typed.</p></li>
+<li><p><strong>itemType</strong> (<em>type</em>) – Type to be casted to each tuple item.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Tuple with values of all itemType types.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>tuple[type]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Morelia.Parameters">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Parameters" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Morelia.Packets.html" class="btn btn-neutral float-left" title="Morelia.Packets package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Morelia.Stream.html" class="btn btn-neutral float-right" title="Morelia.Stream package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
