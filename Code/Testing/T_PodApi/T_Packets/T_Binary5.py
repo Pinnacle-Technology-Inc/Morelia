@@ -1,6 +1,6 @@
 # local imports
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
-from PodApi.Packets import PacketBinary5
+from Morelia.Packets import PacketBinary5
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -12,7 +12,7 @@ __email__       = "sales@pinnaclet.com"
 
 # ---------------------------------------------------------------------------------------------------------
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Packets.PacketBinary5
+    """Run all tests on Morelia.Packets.PacketBinary5
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.

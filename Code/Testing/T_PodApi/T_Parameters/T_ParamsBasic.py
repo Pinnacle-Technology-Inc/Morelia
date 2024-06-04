@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Parameters import Params
+from Morelia.Parameters import Params
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
@@ -37,7 +37,7 @@ def Test1_MatchInit() -> TestResult :
     # identify inputs and outputs from Params class 
     INport: str = "COM1"
     INcheckForValidParams: bool = False
-    OUTexpectedInitStr: str = "PodApi.Parameters.Params(port='"+INport+"')"
+    OUTexpectedInitStr: str = "Morelia.Parameters.Params(port='"+INport+"')"
     # create instance of params
     param = Params(INport, INcheckForValidParams)
     # get init build string

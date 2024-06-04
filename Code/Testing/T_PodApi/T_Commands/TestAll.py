@@ -11,7 +11,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[int,int] :
-    """Run all tests for PodApi.Commands
+    """Run all tests for Morelia.Commands
 
     Args:
         printThisTest (bool, optional): Prints a header and number of total tests passed when True. Defaults to False.
@@ -24,7 +24,7 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
         testModules   = [
                 T_Commands.T_PodCommands,
             ], 
-        headerModule  = 'PodApi.Commands', 
+        headerModule  = 'Morelia.Commands', 
         printThisTest = printThisTest, 
         printSubTests = printSubTests
     )

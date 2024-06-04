@@ -10,7 +10,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printThisTest = True) -> tuple[int,int]: 
-    if(printThisTest) : print("====== PodApi ======")
+    if(printThisTest) : print("====== Morelia ======")
     # run all tests 
     tests : list[tuple[int,int]] = [
         T_PodApi.T_Parameters.TestAll .RunTests( True, True ),

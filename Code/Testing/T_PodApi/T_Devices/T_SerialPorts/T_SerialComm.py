@@ -1,5 +1,5 @@
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
-from PodApi.Devices.SerialPorts import PortIO, FindPorts
+from Morelia.Devices.SerialPorts import PortIO, FindPorts
 
 # authorship
 __author__      = "James Hurd"
@@ -16,7 +16,7 @@ class T_PortIO :
         
     # ---------------------------------------------------------------------------------------------------------
     def RunTests(self, printTests: bool = True) -> tuple[int, int]:
-        """Run all tests on for PodApi.Devices.SerialPorts.SerialComm
+        """Run all tests on for Morelia.Devices.SerialPorts.SerialComm
 
         Args:
             printTests (bool, optional): Make True to print the test results and messages. Defaults to True.

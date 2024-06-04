@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Parameters import Params8401HR
+from Morelia.Parameters import Params8401HR
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
@@ -60,7 +60,7 @@ def Test1_MatchInit() :
     # get init build string
     paraminits = param.GetInit()
     # check that result matches expected 
-    OUTexpectedInitStr: str = "PodApi.Parameters.Params8401HR(port='COM1', preampDevice='8407-SE', sampleRate=3000, muxMode=False, preampGain=(None, 10, 100, None), ssGain=(1, 1, 5, 5), highPass=(0.0, 0.5, 1.0, 10.0), lowPass=(100, 1000, 10000, 15000), bias=(0.6, -0.6, 1.0, -1.0), dcMode=('VBIAS', 'AGND', 'VBIAS', 'AGND'))"
+    OUTexpectedInitStr: str = "Morelia.Parameters.Params8401HR(port='COM1', preampDevice='8407-SE', sampleRate=3000, muxMode=False, preampGain=(None, 10, 100, None), ssGain=(1, 1, 5, 5), highPass=(0.0, 0.5, 1.0, 10.0), lowPass=(100, 1000, 10000, 15000), bias=(0.6, -0.6, 1.0, -1.0), dcMode=('VBIAS', 'AGND', 'VBIAS', 'AGND'))"
     if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
     return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 

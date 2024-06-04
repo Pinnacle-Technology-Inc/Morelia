@@ -1,6 +1,6 @@
 # local imports
-from PodApi.Packets import Packet
-from PodApi.Commands import CommandSet
+from Morelia.Packets import Packet
+from Morelia.Commands import CommandSet
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
@@ -13,7 +13,7 @@ __email__       = "sales@pinnaclet.com"
 
 # ---------------------------------------------------------------------------------------------------------
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Packets.Packet
+    """Run all tests on Morelia.Packets.Packet
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.

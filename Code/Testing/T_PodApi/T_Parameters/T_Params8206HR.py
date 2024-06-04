@@ -1,5 +1,5 @@
 # local imports
-from PodApi.Parameters import Params8206HR
+from Morelia.Parameters import Params8206HR
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
 
 # authorship
@@ -11,7 +11,7 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 def RunTests(printTests: bool = True) -> tuple[int,int]: 
-    """Run all tests on PodApi.Parameters.Params8206HR
+    """Run all tests on Morelia.Parameters.Params8206HR
 
     Args:
         printTests (bool, optional): Make True to print the test results and messages. Defaults to True.
@@ -47,7 +47,7 @@ def Test1_MatchInit() :
     # get init build string
     paraminits = param.GetInit()
     # check that result matches expected 
-    OUTexpectedInitStr: str = "PodApi.Parameters.Params8206HR(port='COM1', sampleRate=500, preamplifierGain=10, lowPass=(400, 400, 400))"
+    OUTexpectedInitStr: str = "Morelia.Parameters.Params8206HR(port='COM1', sampleRate=500, preamplifierGain=10, lowPass=(400, 400, 400))"
     if(paraminits == OUTexpectedInitStr) :  return TestResult(True, '')
     return TestResult( False, "GetInit does not match given arguments.\n\tExpected: "+OUTexpectedInitStr+"\n\tRecieved: "+str(paraminits) )
 

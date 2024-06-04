@@ -1,7 +1,7 @@
 import random
 
 from Testing.T_PodApi.TestProtocol import RunningTests, TestResult
-from PodApi.Devices import Pod8229
+from Morelia.Devices import Pod8229
 
 # authorship
 __author__      = "James Hurd"
@@ -56,7 +56,7 @@ class T_Pod8229 :
                 raise RuntimeError('Unable to set default schedule.') 
 
     def RunTests(self, printTests: bool = True) -> tuple[int,int]: 
-        """Run all tests on PodApi.Packets.PacketStandard
+        """Run all tests on Morelia.Packets.PacketStandard
 
         Args:
             printTests (bool, optional): Make True to print the test results and messages. Defaults to True.

@@ -23,7 +23,7 @@ def RunAllTests(
 
     Args:
         testModules (list): List of test modules to call RunTests() on.
-        headerModule (str, optional): Text to print as the section header (i.e. 'PodApi.Parameters').
+        headerModule (str, optional): Text to print as the section header (i.e. 'Morelia.Parameters').
         printThisTest (bool, optional): Prints a header and number of total tests passed when True. Defaults to False.
         printSubTests (bool, optional): Prints a header and number of tests passed for each sub-test when True. Defaults to True.
 
