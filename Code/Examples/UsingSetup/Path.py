@@ -4,14 +4,14 @@
 """
 
 def AddAPIpath() : 
-    """Add directory path <...>\Python-POD-API<...>\Code to code 
+    """Add directory path <...>\Morelia<...>\Code to code 
     """
     import sys, os
-    # get current path, and split into list surrounding 'Python-POD-API'
-    aroundApi = os.path.abspath('.').split('Python-POD-API')
+    # get current path, and split into list surrounding 'Morelia'
+    aroundApi = os.path.abspath('.').split('Morelia')
     # build directory path 
-    apiPath = aroundApi[0] + 'Python-POD-API'
-    # check if the 'Python-POD-API' has any trailing text before any subdirectories
+    apiPath = aroundApi[0] + 'Morelia'
+    # check if the 'Morelia' has any trailing text before any subdirectories
     if(len(aroundApi) > 1 and (not aroundApi[1].startswith('\\'))): 
         # add trailing text to the api path
         apiPath += aroundApi[1].split('\\')[0]
@@ -23,6 +23,6 @@ def AddMyAPIpath():
     """
     import sys
     # define string of the API path here
-    myPath = r'C:\git\Python-POD-API\Code'
+    myPath = r'C:\git\Morelia\Code'
     # add path to system
     sys.path.append(myPath) 
