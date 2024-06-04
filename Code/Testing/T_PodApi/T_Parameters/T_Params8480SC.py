@@ -27,7 +27,7 @@ def RunTests(printTests: bool = True) -> tuple[int,int]:
         "3. Check LED:\t\t"     : Test3_BadLedCurrent,
         "4. Check Estim:\t\t"   : Test4_BadEstimCurrent,
     }
-    return RunningTests.RunTests(tests, 'Params8401HR', printTests=printTests)
+    return RunningTests.RunTests(tests, 'Params8480SC', printTests=printTests)
 
 def Test1_MatchInit() : 
     """Tests if the port argument given to a Params8480SC object is correctly reflected in its GetInit() result. 
