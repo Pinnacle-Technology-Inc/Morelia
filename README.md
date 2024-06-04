@@ -1,4 +1,6 @@
-# Python-POD-API Project
+# Morelia
+
+<center><img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
 
 ## Introduction 
 
@@ -6,7 +8,7 @@
 ![GitHub repo size](https://img.shields.io/github/repo-size/Pinnacle-Technology-Inc/Python-POD-API)
 [![Documentation Status](https://readthedocs.org/projects/python-pod-api/badge/?version=latest)](https://python-pod-api.readthedocs.io/en/latest/?badge=latest)
 
-The Python POD API is a free, open-source application programming interface for Pinnacle Technology, Inc. data acquisition POD devices. The Python POD API core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
+Morelia is a free, open-source Python application programming interface (API) for Pinnacle Technology, Inc. data acquisition POD devices. Morelia core modules, usage examples, and supporting documentation can be found here on GitHub and are available freely under the New BSD License. 
 
 The [SetupAllDevices](/Documents/API_Manuals/SetupAllDevices_Package_Manual.pdf) Python package is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. SetupAllDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
