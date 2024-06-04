@@ -8,8 +8,8 @@ Path.AddAPIpath()
 
 # local imports
 import  HelperFunctions as hf
-from PodApi.Packets import Packet
-from PodApi.Devices import Pod, Pod8274D
+from Morelia.Packets import Packet
+from Morelia.Devices import Pod, Pod8274D
 
 # authorship
 __author__      = "Sree Kondi"

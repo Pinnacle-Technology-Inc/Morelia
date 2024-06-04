@@ -8,7 +8,7 @@ Path.AddAPIpath()
 
 # local imports
 from Setup.SetupAllDevices  import SetupAll
-from PodApi.Parameters      import Params8206HR
+from Morelia.Parameters      import Params8206HR
 
 # authorship
 __author__      = "Thresa Kelly"

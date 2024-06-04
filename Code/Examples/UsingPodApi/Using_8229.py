@@ -10,7 +10,7 @@ import time
 
 # local imports
 import  HelperFunctions as hf
-from    PodApi.Devices  import Pod8229
+from    Morelia.Devices  import Pod8229
 
 # authorship
 __author__      = "Thresa Kelly"

@@ -5,7 +5,7 @@
 """
 
 def AddAPIpath() : 
-    """Add directory path <...>\Morelia\Code\PodApi to code 
+    """Add directory path <...>\Morelia\Code\Morelia to code 
     """
     import sys, os
     # get current path, and split into list surrounding 'Morelia'

@@ -7,8 +7,8 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from PodApi.Devices     import Pod
-from PodApi.Packets     import Packet
+from Morelia.Devices     import Pod
+from Morelia.Packets     import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

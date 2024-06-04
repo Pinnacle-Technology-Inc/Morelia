@@ -1,5 +1,5 @@
 """
-Example that demonstrates how to use PodApi.Stream to save streaming \
+Example that demonstrates how to use Morelia.Stream to save streaming \
 data to a file from a 8206-HR POD device. 
 """
 
@@ -8,9 +8,9 @@ import Path
 Path.AddAPIpath()
 
 # local imports
-from PodApi.Devices import Pod8206HR
-from PodApi.Packets import PacketStandard
-from PodApi.Stream.Collect import Bucket, DrainBucket
+from Morelia.Devices import Pod8206HR
+from Morelia.Packets import PacketStandard
+from Morelia.Stream.Collect import Bucket, DrainBucket
 
 # enviornment imports
 from threading import Thread

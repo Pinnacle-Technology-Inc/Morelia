@@ -7,7 +7,7 @@ Path.AddAPIpath()
 
 # local imports
 import  HelperFunctions as hf
-from    PodApi.Devices  import Pod8401HR
+from    Morelia.Devices  import Pod8401HR
 
 # authorship
 __author__      = "Thresa Kelly"
