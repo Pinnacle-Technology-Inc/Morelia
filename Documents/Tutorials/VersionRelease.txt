@@ -13,7 +13,7 @@ Date:   05/21/2024
 4. Update the README.md with any changes
 
 5. Update Sphinx:
-        1. Open Morelia\pyproject.toml. Edit line 3 with current verion number (inen ''' version = "v1.6.1" ''').
+        1. Open Morelia\pyproject.toml. Edit line 3 with current verion number (i.e. ''' version = "v1.6.1" ''').
         2. Open Morelia\SphinxDocs\conf.py. Edit line 15 with current version number (i.e. ''' release = 'v1.6.1' ''')
         3. Enter python enviornment: i.e. 
             >>  Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
