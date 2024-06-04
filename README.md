@@ -1,7 +1,7 @@
 # Morelia
 
 <!DOCTYPE html>
-<html lang=”en”>
+<html lang="en">
    <div style="text-align: center;">
       <img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
    </div>
@@ -17,10 +17,10 @@ Morelia is a free, open-source Python application programming interface (API) fo
 
 The [SetupAllDevices](/Documents/API_Manuals/SetupAllDevices_Package_Manual.pdf) Python package is designed to be a simple and user-friendly method to setup and stream data from Data Conditioning and Acquisition System POD devices. With this module, you can control several aspects of the hardware. You can connect multiple POD devices and stream data simultaneously. Data can be saved to either EDF or text files. SetupAllDevices uses several supporting classes to interface with the POD devices. The user can use these same modules to code their own personalized data acquisition systems. 
 
-Currently, the API supports 8206-HR, 8401-HR, 8229, and 8480-SC POD devices. In the future, we will offer support to other Pinnacle devices. 
+Currently, the API supports 8206-HR, 8401-HR, 8229, 8480-SC, and 8274-D POD devices. In the future, we will offer support to other Pinnacle devices. 
 
 * Code documentation: [here](https://python-pod-api.readthedocs.io/en/latest/)
-* PDF Manual: [here](/Documents/API_Manuals/Python_POD_API_Manual.pdf)
+* PDF Manual: [here](/Documents/API_Manuals/Morelia_Manual.pdf)
 
 ## Collaboration 
 
