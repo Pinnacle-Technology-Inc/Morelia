@@ -96,11 +96,10 @@ class Pod8274D(Pod) :
                 There are some conditions for some commands. For example, if cmd is Local Scan, it returns Payload[1:7]
                 because that will be the bluetooth address that can be used to connect to the device.
         """
-        print(cmd)
+        #print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket()
         data: dict = r.TranslateAll()
-        print("read1:", data)
         if cmd in ['LOCAL SCAN'] :
             max_retries = 3  # Maximum number of retries
             retries = 0
@@ -112,20 +111,18 @@ class Pod8274D(Pod) :
                     retries += 1
                     continue
                 data: dict = r.TranslateAll()
-                print("read:", data)
                 if data['Command Number'] == 101 and len(data['Payload']) > 1:
-                    return data['Payload'][1:7]  # Assuming the payload contains the address to connect
+                    return data  
         if cmd in ['CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
             read: Packet = self.ReadPODpacket()
             data: dict = read.TranslateAll()
-            print("read3:", data)
             if cmd == 'GET NAME':
                 read: Packet = self.ReadPODpacket()
                 data: dict = read.TranslateAll()
                 name = data['Payload']
-                print("read3:", data)
                 return name
             if cmd == 'GET SAMPLE RATE':
+                data['Payload'][0]
                 return data['Payload'][0]
         elif cmd == 'STREAM':
             while True:

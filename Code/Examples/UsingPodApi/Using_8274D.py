@@ -39,7 +39,7 @@ def Read_8274D(pod: Pod, cmd) :
             print('Read:\t', data)
             if data.get('Command Number') == 211:
                 break  # Exit the loop when Command Number is 211
-    if (cmd == 'CHANNEL SCAN'):
+    if (cmd == 'CHANNEL SCAN' ):
             read: Packet = pod.ReadPODpacket()
             data: dict = read.TranslateAll()
             print('Read:\t', data)
@@ -78,6 +78,12 @@ RunCommand_8274D(pod, 'TYPE') # Returns the device type value.  This is a unique
 RunCommand_8274D(pod, 'ID') # Returns the device ID value 
 RunCommand_8274D(pod, 'FIRMWARE VERSION') # Returns the device firmware version as 3 values.  So 1.0.10 would come back as 0x31, 0x30, 0x00, 0x41
 
+# print('~~ SET BAUD RATE ~~')
+# RunCommand_8274D(pod, 'SET BAUD RATE', (2)) 
+
+print("Waiting 5 sec...")
+time.sleep(5) 
+
 print('~~ LOCAL SCAN ~~')
 RunCommand_8274D(pod, 'LOCAL SCAN', (1))
 print("Waiting 5 sec...")
@@ -93,8 +99,8 @@ print("Waiting 5 sec...")
 time.sleep(5) # added a delay here because pod device is continuing to read for 'CONNECT BY ADDRESS' for the next commands.
 
 
-print('~~ SET BAUD RATE ~~')
-RunCommand_8274D(pod, 'SET BAUD RATE', (2)) 
+# print('~~ SET BAUD RATE ~~')
+# RunCommand_8274D(pod, 'SET BAUD RATE', (2)) 
 
 print('~~ CHANNEL SCAN ~~')
 RunCommand_8274D(pod, 'CHANNEL SCAN', (1)) 
