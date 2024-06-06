@@ -1,6 +1,5 @@
 # enviornment imports
 import time
-import numpy as np
 from threading import Thread
 from queue import Queue
 
@@ -28,7 +27,7 @@ class Bucket :
         isCollecting (bool): True when collecting drops from the Hose, False otherwise.
     """
     
-    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = np.nan) -> None:
+    def __init__(self, podDevice: Pod8206HR|Pod8401HR|Pod8274D, filterMethod: str = 'TakePast', filterInsert: float = float('nan')) -> None:
         """Set class instance variables.
 
         Args:
