@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Morelia.Stream package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia.Stream.Collect package" href="Morelia.Stream.Collect.html" />
+    <link rel="prev" title="Morelia.Parameters package" href="Morelia.Parameters.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="Morelia.html">Morelia package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Commands.html">Morelia.Commands package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.html">Morelia.Devices package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Packets.html">Morelia.Packets package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Parameters.html">Morelia.Parameters package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Morelia.Stream package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Setup.html">Setup package</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Morelia.html">Morelia package</a></li>
+      <li class="breadcrumb-item active">Morelia.Stream package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Morelia.Stream.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="morelia-stream-package">
+<h1>Morelia.Stream package<a class="headerlink" href="#morelia-stream-package" title="Permalink to this heading"></a></h1>
+<section id="subpackages">
+<h2>Subpackages<a class="headerlink" href="#subpackages" title="Permalink to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="Morelia.Stream.Collect.html">Morelia.Stream.Collect package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#module-Morelia.Stream.Collect.DataBucket">Morelia.Stream.Collect.DataBucket module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket"><code class="docutils literal notranslate"><span class="pre">Bucket</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.dataHose"><code class="docutils literal notranslate"><span class="pre">Bucket.dataHose</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.drops"><code class="docutils literal notranslate"><span class="pre">Bucket.drops</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.totalDropsCollected"><code class="docutils literal notranslate"><span class="pre">Bucket.totalDropsCollected</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.isCollecting"><code class="docutils literal notranslate"><span class="pre">Bucket.isCollecting</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.DripDrop"><code class="docutils literal notranslate"><span class="pre">Bucket.DripDrop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.EmptyBucket"><code class="docutils literal notranslate"><span class="pre">Bucket.EmptyBucket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.GetVolumeOfDrops"><code class="docutils literal notranslate"><span class="pre">Bucket.GetVolumeOfDrops()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.StartCollecting"><code class="docutils literal notranslate"><span class="pre">Bucket.StartCollecting()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket.StopCollecting"><code class="docutils literal notranslate"><span class="pre">Bucket.StopCollecting()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket._CollectDrop"><code class="docutils literal notranslate"><span class="pre">Bucket._CollectDrop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket._CollectForDuration"><code class="docutils literal notranslate"><span class="pre">Bucket._CollectForDuration()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket._CollectWhileOpen"><code class="docutils literal notranslate"><span class="pre">Bucket._CollectWhileOpen()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataBucket.Bucket._IsDropAvailableInHose"><code class="docutils literal notranslate"><span class="pre">Bucket._IsDropAvailableInHose()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#module-Morelia.Stream.Collect.DataHose">Morelia.Stream.Collect.DataHose module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose"><code class="docutils literal notranslate"><span class="pre">Hose</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.sampleRate"><code class="docutils literal notranslate"><span class="pre">Hose.sampleRate</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.deviceValve"><code class="docutils literal notranslate"><span class="pre">Hose.deviceValve</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.data"><code class="docutils literal notranslate"><span class="pre">Hose.data</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.numDrops"><code class="docutils literal notranslate"><span class="pre">Hose.numDrops</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.corruptedPointsRemoved"><code class="docutils literal notranslate"><span class="pre">Hose.corruptedPointsRemoved</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.filterMethod"><code class="docutils literal notranslate"><span class="pre">Hose.filterMethod</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.filterInsert"><code class="docutils literal notranslate"><span class="pre">Hose.filterInsert</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.EmptyHose"><code class="docutils literal notranslate"><span class="pre">Hose.EmptyHose()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.GetSampleRate"><code class="docutils literal notranslate"><span class="pre">Hose.GetSampleRate()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.PickFilterMethod"><code class="docutils literal notranslate"><span class="pre">Hose.PickFilterMethod()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.SetFilterInsertValue"><code class="docutils literal notranslate"><span class="pre">Hose.SetFilterInsertValue()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.StartStream"><code class="docutils literal notranslate"><span class="pre">Hose.StartStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose.StopStream"><code class="docutils literal notranslate"><span class="pre">Hose.StopStream()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Drop"><code class="docutils literal notranslate"><span class="pre">Hose._Drop()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter"><code class="docutils literal notranslate"><span class="pre">Hose._Filter()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter_DoNothing"><code class="docutils literal notranslate"><span class="pre">Hose._Filter_DoNothing()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter_InsertValue"><code class="docutils literal notranslate"><span class="pre">Hose._Filter_InsertValue()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter_RemoveEntry"><code class="docutils literal notranslate"><span class="pre">Hose._Filter_RemoveEntry()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter_TakeFuture"><code class="docutils literal notranslate"><span class="pre">Hose._Filter_TakeFuture()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Filter_TakePast"><code class="docutils literal notranslate"><span class="pre">Hose._Filter_TakePast()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DataHose.Hose._Flow"><code class="docutils literal notranslate"><span class="pre">Hose._Flow()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#module-Morelia.Stream.Collect.DeviceValve">Morelia.Stream.Collect.DeviceValve module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve"><code class="docutils literal notranslate"><span class="pre">Valve</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.podDevice"><code class="docutils literal notranslate"><span class="pre">Valve.podDevice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.streamCmd"><code class="docutils literal notranslate"><span class="pre">Valve.streamCmd</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.streamPldStart"><code class="docutils literal notranslate"><span class="pre">Valve.streamPldStart</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.streamPldStop"><code class="docutils literal notranslate"><span class="pre">Valve.streamPldStop</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.Close"><code class="docutils literal notranslate"><span class="pre">Valve.Close()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.Drip"><code class="docutils literal notranslate"><span class="pre">Valve.Drip()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.EmptyValve"><code class="docutils literal notranslate"><span class="pre">Valve.EmptyValve()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.GetStartBytes"><code class="docutils literal notranslate"><span class="pre">Valve.GetStartBytes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.GetStopBytes"><code class="docutils literal notranslate"><span class="pre">Valve.GetStopBytes()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DeviceValve.Valve.Open"><code class="docutils literal notranslate"><span class="pre">Valve.Open()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#module-Morelia.Stream.Collect.DrainBucketToFile">Morelia.Stream.Collect.DrainBucketToFile module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket"><code class="docutils literal notranslate"><span class="pre">DrainBucket</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.DrainBucketToFile"><code class="docutils literal notranslate"><span class="pre">DrainBucket.DrainBucketToFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsCollecting"><code class="docutils literal notranslate"><span class="pre">DrainBucket.IsCollecting()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.IsDataAvailable"><code class="docutils literal notranslate"><span class="pre">DrainBucket.IsDataAvailable()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._DrainDropToFile"><code class="docutils literal notranslate"><span class="pre">DrainBucket._DrainDropToFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket._ThreadedDrainBucketToFile"><code class="docutils literal notranslate"><span class="pre">DrainBucket._ThreadedDrainBucketToFile()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Collect.html#Morelia.Stream.Collect.DrainBucketToFile.DrainBucket.self.drainToFile"><code class="docutils literal notranslate"><span class="pre">DrainBucket.self.drainToFile</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Collect.html#module-Morelia.Stream.Collect">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Morelia.Stream.Drain.html">Morelia.Stream.Drain package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Drain.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Drain.html#module-Morelia.Stream.Drain.ToEDF">Morelia.Stream.Drain.ToEDF module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF"><code class="docutils literal notranslate"><span class="pre">DrainToEDF</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.file"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.file</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.CloseFile"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.CloseFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.DigitalMax"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.DigitalMax()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.DigitalMin"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.DigitalMin()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.DrainDropToFile"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.DrainDropToFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.OpenFile"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.OpenFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToEDF.DrainToEDF.PhysicalBound"><code class="docutils literal notranslate"><span class="pre">DrainToEDF.PhysicalBound()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Drain.html#module-Morelia.Stream.Drain.ToFile">Morelia.Stream.Drain.ToFile module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile"><code class="docutils literal notranslate"><span class="pre">DrainToFile</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.dataBucket"><code class="docutils literal notranslate"><span class="pre">DrainToFile.dataBucket</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.fileName"><code class="docutils literal notranslate"><span class="pre">DrainToFile.fileName</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.preampDevice"><code class="docutils literal notranslate"><span class="pre">DrainToFile.preampDevice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.deviceHandler"><code class="docutils literal notranslate"><span class="pre">DrainToFile.deviceHandler</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.CloseFile"><code class="docutils literal notranslate"><span class="pre">DrainToFile.CloseFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.DrainDropToFile"><code class="docutils literal notranslate"><span class="pre">DrainToFile.DrainDropToFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.GetExtension"><code class="docutils literal notranslate"><span class="pre">DrainToFile.GetExtension()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.GetHandlerForBucket"><code class="docutils literal notranslate"><span class="pre">DrainToFile.GetHandlerForBucket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToFile.DrainToFile.OpenFile"><code class="docutils literal notranslate"><span class="pre">DrainToFile.OpenFile()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Drain.html#module-Morelia.Stream.Drain.ToText">Morelia.Stream.Drain.ToText module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT"><code class="docutils literal notranslate"><span class="pre">DrainToTXT</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT.file"><code class="docutils literal notranslate"><span class="pre">DrainToTXT.file</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT.CloseFile"><code class="docutils literal notranslate"><span class="pre">DrainToTXT.CloseFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT.DrainDropToFile"><code class="docutils literal notranslate"><span class="pre">DrainToTXT.DrainDropToFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT.OpenFile"><code class="docutils literal notranslate"><span class="pre">DrainToTXT.OpenFile()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.Drain.html#Morelia.Stream.Drain.ToText.DrainToTXT._GetTimeHeader"><code class="docutils literal notranslate"><span class="pre">DrainToTXT._GetTimeHeader()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.Drain.html#module-Morelia.Stream.Drain">Module contents</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="Morelia.Stream.PodHandler.html">Morelia.Stream.PodHandler package</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#submodules">Submodules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#module-Morelia.Stream.PodHandler.Handle8206HR">Morelia.Stream.PodHandler.Handle8206HR module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8206HR.Drain8206HR"><code class="docutils literal notranslate"><span class="pre">Drain8206HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8206HR.Drain8206HR.DropToDf"><code class="docutils literal notranslate"><span class="pre">Drain8206HR.DropToDf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8206HR.Drain8206HR.DropToListOfArrays"><code class="docutils literal notranslate"><span class="pre">Drain8206HR.DropToListOfArrays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8206HR.Drain8206HR.GetDeviceColNames"><code class="docutils literal notranslate"><span class="pre">Drain8206HR.GetDeviceColNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8206HR.Drain8206HR.GetDeviceColNamesList"><code class="docutils literal notranslate"><span class="pre">Drain8206HR.GetDeviceColNamesList()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#module-Morelia.Stream.PodHandler.Handle8274D">Morelia.Stream.PodHandler.Handle8274D module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8274D.Drain8274D"><code class="docutils literal notranslate"><span class="pre">Drain8274D</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8274D.Drain8274D.DropToDf"><code class="docutils literal notranslate"><span class="pre">Drain8274D.DropToDf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8274D.Drain8274D.DropToListOfArrays"><code class="docutils literal notranslate"><span class="pre">Drain8274D.DropToListOfArrays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8274D.Drain8274D.GetDeviceColNames"><code class="docutils literal notranslate"><span class="pre">Drain8274D.GetDeviceColNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8274D.Drain8274D.GetDeviceColNamesList"><code class="docutils literal notranslate"><span class="pre">Drain8274D.GetDeviceColNamesList()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#module-Morelia.Stream.PodHandler.Handle8401HR">Morelia.Stream.PodHandler.Handle8401HR module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR"><code class="docutils literal notranslate"><span class="pre">Drain8401HR</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR.preampDevice"><code class="docutils literal notranslate"><span class="pre">Drain8401HR.preampDevice</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR.DropToDf"><code class="docutils literal notranslate"><span class="pre">Drain8401HR.DropToDf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR.DropToListOfArrays"><code class="docutils literal notranslate"><span class="pre">Drain8401HR.DropToListOfArrays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR.GetDeviceColNames"><code class="docutils literal notranslate"><span class="pre">Drain8401HR.GetDeviceColNames()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.Handle8401HR.Drain8401HR.GetDeviceColNamesList"><code class="docutils literal notranslate"><span class="pre">Drain8401HR.GetDeviceColNamesList()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#module-Morelia.Stream.PodHandler.HandlerInterface">Morelia.Stream.PodHandler.HandlerInterface module</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler.DropToDf"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler.DropToDf()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler.DropToListOfArrays"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler.DropToListOfArrays()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler.GetDeviceColNamesList"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler.GetDeviceColNamesList()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler.GetPodFromBucket"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler.GetPodFromBucket()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Stream.PodHandler.html#Morelia.Stream.PodHandler.HandlerInterface.DrainDeviceHandler._uV"><code class="docutils literal notranslate"><span class="pre">DrainDeviceHandler._uV()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="Morelia.Stream.PodHandler.html#module-Morelia.Stream.PodHandler">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-Morelia.Stream">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Stream" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Morelia.Parameters.html" class="btn btn-neutral float-left" title="Morelia.Parameters package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Morelia.Stream.Collect.html" class="btn btn-neutral float-right" title="Morelia.Stream.Collect package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

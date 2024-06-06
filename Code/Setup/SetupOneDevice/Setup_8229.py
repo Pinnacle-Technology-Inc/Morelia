@@ -7,9 +7,9 @@ import time
 # local imports
 from Setup.SetupOneDevice   import SetupInterface
 from Setup.Inputs           import UserInput
-from PodApi.Packets         import PacketStandard
-from PodApi.Devices         import Pod8229
-from PodApi.Parameters      import Params8229
+from Morelia.Packets        import PacketStandard
+from Morelia.Devices        import Pod8229
+from Morelia.Parameters     import Params8229
 
 # authorship
 __author__      = "Thresa Kelly"
