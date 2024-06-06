@@ -90,13 +90,11 @@ class Hose :
             if(not podDevice.TestConnection()) :
                 raise Exception('[!] Could not connect to this POD device.')
             pkt: PacketStandard = podDevice.WriteRead('GET SAMPLE RATE')
-            print("here", int(pkt.Payload()[0]))
             return int(pkt.Payload()[0]) 
         else :  
             if(not podDevice.TestConnection()) :  
                 raise Exception ('[!] Could not connect to this POD device.')
             pkt: PacketBinary = podDevice.WriteRead('GET SAMPLE RATE')
-            print("here2", int(pkt))
             return pkt
             
 

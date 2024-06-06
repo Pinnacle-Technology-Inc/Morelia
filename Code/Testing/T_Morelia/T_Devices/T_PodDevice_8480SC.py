@@ -133,7 +133,12 @@ class T_Pod8480SC :
     def PreAmp(self) -> TestResult : 
         preamp = 0
         # set
-        self.pod.WriteRead('SET PREAMP TYPE', preamp)
+        r = self.pod.WriteRead('SET PREAMP TYPE', preamp)
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 125     ) :      return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()        != None ) :         return TestResult(False, 'Packet has incorrect payload.')
         # get
         r = self.pod.WriteRead('GET PREAMP TYPE')
         # check 
@@ -147,7 +152,12 @@ class T_Pod8480SC :
     def TtlPullups(self) -> TestResult : 
         ttlpullups = 1
         # set
-        self.pod.WriteRead('SET TTL PULLUPS', ttlpullups)
+        r = self.pod.WriteRead('SET TTL PULLUPS', ttlpullups)
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 111     ) :      return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()        != None ) :         return TestResult(False, 'Packet has incorrect payload.')
         # get
         r = self.pod.WriteRead('GET TTL PULLUPS')
         # check 
@@ -162,13 +172,18 @@ class T_Pod8480SC :
         synconfig = 3
         SyncConfig_bits = self.pod.DecodeSyncConfigBits(3)
         # set
-        self.pod.WriteRead('SET SYNC CONFIG', synconfig)
+        r = self.pod.WriteRead('SET SYNC CONFIG', synconfig)
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 127     ) :      return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()        != None ) :         return TestResult(False, 'Packet has incorrect payload.')
         # get
         r = self.pod.WriteRead('GET SYNC CONFIG')
         # check 
         if(not isinstance(r,PacketStandard)) :          return TestResult(False, 'Command did not return a standard packet')
         elif(r.CommandNumber() != 126     ) :           return TestResult(False, 'Packet has an incorrect command number.')
-        elif(r.Payload()      != (SyncConfig_bits) ) : return TestResult(False, 'Packet has incorrect payload.')
+        elif(r.Payload()      != (SyncConfig_bits) ) :  return TestResult(False, 'Packet has incorrect payload.')
         # otherwise good 
         return TestResult(True)
     
@@ -176,14 +191,19 @@ class T_Pod8480SC :
     def Stimulus(self) -> TestResult : 
         stimulus = (0, 1000, 0, 500, 0, 5, 2)
         # set
-        self.pod.WriteRead('SET STIMULUS', stimulus)
+        r = self.pod.WriteRead('SET STIMULUS', stimulus)
         expected_payload = (0, 1000, 0, 500, 0, 5, self.pod.DecodeStimulusConfigBits(2))
+        # check 
+        if(  not isinstance(r,Packet)) :            return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :    return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 102     ) :      return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()        != None ) :         return TestResult(False, 'Packet has incorrect payload.')
         # get
         r = self.pod.WriteRead('GET STIMULUS', 0)
         # check 
-        if(not isinstance(r,PacketStandard)) :      return TestResult(False, 'Command did not return a standard packet')
-        elif(r.CommandNumber() != 101     ) :       return TestResult(False, 'Packet has an incorrect command number.')
-        elif(r.Payload()       != (expected_payload) ) :    return TestResult(False, 'Packet has incorrect payload.')
+        if(not isinstance(r,PacketStandard)) :          return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber() != 101     ) :           return TestResult(False, 'Packet has an incorrect command number.')
+        elif(r.Payload()      != (expected_payload) ) : return TestResult(False, 'Packet has incorrect payload.')
         # otherwise good 
         return TestResult(True)
     

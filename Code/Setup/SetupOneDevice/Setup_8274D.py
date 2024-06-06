@@ -106,8 +106,9 @@ class Setup8274D(SetupInterface) :
             if(not self._TestDeviceConnection(pod)): raise Exception('Could not connect to POD device.')
             # write setup parameters
             address = pod.WriteRead('LOCAL SCAN', deviceParams.localScan)
+            addres_to_connect = address['Payload'][1:7]
             time.sleep(5)
-            pod.WriteRead('CONNECT BY ADDRESS', (address)) 
+            pod.WriteRead('CONNECT BY ADDRESS', (addres_to_connect)) 
             time.sleep(1)
             pod.WriteRead('SET SAMPLE RATE', deviceParams.sampleRate)
             time.sleep(1)
