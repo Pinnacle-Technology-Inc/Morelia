@@ -26,6 +26,7 @@ class Valve :
         Args:
             podDevice (Pod8206HR | Pod8401HR | Pod8274D): 8206-HR/8401-HR/8274D POD device to stream data from.
         """
+        print("hi1")
         # set instance variables 
         self.podDevice : Pod8206HR|Pod8401HR|Pod8274D = podDevice
         self.streamCmd : str|int = 'STREAM' 
@@ -45,6 +46,7 @@ class Valve :
         Raises:
             Exception: Could not connect to this POD device.
         """
+        print("hi2")
         # check for good connection 
         if(not self.podDevice.TestConnection()): 
             raise Exception('[!] Could not connect to this POD device.')
@@ -54,6 +56,7 @@ class Valve :
     def Close(self):
         """Write command to stop streaming 
         """
+        print("hi3")
         # write command without checking connection, which flushes all packets
         self.podDevice.WritePacket(self.streamCmd, self.streamPldStop)
 
@@ -65,11 +68,13 @@ class Valve :
                 This may be a standard packet, binary packet, or an \
                 unformatted packet (STX+something+ETX).
         """
+        print("hi4")
         return self.podDevice.ReadPODpacket(timeout_sec=1)
 
     def EmptyValve(self) :
         """Reset the serial port buffer.
         """ 
+        print("hi5")
         self.podDevice.FlushPort()
         
     def GetStartBytes(self) -> bytes : 
@@ -79,6 +84,7 @@ class Valve :
             bytes: Bytes string for a self.streamCmd command and a \
                 self.streamPldStart payload.
         """
+        print("hi6")
         return self.podDevice.GetPODpacket( cmd=self.streamCmd, payload=self.streamPldStart)
     
     def GetStopBytes(self) -> bytes : 
@@ -88,4 +94,6 @@ class Valve :
             bytes: Bytes string for a self.streamCmd command and a \
                 self.streamPldStop payload.
         """
+        # print("hi7", self.podDevice.GetPODpacket( cmd=self.streamCmd, payload=self.streamPldStop))
+        print("hi7", self)
         return self.podDevice.GetPODpacket( cmd=self.streamCmd, payload=self.streamPldStop)

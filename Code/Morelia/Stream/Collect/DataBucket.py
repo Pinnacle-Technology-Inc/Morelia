@@ -37,26 +37,31 @@ class Bucket :
                 does not remove points when False. Defaults to True.
         """
         # set instance variables 
+        print("one")
         self.dataHose: Hose = Hose(podDevice,filterMethod,filterInsert)
         self.drops: Queue[ tuple[ list[float], list[Packet|None] ] ] = Queue() # Each item in queue is a tuple (x,y) with 1 sec of timestamps (x) and data (y) 
         self.totalDropsCollected: int = 0 # rolling counter
         self.isCollecting: bool = False
+        print("two")
         
     def EmptyBucket(self) : 
         """Resets the class.
         """
+        print("three")
         self.dataHose.EmptyHose()
         # reset all 
         self.drops = Queue()
         self.totalDropsCollected = 0
         self.isCollecting = False
+        print("four")
         
     def GetVolumeOfDrops(self) -> int : 
         """Get the number of data drops currently in the queue.
-
+ 
         Returns:
             int: Size of the drops queue.
         """
+        print("five")
         return self.drops.qsize()
 
     def DripDrop(self) -> tuple[ list[float], list[Packet|None] ]: 
@@ -69,6 +74,7 @@ class Bucket :
             tuple[ list[float], list[Packet|None] ]: Tuple (x,y) with ~1 sec of \
                 timestamps (x) and data (y) .
         """
+        print("six")
         if(not self.drops.empty() ) :
             return self.drops.get()
         else :
@@ -78,6 +84,7 @@ class Bucket :
         """Tells the POD device to stop streaming data.
         """
         # signal to stop streaming 
+        print("seven")
         self.dataHose.StopStream()    
 
     def StartCollecting(self, duration_sec: float|None = None ) -> Thread : 
@@ -89,6 +96,7 @@ class Bucket :
         Returns:
             Thread: Started Thread for data collection.
         """
+        print("eight")
         self.EmptyBucket()
         # start streaming data
         self.isCollecting = True
@@ -99,12 +107,14 @@ class Bucket :
         else : 
             collect: Thread = Thread(target=self._CollectForDuration, args=(float(duration_sec),))
         collect.start() 
+        print("nine")
         return collect # call collect.join() to pause program until thread finishes
     
     def _CollectWhileOpen(self) : 
         """Collect streaming data until the Hose is finished dripping.
         """
         # collect data while the device is streaming 
+        print("ten")
         while(self.dataHose.isOpen or self._IsDropAvailableInHose()) : 
             # check for new data
             if(self._IsDropAvailableInHose()) :
@@ -120,6 +130,7 @@ class Bucket :
         Args:
             duration_sec (float): How long to stream data in seconds.
         """
+        print("eleven")
         # collect data for the duration set
         ti: float = time.time()
         while( (time.time() - ti ) < duration_sec) :
@@ -144,6 +155,7 @@ class Bucket :
         ~1 sec of streaming, or the number of values approximatly equal to \
         the sample rate).
         """ 
+        print("twelve")
         # add data to lists 
         self.drops.put( (self.dataHose.timestamps, self.dataHose.data) )
         # increment counter
@@ -155,4 +167,5 @@ class Bucket :
         Returns:
             bool: True if there is a drop to be collected, False otherwise.
         """
+        print("thirteen")
         return ( self.totalDropsCollected < self.dataHose.numDrops ) 

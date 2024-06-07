@@ -103,11 +103,11 @@ class T_Pod8274D :
         r = self.pod.WriteRead('CONNECT BY ADDRESS', (0, 13, 111, 254, 61, 150))
         connected_payload = (49152,)
         # check 
-        if(  not isinstance(r,Packet)) :                return TestResult(False, 'Command did not return a packet')
-        elif(not isinstance(r,PacketStandard)) :        return TestResult(False, 'Command did not return a standard packet')
-        elif(r.CommandNumber()  != 222     ) :          return TestResult(False, 'Packet has an incorrect command number.')
+        if(  not isinstance(r,Packet)) :                 return TestResult(False, 'Command did not return a packet')
+        elif(not isinstance(r,PacketStandard)) :         return TestResult(False, 'Command did not return a standard packet')
+        elif(r.CommandNumber()  != 222     ) :           return TestResult(False, 'Packet has an incorrect command number.')
         elif(not isinstance(r.Payload(), tuple) 
-             or (r.Payload()) != connected_payload) :   return TestResult(False, 'Packet has incorrect payload.')
+             or (r.Payload()) != connected_payload) :    return TestResult(False, 'Packet has incorrect payload.')
         # otherwise good
         return TestResult(True)
 
