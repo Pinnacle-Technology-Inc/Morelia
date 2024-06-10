@@ -48,7 +48,7 @@ class T_Pod8480SC :
                 "7. SynConfig:\t\t"         : self.SynConfig,
                 "8. Stimulus:\t\t"          : self.Stimulus,
                 "9. Run Stimulus:\t"        : self.Run_Stimulus, 
-                "10. EventTtl:\t\t"         : self.Event_Ttl,       
+                "10.EventTtl:\t\t"         : self.Event_Ttl,       
 
             }
             return RunningTests.RunTests(tests, 'Pod8480SC', printTests=printTests)
@@ -217,7 +217,7 @@ class T_Pod8480SC :
         if(  not isinstance(r,Packet)) :                return TestResult(False, 'Command did not return a packet')
         elif(not isinstance(r,PacketStandard)) :        return TestResult(False, 'Command did not return a standard packet')
         elif(r.CommandNumber()  != 100     ) :          return TestResult(False, 'Packet has an incorrect command number.')
-        elif(r.Payload()        != (None) ) :             return TestResult(False, 'Packet has incorrect payload.')
+        elif(r.Payload()        != (None) ) :           return TestResult(False, 'Packet has incorrect payload.')
         return TestResult(True)
     
 

@@ -153,7 +153,7 @@ class T_Pod8206HR :
         elif(r.CommandNumber()  != 107     ) :      return TestResult(False, 'Packet has an incorrect command number.')
         elif(not isinstance(r.Payload(), tuple)) :  return TestResult(False, 'Packet is missing a payload.')
         elif(len(r.Payload()) > 1) :                return TestResult(False, 'Packet is incorrect size.')
-        elif(r.Payload()[0] not in [0,1,2]) :  return TestResult(False, 'Packet has incorrect payload.')
+        elif(r.Payload()[0] not in [0,1,2]) :       return TestResult(False, 'Packet has incorrect payload.')
         # otherwise good 
         return TestResult(True)
     
