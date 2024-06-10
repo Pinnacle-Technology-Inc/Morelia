@@ -35,7 +35,6 @@ class T_Valve:
         # create pod device object 
         self.pod: Pod8206HR = Pod8206HR(self.port, preampGain)
         self.valve: Valve = Valve(self.pod)
-        #self.Stream()
         self.RunTests()
 
 
@@ -134,7 +133,6 @@ class T_Valve:
             return (False, f"GetStopBytes test failed with exception: {e}")
         return(True)
     
-        
 
 if __name__ == "__main__":
     tester = T_Valve()
