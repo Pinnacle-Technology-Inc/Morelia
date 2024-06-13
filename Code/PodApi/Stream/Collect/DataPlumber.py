@@ -7,7 +7,7 @@ from functools import partial
 
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
-from PodApi.Stream.Collect.Producer import drain
+from PodApi.Stream.Collect.Consumer import drain_to_influx
 from PodApi.Stream.Collect.Filter import FilterMethod, filter_data
 from PodApi.Stream.Collect.Producer import get_data
 
@@ -93,7 +93,8 @@ class Plumber:
                 self._manual_stop_events.append(manual_stop_event)
 
                 producer: mp.Process = mp.Process(target=get_data, args=(self._data_filter, duration_sec, self._fail_tolerance, end_stream_event, manual_stop_event, send, pod))
-                consumer: mp.Process = mp.Process(target=drain, args=(recv, end_stream_event))
+                #consumer: mp.Process = mp.Process(target=drain_to_influx, args=(recv, end_stream_event, pod))
+                consumer: mp.Process = mp.Process(target=drain_to_influx, args=(recv, end_stream_event, pod))
 
                 producer.start()
                 consumer.start()

@@ -1,7 +1,7 @@
 from multiprocessing import Event
 from multiprocessing.connection import Connection
 import time
-from numpy import linspace
+import numpy as np
 from functools import partial
 
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
@@ -30,7 +30,7 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
 
     data_sender = partial(_send_data, pipe, data_filter, sample_rate)
 
-    current_time_stamp : float = 0.0 
+    current_time_stamp : int = 0
 
     stream_start_time : float = time.time()
     
@@ -42,7 +42,7 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
         # initialize
         data: list[Packet|None] = [None] * sample_rate
 
-        inital_time = (round(time.time(),9)) # initial time (sec)
+        inital_time = time.time_ns() # initial time (sec)
 
         # read data for one second
         num_data_points_tried: int = 0
@@ -59,7 +59,7 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
                 drip: Packet = device_valve.Drip()
 
                 # check stop condition 
-                current_time_stamp = time.time()
+                current_time_stamp: int = time.time_ns()
 
                 if drip.rawPacket == stop_bytes:
                     
@@ -87,16 +87,18 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
     end_stream_event.set()
 
 #TODO: type hints
-def _send_data(pipe: Connection, data_filter, sample_rate: int, current_time: float,
-               inital_time: float, data: list[Packet|None]) -> float: 
+def _send_data(pipe: Connection, data_filter, sample_rate: int, current_time: int,
+               inital_time: int, data: list[Packet|None]) -> int: 
 
     # get times 
-    next_time = current_time + (round(time.time(),9) - inital_time)
-
-    timestamps: list[float] = linspace( # evenly spaced numbers over interval.
+    next_time = current_time + (time.time_ns() - inital_time)
+    
+    
+    timestamps: list[int] = np.linspace( # evenly spaced numbers over interval.
         current_time,    # start time
         next_time,       # stop time
-        sample_rate # number of items 
+        sample_rate, # number of items 
+        dtype=np.ulonglong
     ).tolist()
 
     # clean out corrupted data
