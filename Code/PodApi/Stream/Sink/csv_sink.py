@@ -40,7 +40,13 @@ class CsvSink(SinkInterface):
         return self._file_path
 
     async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
-        """Write a drop of data to CSV."""
+        """Write a drop of data to CSV.
+
+        :param timestamps: A list of timestamps for data.
+        :type timestamps: list[float]
+        :param raw_data: A list of data packets from a device.
+        :type raw_data: list[:class: Packet|None]
+        """
         async with aiofiles.open(self._file_path, 'w') as f:
             structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps,raw_data)
             await f.write(structured_data.to_csv(index=False).split('\n',1) [1] )

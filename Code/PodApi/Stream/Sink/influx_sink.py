@@ -17,19 +17,24 @@ __copyright__   = "Copyright (c) 2024, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
  
 class InfluxSink(SinkInterface):
-    """Stream data to InfluxDB for real-time monitoring."""
+    """Stream data to InfluxDB for real-time monitoring.
+
+            :param url: URL that points to an InfluxDB server.
+            :type url: str
+            :param api_token: API token to authenticate to InfluxDB. Needs write permissions.
+            :type api_token: str
+            :param org: Organization within InfluxDB to write data to.
+            :type org:
+            :param bucket: Bucket within InfluxDB to write data to.
+            :type bucket: str
+            :param measurement: Measurement within InfluxDB to write data to.
+            :type measurement: str
+            :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
+            :type pod: :class: Pod8206HR | Pod8401HR | Pod8274D
+    """
 
     def __init__(self, url: str, api_token: str, org: str, bucket: str, measurement: str, pod: Pod8206HR | Pod8274D | Pod8401HR) -> None:
-        """Set instance variables.
-
-        Args:
-            url str: URL that points to an InfluxDB server.
-            api_token str: API token to authenticate to InfluxDB. Needs write permissions.
-            org str: Organization within InfluxDB to write data to.
-            bucket: Bucket within InfluxDB to write data to.
-            measurement: Measurement within InfluxDB to write data to.
-            pod (Pod8206HR | Pod8401HR | Pod8274D): 8206-HR/8401-HR/8274D POD device you are streaming data from.
-        """
+        """Set instance variables."""
 
         self.__api_token: str = api_token
         self._url: str = url
@@ -48,9 +53,10 @@ class InfluxSink(SinkInterface):
     async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
         """Send a drop of data to InfluxDB.
 
-        Args:
-            timestamps list[float]: A list of timestamps for data.
-            raw data list[Packet|None]: A list of data packets from a device.
+        :param timestamps: A list of timestamps for data.
+        :type timestamps: list[float]
+        :param raw_data: A list of data packets from a device.
+        :type raw_data: list[:class: Packet|None]
         """
         structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps,raw_data).set_index('Time')
 
