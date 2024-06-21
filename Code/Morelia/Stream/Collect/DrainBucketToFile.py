@@ -4,7 +4,7 @@ from threading import Thread
 
 # local imports
 from Morelia.Stream.Collect import Bucket
-from Morelia.Stream.Drain import DrainToFile, DrainToTXT, DrainToEDF
+from Morelia.Stream.Drain import DrainToFile, DrainToTXT, DrainToEDF, DrainToPVFS
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -39,6 +39,8 @@ class DrainBucket :
             self.drainToFile: DrainToTXT = DrainToTXT(dataBucket, fileName, preampDevice)
         elif(ext == '.edf') : 
             self.drainToFile: DrainToEDF = DrainToEDF(dataBucket, fileName, preampDevice)
+        elif(ext == '.pvfs') : 
+            self.drainToFile: DrainToPVFS = DrainToPVFS(dataBucket, fileName, preampDevice)
         else : 
             raise Exception('[!] File extension '+str(ext)+' is not supported.')    
            

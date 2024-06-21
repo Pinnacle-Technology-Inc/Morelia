@@ -57,7 +57,7 @@ class SetupInterface :
             list[str]: List of string file extensions.
         """
         # NOTE add or remove extensions in child class if needed
-        return(['.csv','.txt','.edf'])
+        return(['.csv','.txt','.edf', '.pvfs'])
 
 
     def _GetParam_onePODdevice(self, forbiddenNames: list[str] = []) -> Params :
