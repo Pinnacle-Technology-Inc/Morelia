@@ -1,19 +1,20 @@
+"""Send data to CSV file."""
+
+__author__      = 'James Hurd'
+__maintainer__  = 'Thresa Kelly'
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__license__     = 'New BSD License'
+__copyright__   = 'Copyright (c) 2024, Thresa Kelly'
+__email__       = 'sales@pinnaclet.com'
+
 import aiofiles
 
-from PodApi.Stream.Sink import SinkInterface
+from PodApi.Stream.sink import SinkInterface
 from PodApi.Stream.PodHandler import DrainDeviceHandler
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
 
-# authorship
-__author__      = "James Hurd"
-__maintainer__  = "Thresa Kelly"
-__credits__     = ["James Hurd", "Sam Groth", "Thresa Kelly", "Seth Gabbert"]
-__license__     = "New BSD License"
-__copyright__   = "Copyright (c) 2024, Thresa Kelly"
-__email__       = "sales@pinnaclet.com"
-
-class CsvSink(SinkInterface):
+class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
     
     :param file_path: Path to CSV file to write to.

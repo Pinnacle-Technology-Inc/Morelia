@@ -1,31 +1,41 @@
+"""Functions for getting streaming data from a POD device."""
+
+__author__      = 'Thresa Kelly'
+__maintainer__  = 'James Hurd'
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__license__     = 'New BSD License'
+__copyright__   = 'Copyright (c) 2023, Thresa Kelly'
+__email__       = 'sales@pinnaclet.com'
+
+#environment imports
 from multiprocessing import Event
 from multiprocessing.connection import Connection
 import time
 import numpy as np
 from functools import partial
+from typing import Callable
 
+#local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet, PacketStandard, PacketBinary
-from PodApi.Stream.Collect import Valve
+from PodApi.Stream.valve import Valve
 
-#TODO: type hint
-def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Event, 
-           manual_stop_event: Event, pipe: Connection, pod: Pod8206HR|Pod8401HR|Pod8274D): 
+def get_data(data_filter: Callable[[list[Packet|None],list[float]],bool], duration: float, fail_tolerance: int, end_stream_event: Event, 
+             manual_stop_event: Event, pipe: Connection, pod: Pod8206HR|Pod8401HR|Pod8274D) -> None: 
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved. 
 
     Args: 
          fail_tolerance (int): The number of successive failed attempts of reading data before stopping the streaming.
     """
-    
     # initialize       
 
     successive_fail_count: int = 0
-    
+
     device_valve: Valve = Valve(pod)
 
     stop_bytes: bytes = device_valve.GetStopBytes()
-    
+
     sample_rate = _get_sample_rate(pod)
 
     data_sender = partial(_send_data, pipe, data_filter, sample_rate)
@@ -33,12 +43,11 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
     current_time_stamp : int = 0
 
     stream_start_time : float = time.time()
-    
+
     # start streaming data 
     device_valve.Open()
-    
-    #TODO: OR EVENT
-    while time.time()-stream_start_time < duration and not manual_stop_event.is_set() : 
+
+    while time.time()-stream_start_time < duration and not manual_stop_event.is_set() :
         # initialize
         data: list[Packet|None] = [None] * sample_rate
 
@@ -50,10 +59,10 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
         while num_data_points_tried < sample_rate: # operates like 'for i in range(sampleRate)'
             try:
                 # check for too many failed packets 
-                if successive_fail_count > fail_tolerance: 
+                if successive_fail_count > fail_tolerance:
                     # finish up
                     current_time_stamp = data_sender(current_time_stamp, inital_time, data)
-                    return 
+                    return
 
                 # read data (vv exception raised here if bad checksum or packet read timeout vv)
                 drip: Packet = device_valve.Drip()
@@ -62,18 +71,18 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
                 current_time_stamp: int = time.time_ns()
 
                 if drip.rawPacket == stop_bytes:
-                    
+
                     # finish up
                     current_time_stamp = data_sender(current_time_stamp, inital_time, data)
-                    return 
+                    return
 
                 # save binary packet data and ignore standard packets
-                if not isinstance(drip,PacketStandard): 
+                if not isinstance(drip,PacketStandard):
                     data[num_data_points_tried] = drip
                     num_data_points_tried += 1 # update looping condition 
                     successive_fail_count = 0 # reset after succsessful loop 
 
-            except Exception as e: 
+            except Exception as e:
                 # corrupted data here, leave None in data[i]
                 num_data_points_tried += 1 # update looping condition        
                 successive_fail_count += 1
@@ -81,19 +90,17 @@ def get_data(data_filter, duration: float, fail_tolerance, end_stream_event: Eve
         # drop data 
         current_time_stamp = data_sender(current_time_stamp, inital_time, data)
 
-
     # stop streaming
     device_valve.Close()
     end_stream_event.set()
 
-#TODO: type hints
-def _send_data(pipe: Connection, data_filter, sample_rate: int, current_time: int,
-               inital_time: int, data: list[Packet|None]) -> int: 
+def _send_data(pipe: Connection, data_filter: Callable[[list[Packet|None],list[float]],bool], sample_rate: int, current_time: int,
+               inital_time: int, data: list[Packet|None]) -> int:
+    """Send data packets in pipe."""
 
     # get times 
     next_time = current_time + (time.time_ns() - inital_time)
-    
-    
+
     timestamps: list[int] = np.linspace( # evenly spaced numbers over interval.
         current_time,    # start time
         next_time,       # stop time
@@ -109,7 +116,7 @@ def _send_data(pipe: Connection, data_filter, sample_rate: int, current_time: in
     # finish
     return next_time
 
-def _get_sample_rate(pod: Pod8206HR|Pod8401HR|Pod8274D ) -> int : 
+def _get_sample_rate(pod: Pod8206HR|Pod8401HR|Pod8274D ) -> int :
     """Writes a command to the POD device to get its sample rate in Hz.
 
     Args:
@@ -122,7 +129,7 @@ def _get_sample_rate(pod: Pod8206HR|Pod8401HR|Pod8274D ) -> int :
     Returns:
         int: Sample rate in Hz.
     """
-    
+
     # Device  ::: cmd, command name,    args, ret, description
     # ----------------------------------------------------------------------------------------------
     # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
@@ -133,15 +140,15 @@ def _get_sample_rate(pod: Pod8206HR|Pod8401HR|Pod8274D ) -> int :
     # If there is a new device that uses a different command, add a method 
     # to check what type the device is (i.e isinstance(pod, PodClass)) 
     # and set the self.stream* instance variables accordingly.
-    if( not isinstance(pod, Pod8274D)) : 
+    if( not isinstance(pod, Pod8274D)) :
         pod._commands.ValidateCommand('GET SAMPLE RATE')
         if(not pod.TestConnection()) :
             raise Exception('[!] Could not connect to this POD device.')
         pkt: PacketStandard = pod.WriteRead('GET SAMPLE RATE')
         print("here", int(pkt.Payload()[0]))
-        return int(pkt.Payload()[0]) 
-    else :  
-        if(not pod.TestConnection()) :  
+        return int(pkt.Payload()[0])
+    else :
+        if(not pod.TestConnection()) :
             raise Exception ('[!] Could not connect to this POD device.')
         pkt: PacketBinary = pod.WriteRead('GET SAMPLE RATE')
         print("here2", int(pkt))

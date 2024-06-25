@@ -1,4 +1,5 @@
 # sub-module access
-from PodApi.Stream import Collect
-from PodApi.Stream import PodHandler
-from PodApi.Stream import Drain
+import PodApi.Stream.data_flow
+import PodApi.Stream.PodHandler
+import PodApi.Stream.sink
+from PodApi.Stream.filter_data import FilterMethod

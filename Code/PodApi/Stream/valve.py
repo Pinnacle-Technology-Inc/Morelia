@@ -1,14 +1,15 @@
+"""Interact with a device in a streaming context."""
+
+__author__      = 'Thresa Kelly'
+__maintainer__  = 'Thresa Kelly'
+__credits__     = ['Thresa Kelly', 'Seth Gabbert']
+__license__     = 'New BSD License'
+__copyright__   = 'Copyright (c) 2023, Thresa Kelly'
+__email__       = 'sales@pinnaclet.com'
+
 # local imports
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from PodApi.Packets import Packet
-
-# authorship
-__author__      = "Thresa Kelly"
-__maintainer__  = "Thresa Kelly"
-__credits__     = ["Thresa Kelly", "Seth Gabbert"]
-__license__     = "New BSD License"
-__copyright__   = "Copyright (c) 2023, Thresa Kelly"
-__email__       = "sales@pinnaclet.com"
 
 class Valve : 
     """Simple class to start and stop streaming data from a POD device.

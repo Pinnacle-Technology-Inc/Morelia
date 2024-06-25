@@ -1,12 +1,21 @@
+"""Send data to EDF file."""
+
+__author__      = 'James Hurd'
+__maintainer__  = 'Thresa Kelly'
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__license__     = 'New BSD License'
+__copyright__   = 'Copyright (c) 2024, Thresa Kelly'
+__email__       = 'sales@pinnaclet.com'
+
 from pyedflib import EdfWriter
 import asyncio
 
-from PodApi.Stream.Sink import SinkInterface
+from PodApi.Stream.sink import SinkInterface
 from PodApi.Packets import Packet
 from PodApi.Stream.PodHandler import DrainDeviceHandler
 from PodApi.Devices import Pod8206HR, Pod8401HR, Pod8274D
 
-class EdfSink(SinkInterface):
+class EDFSink(SinkInterface):
     """Stream data to an EDF file.
 
     :param sample_rate: Sample rate of device being streamed from. Used in
