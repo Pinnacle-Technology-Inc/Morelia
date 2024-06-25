@@ -2,6 +2,8 @@
 
 <center><img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
 
+## DEVELOPER'S NOTE: Due to recent refactors in what streaming looks like, the Setup submodule is currently broken. Please set up your devices manually for now.
+
 ## Introduction 
 
 ![GitHub license](https://img.shields.io/github/license/Pinnacle-Technology-Inc/Python-POD-API)
