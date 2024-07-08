@@ -67,7 +67,7 @@ class DrainToFile : # interface class
 
     @staticmethod
     def GetExtension(fileName: str) -> str: 
-        """Gets the extension from a file, such as '.txt', '.csv', or '.edf'.
+        """Gets the extension from a file, such as '.txt', '.csv', '.edf', or '.pvfs'.
 
         Args:
             fileName (str): Name of the file with an extension.
