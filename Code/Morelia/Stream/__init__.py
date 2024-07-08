@@ -1,4 +1,4 @@
-# sub-module access
-from Morelia.Stream import Collect
-from Morelia.Stream import PodHandler
-from Morelia.Stream import Drain
+import Morelia.Stream.data_flow
+import Morelia.Stream.PodHandler
+import Morelia.Stream.sink
+from Morelia.Stream.filter_data import FilterMethod

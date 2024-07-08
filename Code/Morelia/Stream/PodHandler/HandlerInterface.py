@@ -5,7 +5,6 @@ import numpy  as np
 # local imports
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from Morelia.Packets import Packet
-from Morelia.Stream.Collect  import Bucket
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -18,18 +17,6 @@ __email__       = "sales@pinnaclet.com"
 class DrainDeviceHandler() : # interface class
     """Interface class for the POD device handlers used by the Drain classes.
     """
-    
-    @staticmethod
-    def GetPodFromBucket(bkt: Bucket) -> Pod8206HR | Pod8401HR | Pod8274D: 
-        """Gets the POD device contained in the Bucket.
-
-        Args:
-            bkt (Bucket): Bucket to collect streaming data from a POD device.
-
-        Returns:
-            Pod8206HR | Pod8401HR: POD device connected to the Bucket.
-        """
-        return bkt.dataHose.deviceValve.podDevice
     
     @staticmethod
     def _uV(voltage: float|int) -> float :
