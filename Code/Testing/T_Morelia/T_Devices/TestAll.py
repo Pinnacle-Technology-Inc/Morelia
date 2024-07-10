@@ -38,7 +38,6 @@ def RunTests(printThisTest: bool = False, printSubTests: bool = True) -> tuple[i
     testModulesList.append(T_Devices.T_PodDevice_8274D.T_Pod8274D(forbidden=forbidden))
     forbidden.append(testModulesList[-1].port)
 
-    #testModulesList.append(T_Devices.T_PodDevice_8274D.T_Pod8274D())
 
     return RunningTests.RunAllTests(
         testModules   = testModulesList, 
