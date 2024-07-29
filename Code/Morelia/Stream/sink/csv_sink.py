@@ -7,12 +7,13 @@ __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
-import aiofiles
+import csv
+from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Stream.PodHandler import DrainDeviceHandler
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
-from Morelia.Packets import Packet
+from Morelia.Devices import AquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
+from Morelia.Packets import PacketBinary
 
 class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
@@ -24,30 +25,49 @@ class CSVSink(SinkInterface):
     :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
 
-    def __init__(self, file_path: str, pod: Pod8206HR | Pod8401HR | Pod8274D) -> None:
+    def __init__(self, file_path: str, pod: AquisitionDevice) -> None:
         """Class constructor."""
 
         self._file_path = file_path
         
-        self._dev_handler: DrainDeviceHandler = SinkInterface.get_device_handler(pod)
-
-        with open(self._file_path, 'w') as f:
-            f.write(self._dev_handler.GetDeviceColNames())
+        self._pod = pod
    
-    #make filepath an immutable attribute, changing this could cause problems with
-    #data being split across files...
-    @property
-    def file_path(self) -> str:
-        return self._file_path
+    def __enter__(self) -> Self:
+        self._file_handle = open(self._file_path, 'w', newline='') 
+        self._csv_writer = csv.writer(self._file_handle)
 
-    async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
-        """Write a drop of data to CSV.
+        if isinstance(self._pod, Pod8206HR):
+                self._csv_writer.writerow(('time', 'EEG1', 'EEG2', 'EEG3/EMG'))
 
-        :param timestamps: A list of timestamps for data.
-        :type timestamps: list[float]
-        :param raw_data: A list of data packets from a device.
-        :type raw_data: list[:class: Packet|None]
-        """
-        async with aiofiles.open(self._file_path, 'w') as f:
-            structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps,raw_data)
-            await f.write(structured_data.to_csv(index=False).split('\n',1) [1] )
+        elif isinstance(self._pod, Pod8401HR):
+
+            preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
+
+            self._csv_writer.writerow(('time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
+
+        elif isinstance(self._pod, Pod8274D):
+                self._csv_writer.writerow(('time', 'length_in_bytes', 'data'))
+
+        else:
+            raise ValueError(f'Device "{self._pod.device_name}" cannot be streamed from!')
+
+    def __exit__(self, *args, **kwargs) -> bool:
+        self._file_handle.close()
+        del self._csv_writer
+        del self._file_handle
+        return False
+
+    #TODO: typehint packet
+    #TODO: check that sink is open
+    def flush(self, timestamp: int, packet) -> None:
+
+        if isinstance(self._pod, Pod8206HR):
+            self._csv_writer.writerow((timestamp,) + tuple(map(lambda x: round(x + 1E6, 12), (packet.Ch(0), packet.Ch(1), packet.Ch(2)))))
+
+        elif isinstance(self._pod, Pod8401HR):
+            channel_data = (packet.Channel('A'), packet.Channel('B'), packet.Channel('C'), packet.Channel('D'))
+            aext_data = (packet.AnalogEXT(0), packet.AnalogEXT(1))
+            attl_data = (packet.AnalogTTL(1), packet.AnalogTTL(2), packet.AnalogTTL(3), packet.AnalogTTL(4))
+            self._csv_writer.writerow((timestamp,) + tuple(map(lambda x: round(x + 1E6, 12), channel_data + aext_data + attl_data)))
+        
+        #TODO: 8274D

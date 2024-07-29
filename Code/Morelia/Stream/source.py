@@ -1,6 +1,6 @@
 """Functions for getting streaming data from a POD device."""
 
-__author__      = 'Thresa Kelly'
+__author__      = 'James Hurd'
 __maintainer__  = 'James Hurd'
 __credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
 __license__     = 'New BSD License'
@@ -9,147 +9,106 @@ __email__       = 'sales@pinnaclet.com'
 
 #environment imports
 from multiprocessing import Event
-from multiprocessing.connection import Connection
 import time
-import numpy as np
 from functools import partial
-from typing import Callable
+from contextlib import ExitStack
 
 #local imports
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
-from Morelia.Packets import Packet, PacketStandard, PacketBinary
-from Morelia.Stream.valve import Valve
+from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
+from Morelia.Packets import Packet, PacketStandard, PacketBinary5, PacketBinary4
 
-def get_data(data_filter: Callable[[list[Packet|None],list[float]],bool], duration: float, fail_tolerance: int, end_stream_event: Event, 
-             manual_stop_event: Event, pipe: Connection, pod: Pod8206HR|Pod8401HR|Pod8274D) -> None: 
+import reactivex as rx
+from reactivex import operators as ops
+
+counter = 0
+
+#TODO: __all__ to tell us what to export.
+
+#TODO: more extensively document why timing is hard.
+#TODO: type hints
+#reactivex operator to timestamp packets as we get them based on the average observed sample
+#rate (# total packets/time elapsed). this way, our timestamps are more evenly distributed
+#and more closely resemble the time at which they were read from the device (as opposed
+#to things like transfer and buffering delays by the OS/USB messign with things.
+def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
+    def _timestamp_via_adjusted_sample_rate_operator(source):
+        def subscribe(observer, scheduler=None):
+
+            observer.sample_rate = starting_sample_rate
+            observer.time_at_last_update = time.perf_counter()
+            observer.starting_time = time.perf_counter()
+            observer.last_timestamp = time.time_ns()
+            observer.packet_count = 0
+
+            def on_next(value):
+                observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
+                observer.packet_count += 1
+
+                if time.perf_counter() - observer.time_at_last_update > 1:
+
+                    observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
+                    observer.time_at_last_update = time.perf_counter()
+
+                observer.on_next((observer.last_timestamp, value))
+
+            return source.subscribe(on_next,
+                observer.on_error,
+                observer.on_completed,
+                scheduler=scheduler)
+        return rx.create(subscribe)
+    return(_timestamp_via_adjusted_sample_rate_operator)
+
+#TODO: type hints
+#TODO: remove counter
+#function used by reactivex to create an observable from a packet stream from an aquisition device.
+
+def _stream_from_pod_device(pod: AquisitionDevice, duration: float, manual_stop_event: Event):
+    def _stream_from_pod_device_observable(observer, scheduler) -> None:
+        
+        global counter
+
+        with pod:
+            stream_start_time : float = time.perf_counter()
+
+            while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
+            
+                observer.on_next(pod.ReadPODpacket())
+                counter += 1
+
+        observer.on_completed()
+    return _stream_from_pod_device_observable
+
+def get_data(duration: float, manual_stop_event: Event, pod: AquisitionDevice, sinks) -> None: 
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved. 
 
     Args: 
          fail_tolerance (int): The number of successive failed attempts of reading data before stopping the streaming.
     """
-    # initialize       
 
-    successive_fail_count: int = 0
+    device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
 
-    device_valve: Valve = Valve(pod)
+    data = device.pipe(
+           ops.filter(lambda i: not isinstance(i, PacketStandard)), #todo: more strict filtering
+           _timestamp_via_adjusted_sample_rate(pod.sample_rate)
+       )
+    
+    streamer = ops.publish()
 
-    stop_bytes: bytes = device_valve.GetStopBytes()
+    stream = streamer(data)
 
-    sample_rate = _get_sample_rate(pod)
+    #TODO: handle errors
+    with ExitStack() as context_manager_stack:
 
-    data_sender = partial(_send_data, pipe, data_filter, sample_rate)
+        send_to_sink = lambda sink, args: sink.flush(*args)
+        
+        for sink in sinks:
+            context_manager_stack.enter_context(sink)
+            
+            stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
 
-    current_time_stamp : int = 0
+        stream.connect()
 
-    stream_start_time : float = time.time()
+    global counter
 
-    # start streaming data 
-    device_valve.Open()
-
-    while time.time()-stream_start_time < duration and not manual_stop_event.is_set() :
-        # initialize
-        data: list[Packet|None] = [None] * sample_rate
-
-        inital_time = time.time_ns() # initial time (sec)
-
-        # read data for one second
-        num_data_points_tried: int = 0
-
-        while num_data_points_tried < sample_rate: # operates like 'for i in range(sampleRate)'
-            try:
-                # check for too many failed packets 
-                if successive_fail_count > fail_tolerance:
-                    # finish up
-                    current_time_stamp = data_sender(current_time_stamp, inital_time, data)
-                    return
-
-                # read data (vv exception raised here if bad checksum or packet read timeout vv)
-                drip: Packet = device_valve.Drip()
-
-                # check stop condition 
-                current_time_stamp: int = time.time_ns()
-
-                if drip.rawPacket == stop_bytes:
-
-                    # finish up
-                    current_time_stamp = data_sender(current_time_stamp, inital_time, data)
-                    return
-
-                # save binary packet data and ignore standard packets
-                if not isinstance(drip,PacketStandard):
-                    data[num_data_points_tried] = drip
-                    num_data_points_tried += 1 # update looping condition 
-                    successive_fail_count = 0 # reset after succsessful loop 
-
-            except Exception as e:
-                # corrupted data here, leave None in data[i]
-                num_data_points_tried += 1 # update looping condition        
-                successive_fail_count += 1
-
-        # drop data 
-        current_time_stamp = data_sender(current_time_stamp, inital_time, data)
-
-    # stop streaming
-    device_valve.Close()
-    end_stream_event.set()
-
-def _send_data(pipe: Connection, data_filter: Callable[[list[Packet|None],list[float]],bool], sample_rate: int, current_time: int,
-               inital_time: int, data: list[Packet|None]) -> int:
-    """Send data packets in pipe."""
-
-    # get times 
-    next_time = current_time + (time.time_ns() - inital_time)
-
-    timestamps: list[int] = np.linspace( # evenly spaced numbers over interval.
-        current_time,    # start time
-        next_time,       # stop time
-        sample_rate, # number of items 
-        dtype=np.ulonglong
-    ).tolist()
-
-    # clean out corrupted data
-    if data_filter(data,timestamps):
-
-        pipe.send( (timestamps, data) )
-
-    # finish
-    return next_time
-
-def _get_sample_rate(pod: Pod8206HR|Pod8401HR|Pod8274D ) -> int :
-    """Writes a command to the POD device to get its sample rate in Hz.
-
-    Args:
-        pod (Pod8206HR | Pod8401HR | Pod8274D): POD device to get the sample rate for.
-
-    Raises:
-        Exception: Cannot get the sample rate for this POD device.
-        Exception: Could not connect to this POD device.
-
-    Returns:
-        int: Sample rate in Hz.
-    """
-
-    # Device  ::: cmd, command name,    args, ret, description
-    # ----------------------------------------------------------------------------------------------
-    # 8206-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
-    # 8401-HR ::: 100, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
-    # 8274D   ::: 256, GET SAMPLE RATE, None, U16, Gets the current sample rate of the system, in Hz
-    # ----------------------------------------------------------------------------------------------
-    # NOTE both 8206HR and 8401HR use the same command to start streaming. 
-    # If there is a new device that uses a different command, add a method 
-    # to check what type the device is (i.e isinstance(pod, PodClass)) 
-    # and set the self.stream* instance variables accordingly.
-    if( not isinstance(pod, Pod8274D)) :
-        pod._commands.ValidateCommand('GET SAMPLE RATE')
-        if(not pod.TestConnection()) :
-            raise Exception('[!] Could not connect to this POD device.')
-        pkt: PacketStandard = pod.WriteRead('GET SAMPLE RATE')
-        print("here", int(pkt.Payload()[0]))
-        return int(pkt.Payload()[0])
-    else :
-        if(not pod.TestConnection()) :
-            raise Exception ('[!] Could not connect to this POD device.')
-        pkt: PacketBinary = pod.WriteRead('GET SAMPLE RATE')
-        print("here2", int(pkt))
-        return pkt
+    print(pod.device_name, counter)

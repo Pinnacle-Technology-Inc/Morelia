@@ -9,7 +9,7 @@ __email__       = 'sales@pinnaclet.com'
 
 import abc
 
-from Morelia.Packets import Packet
+from Morelia.Packets import PacketBinary
 from Morelia.Stream.PodHandler import Drain8206HR, Drain8274D, Drain8401HR
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 
@@ -32,8 +32,9 @@ class SinkInterface(metaclass=abc.ABCMeta):
 
         #TODO: say which device?
         raise ValueError('Streaming from this device is not supported!')
-
+    
+    #TODO: typehint packet
     @abc.abstractmethod
-    async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
+    def flush(self, timestamp: int, packet) -> None:
         """Send data to destination (e.g. and EDF file)."""
         raise NotImplementedError
