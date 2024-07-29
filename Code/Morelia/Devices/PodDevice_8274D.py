@@ -1,6 +1,6 @@
 # local imports 
 import time
-from Morelia.Devices import Pod
+from Morelia.Devices import Pod, AquisitionDevice
 from Morelia.Packets import Packet, PacketStandard, PacketBinary
 
 # authorship
@@ -18,7 +18,7 @@ class Pod8274D(Pod) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port: str|int, baudrate:int=921600) -> None :
+    def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8274 POD device. 
 
@@ -28,7 +28,7 @@ class Pod8274D(Pod) :
                 the COM_io instance. Defaults to 921600.
         """
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210) 
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
@@ -60,9 +60,9 @@ class Pod8274D(Pod) :
         self._commands.AddCommand(206, 'GET MODEL NUMBER',         (0,),                    (U16,),              False, 'SL_STATUS_T.')
         self._commands.AddCommand(207, 'GET MODEL NUMBER REPLY',   (0,),                    tuple([U8]*12),      False, 'Returned model number.')
         # recieved only commands below vvv 
-        self._commands.AddCommand(208, 'GET SAMPLE RATE',          (0,),                    (U16,),              False, 'SL_STATUS_T')
+        #self._commands.AddCommand(208, 'GET SAMPLE RATE',          (0,),                    (U16,),              False, 'SL_STATUS_T')
         self._commands.AddCommand(209, 'GET SAMPLE RATE REPLY',    (0,),                    (U8,),               False, 'Returned sample rate, 0 = 1024, 1 = 512, 2 = 256, 3 = 128')
-        self._commands.AddCommand(210, 'SET SAMPLE RATE',          (U8,),                   (U16,),              False, 'Requires 0,1,2,3 sample rate, returns SL_STATUS_T')
+        #self._commands.AddCommand(210, 'SET SAMPLE RATE',          (U8,),                   (U16,),              False, 'Requires 0,1,2,3 sample rate, returns SL_STATUS_T')
         self._commands.AddCommand(211, 'PROCEDURE COMPLETE',       (0,),                    (0,),                False, 'A special response that is generated upon a successful write or any remote GATT operation.  Every SET and GET will generate one ')
        # self._commands.AddCommand(212, 'GET RSSI',               (0,),                    (U16,),              False, 'SL_STATUS_T')
        # self._commands.AddCommand(213, 'GET RSSI REPLY',          (0,),                    (0,),                False, 'The value of RSSI, from -128 to +20')

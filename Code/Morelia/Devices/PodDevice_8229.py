@@ -20,7 +20,7 @@ class Pod8229(Pod) :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port: str|int, baudrate:int=19200) -> None :
+    def __init__(self, port: str|int, baudrate:int=19200, device_name: str | None = None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8229 POD device. 
 
@@ -30,7 +30,7 @@ class Pod8229(Pod) :
                 the COM_io instance. Defaults to 19200.
         """
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, baudrate=baudrate, device_name=device_name) 
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)

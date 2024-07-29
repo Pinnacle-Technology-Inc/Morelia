@@ -1,5 +1,5 @@
 # local imports 
-from Morelia.Devices import Pod
+from Morelia.Devices import AquisitionDevice, Pod, Preamp
 from Morelia.Packets import Packet, PacketStandard, PacketBinary5
 
 # authorship
@@ -10,7 +10,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8401HR(Pod) : 
+class Pod8401HR(AquisitionDevice) : 
     """
     POD_8401HR handles communication using an 8401-HR POD device. 
 
@@ -24,21 +24,21 @@ class Pod8401HR(Pod) :
     # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
 
     __CHANNELMAPALL : dict[str,dict[str,str]] = {
-        '8407-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
-        '8407-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
-        '8407-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
-        '8407-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
-        '8407-SE31M'   : {'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
-        '8407-SE-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
-        '8407-SL-2BIO' : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
-        '8406-SE31M'   : {'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
-        '8406-BIO'     : {'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  },
-        '8406-2BIO'    : {'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  },
-        '8406-EEG2BIO' : {'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'},
-        '8406-SE'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
-        '8406-SL'      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
-        '8406-SE3'     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
-        '8406-SE4'     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
+        Preamp.Preamp8407_SE      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8407_SL      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8407_SE3     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        Preamp.Preamp8407_SE4     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        Preamp.Preamp8407_SE31M   : {'A':'EEG3', 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8407_SE_2BIO : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8407_SL_2BIO : {'A':'Bio1', 'B':'Bio2', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8406_SE31M   : {'A':'EMG' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        Preamp.Preamp8406_BIO     : {'A':'Bio' , 'B':'NC'  , 'C':'NC'  , 'D':'NC'  },
+        Preamp.Preamp8406_2BIO    : {'A':'Bio1', 'B':'Bio2', 'C':'NC'  , 'D':'NC'  },
+        Preamp.Preamp8406_EEG2BIO : {'A':'Bio1', 'B':'EEG1', 'C':'EMG' , 'D':'Bio2'},
+        Preamp.Preamp8406_SE      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8406_SL      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
+        Preamp.Preamp8406_SE3     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
+        Preamp.Preamp8406_SE4     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
     }
     """Class-level dictionary containing the channel map for \
     all preamplifier devices.
@@ -50,9 +50,11 @@ class Pod8401HR(Pod) :
 
     def __init__(self, 
                  port: str|int, 
+                 preamp: Preamp,
                  ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
-                 baudrate:int=9600
+                 baudrate:int=9600,
+                 device_name: str | None = None
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ssGain \
@@ -68,8 +70,11 @@ class Pod8401HR(Pod) :
             baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
                 the COM_io instance. Defaults to 9600.
         """
+
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, 10000, baudrate=baudrate, device_name=device_name) 
+
+        self._preamp: Preamp = preamp
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
@@ -79,8 +84,8 @@ class Pod8401HR(Pod) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
-        self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
+        #self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
+        #self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
         self._commands.AddCommand( 102,	'GET HIGHPASS',	    (U8,),	    (U8,),      False,  'Reads the highpass filter value for a channel. Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass.')
         self._commands.AddCommand( 103,	'SET HIGHPASS',	    (U8, U8),	(0,),       False,  'Sets the highpass filter for a channel. Requires channel to set, and filter value. Values are the same as returned in GET HIGHPASS.')
         self._commands.AddCommand( 104,	'GET LOWPASS',	    (U8,),	    (U16,),     False,  'Gets the lowpass filter for the desired channel. Requires the channel to read, Returns the value in Hz.')
@@ -114,6 +119,10 @@ class Pod8401HR(Pod) :
         self._preampGain : dict[str,int|None] = preampGain_dict
     
     
+    @property
+    def preamp(self) -> Preamp:
+        return self._preamp
+
     @staticmethod
     def _FixABCDtype(info: tuple|list|dict, thisIs: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
@@ -212,11 +221,11 @@ class Pod8401HR(Pod) :
 
 
     @staticmethod
-    def IsPreampDeviceSupported(name: str) -> bool : 
+    def IsPreampDeviceSupported(name: Preamp) -> bool : 
         """Checks if the argument exists in channel map for all preamp sensors. 
 
         Args:
-            name (str): name of the device
+            name (Preamp): name of the device
 
         Returns:
             bool: True if the name exists in __CHANNELMAPALL, false otherwise.

@@ -1,5 +1,5 @@
 # local imports 
-from Morelia.Devices import Pod
+from Morelia.Devices import AquisitionDevice, Pod
 from Morelia.Packets import Packet, PacketStandard, PacketBinary4
 
 # authorship
@@ -10,7 +10,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8206HR(Pod) : 
+class Pod8206HR(AquisitionDevice) : 
     """
     POD_8206HR handles communication using an 8206HR POD device. 
     
@@ -20,7 +20,7 @@ class Pod8206HR(Pod) :
     
     # ------------ DUNDER ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
+    def __init__(self, port: str|int, preampGain: int, baudrate:int=9600, device_name: str | None =  None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8206-HR POD device. 
 
@@ -34,7 +34,7 @@ class Pod8206HR(Pod) :
             Exception: Preamplifier gain must be 10 or 100.
         """
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, 2000, baudrate, device_name) 
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
@@ -45,8 +45,8 @@ class Pod8206HR(Pod) :
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand(100, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
-        self._commands.AddCommand(101, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
+        #self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
+        #self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
         self._commands.AddCommand(102, 'GET LOWPASS',          (U8,),      (U16,),    False,   'Gets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG). Returns the value in Hz.')
         self._commands.AddCommand(103, 'SET LOWPASS',          (U8,U16),   (0,),      False,   'Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.')
         self._commands.AddCommand(104, 'SET TTL OUT',          (U8,U8),    (0,),      False,   'Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).')
@@ -58,7 +58,6 @@ class Pod8206HR(Pod) :
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
-    
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 

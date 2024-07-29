@@ -25,7 +25,7 @@ class Pod :
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port: str|int, baudrate:int=9600) -> None : 
+    def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None) -> None : 
         """Runs when an instance of POD_Basics is constructed. It initializes the instance variable for 
         the COM port communication (_port) and for the command handler (_commands). It also increments \
         the POD device counter (__NUMPOD).
@@ -40,6 +40,7 @@ class Pod :
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
 
+        self._device_name: str = device_name if device_name else str(port)
 
     # ============ STATIC METHODS ============      ========================================================================================================================
     
@@ -62,6 +63,10 @@ class Pod :
             case 16: return(CommandSet.U16())
             case 32: return(CommandSet.U32())
             case  _: return(CommandSet.NoValue())
+
+    @property
+    def device_name(self) -> str:
+        return self._device_name
 
     # ------------ PORT ------------   ------------------------------------------------------------------------------------------------------------------------
 
