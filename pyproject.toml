@@ -4,8 +4,8 @@ version = "v1.6.1"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.md"}
-authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}, {name = "Seth Gabbert"}, {name="Sam Groth"]
-maintainers = [{name = "James Hurd"}, {name = "Sam Groth"]
+authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}, {name = "Seth Gabbert"}, {name="Sam Groth"}]
+maintainers = [{name = "James Hurd"}, {name = "Sam Groth"}]
 
 [tool.setuptools]
 package-dir = {"" = "Morelia"}
@@ -16,3 +16,8 @@ build-backend = "setuptools.build_meta"
 
 [project.urls]
 repository = "https://github.com/Pinnacle-Technology-Inc/Morelia"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
