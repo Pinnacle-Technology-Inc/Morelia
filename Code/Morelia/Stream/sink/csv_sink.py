@@ -11,7 +11,6 @@ import csv
 from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Stream.PodHandler import DrainDeviceHandler
 from Morelia.Devices import AquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
 from Morelia.Packets import PacketBinary
 

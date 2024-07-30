@@ -14,7 +14,6 @@ import functools as ft
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Packets import Packet, PacketBinary4
-from Morelia.Stream.PodHandler import DrainDeviceHandler
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
 
 class EDFSink(SinkInterface):
