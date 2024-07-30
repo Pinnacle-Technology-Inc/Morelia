@@ -26,7 +26,6 @@ class CSVSink(SinkInterface):
 
     def __init__(self, file_path: str, pod: Pod8206HR | Pod8401HR | Pod8274D) -> None:
         """Class constructor."""
-
         self._file_path = file_path
         
         self._dev_handler: DrainDeviceHandler = SinkInterface.get_device_handler(pod)
