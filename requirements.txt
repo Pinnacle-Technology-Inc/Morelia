@@ -1,3 +1,4 @@
+#TODO: update package versions
 numpy
 pandas
 pyEDFlib
@@ -5,5 +6,6 @@ pyserial
 texttable
 sphinx
 sphinx-rtd-theme
-reactivex
 influxdb-client
+reactivex
+pytest
