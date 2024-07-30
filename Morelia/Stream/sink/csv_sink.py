@@ -26,7 +26,6 @@ class CSVSink(SinkInterface):
 
     def __init__(self, file_path: str, pod: AquisitionDevice) -> None:
         """Class constructor."""
-
         self._file_path = file_path
         
         self._pod = pod
