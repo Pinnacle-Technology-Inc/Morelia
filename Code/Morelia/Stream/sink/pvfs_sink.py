@@ -1,6 +1,6 @@
 """Send data to PVFS file."""
 
-__author__      = 'James Hurd'
+__author__      = 'Sree Kondi'
 __maintainer__  = 'Thresa Kelly'
 __credits__     = ['Sree Kondi', 'James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
 __license__     = 'New BSD License'
@@ -11,6 +11,9 @@ from typing import Literal
 import numpy as np
 import cppyy
 import os
+import ctypes 
+import zlib 
+from threading import Thread, Lock
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Stream.PodHandler import DrainDeviceHandler
@@ -27,10 +30,11 @@ class PVFSSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
-
     def __init__(self, file_path: str, pod: Pod8206HR | Pod8401HR | Pod8274D ) -> None:
         self._file_path = file_path
         self._dev_handler: DrainDeviceHandler = SinkInterface.get_device_handler(pod)
+
+
         try:
             #include a path to wherever the Pvfs.h is located, make sure you put '/mnt/c' if using wsl
             #first, make sure you include Pvfs.h file into your cppyy.
@@ -54,6 +58,15 @@ class PVFSSink(SinkInterface):
                 self.DataIndex(result)
         except Exception as e:
             print(f"Error: {e}") 
+        
+        # initialize the member variables
+        self.m_DataFileIndex = 0
+        self.m_DataChunkCRC = 0  # Or appropriate initialization
+        self.m_DataFileWriteCache = None  # Set this to the actual initial value or object
+        self.m_IndexFileWriteCache = None  # Set this to the actual initial value or object
+        self.m_Modified = False
+        
+        
 
 
     
@@ -96,6 +109,46 @@ class PVFSSink(SinkInterface):
                 else:
                     print("write header test failed")
 
+        print("\nTest PVFS_get_channel_list")
+        names = cppyy.gbl.std.vector('std::string')()
+        retval = int
+        vfs = cppyy.gbl.pvfs.PVFS_open(self._file_path)
+        if vfs:
+            # Retrieve the channel list
+            retval = cppyy.gbl.pvfs.PVFS_get_channel_list(vfs, names)
+            if retval == cppyy.gbl.pvfs.PVFS_OK:
+                # Print each channel name
+                for name in names:
+                    print(name)
+                print("PVFS_get_channel_list test passed")
+            else:
+                print("PVFS_get_channel_list error during read")
+
+    
+    def WriteCacheToFile(file):
+        if mutex.Lock():
+            result = DoWriteCacheToFile(file)
+        mutex.unlock()
+        return result
+
+           
+    def write_data(self, data: bytes,length: int, do_crc: bool = True):
+        self.m_DataFileIndex += length
+
+        # Calculate CRC if requested
+        if do_crc:
+            cppyy.gbl.CRC32.AppendBytes(data, length)
+
+        # Write data to file cache
+        if cppyy.gbl.Write(data, length, self.m_DataFileWriteCache):
+            # Flush index file if data file filled up
+            self.WriteCacheToFile()
+
+        # Set modified flag
+        self.m_Modified = True
+        # so that is the template
+        return 0  # Return value as in C++
+
     
     async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
         """Write a drop of data to PVFS.
@@ -104,16 +157,38 @@ class PVFSSink(SinkInterface):
         :type timestamps: list[float]
         :param raw_data: A list of data packets from a device.
         :type raw_data: list[:class: Packet|None]
-        """
-        # print("###")
-        #     TODO: have to write data to the created PVFS file.
-        #     Get Time Stamps from this function 'GetStartTime' from 
-        #     PVFS_IndexedDataFile.cpp. Use PVFS_write from the PVFS.cpp 
-        #     to write data to the PVFS file.
+        """         
+        data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
+        print("##", data_chunk_crc)
+        # print("##",self.write_data(data_chunk_crc))  
+        try:
+            # Convert raw data to DataFrame
+            structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps, raw_data)
+            
+            # Convert DataFrame to numpy array
+            # data_array = structured_data.to_numpy(dtype=np.float32)
+            print("!!!", structured_data)
+            # Convert numpy array to byte buffer
+            # data_buffer = data_array.tobytes()
+
+            # data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
+            # print("##")
+            # print("##",self.write_data(data_chunk_crc))  
+
+            # if ( self.m_DataFileIndex > 0 ) :
+            #     data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
+            #     self.write_data ( data_chunk_crc )
+            self.write_data(structured_data, 2000)
+                
+        #         # Close the data file
+        #         cppyy.gbl.pvfs.PVFS_fclose(data_file)
+         
+        #     # Close the PVFS file
+        #     cppyy.gbl.pvfs.PVFS_close((vfs))
+
+        
+        
+        except Exception as e:
+            print(f"Error during flush: {e}") 
 
 
-
-        # def CloseFile(self) : 
-        #     """Write one drop of data to the save file.
-        #     """  
-        #     TODO: have to close the PVFS file.

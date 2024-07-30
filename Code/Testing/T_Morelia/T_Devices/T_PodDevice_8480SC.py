@@ -4,7 +4,7 @@ from Morelia.Devices import Pod8480SC
 from Morelia.Packets import Packet, PacketStandard, PacketBinary4
 
 # authorship
-__author__      = "Thresa Kelly"
+__author__      = "Sree Kondi"
 __maintainer__  = "Thresa Kelly"
 __credits__     = ["Sree Kondi", "Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
