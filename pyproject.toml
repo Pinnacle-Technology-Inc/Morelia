@@ -8,7 +8,10 @@ authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}
 maintainers = [{name = "James Hurd"}, {name = "Sam Groth"}]
 
 [tool.setuptools]
-package-dir = {"" = "Morelia"}
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
