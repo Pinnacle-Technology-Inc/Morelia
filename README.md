@@ -7,7 +7,10 @@
    </div>
 </html>
 
-## DEVELOPER'S NOTE: Due to recent refactors in what streaming looks like, the Setup submodule is currently broken. Please set up your devices manually for now.
+## DEVELOPER'S NOTE 
+
+Due to recent refactors, the setup scripts are currently broken (see `scripts/`). 
+Please set up your devices manually for now. The examples are also no longer accurate in many cases.
 
 ## Introduction 
 
