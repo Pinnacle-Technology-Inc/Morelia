@@ -38,7 +38,6 @@ class PVFSSink(SinkInterface):
         try:
             #include a path to wherever the Pvfs.h is located, make sure you put '/mnt/c' if using wsl
             #first, make sure you include Pvfs.h file into your cppyy.
-
             path = os.path.dirname(os.path.abspath(__file__))
             pvfs_h_path = os.path.join(path, 'Pvfs.h')
             cppyy.include(pvfs_h_path)  
@@ -65,6 +64,8 @@ class PVFSSink(SinkInterface):
         self.m_DataFileWriteCache = None  # Set this to the actual initial value or object
         self.m_IndexFileWriteCache = None  # Set this to the actual initial value or object
         self.m_Modified = False
+        # self.seconds = 0
+        # self.subseconds = 0.0
         
         
 
@@ -132,7 +133,7 @@ class PVFSSink(SinkInterface):
         return result
 
            
-    def write_data(self, data: bytes,length: int, do_crc: bool = True):
+    def write_data(self,data: bytes,length: int, do_crc: bool = False):
         self.m_DataFileIndex += length
 
         # Calculate CRC if requested
@@ -158,37 +159,27 @@ class PVFSSink(SinkInterface):
         :param raw_data: A list of data packets from a device.
         :type raw_data: list[:class: Packet|None]
         """         
-        data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
-        print("##", data_chunk_crc)
-        # print("##",self.write_data(data_chunk_crc))  
+        reservedSpace	= 0
+        seconds			= 0
+        subseconds		= 0.0
+
         try:
             # Convert raw data to DataFrame
             structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps, raw_data)
             
-            # Convert DataFrame to numpy array
-            # data_array = structured_data.to_numpy(dtype=np.float32)
             print("!!!", structured_data)
-            # Convert numpy array to byte buffer
-            # data_buffer = data_array.tobytes()
-
-            # data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
-            # print("##")
-            # print("##",self.write_data(data_chunk_crc))  
-
-            # if ( self.m_DataFileIndex > 0 ) :
-            #     data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
-            #     self.write_data ( data_chunk_crc )
-            self.write_data(structured_data, 2000)
-                
-        #         # Close the data file
+        
+            if (self.m_DataFileIndex > 0) :
+                self.data_chunk_crc = cppyy.gbl.CRC32.GetCRC()
+                await self.write_data(self.data_chunk_crc)
+        #         # Close the data file      
         #         cppyy.gbl.pvfs.PVFS_fclose(data_file)
-         
+
+        
+
         #     # Close the PVFS file
         #     cppyy.gbl.pvfs.PVFS_close((vfs))
 
-        
-        
         except Exception as e:
             print(f"Error during flush: {e}") 
-
 
