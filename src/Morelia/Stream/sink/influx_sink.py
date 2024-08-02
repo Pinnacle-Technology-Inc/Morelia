@@ -60,9 +60,14 @@ class InfluxSink(SinkInterface):
 
         elif isinstance(self._pod, Pod8206HR):
             def _line_protocol_factory(timestamp, packet) -> str:
-                return f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={round(packet.Ch(0) * 1E6, 12)} {timestamp}
-                       {self._measurement},channel=CH1,name={self._pod.device_name} value={round(packet.Ch(1) * 1E6, 12)} {timestamp}
-                       {self._measurement},channel=CH2,name={self._pod.device_name} value={round(packet.Ch(2) * 1E6, 12)} {timestamp}""".encode('utf-8')
+                return f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={packet.ch0} {timestamp}
+                       {self._measurement},channel=CH1,name={self._pod.device_name} value={packet.ch1} {timestamp}
+                       {self._measurement},channel=CH2,name={self._pod.device_name} value={packet.ch2} {timestamp}
+                       {self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
+                       {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
+                       {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
+                       {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}
+                       """.encode('utf-8')
 
         #self._line_protocol_factory = _line_protocol_factory
 
