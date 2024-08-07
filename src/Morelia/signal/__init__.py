@@ -1,1 +1,1 @@
-from Morelia.signal.ttl import TTL
+from Morelia.signal.digital_signal import DigitalSignal
