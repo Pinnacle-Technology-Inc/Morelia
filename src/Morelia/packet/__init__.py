@@ -1,3 +1,6 @@
 from Morelia.packet.pod_packet import PodPacket
-from Morelia.packet.binary_pod_packet import BinaryPodPacket
-from Morelia.packet.binary_8206hr_pod_packet import Binary8206HRPodPacket
+from Morelia.packet.channel_mode import PrimaryChannelMode, SecondaryChannelMode
+
+import Morelia.packet.data
+
+#from Morelia.packet.control_packet import ControlPacket

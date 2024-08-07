@@ -11,7 +11,6 @@ binary bytes --------- ascii bytes
                int
 """
 
-
 from enum import Enum, auto
 
 class Endianness(Enum):
@@ -184,6 +183,7 @@ def binary_bytes_to_int(msg: bytes, byteorder: Endianness=Endianness.BIG, signed
 def int_to_binary_bytes(msg: int, num_bytes: int, byteorder: Endianness=Endianness.BIG) -> bytes:
     return msg.to_bytes(num_bytes, byteorder=str(byteorder))
 
+#can this handle signed numbers?
 def binary_bytes_to_int_split(msg: bytes, msb_index: int, lsb_index: int, byteorder: Endianness=Endianness.BIG, signed:bool=False) -> int : 
     """Converts a specific bit range in a binary-encoded bytes object to an integer.
 
@@ -199,6 +199,7 @@ def binary_bytes_to_int_split(msg: bytes, msb_index: int, lsb_index: int, byteor
     Returns:
         int: Integer result from the binary-encoded bytes message in a given bit range.
     """
+    #indexed right ot left (leftmost bit 0)
     # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
     return( ( binary_bytes_to_int(msg,byteorder,signed) & (2**msb_index - 1) ) >> lsb_index)
 
