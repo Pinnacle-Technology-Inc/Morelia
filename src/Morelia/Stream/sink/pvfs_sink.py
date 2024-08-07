@@ -13,7 +13,7 @@ import cppyy
 import os
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Stream.PodHandler import DrainDeviceHandler
+#from Morelia.Stream.PodHandler import DrainDeviceHandler
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 from Morelia.Packets import Packet
 
@@ -30,7 +30,7 @@ class PVFSSink(SinkInterface):
 
     def __init__(self, file_path: str, pod: Pod8206HR | Pod8401HR | Pod8274D ) -> None:
         self._file_path = file_path
-        self._dev_handler: DrainDeviceHandler = SinkInterface.get_device_handler(pod)
+#        self._dev_handler: DrainDeviceHandler = SinkInterface.get_device_handler(pod)
         try:
             #include a path to wherever the Pvfs.h is located, make sure you put '/mnt/c' if using wsl
             #first, make sure you include Pvfs.h file into your cppyy.

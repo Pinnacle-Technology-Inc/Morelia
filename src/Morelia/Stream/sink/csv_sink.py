@@ -60,12 +60,12 @@ class CSVSink(SinkInterface):
     def flush(self, timestamp: int, packet) -> None:
 
         if isinstance(self._pod, Pod8206HR):
-            self._csv_writer.writerow((timestamp,) + tuple(map(lambda x: round(x + 1E6, 12), (packet.Ch(0), packet.Ch(1), packet.Ch(2)))))
+            self._csv_writer.writerow((timestamp,) + (packet.ch0, packet.ch1, packet.ch2, packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4))
 
         elif isinstance(self._pod, Pod8401HR):
-            channel_data = (packet.Channel('A'), packet.Channel('B'), packet.Channel('C'), packet.Channel('D'))
-            aext_data = (packet.AnalogEXT(0), packet.AnalogEXT(1))
-            attl_data = (packet.AnalogTTL(1), packet.AnalogTTL(2), packet.AnalogTTL(3), packet.AnalogTTL(4))
-            self._csv_writer.writerow((timestamp,) + tuple(map(lambda x: round(x + 1E6, 12), channel_data + aext_data + attl_data)))
+            channel_data = (packet.ch0, packet.ch1, packet.ch2, packet.ch3)
+            aext_data = (packet.ext0, packet.ext1)
+            attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
+            self._csv_writer.writerow((timestamp,) + channel_data + aext_data + attl_data)
         
         #TODO: 8274D

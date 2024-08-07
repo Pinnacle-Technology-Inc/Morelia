@@ -36,13 +36,13 @@ class EDFSink(SinkInterface):
         self._pod = pod
 
         if isinstance(self._pod, Pod8206HR):
-                self._channels = ('EEG1', 'EEG2', 'EEG3/EMG')
+                self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
 
         elif isinstance(self._pod, Pod8401HR):
 
             preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
-            self._channels = tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4')
+            self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 
         elif isinstance(self._pod, Pod8274D):
                 self._channels('length_in_bytes', 'data')
@@ -75,14 +75,7 @@ class EDFSink(SinkInterface):
 
     def __exit__(self, *args, **kwargs) -> bool:
 
-        #for idx, channel in enumerate(self._buffer):
-        #    while len(self._buffer[idx]) < self._pod.sample_rate:
-        #        channel.append(0.0)
-        #        #self._buffer[idx] = np.append(channel, [0])
-        #    #    print(len(self._buffer[idx]))
-
         self._write_buffer_to_edf()
-        print(self._edf_writer.counter)
 
         self._edf_writer.close()
         del self._edf_writer
@@ -97,19 +90,27 @@ class EDFSink(SinkInterface):
     def flush(self, timestamp: int, packet) -> None:
         
         if isinstance(self._pod, Pod8206HR):
-            for idx, val in enumerate((packet.Ch(0), packet.Ch(1), packet.Ch(2))):
-                self._buffer[idx].append(round(val * 1E6, 12))
+            self._buffer[0].append(packet.ch0)
+            self._buffer[1].append(packet.ch1)
+            self._buffer[2].append(packet.ch2)
+            self._buffer[3].append(float(packet.ttl1))
+            self._buffer[4].append(float(packet.ttl2))
+            self._buffer[5].append(float(packet.ttl3))
+            self._buffer[6].append(float(packet.ttl4))
 
         elif isinstance(self._pod, Pod8401HR):
+            self._buffer[0].append(packet.ch0)
+            self._buffer[1].append(packet.ch1)
+            self._buffer[2].append(packet.ch2)
+            self._buffer[3].append(packet.ch3)
+            self._buffer[4].append(float(packet.ext0))
+            self._buffer[5].append(float(packet.ext1))
+            self._buffer[6].append(float(packet.ttl1))
+            self._buffer[7].append(float(packet.ttl2))
+            self._buffer[8].append(float(packet.ttl3))
+            self._buffer[9].append(float(packet.ttl4))
 
-            channel_data = (packet.Channel('A'), packet.Channel('B'), packet.Channel('C'), packet.Channel('D'))
-            aext_data = (packet.AnalogEXT(0), packet.AnalogEXT(1))
-            attl_data = (packet.AnalogTTL(1), packet.AnalogTTL(2), packet.AnalogTTL(3), packet.AnalogTTL(4))
-        
-            for idx, val in enumerate(aext_data + attl_data + channel_data):
-                self._buffer[idx].append(round(val * 1E6, 12))
-
-        if len(self._buffer[0]) > self._pod.sample_rate:
+        if len(self._buffer[0]) >= self._pod.sample_rate:
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:

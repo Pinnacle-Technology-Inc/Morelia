@@ -1,7 +1,7 @@
 # local imports 
 from Morelia.Devices import AquisitionDevice, Pod
 from Morelia.Packets import Packet, PacketStandard, PacketBinary4
-from Morelia.packet import Binary8206HRPodPacket
+from Morelia.packet.data import DataPacket8206HR
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -155,4 +155,4 @@ class Pod8206HR(AquisitionDevice) :
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return Binary8206HRPodPacket(packet, self._preampGain)
+        return DataPacket8206HR(packet, self._preampGain)

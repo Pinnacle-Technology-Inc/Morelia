@@ -1,6 +1,9 @@
 # local imports 
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
 from Morelia.Packets import Packet, PacketStandard, PacketBinary5
+from Morelia.packet.data import DataPacket8401HR
+
+from functools import partial
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -51,6 +54,8 @@ class Pod8401HR(AquisitionDevice) :
     def __init__(self, 
                  port: str|int, 
                  preamp: Preamp,
+                 primary_channel_modes,
+                 secondary_channel_modes,
                  ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  baudrate:int=9600,
@@ -114,9 +119,14 @@ class Pod8401HR(AquisitionDevice) :
         self._ValidateSsGain(ssGain_dict)
         self._ssGain : dict[str,int|None] = ssGain_dict         
         # preamplifier gain
-        preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain ')
+        preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain')
         self._ValidatePreampGain(preampGain_dict)
         self._preampGain : dict[str,int|None] = preampGain_dict
+
+        self._primary_channel_modes = primary_channel_modes
+        self._secondary_channel_modes = secondary_channel_modes
+
+        self._packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
     
     
     @property
@@ -510,5 +520,6 @@ class Pod8401HR(AquisitionDevice) :
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return PacketBinary5(packet, self._ssGain, self._preampGain, self._commands)
+        #return PacketBinary5(packet, self._ssGain, self._preampGain, self._commands)
+        return self._packet_factory(packet)
  
