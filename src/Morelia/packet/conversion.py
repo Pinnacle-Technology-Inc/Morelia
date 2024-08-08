@@ -208,3 +208,4 @@ def binary_bytes_to_ascii_bytes(msg: bytes, num_chars: int, byteorder: Endiannes
 
 def ascii_bytes_to_binary_bytes(msg_b: bytes, num_bytes: bytes, byteorder: Endianness = Endianness.BIG, signed: bool = False) -> bytes:
     return int_to_binary_bytes(ascii_bytes_to_int(msg_b, signed), num_bytes, byteorder)
+

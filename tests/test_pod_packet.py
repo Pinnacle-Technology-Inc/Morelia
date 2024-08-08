@@ -21,3 +21,12 @@ class TestPodPacket:
 
         with pytest.raises(ValueError):
             test_packet.command_number
+
+    def test_equality(self):
+        test_packet1 = PodPacket(b'\x02' + conversion.int_to_ascii_bytes(24, 4)  + b'\x03')
+        test_packet2 = PodPacket(b'\x02' + conversion.int_to_ascii_bytes(24, 4)  + b'\x03')
+        test_packet3 = PodPacket(b'\x02' + conversion.int_to_ascii_bytes(48, 4)  + b'\x03')
+
+        assert test_packet1 == test_packet2
+        assert test_packet1 != test_packet3
+        assert test_packet2 != test_packet3

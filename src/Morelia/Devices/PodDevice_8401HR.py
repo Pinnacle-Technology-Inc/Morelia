@@ -1,6 +1,7 @@
 # local imports 
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
 from Morelia.Packets import Packet, PacketStandard, PacketBinary5
+from Morelia.packet import ControlPacket
 from Morelia.packet.data import DataPacket8401HR
 
 from functools import partial
@@ -126,7 +127,14 @@ class Pod8401HR(AquisitionDevice) :
         self._primary_channel_modes = primary_channel_modes
         self._secondary_channel_modes = secondary_channel_modes
 
-        self._packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
+        self._stream_packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
+
+        def decode_payload(command_number: int, payload: bytes) -> tuple:
+            if command_number in [127, 128, 129]:
+                return Pod8401HR.DecodeTTLPayload(payload)
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+
+        self._control_packet_factory = partial(ControlPacket, decode_payload)
     
     
     @property
@@ -417,51 +425,6 @@ class Pod8401HR(AquisitionDevice) :
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
-        """Builds a POD packet and writes it to the POD device. 
-
-        Args:
-            cmd (str | int): Command number.
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
-                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
-
-        Returns:
-            Packet_Standard: Packet that was written to the POD device.
-        """
-        # write
-        packet: PacketStandard = super().WritePacket(cmd, payload)
-        # check for special packets
-        specialCommands = [127, 129] # 127 SET TTL CONFIG # 129 SET TTL OUTS
-        if(packet.CommandNumber() in specialCommands) : 
-            packet.SetCustomPayload(Pod8401HR.DecodeTTLPayload, (packet.payload,))
-        # returns packet object
-        return packet
-    
-    
-    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
-        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-        ending with ETX. Reads first STX and then starts recursion. 
-
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
-
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may be a \
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-        """
-        packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
-        # check for special packets
-        if(isinstance(packet, PacketStandard)) : 
-            if(packet.CommandNumber() == 128) : # 128 GET TTL CONFIG
-                packet.SetCustomPayload(Pod8401HR.DecodeTTLPayload, (packet.payload,))
-        # return packet
-        return packet
-
-
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) :
         """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. 
 
@@ -521,5 +484,5 @@ class Pod8401HR(AquisitionDevice) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         #return PacketBinary5(packet, self._ssGain, self._preampGain, self._commands)
-        return self._packet_factory(packet)
+        return self._stream_packet_factory(packet)
  

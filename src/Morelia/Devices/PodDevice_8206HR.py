@@ -2,6 +2,10 @@
 from Morelia.Devices import AquisitionDevice, Pod
 from Morelia.Packets import Packet, PacketStandard, PacketBinary4
 from Morelia.packet.data import DataPacket8206HR
+from Morelia.packet import ControlPacket
+from Morelia.Commands import CommandSet
+
+from functools import partial
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -59,6 +63,14 @@ class Pod8206HR(AquisitionDevice) :
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
+        
+        def decode_packet(command_number: int, payload: bytes) -> tuple:
+            if command_number == 106:
+                return Pod8206HR._TranslateTTLbyte_ASCII(payload)
+
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+
+        self._control_packet_factory = partial(ControlPacket, decode_packet)
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
@@ -74,38 +86,38 @@ class Pod8206HR(AquisitionDevice) :
             dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
         """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( {
+        return ( {
             'TTL1' : Packet.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
             'TTL2' : Packet.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
             'TTL3' : Packet.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
             'TTL4' : Packet.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        } )   
+        }, )   
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
-    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
-        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-        ending with ETX. Reads first STX and then starts recursion. 
+    #def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
+    #    """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+    #    ending with ETX. Reads first STX and then starts recursion. 
 
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
+    #    Args:
+    #        validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
+    #            skip validation. Defaults to True.
+    #        timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
+    #            Defaults to 5. 
 
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may be a \
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-        """
-        packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
-        # check for special packets
-        if(isinstance(packet, PacketStandard)) : 
-            if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
-                packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
-        # return packet
-        return packet
+    #    Returns:
+    #        Packet: POD packet beginning with STX and ending with ETX. This may be a \
+    #            standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+    #    """
+    #    packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
+    #    # check for special packets
+    #    if(isinstance(packet, PacketStandard)) : 
+    #        if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
+    #            packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
+    #    # return packet
+    #    return packet
             
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary4 :

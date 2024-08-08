@@ -17,6 +17,8 @@ from contextlib import ExitStack
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
 from Morelia.Packets import Packet, PacketStandard, PacketBinary5, PacketBinary4
 
+from Morelia.packet import ControlPacket
+
 import reactivex as rx
 from reactivex import operators as ops
 
@@ -89,7 +91,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AquisitionDevice, s
     device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
 
     data = device.pipe(
-           ops.filter(lambda i: not isinstance(i, PacketStandard)), #todo: more strict filtering
+           ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
            _timestamp_via_adjusted_sample_rate(pod.sample_rate)
        )
     

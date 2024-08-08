@@ -2,6 +2,9 @@
 from Morelia.Devices.SerialPorts import PortIO, FindPorts
 from Morelia.Commands            import CommandSet
 from Morelia.Packets             import Packet, PacketStandard, PacketBinary
+from Morelia.packet import ControlPacket
+
+from functools import partial
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -41,6 +44,8 @@ class Pod :
         self._commands : CommandSet = CommandSet()
 
         self._device_name: str = device_name if device_name else str(port)
+
+        self._control_packet_factory = partial(ControlPacket, self._commands)
 
     # ============ STATIC METHODS ============      ========================================================================================================================
     
@@ -279,7 +284,7 @@ class Pod :
             r: Packet = self.ReadPODpacket()
         except:   return(False)
         # check that read matches ping write
-        if(w.rawPacket==r.rawPacket): return(True)
+        if(w ==r ): return(True)
         return(False)
     
 
@@ -358,7 +363,7 @@ class Pod :
         # write packet to serial port 
         self._port.Write(packet)
         # returns packet that was written
-        return(PacketStandard(packet, self._commands))
+        return ControlPacket(self._commands, packet)
 
 
     def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> Packet :
@@ -424,7 +429,7 @@ class Pod :
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
             packet: PacketBinary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read
-            packet: PacketStandard = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
+            packet: ControlPacket = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
         return(packet)
 
@@ -516,7 +521,7 @@ class Pod :
             if( not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for standard POD packet read.')
         # return packet
-        return PacketStandard(packet, self._commands)
+        return self._control_packet_factory(packet)
 
 
     def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
