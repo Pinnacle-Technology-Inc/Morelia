@@ -11,11 +11,8 @@ class DataPacket8401HR(DataPacket):
                  primary_channel_modes: tuple[PrimaryChannelMode], secondary_channel_modes: tuple[SecondaryChannelMode],
                  raw_packet: bytes) -> None:
 
-        super().__init__(raw_packet)
+        super().__init__(raw_packet, 31)
             
-         #maybe pas in constructor?
-         #self._min_length = 
-
         self._preamp_gain = preamp_gain
         self._ss_gain = ss_gain
         self._primary_channel_modes = primary_channel_modes

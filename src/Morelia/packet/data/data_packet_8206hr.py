@@ -8,8 +8,7 @@ class DataPacket8206HR(DataPacket):
     __slots__ = ('_ch0', '_ch1', '_ch2', '_ttl1', '_ttl2', '_ttl3', '_ttl4')
     def __init__(self, raw_packet: bytes, preamp_gain: int) -> None:
         self._preamp_gain = preamp_gain
-        #self._min_length = 
-        super().__init__(raw_packet)
+        super().__init__(raw_packet, 16)
 
         self._ch0 = None
         self._ch1 = None

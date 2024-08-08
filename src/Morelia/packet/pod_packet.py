@@ -4,9 +4,9 @@ class PodPacket:
     
     __slots__ = ('_raw_packet', '_min_length', '_command_number')
 
-    def __init__(self, raw_packet: bytes) -> None:
+    def __init__(self, raw_packet: bytes, min_length: int = 2) -> None:
         self._raw_packet = raw_packet
-        self._min_length = 2
+        self._min_length = min_length
 
         self._command_number = None
     
