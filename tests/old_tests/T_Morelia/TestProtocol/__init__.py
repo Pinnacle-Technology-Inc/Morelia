@@ -1,2 +1,0 @@
-from Testing.T_Morelia.TestProtocol import RunningTests
-from Testing.T_Morelia.TestProtocol.TestResult import TestResult
