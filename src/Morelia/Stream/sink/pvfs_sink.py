@@ -15,7 +15,7 @@ import os
 from Morelia.Stream.sink import SinkInterface
 #from Morelia.Stream.PodHandler import DrainDeviceHandler
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
-from Morelia.Packets import Packet
+from Morelia.packet.data import DataPacket
 
 
 class PVFSSink(SinkInterface):
@@ -97,7 +97,7 @@ class PVFSSink(SinkInterface):
                     print("write header test failed")
 
     
-    async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
+    async def flush(self, timestamps: list[float], raw_data: list[DataPacket|None]) -> None:
         """Write a drop of data to PVFS.
 
         :param timestamps: A list of timestamps for data.

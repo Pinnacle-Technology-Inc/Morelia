@@ -3,7 +3,7 @@ from typing import Any
 
 # local imports
 from Morelia.Commands import CommandSet
-from Morelia.Packets  import Packet
+from Morelia.packet.legacy.Packet  import Packet
 
 # authorship
 __author__      = "Thresa Kelly"

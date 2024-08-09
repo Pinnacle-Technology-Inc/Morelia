@@ -12,7 +12,7 @@ from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import AquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
-from Morelia.Packets import PacketBinary
+from Morelia.packet.data import DataPacket
 
 class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
@@ -55,9 +55,8 @@ class CSVSink(SinkInterface):
         del self._file_handle
         return False
 
-    #TODO: typehint packet
     #TODO: check that sink is open
-    def flush(self, timestamp: int, packet) -> None:
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
 
         if isinstance(self._pod, Pod8206HR):
             self._csv_writer.writerow((timestamp,) + (packet.ch0, packet.ch1, packet.ch2, packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4))

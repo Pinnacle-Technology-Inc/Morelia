@@ -1,6 +1,5 @@
 # local imports 
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
-from Morelia.Packets import Packet, PacketStandard, PacketBinary5
 from Morelia.packet import ControlPacket
 from Morelia.packet.data import DataPacket8401HR
 
@@ -84,7 +83,7 @@ class Pod8401HR(AquisitionDevice) :
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
-        B5  = PacketBinary5.GetBinaryLength()
+        B5  = 23
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(10) # SAMPLE RATE
@@ -130,7 +129,7 @@ class Pod8401HR(AquisitionDevice) :
         self._stream_packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
 
         def decode_payload(command_number: int, payload: bytes) -> tuple:
-            if command_number in [127, 128, 129]:
+            if command_number in 127 | 128 | 129:
                 return Pod8401HR.DecodeTTLPayload(payload)
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
 
@@ -298,12 +297,12 @@ class Pod8401HR(AquisitionDevice) :
             dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
         """
         return({
-            'EXT0' : Packet.ASCIIbytesToInt_Split(ttlByte, 8, 7),
-            'EXT1' : Packet.ASCIIbytesToInt_Split(ttlByte, 7, 6),
-            'TTL4' : Packet.ASCIIbytesToInt_Split(ttlByte, 4, 3),
-            'TTL3' : Packet.ASCIIbytesToInt_Split(ttlByte, 3, 2),
-            'TTL2' : Packet.ASCIIbytesToInt_Split(ttlByte, 2, 1),
-            'TTL1' : Packet.ASCIIbytesToInt_Split(ttlByte, 1, 0)
+            'EXT0' : conv.ascii_bytes_to_int_split(ttlByte, 8, 7),
+            'EXT1' : conv.ascii_bytes_to_int_split(ttlByte, 7, 6),
+            'TTL4' : conv.ascii_bytes_to_int_split(ttlByte, 4, 3),
+            'TTL3' : conv.ascii_bytes_to_int_split(ttlByte, 3, 2),
+            'TTL2' : conv.ascii_bytes_to_int_split(ttlByte, 2, 1),
+            'TTL1' : conv.ascii_bytes_to_int_split(ttlByte, 1, 0)
         })
     
 
@@ -383,10 +382,10 @@ class Pod8401HR(AquisitionDevice) :
                 0=Grounded and 1=Connected to Preamp.
         """
         return({
-            'A' : Packet.ASCIIbytesToInt_Split(channels, 4, 3),
-            'B' : Packet.ASCIIbytesToInt_Split(channels, 3, 2),
-            'C' : Packet.ASCIIbytesToInt_Split(channels, 2, 1),
-            'D' : Packet.ASCIIbytesToInt_Split(channels, 1, 0)
+            'A' : conv.ascii_bytes_to_int_split(channels, 4, 3),
+            'B' : conv.ascii_bytes_to_int_split(channels, 3, 2),
+            'C' : conv.ascii_bytes_to_int_split(channels, 2, 1),
+            'D' : conv.ascii_bytes_to_int_split(channels, 1, 0)
         })
 
 
@@ -477,12 +476,11 @@ class Pod8401HR(AquisitionDevice) :
         # -----------------------------------------------------------------------------
 
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(PacketBinary5.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(23) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        #return PacketBinary5(packet, self._ssGain, self._preampGain, self._commands)
         return self._stream_packet_factory(packet)
  

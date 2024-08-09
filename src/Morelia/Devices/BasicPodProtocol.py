@@ -1,8 +1,9 @@
 # local imports
 from Morelia.Devices.SerialPorts import PortIO, FindPorts
 from Morelia.Commands            import CommandSet
-from Morelia.Packets             import Packet, PacketStandard, PacketBinary
-from Morelia.packet import ControlPacket
+from Morelia.packet import ControlPacket, PodPacket
+from Morelia.packet.data import DataPacket
+import Morelia.packet.conversion as conv
 
 from functools import partial
 
@@ -110,8 +111,8 @@ class Pod :
         # get length of POD packet 
         packetBytes = len(msg)
         # check that packet begins with STX and ends with ETX
-        if(    (msg[0].to_bytes(1,'big') != Packet.STX()) 
-            or (msg[packetBytes-1].to_bytes(1,'big') != Packet.ETX())
+        if(    (msg[0].to_bytes(1,'big') != PodPacket.STX) 
+            or (msg[packetBytes-1].to_bytes(1,'big') != PodPacket.ETX)
         ) : 
             raise Exception('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
@@ -147,7 +148,7 @@ class Pod :
         # invert and get last byte 
         cs  = ~sum & 0xFF
         # convert int into bytes 
-        cs_bytes = Packet.IntToAsciiBytes(cs, 2)
+        cs_bytes = conv.int_to_ascii_bytes(cs, 2)
         # return checksum bytes
         return(cs_bytes)
 
@@ -166,9 +167,9 @@ class Pod :
             bytes: Bytes string of a complete standard POD packet.
         """
         # prepare components of packet
-        stx = Packet.STX()                              # STX indicating start of packet (1 byte)
-        cmd = Packet.IntToAsciiBytes(commandNumber, 4)  # command number (4 bytes)
-        etx = Packet.ETX()                              # ETX indicating end of packet (1 byte)
+        stx = PodPacket.STX                              # STX indicating start of packet (1 byte)
+        cmd = conv.int_to_ascii_bytes(commandNumber, 4)  # command number (4 bytes)
+        etx = PodPacket.ETX                              # ETX indicating end of packet (1 byte)
         # build packet with payload 
         if(payload) :
             csm = Pod.Checksum(cmd+payload)         # checksum (2 bytes)
@@ -195,7 +196,7 @@ class Pod :
         # if integer payload is given ... 
         if(isinstance(payload,int)):
             # convert to bytes of the expected length 
-            pld = Packet.IntToAsciiBytes(payload,sum(argSizes))
+            pld = conv.int_to_ascii_bytes(payload,sum(argSizes))
         # if bytes payload is given...
         elif(isinstance(payload, bytes)):
             pld = payload
@@ -206,7 +207,7 @@ class Pod :
             for i in range(len(payload)) : 
                 if(isinstance(payload[i], int)) :
                     # convert to bytes of the expected length 
-                    tempPld[i] = Packet.IntToAsciiBytes(payload[i],argSizes[i])
+                    tempPld[i] = conv.int_to_ascii_bytes(payload[i],argSizes[i])
                 else : 
                     # accept bytes payload as given
                     tempPld[i] = payload[i]
@@ -280,8 +281,8 @@ class Pod :
         # returns True when connection is successful, false otherwise
         try:
             self.FlushPort() # clear out any unread packets 
-            w: PacketStandard = self.WritePacket(cmd=pingCmd)
-            r: Packet = self.ReadPODpacket()
+            w: ControlPacket = self.WritePacket(cmd=pingCmd)
+            r: PodPacket = self.ReadPODpacket()
         except:   return(False)
         # check that read matches ping write
         if(w ==r ): return(True)
@@ -328,7 +329,7 @@ class Pod :
         # return complete packet 
         return(packet)
     
-    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet :
+    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> PodPacket :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
         Args:
@@ -347,7 +348,7 @@ class Pod :
         return(r)
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -366,7 +367,7 @@ class Pod :
         return ControlPacket(self._commands, packet)
 
 
-    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> Packet :
+    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
@@ -382,7 +383,7 @@ class Pod :
         """
         # read until STX is found
         b = None
-        while(b != Packet.STX()) :
+        while(b != PodPacket.STX) :
             b = self._port.Read(1,timeout_sec)     # read next byte  
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
@@ -395,7 +396,7 @@ class Pod :
 
     # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
-    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> Packet : 
+    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
         binary and reads accordingly, then returns the packet.
@@ -413,21 +414,21 @@ class Pod :
                 (STX+something+ETX). 
         """
         # start packet with STX
-        packet: bytes = Packet.STX()
+        packet: bytes = PodPacket.STX
         # read next 4 bytes of the command number 
         cmd: bytes = self._Read_GetCommand(validateChecksum=validateChecksum)
         packet += cmd 
         # return packet if cmd ends in ETX
-        if(cmd[len(cmd)-1].to_bytes(1,'big') == Packet.ETX()) : 
-            return(Packet(packet))
+        if(cmd[len(cmd)-1].to_bytes(1,'big') == PodPacket.ETX) : 
+            return(PodPacket(packet))
         # determine the command number
-        cmdNum: int = Packet.AsciiBytesToInt(cmd)
+        cmdNum: int = conv.ascii_bytes_to_int(cmd)
         # check if command number is valid
         if( not self._commands.DoesCommandExist(cmdNum) ) :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
         if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
-            packet: PacketBinary = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
+            packet: DataPacket = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read
             packet: ControlPacket = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
@@ -460,10 +461,10 @@ class Pod :
             else : 
                 cmd += b
             # start over if STX is found 
-            if(b == Packet.STX() ) : 
+            if(b == PodPacket.STX ) : 
                 self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
             # return if ETX is found
-            if(b == Packet.ETX() ) : 
+            if(b == PodPacket.ETX ) : 
                 return(cmd)
         # return complete 4 byte long command packet
         return(cmd)
@@ -484,7 +485,7 @@ class Pod :
         packet = None
         b = None
         # stop reading after finding ETX
-        while(b != Packet.ETX()) : 
+        while(b != PodPacket.ETX) : 
             # read next byte
             b = self._port.Read(1)
             # build packet 
@@ -493,13 +494,13 @@ class Pod :
             else : 
                 packet += b
             # start over if STX
-            if(b == Packet.STX()) : 
+            if(b == PodPacket.STX) : 
                 self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return packet
         return(packet)
 
 
-    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> PacketStandard :
+    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
 
         Args:
@@ -524,7 +525,7 @@ class Pod :
         return self._control_packet_factory(packet)
 
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary :
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
@@ -546,15 +547,15 @@ class Pod :
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
         # read standard POD packet 
-        startPacket: PacketStandard = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        startPacket: ControlPacket = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
-        numOfbinaryBytes: int = startPacket.Payload() [0]
+        numOfbinaryBytes: int = startPacket.payload[0]
         # read binary packet
         binaryMsg = self._port.Read(numOfbinaryBytes)
         # read csm and etx
         binaryEnd = self._Read_ToETX(validateChecksum=validateChecksum)
         # build complete message
-        packet = startPacket.rawPacket + binaryMsg + binaryEnd
+        packet = startPacket.raw_packet + binaryMsg + binaryEnd
         # check if checksum is correct 
         if(validateChecksum):
             csmCalc = Pod.Checksum(binaryMsg)
@@ -562,4 +563,4 @@ class Pod :
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return PacketBinary(packet, self._commands)
+        return DataPacket(packet)

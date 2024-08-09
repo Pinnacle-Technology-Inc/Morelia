@@ -13,7 +13,7 @@ import numpy as np
 import functools as ft
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Packets import Packet, PacketBinary4
+from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
 
 class EDFSink(SinkInterface):
@@ -84,10 +84,9 @@ class EDFSink(SinkInterface):
 
 
     #we have a "useless" timestamp paramater here so we implement the same function "interface".
-    #TODO: typhint packet
     #TODO: check if sink is open
     #TODO: 8274
-    def flush(self, timestamp: int, packet) -> None:
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
         
         if isinstance(self._pod, Pod8206HR):
             self._buffer[0].append(packet.ch0)

@@ -9,7 +9,7 @@ __email__       = 'sales@pinnaclet.com'
 
 import abc
 
-from Morelia.Packets import PacketBinary
+from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 
 class SinkInterface(metaclass=abc.ABCMeta):
@@ -18,8 +18,7 @@ class SinkInterface(metaclass=abc.ABCMeta):
     def __subclasshook__(cls, subclass) -> None:
         return ( hasattr(subclass, 'flush') and callable(subclass.flush) ) or NotImplemented
 
-    #TODO: typehint packet
     @abc.abstractmethod
-    def flush(self, timestamp: int, packet) -> None:
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
         """Send data to destination (e.g. and EDF file)."""
         raise NotImplementedError

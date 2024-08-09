@@ -3,9 +3,9 @@ from datetime import datetime
 
 # local imports 
 from Morelia.Devices import Pod
-from Morelia.Packets import PacketStandard
 from Morelia.Commands import CommandSet
 from Morelia.packet import ControlPacket
+import Morelia.packet.conversion as conv
 
 from functools import partial
 
@@ -72,15 +72,21 @@ class Pod8229(Pod) :
         self._commands.AddCommand(204, 'LCD SET MODE',          (NOVALUE,),             (U16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
 
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
-            if cmd_number == 140:
-                return Pod8229._Custom140SETTIME(ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
-            if cmd_number == 141:
-                return Pod8229.DecodeDayAndSchedule(payload)
-            if cmd_number == 142:
-                return Pod8229.DecodeDaySchedule(payload)
-            if cmd_number == 202:
-                return Pod8229.DecodeLCDSchedule(payload)
-            return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
+            match cmd_number:
+                case 140:
+                    return Pod8229._Custom140SETTIME(ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
+
+                case 141:
+                    return Pod8229.DecodeDayAndSchedule(payload)
+
+                case 142:
+                    return Pod8229.DecodeDaySchedule(payload)
+
+                case 202:
+                    return Pod8229.DecodeLCDSchedule(payload)
+
+                case _:
+                    return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
 
         self._control_packet_factory = partial(ControlPacket, decode_payload)
 
@@ -177,9 +183,9 @@ class Pod8229(Pod) :
         for i in range(24) : 
             thisHr = validSchedule[2*i:2*i+2]
             # msb in each byte is a flag for motor on (1) or off (0)
-            hours[i]  = PacketStandard.ASCIIbytesToInt_Split(thisHr, 8, 7) 
+            hours[i]  = conv.ascii_bytes_to_int_split(thisHr, 8, 7) 
             # remaining 7 bits are the speed (0-100)
-            speeds[i] = PacketStandard.ASCIIbytesToInt_Split(thisHr, 7, 0) 
+            speeds[i] = conv.ascii_bytes_to_int_split(thisHr, 7, 0) 
         # check if all speeds are the same 
         if(len(set(speeds)) == 1) : 
             # speeds has all identical elements
@@ -196,7 +202,7 @@ class Pod8229(Pod) :
     @staticmethod
     def DecodeDayAndSchedule(dayschedule: bytes) : 
         U8 = Pod8229.GetU(8)
-        day = PacketStandard.AsciiBytesToInt(dayschedule[:U8])
+        day = conv.ascii_bytes_to_int(dayschedule[:U8])
         print(dayschedule[:U8+1], day)
         schedule = Pod8229.DecodeDaySchedule(dayschedule[U8:])
         print(schedule)
@@ -219,13 +225,13 @@ class Pod8229(Pod) :
         # check for valid arguments 
         validSchedule = Pod8229._Validate_Schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = Pod8229.DecodeDayOfWeek( PacketStandard.AsciiBytesToInt( validSchedule[0:2] ) )
+        day = Pod8229.DecodeDayOfWeek( conv.ascii_bytes_to_int( validSchedule[0:2] ) )
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
         topBit = Pod.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
-            hours.append( PacketStandard.ASCIIbytesToInt_Split( hourBytes, topBit, topBit-1))
+            hours.append( conv.ascii_bytes_to_int_split( hourBytes, topBit, topBit-1))
             topBit -= 1
         # return decoded LCD SET DAY SCHEDULE value
         return{'Day' : day, 'Hours' : hours} # Each bit represents the motor state in that hour, 1 for on and 0 for off.
@@ -285,7 +291,7 @@ class Pod8229(Pod) :
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
+    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket :
         """Builds a POD packet and writes it to the POD device. 
 
         Args:
@@ -298,9 +304,9 @@ class Pod8229(Pod) :
         """
         # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
-            packet: PacketStandard = super().WritePacket(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
+            packet: ControlPacket = super().WritePacket(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
         else :
-            packet: PacketStandard = super().WritePacket(cmd,payload)
+            packet: ControlPacket = super().WritePacket(cmd,payload)
 
         # returns packet object
         return(packet)

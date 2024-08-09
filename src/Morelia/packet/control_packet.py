@@ -48,7 +48,8 @@ class ControlPacket(PodPacket):
 
         else:
             sizes = (len(payload),)
-
+        
+        print(sizes)
         payload_values: list[sizes] = []
         
         start_byte_idx: int = 0

@@ -22,8 +22,9 @@ class AquisitionDevice(Pod):
         
         self._commands.AddCommand(get_sample_rate_cmd_no, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
         self._commands.AddCommand(set_sample_rate_cmd_no, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
-
-        self._sample_rate: int = self.WriteRead('GET SAMPLE RATE').payload
+        
+        #initialize as none so that when we ask for the sample rate later, it uses the overidden WriteRead.
+        self._sample_rate: int = None
 
         self._max_sample_rate: int = max_sample_rate
 
@@ -33,6 +34,8 @@ class AquisitionDevice(Pod):
 
     @property
     def sample_rate(self) -> int:
+        if self._sample_rate is None:
+            self._sample_rate = self.WriteRead('GET SAMPLE RATE').payload
         return self._sample_rate
 
     @sample_rate.setter

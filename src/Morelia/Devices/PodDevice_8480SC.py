@@ -1,6 +1,8 @@
 # local imports 
 from Morelia.Devices import Pod
-from Morelia.Packets import PacketStandard
+from Morelia.packet import ControlPacket
+
+from functools import partial
 
 # authorship
 __author__      = "Sree Kondi"
@@ -61,6 +63,27 @@ class Pod8480SC(Pod) :
         self._commands.AddCommand( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ,'Indicates the end of a stimulus. Returns U8 channel.')
         self._commands.AddCommand( 135,	'EVENT LOW CURRENT',	(0,),	                            (U8,),                               False  , 'Indicates a low current status on one or more of the LED channels.  U8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1.')
 
+        def decode_payload(cmd_number: int, payload: bytes) -> tuple:
+            match cmd_number:
+                case 126 | 127:
+                    return Pod8480SC._CustomSYNCCONFIG(payload)
+
+                case 108:
+                    return Pod8480SC._Custom108GETTTLSETUP(payload)
+
+                case 109:
+                    return Pod8480SC._Custom109SETTTLSETUP(payload)
+
+                case 101 | 102:
+                    return Pod8480SC._CustomSTIMULUS(payload, ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
+
+                case _:
+                    return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
+
+        self._control_packet_factory = partial(ControlPacket, decode_payload)
+
+
+
     # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
@@ -78,7 +101,6 @@ class Pod8480SC(Pod) :
                 The return value is the seventh item in the payload for command 'SET STIMULUS'.
         """
         return (0 | (Simul << 2) | (monoBiphasic << 1) | (optoElec))
-
     
     @staticmethod
     def SyncConfigBits(sync_level: bool, sync_idle: bool, signal_trigger: bool) -> int :
@@ -95,7 +117,6 @@ class Pod8480SC(Pod) :
         """
         return (0 | (signal_trigger << 2) | (sync_idle << 1) | (sync_level))
 
-
     @staticmethod    
     def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool) -> int :
         """Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to \
@@ -111,7 +132,6 @@ class Pod8480SC(Pod) :
             int: which represents the TTL Config Bits Format value. \
         """
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
-    
 
     @staticmethod
     def DecodeStimulusConfigBits(config: int) -> dict :
@@ -128,7 +148,6 @@ class Pod8480SC(Pod) :
             'monoBiphasic'  : (config >> 1) & 1,  
             'Simul'         : (config >> 2) & 1
         }
-
 
     @staticmethod
     def DecodeSyncConfigBits(config: int) -> dict :
@@ -162,55 +181,6 @@ class Pod8480SC(Pod) :
             'TTLInputSync'   : (config >> 7) & 1
         }
     
-    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
-
-    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> PacketStandard:
-        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-        ending with ETX. Reads first STX and then starts recursion. 
-
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
-
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may be a \
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-        """
-        packet: PacketStandard = super().ReadPODpacket(validateChecksum, timeout_sec)
-        # check for special packets
-        match packet.CommandNumber() : 
-            case 126 : # 126 GET SYNC CONFIG
-                packet.SetCustomPayload(Pod8480SC._CustomSYNCCONFIG, (packet.payload,))
-            case 108 : # 108 GET TTL SETUP
-                packet.SetCustomPayload(Pod8480SC._Custom108GETTTLSETUP, (packet.payload,))
-            case 101 : # 101 GET STIMULUS
-                packet.SetCustomPayload(Pod8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
-        return packet
-
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> PacketStandard :
-        """Builds a POD packet and writes it to the POD device. 
-
-        Args:
-            cmd (str | int): Command number.
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
-                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
-
-        Returns:
-            Packet_Standard: Packet that was written to the POD device.
-        """
-        packet: PacketStandard = super().WritePacket(cmd, payload)
-        # check for special packets
-        match packet.CommandNumber() : 
-            case 127: # 127 SET SYNC CONFIG
-                packet.SetCustomPayload(Pod8480SC._CustomSYNCCONFIG, (packet.payload,))
-            case 109 : # 109 SET TTL SETUP
-                packet.SetCustomPayload(Pod8480SC._Custom109SETTTLSETUP, (packet.payload,))
-            case 102 : # 102 SET STIMULUS
-                packet.SetCustomPayload(Pod8480SC._CustomSTIMULUS, (packet.payload, packet.DefaultPayload()))
-        return packet
-
     @staticmethod
     def _CustomSYNCCONFIG(payload: bytes) -> dict : 
         """Custom function to translate the sync config.
@@ -221,7 +191,7 @@ class Pod8480SC(Pod) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit.
         """
-        return Pod8480SC.DecodeSyncConfigBits(PacketStandard.AsciiBytesToInt( payload[:2]))
+        return Pod8480SC.DecodeSyncConfigBits(conv.ascii_bytes_to_int( payload[:2]))
 
     @staticmethod
     def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
@@ -233,8 +203,8 @@ class Pod8480SC(Pod) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        return ( Pod8480SC.DecodeTTlConfigBits(PacketStandard.AsciiBytesToInt( payload[0:2] )), # dict
-                 PacketStandard.AsciiBytesToInt( payload[2:4]) ) # int
+        return ( Pod8480SC.DecodeTTlConfigBits(conv.ascii_bytes_to_int( payload[0:2] )), # dict
+                 conv.ascii_bytes_to_int( payload[2:4]) ) # int
     
     @staticmethod
     def _Custom109SETTTLSETUP(payload: bytes) -> tuple[int|dict] :
@@ -246,7 +216,7 @@ class Pod8480SC(Pod) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        data: list = [ PacketStandard.AsciiBytesToInt(payload[:2]) ]
+        data: list = [ conv.ascii_bytes_to_int(payload[:2]) ]
         data.append( Pod8480SC._Custom108GETTTLSETUP(payload[2:]) )
         return tuple(data)
         
@@ -262,6 +232,6 @@ class Pod8480SC(Pod) :
             tuple: Tuple of the translated stimulus payload.
         """
         pld = list(defaultPayload[:-1])
-        pld.append(Pod8480SC.DecodeStimulusConfigBits(PacketStandard.AsciiBytesToInt( payload[-2:] ))) # bits part of the payload
+        pld.append(Pod8480SC.DecodeStimulusConfigBits(conv.ascii_bytes_to_int( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            
         

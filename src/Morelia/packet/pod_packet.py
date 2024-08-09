@@ -1,7 +1,9 @@
 import Morelia.packet.conversion as conversion
 
 class PodPacket:
-    
+    STX: bytes = bytes.fromhex('02')
+    ETX: bytes = bytes.fromhex('03')
+
     __slots__ = ('_raw_packet', '_min_length', '_command_number')
     
     #min length: STX + 4 byte command number + ETX
@@ -26,6 +28,10 @@ class PodPacket:
                 raise ValueError(f'Packet has invalid command number: {self._raw_packet[1:5].decode("ascii")}.')
 
         return self._command_number
+   
+    @property
+    def raw_packet(self) -> bytes:
+        return self._raw_packet
 
     def __eq__(self, other):
         return self._raw_packet == other._raw_packet

@@ -15,7 +15,6 @@ from contextlib import ExitStack
 
 #local imports
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
-from Morelia.Packets import Packet, PacketStandard, PacketBinary5, PacketBinary4
 
 from Morelia.packet import ControlPacket
 

@@ -13,8 +13,8 @@ import reactivex.operators as ops
 from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Packets import PacketBinary
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
+from Morelia.packet.data import DataPacket
 
 
 class InfluxSink(SinkInterface):
@@ -115,8 +115,7 @@ class InfluxSink(SinkInterface):
         """Wrapper around `self.__exit__` for use outside of a context manager."""
         self.__exit__()
     
-    #TODO: type hint packet
-    def flush(self, timestamp: int, packet) -> None:
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
         """Write data to InfluxDB."""
         #with Profile() as prof:         
             #can't send data if no influx client/writer.
