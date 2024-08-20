@@ -12,6 +12,9 @@
 Due to recent refactors, the setup scripts are currently broken (see `scripts/`). 
 Please set up your devices manually for now. The examples are also no longer accurate in many cases.
 
+Also, documentation is currently split into two folders `docs` and `docs_legacy`. Currently, the contents of `docs_legacy` are being incoperated into `docs`, which is built
+using `Sphinx`.
+
 ## Introduction 
 
 ![GitHub license](https://img.shields.io/github/license/Pinnacle-Technology-Inc/Python-POD-API)
