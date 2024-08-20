@@ -2,6 +2,7 @@ from Morelia.packet import ControlPacket
 from Morelia.packet import conversion as conv
 from Morelia.Commands import CommandSet
 
+from pytest import raises
 from functools import partial
 
 class TestControlPacket:
@@ -53,3 +54,8 @@ class TestControlPacket:
 
         assert packet.payload[0] == 1010
         assert packet.payload[1] == 20
+
+    def test_payload_too_short(self):
+        with raises(ValueError):
+            packet = ControlPacket(CommandSet(), b'0x02')
+            packet.payload
