@@ -6,27 +6,30 @@ import Morelia.packet.conversion as conv
 
 from Morelia.Commands import CommandSet
 
+#: honesty the way to do this might be draw it in excalidarw and include an image... yeah i think so...
 class ControlPacket(PodPacket):
-    """Class for parsing "Standard" POD packets from raw bytes. These are associated with controlling or configuring a device, hence the name
-       These packets take the following form:
+    """ Class for parsing "Standard" POD packets from raw bytes. These are associated with controlling or configuring a device, hence the name
+    These packets take the following form
 
-       -------------------------------------------------------------------------------------------------------------------------------------------------------
-       | 0x02 (1 byte) | command number (4 ascii-encoded bytes) | payload (variable even number of ascii-encoded bytes) | checksum (2 bytes) | 0x03 (1 byte) |
-       -------------------------------------------------------------------------------------------------------------------------------------------------------
+    .. code-block::
 
-       The payload is normally several values that need to parsed into a tuple of integers.
+        -------------------------------------------------------------------------------------------------------------------------------------------------------
+        | 0x02 (1 byte) | command number (4 ascii-encoded bytes) | payload (variable even number of ascii-encoded bytes) | checksum (2 bytes) | 0x03 (1 byte) |
+        -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-       Oftentimes, this class is used a "factory" of sorts. For any given device, you might partially apply the constructor with the
-       `decode_from` argument, and then any time you need to make a packet, just call the curried constructor with
-       the raw bytes of the packet you want to parse. For a concrete example of this, see the constructor of the `Pod8206HR` class.
+    The payload is normally several values that need to parsed into a tuple of integers.
+    Oftentimes, this class is used a "factory" of sorts. For any given device, you might partially apply the constructor with the
+    ``decode_from`` argument, and then any time you need to make a packet, just call the curried constructor with
+    the raw bytes of the packet you want to parse. For a concrete example of this, see the constructor of the ``Pod8206HR`` class.
 
-       :param decode_from: Instructs the packet how to parse the payload from raw bytes to a Python object. If a `CommandSet` object is passed,
-       the payload is decoded according to that. Otherwise, a function must be passed that takes a command number and `bytes` object to decode,
-       and returns a `tuple`. For a simple example of how passing a `decode_from` function directly may be used,
-       see the constructor of the `Pod8206HR` class.
-       :type decode_from: class: `CommandSet` | Callable[[int, bytes], tuple]
-       :param: raw_packet: The raw bytes to be parsed as a control packet.
-       :type raw_packet: bytes
+    :param decode_from: Instructs the packet how to parse the payload from raw bytes to a Python object. If a ``CommandSet`` object is passed,
+        the payload is decoded according to that. Otherwise, a function must be passed that takes a command number and ``bytes`` object to decode,
+        and returns a ``tuple``. For a simple example of how passing a ``decode_from`` function directly may be used,
+        see the constructor of the ``Pod8206HR`` class.
+    :type decode_from: ``CommandSet`` | Callable[[int, bytes], tuple]
+
+    :param raw_packet: The raw bytes to be parsed as a control packet.
+    :type raw_packet: bytes
     """
 
     def __init__(self, decode_from: CommandSet | Callable[[int, bytes], tuple], raw_packet: bytes) -> None:
@@ -66,13 +69,13 @@ class ControlPacket(PodPacket):
     @staticmethod    
     def decode_payload_from_cmd_set(cmds: CommandSet, cmd_number: int, payload: bytes) -> tuple:
         """
-        Used for parsing packet payloads according to a `CommandSet` object. Do not use this function for payload access (it lacks the memoization that makes the payload
-        property speedy), but for building bespoke decoding functions to pass to this class as `decode_from`. 
+        Used for parsing packet payloads according to a ``CommandSet`` object. Do not use this function for payload access (it lacks the memoization that makes the payload
+        property speedy), but for building bespoke decoding functions to pass to this class as ``decode_from``. 
         Generally, this function is used to create decoding functions that default to using a command set,
-        but have the capability to handle edge-cases on a per-command basis. For an example of how this is used, see the constructor of the Pod8206HR class.
+        but have the capability to handle edge-cases on a per-command basis. For an example of how this is used, see the constructor of the ``Pod8206HR`` class.
 
         :param cmds: The CommandSet to decode from.
-        :type cmds: class: `CommandSet`
+        :type cmds: ``CommandSet``
         :param cmd_number: Command number of the packet that the payload corresponds to.
         :type cmd_number: int
         :param payload: Raw bytes of the payload you wish to decode.

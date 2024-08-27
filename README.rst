@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
    <div style="text-align: center;">
-      <img src="docs_legacy/Logos/Rings.png" alt="logo" width="160"/></center>
+      <img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
    </div>
 </html>
 

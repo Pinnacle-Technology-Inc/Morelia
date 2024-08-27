@@ -10,8 +10,8 @@ sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code'))
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'Morelia'
-copyright = '2023, Thresa Kelly'
-author = 'Thresa Kelly'
+copyright = '2023, Pinnacle Technology'
+author = 'Thresa Kelly, James Hurd, Sree Kondi'
 release = 'v1.6.1'
 
 # -- General configuration ---------------------------------------------------

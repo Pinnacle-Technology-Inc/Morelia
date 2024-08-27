@@ -5,8 +5,10 @@ pyEDFlib
 pyserial
 texttable
 sphinx
+autodoc
 sphinx-rtd-theme
 influxdb-client
 reactivex
 pytest
 cppyy
+
