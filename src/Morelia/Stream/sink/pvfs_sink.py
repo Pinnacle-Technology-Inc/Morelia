@@ -40,6 +40,7 @@ class PVFSSink(SinkInterface):
             #include a path to wherever the Pvfs.h is located, make sure you put '/mnt/c' if using wsl
             #first, make sure you include Pvfs.h file into your cppyy.
             path = os.path.dirname(os.path.abspath(__file__))
+            print("111", path)
             pvfs_h_path = os.path.join(path, 'Pvfs.h')
             cppyy.include(pvfs_h_path)  
             print("!!!", pvfs_h_path)
@@ -151,7 +152,6 @@ class PVFSSink(SinkInterface):
 
         # Set modified flag
         self.m_Modified = True
-        print("**************************")
         # so that is the template
         return 0  # Return value as in C++
 
