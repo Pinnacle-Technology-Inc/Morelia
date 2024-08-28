@@ -40,16 +40,13 @@ class PVFSSink(SinkInterface):
             #include a path to wherever the Pvfs.h is located, make sure you put '/mnt/c' if using wsl
             #first, make sure you include Pvfs.h file into your cppyy.
             path = os.path.dirname(os.path.abspath(__file__))
-            print("111", path)
             pvfs_h_path = os.path.join(path, 'Pvfs.h')
             cppyy.include(pvfs_h_path)  
-            print("!!!", pvfs_h_path)
 
             #second, make sure you include your library (.dll file) into your cppyy.
             # You can get this .dll file by compiling the Pvfs.cpp file.
             libtest_h_path = os.path.join(path, 'libtest.dll')
             cppyy.load_library(libtest_h_path)
-            print("@@@", libtest_h_path)
             print("\nPvfs library loaded successfully!") 
             
             #creating an empty PVFS file
@@ -68,8 +65,6 @@ class PVFSSink(SinkInterface):
         self.m_DataFileWriteCache = None  # Set this to the actual initial value or object
         self.m_IndexFileWriteCache = None  # Set this to the actual initial value or object
         self.m_Modified = False
-        # self.seconds = 0
-        # self.subseconds = 0.0
         
         
 
@@ -85,25 +80,24 @@ class PVFSSink(SinkInterface):
     def DataIndex(self, vfs) : 
         """Creates a Data File and an index file. 
         Args:
-            dataBucket (Bucket): Bucket to collect streaming data.
-            fileName (str): Name (with optional file path) of the file to save data to.
-            preampDevice (str | None, optional): Optional preamplifier for the 8401-HR. Defaults to None.
+            vfs : The Pvfs file created earlier.
         """
         drain_instance = self._dev_handler
-        # Getting Channel Names
+        # Getting Channel Names (different for each pod device)
         base_names = drain_instance.GetDeviceColNamesList()
+        # This is basically creating channels in the Pvfs file created earlier. 
         for each in base_names :
             # adding data extension (.idat) to each column name
             sub_data_filename = each + cppyy.gbl.pvfs.PVFS_DATA_EXTENSION
             # adding index extension (.index) to each column name
             sub_index_filename = each + cppyy.gbl.pvfs.PVFS_INDEX_EXTENSION
             print("data : " + sub_data_filename)
-            # creating a data file with the filename above
+            # creating a Data file with the filename above
             data_file = cppyy.gbl.pvfs.PVFS_fcreate(vfs, sub_data_filename)
             print("index : " + sub_index_filename)
-             # creating a index file with the filename above
+             # creating a Index file with the filename above
             index_file = cppyy.gbl.pvfs.PVFS_fcreate(vfs, sub_index_filename)
-            #checking if data file has been created successfully.
+            #checking if Data file has been created successfully.
             if data_file:
                 print("PVFS_fcreate data  passed")
                 # Create an index header object
@@ -117,9 +111,11 @@ class PVFSSink(SinkInterface):
         print("\nTest PVFS_get_channel_list")
         names = cppyy.gbl.std.vector('std::string')()
         retval = int
+        #Opening the Pvfs file we created earlier.
         vfs = cppyy.gbl.pvfs.PVFS_open(self._file_path)
         if vfs:
-            # Retrieve the channel list
+            # Retrieve the channel list, test case from test.cpp 
+            #  This test can show if the channels were actually created in the Pvfs file. 
             retval = cppyy.gbl.pvfs.PVFS_get_channel_list(vfs, names)
             if retval == cppyy.gbl.pvfs.PVFS_OK:
                 # Print each channel name
@@ -129,16 +125,8 @@ class PVFSSink(SinkInterface):
             else:
                 print("PVFS_get_channel_list error during read")
 
-    
-    # def WriteCacheToFile(file):
-    #     if mutex.Lock():
-    #         result = DoWriteCacheToFile(file)
-    #     mutex.unlock()
-    #     return result
-
            
     def write_data(self,data: bytes,length: int, do_crc: bool = False):
-        print("!!!!!!!!!!!!!!!!!!!!!!!")
         self.m_DataFileIndex += length
 
         # Calculate CRC if requested
@@ -164,34 +152,10 @@ class PVFSSink(SinkInterface):
         :param raw_data: A list of data packets from a device.
         :type raw_data: list[:class: Packet|None]
         """         
-        # reservedSpace	= 0
-        # seconds			= 0
-        # subseconds		= 0.0
 
         try:
             # Convert raw data to DataFrame
             structured_data: pd.DataFrame = self._dev_handler.DropToDf(timestamps, raw_data)
-            #vfs = cppyy.gbl.pvfs.PVFS_open(self._file_path)
-            print("!!!", structured_data)
-            # if vfs:
-            #     # Get the file handle for the data file
-            #     data_file = cppyy.gbl.pvfs.PVFS_fopen(vfs, "Time.idat")
-            #     data_file = cppyy.gbl.pvfs.PVFS_fopen(vfs, "EEG1.idat")
-            #     data_file = cppyy.gbl.pvfs.PVFS_fopen(vfs, "EEG2.idat")
-            #     data_file = cppyy.gbl.pvfs.PVFS_fopen(vfs, "EEG3/EMG.idat")
-            #     if data_file:
-            #         print("&&&&&&&&&&&&&&&&&&&&&&&&")
-            #         for row in structured_data.itertuples(index=False): # loop through row
-            #             for value in row:
-            #                 #print("@1", value)
-            #                 data = np.int64(value).tobytes() #convert value to bytes
-            #                 buffer = ctypes.create_string_buffer(data) #create a buffer
-            #                 c_buffer = ctypes.cast(buffer, ctypes.POINTER(ctypes.c_uint8)) #cast buffer to pointer
-            #                 result = cppyy.gbl.pvfs.PVFS_write(data_file, c_buffer, len(data)) 
-            # print(result) 
-
-           #  Open PVFS file
-
             vfs = cppyy.gbl.pvfs.PVFS_open(self._file_path)
             if not vfs:
                 print("Failed to open PVFS file")
@@ -214,41 +178,12 @@ class PVFSSink(SinkInterface):
                         buffer = ctypes.create_string_buffer(data)
                         c_buffer = ctypes.cast(buffer, ctypes.POINTER(ctypes.c_uint8))
                         # Write data to file
-                        result = cppyy.gbl.pvfs.PVFS_write(file_handle, c_buffer, len(data))
-                        
-                        # if result != cppyy.gbl.pvfs.PVFS_OK:
-                        #    print(f"Error writing to {column}.idat")
-                        #         # Close the data file      
+                        result = cppyy.gbl.pvfs.PVFS_write(file_handle, c_buffer, len(data))    
                     cppyy.gbl.pvfs.PVFS_fclose(file_handle)
                 else:
                     print(f"Failed to open file for {column}")
 
             print("Data writing completed.")
-
-            
-
-            # if (self.m_DataFileIndex > 0) :
-            #     crc = cppyy.gbl.CRC32.GetCRC()
-            #     self.write_data(crc.to_bytes(4, 'little'), 4)  # Convert CRC to bytes           
-
-            # for timestamp in timestamps:
-            #     # Convert timestamp to a simulated Time object
-            #     seconds = int(timestamp)
-            #     print("$$$", seconds)
-            #     subseconds = timestamp - seconds
-            #     time_data = seconds.to_bytes(8, 'little') + subseconds.to_bytes(8, 'little')
-            #     self.write_data(time_data, len(time_data))  # Write time data
-
-            #     # Reserved space (8 bytes)
-            #     reserved_space = (0).to_bytes(8, 'little')
-            #     self.write_data(reserved_space, 8)
-
-            #     # Start new CRC calculation and write data value
-            #     self.m_DataChunkCRC.Reset()
-            #     for packet in raw_data:
-            #         if packet:
-            #             packet_data = packet.to_bytes()  # Ensure Packet has to_bytes method
-            #             self.write_data(packet_data, len(packet_data), True)
 
 
         #         # Close the data file      

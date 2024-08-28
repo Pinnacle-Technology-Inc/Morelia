@@ -1,6 +1,7 @@
 
 # Python Wrapper for Pvfs.h
 
+
 __author__      = 'Sree Kondi'
 __maintainer__  = 'Sree Kondi'
 __credits__     = ['Sree Kondi', 'James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
@@ -10,64 +11,18 @@ __email__       = 'sales@pinnaclet.com'
 
 from threading import Lock
 import cppyy
-from typing import Optional, List
+from typing import Optional, List, Union
 import os
 
+
 class Pvfs():
-    # def __init__(self):
-    #     #path = os.path.dirname(os.path.abspath(__file__))
-    #     # pvfs_h_path = os.path.join(path, 'Pvfs.h')
-    #     # cppyy.include(pvfs_h_path)
-    #     # libtest_h_path = os.path.join(path, 'libtest.dll')
-    #     # cppyy.load_library(libtest_h_path)
-    #     # print("Library loaded successfully")
-    #     # file_path = '/mnt/c/Users/skondi/Desktop/test/test.pvfs'
-
-    #     self.PVFS_VERSION_MAJOR = 2
-    #     self.PVFS_VERSION_MINOR = 0
-    #     self.PVFS_VERSION_REVISION = 2
-
-    #     SIZE_UINT8_T = 1     # uint8_t is 1 byte
-    #     SIZE_INT32_T = 4     # int32_t is 4 bytes
-    #     SIZE_INT64_T = 8     # int64_t is 8 bytes
-
-    #     self.PVFS_BLOCK_HEADER_SIZE = (
-    #         SIZE_UINT8_T +    # sizeof(uint8_t)
-    #         3 * SIZE_INT64_T +  # 3 * sizeof(int64_t)
-    #         SIZE_INT32_T     # sizeof(int32_t)
-    #     )
-
-    #     self.PVFS_HEADER_SIZE = 0x0400
-    #     self.PVFS_DEFAULT_BLOCK_SIZE = 0x4000 - self.PVFS_BLOCK_HEADER_SIZE # 16 k default block size
-    #     self.PVFS_MAX_FILENAME_LENGTH = 0x0100 # Max length of a filename.
-    #     PVFS_MAX_HANDLES = 0xFF # Maximum number of file pointers allowed into the virtual file.
-    #     self.PVFS_TIMESTAMP_SIZE = 44
-
-    #     self.PVFS_BLOCK_TYPE_UNKNOWN = 0
-    #     self.PVFS_BLOCK_TYPE_DATA = 1
-    #     self.PVFS_BLOCK_TYPE_TREE = 2
-    #     self.PVFS_BLOCK_TYPE_FILE = 3
-    #     self.PVFS_BLOCK_TYPE_EOF = 0xFF
-
-    #     self.PVFS_INVALID_LOCATION = -1
-    #     self.PVFS_INVALID_FD = -1
-
-    #     self.PVFS_OK = 0
-    #     self.PVFS_ERROR = -1
-    #     self.PVFS_ARG_NULL = -2
-    #     self.PVFS_EOF = -3
-    #     self.PVFS_FILE_NOT_OPENED = -4
-    #     self.PVFS_CORRUPTION_DETECTED = -5
-
-    #     self.PVFS_DIRTY = 0
-    #     self.PVFS_CLEAN = 1
-
-    #     self.PVFS_INDEX_DATA_FILE_MAGIC_NUMBER = 0XFF01FF01
-    #     self.PVFS_INDEX_DATA_FILE_VERSION = 2
-    #     self.PVFS_INDEX_EXTENSION = ".index"
-    #     self.PVFS_DATA_EXTENSION = ".idat"
-    #     self.PVFS_INDEX_HEADER_SIZE = 0x4000
-    
+    path = os.path.dirname(os.path.abspath(__file__))
+    pvfs_h_path = os.path.join(path, 'Pvfs.h')
+    cppyy.include(pvfs_h_path)
+    libtest_h_path = os.path.join(path, 'libtest.dll')
+    cppyy.load_library(libtest_h_path)
+    print("Library loaded successfully")
+    file_path = '/mnt/c/Users/skondi/Desktop/test/test.pvfs'
 
     PVFS_VERSION_MAJOR = 2
     PVFS_VERSION_MINOR = 0
@@ -118,23 +73,64 @@ class Pvfs():
         pass
 
 
+    @staticmethod
+    def p_write(fd: int, buf: Union[bytes, bytearray]) -> int:
+        try:
+            return os.write(fd, buf)
+        except OSError as e:
+            print(f"Error writing to file descriptor {fd}: {e}")
+            return -1
+    
+    @staticmethod
+    def pvfs_write_uint8(fd: int, value: int) -> int:
+        if not (0 <= value <= 255):
+            raise ValueError("Value must be between 0 and 255 inclusive.")
+        
+        # Convert the integer to a single byte
+        byte_value = value.to_bytes(1, byteorder='little', signed=False)
+        
+        return Pvfs.p_write(fd, byte_value)
+    
+        
+    @staticmethod
+    def pvfs_write_uint16(fd: int, value: int) -> int:
+        if not (0 <= value <= 0xFFFF):
+            raise ValueError("Value must be between 0 and 65535 inclusive.")
+        
+        # Convert the value to a 2-byte (unsigned 16-bit) representation
+        byte_value = value.to_bytes(2, byteorder='little', signed=False)
+        
+        # Write the bytes to the file descriptor using p_write
+        return Pvfs.p_write(fd, byte_value)
+
+
+    @staticmethod
+    def pvfs_write_sint32(fd: int, value: int) -> int:
+        if not (-0x80000000 <= value <= 0x7FFFFFFF):
+            raise ValueError("Value must be between -2147483648 and 2147483647 inclusive.")
+        
+        # Convert the value to a 4-byte (signed 32-bit) representation
+        byte_value = value.to_bytes(4, byteorder='little', signed=True)
+        
+        # Write the bytes to the file descriptor using p_write
+        return Pvfs.p_write(fd, byte_value)
+
+
+    @staticmethod
+    def pvfs_write_sint64(fd: int, value: int) -> int:
+        if not (-0x8000000000000000 <= value <= 0x7FFFFFFFFFFFFFFF):
+            raise ValueError("Value must be between -9223372036854775808 and 9223372036854775807 inclusive.")
+
+        # Convert the value to an 8-byte (signed 64-bit) representation
+        byte_value = value.to_bytes(8, byteorder='little', signed=True)
+
+        # Write the bytes to the file descriptor using p_write
+        return Pvfs.p_write(fd, byte_value, 8)
+        
+
     def createVFS(self, block_size):
         try:
-            vfs = Pvfs.PvfsFile()  # Create an instance of PvfsFile
-            vfs.version = Pvfs.PvfsFileVersion(
-                major=Pvfs.PVFS_VERSION_MAJOR,
-                minor=Pvfs.PVFS_VERSION_MINOR,
-                revision=Pvfs.PVFS_VERSION_REVISION
-            )
-            vfs.blockSize = block_size
-            vfs.fileMaxCount = (block_size) // (
-                Pvfs.PVFS_MAX_FILENAME_LENGTH + 2 * Pvfs.SIZE_INT64_T
-            )
-            vfs.treeMaxCount = (
-                (block_size - 2 * Pvfs.SIZE_INT64_T) // (2 * Pvfs.SIZE_INT64_T)
-            )
-
-            return vfs
+            result = cppyy.gbl.pvfs.PVFS_create(self.file_path) 
         except MemoryError as e:
             print(f"VFS Memory allocation failed: {e}")
             return None
@@ -164,10 +160,9 @@ class Pvfs():
         
         # Clear the data and resize it to the specified size, filling with zeros
         block.data = bytearray(size)  # Allocate space and set all values to zero
-        
         return Pvfs.PVFS_OK
         
-
+    
     def create_PVFS_block(self, vfs) :
         if vfs is None:
             return None
@@ -186,8 +181,18 @@ class Pvfs():
         block.size = vfs.blockSize
         print("&&&", block)
         return block
-        
 
+    print("LINE")   
+    def create_PVFS_block_file (self, vfs) :
+        block = self.PvfsBlockFile() 
+        if block is None:
+            return None
+        block.type = Pvfs.PVFS_BLOCK_TYPE_FILE
+        block.prev = Pvfs.PVFS_INVALID_LOCATION
+        block.self_value = Pvfs.PVFS_INVALID_LOCATION
+        block.next = Pvfs.PVFS_INVALID_LOCATION
+        block.count = 0
+        block.maxFiles = vfs.file
 
 
     def create_PVFS_file_structure(self, block_size ):
@@ -293,13 +298,14 @@ class Pvfs():
             self.mappings = mappings
 
     class PvfsBlockFile:
-        def __init__(self, self_value=0, type=0, prev=0, next=0, count=0, maxFiles=[]):
+        def __init__(self, self_value=0, type=0, prev=0, next=0, count=0, maxFiles=0):
             self.type = type
             self.prev = prev
             self.self_value = self_value
             self.next = next
             self.count = count
-            self.maxcount = maxFiles
+            self.maxFiles = maxFiles
+            self.files = Pvfs.PvfsFileEntry()
 
     class PvfsFileHandle:
         def __init__(self, vfs, info, block, data, currentAddress=0, dirty=0, tableBlock=0, tableIndex=0, error=0):
@@ -375,23 +381,3 @@ else:
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-     
