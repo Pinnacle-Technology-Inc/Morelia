@@ -1,5 +1,6 @@
 
-# Python Wrapper for Pvfs.h
+# Python Wrapper for Pvfs.h using cppyy Python-C++ binding.
+ 
 
 
 __author__      = 'Sree Kondi'
@@ -73,164 +74,7 @@ class Pvfs():
         pass
 
 
-    @staticmethod
-    def p_write(fd: int, buf: Union[bytes, bytearray]) -> int:
-        try:
-            return os.write(fd, buf)
-        except OSError as e:
-            print(f"Error writing to file descriptor {fd}: {e}")
-            return -1
     
-    @staticmethod
-    def pvfs_write_uint8(fd: int, value: int) -> int:
-        if not (0 <= value <= 255):
-            raise ValueError("Value must be between 0 and 255 inclusive.")
-        
-        # Convert the integer to a single byte
-        byte_value = value.to_bytes(1, byteorder='little', signed=False)
-        
-        return Pvfs.p_write(fd, byte_value)
-    
-        
-    @staticmethod
-    def pvfs_write_uint16(fd: int, value: int) -> int:
-        if not (0 <= value <= 0xFFFF):
-            raise ValueError("Value must be between 0 and 65535 inclusive.")
-        
-        # Convert the value to a 2-byte (unsigned 16-bit) representation
-        byte_value = value.to_bytes(2, byteorder='little', signed=False)
-        
-        # Write the bytes to the file descriptor using p_write
-        return Pvfs.p_write(fd, byte_value)
-
-
-    @staticmethod
-    def pvfs_write_sint32(fd: int, value: int) -> int:
-        if not (-0x80000000 <= value <= 0x7FFFFFFF):
-            raise ValueError("Value must be between -2147483648 and 2147483647 inclusive.")
-        
-        # Convert the value to a 4-byte (signed 32-bit) representation
-        byte_value = value.to_bytes(4, byteorder='little', signed=True)
-        
-        # Write the bytes to the file descriptor using p_write
-        return Pvfs.p_write(fd, byte_value)
-
-
-    @staticmethod
-    def pvfs_write_sint64(fd: int, value: int) -> int:
-        if not (-0x8000000000000000 <= value <= 0x7FFFFFFFFFFFFFFF):
-            raise ValueError("Value must be between -9223372036854775808 and 9223372036854775807 inclusive.")
-
-        # Convert the value to an 8-byte (signed 64-bit) representation
-        byte_value = value.to_bytes(8, byteorder='little', signed=True)
-
-        # Write the bytes to the file descriptor using p_write
-        return Pvfs.p_write(fd, byte_value, 8)
-        
-
-    def createVFS(self, block_size):
-        try:
-            result = cppyy.gbl.pvfs.PVFS_create(self.file_path) 
-        except MemoryError as e:
-            print(f"VFS Memory allocation failed: {e}")
-            return None
-        
-    def createBlock(self, BlockType, size):
-        try:
-            # Create an instance of BlockType
-            block = BlockType()
-            # Call a method to clear and initialize the block
-            err = self.clearBlock(block, size)
-            if err != Pvfs.PVFS_OK:
-                return None
-            return block
-        except Exception as e:
-            print(f"Block Memory allocation failed: {e}")
-            return None
-    
-
-    def clearBlock(self, block, size):
-        if block is None:
-            return Pvfs.PVFS_ARG_NULL
-
-        # Reset block attributes
-        block.next = Pvfs.PVFS_INVALID_LOCATION
-        block.prev = Pvfs.PVFS_INVALID_LOCATION
-        block.count = 0
-        
-        # Clear the data and resize it to the specified size, filling with zeros
-        block.data = bytearray(size)  # Allocate space and set all values to zero
-        return Pvfs.PVFS_OK
-        
-    
-    def create_PVFS_block(self, vfs) :
-        if vfs is None:
-            return None
-        
-        # Create a PvfsBlock instance with a block size
-        block = self.createBlock(Pvfs.PvfsBlock, vfs.blockSize)
-        if block is None:
-            return None
-
-        # Initialize block attributes
-        block.type = Pvfs.PVFS_BLOCK_TYPE_UNKNOWN
-        block.next = Pvfs.PVFS_INVALID_LOCATION
-        block.prev = Pvfs.PVFS_INVALID_LOCATION
-        block.self_value = Pvfs.PVFS_INVALID_LOCATION
-        block.count = 0
-        block.size = vfs.blockSize
-        print("&&&", block)
-        return block
-
-    print("LINE")   
-    def create_PVFS_block_file (self, vfs) :
-        block = self.PvfsBlockFile() 
-        if block is None:
-            return None
-        block.type = Pvfs.PVFS_BLOCK_TYPE_FILE
-        block.prev = Pvfs.PVFS_INVALID_LOCATION
-        block.self_value = Pvfs.PVFS_INVALID_LOCATION
-        block.next = Pvfs.PVFS_INVALID_LOCATION
-        block.count = 0
-        block.maxFiles = vfs.file
-
-
-    def create_PVFS_file_structure(self, block_size ):
-        vfs = self.createVFS(block_size)
-        if vfs is None:
-            return None
-
-        # Initialize attributes
-        vfs.fd = Pvfs.PVFS_INVALID_FD
-        vfs.tableLoc = Pvfs.PVFS_HEADER_SIZE
-        vfs.fileBlock = None
-        vfs.blockSize = Pvfs.PVFS_DEFAULT_BLOCK_SIZE
-        vfs.fileMaxCount = 0
-        vfs.treeMaxCount = 0
-        vfs.block = None
-        vfs.fileBlock = None
-        vfs.nextBlock = Pvfs.PVFS_HEADER_SIZE
-
-        vfs.fileHandles = [None] * Pvfs.PVFS_MAX_HANDLES
-
-        vfs.fileMaxCount = (block_size) // (
-            Pvfs.PVFS_MAX_FILENAME_LENGTH + 2 * Pvfs.SIZE_INT64_T
-        )
-        vfs.treeMaxCount = (
-            (block_size - 2 * Pvfs.SIZE_INT64_T) // (2 * Pvfs.SIZE_INT64_T)
-        )
-        print("***")
-        # Create and assign block objects
-        vfs.block = self.create_PVFS_block(vfs)
-        # vfs.fileBlock = self.create_PVFS_block_file(vfs)
-        # vfs.fileBlockTemp = self.create_PVFS_block_file(vfs)
-        # vfs.treeBlockTemp = self.create_PVFS_block_tree(vfs)
-        # vfs.dataBlockTemp = self.create_PVFS_block_data(vfs)
-
-        return vfs
-    
-
-
 
     # Define inner classes
     class HighTime:
@@ -346,24 +190,237 @@ class Pvfs():
             self.endTime = endTime
             self.timeStampIntervalSeconds = timeStampIntervalSeconds
 
+    def createVFS(self, block_size):
+        try:
+            result = cppyy.gbl.pvfs.createVFS(block_size) 
+            return result
+        except MemoryError as e:
+            print(f"VFS Memory allocation failed: {e}")
+            return None
+
+    def create_PVFS_file_structure(self, block_size ):
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_file_structure(block_size) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_file_structure failed{e}")
+            return None
+        
+    
+    def PVFS_file_set_blockSize(self, vfs, block_size ):
+        try:
+            result = cppyy.gbl.pvfs.PVFS_file_set_blockSize(vfs, block_size) 
+            return result
+        except Exception as e:
+            print(f"PVFS_file_set_blockSize failed {e}")
+            return None
+        
+
+    def create_PVFS_block(self, vfs):
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_block(vfs) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_block failed {e}")
+            return None
+    
+    def PVFS_read_block(self, fd, address, block) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_read_block(fd, address, block) 
+            return result
+        except Exception as e:
+            print(f"PVFS_read_block failed {e}")
+            return None
+        
+    def PVFS_write_block(self, fd, address, block) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_write_block(fd, address, block) 
+            return result
+        except Exception as e:
+            print(f"PVFS_write_block failed {e}")
+            return None
+
+    def create_PVFS_block_data(self, vfs) :
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_block_data(vfs) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_block_data failed {e}")
+            return None
+    
+    def create_PVFS_block_tree(self, vfs) :
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_block_tree(vfs) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_block_tree failed {e}")
+            return None
+        
+    def create_PVFS_block_file(self, vfs) :
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_block_file(vfs) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_block_file failed {e}")
+            return None
+    
+    def PVFS_cast_block_to_data(self, block, block_data) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_block_to_data(block, block_data) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_block_to_data failed {e}")
+            return None
+    
+    def PVFS_cast_block_to_tree(self, block, block_tree) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_block_to_tree(block, block_tree) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_block_to_tree failed {e}")
+            return None
+    
+    def PVFS_cast_block_to_file(self, block, block_file) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_block_to_file(block, block_file) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_block_to_file failed {e}")
+            return None
+    
+    def PVFS_cast_data_to_block(self, block_data, block) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_data_to_block(block_data, block) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_data_to_block failed {e}")
+            return None
+    
+    def PVFS_cast_tree_to_block(self, block_tree, block) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_tree_to_block(block_tree, block) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_tree_to_block failed {e}")
+            return None
+    
+    def PVFS_cast_file_to_block(self, block_file, block) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_cast_file_to_block(block_file, block) 
+            return result
+        except Exception as e:
+            print(f"PVFS_cast_file_to_block failed {e}")
+            return None
+        
+    def PVFS_read_block_file (self, vfs, address, block_file) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_read_block_file(vfs, address, block_file) 
+            return result
+        except Exception as e:
+            print(f"PVFS_read_block_file failed {e}")
+            return None
+    
+    def PVFS_read_block_tree (self, vfs, address, block_tree) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_read_block_tree(vfs, address, block_tree) 
+            return result
+        except Exception as e:
+            print(f"PVFS_read_block_tree failed {e}")
+            return None
+        
+    def PVFS_read_block_data (self, vfs, address, block_data) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_read_block_data(vfs, address, block_data) 
+            return result
+        except Exception as e:
+            print(f"PVFS_read_block_data failed {e}")
+            return None
+    
+    def PVFS_write_block_file (self, vfs, address, block_file) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_write_block_file(vfs, address, block_file) 
+            return result
+        except Exception as e:
+            print(f"PVFS_write_block_file failed {e}")
+            return None
+        
+    def PVFS_write_block_tree (self, vfs, address, block_tree) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_write_block_tree(vfs, address, block_tree) 
+            return result
+        except Exception as e:
+            print(f"PVFS_write_block_tree failed {e}")
+            return None
+    
+    def PVFS_write_block_data (self, vfs, address, block_data) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_write_block_data(vfs, address, block_data) 
+            return result
+        except Exception as e:
+            print(f"PVFS_write_block_data failed {e}")
+            return None
+
     
 
 # # Create an instance of the Pvfs class
 pvfs_instance = Pvfs()
-result = pvfs_instance.createVFS(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
-print("HELLO", result)
-if result:
-    print("createVFS test passed")
-else:
-    print("createVFS failed")
+vfs = pvfs_instance.createVFS(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
+
+vfs = pvfs_instance.create_PVFS_file_structure(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
+
+#doesn't return anything
+result = pvfs_instance.PVFS_file_set_blockSize(vfs,Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
+
+block = pvfs_instance.create_PVFS_block(vfs) #returns an instance of create_PVFS_block
+if block:
+    print("SUCCESS")
 
 
-result = pvfs_instance.create_PVFS_file_structure(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
-print("HELLO", result)
-if result:
-    print("create_PVFS_file_structure test passed")
-else:
-    print("create_PVFS_file_structure failed")
+
+file_descriptor = vfs.fd
+print("!!", file_descriptor)
+read_block = pvfs_instance.PVFS_read_block(file_descriptor, 0, block)
+
+
+write_block = pvfs_instance.PVFS_write_block(file_descriptor, 0, block)
+
+
+block_data = pvfs_instance.create_PVFS_block_data(vfs)
+
+block_tree = pvfs_instance.create_PVFS_block_tree(vfs)
+
+block_file = pvfs_instance.create_PVFS_block_file(vfs)
+
+pvfs_instance.PVFS_cast_block_to_data(block, block_data)
+pvfs_instance.PVFS_cast_block_to_tree(block, block_tree)
+pvfs_instance.PVFS_cast_block_to_file(block, block_file)
+pvfs_instance.PVFS_cast_data_to_block(block_data, block)
+pvfs_instance.PVFS_cast_tree_to_block(block_tree, block)
+pvfs_instance.PVFS_cast_file_to_block(block_file, block)
+
+pvfs_instance.PVFS_read_block_file(vfs, 0, block_file)
+pvfs_instance.PVFS_read_block_tree(vfs, 0, block_tree)
+pvfs_instance.PVFS_read_block_data(vfs, 0, block_data)
+pvfs_instance.PVFS_write_block_file(vfs, 0, block_file)
+pvfs_instance.PVFS_write_block_tree(vfs, 0, block_tree)
+pvfs_instance.PVFS_write_block_data(vfs, 0, block_data)
+
+
+
+
+
+
+
+
+
+#result = pvfs_instance.PVFS_file_set_blockSize(result)
+
+# result = pvfs_instance.create_PVFS_file_structure(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
+# print("HELLO", result)
+# if result:
+#     print("create_PVFS_file_structure test passed")
+# else:
+#     print("create_PVFS_file_structure failed")
 
 # # Access inner classes using the class attributes of the Pvfs instance
 # HighTime = pvfs_instance.HighTime
@@ -376,6 +433,7 @@ else:
 
 # print(index_entry.StartTime.seconds)  # Output: 10
 # print(index_entry.endTime.subSeconds)  # Output: 0.75
+
 
 
 
