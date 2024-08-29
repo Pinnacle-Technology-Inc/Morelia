@@ -359,7 +359,54 @@ class Pvfs():
         except Exception as e:
             print(f"PVFS_write_block_data failed {e}")
             return None
+        
+    def create_PVFS_file_handle (self, vfs) :
+        try:
+            result = cppyy.gbl.pvfs.create_PVFS_file_handle(vfs) 
+            return result
+        except Exception as e:
+            print(f"create_PVFS_file_handle failed {e}")
+            return None
+    
+    def PVFS_create (self, filename) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_create(filename) 
+            return result
+        except Exception as e:
+            print(f"Unsuccesful file creation {e}")
+            return None
+        
+    def PVFS_create_size (self, filename, blocksize) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_create_size(filename, blocksize) 
+            return result
+        except Exception as e:
+            print(f"Unsuccesful file creation {e}")
+            return None
+        
+    def PVFS_open (self, filename) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_open(filename) 
+            return result
+        except Exception as e:
+            print(f"Unsuccesful attempt to open Pvfs file {e}")
+            return None
+    
+    def PVFS_open_readonly (self, filename) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_open_readonly(filename) 
+            return result
+        except Exception as e:
+            print(f"Unsuccesful attempt to open-readonly Pvfs file {e}")
+            return None
 
+    def PVFS_close (self, fd) :
+        try:
+            result = cppyy.gbl.pvfs.PVFS_close(fd) 
+            return result
+        except Exception as e:
+            print(f"Unsuccesful closing {e}")
+            return None
     
 
 # # Create an instance of the Pvfs class
@@ -372,13 +419,12 @@ vfs = pvfs_instance.create_PVFS_file_structure(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
 result = pvfs_instance.PVFS_file_set_blockSize(vfs,Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
 
 block = pvfs_instance.create_PVFS_block(vfs) #returns an instance of create_PVFS_block
-if block:
-    print("SUCCESS")
+
 
 
 
 file_descriptor = vfs.fd
-print("!!", file_descriptor)
+# print("!!", file_descriptor)
 read_block = pvfs_instance.PVFS_read_block(file_descriptor, 0, block)
 
 
@@ -390,6 +436,7 @@ block_data = pvfs_instance.create_PVFS_block_data(vfs)
 block_tree = pvfs_instance.create_PVFS_block_tree(vfs)
 
 block_file = pvfs_instance.create_PVFS_block_file(vfs)
+
 
 pvfs_instance.PVFS_cast_block_to_data(block, block_data)
 pvfs_instance.PVFS_cast_block_to_tree(block, block_tree)
@@ -406,6 +453,23 @@ pvfs_instance.PVFS_write_block_tree(vfs, 0, block_tree)
 pvfs_instance.PVFS_write_block_data(vfs, 0, block_data)
 
 
+# PVFS_copy_fileEntry - didn't think we need this
+
+file_handle = pvfs_instance.create_PVFS_file_handle(vfs)
+# print("@@@", file_handle.currentAddress)
+
+pvfs_instance.PVFS_create(Pvfs.file_path)
+# print("@@@", vfs.blockSize)
+pvfs_instance.PVFS_create_size(Pvfs.file_path, vfs.blockSize)
+pvfs_instance.PVFS_open(Pvfs.file_path)
+vfs = pvfs_instance.PVFS_open_readonly(Pvfs.file_path)
+
+# if vfs:
+#     print("SUCCESS")
+
+vfs = pvfs_instance.PVFS_close(vfs.fd)
+if vfs:
+    print("SUCCESS")
 
 
 
@@ -413,26 +477,6 @@ pvfs_instance.PVFS_write_block_data(vfs, 0, block_data)
 
 
 
-#result = pvfs_instance.PVFS_file_set_blockSize(result)
-
-# result = pvfs_instance.create_PVFS_file_structure(Pvfs.PVFS_DEFAULT_BLOCK_SIZE)
-# print("HELLO", result)
-# if result:
-#     print("create_PVFS_file_structure test passed")
-# else:
-#     print("create_PVFS_file_structure failed")
-
-# # Access inner classes using the class attributes of the Pvfs instance
-# HighTime = pvfs_instance.HighTime
-# PvfsIndexEntry = pvfs_instance.PvfsIndexEntry
-
-# # Create instances of HighTime and PvfsIndexEntry
-# start_time = HighTime(10, 0.5)
-# end_time = HighTime(20, 0.75)
-# index_entry = PvfsIndexEntry(start_time, end_time, myLocation=100, dataLocation=200)
-
-# print(index_entry.StartTime.seconds)  # Output: 10
-# print(index_entry.endTime.subSeconds)  # Output: 0.75
 
 
 
