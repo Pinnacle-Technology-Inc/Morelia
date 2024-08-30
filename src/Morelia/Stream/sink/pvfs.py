@@ -487,13 +487,11 @@ pvfs_instance.PVFS_write_block_tree(vfs, 0, block_tree)
 pvfs_instance.PVFS_write_block_data(vfs, 0, block_data)
 
 
-# PVFS_copy_fileEntry - didn't think we need this
-
 file_handle = pvfs_instance.create_PVFS_file_handle(vfs)
-# print("@@@", file_handle.currentAddress)
+
 
 pvfs_instance.PVFS_create(Pvfs.file_path)
-# print("@@@", vfs.blockSize)
+
 pvfs_instance.PVFS_create_size(Pvfs.file_path, vfs.blockSize)
 pvfs_instance.PVFS_open(Pvfs.file_path)
 vfs = pvfs_instance.PVFS_open_readonly(Pvfs.file_path)
