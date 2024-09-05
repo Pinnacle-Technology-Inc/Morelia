@@ -13,27 +13,67 @@ Python tutorial <https://docs.python.org/3/tutorial/index.html>`_ is a good plac
 * Harnessing Data Acquisition Systems
 * Controlling a Sleep Deprivation System
 * Wielding a Stimulus Controller
+* What does the name "Morelia" mean?
 
 ==============================
 Setting Up Your Environment 🌱
 ==============================
-
 To use Morelia, you must have the Python programming language installed. Morelia is officially supported for
 Python >= 3.10, however it may also be compatible with other versions (these just have not been tested).
 
-On standard Linux and Windows, no special setup is required to run Morelia aside from making sure that
-you have the correct device drivers installed and any devices you would like to interact with are visible to the operating system.
+------------
+Windows 🪟
+------------
+For Windows, all that is required is to install the proper device drivers.
+You can download and install our USB drivers 
+from `our website <https://pinnaclet.com/drivers.html>`_. 
 
-However, if using the Windows Subsystem for Linux 2 (WSL), special care must be taken to set up the development environment.
+It is also important to make
+sure that the virtual COM port functionality is enabled on each device. This can be done by opening
+``Device Manager``, finding the device in question (it usually shows up as a "USB Serial Converter" under the
+"Universal Serial Bus controller"), right-clicking and selecting ``Properties``. From there, select the
+``Advanced`` menu and check the ``Load VCP`` box.
 
-WORK IN PROGRESS:
-DO I HAVE END USERS FT-PROG???
-DOES WINDOWS HAVE FTDI DRIVERS BY DEFAULT???? SETUP ON WINDOWS?
+Please note that in select devices (mainly 8274D and 8229s) enabling VCP can cause issues when connecting to your
+devices in Sirenia, so you may need to unload the VCP functionality when you are ready to access your device in Sirenia again.
+
+------------
+GNU/Linux 🐧
+------------
+For Linux, the drivers are included in the Kernel by default. However, if you have
+an older device (acquired before 2024), some modifications may need to be made to
+the device's firmware for it to be properly recognized by the kernel. If your device
+is not being properly recognized, please reach out to us at `sales@pinnaclet.com <mailto:sales@pinnaclet.com>`_.
+
+--------------------------------
+Windows Subsystem for Linux 2 💾
+--------------------------------
+If using the Windows Subsystem for Linux 2 (WSL), special care must be taken to set up an environment
+in addition to the normal GNU/Linux instructions.
+First, we must load the proper driver into the kernel. We can do this by running the following command as root:
+
+.. code-block::
+
+   # modprobe ftdi_sio
+
+Next, we want to verify that WSL is starting ``systemd``. Make sure that the file
+``/etc/wsl.conf`` contains the lines:
+
+.. code-block::
+
+   [boot]
+   systemd=true
+
+Finally, we must download and install an additional tool to make our serial devices
+available to WSL called ``usbipd``. Instructions to download, install, and use this
+product are available on `their documentation <https://learn.microsoft.com/en-us/windows/wsl/connect-usb>`_.
+Make sure to share any devices you wish to access using WSL!
+
+After the devices have been shared, you should see your serial devices in WSL.
 
 ================
 Installation 💽
 ================
-
 With our environment set up, we can now continue on our journey and install Morelia! Morelia can be installed one of two ways:
 
 * From the `Python Package Index (PyPI) (recommended) <https://pypi.org/>`_
@@ -57,6 +97,50 @@ run the following command:
 
    $ pip install .
 
+To verify that Morelia is correctly installed, you can run the following command in
+the Python interactive shell:
+
+.. code-block::
+
+   >> import Morelia
+
+If that runs with no errors, then you are ready to begin programming!
+
+========================
+Connecting to Devices 🔌
+========================
+After getting set up, the first step is to connect to our devices. To begin, we must first
+import the proper classes from Morelia. Currently, the following devices are supported via
+the ``Morelia.Devices`` submodule:
+
+======  =============
+Device  Class
+======  =============
+8206HR  ``Pod8206HR``
+8401HR  ``Pod8401HR``
+8274D   ``Pod8274D``
+8229    ``Pod8229``
+8480SC  ``Pof8480SC``
+======  =============
+
+To connect to any of these devices, instantiate an instance of the class with a string that contains the port name.
+On Linux, this will most likely take the form of a file path (e.g. `/dev/ttyUSB0`) as on Windows, this is simply the
+port name (e.g. `COM0`).
+
+Each devices takes different parameters for instantiation, but there are a few that are common across all devices:
+
+.. TODO: descriptions of each!
+
+* ``port``
+* ``baudrate``
+* ``device_name``
+
+========================
+Configuring Devices 🎨
+========================
+.. TODO: may need to just link to each devices specific docs to talk about config and instantiation options.
+
+.. TODO: might have a section on streaming, and refer to the device specific pages for sleep dep and sc controls.
 
 ====================
 What's in a Name? 🌹
