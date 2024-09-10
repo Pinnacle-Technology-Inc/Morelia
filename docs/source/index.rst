@@ -10,4 +10,7 @@ Welcome to Morelia's documentation!
    :hidden:
 
    getting_started
+   streaming
+   sleep_dep
+   stimulus
    modules

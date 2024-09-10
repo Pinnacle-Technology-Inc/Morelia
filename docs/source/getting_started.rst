@@ -6,14 +6,7 @@ Welcome to the getting started guide for Pinnacle Technology's Python API: Morel
 and only assumes basic Python programming skills. If you have not used Python before, or simply need to refresher, `the official
 Python tutorial <https://docs.python.org/3/tutorial/index.html>`_ is a good place to start. In terms of content, this guide contains:
 
-* Environment Setup 
-* Installation
-* Connecting to Devices
-* Device Configuration
-* Harnessing Data Acquisition Systems
-* Controlling a Sleep Deprivation System
-* Wielding a Stimulus Controller
-* What does the name "Morelia" mean?
+.. contents:: 
 
 ==============================
 Setting Up Your Environment 🌱
@@ -124,23 +117,53 @@ Device  Class
 ======  =============
 
 To connect to any of these devices, instantiate an instance of the class with a string that contains the port name.
-On Linux, this will most likely take the form of a file path (e.g. `/dev/ttyUSB0`) as on Windows, this is simply the
-port name (e.g. `COM0`).
+On Linux, this will most likely take the form of a file path (e.g. ``/dev/ttyUSB0``) as on Windows, this is simply the
+port name (e.g. ``COM0``).
 
 Each devices takes different parameters for instantiation, but there are a few that are common across all devices:
 
-.. TODO: descriptions of each!
+* ``port``: Exactly what it sounds like, the serial port the device is on.
+* ``baudrate``: This parameter is optional and only relevant for the 8229 and 8274D. The default should be fine for most use cases, but feel free to contact us
+  with any questions.
+* ``device_name``: A virtual name that identifies the device, this can be whatever makes the most sense to you. This parameter is optional
+  and defaults to ``None``.
 
-* ``port``
-* ``baudrate``
-* ``device_name``
+For the specific additional parameters of each device, see the documentation for the corresponding class. 
+
+As an example, let's connect to an 8206HR that is connected on
+``/dev/ttyUSB0``. Luckily for us, the 8206HR only takes one more parameter in addition to the defaults in its constructor -- `preamp_gain`.
+
+.. code-block:: python
+
+  # Import the proper class from Morelia.
+  from Morelia.Devices import Pod8206HR
+  
+  # Connect to an 8206HR on /dev/ttyUSB0 and set the preamplifer gain to 10.
+  pod = Pod8206HR('/dev/ttyUSB0', 10)
+
+It's really as simple as that! Granted, some devices are much more complex that other due to vast number of configuration options (e.g. the 8401HR), but overall
+connecting to most devices will look similar to the above example.
 
 ========================
 Configuring Devices 🎨
 ========================
-.. TODO: may need to just link to each devices specific docs to talk about config and instantiation options.
+Aside from parameters passed to devices on connection, there are also many other knobs and dials for you to adjust on each device
+for your experiment! This tends to be very device-specific, so please refer to the individual documentation of each device to see the
+available options.
 
-.. TODO: might have a section on streaming, and refer to the device specific pages for sleep dep and sc controls.
+.. TODO: Example. blocked by adding more properties one each device.
+
+========================
+Where to Next? 🤔
+========================
+Now that you have connected and configured all of your devices, the world is your neurological oyster! From this point, there are several different things you can do 
+using Morelia:
+
+    * :doc:`Streaming from data aquisition systems </streaming>`
+    * :doc:`Controlling sleep deprivation system </sleep_dep>`
+    * :doc:`Wielding stimulus controllers </stimulus>`
+
+Happy experimenting! 😁
 
 ====================
 What's in a Name? 🌹
@@ -148,5 +171,4 @@ What's in a Name? 🌹
 
 At Pinnacle, it's a bit of a tradition to name our products after animals. Since Morelia is written in
 Python, we decided to name it after a `genus of pythons <https://en.wikipedia.org/wiki/Morelia_(snake)>`_. 😁🐍
-
 
