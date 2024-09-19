@@ -56,7 +56,7 @@ class AquisitionDevice(Pod):
 
         return self
 
-    def __exit__(self, *args, **kwargs) -> None:
+    def __exit__(self, *args, **kwargs) -> bool:
 
         self.WritePacket('STREAM', 0)
         
