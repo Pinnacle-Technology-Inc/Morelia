@@ -96,3 +96,11 @@ class DataFlow:
         #start processes
         for worker in self._workers:
             worker.start()
+
+    def __enter__(self) -> None:
+        self.collect()
+
+    def __exit__(self, *args, **kwargs) -> None:
+        self.stop_collection()
+        return False
+
