@@ -142,10 +142,32 @@ for a specific time interval, or whenever we tell it to stop.
 ---------------------
 Temporal Streaming ⏳
 ---------------------
+The first way to stream is for a particular duration of time, using ``data_flow``'s ``collect_for_seconds`` method. This method takes one parameter, how many seconds to collect for,
+and **blocks until collection has finished**. When run, this will execute the data-flow graph defined by ``data_flow``, streaming data from sources to sinks. As a short example,
+to collect for 5 minutes using our example from earlier.
+
+.. code-block:: python
+
+   flowgraph.collect_for_seconds(5*60)
+
 
 ---------------------
 Infinite Streaming 🌌
 ---------------------
+The other way to stream is for an undefined amount of time. To begin streaming, use ``data_flow``'s ``collect`` method. This method takes no parameters and is **non-blocking**.
+When ready to stop streaming, the ``stop_collecting``. This behavior is also supported through context managers, where you can use a ``with`` statement to automatically start
+and stop streaming. For example,
+
+.. code-block:: python
+
+   with flowgraph:
+        if flag:
+            break
+
+        # do other things...
+
+can be used to stream until the ``flag`` variable is set to true at some other point in the code, and will automatically stop streaming once the ``with`` statement is left.
+
 
 =========================
 Making Your Own Sinks 📦
