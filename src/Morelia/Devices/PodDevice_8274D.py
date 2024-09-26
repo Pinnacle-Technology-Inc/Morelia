@@ -5,7 +5,7 @@ from Morelia.Packets import Packet, PacketStandard, PacketBinary
 
 # authorship
 __author__      = "Sree Kondi"
-__maintainer__  = "Sree Kondi"
+__maintainer__  = "Thresa Kelly"
 __credits__     = ["Sree Kondi", "Thresa Kelly", "Seth Gabbert"]
 __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
