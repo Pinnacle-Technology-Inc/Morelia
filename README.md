@@ -20,7 +20,7 @@ The [SetupAllDevices](/Documents/API_Manuals/SetupAllDevices_Package_Manual.pdf)
 
 Currently, the API supports 8206-HR, 8401-HR, 8229, 8480-SC, and 8274-D POD devices. In the future, we will offer support to other Pinnacle devices. 
 
-* Code documentation: [here](https://pinnacle-technology-inc.github.io/Morelia/streaming.html)
+* Code documentation: [here](https://pinnacle-technology-inc.github.io/Morelia)
 * PDF Manual: [here](/Documents/API_Manuals/Morelia_Manual.pdf)
 
 ## Collaboration 
