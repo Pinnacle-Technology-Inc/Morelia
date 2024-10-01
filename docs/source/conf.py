@@ -23,7 +23,8 @@ release = 'v1.6.1'
 extensions = [
     'sphinx.ext.duration',
    'sphinx.ext.autosummary',
-    'sphinx.ext.autodoc'
+    'sphinx.ext.autodoc',
+    'sphinx.ext.githubpages'
 ]
 
 templates_path = ['_templates']
