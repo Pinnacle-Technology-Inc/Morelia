@@ -4,3 +4,5 @@
 testing.py
 *.bkp
 *.dtmp
+*.egg-info
+auth.json

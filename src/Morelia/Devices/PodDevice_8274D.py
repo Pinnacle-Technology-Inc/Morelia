@@ -1,7 +1,13 @@
 # local imports 
 import time
-from Morelia.Devices import Pod
-from Morelia.Packets import Packet, PacketStandard, PacketBinary
+from Morelia.Devices import Pod, AquisitionDevice
+
+from Morelia.packet.legacy import PacketBinary, Packet
+
+from Morelia.packet import ControlPacket
+import Morelia.packet.conversion as conv
+
+from functools import partial
 
 # authorship
 __author__      = "Sree Kondi"
@@ -11,14 +17,14 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8274D(Pod) : 
+class Pod8274D(AquisitionDevice) : 
     """POD_8274D handles communication using an 8274D POD device.
     """
 
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
-    def __init__(self, port: str|int, baudrate:int=921600) -> None :
+    def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8274 POD device. 
 
@@ -28,7 +34,7 @@ class Pod8274D(Pod) :
                 the COM_io instance. Defaults to 921600.
         """
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210) 
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
@@ -60,9 +66,9 @@ class Pod8274D(Pod) :
         self._commands.AddCommand(206, 'GET MODEL NUMBER',         (0,),                    (U16,),              False, 'SL_STATUS_T.')
         self._commands.AddCommand(207, 'GET MODEL NUMBER REPLY',   (0,),                    tuple([U8]*12),      False, 'Returned model number.')
         # recieved only commands below vvv 
-        self._commands.AddCommand(208, 'GET SAMPLE RATE',          (0,),                    (U16,),              False, 'SL_STATUS_T')
+        #self._commands.AddCommand(208, 'GET SAMPLE RATE',          (0,),                    (U16,),              False, 'SL_STATUS_T')
         self._commands.AddCommand(209, 'GET SAMPLE RATE REPLY',    (0,),                    (U8,),               False, 'Returned sample rate, 0 = 1024, 1 = 512, 2 = 256, 3 = 128')
-        self._commands.AddCommand(210, 'SET SAMPLE RATE',          (U8,),                   (U16,),              False, 'Requires 0,1,2,3 sample rate, returns SL_STATUS_T')
+        #self._commands.AddCommand(210, 'SET SAMPLE RATE',          (U8,),                   (U16,),              False, 'Requires 0,1,2,3 sample rate, returns SL_STATUS_T')
         self._commands.AddCommand(211, 'PROCEDURE COMPLETE',       (0,),                    (0,),                False, 'A special response that is generated upon a successful write or any remote GATT operation.  Every SET and GET will generate one ')
        # self._commands.AddCommand(212, 'GET RSSI',               (0,),                    (U16,),              False, 'SL_STATUS_T')
        # self._commands.AddCommand(213, 'GET RSSI REPLY',          (0,),                    (0,),                False, 'The value of RSSI, from -128 to +20')
@@ -75,6 +81,30 @@ class Pod8274D(Pod) :
         self._commands.AddCommand(221, 'GET NAME REPLY',           (0,),                    tuple([U8]*13),      False, 'The name in characters.')
         self._commands.AddCommand(222, 'CONNECT BY ADDRESS',       tuple([U8]*6),           (U16,),              False, 'Requires a BT address to connect to directly, returns SL_STATUS_T ')
         # self._commands.AddCommand(223, 'SERVICE DISCOVERY',      (0,),                    (U16,),              False, 'Returns SL_STATUS_T, and then will start generating characteristic responses.  Those are currently unhandled. Likely this command wont be exposed in the long run ')
+
+        def decode_payload(cmd_number: int, payload: bytes) -> tuple:
+            if cmd_number == 12:
+                """
+                Firmware version is stored in the receiver's GATT table, and things
+                in the GATT are stored as stings. When we send this data, we read it from
+                the GATT and then encode it as POD. As a result of this, when we decode the
+                POD we are left with integers that correspond to the ASCII characters of
+                the actual values, so we have to further decode the results before sending them.
+                """
+                major_version: int = int(chr(conv.ascii_bytes_to_int(payload[0:2])))
+                minor_version: int = int(chr(conv.ascii_bytes_to_int(payload[2:4])))
+
+                rev_msb: int = conv.ascii_bytes_to_int(payload[4:6])
+                rev_lsb: int = conv.ascii_bytes_to_int(payload[6:8])
+
+                rev: int = int(chr(rev_msb) + chr(rev_lsb))
+
+                return (major_version, minor_version, rev)
+
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
+
+        self._control_packet_factory = partial(ControlPacket, decode_payload)
+
     
     #------------------------OVERWRITE---------------------------------------------#
     
@@ -99,7 +129,6 @@ class Pod8274D(Pod) :
         #print(cmd)
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket()
-        data: dict = r.TranslateAll()
         if cmd in ['LOCAL SCAN'] :
             max_retries = 3  # Maximum number of retries
             retries = 0
@@ -110,19 +139,16 @@ class Pod8274D(Pod) :
                     time.sleep(5)  # Wait for 5 seconds
                     retries += 1
                     continue
-                data: dict = r.TranslateAll()
-                if data['Command Number'] == 101 and len(data['Payload']) > 1:
-                    return data  
+                if r.command_number == 101 and len(r.payload) > 1:
+                    return r  
         if cmd in ['CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
             read: Packet = self.ReadPODpacket()
-            data: dict = read.TranslateAll()
             if cmd == 'GET NAME':
                 read: Packet = self.ReadPODpacket()
-                data: dict = read.TranslateAll()
-                name = data['Payload']
+                name = read.payload
                 return name
             if cmd == 'GET SAMPLE RATE':
-                data['Payload'][0]
+                read.payload[0]
                 return data['Payload'][0]
         elif cmd == 'STREAM':
             while True:

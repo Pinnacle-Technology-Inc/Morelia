@@ -1,6 +1,11 @@
 # local imports 
-from Morelia.Devices import Pod
-from Morelia.Packets import Packet, PacketStandard, PacketBinary4
+from Morelia.Devices import AquisitionDevice, Pod
+from Morelia.packet.data import DataPacket8206HR
+from Morelia.packet import ControlPacket
+from Morelia.Commands import CommandSet
+import Morelia.packet.conversion as conv
+
+from functools import partial
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -10,7 +15,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8206HR(Pod) : 
+class Pod8206HR(AquisitionDevice) : 
     """
     POD_8206HR handles communication using an 8206HR POD device. 
     
@@ -20,7 +25,7 @@ class Pod8206HR(Pod) :
     
     # ------------ DUNDER ------------           ------------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, port: str|int, preampGain: int, baudrate:int=9600) -> None :
+    def __init__(self, port: str|int, preampGain: int, baudrate:int=9600, device_name: str | None =  None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8206-HR POD device. 
 
@@ -34,19 +39,19 @@ class Pod8206HR(Pod) :
             Exception: Preamplifier gain must be 10 or 100.
         """
         # initialize POD_Basics
-        super().__init__(port, baudrate=baudrate) 
+        super().__init__(port, 2000, baudrate, device_name) 
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
-        B4  = PacketBinary4.GetBinaryLength()
+        B4  = 8
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(9)  # ID
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
         # add device specific commands
-        self._commands.AddCommand(100, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
-        self._commands.AddCommand(101, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
+        #self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
+        #self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
         self._commands.AddCommand(102, 'GET LOWPASS',          (U8,),      (U16,),    False,   'Gets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG). Returns the value in Hz.')
         self._commands.AddCommand(103, 'SET LOWPASS',          (U8,U16),   (0,),      False,   'Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.')
         self._commands.AddCommand(104, 'SET TTL OUT',          (U8,U8),    (0,),      False,   'Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).')
@@ -58,7 +63,14 @@ class Pod8206HR(Pod) :
         if(preampGain != 10 and preampGain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preampGain : int = preampGain 
-    
+        
+        def decode_packet(command_number: int, payload: bytes) -> tuple:
+            if command_number == 106:
+                return Pod8206HR._TranslateTTLbyte_ASCII(payload)
+
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+
+        self._control_packet_factory = partial(ControlPacket, decode_packet)
 
     # ------------ CONVERSIONS ------------           ------------------------------------------------------------------------------------------------------------------------
 
@@ -74,41 +86,17 @@ class Pod8206HR(Pod) :
             dict[str,int]: Dictionary of the TTLs. Values are 1 when input, 0 when output.
         """
         # TTL : b 0123 XXXX <-- 8 bits, lowest 4 are always 0 (dont care=X), msb is TTL0
-        return( {
-            'TTL1' : Packet.ASCIIbytesToInt_Split(ttlByte, 8, 7), # TTL 0 
-            'TTL2' : Packet.ASCIIbytesToInt_Split(ttlByte, 7, 6), # TTL 1 
-            'TTL3' : Packet.ASCIIbytesToInt_Split(ttlByte, 6, 5), # TTL 2 
-            'TTL4' : Packet.ASCIIbytesToInt_Split(ttlByte, 5, 4)  # TTL 3 
-        } )   
+        return ( {
+            'TTL1' : conv.ascii_bytes_to_int_split(ttlByte, 8, 7), # TTL 0 
+            'TTL2' : conv.ascii_bytes_to_int_split(ttlByte, 7, 6), # TTL 1 
+            'TTL3' : conv.ascii_bytes_to_int_split(ttlByte, 6, 5), # TTL 2 
+            'TTL4' : conv.ascii_bytes_to_int_split(ttlByte, 5, 4)  # TTL 3 
+        }, )   
 
 
     # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
 
-
-    def ReadPODpacket(self, validateChecksum: bool = True, timeout_sec: int | float = 5) -> Packet:
-        """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-        ending with ETX. Reads first STX and then starts recursion. 
-
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
-
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may be a \
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
-        """
-        packet: Packet = super().ReadPODpacket(validateChecksum, timeout_sec)
-        # check for special packets
-        if(isinstance(packet, PacketStandard)) : 
-            if(packet.CommandNumber() == 106) : # 106, 'GET TTL PORT'
-                packet.SetCustomPayload(self._TranslateTTLbyte_ASCII, (packet.payload,))
-        # return packet
-        return packet
-            
-
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> PacketBinary4 :
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8206HR :
         """After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX \
         (checksum+ETX). 
 
@@ -149,10 +137,10 @@ class Pod8206HR(Pod) :
         # ------------------------------------------------------------
         
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(PacketBinary4.GetBinaryLength()) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
-        return PacketBinary4(packet, self._preampGain, self._commands)
+        return DataPacket8206HR(packet, self._preampGain)

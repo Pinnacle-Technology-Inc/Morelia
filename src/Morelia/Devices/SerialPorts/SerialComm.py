@@ -211,7 +211,7 @@ class PortIO :
                 # read packet
                 return(self.__serialInst.read(numBytes) )
             t += (round(time.time(),9)) - ti
-        raise Exception('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
 
 
     def ReadLine(self) -> bytes|None :

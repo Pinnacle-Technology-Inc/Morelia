@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
    <div style="text-align: center;">
-      <img src="Documents/Logos/Rings.png" alt="logo" width="160"/></center>
+      <img src="docs_legacy/Logos/Rings.png" alt="logo" width="160"/></center>
    </div>
 </html>
 
@@ -11,6 +11,9 @@
 
 Due to recent refactors, the setup scripts are currently broken (see `scripts/`). 
 Please set up your devices manually for now. The examples are also no longer accurate in many cases.
+
+Also, documentation is currently split into two folders `docs` and `docs_legacy`. Currently, the contents of `docs_legacy` are being incoperated into `docs`, which is built
+using `Sphinx`.
 
 ## Introduction 
 

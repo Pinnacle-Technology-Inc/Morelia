@@ -8,12 +8,13 @@ __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 from pyedflib import EdfWriter
-import asyncio
+from typing import Self
+import numpy as np
+import functools as ft
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Packets import Packet
-from Morelia.Stream.PodHandler import DrainDeviceHandler
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
+from Morelia.packet.data import DataPacket
+from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
 
 class EDFSink(SinkInterface):
     """Stream data to an EDF file.
@@ -29,24 +30,39 @@ class EDFSink(SinkInterface):
     :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
 
-    def __init__(self, sample_rate: int, file_path: str, pod: Pod8206HR | Pod8401HR | Pod8274D ) -> None:
+    def __init__(self, file_path: str, pod: AquisitionDevice ) -> None:
         """ Class constructor."""
         self._file_path = file_path
-        self._dev_handler = SinkInterface.get_device_handler(pod)
+        self._pod = pod
+
+        if isinstance(self._pod, Pod8206HR):
+                self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
+
+        elif isinstance(self._pod, Pod8401HR):
+
+            preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
+
+            self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
+
+        elif isinstance(self._pod, Pod8274D):
+                self._channels('length_in_bytes', 'data')
+
+
+        self._buffer = [ [] for _ in self._channels ]
+
+    def __enter__(self) -> Self:
 
         EDF_PHYSICAL_BOUND = 2046
         EDF_DIGITAL_MAX = 32767
         EDF_DIGITAL_MIN = -32768
 
-        channels = [x for x in self._dev_handler.GetDeviceColNamesList(includeTime=False) if x !='NC']
+        self._edf_writer = EdfWriter(self._file_path, len(self._channels))
 
-        self._edf_writer = EdfWriter(self._file_path, len(channels))
-
-        for idx, channel in enumerate(channels):
+        for idx, channel in enumerate(self._channels):
            self._edf_writer.setSignalHeader( idx, {
                 'label'         :  channel,
                 'dimension'     :  'uV',
-                'sample_rate'   :  sample_rate,
+                'sample_frequency'   :  self._pod.sample_rate,
                 'physical_max'  :  EDF_PHYSICAL_BOUND,
                 'physical_min'  : -EDF_PHYSICAL_BOUND,
                 'digital_max'   :  EDF_DIGITAL_MAX,
@@ -55,20 +71,47 @@ class EDFSink(SinkInterface):
                 'prefilter'     :  ''
             } )
 
-    #make filepath an immutable attribute, changing this could cause problems with
-    #data being split across files...
-    @property
-    def file_path(self) -> str:
-        return self._file_path
+        return self
 
-    #we have a "useless" timestamps paramater here so we implement the same function "interface".
-    async def flush(self, timestamps: list[float], raw_data: list[Packet|None]) -> None:
-        """Save a drop of data to EDF.
+    def __exit__(self, *args, **kwargs) -> bool:
 
-        :param timestamps: A list of timestamps for data.
-        :type timestamps: list[float]
-        :param raw_data: A list of data packets from a device.
-        :type raw_data: list[:class: Packet|None]
-        """
-        data = self._dev_handler.DropToListOfArrays(raw_data)
-        await asyncio.to_thread(self._edf_writer.writeSamples, data)
+        self._write_buffer_to_edf()
+
+        self._edf_writer.close()
+        del self._edf_writer
+
+        return False
+
+
+    #we have a "useless" timestamp paramater here so we implement the same function "interface".
+    #TODO: check if sink is open
+    #TODO: 8274
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
+        
+        if isinstance(self._pod, Pod8206HR):
+            self._buffer[0].append(packet.ch0)
+            self._buffer[1].append(packet.ch1)
+            self._buffer[2].append(packet.ch2)
+            self._buffer[3].append(float(packet.ttl1))
+            self._buffer[4].append(float(packet.ttl2))
+            self._buffer[5].append(float(packet.ttl3))
+            self._buffer[6].append(float(packet.ttl4))
+
+        elif isinstance(self._pod, Pod8401HR):
+            self._buffer[0].append(packet.ch0)
+            self._buffer[1].append(packet.ch1)
+            self._buffer[2].append(packet.ch2)
+            self._buffer[3].append(packet.ch3)
+            self._buffer[4].append(float(packet.ext0))
+            self._buffer[5].append(float(packet.ext1))
+            self._buffer[6].append(float(packet.ttl1))
+            self._buffer[7].append(float(packet.ttl2))
+            self._buffer[8].append(float(packet.ttl3))
+            self._buffer[9].append(float(packet.ttl4))
+
+        if len(self._buffer[0]) >= self._pod.sample_rate:
+            self._write_buffer_to_edf()
+
+    def _write_buffer_to_edf(self) -> None:
+        self._edf_writer.writeSamples(list(map(np.array, self._buffer)))
+        self._buffer = [ [] for _ in self._channels ]
