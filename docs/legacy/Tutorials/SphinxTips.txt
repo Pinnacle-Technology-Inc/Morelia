@@ -1,0 +1,90 @@
+/////////////////////////////////
+Name:   Thresa Kelly
+Date:   06/21/2023
+/////////////////////////////////
+
+This document is a simple tutorial for setting up Sphinx for python docuemtation.
+It also contains tips for using Sphinx in the Python POD API project.
+
+Note: This tutorial is for Windows 11 PowerShell.
+Note: ">>" indicates the terminal command line in the <path>\Python-POD-API\ directory.
+Note: Enter the python enviornment before installing Sphinx. See Documents\PythonEnviornmentTipe.txt
+Note: Python POD API modules use the Google Python Style Guide (https://google.github.io/styleguide/pyguide.html).
+        Sphinx requires the napoleon exstension to handle theis style.
+
+Helpful videos about Sphinx:
+    https://www.youtube.com/playlist?list=PLPDCBPbzk1AYghqYazE7Cxt3p7edml8I7
+    https://www.youtube.com/watch?v=5s3JvVqwESA&t=600s
+    https://www.youtube.com/watch?v=BWIrhgCAae0&t=694s 
+    
+/////////////////////////////////
+
+Installing Sphinx:
+https://www.sphinx-doc.org/en/master/
+
+    >> pip install sphinx
+
+    Installing Sphinx templates
+
+        >> pip install <template name>
+
+        For the Python POD API project: 
+        https://sphinx-themes.org/sample-sites/furo/
+
+            >> pip install sphinx-rtd-theme
+
+
+Setting up a new Sphinx project:
+
+    >> sphinx-quickstart
+
+
+Update Sphinx configuration:
+
+    Go to SphinxDocs\conf.py and make the following changes:
+
+        import os
+        import sys
+        sys.path.insert(0, os.path.join( <add path here> ))
+
+        extensions = ['sphinx.ext.autodoc', <any other extensions>]
+
+        html_theme = '<template name>'
+
+    For the Python POD API project: 
+
+        import sys, os
+        sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'PodApi') )
+        sys.path.insert(0, os.path.join( os.path.abspath('..'), 'Code', 'Setup' ) )
+
+        extensions = ['sphinx.ext.autodoc', 'sphinx.ext.napoleon']
+
+        html_theme = 'sphinx_rtd_theme'
+        
+        autodoc_default_options = {'private-members': True}
+
+
+Adding modules to Sphinx project: 
+    >> sphinx-apidoc -o <path to output> <path to code modules>
+
+    For the Python POD API project: 
+        >> sphinx-apidoc -o .\SphinxDocs .\Code\
+
+
+Build Sphinx documents:
+    >> cd .\SphinxDocs\
+    >> .\make <target>
+
+    For the Python POD API project: 
+        >> .\make html
+        >> .\make latex
+
+
+Remove Sphinx documents:
+    >> cd .\SphinxDocs\
+
+    Remove all _build\ documents:
+        >> .\make clean 
+
+    Remove a specific build document: 
+        >> .\make clean <target>

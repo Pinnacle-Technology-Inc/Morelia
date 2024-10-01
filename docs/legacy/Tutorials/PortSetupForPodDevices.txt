@@ -1,0 +1,30 @@
+/////////////////////////////////
+Name:   Thresa Kelly
+Date:   07/06/2023
+/////////////////////////////////
+
+This document is a tutorial for setting up a POD device to access a COM port 
+on a Windows 11 computer. 
+
+/////////////////////////////////
+
+First time setup of POD device: 
+
+1. Plug in POD device to USB port
+2. Open the "Device Manager".
+3. Click "Universal Serial Bus controllers" drop down menu.
+4. Double click on POD device. This will pop up a new window.
+    8229 -> "Sleep Dep"
+5. Click "Advanced" at top of the POD device properties window. 
+6. Ckick "Load VCP".
+7. Click "Ok" at bottom of POD device properties window.
+8. Unplug POD device form USB port 
+
+/////////////////////////////////
+
+Verify that POD device is a COM port:
+
+1. Plug in POD device to USB port
+2. Open the "Device Manager".
+3. Click "Ports (COM & LPT)" drop down menu.
+4. Locate POD device.
