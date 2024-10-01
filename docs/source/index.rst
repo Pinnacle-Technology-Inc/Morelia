@@ -7,7 +7,6 @@ Welcome to Morelia's documentation!
 ===================================
 
 .. toctree::
-   :hidden:
 
    getting_started
    streaming

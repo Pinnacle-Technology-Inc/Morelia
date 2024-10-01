@@ -161,10 +161,14 @@ and stop streaming. For example,
 .. code-block:: python
 
    with flowgraph:
-        if flag:
+
+        while True:
+
+          if flag:
+
             break
 
-        # do other things...
+          # do other things if flag is not set...
 
 can be used to stream until the ``flag`` variable is set to true at some other point in the code, and will automatically stop streaming once the ``with`` statement is left.
 
@@ -172,7 +176,9 @@ can be used to stream until the ``flag`` variable is set to true at some other p
 =========================
 Making Your Own Sinks 📦
 =========================
-
+Coming soon to a Morelia near you! 👀
+.. If you are an advanced power user, you may want to try your hand at making your own sink.
+.. To create a custom sink, your class must be a subclass of ``SinkInterface``.
 .. TODO: sections for making your own sinks.
 .. TODO: Seperate page for "workflow examples", like influx has.
 .. TODO: note on influx that sits not good for long-term storage.
