@@ -3,17 +3,10 @@
 <!DOCTYPE html>
 <html lang="en">
    <div style="text-align: center;">
-      <img src="docs_legacy/Logos/Rings.png" alt="logo" width="160"/></center>
+      <img src="docs/legacy/Logos/Rings.png" alt="logo" width="160"/></center>
    </div>
 </html>
 
-## DEVELOPER'S NOTE 
-
-Due to recent refactors, the setup scripts are currently broken (see `scripts/`). 
-Please set up your devices manually for now. The examples are also no longer accurate in many cases.
-
-Also, documentation is currently split into two folders `docs` and `docs_legacy`. Currently, the contents of `docs_legacy` are being incoperated into `docs`, which is built
-using `Sphinx`.
 
 ## Introduction 
 
@@ -27,7 +20,7 @@ The [SetupAllDevices](/Documents/API_Manuals/SetupAllDevices_Package_Manual.pdf)
 
 Currently, the API supports 8206-HR, 8401-HR, 8229, 8480-SC, and 8274-D POD devices. In the future, we will offer support to other Pinnacle devices. 
 
-* Code documentation: [here](https://python-pod-api.readthedocs.io/en/latest/)
+* Code documentation: [here](https://pinnacle-technology-inc.github.io/Morelia)
 * PDF Manual: [here](/Documents/API_Manuals/Morelia_Manual.pdf)
 
 ## Collaboration 
