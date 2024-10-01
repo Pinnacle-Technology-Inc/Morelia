@@ -4,11 +4,35 @@ version = "v1.6.1"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {file = "LICENSE.md"}
-authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}, {name = "Seth Gabbert"}]
-maintainers = [{name = "Thresa Kelly"}]
+authors = [{name = "Thresa Kelly"}, {name = "Sree Kondi"}, {name = "James Hurd"}, {name = "Seth Gabbert"}, {name="Sam Groth"}]
+maintainers = [{name = "James Hurd"}, {name = "Sam Groth"}]
+dependencies = [
+  "numpy",
+  "pandas",
+  "pyEDFlib",
+  "pyserial",
+  "texttable",
+  "influxdb-client",
+  "reactivex",
+  "cppyy",
+]
+
+[project.optional-dependencies]
+docs = [
+  "sphinx",
+  "autodoc",
+  "sphinx-rtd-theme",
+]
+
+tests = [
+  "pytest",
+]
 
 [tool.setuptools]
-package-dir = {"" = "Code"}
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
@@ -16,3 +40,8 @@ build-backend = "setuptools.build_meta"
 
 [project.urls]
 repository = "https://github.com/Pinnacle-Technology-Inc/Morelia"
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
