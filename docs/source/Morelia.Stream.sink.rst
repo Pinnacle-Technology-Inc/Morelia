@@ -28,13 +28,6 @@ Morelia.Stream.sink.influx\_sink module
    :undoc-members:
    :show-inheritance:
 
-Morelia.Stream.sink.pvfs\_sink module
--------------------------------------
-
-.. automodule:: Morelia.Stream.sink.pvfs_sink
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Morelia.Stream.sink.sink\_interface module
 ------------------------------------------
