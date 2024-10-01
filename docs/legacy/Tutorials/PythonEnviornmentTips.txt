@@ -1,0 +1,70 @@
+/////////////////////////////////
+Name:   Thresa Kelly
+Date:   06/21/2023
+/////////////////////////////////
+
+This document is a simple tutorial for setting up a python enviornment and installing 
+the requirements to run the Python POD API.
+
+Note: ">>" indicates the terminal command line.
+
+Useful links:
+    - Python tutorial: https://code.visualstudio.com/docs/python/python-tutorial 
+
+/////////////////////////////////
+
+Verify python installation: 
+    # Linux/macOS
+    >> python3 --version
+    # Windows
+    >> py -3 --version
+
+Create python enviornment (VS Code): 
+    Command Palette >> Python: Create Environment >> Venv
+    Command Palette >> Python: Select Interpreter >> .venv
+
+Enter the python enviornment: 
+
+    # Windows 
+    >> & <path>/.venv/Scripts/Activate.ps1
+
+    example: 
+        >> & C:/git/Python-POD-API/.venv/Scripts/Activate.ps1
+
+    If the activate command generates the message "Activate.ps1 is not digitally signed. 
+    You cannot run this script on the current system.", then you need to temporarily change 
+    the PowerShell execution policy to allow scripts to run.
+
+        >> Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+        >> & <path>/.venv/Scripts/Activate.ps1
+
+
+Install python packages while in env:
+
+    # macOS
+    >> python3 -m pip install <package name>
+
+    # Windows (may require elevation)
+    >> python -m pip install <package name>
+
+    # Linux (Debian)
+    >> apt-get install python3-tk
+    >> python3 -m pip install <package name>
+
+
+Install all required packages while in env:
+
+    >> cd <path>\Python-POD-API\Code
+    >> pip install -r requirements.txt
+
+
+Get list of required packages for project:
+
+    >> pipreqs <path>\Python-POD-API\Code
+
+    or navigate to the directory of interest:
+    >> pipreqs --encoding utf-8 "./"    
+
+Get list of packages in enviornment:
+
+    >> pip freeze

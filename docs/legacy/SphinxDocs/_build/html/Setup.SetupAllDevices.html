@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup.SetupAllDevices package &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Setup.SetupOneDevice package" href="Setup.SetupOneDevice.html" />
+    <link rel="prev" title="Setup.Inputs package" href="Setup.Inputs.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia Python POD API Project</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="Morelia.html">Morelia package</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="Setup.html">Setup package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="Setup.html#subpackages">Subpackages</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="Setup.Inputs.html">Setup.Inputs package</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">Setup.SetupAllDevices package</a></li>
+<li class="toctree-l4"><a class="reference internal" href="Setup.SetupOneDevice.html">Setup.SetupOneDevice package</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="Setup.html#module-Setup">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">Morelia Python POD API Project</a></li>
+          <li class="breadcrumb-item"><a href="Setup.html">Setup package</a></li>
+      <li class="breadcrumb-item active">Setup.SetupAllDevices package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Setup.SetupAllDevices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="setup-setupalldevices-package">
+<h1>Setup.SetupAllDevices package<a class="headerlink" href="#setup-setupalldevices-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-Setup.SetupAllDevices.Setup_PodDevices">
+<span id="setup-setupalldevices-setup-poddevices-module"></span><h2>Setup.SetupAllDevices.Setup_PodDevices module<a class="headerlink" href="#module-Setup.SetupAllDevices.Setup_PodDevices" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Setup.SetupAllDevices.Setup_PodDevices.</span></span><span class="sig-name descname"><span class="pre">SetupAll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Parameters.html#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><span class="pre">Morelia.Parameters.ParamsBasic.Params</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Setup_PodDevices allows a user to set up and stream from any number of POD devices. The streamed     data is saved to a file.</p>
+<p>REQUIRES FIRMWARE 1.0.2 OR HIGHER.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Setup_PodDevices">
+<span class="sig-name descname"><span class="pre">_Setup_PodDevices</span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Setup_PodDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary containing the Setup_Interface             subclasses for each POD device.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,dict[int,Params_Interface]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._options">
+<span class="sig-name descname"><span class="pre">_options</span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._options" title="Permalink to this definition"></a></dt>
+<dd><p>Dictionary listing the different options for the user to complete.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[int,str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetOptions">
+<span class="sig-name descname"><span class="pre">GetOptions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetOptions" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the dictionary of setup options.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary listing the different options for the user to complete (_options).</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[int,str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetPODparametersInit">
+<span class="sig-name descname"><span class="pre">GetPODparametersInit</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetPODparametersInit" title="Permalink to this definition"></a></dt>
+<dd><p>Sets up each POD device type. Used in initialization.
+:returns: String representing a dictionary of all POD devices initialization. The keys are the                 device name and the entries are the initialization dictionaries.
+:rtype: str</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetSaveFileNames">
+<span class="sig-name descname"><span class="pre">GetSaveFileNames</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.GetSaveFileNames" title="Permalink to this definition"></a></dt>
+<dd><p>Gets a dictionary of the save files names for all connected POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dictionary of the save file name and path for all devices.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>dict[str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.Run">
+<span class="sig-name descname"><span class="pre">Run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.Run" title="Permalink to this definition"></a></dt>
+<dd><p>Prints the options and askes the user what to do. Loops until ‘Quit” is chosen.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupPODparameters">
+<span class="sig-name descname"><span class="pre">SetupPODparameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="Morelia.Parameters.html#Morelia.Parameters.ParamsBasic.Params" title="Morelia.Parameters.ParamsBasic.Params"><span class="pre">Morelia.Parameters.ParamsBasic.Params</span></a><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupPODparameters" title="Permalink to this definition"></a></dt>
+<dd><p>Sets up each POD device type. Used in initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em>[</em><em>int</em><em>,</em><em>Params_Interface</em><em>] </em><em>| </em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupSaveFile">
+<span class="sig-name descname"><span class="pre">SetupSaveFile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">saveFileDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll.SetupSaveFile" title="Permalink to this definition"></a></dt>
+<dd><p>Gets the path/file name from the user and stores it. Used in initialization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>saveFile</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>str</em><em>|</em><em>None</em><em>] </em><em>| </em><em>None</em><em>, </em><em>optional</em>) – String of the save file, which includes the directory path,                 filename, and file extension. Defaults to None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskOption">
+<span class="sig-name descname"><span class="pre">_AskOption</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">int</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskOption" title="Permalink to this definition"></a></dt>
+<dd><p>Asks user which option to do.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Integer number representing an option key.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>int</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskToStopStream">
+<span class="sig-name descname"><span class="pre">_AskToStopStream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskToStopStream" title="Permalink to this definition"></a></dt>
+<dd><p>Asks user to press enter to stop streaming. The program will then prompt all POD         devices to end stream.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskUserForDevices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_AskUserForDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._AskUserForDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user what POD devices they want to use.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._CheckForValidParams">
+<span class="sig-name descname"><span class="pre">_CheckForValidParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._CheckForValidParams" title="Permalink to this definition"></a></dt>
+<dd><p>Checks if the parameters are correctly formatted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>None</em><em> | </em><em>dict</em><em>]</em>) – Dictionary with keys as the device names and                 values as None or the respective parameter dictionary.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>Exception</strong> – Parameters must be dictionary type.</p></li>
+<li><p><strong>Exception</strong> – Parameters dictionary is empty.</p></li>
+<li><p><strong>Exception</strong> – Invalid device name in paramater dictionary.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the parameters are correctly formatted.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ConnectNewDevice">
+<span class="sig-name descname"><span class="pre">_ConnectNewDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ConnectNewDevice" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user for the POD device type, then it sets up that device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._DoOption">
+<span class="sig-name descname"><span class="pre">_DoOption</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">choice</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._DoOption" title="Permalink to this definition"></a></dt>
+<dd><p>Performs the methods associated with the user selected option.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>choice</strong> (<em>int</em>) – Integer number representing an option key.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditCheckConnect">
+<span class="sig-name descname"><span class="pre">_EditCheckConnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditCheckConnect" title="Permalink to this definition"></a></dt>
+<dd><p>Displays the POD devices parameters, asks the user to edit the device, and then reconnects         the device for each POD device type.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditSaveFilePath">
+<span class="sig-name descname"><span class="pre">_EditSaveFilePath</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._EditSaveFilePath" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user for the POD device type, then asks the user for a new file name and path,         then sets the value to the POD devices.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetChosenDeviceType">
+<span class="sig-name descname"><span class="pre">_GetChosenDeviceType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">question</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetChosenDeviceType" title="Permalink to this definition"></a></dt>
+<dd><p>Asks the user which type of POD device they want.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>question</strong> (<em>str</em>) – Question to ask the user.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>String of the user input (may be invalid POD device type).</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetParams">
+<span class="sig-name descname"><span class="pre">_GetParams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">None</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._GetParams" title="Permalink to this definition"></a></dt>
+<dd><p>If no parameters are give, this asks user which types of POD devices they want to use.         Then it checks if the parameters are valid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>None</em><em> | </em><em>dict</em><em>[</em><em>str</em><em>,</em><em>None</em><em>]</em>) – Dictionary of all POD devices initialization.                 The keys are the device name and the entries are the initialization dictionaries.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Dictionary whose keys are the POD device name, and value the setup                 dictionary.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str,dict|None]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintInitCode">
+<span class="sig-name descname"><span class="pre">_PrintInitCode</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintInitCode" title="Permalink to this definition"></a></dt>
+<dd><p>Prints code that can be used to initialize and run SetupPodDevices with the         current parameters.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintOptions">
+<span class="sig-name descname"><span class="pre">_PrintOptions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._PrintOptions" title="Permalink to this definition"></a></dt>
+<dd><p>Prints options available for user.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Reconnect">
+<span class="sig-name descname"><span class="pre">_Reconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Reconnect" title="Permalink to this definition"></a></dt>
+<dd><p>Reconnects all POD devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Bool that is true if all devices were successfully connected. False otherwise.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._RemoveDevice">
+<span class="sig-name descname"><span class="pre">_RemoveDevice</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._RemoveDevice" title="Permalink to this definition"></a></dt>
+<dd><p>Displays the POD devices parameters, asks the user which device ro remove, and then         deletes that POD device.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Set_Setup_PodDevices">
+<span class="sig-name descname"><span class="pre">_Set_Setup_PodDevices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">podParametersDict</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Set_Setup_PodDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Sets the _Setup_PodDevices varaible to have keys as the POD device name and values         as the setup class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>podParametersDict</strong> (<em>dict</em><em>[</em><em>str</em><em>,</em><em>dict</em><em> | </em><em>None</em><em>]</em>) – Dictionary with keys as the device names                 and values as None or the respective parameter dictionary.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ShowCurrentSettings">
+<span class="sig-name descname"><span class="pre">_ShowCurrentSettings</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._ShowCurrentSettings" title="Permalink to this definition"></a></dt>
+<dd><p>Displays the POD device settings for all devices, and then prints the save file name.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Stream">
+<span class="sig-name descname"><span class="pre">_Stream</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._Stream" title="Permalink to this definition"></a></dt>
+<dd><p>Streams data from all POD devices and prints the execution time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Float of the execution time in seconds.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._StreamAllDevices">
+<span class="sig-name descname"><span class="pre">_StreamAllDevices</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._StreamAllDevices" title="Permalink to this definition"></a></dt>
+<dd><p>Streams data from all the devices. User is asked to click enter to stop streaming.         Data is saved to file. Uses threading.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Setup.SetupAllDevices.Setup_PodDevices.SetupAll._TimeFunc">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">_TimeFunc</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="headerlink" href="#Setup.SetupAllDevices.Setup_PodDevices.SetupAll._TimeFunc" title="Permalink to this definition"></a></dt>
+<dd><p>Runs a function and gets the calculated execultion time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>func</strong> (<em>function</em>) – Function/method name.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Float of the execution time in seconds rounded to 3 decimal places.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-Setup.SetupAllDevices">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Setup.SetupAllDevices" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Setup.Inputs.html" class="btn btn-neutral float-left" title="Setup.Inputs package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="Setup.SetupOneDevice.html" class="btn btn-neutral float-right" title="Setup.SetupOneDevice package" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Thresa Kelly.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
