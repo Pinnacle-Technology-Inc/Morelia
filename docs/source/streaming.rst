@@ -177,6 +177,7 @@ can be used to stream until the ``flag`` variable is set to true at some other p
 Making Your Own Sinks 📦
 =========================
 Coming soon to a Morelia near you! 👀
+
 .. If you are an advanced power user, you may want to try your hand at making your own sink.
 .. To create a custom sink, your class must be a subclass of ``SinkInterface``.
 .. TODO: sections for making your own sinks.
