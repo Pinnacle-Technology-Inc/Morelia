@@ -22,7 +22,7 @@ jobs:
           name: html-docs
           path: docs/build/html
 
-    deploy-docs:
+  deploy-docs:
       needs: build-docs
       name: Deploy documentation
       runs-on: ubuntu-latest
