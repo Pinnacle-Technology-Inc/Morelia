@@ -1,24 +1,35 @@
+# This CI pipeline builds our docs with sphinx and deploys them to GitHub pages.
 name: documentation
 
+# Jobs run when PRs to integration are approved.
 on:
   push:
     branches:
       - integration
 
 jobs:
-  build-publish-docs:
-    name: Build documentation.
+  
+  build-docs:
+    name: Build documentation
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: ammaraskar/sphinx-action@7.0.0
-      - uses: actions/upload-artifact@v4
+      - uses: actions/checkout@v4 # Get repo contents.
+      - uses: ammaraskar/sphinx-action@7.0.0 # Build docs using sphinx.
+      - uses: actions/upload-artifact@v4 # Upload built docs to a place where other jobs can acess them.
         with:
           name: html-docs
           path: docs/build/html
-      - uses: peaceiris/actions-gh-pages@v3
+
+    deploy-docs:
+      needs: build-docs
+      name: Deploy documentation
+      runs-on: ubuntu-latest
+      permissions:
+        contents: write
+    steps:
+      - uses: peaceiris/actions-gh-pages@v3 # Push docs to gh-pages branch to be deployed to GitHub pages.
         if: github.ref == 'refs/heads/integration'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
