@@ -23,10 +23,10 @@ jobs:
           path: docs/build/html
 
   deploy-docs:
-      needs: build-docs
-      name: Deploy documentation
-      runs-on: ubuntu-latest
-      permissions:
+    needs: build-docs
+    name: Deploy documentation
+    runs-on: ubuntu-latest
+    permissions:
         contents: write
     steps:
       - uses: peaceiris/actions-gh-pages@v3 # Push docs to gh-pages branch to be deployed to GitHub pages.
