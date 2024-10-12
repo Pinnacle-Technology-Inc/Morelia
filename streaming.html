@@ -1,0 +1,297 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harnessing Data Acquisition Systems 🤠 &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+
+  
+      <script src="_static/jquery.js"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+      <script src="_static/doctools.js"></script>
+      <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Controlling Sleep Deprivation Systems 😴" href="sleep_dep.html" />
+    <link rel="prev" title="The Hitchhiker’s Guide to Morelia 🐍" href="getting_started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Harnessing Data Acquisition Systems 🤠</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-1000-foot-view">The 1000-Foot View 👀</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#defining-a-streaming-workflow">Defining a Streaming Workflow 📐</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#let-the-data-flow">Let the Data Flow! 🌊</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#temporal-streaming">Temporal Streaming ⏳</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#infinite-streaming">Infinite Streaming 🌌</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#making-your-own-sinks">Making Your Own Sinks 📦</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Harnessing Data Acquisition Systems 🤠</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/streaming.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="harnessing-data-acquisition-systems">
+<h1><a class="toc-backref" href="#id1" role="doc-backlink">Harnessing Data Acquisition Systems 🤠</a><a class="headerlink" href="#harnessing-data-acquisition-systems" title="Permalink to this heading"></a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#harnessing-data-acquisition-systems" id="id1">Harnessing Data Acquisition Systems 🤠</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-1000-foot-view" id="id2">The 1000-Foot View 👀</a></p></li>
+<li><p><a class="reference internal" href="#defining-a-streaming-workflow" id="id3">Defining a Streaming Workflow 📐</a></p></li>
+<li><p><a class="reference internal" href="#let-the-data-flow" id="id4">Let the Data Flow! 🌊</a></p>
+<ul>
+<li><p><a class="reference internal" href="#temporal-streaming" id="id5">Temporal Streaming ⏳</a></p></li>
+<li><p><a class="reference internal" href="#infinite-streaming" id="id6">Infinite Streaming 🌌</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#making-your-own-sinks" id="id7">Making Your Own Sinks 📦</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="the-1000-foot-view">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">The 1000-Foot View 👀</a><a class="headerlink" href="#the-1000-foot-view" title="Permalink to this heading"></a></h2>
+<p>Streaming in Morelia takes the form of defining and executing data-flow graphs. Each data-flow
+graph (in Morelia) consists of three parts:</p>
+<ul class="simple">
+<li><p>A collection of data <strong>sources</strong>.</p></li>
+<li><p>A collection of data <strong>sinks</strong>.</p></li>
+<li><p>A <strong>mapping</strong> that defines the flow of data between sources and sinks.</p></li>
+</ul>
+<p>Let’s expand on each of those concepts.</p>
+<p>A <strong>data source</strong> (or more simply <em>source</em>) is anything that supplies <a class="reference internal" href="Morelia.packet.data.html"><span class="doc">POD data packets</span></a>. For almost all use-cases, this will be a
+data aquisition device such as an 8206HR, 8401HR, or 8274D.</p>
+<p>A <strong>data sink</strong> (oftentimes just called a <em>sink</em>), is a place to you want to send data. Some examples of this are EDF files, PVFS files, or even
+a time-series database like InfluxDB.</p>
+<p>We then relate sources to sinks via a one-to-many mapping with following constraint: A source can map to many sinks, but a sink can only map
+to exactly <strong>one</strong> source. In more mathematical terms, it is an <em>injective</em> mapping.</p>
+<p>To shed some more light on this, let us view an example data-flow graph.</p>
+<img alt="_images/dataflow_example.png" src="_images/dataflow_example.png" />
+<p>This data flow graph streams data to both EDF files and InfluxDB. As you can see, each data source maps to one or more sinks, but each sink maps to only one source.
+We will use this diagram as a running example as we move into the next section.</p>
+</section>
+<section id="defining-a-streaming-workflow">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Defining a Streaming Workflow 📐</a><a class="headerlink" href="#defining-a-streaming-workflow" title="Permalink to this heading"></a></h2>
+<p>Now, with the concepts out of the way it’s time to get our hands dirty in the code. Throughout this section, we will use the diagram at the
+end of the previous section as an example as we walk through how to setup a data-flow graph.</p>
+<p>All streaming functionality is handled through the
+<code class="docutils literal notranslate"><span class="pre">Morelia.Stream</span></code> subpackage. When streaming, the first step is to set up a data source. Great news, if you followed our <a class="reference internal" href="getting_started.html"><span class="doc">Hitchhiker’s Guide to
+Morelia</span></a>, then you already know how to do this. Any acquisition device can function as data source, so go ahead and wire up
+any devices you want in the API. As an example, let’s connect to three 8206HR devices,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class.</span>
+<span class="kn">from</span> <span class="nn">Morelia.Devices</span> <span class="kn">import</span> <span class="n">Pod8206HR</span>
+
+<span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The next step is to initialize our data sinks, which can be imported from the
+<code class="docutils literal notranslate"><span class="pre">Morelia.Stream.sink</span></code> subpackage. Currently, Morelia supports the following as
+destinations to send data to:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Destination</p></th>
+<th class="head"><p>Class</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>CSV File</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">CSVSink</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>EDF File</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">EDFSink</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>InfluxDB</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>With plans for PVFS files in the near future. Depending on the sink, different parameters
+are passed in the constructors of those objects. For specific and extensive documentation,
+on the specific parameters of each sink, please see the documentation of <a class="reference internal" href="Morelia.Stream.sink.html"><span class="doc">Morelia.Stream.sink</span></a>
+, we will not cover it here for the sake of brevity.</p>
+<p>Continuing along with our example, let us build our sinks.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class.</span>
+<span class="kn">from</span> <span class="nn">Morelia.Devices</span> <span class="kn">import</span> <span class="n">Pod8206HR</span>
+<span class="kn">from</span> <span class="nn">Morelia.Stream.sink</span> <span class="kn">import</span> <span class="n">EDFSink</span><span class="p">,</span> <span class="n">InfluxSink</span>
+
+<span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Create EDF sinks.</span>
+<span class="n">edf_dump_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_dump_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+
+<span class="c1"># Create InfluxDB Sinks.</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Finally, it’s time to link them together with the mapping. We can do this using the
+<code class="docutils literal notranslate"><span class="pre">data_flow</span></code> object from <code class="docutils literal notranslate"><span class="pre">Morelia.Stream</span></code>. In its constructor, the <code class="docutils literal notranslate"><span class="pre">data_flow</span></code>
+object takes a single parameter, a list of tuples where each tuple contains an
+acquisition device as the first element, and a list of sinks that said device maps
+to as its second element. Instead of the headache of trying to parse that awful
+sentence, let’s see what it looks like in our example.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class.</span>
+<span class="kn">from</span> <span class="nn">Morelia.Devices</span> <span class="kn">import</span> <span class="n">Pod8206HR</span>
+<span class="kn">from</span> <span class="nn">Morelia.Stream.sink</span> <span class="kn">import</span> <span class="n">EDFSink</span><span class="p">,</span> <span class="n">InfluxSink</span>
+<span class="kn">from</span> <span class="nn">Morelia.Stream</span> <span class="kn">import</span> <span class="n">data_flow</span>
+
+<span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Create EDF sinks.</span>
+<span class="n">edf_dump_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_dump_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+
+<span class="c1"># Create InfluxDB sinks.</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+
+<span class="c1"># List that defines how sources map to sinks.</span>
+<span class="n">mapping</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_dump_1</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">pod_2</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_dump_2</span><span class="p">,</span> <span class="n">influx_sink_1</span><span class="p">]),</span>
+            <span class="p">(</span><span class="n">pod_2</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_2</span><span class="p">])]</span>
+
+<span class="n">flowgraph</span> <span class="o">=</span> <span class="n">data_flow</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>And presto, you are all ready to stream! In the next section, we will carry our example
+over and loop at how to start collecting data now that everything is in place.</p>
+</section>
+<section id="let-the-data-flow">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Let the Data Flow! 🌊</a><a class="headerlink" href="#let-the-data-flow" title="Permalink to this heading"></a></h2>
+<p>This section will use the example from last section, so if you are just jumping in
+here, be sure to reference that first.</p>
+<p>Once we’ve created our flow graph, we can start streaming! We can either stream data
+for a specific time interval, or whenever we tell it to stop.</p>
+<section id="temporal-streaming">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Temporal Streaming ⏳</a><a class="headerlink" href="#temporal-streaming" title="Permalink to this heading"></a></h3>
+<p>The first way to stream is for a particular duration of time, using <code class="docutils literal notranslate"><span class="pre">data_flow</span></code>’s <code class="docutils literal notranslate"><span class="pre">collect_for_seconds</span></code> method. This method takes one parameter, how many seconds to collect for,
+and <strong>blocks until collection has finished</strong>. When run, this will execute the data-flow graph defined by <code class="docutils literal notranslate"><span class="pre">data_flow</span></code>, streaming data from sources to sinks. As a short example,
+to collect for 5 minutes using our example from earlier.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">flowgraph</span><span class="o">.</span><span class="n">collect_for_seconds</span><span class="p">(</span><span class="mi">5</span><span class="o">*</span><span class="mi">60</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="infinite-streaming">
+<h3><a class="toc-backref" href="#id6" role="doc-backlink">Infinite Streaming 🌌</a><a class="headerlink" href="#infinite-streaming" title="Permalink to this heading"></a></h3>
+<p>The other way to stream is for an undefined amount of time. To begin streaming, use <code class="docutils literal notranslate"><span class="pre">data_flow</span></code>’s <code class="docutils literal notranslate"><span class="pre">collect</span></code> method. This method takes no parameters and is <strong>non-blocking</strong>.
+When ready to stop streaming, the <code class="docutils literal notranslate"><span class="pre">stop_collecting</span></code>. This behavior is also supported through context managers, where you can use a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement to automatically start
+and stop streaming. For example,</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">flowgraph</span><span class="p">:</span>
+
+     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+
+       <span class="k">if</span> <span class="n">flag</span><span class="p">:</span>
+
+         <span class="k">break</span>
+
+       <span class="c1"># do other things if flag is not set...</span>
+</pre></div>
+</div>
+<p>can be used to stream until the <code class="docutils literal notranslate"><span class="pre">flag</span></code> variable is set to true at some other point in the code, and will automatically stop streaming once the <code class="docutils literal notranslate"><span class="pre">with</span></code> statement is left.</p>
+</section>
+</section>
+<section id="making-your-own-sinks">
+<h2><a class="toc-backref" href="#id7" role="doc-backlink">Making Your Own Sinks 📦</a><a class="headerlink" href="#making-your-own-sinks" title="Permalink to this heading"></a></h2>
+<p>Coming soon to a Morelia near you! 👀</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting_started.html" class="btn btn-neutral float-left" title="The Hitchhiker’s Guide to Morelia 🐍" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="sleep_dep.html" class="btn btn-neutral float-right" title="Controlling Sleep Deprivation Systems 😴" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Pinnacle Technology.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
