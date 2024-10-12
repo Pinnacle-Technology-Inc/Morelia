@@ -29,6 +29,10 @@ jobs:
     permissions:
         contents: write
     steps:
+      - uses: actions/download-artifact@v4 # Get built HTML pages artifact.
+        with:
+          name: html-docs
+          path: docs/build/html
       - uses: peaceiris/actions-gh-pages@v3 # Push docs to gh-pages branch to be deployed to GitHub pages.
         if: github.ref == 'refs/heads/integration'
         with:
