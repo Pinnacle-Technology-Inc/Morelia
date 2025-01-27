@@ -21,8 +21,6 @@ from Morelia.packet import ControlPacket
 import reactivex as rx
 from reactivex import operators as ops
 
-counter = 0
-
 #TODO: __all__ to tell us what to export.
 
 #TODO: more extensively document why timing is hard.
@@ -66,15 +64,12 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
 def _stream_from_pod_device(pod: AquisitionDevice, duration: float, manual_stop_event: Event):
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
         
-        global counter
-
         with pod:
             stream_start_time : float = time.perf_counter()
 
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
             
                 observer.on_next(pod.ReadPODpacket())
-                counter += 1
 
         observer.on_completed()
     return _stream_from_pod_device_observable
@@ -109,7 +104,3 @@ def get_data(duration: float, manual_stop_event: Event, pod: AquisitionDevice, s
             stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
 
         stream.connect()
-
-    global counter
-
-    print(pod.device_name, counter)
