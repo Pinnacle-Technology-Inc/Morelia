@@ -27,6 +27,8 @@ sure that the virtual COM port functionality is enabled on each device. This can
 "Universal Serial Bus controller"), right-clicking and selecting ``Properties``. From there, select the
 ``Advanced`` menu and check the ``Load VCP`` box.
 
+You will also need to install the [Microsoft Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+
 Please note that in select devices (mainly 8274D and 8229s) enabling VCP can cause issues when connecting to your
 devices in Sirenia, so you may need to unload the VCP functionality when you are ready to access your device in Sirenia again.
 
