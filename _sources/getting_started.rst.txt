@@ -17,9 +17,9 @@ Python >= 3.10, however it may also be compatible with other versions (these jus
 ------------
 Windows 🪟
 ------------
-For Windows, all that is required is to install the proper device drivers.
+For Windows, it may be required is to install the proper device drivers depending on your system.
 You can download and install our USB drivers 
-from `our website <https://pinnaclet.com/drivers.html>`_. 
+from `our website <https://pinnaclet.com/drivers.html>`_ if needed.
 
 It is also important to make
 sure that the virtual COM port functionality is enabled on each device. This can be done by opening
@@ -27,7 +27,7 @@ sure that the virtual COM port functionality is enabled on each device. This can
 "Universal Serial Bus controller"), right-clicking and selecting ``Properties``. From there, select the
 ``Advanced`` menu and check the ``Load VCP`` box.
 
-You will also need to install the [Microsoft Visual Studio Build Tools 2022](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+You will also need to install the `Microsoft Visual Studio Build Tools 2022 <https://visualstudio.microsoft.com/visual-cpp-build-tools/>`_.
 
 Please note that in select devices (mainly 8274D and 8229s) enabling VCP can cause issues when connecting to your
 devices in Sirenia, so you may need to unload the VCP functionality when you are ready to access your device in Sirenia again.
