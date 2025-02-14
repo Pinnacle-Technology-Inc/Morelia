@@ -12,7 +12,8 @@ Python tutorial <https://docs.python.org/3/tutorial/index.html>`_ is a good plac
 Setting Up Your Environment 🌱
 ==============================
 To use Morelia, you must have the Python programming language installed. Morelia is officially supported for
-Python >= 3.10, however it may also be compatible with other versions (these just have not been tested).
+Python >= 3.10, however it may also be compatible with other versions (these just have not been tested). For all environments,
+you will need a C++ compiler installed. Additionally, there are a few operating-system-specific requirements:
 
 ------------
 Windows 🪟
