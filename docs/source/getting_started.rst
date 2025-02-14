@@ -12,7 +12,8 @@ Python tutorial <https://docs.python.org/3/tutorial/index.html>`_ is a good plac
 Setting Up Your Environment 🌱
 ==============================
 To use Morelia, you must have the Python programming language installed. Morelia is officially supported for
-Python >= 3.10, however it may also be compatible with other versions (these just have not been tested).
+Python >= 3.10, however it may also be compatible with other versions (these just have not been tested). For all environments,
+you will need a C++ compiler installed. Additionally, there are a few operating-system-specific requirements:
 
 ------------
 Windows 🪟
@@ -83,8 +84,10 @@ and please refer to the next subsection for installing from source!
 -------------------------
 Installing from Source 👷
 -------------------------
-To begin, `download the latest source code release <https://github.com/Pinnacle-Technology-Inc/Morelia/releases>`_ from Github 
-(you just need to download one of the files, which one you choose is up to personal preference), decompress it
+
+.. TODO: Switch to source code release when up-to-date release exists.
+
+To begin, `download a copy of the source code <https://github.com/Pinnacle-Technology-Inc/Morelia>`_ from Github, decompress it
 using your favorite method, and enter the top level directory though your favorite terminal emulator. After that,
 run the following command:
 
