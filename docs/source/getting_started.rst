@@ -84,8 +84,10 @@ and please refer to the next subsection for installing from source!
 -------------------------
 Installing from Source 👷
 -------------------------
-To begin, `download the latest source code release <https://github.com/Pinnacle-Technology-Inc/Morelia/releases>`_ from Github 
-(you just need to download one of the files, which one you choose is up to personal preference), decompress it
+
+.. TODO: Switch to source code release when up-to-date release exists.
+
+To begin, `download a copy of the source code <https://github.com/Pinnacle-Technology-Inc/Morelia>`_ from Github, decompress it
 using your favorite method, and enter the top level directory though your favorite terminal emulator. After that,
 run the following command:
 
