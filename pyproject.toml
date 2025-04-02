@@ -34,6 +34,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["*", "pvfs_tools", "pvfs_tools.*"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
