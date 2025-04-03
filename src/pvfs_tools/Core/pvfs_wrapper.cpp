@@ -185,6 +185,10 @@ __declspec(dllexport) void close_file(PvfsFileHandleWrapper* handle) {
     }
 }
 
+__declspec(dllexport) int32_t pvfs_close(int32_t fd) {
+    return pvfs::PVFS_close(fd);
+}
+
 // String vector operations
 __declspec(dllexport) StringVectorWrapper* create_string_vector() {
     auto wrapper = new StringVectorWrapper();

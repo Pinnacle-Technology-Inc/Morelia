@@ -1,8 +1,10 @@
 **/__pycache__
+**/build/
 .venv
 .vscode
 testing.py
 *.bkp
 *.dtmp
 *.egg-info
+temp.vfs
 auth.json

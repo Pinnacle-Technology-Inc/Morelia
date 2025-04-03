@@ -134,6 +134,10 @@ _lib.close_file.restype = None
 _lib.delete_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
 _lib.delete_vfs.restype = None
 
+# Add PVFS_close function binding
+_lib.pvfs_close.argtypes = [ctypes.c_int32]
+_lib.pvfs_close.restype = ctypes.c_int32
+
 # String vector operations
 _lib.create_string_vector.restype = ctypes.POINTER(StringVectorWrapper)
 _lib.delete_string_vector.argtypes = [ctypes.POINTER(StringVectorWrapper)]
@@ -186,6 +190,17 @@ _lib.unlock_vfs.restype = None
 
 _lib.test_modify_header_wrapper.argtypes = [ctypes.POINTER(CWrapper)]
 _lib.test_modify_header_wrapper.restype = None
+
+def pvfs_close(fd):
+    """Close a file descriptor using PVFS_close.
+    
+    Args:
+        fd (int): The file descriptor to close
+        
+    Returns:
+        int: 0 on success, -1 on error
+    """
+    return _lib.pvfs_close(fd)
 
 class StringVector:
     def __init__(self):
@@ -255,7 +270,7 @@ class HighTime:
             raise RuntimeError("Failed to create HighTime")
 
     def __del__(self):
-        if self._time:
+        if hasattr(self, '_time') and self._time:
             _lib.delete_high_time(self._time)
 
     @property

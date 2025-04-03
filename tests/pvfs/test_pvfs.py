@@ -1,9 +1,10 @@
 import os
 import pytest
 from datetime import datetime
-from pvfs_tools.Core.pvfs_binding import PvfsFile, HighTime, StringVector
+from pvfs_tools.Core.pvfs_binding import PvfsFile, HighTime, StringVector, _lib
 from pvfs_tools.Database.database import ExperimentDatabase
 from pvfs_tools.Database.models import ExperimentInformation, ChannelInformation, Annotation
+from pvfs_tools.Core.indexed_data_file import IndexedDataFile
 from pathlib import Path
 
 @pytest.fixture
@@ -21,17 +22,18 @@ def vfs(file_name):
         vfs_instance = PvfsFile.open(file_name)
         yield vfs_instance
     finally:
-        # Close the VFS instance first
-        if vfs_instance:
-            try:
-                vfs_instance.close()
-            except Exception as e:
-                print(f"Warning: Failed to close VFS instance: {e}")
-        
-        # Then clean up any temporary files
+        # Clean up any temporary files first
         temp_file = Path("temp.vfs")
         if temp_file.exists():
             try:
+                # First ensure the VFS instance is properly cleaned up
+                if vfs_instance:
+                    # Close any open file handles
+                    if hasattr(vfs_instance, '_wrapper'):
+                        _lib.delete_vfs(vfs_instance._wrapper)
+                        vfs_instance._wrapper = None
+                
+                # Now try to delete the temp file
                 temp_file.unlink()
             except Exception as e:
                 print(f"Warning: Failed to delete temp.vfs: {e}")
@@ -294,6 +296,64 @@ def test_db_get_all_annotations(db):
         print(f"Error getting all annotations: {e}")
         raise
 
+def test_indexed_data_file(vfs, file_name):
+    """Test the IndexedDataFile class with the EEG10 channel."""
+    print(f"\nTesting IndexedDataFile with file: {file_name}")
+    try:
+        # Get channel list first
+        channels = vfs.get_channel_list()
+        assert channels is not None, "Failed to get channel list"
+        print(f"Found {len(channels)} channels:")
+        for channel in channels:
+            print(f"  - {channel}")
+            
+        # Check if EEG10.index is in the channel list
+        assert "EEG10.index" in channels, "EEG10.index channel not found in VFS"
+        
+        # Open the indexed data file for EEG10
+        print("Opening indexed data file for EEG10")
+        indexed_file = IndexedDataFile(vfs, "EEG10")
+        
+        # Get header information
+        header = indexed_file._header
+        print(f"File header information:")
+        print(f"  - Magic number: {header.magic_number}")
+        print(f"  - Version: {header.version}")
+        print(f"  - Data type: {header.data_type}")
+        print(f"  - Data rate: {header.data_rate} Hz")
+        print(f"  - Start time: {header.start_time.seconds}.{header.start_time.subseconds}")
+        print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
+        print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
+        
+        # Get time range
+        start_time = indexed_file.get_start_time()
+        end_time = indexed_file.get_end_time()
+        print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
+        
+        # Get data rate
+        data_rate = indexed_file.get_data_rate()
+        print(f"Data rate: {data_rate} Hz")
+        
+        # Get channel name
+        channel_name = indexed_file.get_channel_name()
+        print(f"Channel name: {channel_name}")
+        
+        # Try to get some data
+        if start_time != end_time:
+            # Get a small sample of data
+            timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
+            print(f"Retrieved {len(timestamps)} data points:")
+            for i, (ts, val) in enumerate(zip(timestamps, values)):
+                print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
+        
+        # Close the file
+        indexed_file.close()
+        print("Indexed data file closed successfully")
+        return True
+    except Exception as e:
+        print(f"Error testing indexed data file: {e}")
+        return False
+
 def main():
     # Test file path - using Windows path format
     file_name = str(Path("E:/newPython/PVFS_test/test1.pvfs"))
@@ -312,7 +372,8 @@ def main():
         ("Get Channel List", test_pvfs_get_channel_list),
         ("Get File List", test_pvfs_get_file_list),
         ("Extract Database", test_pvfs_extract_database),
-        ("Data Channel Operations", test_pvfs_data_channel)
+        ("Data Channel Operations", test_pvfs_data_channel),
+        ("Indexed Data File", test_indexed_data_file)
     ]
 
     print("\nStarting PVFS tests...")
