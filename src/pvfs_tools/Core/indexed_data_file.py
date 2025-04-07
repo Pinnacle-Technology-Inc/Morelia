@@ -215,7 +215,7 @@ class IndexedDataFile:
             return False
             
         if lock:
-            _lib.PVFS_lock_file(self._index_file)
+            self._pvfs_file.lock()
             
         try:
             _lib.PVFS_seek(self._index_file, 0)
@@ -232,7 +232,7 @@ class IndexedDataFile:
             return True
         finally:
             if lock:
-                _lib.PVFS_unlock_file(self._index_file)
+                self._pvfs_file.unlock()
 
     def read_header(self) -> bool:
         """Read the header information from the file.
@@ -254,7 +254,7 @@ class IndexedDataFile:
         if not self._index_file:
             return False
             
-        _lib.PVFS_lock_file(self._index_file)
+        self._pvfs_file.lock()
         try:
             _lib.PVFS_seek(self._index_file, 0)
             
@@ -303,7 +303,7 @@ class IndexedDataFile:
             
             return True
         finally:
-            _lib.PVFS_unlock_file(self._index_file)
+            self._pvfs_file.unlock()
 
     def _read_all_indices(self):
         """Read all index entries from the index file."""
@@ -367,7 +367,7 @@ class IndexedDataFile:
         if not self._index_file:
             return None, 0
             
-        _lib.PVFS_lock_file(self._index_file)
+        self._pvfs_file.lock()
         try:
             _lib.PVFS_seek(self._index_file, location)
             
@@ -391,7 +391,7 @@ class IndexedDataFile:
             else:
                 return None, 0
         finally:
-            _lib.PVFS_unlock_file(self._index_file)
+            self._pvfs_file.unlock()
 
     def _write_timestamp(self, time: HighTime) -> int:
         """Write a timestamp to the index file.
@@ -405,7 +405,7 @@ class IndexedDataFile:
         if not self._index_file:
             return -1
             
-        _lib.PVFS_lock_file(self._index_file)
+        self._pvfs_file.lock()
         try:
             # Get current position
             current_pos = _lib.PVFS_ftell(self._index_file)
@@ -422,7 +422,7 @@ class IndexedDataFile:
             
             return current_pos
         finally:
-            _lib.PVFS_unlock_file(self._index_file)
+            self._pvfs_file.unlock()
 
     def _write_data(self, data: bytes, do_crc: bool = False) -> int:
         """Write data to the data file.
@@ -437,7 +437,7 @@ class IndexedDataFile:
         if not self._data_file:
             return -1
             
-        _lib.PVFS_lock_file(self._data_file)
+        self._pvfs_file.lock()
         try:
             # Write data
             for byte in data:
@@ -448,7 +448,7 @@ class IndexedDataFile:
             
             return 0
         finally:
-            _lib.PVFS_unlock_file(self._data_file)
+            self._pvfs_file.unlock()
 
     def _write_timestamp_and_data(self, time: HighTime, value: float) -> int:
         """Write a timestamp and data value.
@@ -503,7 +503,7 @@ class IndexedDataFile:
                 continue
                 
             # Read data value
-            _lib.PVFS_lock_file(self._data_file)
+            self._pvfs_file.lock()
             try:
                 _lib.PVFS_seek(self._data_file, data_location)
                 
@@ -525,7 +525,7 @@ class IndexedDataFile:
                     if max_points > 0 and len(timestamps) >= max_points:
                         break
             finally:
-                _lib.PVFS_unlock_file(self._data_file)
+                self._pvfs_file.unlock()
         
         return timestamps, values
 
