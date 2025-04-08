@@ -154,7 +154,11 @@ __declspec(dllexport) PvfsFileHandleWrapper* create_file(PvfsFileWrapper* vfs, c
 __declspec(dllexport) PvfsFileHandleWrapper* open_file(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
-    handle->ptr = std::make_shared<pvfs::PvfsFileHandle>();
+    handle->ptr = pvfs::PVFS_fopen(vfs->ptr, filename);
+    if (!handle->ptr) {
+        delete handle;
+        return nullptr;
+    }
     return handle;
 }
 
@@ -406,6 +410,11 @@ __declspec(dllexport) int64_t pvfs_write_uint8(PvfsFileHandleWrapper* handle, ui
     return pvfs::PVFS_write_uint8(handle->ptr->vfs->fd, value);
 }
 
+__declspec(dllexport) int64_t pvfs_write_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
+    if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
+    return pvfs::PVFS_write_sint8(handle->ptr->vfs->fd, value);
+}
+
 __declspec(dllexport) int64_t pvfs_write_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_sint16(handle->ptr->vfs->fd, value);
@@ -437,6 +446,11 @@ __declspec(dllexport) int64_t pvfs_read_uint8(PvfsFileHandleWrapper* handle, uin
     return pvfs::PVFS_read_uint8(handle->ptr->vfs->fd, *value);
 }
 
+__declspec(dllexport) int64_t pvfs_read_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
+    if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
+    return pvfs::PVFS_read_sint8(handle->ptr->vfs->fd, *value);
+}
+
 __declspec(dllexport) int64_t pvfs_read_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_sint16(handle->ptr->vfs->fd, *value);
@@ -466,6 +480,11 @@ __declspec(dllexport) int64_t pvfs_read_sint64(PvfsFileHandleWrapper* handle, in
 __declspec(dllexport) int64_t pvfs_fwrite_uint8(PvfsFileHandleWrapper* handle, uint8_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_uint8(handle->ptr, value);
+}
+
+__declspec(dllexport) int64_t pvfs_fwrite_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
+    if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
+    return pvfs::PVFS_fwrite_sint8(handle->ptr, value);
 }
 
 __declspec(dllexport) int64_t pvfs_fwrite_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
@@ -507,6 +526,11 @@ __declspec(dllexport) int64_t pvfs_fwrite_double(PvfsFileHandleWrapper* handle, 
 __declspec(dllexport) int64_t pvfs_fread_uint8(PvfsFileHandleWrapper* handle, uint8_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_uint8(handle->ptr, value);
+}
+
+__declspec(dllexport) int64_t pvfs_fread_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
+    if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
+    return pvfs::PVFS_fread_sint8(handle->ptr, value);
 }
 
 __declspec(dllexport) int64_t pvfs_fread_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {

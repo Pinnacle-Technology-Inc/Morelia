@@ -6,6 +6,12 @@ import struct
 
 from .pvfs_binding import PvfsFile, HighTime, PvfsFileHandle, PvfsFileHandleWrapper
 
+class PvfsError(Exception):
+    """Exception raised for PVFS-related errors."""
+    def __init__(self, error_code: int):
+        self.error_code = error_code
+        super().__init__(f"PVFS error: {error_code}")
+
 @dataclass
 class IndexedHeader:
     """Header structure for indexed data files."""
@@ -156,6 +162,8 @@ class IndexedDataFile:
         # Construct filenames
         index_name = filename + self.INDEX_EXTENSION
         data_name = filename + self.DATA_EXTENSION
+        print(f"Opening index file: {index_name}")
+        print(f"Opening data file: {data_name}")
         
         # Lock the VFS during file operations
         pvfs_file.lock()
@@ -176,7 +184,7 @@ class IndexedDataFile:
                 return False
                 
 #            self._read_all_indices()
-#            return True
+            return True
         finally:
             pvfs_file.unlock()
 
@@ -223,9 +231,9 @@ class IndexedDataFile:
             self._index_file.fwrite_uint32(header.version)
             self._index_file.fwrite_uint32(header.data_type)
             self._index_file.fwrite_float(header.data_rate)
-            self._index_file.fwrite_sint64(header.start_time.seconds)
+            self._index_file.fwrite_int64(header.start_time.seconds)
             self._index_file.fwrite_double(header.start_time.subseconds)
-            self._index_file.fwrite_sint64(header.end_time.seconds)
+            self._index_file.fwrite_int64(header.end_time.seconds)
             self._index_file.fwrite_double(header.end_time.subseconds)
             self._index_file.fwrite_uint32(header.timestamp_interval_seconds)
             self._index_file.flush()
@@ -240,36 +248,57 @@ class IndexedDataFile:
         Returns:
             bool: True if successful, False otherwise
         """
-        return self.read_header_data(self._header)
+        return self.read_header_data()
 
-    def read_header_data(self, header: IndexedHeader) -> bool:
-        """Read header data from the file.
-        
-        Args:
-            header: Header object to store the data
-            
-        Returns:
-            bool: True if successful, False otherwise
-        """
+    def read_header_data(self) -> bool:
+        """Read the header data from the index file."""
         if not self._index_file:
             return False
             
         try:
-            self._index_file.seek(0)
-            magic = self._index_file.fread_uint32()
-            if magic != self.INDEXED_DATA_FILE_MAGIC_NUMBER:
+            # Read magic number
+            magic_number = self._index_file.fread_uint32()
+            print(f"Magic number: {magic_number}")
+            if magic_number != 0xFF01FF01:
+                print(f"Invalid magic number: {magic_number}")
                 return False
                 
-            header.magic_number = magic
-            header.version = self._index_file.fread_uint32()
-            header.data_type = self._index_file.fread_uint32()
-            header.data_rate = self._index_file.fread_float()
-            header.start_time.seconds = self._index_file.fread_sint64()
-            header.start_time.subseconds = self._index_file.fread_double()
-            header.end_time.seconds = self._index_file.fread_sint64()
-            header.end_time.subseconds = self._index_file.fread_double()
-            header.timestamp_interval_seconds = self._index_file.fread_uint32()
+            # Read version
+            version = self._index_file.fread_uint32()
+            if version != 1:
+                print(f"Unsupported version: {version}")
+                return False
+                
+            # Read data type
+            data_type = self._index_file.fread_uint32()
+            
+            # Read data rate
+            data_rate = self._index_file.fread_float()
+            
+            # Read start time
+            start_seconds = self._index_file.fread_int64()
+            start_subseconds = self._index_file.fread_double()
+            start_time = HighTime(start_seconds, start_subseconds)
+            
+            # Read end time
+            end_seconds = self._index_file.fread_int64()
+            end_subseconds = self._index_file.fread_double()
+            end_time = HighTime(end_seconds, end_subseconds)
+            
+            # Read timestamp interval
+            timestamp_interval = self._index_file.fread_uint32()
+            
+            # Update header with new values
+            self._header.magic_number = magic_number
+            self._header.version = version
+            self._header.data_type = data_type
+            self._header.data_rate = data_rate
+            self._header.start_time = start_time
+            self._header.end_time = end_time
+            self._header.timestamp_interval_seconds = timestamp_interval
+            
             return True
+            
         except Exception as e:
             print(f"Error reading header: {e}")
             return False
@@ -342,9 +371,9 @@ class IndexedDataFile:
             if marker != self.UNIQUE_MARKER_BYTE:
                 return None, -1
                 
-            seconds = self._index_file.fread_sint64()
+            seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
-            data_location = self._index_file.fread_sint64()
+            data_location = self._index_file.fread_int64()
             
             return HighTime(seconds, subseconds), data_location
         except Exception as e:
@@ -366,9 +395,9 @@ class IndexedDataFile:
         try:
             location = self._index_file.tell()
             self._index_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
-            self._index_file.fwrite_sint64(time.seconds)
+            self._index_file.fwrite_int64(time.seconds)
             self._index_file.fwrite_double(time.subseconds)
-            self._index_file.fwrite_sint64(self._data_file.tell())
+            self._index_file.fwrite_int64(self._data_file.tell())
             self._index_file.flush()
             return location
         except Exception as e:

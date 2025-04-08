@@ -36,21 +36,23 @@ pvfs_close(fd: int) -> int:                              PVFS_close(fd)
 Type-Specific Write Operations:
 -----------------------------
 write_uint8(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_uint8(handle, value)
-write_int16(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_int16(handle, value)
+write_int8(handle: PvfsFileHandleWrapper, value: int) -> int:     PVFS_write_sint8(handle, value)
+write_int16(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_sint16(handle, value)
 write_uint16(handle: PvfsFileHandleWrapper, value: int) -> int:   PVFS_write_uint16(handle, value)
-write_int32(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_int32(handle, value)
+write_int32(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_sint32(handle, value)
 write_uint32(handle: PvfsFileHandleWrapper, value: int) -> int:   PVFS_write_uint32(handle, value)
-write_int64(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_int64(handle, value)
+write_int64(handle: PvfsFileHandleWrapper, value: int) -> int:    PVFS_write_sint64(handle, value)
 write_uint64(handle: PvfsFileHandleWrapper, value: int) -> int:   PVFS_write_uint64(handle, value)
 
 Type-Specific Read Operations:
 ----------------------------
 read_uint8(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_uint8(handle, value)
-read_int16(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_int16(handle, value)
+read_int8(handle: PvfsFileHandleWrapper) -> int:          PVFS_read_sint8(handle, value)
+read_int16(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_sint16(handle, value)
 read_uint16(handle: PvfsFileHandleWrapper) -> int:        PVFS_read_uint16(handle, value)
-read_int32(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_int32(handle, value)
+read_int32(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_sint32(handle, value)
 read_uint32(handle: PvfsFileHandleWrapper) -> int:        PVFS_read_uint32(handle, value)
-read_int64(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_int64(handle, value)
+read_int64(handle: PvfsFileHandleWrapper) -> int:         PVFS_read_sint64(handle, value)
 read_uint64(handle: PvfsFileHandleWrapper) -> int:        PVFS_read_uint64(handle, value)
 
 File-Specific Type Operations:
@@ -369,6 +371,61 @@ _lib.pvfs_read_uint32.restype = ctypes.c_int64
 
 _lib.pvfs_read_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
 _lib.pvfs_read_sint64.restype = ctypes.c_int64
+
+# Add read/write operation bindings
+_lib.pvfs_fread_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8)]
+_lib.pvfs_fread_uint8.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint8]
+_lib.pvfs_fwrite_uint8.restype = ctypes.c_int64
+
+_lib.pvfs_fread_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int8)]
+_lib.pvfs_fread_sint8.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int8]
+_lib.pvfs_fwrite_sint8.restype = ctypes.c_int64
+
+_lib.pvfs_fread_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint16)]
+_lib.pvfs_fread_uint16.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint16]
+_lib.pvfs_fwrite_uint16.restype = ctypes.c_int64
+
+_lib.pvfs_fread_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int16)]
+_lib.pvfs_fread_sint16.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int16]
+_lib.pvfs_fwrite_sint16.restype = ctypes.c_int64
+
+_lib.pvfs_fread_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint32)]
+_lib.pvfs_fread_uint32.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint32]
+_lib.pvfs_fwrite_uint32.restype = ctypes.c_int64
+
+_lib.pvfs_fread_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int32)]
+_lib.pvfs_fread_sint32.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
+_lib.pvfs_fwrite_sint32.restype = ctypes.c_int64
+
+_lib.pvfs_fread_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
+_lib.pvfs_fread_sint64.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
+_lib.pvfs_fwrite_sint64.restype = ctypes.c_int64
+
+_lib.pvfs_fread_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_float)]
+_lib.pvfs_fread_float.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_float]
+_lib.pvfs_fwrite_float.restype = ctypes.c_int64
+
+_lib.pvfs_fread_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_double)]
+_lib.pvfs_fread_double.restype = ctypes.c_int64
+
+_lib.pvfs_fwrite_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_double]
+_lib.pvfs_fwrite_double.restype = ctypes.c_int64
 
 def pvfs_close(fd):
     """Close a file descriptor using PVFS_close.
@@ -696,6 +753,12 @@ class PvfsFileHandle:
         if not isinstance(value, int) or not 0 <= value <= 255:
             raise ValueError("Value must be an integer between 0 and 255")
         return _lib.pvfs_write_uint8(self.handle, value)
+    
+    def write_int8(self, value: int) -> int:
+        """Write a signed 8-bit integer."""
+        if not isinstance(value, int) or not 0 <= value <= 255:
+            raise ValueError("Value must be an integer between 0 and 255")
+        return _lib.pvfs_write_sint8(self.handle, value)
 
     def write_int16(self, value: int) -> int:
         """Write a signed 16-bit integer."""
@@ -753,6 +816,14 @@ class PvfsFileHandle:
         if result < 0:
             raise RuntimeError(f"Failed to read uint8: {result}")
         return value.value
+    
+    def read_int8(self) -> int:
+        """Read a signed 8-bit integer."""
+        value = ctypes.c_int8()
+        result = _lib.pvfs_read_sint8(self.handle, ctypes.byref(value))
+        if result < 0:
+            raise RuntimeError(f"Failed to read int8: {result}")
+        return value.value
 
     def read_int16(self) -> int:
         """Read a signed 16-bit integer."""
@@ -793,7 +864,6 @@ class PvfsFileHandle:
         if result < 0:
             raise RuntimeError(f"Failed to read int64: {result}")
         return value.value
-
 
     def fwrite_uint8(self, value: int) -> int:
         """Write an unsigned 8-bit integer to the file."""
@@ -853,72 +923,72 @@ class PvfsFileHandle:
         """Read an unsigned 8-bit integer from the file."""
         value = ctypes.c_uint8()
         result = _lib.pvfs_fread_uint8(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read uint8: {result}")
         return value.value
 
     def fread_int8(self) -> int:
         """Read a signed 8-bit integer from the file."""
         value = ctypes.c_int8()
         result = _lib.pvfs_fread_sint8(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read int8: {result}")
         return value.value
 
     def fread_uint16(self) -> int:
         """Read an unsigned 16-bit integer from the file."""
         value = ctypes.c_uint16()
         result = _lib.pvfs_fread_uint16(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read uint16: {result}")
         return value.value
 
     def fread_int16(self) -> int:
         """Read a signed 16-bit integer from the file."""
         value = ctypes.c_int16()
         result = _lib.pvfs_fread_sint16(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read int16: {result}")
         return value.value
 
     def fread_uint32(self) -> int:
         """Read an unsigned 32-bit integer from the file."""
         value = ctypes.c_uint32()
         result = _lib.pvfs_fread_uint32(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read uint32: {result}")
         return value.value
 
     def fread_int32(self) -> int:
         """Read a signed 32-bit integer from the file."""
         value = ctypes.c_int32()
         result = _lib.pvfs_fread_sint32(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read int32: {result}")
         return value.value
 
     def fread_int64(self) -> int:
         """Read a signed 64-bit integer from the file."""
         value = ctypes.c_int64()
         result = _lib.pvfs_fread_sint64(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read int64: {result}")
         return value.value
 
     def fread_float(self) -> float:
         """Read a 32-bit float from the file."""
         value = ctypes.c_float()
         result = _lib.pvfs_fread_float(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read float: {result}")
         return value.value
 
     def fread_double(self) -> float:
         """Read a 64-bit double from the file."""
         value = ctypes.c_double()
         result = _lib.pvfs_fread_double(self.handle, ctypes.byref(value))
-        if result != 0:
-            raise PvfsError(result)
+        if result < 0:
+            raise RuntimeError(f"Failed to read double: {result}")
         return value.value
 
 def create_vfs(block_size):
