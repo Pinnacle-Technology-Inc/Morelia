@@ -4,7 +4,7 @@ import ctypes
 from pathlib import Path
 import struct
 
-from .pvfs_binding import PvfsFile, HighTime, _lib
+from .pvfs_binding import PvfsFile, HighTime, PvfsFileHandle, PvfsFileHandleWrapper
 
 @dataclass
 class IndexedHeader:
@@ -175,19 +175,19 @@ class IndexedDataFile:
             if not self.read_header():
                 return False
                 
-            self._read_all_indices()
-            return True
+#            self._read_all_indices()
+#            return True
         finally:
             pvfs_file.unlock()
 
     def close(self):
         """Close the indexed data file."""
         if self._index_file:
-            _lib.PVFS_fclose(self._index_file)
+            self._index_file.close()
             self._index_file = None
             
         if self._data_file:
-            _lib.PVFS_fclose(self._data_file)
+            self._data_file.close()
             self._data_file = None
 
     def write_header(self, lock: bool = True) -> bool:
@@ -218,17 +218,17 @@ class IndexedDataFile:
             self._pvfs_file.lock()
             
         try:
-            _lib.PVFS_seek(self._index_file, 0)
-            _lib.PVFS_fwrite_uint32(self._index_file, header.magic_number)
-            _lib.PVFS_fwrite_uint32(self._index_file, header.version)
-            _lib.PVFS_fwrite_uint32(self._index_file, header.data_type)
-            _lib.PVFS_fwrite_float(self._index_file, header.data_rate)
-            _lib.PVFS_fwrite_sint64(self._index_file, header.start_time.seconds)
-            _lib.PVFS_fwrite_double(self._index_file, header.start_time.subseconds)
-            _lib.PVFS_fwrite_sint64(self._index_file, header.end_time.seconds)
-            _lib.PVFS_fwrite_double(self._index_file, header.end_time.subseconds)
-            _lib.PVFS_fwrite_uint32(self._index_file, header.timestamp_interval_seconds)
-            _lib.PVFS_flush(self._index_file)
+            self._index_file.seek(0)
+            self._index_file.fwrite_uint32(header.magic_number)
+            self._index_file.fwrite_uint32(header.version)
+            self._index_file.fwrite_uint32(header.data_type)
+            self._index_file.fwrite_float(header.data_rate)
+            self._index_file.fwrite_sint64(header.start_time.seconds)
+            self._index_file.fwrite_double(header.start_time.subseconds)
+            self._index_file.fwrite_sint64(header.end_time.seconds)
+            self._index_file.fwrite_double(header.end_time.subseconds)
+            self._index_file.fwrite_uint32(header.timestamp_interval_seconds)
+            self._index_file.flush()
             return True
         finally:
             if lock:
@@ -254,56 +254,25 @@ class IndexedDataFile:
         if not self._index_file:
             return False
             
-        self._pvfs_file.lock()
         try:
-            _lib.PVFS_seek(self._index_file, 0)
-            
-            # Read header fields
-            magic = ctypes.c_uint32()
-            _lib.PVFS_fread_uint32(self._index_file, ctypes.byref(magic))
-            header.magic_number = magic.value
-            
-            version = ctypes.c_uint32()
-            _lib.PVFS_fread_uint32(self._index_file, ctypes.byref(version))
-            header.version = version.value
-            
-            data_type = ctypes.c_uint32()
-            _lib.PVFS_fread_uint32(self._index_file, ctypes.byref(data_type))
-            header.data_type = data_type.value
-            
-            data_rate = ctypes.c_float()
-            _lib.PVFS_fread_float(self._index_file, ctypes.byref(data_rate))
-            header.data_rate = data_rate.value
-            self._data_rate = data_rate.value
-            
-            start_seconds = ctypes.c_int64()
-            _lib.PVFS_fread_sint64(self._index_file, ctypes.byref(start_seconds))
-            
-            start_subseconds = ctypes.c_double()
-            _lib.PVFS_fread_double(self._index_file, ctypes.byref(start_subseconds))
-            header.start_time = HighTime(start_seconds.value, start_subseconds.value)
-            
-            end_seconds = ctypes.c_int64()
-            _lib.PVFS_fread_sint64(self._index_file, ctypes.byref(end_seconds))
-            
-            end_subseconds = ctypes.c_double()
-            _lib.PVFS_fread_double(self._index_file, ctypes.byref(end_subseconds))
-            header.end_time = HighTime(end_seconds.value, end_subseconds.value)
-            
-            interval = ctypes.c_uint32()
-            _lib.PVFS_fread_uint32(self._index_file, ctypes.byref(interval))
-            header.timestamp_interval_seconds = interval.value
-            
-            if header.timestamp_interval_seconds <= 0:
-                header.timestamp_interval_seconds = 10
+            self._index_file.seek(0)
+            magic = self._index_file.fread_uint32()
+            if magic != self.INDEXED_DATA_FILE_MAGIC_NUMBER:
+                return False
                 
-            # Set zero time and time range
-            self._zero_time = HighTime(header.start_time.seconds, header.start_time.subseconds)
-            self._start_time_set = True
-            
+            header.magic_number = magic
+            header.version = self._index_file.fread_uint32()
+            header.data_type = self._index_file.fread_uint32()
+            header.data_rate = self._index_file.fread_float()
+            header.start_time.seconds = self._index_file.fread_sint64()
+            header.start_time.subseconds = self._index_file.fread_double()
+            header.end_time.seconds = self._index_file.fread_sint64()
+            header.end_time.subseconds = self._index_file.fread_double()
+            header.timestamp_interval_seconds = self._index_file.fread_uint32()
             return True
-        finally:
-            self._pvfs_file.unlock()
+        except Exception as e:
+            print(f"Error reading header: {e}")
+            return False
 
     def _read_all_indices(self):
         """Read all index entries from the index file."""
@@ -314,7 +283,7 @@ class IndexedDataFile:
             return
             
         # Calculate number of indices
-        file_size = _lib.PVFS_get_file_size(self._index_file)
+        file_size = self._index_file.get_file_size()
         n = (file_size - self.INDEX_HEADER_SIZE) // self.TIMESTAMP_SIZE
         
         read_location = self.INDEX_HEADER_SIZE
@@ -356,99 +325,79 @@ class IndexedDataFile:
             self._indices.append(entry)
 
     def _read_timestamp(self, location: int) -> Tuple[Optional[HighTime], int]:
-        """Read a timestamp from the index file.
+        """Read a timestamp from the specified location.
         
         Args:
-            location: File location to read from
+            location: File position to read from
             
         Returns:
-            Tuple of (timestamp, data_location) or (None, 0) if failed
+            Tuple[Optional[HighTime], int]: The timestamp and data location, or (None, -1) if error
         """
         if not self._index_file:
-            return None, 0
+            return None, -1
             
-        self._pvfs_file.lock()
         try:
-            _lib.PVFS_seek(self._index_file, location)
+            self._index_file.seek(location)
+            marker = self._index_file.fread_uint8()
+            if marker != self.UNIQUE_MARKER_BYTE:
+                return None, -1
+                
+            seconds = self._index_file.fread_sint64()
+            subseconds = self._index_file.fread_double()
+            data_location = self._index_file.fread_sint64()
             
-            # Read timestamp
-            seconds = ctypes.c_int64()
-            _lib.PVFS_fread_sint64(self._index_file, ctypes.byref(seconds))
-            
-            subseconds = ctypes.c_double()
-            _lib.PVFS_fread_double(self._index_file, ctypes.byref(subseconds))
-            
-            # Read data location
-            data_location = ctypes.c_int64()
-            _lib.PVFS_fread_sint64(self._index_file, ctypes.byref(data_location))
-            
-            # Read unique marker
-            marker = ctypes.c_uint8()
-            _lib.PVFS_fread_uint8(self._index_file, ctypes.byref(marker))
-            
-            if marker.value == self.UNIQUE_MARKER_BYTE:
-                return HighTime(seconds.value, subseconds.value), data_location.value
-            else:
-                return None, 0
-        finally:
-            self._pvfs_file.unlock()
+            return HighTime(seconds, subseconds), data_location
+        except Exception as e:
+            print(f"Error reading timestamp: {e}")
+            return None, -1
 
     def _write_timestamp(self, time: HighTime) -> int:
-        """Write a timestamp to the index file.
+        """Write a timestamp to the file.
         
         Args:
-            time: Timestamp to write
+            time: The timestamp to write
             
         Returns:
-            int: 0 on success, -1 on failure
+            int: The location where the timestamp was written, or -1 if error
         """
         if not self._index_file:
             return -1
             
-        self._pvfs_file.lock()
         try:
-            # Get current position
-            current_pos = _lib.PVFS_ftell(self._index_file)
-            
-            # Write timestamp
-            _lib.PVFS_fwrite_sint64(self._index_file, time.seconds)
-            _lib.PVFS_fwrite_double(self._index_file, time.subseconds)
-            
-            # Write data location
-            _lib.PVFS_fwrite_sint64(self._index_file, self._data_file_index)
-            
-            # Write unique marker
-            _lib.PVFS_fwrite_uint8(self._index_file, self.UNIQUE_MARKER_BYTE)
-            
-            return current_pos
-        finally:
-            self._pvfs_file.unlock()
+            location = self._index_file.tell()
+            self._index_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
+            self._index_file.fwrite_sint64(time.seconds)
+            self._index_file.fwrite_double(time.subseconds)
+            self._index_file.fwrite_sint64(self._data_file.tell())
+            self._index_file.flush()
+            return location
+        except Exception as e:
+            print(f"Error writing timestamp: {e}")
+            return -1
 
     def _write_data(self, data: bytes, do_crc: bool = False) -> int:
-        """Write data to the data file.
+        """Write data to the file.
         
         Args:
-            data: Data to write
-            do_crc: Whether to calculate CRC
+            data: The data to write
+            do_crc: Whether to calculate CRC (not implemented)
             
         Returns:
-            int: 0 on success, -1 on failure
+            int: The location where the data was written, or -1 if error
         """
         if not self._data_file:
             return -1
             
-        self._pvfs_file.lock()
         try:
-            # Write data
-            for byte in data:
-                _lib.PVFS_fwrite_uint8(self._data_file, byte)
-            
-            # Update data file index
-            self._data_file_index += len(data)
-            
-            return 0
-        finally:
-            self._pvfs_file.unlock()
+            location = self._data_file.tell()
+            self._data_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
+            self._data_file.fwrite_uint32(len(data))
+            self._data_file.write(data, len(data))
+            self._data_file.flush()
+            return location
+        except Exception as e:
+            print(f"Error writing data: {e}")
+            return -1
 
     def _write_timestamp_and_data(self, time: HighTime, value: float) -> int:
         """Write a timestamp and data value.
@@ -505,13 +454,13 @@ class IndexedDataFile:
             # Read data value
             self._pvfs_file.lock()
             try:
-                _lib.PVFS_seek(self._data_file, data_location)
+                self._data_file.seek(data_location)
                 
                 # Read float value
                 value_bytes = bytearray(4)
                 for i in range(4):
                     byte_val = ctypes.c_uint8()
-                    _lib.PVFS_fread_uint8(self._data_file, ctypes.byref(byte_val))
+                    self._data_file.fread_uint8(ctypes.byref(byte_val))
                     value_bytes[i] = byte_val.value
                 
                 value = struct.unpack('f', bytes(value_bytes))[0]
@@ -671,7 +620,7 @@ class IndexedDataFile:
             synchronous: Whether to wait for flush to complete
         """
         if self._index_file:
-            _lib.PVFS_flush(self._index_file)
+            self._index_file.flush()
             
         if self._data_file:
-            _lib.PVFS_flush(self._data_file) 
+            self._data_file.flush() 

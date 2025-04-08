@@ -316,67 +316,67 @@ def test_db_get_all_annotations(db):
         print(f"Error getting all annotations: {e}")
         raise
 
-# def test_indexed_data_file(vfs, file_name):
-#     """Test the IndexedDataFile class with the EEG10 channel."""
-#     print(f"\nTesting IndexedDataFile with file: {file_name}")
-#     try:
-#         # Get channel list first
-#         channels = vfs.get_channel_list()
-#         assert channels is not None, "Failed to get channel list"
-#         print(f"Found {len(channels)} channels:")
-#         for channel in channels:
-#             print(f"  - {channel}")
+def test_indexed_data_file(vfs, file_name):
+    """Test the IndexedDataFile class with the EEG10 channel."""
+    print(f"\nTesting IndexedDataFile with file: {file_name}")
+    try:
+        # Get channel list first
+        channels = vfs.get_channel_list()
+        assert channels is not None, "Failed to get channel list"
+        print(f"Found {len(channels)} channels:")
+        for channel in channels:
+            print(f"  - {channel}")
             
-#         # Check if EEG10.index is in the channel list
-#         assert "EEG10.index" in channels, "EEG10.index channel not found in VFS"
+        # Check if EEG10.index is in the channel list
+        assert "EEG10.index" in channels, "EEG10.index channel not found in VFS"
         
-#         # Open the indexed data file for EEG10
-#         print("Opening indexed data file for EEG10")
-#         indexed_file = IndexedDataFile(vfs, "EEG10")
-#         assert indexed_file is not None, "Failed to create IndexedDataFile instance"
+        # Open the indexed data file for EEG10
+        print("Opening indexed data file for EEG10")
+        indexed_file = IndexedDataFile(vfs, "EEG10")
+        assert indexed_file is not None, "Failed to create IndexedDataFile instance"
         
-#         # Get header information
-#         header = indexed_file._header
-#         assert header is not None, "Failed to get header information"
-#         print(f"File header information:")
-#         print(f"  - Magic number: {header.magic_number}")
-#         print(f"  - Version: {header.version}")
-#         print(f"  - Data type: {header.data_type}")
-#         print(f"  - Data rate: {header.data_rate} Hz")
-#         print(f"  - Start time: {header.start_time.seconds}.{header.start_time.subseconds}")
-#         print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
-#         print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
+        # Get header information
+        header = indexed_file._header
+        assert header is not None, "Failed to get header information"
+        print(f"File header information:")
+        print(f"  - Magic number: {header.magic_number}")
+        print(f"  - Version: {header.version}")
+        print(f"  - Data type: {header.data_type}")
+        print(f"  - Data rate: {header.data_rate} Hz")
+        print(f"  - Start time: {header.start_time.seconds}.{header.start_time.subseconds}")
+        print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
+        print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
         
-#         # Get time range
-#         start_time = indexed_file.get_start_time()
-#         assert start_time is not None, "Failed to get start time"
-#         end_time = indexed_file.get_end_time()
-#         assert end_time is not None, "Failed to get end time"
-#         print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
+    #     # Get time range
+    #     start_time = indexed_file.get_start_time()
+    #     assert start_time is not None, "Failed to get start time"
+    #     end_time = indexed_file.get_end_time()
+    #     assert end_time is not None, "Failed to get end time"
+    #     print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
         
-#         # Get data rate
-#         data_rate = indexed_file.get_data_rate()
-#         print(f"Data rate: {data_rate} Hz")
+    #     # Get data rate
+    #     data_rate = indexed_file.get_data_rate()
+    #     print(f"Data rate: {data_rate} Hz")
         
-#         # Get channel name
-#         channel_name = indexed_file.get_channel_name()
-#         assert channel_name == "EEG10", "Unexpected channel name"
-#         print(f"Channel name: {channel_name}")
+    #     # Get channel name
+    #     channel_name = indexed_file.get_channel_name()
+    #     assert channel_name == "EEG10", "Unexpected channel name"
+    #     print(f"Channel name: {channel_name}")
         
-#         # Try to get some data
-#         if start_time != end_time:
-#             # Get a small sample of data
-#             timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
-#             print(f"Retrieved {len(timestamps)} data points:")
-#             for i, (ts, val) in enumerate(zip(timestamps, values)):
-#                 print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
+    #     # Try to get some data
+    #     if start_time != end_time:
+    #         # Get a small sample of data
+    #         timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
+    #         print(f"Retrieved {len(timestamps)} data points:")
+    #         for i, (ts, val) in enumerate(zip(timestamps, values)):
+    #             print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
         
-#         # Close the file
-#         indexed_file.close()
-#         print("Indexed data file closed successfully")
-#     except Exception as e:
-#         print(f"Error testing indexed data file: {e}")
-#         raise  # Re-raise the exception to fail the test
+    #     # Close the file
+    #     indexed_file.close()
+    #     print("Indexed data file closed successfully")
+    except Exception as e:
+        print(f"Error testing indexed data file: {e}")
+        raise  # Re-raise the exception to fail the test
 
 def main():
     # Test file path - using Windows path format
