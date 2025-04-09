@@ -7,6 +7,7 @@ from pvfs_tools.Database.models import ExperimentInformation, ChannelInformation
 from pvfs_tools.Core.indexed_data_file import IndexedDataFile
 from pathlib import Path
 import time
+import gc
 
 @pytest.fixture
 def file_name():
@@ -25,20 +26,25 @@ def vfs(file_name):
     finally:
         # Clean up any temporary files first
         temp_file = Path("temp.vfs")
-        if temp_file.exists():
+ 
+        # First ensure the VFS instance is properly cleaned up
+        if vfs_instance:
+            # Close any open file handles and the VFS instance
             try:
-                # First ensure the VFS instance is properly cleaned up
-                if vfs_instance:
-                    # Close any open file handles and the VFS instance
-                    vfs_instance.close()
-                    # Give the system a moment to release the file
-                    time.sleep(0.1)
-                
-                # Now try to delete the temp file
-                if temp_file.exists():
-                    temp_file.unlink()
+                vfs_instance.close()
             except Exception as e:
-                print(f"Warning: Failed to delete temp.vfs: {e}")
+                print(f"Warning: Failed to close VFS: {e}")
+            # Garbage collect and give the system a moment to release the file
+            gc.collect()
+            time.sleep(0.2)
+            
+            # Now try to delete the temp file
+            if temp_file.exists():
+                try:
+                    temp_file.unlink()
+
+                except Exception as e:
+                    print(f"Warning: Failed to delete temp.vfs: {e}")
 
 @pytest.fixture
 def db_name():
@@ -347,36 +353,66 @@ def test_indexed_data_file(vfs, file_name):
         print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
         print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
         
-    #     # Get time range
-    #     start_time = indexed_file.get_start_time()
-    #     assert start_time is not None, "Failed to get start time"
-    #     end_time = indexed_file.get_end_time()
-    #     assert end_time is not None, "Failed to get end time"
-    #     print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
+        # Get time range
+        start_time = indexed_file.get_start_time()
+        assert start_time is not None, "Failed to get start time"
+        end_time = indexed_file.get_end_time()
+        assert end_time is not None, "Failed to get end time"
+        print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
         
-    #     # Get data rate
-    #     data_rate = indexed_file.get_data_rate()
-    #     print(f"Data rate: {data_rate} Hz")
+        # Get data rate
+        data_rate = indexed_file.get_data_rate()
+        print(f"Data rate: {data_rate} Hz")
         
-    #     # Get channel name
-    #     channel_name = indexed_file.get_channel_name()
-    #     assert channel_name == "EEG10", "Unexpected channel name"
-    #     print(f"Channel name: {channel_name}")
+        # Get channel name
+        channel_name = indexed_file.get_channel_name()
+        assert channel_name == "EEG10", "Unexpected channel name"
+        print(f"Channel name: {channel_name}")
         
-    #     # Try to get some data
-    #     if start_time != end_time:
-    #         # Get a small sample of data
-    #         timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
-    #         print(f"Retrieved {len(timestamps)} data points:")
-    #         for i, (ts, val) in enumerate(zip(timestamps, values)):
-    #             print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
+        # Try to get some data
+        if start_time != end_time:
+            # Get a small sample of data
+            timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
+            print(f"Retrieved {len(timestamps)} data points:")
+            for i, (ts, val) in enumerate(zip(timestamps, values)):
+                print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
         
-    #     # Close the file
-    #     indexed_file.close()
-    #     print("Indexed data file closed successfully")
+        # Close the file
+        indexed_file.close()
+        print("Indexed data file closed successfully")
     except Exception as e:
         print(f"Error testing indexed data file: {e}")
         raise  # Re-raise the exception to fail the test
+
+def test_file_handle_get_info(vfs, file_name):
+    """
+    Test retrieving the info (startBlock, size, filename) from a PvfsFileHandle.
+    """
+    print(f"\nTesting file handle get_file_info with file: {file_name}")
+
+    try:
+        # Open a known file inside the VFS (adjust filename if needed)
+        handle = vfs.open_file("EEG10.index")
+        
+        # Call the new get_file_info method (which must be implemented in the binding)
+        info = handle.get_file_info()
+        
+        # Print out the info (similar to the python snippet)
+        filename_str = info.filename.decode("utf-8", errors="ignore").rstrip("\x00")
+        print(f"Start Block: {info.startBlock}")
+        print(f"Size:       {info.size}")
+        print(f"Filename:   {filename_str}")
+
+        # Optionally add some simple assertions:
+        assert info.startBlock >= 0, "startBlock should be non-negative"
+        assert info.size >= 0, "size should be non-negative"
+        assert len(filename_str) > 0, "filename should not be empty"
+
+        
+    except Exception as e:
+        print(f"Error in test_file_handle_get_info: {e}")
+        raise
+
 
 def main():
     # Test file path - using Windows path format

@@ -162,8 +162,6 @@ class IndexedDataFile:
         # Construct filenames
         index_name = filename + self.INDEX_EXTENSION
         data_name = filename + self.DATA_EXTENSION
-        print(f"Opening index file: {index_name}")
-        print(f"Opening data file: {data_name}")
         
         # Lock the VFS during file operations
         pvfs_file.lock()
@@ -183,7 +181,7 @@ class IndexedDataFile:
             if not self.read_header():
                 return False
                 
-#            self._read_all_indices()
+            self._read_all_indices()
             return True
         finally:
             pvfs_file.unlock()
@@ -258,7 +256,6 @@ class IndexedDataFile:
         try:
             # Read magic number
             magic_number = self._index_file.fread_uint32()
-            print(f"Magic number: {magic_number}")
             if magic_number != 0xFF01FF01:
                 print(f"Invalid magic number: {magic_number}")
                 return False
@@ -312,7 +309,8 @@ class IndexedDataFile:
             return
             
         # Calculate number of indices
-        file_size = self._index_file.get_file_size()
+        info = self._index_file.get_file_info()
+        file_size = info.size
         n = (file_size - self.INDEX_HEADER_SIZE) // self.TIMESTAMP_SIZE
         
         read_location = self.INDEX_HEADER_SIZE
@@ -463,11 +461,13 @@ class IndexedDataFile:
         
         if not self._index_file or not self._data_file:
             return timestamps, values
-            
+
+        print(f"index length: {len(self._indices)}")  
         # Find indices that overlap with the time range
         relevant_indices = []
         for entry in self._indices:
-            if (entry.start_time <= end_time and entry.end_time >= start_time):
+            print(f"{abs(entry.start_time.seconds)}  {abs(start_time.seconds)}  {abs(entry.end_time.seconds)} {abs(end_time.seconds)}")
+            if (entry.start_time.seconds <= end_time.seconds and entry.end_time.seconds >= start_time.seconds):
                 relevant_indices.append(entry)
         
         if not relevant_indices:
@@ -489,13 +489,13 @@ class IndexedDataFile:
                 value_bytes = bytearray(4)
                 for i in range(4):
                     byte_val = ctypes.c_uint8()
-                    self._data_file.fread_uint8(ctypes.byref(byte_val))
-                    value_bytes[i] = byte_val.value
+                    byte_val = self._data_file.fread_uint8()
+                    value_bytes[i] = byte_val
                 
                 value = struct.unpack('f', bytes(value_bytes))[0]
                 
                 # Add to results if within time range
-                if start_time <= timestamp <= end_time:
+                if start_time.seconds <= timestamp.seconds <= end_time.seconds:
                     timestamps.append(timestamp)
                     values.append(value)
                     

@@ -568,4 +568,34 @@ __declspec(dllexport) int64_t pvfs_fread_double(PvfsFileHandleWrapper* handle, d
     return pvfs::PVFS_fread_double(handle->ptr, value);
 }
 
+__declspec(dllexport) PvfsFileEntryWrapper get_file_info(PvfsFileHandleWrapper* handle) 
+{
+    PvfsFileEntryWrapper result = {0};
+    if (!handle || !handle->ptr) {
+        // Either return a default-constructed result or handle the error differently.
+        return result;
+    }
+
+    // Copy from the real info struct
+    const auto &entry = handle->ptr->info;
+    result.startBlock = entry.startBlock;
+    result.size       = entry.size;
+
+    // Copy the filename (up to 256 bytes in PvfsFileEntryWrapper)
+    std::memcpy(result.filename, entry.filename, sizeof(result.filename));
+    return result;
+}
+
+__declspec(dllexport) void pvfs_close_file_handle(PvfsFileHandleWrapper* handle) {
+    if (handle && handle->ptr) {
+        handle->ptr.reset();  // Force shared_ptr to release
+    }
+}
+
+__declspec(dllexport) void pvfs_close_vfs(PvfsFileWrapper* wrapper) {
+    if (wrapper && wrapper->ptr) {
+        wrapper->ptr.reset();  //  release shared_ptr to PvfsFile
+    }
+}
+
 } 

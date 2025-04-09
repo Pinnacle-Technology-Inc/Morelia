@@ -427,6 +427,15 @@ _lib.pvfs_fread_double.restype = ctypes.c_int64
 _lib.pvfs_fwrite_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_double]
 _lib.pvfs_fwrite_double.restype = ctypes.c_int64
 
+_lib.get_file_info.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+_lib.get_file_info.restype  = PvfsFileEntryWrapper
+
+_lib.pvfs_close_file_handle.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+_lib.pvfs_close_file_handle.restype = None
+
+_lib.pvfs_close_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
+_lib.pvfs_close_vfs.restype = None
+
 def pvfs_close(fd):
     """Close a file descriptor using PVFS_close.
     
@@ -618,6 +627,7 @@ class PvfsFile:
             try:
                 # First close any open file handles
                 if hasattr(self, '_fd'):
+                    _lib.pvfs_close_vfs(self._wrapper)
                     _lib.PVFS_close(self._fd)
                 # Then delete the VFS instance
                 _lib.delete_vfs(self._wrapper)
@@ -678,7 +688,7 @@ class PvfsFileHandle:
             
         try:
             # First try to flush any pending changes
-            if self._vfs and not self._vfs._closed:
+            if self._vfs:
                 try:
                     _lib.pvfs_flush(self.handle)
                 except Exception as e:
@@ -686,6 +696,7 @@ class PvfsFileHandle:
             
             # Then close the handle
             try:
+                _lib.pvfs_close_file_handle(self.handle)
                 result = _lib.pvfs_fclose(self.handle)
                 if result < 0:
                     print(f"Warning: Failed to close file handle: {result}")
@@ -990,6 +1001,12 @@ class PvfsFileHandle:
         if result < 0:
             raise RuntimeError(f"Failed to read double: {result}")
         return value.value
+    
+    def get_file_info(self):
+        """Retrieve the PvfsFileEntry (info) from the underlying C++ handle."""
+        # Call the new function, which returns a PvfsFileEntryWrapper by value
+        info_struct = _lib.get_file_info(self.handle)
+        return info_struct
 
 def create_vfs(block_size):
     """Create a new VFS with the specified block size."""
