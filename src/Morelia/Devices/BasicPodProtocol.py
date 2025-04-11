@@ -1,8 +1,9 @@
 # local imports
 from Morelia.Devices.SerialPorts import PortIO, FindPorts
-from Morelia.Commands            import CommandSet
+from Morelia.Commands import CommandSet
 from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket
+from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
@@ -17,35 +18,40 @@ __email__       = "sales@pinnaclet.com"
 
 class Pod : 
     """
-    POD_Basics handles basic communication with a generic POD device, including reading and writing 
-    packets and packet interpretation.
+    Pod handles basic communication with a generic POD device, including reading and writing 
+    packets and packet interpretation. This is the parent class for any device that communcates using the POD protocol.
+    
+    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :type port: str | int
+    
+    :param baudrate: Baud rate of the opened serial port. Default value is 9600.
+    :type baudrate: int, optional 
 
-    Attributes: 
-        _port (COM_io): Instance-level COM_io object, which handles the COM port 
-        _commands (POD_Commands): Instance-level POD_Commands object, which stores information about \
-            the commands available to this POD device.
+    :param device_name: Name used to indentify device.
+    :type device_name: str, optional
     """
     
     # ============ DUNDER METHODS ============      ========================================================================================================================
 
 
     def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None) -> None : 
-        """Runs when an instance of POD_Basics is constructed. It initializes the instance variable for 
-        the COM port communication (_port) and for the command handler (_commands). It also increments \
+        """Runs when an instance of Pod is constructed. It initializes the instance variable for 
+        the serial port communication (_port) and for the command handler (_commands). It also increments \
         the POD device counter (__NUMPOD).
-
-        Args:
-            port (str|int): Serial port to be opened. Used when initializing the COM_io instance.
-            baudrate (int): Baud rate of the opened serial port. Used when initializing the COM_io \
-                instance. Default value is 9600.
         """
+
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
+
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
-
+       
+        #set device name.
         self._device_name: str = device_name if device_name else str(port)
-
+    
+        #function that will be used to create new control packets from this device.
+        #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
+        #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
     # ============ STATIC METHODS ============      ========================================================================================================================
@@ -58,11 +64,11 @@ class Pod :
     def GetU(u: int) -> int : 
         """number of hexadecimal characters for an unsigned u-bit value.
 
-        Args:
-            u (int): 8, 16, or 32 bits. Enter any other number for NOVALUE.
+        :param u: 8, 16, or 32 bits. Enter any other number for NOVALUE.
+        :type u: int
 
-        Returns:
-            int: number of hexadecimal characters for an unsigned u-bit value.
+        :return: number of hexadecimal characters for an unsigned u-bit value.
+        :rtype: int
         """
         match u : 
             case  8: return(CommandSet.U8())
@@ -72,19 +78,24 @@ class Pod :
 
     @property
     def device_name(self) -> str:
+        """return the device name.
+
+           :return: number of hexadecimal characters for an unsigned u-bit value.
+           :rtype: int
+        """
         return self._device_name
 
     # ------------ PORT ------------   ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def ChoosePort(forbidden:list[str]=[]) -> str : 
-        """Systems checks user's Operating System, and chooses ports accordingly.
+        """Checks user's Operating System, and chooses ports accordingly.
 
-        Args:
-            forbidden (list[str], optional): List of port names that are already used. Defaults to [].
+        :param forbidden: List of port names that are already used. Defaults to an empty list.
+        :type forbidden: list[str], optional
 
-        Returns:
-            str: String name of the port.
+        :return: Name of the port.
+        :rtype: str
         """
         return FindPorts.ChoosePort(forbidden)
 
@@ -96,15 +107,15 @@ class Pod :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
-        Args: 
-            msg (bytes): Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum \
-                (2 bytes) + ETX (1 byte). 
+        :param msg: Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum (2 bytes) + ETX (1 byte). 
+        :type msg: bytes
 
-        Returns: 
-            bool: True if the checksum is correct, false otherwise.
+        :return: True if the checksum is correct, false otherwise.
+        :rtype: bool
 
-        Raises:
-            Exception: msg does not begin with STX or end with ETX. 
+        :raises Exception: msg does not begin with STX or end with ETX. 
+
+        :meta private:
         """
         # ... assume that msg contains STX + packet + csm + ETX. This assumption is good for more all 
         #     pod packets except variable length binary packet
@@ -114,7 +125,7 @@ class Pod :
         if(    (msg[0].to_bytes(1,'big') != PodPacket.STX) 
             or (msg[packetBytes-1].to_bytes(1,'big') != PodPacket.ETX)
         ) : 
-            raise Exception('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
+            raise InvalidChecksumError('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
         msgPacket = msg[1:packetBytes-3]
         msgCsm = msg[packetBytes-3:packetBytes-1]
