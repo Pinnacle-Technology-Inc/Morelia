@@ -5,3 +5,4 @@ from Morelia import signal
 from Morelia import Devices
 from Morelia import Parameters
 from Morelia import Stream
+from Morelia import exceptions
