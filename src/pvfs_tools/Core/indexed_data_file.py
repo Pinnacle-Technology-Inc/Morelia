@@ -311,6 +311,7 @@ class IndexedDataFile:
         # Calculate number of indices
         info = self._index_file.get_file_info()
         file_size = info.size
+        print(f"Size {file_size} {self.INDEX_HEADER_SIZE}")
         n = (file_size - self.INDEX_HEADER_SIZE) // self.TIMESTAMP_SIZE
         
         read_location = self.INDEX_HEADER_SIZE
@@ -322,6 +323,7 @@ class IndexedDataFile:
         for i in range(n):
             # Read timestamp and data location
             timestamp, data_location = self._read_timestamp(read_location)
+            print(f"timestamp and data {timestamp.seconds}  {data_location}")
             
             if timestamp is not None:
                 count += 1
