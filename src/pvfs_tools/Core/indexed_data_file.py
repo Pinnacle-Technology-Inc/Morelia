@@ -367,9 +367,10 @@ class IndexedDataFile:
             
         try:
             self._index_file.seek(location)
-            marker = self._index_file.fread_uint8()
-            if marker != self.UNIQUE_MARKER_BYTE:
-                return None, -1
+            for i in range(8):                
+                marker = self._index_file.fread_uint8()
+                if marker != self.UNIQUE_MARKER_BYTE:
+                    return None, -1
                 
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()

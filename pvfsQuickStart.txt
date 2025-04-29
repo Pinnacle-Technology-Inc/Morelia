@@ -23,7 +23,7 @@ B. Activate the virtual environment:
    .venv\Scripts\Activate.ps1
 
 C. Install project dependencies:
-   pip install .[tests]
+   pip install .[tests] (include -e if developing)
 
 Then continue with normal workflow (step 3).
 
