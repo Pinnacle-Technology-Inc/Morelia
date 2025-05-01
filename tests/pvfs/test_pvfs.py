@@ -372,10 +372,11 @@ def test_indexed_data_file(vfs, file_name):
         # Try to get some data
         if start_time != end_time:
             # Get a small sample of data
-            timestamps, values = indexed_file.get_data(start_time, end_time, max_points=5)
+            timestamps, values = indexed_file.get_data(start_time, end_time)
             print(f"Retrieved {len(timestamps)} data points:")
             for i, (ts, val) in enumerate(zip(timestamps, values)):
-                print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
+                if i == 5 or i == 22150:
+                    print(f"  - Point {i+1}: Time={ts.seconds}.{ts.subseconds}, Value={val}")
         
         # Close the file
         indexed_file.close()

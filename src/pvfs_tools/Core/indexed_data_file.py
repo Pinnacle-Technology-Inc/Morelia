@@ -448,67 +448,91 @@ class IndexedDataFile:
         data_bytes = struct.pack('f', value)
         return self._write_data(data_bytes, True)
 
-    def get_data(self, start_time: HighTime, end_time: HighTime, max_points: int = -1) -> Tuple[List[HighTime], List[float]]:
-        """Get data within the specified time range.
-        
-        Args:
-            start_time: Start time for data retrieval
-            end_time: End time for data retrieval
-            max_points: Maximum number of points to return (-1 for all)
-            
-        Returns:
-            Tuple of (timestamps, values)
-        """
-        timestamps = []
-        values = []
-        
+    def get_data(self,
+                start_time: HighTime,
+                end_time:   HighTime,
+                max_points: int = -1
+                ) -> Tuple[List[HighTime], List[float]]:
+        """Get data within the specified time range, reading full blocks of samples."""
+        timestamps: List[HighTime] = []
+        values:     List[float]   = []
+
         if not self._index_file or not self._data_file:
             return timestamps, values
 
-        print(f"index length: {len(self._indices)}")  
-        # Find indices that overlap with the time range
-        relevant_indices = []
-        for entry in self._indices:
-            print(f"{abs(entry.start_time.seconds)}  {abs(start_time.seconds)}  {abs(entry.end_time.seconds)} {abs(end_time.seconds)}")
-            if (entry.start_time.seconds <= end_time.seconds and entry.end_time.seconds >= start_time.seconds):
-                relevant_indices.append(entry)
-        
-        if not relevant_indices:
+        # pick only those blocks overlapping our time window
+        relevant = []
+        start_f = start_time.seconds + start_time.subseconds * 1e-9
+        end_f   = end_time.seconds   + end_time.subseconds   * 1e-9
+
+        for e in self._indices:
+            val1 = e.start_time.seconds + e.start_time.subseconds * 1e-9
+            val2 = e.end_time.seconds   + e.end_time.subseconds   * 1e-9
+
+            print(f"index start {val1}  index stop {val2}  "
+                f"start {start_f}  stop {end_f}")
+
+            if val1 <= end_f and val2 >= start_f:
+                relevant.append(e)
+
+        if not relevant:
             return timestamps, values
-            
-        # Read data from each relevant index
-        for entry in relevant_indices:
-            # Read timestamp and data from this index
-            timestamp, data_location = self._read_timestamp(entry.my_location)
-            if timestamp is None:
+
+        # file size = fallback end-of-block
+        data_size = self._data_file.get_file_info().size
+
+        print(f"Number of relevent indices {len(relevant)}")
+
+        for entry in relevant:
+            # find this entry’s index in the full list
+            all_i = self._indices.index(entry)
+
+            start_off = entry.data_location
+            if all_i + 1 < len(self._indices):
+                next_off = self._indices[all_i + 1].data_location
+            else:
+                next_off = data_size
+
+            block_bytes = next_off - start_off
+            num_pts     = block_bytes // 4
+            print(f"block_bytes {block_bytes} num_pts {num_pts}")
+            if num_pts <= 0:
                 continue
-                
-            # Read data value
+
+            # compute float timestamps between start_time and end_time
+            t0 = entry.start_time.seconds + entry.start_time.subseconds*1e-9
+            t1 = entry.end_time.seconds   + entry.end_time.subseconds*1e-9
+            dt = (t1 - t0) / (num_pts - 1) if num_pts > 1 else 0.0
+
+            print(f"t0 {t0} t1 {t1} numpts {num_pts} dt {dt}")
+
+            # read the entire block
             self._pvfs_file.lock()
             try:
-                self._data_file.seek(data_location)
-                
-                # Read float value
-                value_bytes = bytearray(4)
-                for i in range(4):
-                    byte_val = ctypes.c_uint8()
-                    byte_val = self._data_file.fread_uint8()
-                    value_bytes[i] = byte_val
-                
-                value = struct.unpack('f', bytes(value_bytes))[0]
-                
-                # Add to results if within time range
-                if start_time.seconds <= timestamp.seconds <= end_time.seconds:
-                    timestamps.append(timestamp)
-                    values.append(value)
-                    
-                    # Check if we've reached max_points
-                    if max_points > 0 and len(timestamps) >= max_points:
-                        break
+                self._data_file.seek(start_off)
+                for i in range(num_pts):
+                    # read one float (4 bytes)
+                    # raw = bytes(self._data_file.fread_uint8() for _ in range(4))
+                    # val = struct.unpack('f', raw)[0]
+                    val = self._data_file.fread_float()
+
+                    # reconstruct exact timestamp
+                    t = t0 + i * dt
+                    ht = HighTime(int(t), t - int(t))
+
+                    # only keep points within the requested window
+                    if (start_time.seconds + start_time.subseconds*1e-9) <= t <= (end_time.seconds + end_time.subseconds*1e-9):
+                        timestamps.append(ht)
+                        values.append(val)
+                        if 0 < max_points == len(timestamps):
+                            break
+                if 0 < max_points == len(timestamps):
+                    break
             finally:
                 self._pvfs_file.unlock()
-        
+
         return timestamps, values
+
 
     def append(self, time: HighTime, value: float, consolidate: bool = False) -> int:
         """Append a single data point.
