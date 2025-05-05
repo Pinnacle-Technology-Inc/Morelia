@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from typing import List, Optional, Tuple
 import ctypes
 from pathlib import Path
-import struct
+import math, struct
+from typing import List, Tuple
+
 
 from .pvfs_binding import PvfsFile, HighTime, PvfsFileHandle, PvfsFileHandleWrapper
 
@@ -311,7 +313,6 @@ class IndexedDataFile:
         # Calculate number of indices
         info = self._index_file.get_file_info()
         file_size = info.size
-        print(f"Size {file_size} {self.INDEX_HEADER_SIZE}")
         n = (file_size - self.INDEX_HEADER_SIZE) // self.TIMESTAMP_SIZE
         
         read_location = self.INDEX_HEADER_SIZE
@@ -374,6 +375,7 @@ class IndexedDataFile:
                 
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
+            reserved = self._index_file.fread_int64()
             data_location = self._index_file.fread_int64()
             
             return HighTime(seconds, subseconds), data_location
@@ -448,90 +450,96 @@ class IndexedDataFile:
         data_bytes = struct.pack('f', value)
         return self._write_data(data_bytes, True)
 
+
     def get_data(self,
                 start_time: HighTime,
                 end_time:   HighTime,
                 max_points: int = -1
                 ) -> Tuple[List[HighTime], List[float]]:
-        """Get data within the specified time range, reading full blocks of samples."""
+
         timestamps: List[HighTime] = []
-        values:     List[float]   = []
+        values:     List[float]    = []
 
         if not self._index_file or not self._data_file:
             return timestamps, values
 
-        # pick only those blocks overlapping our time window
-        relevant = []
+        # convert window to float seconds
         start_f = start_time.seconds + start_time.subseconds * 1e-9
         end_f   = end_time.seconds   + end_time.subseconds   * 1e-9
-
-        for e in self._indices:
-            val1 = e.start_time.seconds + e.start_time.subseconds * 1e-9
-            val2 = e.end_time.seconds   + e.end_time.subseconds   * 1e-9
-
-            print(f"index start {val1}  index stop {val2}  "
-                f"start {start_f}  stop {end_f}")
-
-            if val1 <= end_f and val2 >= start_f:
-                relevant.append(e)
-
-        if not relevant:
+        if end_f <= start_f:
             return timestamps, values
 
-        # file size = fallback end-of-block
-        data_size = self._data_file.get_file_info().size
+        # total samples we might need
+        sample_rate = self.get_data_rate()
+        if sample_rate <= 0:
+            return timestamps, values
+        
+        total_samps = math.ceil((end_f - start_f) * sample_rate)
 
-        print(f"Number of relevent indices {len(relevant)}")
+        # find the first index entry whose end_time >= start_f
+        first_entry = next(
+            (e for e in self._indices
+            if (e.end_time.seconds + e.end_time.subseconds * 1e-9) >= start_f),
+            None
+        )
+        if first_entry is None:
+            return timestamps, values
 
-        for entry in relevant:
-            # find this entry’s index in the full list
-            all_i = self._indices.index(entry)
+        # position the file once
+        self._data_file.seek(first_entry.data_location)
 
-            start_off = entry.data_location
-            if all_i + 1 < len(self._indices):
-                next_off = self._indices[all_i + 1].data_location
-            else:
-                next_off = data_size
+        # constants for streaming
+        BYTES_PER_FLOAT = 4
+        CHUNK_SAMPS     = 4096
+        dt = 1.0 / sample_rate
 
-            block_bytes = next_off - start_off
-            num_pts     = block_bytes // 4
-            print(f"block_bytes {block_bytes} num_pts {num_pts}")
-            if num_pts <= 0:
-                continue
+        # initial timestamp (may be before start_f)
+        t = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
 
-            # compute float timestamps between start_time and end_time
-            t0 = entry.start_time.seconds + entry.start_time.subseconds*1e-9
-            t1 = entry.end_time.seconds   + entry.end_time.subseconds*1e-9
-            dt = (t1 - t0) / (num_pts - 1) if num_pts > 1 else 0.0
+        samples_read = 0
+        self._pvfs_file.lock()
+        try:
+            while samples_read < total_samps:
+                # how many samples to request this pass
+                to_read_samps = min(CHUNK_SAMPS, total_samps - samples_read)
+                to_read_bytes = to_read_samps * BYTES_PER_FLOAT
 
-            print(f"t0 {t0} t1 {t1} numpts {num_pts} dt {dt}")
+                raw = self._data_file.read(to_read_bytes)
+                if not raw:
+                    break  # EOF or error
 
-            # read the entire block
-            self._pvfs_file.lock()
-            try:
-                self._data_file.seek(start_off)
-                for i in range(num_pts):
-                    # read one float (4 bytes)
-                    # raw = bytes(self._data_file.fread_uint8() for _ in range(4))
-                    # val = struct.unpack('f', raw)[0]
-                    val = self._data_file.fread_float()
+                got_samps = len(raw) // BYTES_PER_FLOAT
+                floats = struct.unpack(f"{got_samps}f", raw[: got_samps*BYTES_PER_FLOAT])
 
-                    # reconstruct exact timestamp
-                    t = t0 + i * dt
-                    ht = HighTime(int(t), t - int(t))
+                for val in floats:
+                    # skip until we reach the window
+                    if t < start_f:
+                        t += dt
+                        continue
+                    # stop once we pass the window
+                    if t > end_f:
+                        return timestamps, values
 
-                    # only keep points within the requested window
-                    if (start_time.seconds + start_time.subseconds*1e-9) <= t <= (end_time.seconds + end_time.subseconds*1e-9):
-                        timestamps.append(ht)
-                        values.append(val)
-                        if 0 < max_points == len(timestamps):
-                            break
-                if 0 < max_points == len(timestamps):
+                    # record this point
+                    sec = int(t)
+                    sub = t - sec
+                    timestamps.append(HighTime(sec, sub))
+                    values.append(val)
+                    samples_read += 1
+
+                    if 0 < max_points == samples_read:
+                        return timestamps, values
+
+                    t += dt
+
+                # if we got fewer samples than requested, we've hit EOF
+                if got_samps < to_read_samps:
                     break
-            finally:
-                self._pvfs_file.unlock()
+        finally:
+            self._pvfs_file.unlock()
 
         return timestamps, values
+
 
 
     def append(self, time: HighTime, value: float, consolidate: bool = False) -> int:

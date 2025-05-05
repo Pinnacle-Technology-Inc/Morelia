@@ -6,5 +6,5 @@ testing.py
 *.bkp
 *.dtmp
 *.egg-info
-temp.vfs
+temp.*
 auth.json
