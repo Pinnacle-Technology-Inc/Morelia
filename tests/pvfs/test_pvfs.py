@@ -14,7 +14,7 @@ def file_name():
     """Fixture to provide the test file path."""
     # Get the directory containing this test file
     test_dir = Path(__file__).parent
-    return str(test_dir / "test.pvfs")
+    return str(test_dir / "sine.pvfs")
 
 @pytest.fixture
 def vfs(file_name):
@@ -55,12 +55,12 @@ def db_name():
 @pytest.fixture
 def channel_name():
     """Fixture to provide the test channel name."""
-    return "EEG1"
+    return "CH C"
 
 @pytest.fixture
 def channel_file_name():
     """Fixture to provide the test channel name."""
-    return "EEG10"
+    return "CH C2"
 
 @pytest.fixture
 def db(db_name):
@@ -333,12 +333,12 @@ def test_indexed_data_file(vfs, file_name):
         for channel in channels:
             print(f"  - {channel}")
             
-        # Check if EEG10.index is in the channel list
-        assert "EEG10.index" in channels, "EEG10.index channel not found in VFS"
+        # Check if CH C2.index is in the channel list
+        assert "CH C2.index" in channels, "CH C2.index channel not found in VFS"
         
         # Open the indexed data file for EEG10
-        print("Opening indexed data file for EEG10")
-        indexed_file = IndexedDataFile(vfs, "EEG10")
+        print("Opening indexed data file for CH C2")
+        indexed_file = IndexedDataFile(vfs, "CH C2")
         assert indexed_file is not None, "Failed to create IndexedDataFile instance"
         
         # Get header information
@@ -366,12 +366,12 @@ def test_indexed_data_file(vfs, file_name):
         
         # Get channel name
         channel_name = indexed_file.get_channel_name()
-        assert channel_name == "EEG10", "Unexpected channel name"
+        assert channel_name == "CH C2", "Unexpected channel name"
         print(f"Channel name: {channel_name}")
         
         # Try to get some data
         if start_time != end_time:
-            timestamps, values = indexed_file.get_data(start_time, end_time)
+            timestamps, values = indexed_file.get_data(start_time, end_time, -1)
             print(f"Retrieved {len(timestamps)} data points:")
             with open('temp.txt', 'w') as f:
                 f.write("Timestamp\tValue\n")

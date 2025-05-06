@@ -468,6 +468,7 @@ class IndexedDataFile:
         end_f   = end_time.seconds   + end_time.subseconds   * 1e-9
         if end_f <= start_f:
             return timestamps, values
+        
 
         # total samples we might need
         sample_rate = self.get_data_rate()
