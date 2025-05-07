@@ -8,6 +8,7 @@ from pvfs_tools.Core.indexed_data_file import IndexedDataFile
 from pathlib import Path
 import time
 import gc
+import struct
 
 @pytest.fixture
 def file_name():
@@ -372,6 +373,8 @@ def test_indexed_data_file(vfs, file_name):
         # Try to get some data
         if start_time != end_time:
             timestamps, values = indexed_file.get_data(start_time, end_time, -1)
+            packed_data = b''.join(struct.pack('f', val) for val in values)
+
             print(f"Retrieved {len(timestamps)} data points:")
             with open('temp.txt', 'w') as f:
                 f.write("Timestamp\tValue\n")
