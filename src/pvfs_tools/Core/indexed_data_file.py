@@ -459,149 +459,142 @@ class IndexedDataFile:
                 ) -> Tuple[List[HighTime], List[float]]:
 
         # ── constants ──
-        BYTES_PER_FLOAT = 4
-        CHUNK_SAMPS     = 4096
-        HEADER_MARKER   = b'\xA5' * 8
-        # after the 8-byte marker:
-        #   seconds(int64), subseconds(double),
-        #   reserved(int64), data_idx(int64), CRC(uint32)
-        HEADER_STRUCT = struct.Struct('<q d q q I')  # 36 bytes
-        HEADER_SIZE   = len(HEADER_MARKER) + HEADER_STRUCT.size  # = 44
+        BYTES_PER_FLOAT   = 4
+        CHUNK_SAMPS       = 4096
+        TIMESTAMP_MARKER  = b'\xA5' * 8
+        # marker + struct (seconds:int64, subseconds:double, reserved:int64, data_idx:int64, CRC:uint32)
+        TIMESTAMP_STRUCT  = struct.Struct('<q d q q I 4x')  # 36 bytes
+        TIMESTAMP_SIZE    = len(TIMESTAMP_MARKER) + TIMESTAMP_STRUCT.size  # 44 bytes
 
-        # output lists
         timestamps: List[HighTime] = []
         values_out:  List[float]   = []
-
-        # quick exits
         if not self._index_file or not self._data_file:
             return timestamps, values_out
 
-        # convert window to float seconds
+        # convert to float seconds
         start_f = start_time.seconds + start_time.subseconds * 1e-9
         end_f   = end_time.seconds   + end_time.subseconds   * 1e-9
         if end_f <= start_f:
             return timestamps, values_out
 
-        # sampling info
+        # sampling
         sample_rate = self.get_data_rate()
         if sample_rate <= 0:
             return timestamps, values_out
         dt_orig     = 1.0 / sample_rate
         total_samps = math.ceil((end_f - start_f) * sample_rate)
 
-        # find the first block covering our window
+        # locate first block
         first_entry = next(
             (e for e in self._indices
-            if (e.end_time.seconds + e.end_time.subseconds * 1e-9) >= start_f),
+             if (e.end_time.seconds + e.end_time.subseconds * 1e-9) >= start_f),
             None
         )
         if first_entry is None:
             return timestamps, values_out
-
-        # seek to its data location
         self._data_file.seek(first_entry.data_location)
 
-        # buffers and trackers
         raw_buffer = b''
         all_values: List[float] = []
-        markers:    List[Tuple[int,float]] = []  # (sample_index, timestamp_float)
+        markers:    List[Tuple[int, float]] = []
         sample_idx = 0
 
-        # read in chunks, parse floats vs headers
         self._pvfs_file.lock()
         try:
             while sample_idx < total_samps:
-                # read enough bytes for CHUNK_SAMPS floats plus one full header margin
-                to_read = CHUNK_SAMPS * BYTES_PER_FLOAT + HEADER_SIZE
-                chunk = self._data_file.read(to_read)
+                # read next chunk (floats + one header's worth)
+                to_read = CHUNK_SAMPS * BYTES_PER_FLOAT + TIMESTAMP_SIZE
+                left = len(raw_buffer)
+                print(f"leftover length {left}")
+                chunk   = self._data_file.read(to_read)
                 if not chunk:
                     break
                 raw_buffer += chunk
 
-                processed_up_to = 0
+                ptr = left
+                buf_len = len(raw_buffer)
 
-                # 1) scan for any _complete_ headers in raw_buffer
+                # 1) process all complete headers
                 while True:
-                    idx = raw_buffer.find(HEADER_MARKER, processed_up_to)
-                    # stop if no marker or if header would exceed buffer
-                    if idx < 0 or len(raw_buffer) < idx + HEADER_SIZE:
+                    idx = raw_buffer.find(TIMESTAMP_MARKER, ptr)
+                    # no marker or incomplete header
+                    if idx < 0 or buf_len < idx + TIMESTAMP_SIZE:
                         break
 
-                    # a) unpack floats _before_ this marker
-                    n_pre = (idx - processed_up_to) // BYTES_PER_FLOAT
-                    if n_pre > 0:
-                        # cap to remaining needed samples
-                        take = min(n_pre, total_samps - sample_idx)
-                        start_b = processed_up_to
+                    # unpack floats before marker
+                    n_floats = (idx - ptr) // BYTES_PER_FLOAT
+                    if n_floats > 0:
+                        take = min(n_floats, total_samps - sample_idx)
+                        start_b = ptr
                         end_b   = start_b + take * BYTES_PER_FLOAT
-                        vals = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
+                        vals    = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
                         all_values.extend(vals)
                         sample_idx += take
-                        processed_up_to += take * BYTES_PER_FLOAT
+                        ptr = end_b
                         if sample_idx >= total_samps:
                             break
 
-                    # b) unpack the 36-byte header that follows the 8-byte marker
-                    hdr_start = idx + len(HEADER_MARKER)
-                    hdr_end   = hdr_start + HEADER_STRUCT.size
-                    sec, sub, _, _, _ = HEADER_STRUCT.unpack(
-                        raw_buffer[hdr_start:hdr_end]
+                    # unpack timestamp struct
+                    hdr_start = idx + len(TIMESTAMP_MARKER)
+                    sec, sub, _, _, _ = TIMESTAMP_STRUCT.unpack(
+                        raw_buffer[hdr_start:hdr_start + TIMESTAMP_STRUCT.size]
                     )
                     markers.append((sample_idx, sec + sub))
 
-                    # c) advance processed_up_to past entire marker+header
-                    processed_up_to = idx + HEADER_SIZE
+                    # advance pointer past marker+header
+                    ptr = idx + TIMESTAMP_SIZE
+                    if sample_idx >= total_samps:
+                        break
 
-                # stop outer loop early if we filled all samples
                 if sample_idx >= total_samps:
+                    # drop processed bytes and exit
+                    raw_buffer = raw_buffer[ptr:]
                     break
 
-            # compute how many bytes we can safely treat as pure floats
-            safe_bytes = len(raw_buffer) - processed_up_to - (HEADER_SIZE - 1)
-            if safe_bytes > 0:
-                n_tail = safe_bytes // BYTES_PER_FLOAT
-                take   = min(n_tail, total_samps - sample_idx)
-                if take > 0:
-                    start_b = processed_up_to
+                # 2) unpack trailing floats that don't overlap a possible header
+                max_tail = (buf_len - ptr - TIMESTAMP_SIZE) // BYTES_PER_FLOAT
+                if max_tail > 0:
+                    take = min(max_tail, total_samps - sample_idx)
+                    start_b = ptr
                     end_b   = start_b + take * BYTES_PER_FLOAT
-                    vals = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
+                    vals    = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
                     all_values.extend(vals)
                     sample_idx += take
-                    processed_up_to += take * BYTES_PER_FLOAT
+                    ptr = end_b
 
-                # 3) drop consumed bytes, keep any partial header/float
-                raw_buffer = raw_buffer[processed_up_to:]
+                # trim consumed bytes, keep partial header/float
+                raw_buffer = raw_buffer[ptr:]
 
-        finally:
-                   # final flush: any bytes left that form whole floats
-            final_tail = len(raw_buffer) // BYTES_PER_FLOAT
-            if final_tail > 0 and sample_idx < total_samps:
-                take = min(final_tail, total_samps - sample_idx)
-                vals = struct.unpack(f'<{take}f', raw_buffer[:take*BYTES_PER_FLOAT])
+            # final flush for any remaining whole floats
+            n_remain = len(raw_buffer) // BYTES_PER_FLOAT
+            if n_remain > 0 and sample_idx < total_samps:
+                take = min(n_remain, total_samps - sample_idx)
+                vals = struct.unpack(f'<{take}f', raw_buffer[:take * BYTES_PER_FLOAT])
                 all_values.extend(vals)
                 sample_idx += take
+
+        finally:
             self._pvfs_file.unlock()
 
-        # adjust dt if we saw at least two embedded timestamps
+        # compute timebase
         if len(markers) >= 2:
-            idx0, t0 = markers[0]
-            idx1, t1 = markers[-1]
-            dt = (t1 - t0) / (idx1 - idx0)
-            t_anchor = t0 - idx0 * dt
+            i0, t0 = markers[0]
+            i1, t1 = markers[-1]
+            dt = (t1 - t0) / (i1 - i0)
+            t_anchor = t0 - i0 * dt
         else:
             dt = dt_orig
             t_anchor = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
 
-        # build the final timestamp/value lists within [start_f, end_f]
+        # build output lists
         for i, val in enumerate(all_values):
-            t_i = t_anchor + i * dt
-            if t_i < start_f:
+            t = t_anchor + i * dt
+            if t < start_f:
                 continue
-            if t_i > end_f:
+            if t > end_f:
                 break
-
-            sec = int(t_i)
-            sub = t_i - sec
+            sec = int(t)
+            sub = t - sec
             timestamps.append(HighTime(sec, sub))
             values_out.append(val)
             if 0 < max_points == len(timestamps):

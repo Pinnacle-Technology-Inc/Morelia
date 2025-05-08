@@ -371,6 +371,7 @@ def test_indexed_data_file(vfs, file_name):
         print(f"Channel name: {channel_name}")
         
         # Try to get some data
+
         if start_time != end_time:
             timestamps, values = indexed_file.get_data(start_time, end_time, -1)
             packed_data = b''.join(struct.pack('f', val) for val in values)
@@ -380,7 +381,13 @@ def test_indexed_data_file(vfs, file_name):
                 f.write("Timestamp\tValue\n")
                 for ts, val in zip(timestamps, values):
                     subsec = f"{ts.subseconds:.9f}".rstrip('0').rstrip('.')
-                    f.write(f"{ts.seconds}.{subsec}\t{val}\n")
+                    if val < -1e20:
+                        # Represent the float as raw 4-byte hex
+                        hex_val = struct.pack('f', val).hex()
+                        f.write(f"{ts.seconds}.{subsec}\t0x{hex_val}\n")
+                    else:
+                        f.write(f"{ts.seconds}.{subsec}\t{val}\n")
+
         
         # Close the file
         indexed_file.close()
