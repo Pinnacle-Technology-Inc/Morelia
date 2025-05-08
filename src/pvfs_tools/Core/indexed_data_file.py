@@ -458,12 +458,12 @@ class IndexedDataFile:
                 max_points: int = -1
                 ) -> Tuple[List[HighTime], List[float]]:
 
-        # ── constants ──
         BYTES_PER_FLOAT   = 4
-        CHUNK_SAMPS       = 4096
+        CHUNK_SAMPS       = 1000
         TIMESTAMP_MARKER  = b'\xA5' * 8
+        HALF_TIMESTAMP_MARKER = b'\xA5' * 4
         # marker + struct (seconds:int64, subseconds:double, reserved:int64, data_idx:int64, CRC:uint32)
-        TIMESTAMP_STRUCT  = struct.Struct('<q d q q I 4x')  # 36 bytes
+        TIMESTAMP_STRUCT  = struct.Struct('<q d q q I')  # 36 bytes
         TIMESTAMP_SIZE    = len(TIMESTAMP_MARKER) + TIMESTAMP_STRUCT.size  # 44 bytes
 
         timestamps: List[HighTime] = []
@@ -502,67 +502,74 @@ class IndexedDataFile:
         self._pvfs_file.lock()
         try:
             while sample_idx < total_samps:
-                # read next chunk (floats + one header's worth)
-                to_read = CHUNK_SAMPS * BYTES_PER_FLOAT + TIMESTAMP_SIZE
-                left = len(raw_buffer)
-                print(f"leftover length {left}")
-                chunk   = self._data_file.read(to_read)
+ 
+                ptr = 0
+                saw_marker = False
+
+                # 1) read a plain chunk
+                chunk = self._data_file.read(CHUNK_SAMPS * BYTES_PER_FLOAT)
+                print(f"Chunk length {len(chunk)}")
                 if not chunk:
                     break
                 raw_buffer += chunk
 
-                ptr = left
-                buf_len = len(raw_buffer)
-
-                # 1) process all complete headers
+                # 2) scan for headers
                 while True:
+                    read_half_marker = False
                     idx = raw_buffer.find(TIMESTAMP_MARKER, ptr)
-                    # no marker or incomplete header
-                    if idx < 0 or buf_len < idx + TIMESTAMP_SIZE:
-                        break
+                    if idx < 0:
+                        idx = raw_buffer.find(HALF_TIMESTAMP_MARKER, ptr)
+                        if idx < 0:
+                            break
+                        else:
+                            print("found a half marker")
+                            read_half_marker = True
+                            
 
-                    # unpack floats before marker
-                    n_floats = (idx - ptr) // BYTES_PER_FLOAT
-                    if n_floats > 0:
-                        take = min(n_floats, total_samps - sample_idx)
-                        start_b = ptr
-                        end_b   = start_b + take * BYTES_PER_FLOAT
-                        vals    = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
-                        all_values.extend(vals)
-                        sample_idx += take
-                        ptr = end_b
-                        if sample_idx >= total_samps:
+                    # 3) if the header is incomplete, fetch the missing bytes
+                    saw_marker = True
+                    need = (idx + TIMESTAMP_SIZE) - len(raw_buffer)
+                    if read_half_marker:
+                        need += BYTES_PER_FLOAT
+                    if need > 0:
+                        raw_pre = len(raw_buffer)
+                        raw_buffer += self._data_file.read(need)
+                        raw_post = len(raw_buffer)
+                        print(f"need {need}")
+                        if(raw_post - raw_pre) != need:
+                            saw_marker = False
                             break
 
-                    # unpack timestamp struct
-                    hdr_start = idx + len(TIMESTAMP_MARKER)
+                    #4a) unpack floats before this header
+                    n_pre = (idx - ptr) // BYTES_PER_FLOAT
+                    if n_pre > 0:
+                        vals = struct.unpack(f'<{n_pre}f', raw_buffer[ptr:ptr + n_pre*BYTES_PER_FLOAT])
+                        if max(vals) > 1e10:
+                            print(f"Max {max(vals)}")
+                        all_values.extend(vals)
+                        sample_idx += n_pre
+
+                    # 4b) unpack the timestamp struct itself
+                    hdr_off = idx + len(TIMESTAMP_MARKER)
+                    print(f"header offset and raw size {hdr_off} {TIMESTAMP_STRUCT.size} {len(raw_buffer)} {idx}")
                     sec, sub, _, _, _ = TIMESTAMP_STRUCT.unpack(
-                        raw_buffer[hdr_start:hdr_start + TIMESTAMP_STRUCT.size]
+                        raw_buffer[hdr_off:hdr_off + TIMESTAMP_STRUCT.size]
                     )
                     markers.append((sample_idx, sec + sub))
 
-                    # advance pointer past marker+header
+                    # advance ptr past marker+header
                     ptr = idx + TIMESTAMP_SIZE
-                    if sample_idx >= total_samps:
-                        break
 
-                if sample_idx >= total_samps:
-                    # drop processed bytes and exit
-                    raw_buffer = raw_buffer[ptr:]
-                    break
+                # 5) everything from ptr to end is pure float data
+                n_tail = (len(raw_buffer) - ptr) // BYTES_PER_FLOAT
 
-                # 2) unpack trailing floats that don't overlap a possible header
-                max_tail = (buf_len - ptr - TIMESTAMP_SIZE) // BYTES_PER_FLOAT
-                if max_tail > 0:
-                    take = min(max_tail, total_samps - sample_idx)
-                    start_b = ptr
-                    end_b   = start_b + take * BYTES_PER_FLOAT
-                    vals    = struct.unpack(f'<{take}f', raw_buffer[start_b:end_b])
+                if n_tail > 0:
+                    vals = struct.unpack(f'<{n_tail}f', raw_buffer[ptr:ptr + n_tail*BYTES_PER_FLOAT])
                     all_values.extend(vals)
-                    sample_idx += take
-                    ptr = end_b
+                    sample_idx += n_tail
+                    ptr += n_tail * BYTES_PER_FLOAT
 
-                # trim consumed bytes, keep partial header/float
+                # 6) drop consumed bytes
                 raw_buffer = raw_buffer[ptr:]
 
             # final flush for any remaining whole floats
