@@ -373,7 +373,9 @@ def test_indexed_data_file(vfs, file_name):
         # Try to get some data
 
         if start_time != end_time:
-            timestamps, values = indexed_file.get_data(start_time, end_time, -1)
+            segment_start = start_time + 9.95
+            segment_stop = start_time + 10.05
+            timestamps, values = indexed_file.get_data(segment_start, segment_stop, -1)
             packed_data = b''.join(struct.pack('f', val) for val in values)
 
             print(f"Retrieved {len(timestamps)} data points:")

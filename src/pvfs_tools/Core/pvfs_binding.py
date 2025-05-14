@@ -505,6 +505,7 @@ class StringVector:
 
 class HighTime:
     """Wrapper for PVFS HighTime structure."""
+
     def __init__(self, seconds, subseconds):
         """Create a new HighTime instance.
         
@@ -512,22 +513,18 @@ class HighTime:
             seconds (int or float): The seconds component
             subseconds (int or float): The subseconds component (fractional part)
         """
-        # Convert to integers for C++ compatibility
         seconds_int = int(seconds)
-        subseconds_int = int(subseconds * 1e9)  # Convert to nanoseconds
+        subseconds_int = int(subseconds * 1e9)  # nanoseconds
         self._time = _lib.create_high_time(seconds_int, subseconds_int)
         if not self._time:
             raise RuntimeError("Failed to create HighTime")
 
     def __del__(self):
-        """Clean up the HighTime instance."""
         if hasattr(self, '_time') and self._time:
             try:
-                # Don't try to access _lib during cleanup as it might be gone
-                # Just mark the time as None
                 self._time = None
             except:
-                pass  # Ignore all errors during cleanup
+                pass
 
     @property
     def seconds(self):
@@ -540,6 +537,29 @@ class HighTime:
         if not hasattr(self, '_time') or not self._time:
             return 0.0
         return _lib.get_high_time_subseconds(self._time)
+
+    def to_seconds(self):
+        return self.seconds + self.subseconds*1e-9
+
+    @classmethod
+    def from_seconds(cls, total_seconds: float):
+        secs = int(total_seconds)
+        subsecs = (total_seconds - secs)
+        return cls(secs, subsecs)
+
+    def __add__(self, other):
+        if isinstance(other, (int, float)):
+            return HighTime.from_seconds(self.to_seconds() + other)
+        elif isinstance(other, HighTime):
+            return HighTime.from_seconds(self.to_seconds() + other.to_seconds())
+        return NotImplemented
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __repr__(self):
+        return f"HighTime(seconds={self.seconds}, subseconds={self.subseconds})"
+
 
 class PvfsFile:
     def __init__(self, block_size=0x4000):

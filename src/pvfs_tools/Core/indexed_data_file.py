@@ -459,7 +459,7 @@ class IndexedDataFile:
                 ) -> Tuple[List[HighTime], List[float]]:
 
         BYTES_PER_FLOAT   = 4
-        CHUNK_SAMPS       = 1000
+        CHUNK_SAMPS       = 10000
         TIMESTAMP_MARKER  = b'\xA5' * 8
         HALF_TIMESTAMP_MARKER = b'\xA5' * 4
         # marker + struct (seconds:int64, subseconds:double, reserved:int64, data_idx:int64, CRC:uint32)
@@ -482,7 +482,7 @@ class IndexedDataFile:
         if sample_rate <= 0:
             return timestamps, values_out
         dt_orig     = 1.0 / sample_rate
-        total_samps = math.ceil((end_f - start_f) * sample_rate)
+        #total_samps = math.ceil((end_f - start_f) * sample_rate)
 
         # locate first block
         first_entry = next(
@@ -490,9 +490,15 @@ class IndexedDataFile:
              if (e.end_time.seconds + e.end_time.subseconds * 1e-9) >= start_f),
             None
         )
+        
         if first_entry is None:
             return timestamps, values_out
+        print(f"First entry {first_entry.start_time.seconds }")
         self._data_file.seek(first_entry.data_location)
+        #read from the beginning of the data block but only return values between start_f and end_f
+        entry_start_f = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
+        total_samps = math.floor((end_f - entry_start_f) * sample_rate)
+        print(f"get data {start_f} {end_f} {end_time.seconds} {sample_rate} {total_samps}")
 
         raw_buffer = b''
         all_values: List[float] = []
@@ -502,13 +508,12 @@ class IndexedDataFile:
         self._pvfs_file.lock()
         try:
             while sample_idx < total_samps:
- 
+                print(f"sample_idx {sample_idx} total samples {total_samps}")
                 ptr = 0
                 saw_marker = False
 
                 # 1) read a plain chunk
                 chunk = self._data_file.read(CHUNK_SAMPS * BYTES_PER_FLOAT)
-                print(f"Chunk length {len(chunk)}")
                 if not chunk:
                     break
                 raw_buffer += chunk
@@ -544,8 +549,11 @@ class IndexedDataFile:
                     n_pre = (idx - ptr) // BYTES_PER_FLOAT
                     if n_pre > 0:
                         vals = struct.unpack(f'<{n_pre}f', raw_buffer[ptr:ptr + n_pre*BYTES_PER_FLOAT])
-                        if max(vals) > 1e10:
-                            print(f"Max {max(vals)}")
+                        if max(abs(v) for v in vals) > 1e10:
+                            max_val = max(vals)
+                            max_index = vals.index(max_val)
+                            print(f"Max {max_val} at index {max_index}")
+
                         all_values.extend(vals)
                         sample_idx += n_pre
 
@@ -593,6 +601,7 @@ class IndexedDataFile:
             dt = dt_orig
             t_anchor = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
 
+        print(f"All values length {len(all_values)} {t_anchor} {dt} {start_f} {end_f}")
         # build output lists
         for i, val in enumerate(all_values):
             t = t_anchor + i * dt
@@ -604,7 +613,8 @@ class IndexedDataFile:
             sub = t - sec
             timestamps.append(HighTime(sec, sub))
             values_out.append(val)
-            if 0 < max_points == len(timestamps):
+            if (0 < max_points) and (max_points == len(timestamps)):
+                print("break")
                 break
 
         return timestamps, values_out
