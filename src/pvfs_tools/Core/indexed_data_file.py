@@ -466,6 +466,8 @@ class IndexedDataFile:
         TIMESTAMP_STRUCT  = struct.Struct('<q d q q I')  # 36 bytes
         TIMESTAMP_SIZE    = len(TIMESTAMP_MARKER) + TIMESTAMP_STRUCT.size  # 44 bytes
 
+        print(f"Timestamp size {TIMESTAMP_SIZE}")
+
         timestamps: List[HighTime] = []
         values_out:  List[float]   = []
         if not self._index_file or not self._data_file:
@@ -508,7 +510,6 @@ class IndexedDataFile:
         self._pvfs_file.lock()
         try:
             while sample_idx < total_samps:
-                print(f"sample_idx {sample_idx} total samples {total_samps}")
                 ptr = 0
                 saw_marker = False
 
@@ -534,6 +535,7 @@ class IndexedDataFile:
                     # 3) if the header is incomplete, fetch the missing bytes
                     saw_marker = True
                     need = (idx + TIMESTAMP_SIZE) - len(raw_buffer)
+                    print(f"Read half marker and need {read_half_marker} {need}")
                     if read_half_marker:
                         need += BYTES_PER_FLOAT
                     if need > 0:
@@ -547,6 +549,7 @@ class IndexedDataFile:
 
                     #4a) unpack floats before this header
                     n_pre = (idx - ptr) // BYTES_PER_FLOAT
+                    print(f"unpack floats before header {n_pre}")
                     if n_pre > 0:
                         vals = struct.unpack(f'<{n_pre}f', raw_buffer[ptr:ptr + n_pre*BYTES_PER_FLOAT])
                         if max(abs(v) for v in vals) > 1e10:
@@ -563,14 +566,13 @@ class IndexedDataFile:
                     sec, sub, _, _, _ = TIMESTAMP_STRUCT.unpack(
                         raw_buffer[hdr_off:hdr_off + TIMESTAMP_STRUCT.size]
                     )
-                    markers.append((sample_idx, sec + sub))
+                    markers.append((sample_idx, sec + 1e-9*sub))
 
                     # advance ptr past marker+header
-                    ptr = idx + TIMESTAMP_SIZE
+                    ptr = idx + TIMESTAMP_SIZE 
 
                 # 5) everything from ptr to end is pure float data
                 n_tail = (len(raw_buffer) - ptr) // BYTES_PER_FLOAT
-
                 if n_tail > 0:
                     vals = struct.unpack(f'<{n_tail}f', raw_buffer[ptr:ptr + n_tail*BYTES_PER_FLOAT])
                     all_values.extend(vals)
@@ -597,6 +599,7 @@ class IndexedDataFile:
             i1, t1 = markers[-1]
             dt = (t1 - t0) / (i1 - i0)
             t_anchor = t0 - i0 * dt
+            print(f"Markers {i0} {t0} {i1} {t1} {dt} {t_anchor} ")
         else:
             dt = dt_orig
             t_anchor = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
@@ -605,6 +608,9 @@ class IndexedDataFile:
         # build output lists
         for i, val in enumerate(all_values):
             t = t_anchor + i * dt
+            if val < -1e10 or val > 1e10:
+                print(f"Bad value {val} at {i}")
+                continue
             if t < start_f:
                 continue
             if t > end_f:
@@ -613,6 +619,7 @@ class IndexedDataFile:
             sub = t - sec
             timestamps.append(HighTime(sec, sub))
             values_out.append(val)
+#            print(f"index {i} time {t} val {val}")
             if (0 < max_points) and (max_points == len(timestamps)):
                 print("break")
                 break

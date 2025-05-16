@@ -7,6 +7,7 @@ from pvfs_tools.Database.models import ExperimentInformation, ChannelInformation
 from pvfs_tools.Core.indexed_data_file import IndexedDataFile
 from pathlib import Path
 import time
+import math
 import gc
 import struct
 
@@ -353,6 +354,7 @@ def test_indexed_data_file(vfs, file_name):
         print(f"  - Start time: {header.start_time.seconds}.{header.start_time.subseconds}")
         print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
         print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
+        print(f"  - Samples per data chunk { header.timestamp_interval_seconds*header.data_rate }")
         
         # Get time range
         start_time = indexed_file.get_start_time()
@@ -363,7 +365,8 @@ def test_indexed_data_file(vfs, file_name):
         
         # Get data rate
         data_rate = indexed_file.get_data_rate()
-        print(f"Data rate: {data_rate} Hz")
+        print(f"Indexed data file get data rate {data_rate}")
+        samples_per_chunk = math.ceil(header.timestamp_interval_seconds*header.data_rate)
         
         # Get channel name
         channel_name = indexed_file.get_channel_name()
@@ -373,8 +376,8 @@ def test_indexed_data_file(vfs, file_name):
         # Try to get some data
 
         if start_time != end_time:
-            segment_start = start_time + 9.95
-            segment_stop = start_time + 10.05
+            segment_start = start_time + 0
+            segment_stop = start_time + 45
             timestamps, values = indexed_file.get_data(segment_start, segment_stop, -1)
             packed_data = b''.join(struct.pack('f', val) for val in values)
 
