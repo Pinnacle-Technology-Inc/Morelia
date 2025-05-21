@@ -557,29 +557,67 @@ class IndexedDataFile:
         finally:
             self._pvfs_file.unlock()
 
-        # build timebase
-        if len(markers) >= 2:
-            i0, t0 = markers[0]
-            i1, t1 = markers[-1]
-            dt = (t1 - t0) / (i1 - i0)
-            t_anchor = t0 - i0 * dt
-        else:
-            dt = 1.0 / sample_rate
-            t_anchor = entry_start_f
+        timestamps.clear()
+        values_out.clear()
 
-        # filter into output arrays
-        for i, val in enumerate(all_raw):
-            t = t_anchor + i * dt
-            if t < start_f:
-                continue
-            if t > end_f:
-                break
-            sec = int(t)
-            sub = t - sec
-            timestamps.append(HighTime(sec, sub))
-            values_out.append(val)
-            if 0 < max_points == len(timestamps):
-                break
+        # Segment-based interpolation
+        if len(markers) >= 2:
+            dt_tolerance = 0.01  # 1% deviation allowed
+
+            # Precompute and validate per-segment dt
+            for (i0, t0), (i1, t1) in zip(markers[:-1], markers[1:]):
+                if i1 <= i0:
+                    continue  # skip bad segment
+                segment_dt = (t1 - t0) / (i1 - i0)
+                expected_dt = 1.0 / sample_rate
+                print(f"Expected dt {expected_dt}, Segment dt {segment_dt}")
+                if abs(segment_dt - expected_dt) / expected_dt > dt_tolerance:
+                    segment_dt = expected_dt
+
+                for i in range(i0, i1):
+                    if i >= len(all_raw):
+                        break  # sanity check
+                    t = t0 + (i - i0) * segment_dt
+                    if t < start_f:
+                        continue
+                    if t > end_f:
+                        break
+                    sec = int(t)
+                    sub = t - sec
+                    timestamps.append(HighTime(sec, sub))
+                    values_out.append(all_raw[i])
+                    if 0 < max_points == len(timestamps):
+                        return timestamps, values_out
+
+            # handle tail if needed
+            last_i, last_t = markers[-1]
+            expected_dt = 1.0 / sample_rate
+            for i in range(last_i, len(all_raw)):
+                t = last_t + (i - last_i) * expected_dt
+                if t > end_f:
+                    break
+                sec = int(t)
+                sub = t - sec
+                timestamps.append(HighTime(sec, sub))
+                values_out.append(all_raw[i])
+                if 0 < max_points == len(timestamps):
+                    return timestamps, values_out
+
+        else:
+            # Fallback: no reliable markers
+            dt = 1.0 / sample_rate
+            for i, val in enumerate(all_raw):
+                t = entry_start_f + i * dt
+                if t < start_f:
+                    continue
+                if t > end_f:
+                    break
+                sec = int(t)
+                sub = t - sec
+                timestamps.append(HighTime(sec, sub))
+                values_out.append(val)
+                if 0 < max_points == len(timestamps):
+                    break
 
         return timestamps, values_out
 
