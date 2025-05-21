@@ -374,7 +374,7 @@ def test_file_handle_get_info(vfs, file_name):
 
 def main():
     # Test file path - using Windows path format
-    file_name = str(Path("E:/newPython/PVFS_test/test1.pvfs"))
+    file_name = str(Path("E:/newPython/PVFS_test/sine.pvfs"))
     
     # Create a single VFS instance for all tests
     try:

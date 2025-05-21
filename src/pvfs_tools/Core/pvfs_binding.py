@@ -555,6 +555,14 @@ class HighTime:
         subsec = int((timestamp % 1) * 1e2)
         print("Local Time:", local_time.strftime('%Y-%m-%d %H:%M:%S.')  + f"{subsec:02d}")
 
+    def to_string_local(self) -> str:
+        """Return a string representation of the HighTime in local timezone."""
+        timestamp = self.seconds + self.subseconds
+        utc_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        local_time = utc_time.astimezone()
+        subsec = int((timestamp % 1) * 1e2)
+        return local_time.strftime('%Y-%m-%d %H:%M:%S.') + f"{subsec:02d}"
+
     def to_string(self, precision: int = 9) -> str:
         """Return a string representation of the HighTime, e.g., '1746557173.798020601'."""
         # Combine parts and format subseconds to given precision
@@ -564,11 +572,10 @@ class HighTime:
         else:
             return str(self.seconds)
 
-
     @classmethod
     def from_seconds(cls, total_seconds: float):
         secs = int(total_seconds)
-        subsecs = total_seconds - secs
+        subsecs = float(total_seconds - secs)
         return cls(secs, subsecs)
 
     def __add__(self, other):
