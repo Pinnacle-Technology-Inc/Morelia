@@ -323,7 +323,6 @@ class IndexedDataFile:
         for i in range(n):
             # Read timestamp and data location
             timestamp, data_location = self._read_timestamp(read_location)
-            print(f"timestamp and data {timestamp.seconds}  {data_location}")
             
             if timestamp is not None:
                 count += 1
@@ -374,7 +373,6 @@ class IndexedDataFile:
                 
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
-            print(f"Read Timestamp subseconds {subseconds}")
             reserved = self._index_file.fread_int64()
             data_location = self._index_file.fread_int64()
             
@@ -570,7 +568,6 @@ class IndexedDataFile:
                     continue  # skip bad segment
                 segment_dt = (t1 - t0) / (i1 - i0)
                 expected_dt = 1.0 / sample_rate
-                print(f"Expected dt {expected_dt}, Segment dt {segment_dt}")
                 if abs(segment_dt - expected_dt) / expected_dt > dt_tolerance:
                     segment_dt = expected_dt
 

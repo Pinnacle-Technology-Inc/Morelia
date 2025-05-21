@@ -886,8 +886,6 @@ std::shared_ptr<PvfsFileHandle> PVFS_fopen ( std::shared_ptr<PvfsFile> &vfs, con
     PvfsFileEntry *		            fileEntry	=	nullptr;
     std::int64_t					address		=	0;			// Current address of the block
 
-    // Error Check
-    std::cout << "PVFS_fopen called" << vfs << filename << std::endl;
     if ( !vfs ) return nullptr;
     if ( filename == nullptr ) return nullptr;
     if ( vfs->fd == PVFS_INVALID_FD ) return nullptr;

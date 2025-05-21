@@ -138,34 +138,6 @@ def test_pvfs_extract_database(vfs, file_name):
 #         print(f"Error: {e}")
 #         raise
 
-# def test_pvfs_data_channel(vfs, file_name):
-#     """Test data channel operations."""
-#     print(f"\nTesting data channel operations with file: {file_name}")
-#     try:
-#         # Get channel list first
-#         channels = vfs.get_channel_list()
-#         assert channels is not None, "Failed to get channel list"
-#         assert len(channels) > 0, "No channels found in VFS"
-
-#         # Try to open the first channel
-#         channel_name = channels[0]
-#         print(f"Opening data channel: {channel_name}")
-#         channel = vfs.open_data_channel(channel_name)
-#         assert channel is not None, "Failed to open data channel"
-        
-#         # Try to read some data
-#         try:
-#             data = channel.read(1024)  # Read first 1024 bytes
-#             assert data is not None, "Failed to read channel data"
-#             print(f"Read {len(data)} bytes from channel")
-#         except Exception as e:
-#             print(f"Error reading channel data: {e}")
-#             raise
-#         finally:
-#             channel.close()
-#     except Exception as e:
-#         print(f"Error in data channel test: {e}")
-#         raise
 
 def test_pvfs_high_time():
     print("\nTest PVFS HighTime")
@@ -324,78 +296,51 @@ def test_db_get_all_annotations(db):
         print(f"Error getting all annotations: {e}")
         raise
 
+
 def test_indexed_data_file(vfs, file_name):
-    """Test the IndexedDataFile class with the EEG10 channel."""
-    print(f"\nTesting IndexedDataFile with file: {file_name}")
-    try:
-        # Get channel list first
-        channels = vfs.get_channel_list()
-        assert channels is not None, "Failed to get channel list"
-        print(f"Found {len(channels)} channels:")
-        for channel in channels:
-            print(f"  - {channel}")
-            
-        # Check if CH C2.index is in the channel list
-        assert "CH C2.index" in channels, "CH C2.index channel not found in VFS"
-        
-        # Open the indexed data file for EEG10
-        print("Opening indexed data file for CH C2")
-        indexed_file = IndexedDataFile(vfs, "CH C2")
-        assert indexed_file is not None, "Failed to create IndexedDataFile instance"
-        
-        # Get header information
-        header = indexed_file._header
-        assert header is not None, "Failed to get header information"
-        print(f"File header information:")
-        print(f"  - Magic number: {header.magic_number}")
-        print(f"  - Version: {header.version}")
-        print(f"  - Data type: {header.data_type}")
-        print(f"  - Data rate: {header.data_rate} Hz")
-        print(f"  - Start time: {header.start_time.seconds}.{header.start_time.subseconds}")
-        print(f"  - End time: {header.end_time.seconds}.{header.end_time.subseconds}")
-        print(f"  - Timestamp interval: {header.timestamp_interval_seconds} seconds")
-        print(f"  - Samples per data chunk { header.timestamp_interval_seconds*header.data_rate }")
-        
-        # Get time range
-        start_time = indexed_file.get_start_time()
-        assert start_time is not None, "Failed to get start time"
-        end_time = indexed_file.get_end_time()
-        assert end_time is not None, "Failed to get end time"
-        
-        print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
-        start_time.print_local()
-        end_time.print_local()
-        
-        # Get data rate
-        data_rate = indexed_file.get_data_rate()
-        print(f"Indexed data file get data rate {data_rate}")
-        samples_per_chunk = math.ceil(header.timestamp_interval_seconds*header.data_rate)
-        
-        # Get channel name
-        channel_name = indexed_file.get_channel_name()
-        assert channel_name == "CH C2", "Unexpected channel name"
-        print(f"Channel name: {channel_name}")
-        
-        # Try to get some data
+    """Unit test for IndexedDataFile class using CH C2 channel."""
+    
+    # Get and validate channel list
+    channels = vfs.get_channel_list()
+    assert channels is not None and "CH C2.index" in channels
 
-        if start_time != end_time:
-            segment_start = start_time + 0
-            segment_stop = start_time + 45
-            timestamps, values = indexed_file.get_data(segment_start, segment_stop, -1)
-            packed_data = b''.join(struct.pack('f', val) for val in values)
+    # Open data file
+    indexed_file = IndexedDataFile(vfs, "CH C2")
+    assert indexed_file is not None
 
-            print(f"Retrieved {len(timestamps)} data points:")
-            with open('temp.txt', 'w') as f:
-                f.write("Timestamp\tValue\n")
-                for ts, val in zip(timestamps, values):
-                    f.write(f"{ts.to_string()}\t{val}\n")
-       
-        # Close the file
-        indexed_file.close()
-        print("Indexed data file closed successfully")
-    except Exception as e:
-        print(f"Error testing indexed data file: {e}")
-        raise  # Re-raise the exception to fail the test
+    # Validate header
+    header = indexed_file._header
+    assert header is not None
+    assert header.data_rate > 0
+
+    # Get time bounds
+    start_time = indexed_file.get_start_time()
+    end_time = indexed_file.get_end_time()
+    assert start_time.to_seconds() < end_time.to_seconds()
+
+    # Validate channel name
+    assert indexed_file.get_channel_name() == "CH C2"
+
+    # Retrieve a short data segment from known region
+    segment_start = start_time
+    segment_stop = start_time + 2  # 2 seconds worth of data
+    timestamps, values = indexed_file.get_data(segment_start, segment_stop)
+
+    # Check structure
+    assert isinstance(timestamps, list)
+    assert isinstance(values, list)
+    assert len(timestamps) == len(values)
+    assert len(values) > 0
+
+    # Known reference value check (index 0)
+    t0 = timestamps[0].to_seconds()
+    v0 = values[0]
+    assert math.isclose(t0, 1746557173.796519995, rel_tol=0, abs_tol=1e-9)
+    assert math.isclose(v0, 298.7197265625, rel_tol=0, abs_tol=1e-6)
+
+    # Close file
+    indexed_file.close()
+
 
 def test_file_handle_get_info(vfs, file_name):
     """

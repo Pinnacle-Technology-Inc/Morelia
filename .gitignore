@@ -8,3 +8,5 @@ testing.py
 *.egg-info
 temp.*
 auth.json
+
+extracted_database.db
