@@ -2,6 +2,8 @@ import ctypes
 import os
 from pathlib import Path
 
+from datetime import datetime, timezone
+
 """
 PVFS Python Bindings Legend
 ==========================
@@ -504,18 +506,23 @@ class StringVector:
             raise
 
 class HighTime:
-    """Wrapper for PVFS HighTime structure."""
 
-    def __init__(self, seconds, subseconds):
-        """Create a new HighTime instance.
-        
-        Args:
-            seconds (int or float): The seconds component
-            subseconds (int or float): The subseconds component (fractional part)
-        """
-        seconds_int = int(seconds)
-        subseconds_int = int(subseconds * 1e9)  # nanoseconds
-        self._time = _lib.create_high_time(seconds_int, subseconds_int)
+    def __init__(self, seconds: int | float, subseconds: float = None):
+        if subseconds is None:
+            if not isinstance(seconds, (int, float)):
+                raise TypeError(f"Expected int or float, got {type(seconds).__name__}")
+            total = float(seconds)
+            secs = int(total)
+            sub = total - secs
+        else:
+            if not isinstance(seconds, int):
+                raise TypeError(f"When using two arguments, seconds must be int, got {type(seconds).__name__}")
+            if not isinstance(subseconds, float):
+                raise TypeError(f"When using two arguments, subseconds must be float, got {type(subseconds).__name__}")
+            secs = seconds
+            sub = subseconds
+
+        self._time = _lib.create_high_time(secs, sub)
         if not self._time:
             raise RuntimeError("Failed to create HighTime")
 
@@ -539,12 +546,29 @@ class HighTime:
         return _lib.get_high_time_subseconds(self._time)
 
     def to_seconds(self):
-        return self.seconds + self.subseconds*1e-9
+        return self.seconds + self.subseconds
+    
+    def print_local(self):
+        timestamp = self.seconds + self.subseconds
+        utc_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        local_time = utc_time.astimezone()
+        subsec = int((timestamp % 1) * 1e2)
+        print("Local Time:", local_time.strftime('%Y-%m-%d %H:%M:%S.')  + f"{subsec:02d}")
+
+    def to_string(self, precision: int = 9) -> str:
+        """Return a string representation of the HighTime, e.g., '1746557173.798020601'."""
+        # Combine parts and format subseconds to given precision
+        subsec_str = f"{self.subseconds:.{precision}f}".split('.')[1].rstrip('0')
+        if subsec_str:
+            return f"{self.seconds}.{subsec_str}"
+        else:
+            return str(self.seconds)
+
 
     @classmethod
     def from_seconds(cls, total_seconds: float):
         secs = int(total_seconds)
-        subsecs = (total_seconds - secs)
+        subsecs = total_seconds - secs
         return cls(secs, subsecs)
 
     def __add__(self, other):
@@ -559,6 +583,7 @@ class HighTime:
 
     def __repr__(self):
         return f"HighTime(seconds={self.seconds}, subseconds={self.subseconds})"
+
 
 
 class PvfsFile:

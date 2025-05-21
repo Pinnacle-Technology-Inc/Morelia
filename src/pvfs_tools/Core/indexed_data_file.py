@@ -5,7 +5,6 @@ from pathlib import Path
 import math, struct
 from typing import List, Tuple
 
-
 from .pvfs_binding import PvfsFile, HighTime, PvfsFileHandle, PvfsFileHandleWrapper
 
 class PvfsError(Exception):
@@ -91,10 +90,10 @@ class IndexedDataFile:
         # Time tracking
         self._zero_time = HighTime(0, 0.0)
         self._start_time_set = False
-        self._previous_timestamp = HighTime(-1, 0.0)
-        self._next_timestamp = HighTime(-1, 0.0)
-        self._delta_time = HighTime(1.0, 0.0)
-        self._max_delta = HighTime(2.0, 0.0)
+        self._previous_timestamp = HighTime(-1.0)
+        self._next_timestamp = HighTime(-1.0)
+        self._delta_time = HighTime(1.0)
+        self._max_delta = HighTime(2.0)
         
         # Data rate
         self._data_rate = 1.0
@@ -375,6 +374,7 @@ class IndexedDataFile:
                 
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
+            print(f"Read Timestamp subseconds {subseconds}")
             reserved = self._index_file.fread_int64()
             data_location = self._index_file.fread_int64()
             
@@ -472,8 +472,8 @@ class IndexedDataFile:
             return timestamps, values_out
 
         # convert times to float seconds
-        start_f = start_time.seconds + start_time.subseconds * 1e-9
-        end_f   = end_time.seconds   + end_time.subseconds   * 1e-9
+        start_f = start_time.seconds + start_time.subseconds
+        end_f   = end_time.seconds   + end_time.subseconds
         if end_f <= start_f:
             return timestamps, values_out
 
@@ -484,13 +484,13 @@ class IndexedDataFile:
         # find first block covering start_f
         first_entry = next(
             (e for e in self._indices
-            if (e.end_time.seconds + e.end_time.subseconds * 1e-9) >= start_f),
+            if (e.end_time.seconds + e.end_time.subseconds) >= start_f),
             None
         )
         if first_entry is None:
             return timestamps, values_out
 
-        entry_start_f = first_entry.start_time.seconds + first_entry.start_time.subseconds * 1e-9
+        entry_start_f = first_entry.start_time.seconds + first_entry.start_time.subseconds
         needed_samps = math.ceil((end_f - entry_start_f) * sample_rate)
 
         all_raw: List[float] = []
@@ -535,7 +535,7 @@ class IndexedDataFile:
                     sec, sub, _, _, _ = TIMESTAMP_STRUCT.unpack(
                         raw_buffer[hdr_off:hdr_off + TIMESTAMP_STRUCT.size]
                     )
-                    markers.append((len(all_raw), sec + sub * 1e-9))
+                    markers.append((len(all_raw), sec + sub))
 
                     # advance past header
                     ptr = idx + HEADER_SIZE
@@ -569,9 +569,6 @@ class IndexedDataFile:
 
         # filter into output arrays
         for i, val in enumerate(all_raw):
-            if val > 1e10 or val < 100:
-                print(f"Bad values {i} {val}")
-                continue
             t = t_anchor + i * dt
             if t < start_f:
                 continue

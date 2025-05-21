@@ -361,7 +361,10 @@ def test_indexed_data_file(vfs, file_name):
         assert start_time is not None, "Failed to get start time"
         end_time = indexed_file.get_end_time()
         assert end_time is not None, "Failed to get end time"
+        
         print(f"Time range: {start_time.seconds}.{start_time.subseconds} to {end_time.seconds}.{end_time.subseconds}")
+        start_time.print_local()
+        end_time.print_local()
         
         # Get data rate
         data_rate = indexed_file.get_data_rate()
@@ -385,15 +388,8 @@ def test_indexed_data_file(vfs, file_name):
             with open('temp.txt', 'w') as f:
                 f.write("Timestamp\tValue\n")
                 for ts, val in zip(timestamps, values):
-                    subsec = f"{ts.subseconds:.9f}".rstrip('0').rstrip('.')
-                    if val < -1e20:
-                        # Represent the float as raw 4-byte hex
-                        hex_val = struct.pack('f', val).hex()
-                        f.write(f"{ts.seconds}.{subsec}\t0x{hex_val}\n")
-                    else:
-                        f.write(f"{ts.seconds}.{subsec}\t{val}\n")
-
-        
+                    f.write(f"{ts.to_string()}\t{val}\n")
+       
         # Close the file
         indexed_file.close()
         print("Indexed data file closed successfully")
