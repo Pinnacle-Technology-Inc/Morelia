@@ -19,6 +19,16 @@ class PvfsToEdfConverter:
         self.root.title("PVFS to EDF+ Converter")
         self.root.geometry("800x600")
         
+        # Set theme if available
+        try:
+            self.root.tk.call('source', 'azure.tcl')
+            self.root.tk.call('set_theme', 'light')
+        except:
+            pass  # Use default theme if custom theme not available
+        
+        style = ttk.Style()
+        style.theme_use('clam')  # or 'alt', 'default', 'classic'
+        
         self.pvfs_file = None
         self.vfs = None
         self.db = None
@@ -32,54 +42,85 @@ class PvfsToEdfConverter:
         
     def setup_ui(self):
         # File selection
-        file_frame = ttk.LabelFrame(self.root, text="File Selection", padding="5")
-        file_frame.pack(fill="x", padx=5, pady=5)
+        file_frame = ttk.LabelFrame(self.root, text="File Selection", padding="10")
+        file_frame.pack(fill="x", padx=10, pady=5)
         
         ttk.Button(file_frame, text="Select PVFS File", command=self.select_pvfs_file).pack(side="left", padx=5)
         self.file_label = ttk.Label(file_frame, text="No file selected")
         self.file_label.pack(side="left", padx=5)
         
         # Channel selection
-        channel_frame = ttk.LabelFrame(self.root, text="Channel Selection", padding="5")
-        channel_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        channel_frame = ttk.LabelFrame(self.root, text="Channel Selection", padding="10")
+        channel_frame.pack(fill="both", expand=True, padx=10, pady=5)
         
         # Channel list with checkboxes
-        self.channel_listbox = tk.Listbox(channel_frame, selectmode="multiple")
-        self.channel_listbox.pack(side="left", fill="both", expand=True)
+        self.channel_listbox = tk.Listbox(channel_frame, selectmode="multiple", 
+                                        font=('TkDefaultFont', 10),
+                                        highlightthickness=1,
+                                        highlightbackground='#cccccc')
+        self.channel_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
         
         scrollbar = ttk.Scrollbar(channel_frame, orient="vertical", command=self.channel_listbox.yview)
-        scrollbar.pack(side="right", fill="y")
+        scrollbar.pack(side="right", fill="y", pady=5)
         self.channel_listbox.configure(yscrollcommand=scrollbar.set)
         
         # Time range selection
-        time_frame = ttk.LabelFrame(self.root, text="Time Range", padding="5")
-        time_frame.pack(fill="x", padx=5, pady=5)
+        time_frame = ttk.LabelFrame(self.root, text="Time Range", padding="10")
+        time_frame.pack(fill="x", padx=10, pady=5)
         
-        ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5)
-        self.start_time_entry = ttk.Entry(time_frame)
-        self.start_time_entry.grid(row=0, column=1, padx=5)
+        ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5, pady=5)
+        self.start_time_entry = ttk.Entry(time_frame, width=25)
+        self.start_time_entry.grid(row=0, column=1, padx=5, pady=5)
         
-        ttk.Label(time_frame, text="End Time:").grid(row=0, column=2, padx=5)
-        self.end_time_entry = ttk.Entry(time_frame)
-        self.end_time_entry.grid(row=0, column=3, padx=5)
+        ttk.Label(time_frame, text="End Time:").grid(row=0, column=2, padx=5, pady=5)
+        self.end_time_entry = ttk.Entry(time_frame, width=25)
+        self.end_time_entry.grid(row=0, column=3, padx=5, pady=5)
+        
+        # Add export annotations checkbox next to end time
+        self.export_annotations_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(time_frame, text="Export Annotations", variable=self.export_annotations_var).grid(row=0, column=4, padx=5, pady=5)
         
         # Add time format help label
-        ttk.Label(time_frame, text="Format: YYYY-MM-DD HH:MM:SS.ss").grid(row=1, column=0, columnspan=4, pady=5)
-        
-        # Add export annotations checkbox
-        self.export_annotations_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(time_frame, text="Export Annotations", variable=self.export_annotations_var).grid(row=2, column=0, columnspan=4, pady=5)
+        ttk.Label(time_frame, text="Format: YYYY-MM-DD HH:MM:SS.ss", 
+                 font=('TkDefaultFont', 9)).grid(row=1, column=0, columnspan=5, pady=5)
         
         # Output file selection
-        output_frame = ttk.LabelFrame(self.root, text="Output", padding="5")
-        output_frame.pack(fill="x", padx=5, pady=5)
+        output_frame = ttk.LabelFrame(self.root, text="Output", padding="10")
+        output_frame.pack(fill="x", padx=10, pady=5)
         
         ttk.Button(output_frame, text="Select Output File", command=self.select_output_file).pack(side="left", padx=5)
         self.output_label = ttk.Label(output_frame, text="No output file selected")
         self.output_label.pack(side="left", padx=5)
         
-        # Convert button
-        ttk.Button(self.root, text="Convert to EDF+", command=self.convert_to_edf).pack(pady=10)
+        # Convert button with more padding
+        convert_frame = ttk.Frame(self.root)
+        convert_frame.pack(fill="x", padx=10, pady=10)
+        ttk.Button(convert_frame, text="Convert to EDF+", command=self.convert_to_edf).pack(pady=5)
+        
+        # Add progress bar with better styling
+        self.progress_frame = ttk.LabelFrame(self.root, text="Progress", padding="10")
+        self.progress_frame.pack(fill="x", padx=10, pady=5)
+        
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(
+            self.progress_frame, 
+            variable=self.progress_var,
+            maximum=100,
+            mode='determinate',
+            length=300,
+            style='Horizontal.TProgressbar'
+        )
+        self.progress_bar.pack(fill="x", padx=5, pady=5)
+        
+        # Style the progress bar
+        style = ttk.Style()
+        style.configure('Horizontal.TProgressbar', 
+                       thickness=20,  # Make progress bar taller
+                       troughcolor='#E0E0E0',  # Light gray background
+                       background='#4CAF50')  # Green progress
+        
+        self.progress_label = ttk.Label(self.progress_frame, text="")
+        self.progress_label.pack(pady=5)
         
     def select_pvfs_file(self):
         file_path = filedialog.askopenfilename(
@@ -193,12 +234,29 @@ class PvfsToEdfConverter:
         except ValueError as e:
             raise ValueError(f"Invalid time format: {time_str}. Expected format: YYYY-MM-DD HH:MM:SS.ss")
             
+    def update_progress(self, value: float, text: str = ""):
+        """Update the progress bar and label.
+        
+        Args:
+            value: Progress value (0-100)
+            text: Optional text to display
+        """
+        # Only update if the value has changed significantly (more than 1%)
+        if abs(self.progress_var.get() - value) > 1.0:
+            self.progress_var.set(value)
+            if text:
+                self.progress_label.config(text=text)
+            self.root.update_idletasks()
+        
     def convert_to_edf(self):
         if not hasattr(self, 'output_file'):
             messagebox.showerror("Error", "Please select an output file")
             return
             
         try:
+            # Reset progress
+            self.update_progress(0, "Starting conversion...")
+            
             # Get selected channels
             selected_indices = self.channel_listbox.curselection()
             if not selected_indices:
@@ -206,13 +264,11 @@ class PvfsToEdfConverter:
                 return
                 
             selected_channels = [self.channel_listbox.get(i) for i in selected_indices]
-            print(f"Selected channels: {selected_channels}")
             
             # Get time range
             try:
                 start_time = self.parse_local_time(self.start_time_entry.get())
                 end_time = self.parse_local_time(self.end_time_entry.get())
-                print(f"Time range: {start_time} to {end_time}")
             except ValueError as e:
                 messagebox.showerror("Error", str(e))
                 return
@@ -220,49 +276,28 @@ class PvfsToEdfConverter:
             # Create EDF file
             try:
                 f = pyedflib.EdfWriter(self.output_file, len(selected_channels))
-                print(f"Created EDF file with {len(selected_channels)} channels")
             except Exception as e:
                 raise Exception(f"Failed to create EDF file: {str(e)}")
-            
-            # Set header information
-            try:
-                # Create datetime object from timestamp
-                start_datetime = datetime.fromtimestamp(start_time)
-                
-                header = {
-                    'technician': 'PVFS Converter',  # Shortened to reduce combined length
-                    'recording_additional': 'PVFS to EDF+',  # Shortened to reduce combined length
-                    'patientname': 'Unknown',
-                    'patient_additional': '',
-                    'patientcode': '',
-                    'sex': 'X',  # Required field, 'X' for unknown
-                    'birthdate': '',
-                    'admincode': '',
-                    'equipment': 'PVFS',  # Shortened to reduce combined length
-                    'hospitalname': '',
-                    'startdate': start_datetime  # Pass datetime object directly
-                }
-                f.setHeader(header)
-                print("Set EDF header information")
-            except Exception as e:
-                raise Exception(f"Failed to set EDF header: {str(e)}")
             
             # Process each channel
             channel_info = []
             channel_data = []
             all_annotations = []  # Store all annotations for writing later
             
-            for channel_name in selected_channels:
+            total_channels = len(selected_channels)
+            last_progress = 0
+            for channel_idx, channel_name in enumerate(selected_channels):
                 try:
-                    print(f"\nProcessing channel: {channel_name}")
+                    # Update progress less frequently
+                    progress = (channel_idx / total_channels) * 50  # First 50% for data processing
+                    if progress - last_progress >= 5:  # Only update every 5%
+                        self.update_progress(progress, f"Processing channel {channel_name}...")
+                        last_progress = progress
                     
                     # Get channel information using processed name
                     channel_info_db = self.db.get_channel_info(channel_name)
                     if not channel_info_db:
-                        print(f"Warning: No channel info found for {channel_name}, skipping")
                         continue
-                    
-                    print(f"Channel info: rate={channel_info_db.data_rate}Hz, unit={channel_info_db.unit}")
                     
                     # Read data using original name
                     original_name = self.channel_name_map[channel_name]
@@ -270,8 +305,8 @@ class PvfsToEdfConverter:
                     start_ht = HighTime(start_time)
                     end_ht = HighTime(end_time)
                     
+                    # Get the data
                     timestamps, values = indexed_file.get_data(start_ht, end_ht)
-                    print(f"Read {len(values)} samples")
                     
                     # Convert to numpy array
                     data = np.array(values, dtype=np.float64)
@@ -281,8 +316,8 @@ class PvfsToEdfConverter:
                         'label': channel_name,  # Use processed name for display
                         'dimension': channel_info_db.unit or 'uV',
                         'sample_frequency': channel_info_db.data_rate,
-                        'physical_max': data.max(),
-                        'physical_min': data.min(),
+                        'physical_max': round(data.max(), 6),  # Round to 6 decimal places
+                        'physical_min': round(data.min(), 6),  # Round to 6 decimal places
                         'digital_max': 32767,
                         'digital_min': -32768,
                         'prefilter': '',
@@ -290,9 +325,6 @@ class PvfsToEdfConverter:
                     })
                     
                     channel_data.append(data)
-                    
-                    print(f"Export annotations? {self.export_annotations_var.get()}")
-                    print(f"channel info id {channel_info_db.id}")
                     
                     # Get annotations for this channel if enabled
                     if self.export_annotations_var.get():
@@ -307,7 +339,6 @@ class PvfsToEdfConverter:
                         annotations = channel_annotations + global_annotations
                         
                         if annotations:
-                            print(f"Found {len(annotations)} annotations for channel {channel_name} (including global annotations)")
                             for annotation in annotations:
                                 # Add a small buffer (1 second) to include annotations near the edges
                                 time_buffer = 1.0  # seconds
@@ -315,28 +346,20 @@ class PvfsToEdfConverter:
                                     annotation.start_time.to_seconds() >= (start_time - time_buffer) and 
                                     annotation.start_time.to_seconds() <= (end_time + time_buffer)):
                                     
-                                    # Convert annotation to EDF format
+                                    # Convert annotation to EDF format - use relative time from start
                                     onset = max(0, annotation.start_time.to_seconds() - start_time)  # Ensure non-negative onset
                                     duration = 0.001  # Minimum duration for EDF compatibility (1ms)
                                     if annotation.end_time:
                                         duration = max(0.001, annotation.end_time.to_seconds() - annotation.start_time.to_seconds())
                                     
                                     # Create annotation text
-                                    annotation_text = f"{annotation.type or 'Note'}"
+                                    annotation_text = ""
                                     if annotation.comment:
                                         annotation_text += f": {annotation.comment}"
                                     
-                                    # Add channel info to annotation text for better context
-                                    if annotation.channel_id == -1:
-                                        annotation_text = f"[Global] {annotation_text}"
-                                    else:
-                                        annotation_text = f"[{channel_name}] {annotation_text}"
-                                    
                                     all_annotations.append((onset, duration, annotation_text))
-                                    print(f"Added annotation: {annotation_text} at {onset} with duration {duration}")
                     
                     indexed_file.close()
-                    print(f"Successfully processed channel {channel_name}")
                     
                 except Exception as e:
                     raise Exception(f"Error processing channel {channel_name}: {str(e)}")
@@ -344,41 +367,65 @@ class PvfsToEdfConverter:
             if not channel_info or not channel_data:
                 raise Exception("No valid channels to write")
             
+            # Update progress for header writing
+            self.update_progress(50, "Writing EDF headers...")
+            
+            # Set header information
+            try:
+                # Create datetime object from timestamp
+                start_datetime = datetime.fromtimestamp(start_time)
+                
+                header = {
+                    'technician': 'PVFS Converter',
+                    'recording_additional': 'PVFS to EDF+',
+                    'patientname': 'Unknown',
+                    'patient_additional': '',
+                    'patientcode': '',
+                    'sex': 'X',
+                    'birthdate': '',
+                    'admincode': '',
+                    'equipment': 'PVFS',
+                    'hospitalname': '',
+                    'startdate': start_datetime
+                }
+                f.setHeader(header)
+            except Exception as e:
+                raise Exception(f"Failed to set EDF header: {str(e)}")
+            
             # Set channel information
             try:
                 f.setSignalHeaders(channel_info)
-                print("Set channel headers")
             except Exception as e:
                 raise Exception(f"Failed to set channel headers: {str(e)}")
+            
+            # Update progress for data writing
+            self.update_progress(75, "Writing data samples...")
             
             # Write data
             try:
                 f.writeSamples(channel_data)
-                print("Wrote samples to EDF file")
             except Exception as e:
                 raise Exception(f"Failed to write samples: {str(e)}")
+            
+            # Update progress for annotation writing
+            self.update_progress(90, "Writing annotations...")
             
             # Write annotations if any
             if self.export_annotations_var.get() and all_annotations:
                 try:
                     # Sort annotations by onset time
                     all_annotations.sort(key=lambda x: x[0])
-                    print("\nWriting annotations to EDF file:")
                     for onset, duration, text in all_annotations:
-                        print(f"  {onset:.3f}s: {text} (duration: {duration:.3f}s)")
-                        # Write each annotation individually
                         f.writeAnnotation(onset, duration, text)
-                    print(f"Successfully wrote {len(all_annotations)} annotations to EDF file")
                 except Exception as e:
                     print(f"Warning: Failed to write annotations: {str(e)}")
-                    print("Annotation details:")
-                    for onset, duration, text in all_annotations:
-                        print(f"  {onset:.3f}s: {text} (duration: {duration:.3f}s)")
+            
+            # Update progress for completion
+            self.update_progress(100, "Conversion completed!")
             
             # Close file
             try:
                 f.close()
-                print("Successfully closed EDF file")
             except Exception as e:
                 raise Exception(f"Failed to close EDF file: {str(e)}")
             
@@ -386,8 +433,10 @@ class PvfsToEdfConverter:
             
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"
-            print(error_msg)  # Print to console for debugging
             messagebox.showerror("Error", error_msg)
+        finally:
+            # Reset progress bar
+            self.update_progress(0, "")
             
     def run(self):
         self.root.mainloop()
