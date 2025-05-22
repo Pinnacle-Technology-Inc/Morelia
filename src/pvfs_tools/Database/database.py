@@ -407,16 +407,6 @@ class ExperimentDatabase:
                 if not result:
                     return None
 
-                def convert_subseconds(subsec_str: str) -> int:
-                    """Convert decimal subsecond string to integer subseconds."""
-                    if not subsec_str:
-                        return 0
-                    try:
-                        # Convert decimal string to float and multiply by 1e6 to get microseconds
-                        return int(float(subsec_str) * 1e6)
-                    except (ValueError, TypeError):
-                        return 0
-
                 # Convert database format to HighTime objects
                 start_time = HighTime(
                     result.start_time_seconds,
@@ -464,27 +454,18 @@ class ExperimentDatabase:
                     ORDER BY start_time_seconds
                 """), {"channel_id": channel_id}).fetchall()
                 
-                def convert_subseconds(subsec_str: str) -> int:
-                    """Convert decimal subsecond string to integer subseconds."""
-                    if not subsec_str:
-                        return 0
-                    try:
-                        # Convert decimal string to float and multiply by 1e6 to get microseconds
-                        return int(float(subsec_str) * 1e6)
-                    except (ValueError, TypeError):
-                        return 0
 
                 annotations = []
                 for result in results:
                     # Convert database format to HighTime objects
                     start_time = HighTime(
                         result.start_time_seconds,
-                        convert_subseconds(result.start_time_sub_seconds)
+                        float(result.start_time_sub_seconds)
                     ) if result.start_time_seconds is not None else None
 
                     end_time = HighTime(
                         result.end_time_seconds,
-                        convert_subseconds(result.end_time_sub_seconds)
+                        float(result.end_time_sub_seconds)
                     ) if result.end_time_seconds is not None else None
 
                     annotations.append(Annotation(
@@ -515,27 +496,18 @@ class ExperimentDatabase:
                     ORDER BY start_time_seconds
                 """)).fetchall()
                 
-                def convert_subseconds(subsec_str: str) -> int:
-                    """Convert decimal subsecond string to integer subseconds."""
-                    if not subsec_str:
-                        return 0
-                    try:
-                        # Convert decimal string to float and multiply by 1e6 to get microseconds
-                        return int(float(subsec_str) * 1e6)
-                    except (ValueError, TypeError):
-                        return 0
 
                 annotations = []
                 for result in results:
                     # Convert database format to HighTime objects
                     start_time = HighTime(
                         result.start_time_seconds,
-                        convert_subseconds(result.start_time_sub_seconds)
+                        float(result.start_time_sub_seconds)
                     ) if result.start_time_seconds is not None else None
 
                     end_time = HighTime(
                         result.end_time_seconds,
-                        convert_subseconds(result.end_time_sub_seconds)
+                        float(result.end_time_sub_seconds)
                     ) if result.end_time_seconds is not None else None
 
                     annotations.append(Annotation(

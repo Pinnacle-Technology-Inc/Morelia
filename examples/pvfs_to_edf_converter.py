@@ -66,6 +66,10 @@ class PvfsToEdfConverter:
         # Add time format help label
         ttk.Label(time_frame, text="Format: YYYY-MM-DD HH:MM:SS.ss").grid(row=1, column=0, columnspan=4, pady=5)
         
+        # Add export annotations checkbox
+        self.export_annotations_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(time_frame, text="Export Annotations", variable=self.export_annotations_var).grid(row=2, column=0, columnspan=4, pady=5)
+        
         # Output file selection
         output_frame = ttk.LabelFrame(self.root, text="Output", padding="5")
         output_frame.pack(fill="x", padx=5, pady=5)
@@ -140,6 +144,10 @@ class PvfsToEdfConverter:
                     self.channel_listbox.insert(tk.END, processed_name)
                     processed_names.add(processed_name)
                     self.channel_name_map[processed_name] = base_name  # Store mapping
+            
+            # Select all channels by default
+            for i in range(self.channel_listbox.size()):
+                self.channel_listbox.selection_set(i)
             
             # Get time range from the first data channel
             if self.channel_listbox.size() > 0:
@@ -242,6 +250,7 @@ class PvfsToEdfConverter:
             # Process each channel
             channel_info = []
             channel_data = []
+            all_annotations = []  # Store all annotations for writing later
             
             for channel_name in selected_channels:
                 try:
@@ -281,6 +290,51 @@ class PvfsToEdfConverter:
                     })
                     
                     channel_data.append(data)
+                    
+                    print(f"Export annotations? {self.export_annotations_var.get()}")
+                    print(f"channel info id {channel_info_db.id}")
+                    
+                    # Get annotations for this channel if enabled
+                    if self.export_annotations_var.get():
+                        # Get channel-specific annotations
+                        channel_annotations = self.db.get_channel_annotations(channel_info_db.id)
+                        # Get global annotations (channel_id = -1) only for the first channel
+                        global_annotations = []
+                        if channel_info_db.id == 0:  # Only get global annotations once
+                            global_annotations = self.db.get_channel_annotations(-1)
+                        
+                        # Combine both types of annotations
+                        annotations = channel_annotations + global_annotations
+                        
+                        if annotations:
+                            print(f"Found {len(annotations)} annotations for channel {channel_name} (including global annotations)")
+                            for annotation in annotations:
+                                # Add a small buffer (1 second) to include annotations near the edges
+                                time_buffer = 1.0  # seconds
+                                if (annotation.start_time and 
+                                    annotation.start_time.to_seconds() >= (start_time - time_buffer) and 
+                                    annotation.start_time.to_seconds() <= (end_time + time_buffer)):
+                                    
+                                    # Convert annotation to EDF format
+                                    onset = max(0, annotation.start_time.to_seconds() - start_time)  # Ensure non-negative onset
+                                    duration = 0.001  # Minimum duration for EDF compatibility (1ms)
+                                    if annotation.end_time:
+                                        duration = max(0.001, annotation.end_time.to_seconds() - annotation.start_time.to_seconds())
+                                    
+                                    # Create annotation text
+                                    annotation_text = f"{annotation.type or 'Note'}"
+                                    if annotation.comment:
+                                        annotation_text += f": {annotation.comment}"
+                                    
+                                    # Add channel info to annotation text for better context
+                                    if annotation.channel_id == -1:
+                                        annotation_text = f"[Global] {annotation_text}"
+                                    else:
+                                        annotation_text = f"[{channel_name}] {annotation_text}"
+                                    
+                                    all_annotations.append((onset, duration, annotation_text))
+                                    print(f"Added annotation: {annotation_text} at {onset} with duration {duration}")
+                    
                     indexed_file.close()
                     print(f"Successfully processed channel {channel_name}")
                     
@@ -303,6 +357,23 @@ class PvfsToEdfConverter:
                 print("Wrote samples to EDF file")
             except Exception as e:
                 raise Exception(f"Failed to write samples: {str(e)}")
+            
+            # Write annotations if any
+            if self.export_annotations_var.get() and all_annotations:
+                try:
+                    # Sort annotations by onset time
+                    all_annotations.sort(key=lambda x: x[0])
+                    print("\nWriting annotations to EDF file:")
+                    for onset, duration, text in all_annotations:
+                        print(f"  {onset:.3f}s: {text} (duration: {duration:.3f}s)")
+                        # Write each annotation individually
+                        f.writeAnnotation(onset, duration, text)
+                    print(f"Successfully wrote {len(all_annotations)} annotations to EDF file")
+                except Exception as e:
+                    print(f"Warning: Failed to write annotations: {str(e)}")
+                    print("Annotation details:")
+                    for onset, duration, text in all_annotations:
+                        print(f"  {onset:.3f}s: {text} (duration: {duration:.3f}s)")
             
             # Close file
             try:

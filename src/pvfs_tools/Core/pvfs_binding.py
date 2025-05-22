@@ -546,7 +546,7 @@ class HighTime:
         return _lib.get_high_time_subseconds(self._time)
 
     def to_seconds(self):
-        return self.seconds + self.subseconds
+        return float(self.seconds) + self.subseconds
     
     def print_local(self):
         timestamp = self.seconds + self.subseconds
