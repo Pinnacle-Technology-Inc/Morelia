@@ -420,12 +420,12 @@ class ExperimentDatabase:
                 # Convert database format to HighTime objects
                 start_time = HighTime(
                     result.start_time_seconds,
-                    convert_subseconds(result.start_time_sub_seconds)
+                    float(result.start_time_sub_seconds)
                 ) if result.start_time_seconds is not None else None
 
                 end_time = HighTime(
                     result.end_time_seconds,
-                    convert_subseconds(result.end_time_sub_seconds)
+                    float(result.end_time_sub_seconds)
                 ) if result.end_time_seconds is not None else None
 
                 return ChannelInformation(

@@ -10,3 +10,7 @@ temp.*
 auth.json
 
 extracted_database.db
+
+tests/pvfs/test.edf
+
+tests/pvfs/sine.db3

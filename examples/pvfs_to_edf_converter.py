@@ -258,8 +258,8 @@ class PvfsToEdfConverter:
                     # Read data using original name
                     original_name = self.channel_name_map[channel_name]
                     indexed_file = IndexedDataFile(self.vfs, original_name)
-                    start_ht = HighTime.from_seconds(start_time)
-                    end_ht = HighTime.from_seconds(end_time)
+                    start_ht = HighTime(start_time)
+                    end_ht = HighTime(end_time)
                     
                     timestamps, values = indexed_file.get_data(start_ht, end_ht)
                     print(f"Read {len(values)} samples")
@@ -271,7 +271,7 @@ class PvfsToEdfConverter:
                     channel_info.append({
                         'label': channel_name,  # Use processed name for display
                         'dimension': channel_info_db.unit or 'uV',
-                        'sample_rate': channel_info_db.data_rate,
+                        'sample_frequency': channel_info_db.data_rate,
                         'physical_max': data.max(),
                         'physical_min': data.min(),
                         'digital_max': 32767,
