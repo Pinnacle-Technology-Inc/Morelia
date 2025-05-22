@@ -18,7 +18,7 @@ class PvfsToEdfConverter:
         self.root = tk.Tk()
         self.root.title("PVFS to EDF+ Converter")
         # Increase window height to accommodate all elements
-        self.root.geometry("800x700")  # Increased from 600 to 700
+        self.root.geometry("800x750")  # Increased from 700 to 750
         
         # Set theme if available
         try:
@@ -45,6 +45,41 @@ class PvfsToEdfConverter:
         main_container.pack(fill="both", expand=True)
         
         self.setup_ui(main_container)
+        
+        # Center the window on screen
+        self.center_window()
+        
+    def center_window(self):
+        """Center the window on the screen."""
+        self.root.update_idletasks()
+        width = self.root.winfo_width()
+        height = self.root.winfo_height()
+        x = (self.root.winfo_screenwidth() // 2) - (width // 2)
+        y = (self.root.winfo_screenheight() // 2) - (height // 2)
+        self.root.geometry(f'{width}x{height}+{x}+{y}')
+        
+    def show_message(self, title, message, message_type="info"):
+        """Show a message box centered on the application window."""
+        # Create a temporary top-level window
+        dialog = tk.Toplevel(self.root)
+        dialog.withdraw()  # Hide the window initially
+        
+        # Show the message box
+        if message_type == "error":
+            messagebox.showerror(title, message, parent=dialog)
+        elif message_type == "warning":
+            messagebox.showwarning(title, message, parent=dialog)
+        else:
+            messagebox.showinfo(title, message, parent=dialog)
+            
+        # Center the dialog on the main window
+        dialog.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() // 2) - (dialog.winfo_width() // 2)
+        y = self.root.winfo_y() + (self.root.winfo_height() // 2) - (dialog.winfo_height() // 2)
+        dialog.geometry(f'+{x}+{y}')
+        
+        # Destroy the temporary window
+        dialog.destroy()
         
     def setup_ui(self, parent):
         # File selection
@@ -182,27 +217,27 @@ class PvfsToEdfConverter:
             # Open database
             self.db = ExperimentDatabase(db_path)
             
-            # Get channel list
-            self.channels = self.vfs.get_channel_list()
+            # Get channel list from database instead of VFS
+            channel_names = self.db.get_channel_names()
             
             # Update channel listbox
             self.channel_listbox.delete(0, tk.END)
-            processed_names = set()  # Keep track of processed names to avoid duplicates
             self.channel_name_map.clear()  # Clear the mapping
             
-            for channel in self.channels:
-                # Check if this is a data channel (has both .index and .dat extensions)
-                base_name = channel
-                if channel.endswith('.index'):
-                    base_name = channel[:-6]
-                elif channel.endswith('.dat'):
-                    base_name = channel[:-4]
-                else:
+            for channel_name in channel_names:
+                # Get channel info from database
+                channel_info = self.db.get_channel_info(channel_name)
+                if not channel_info:
+                    continue
+                
+                # Check if this channel exists in the VFS
+                index_filename = f"{channel_info.filename}.index"
+                if index_filename not in self.vfs.get_file_list():
                     continue
                 
                 # Check channel type from index file
                 try:
-                    indexed_file = IndexedDataFile(self.vfs, base_name)
+                    indexed_file = IndexedDataFile(self.vfs, channel_info.filename)
                     header = indexed_file._header
                     # Only include channels of type 1 or 8
                     if header.data_type not in [1, 8]:
@@ -210,17 +245,13 @@ class PvfsToEdfConverter:
                         continue
                     indexed_file.close()
                 except Exception as e:
-                    print(f"Warning: Could not read header for channel {base_name}: {str(e)}")
+                    print(f"Warning: Could not read header for channel {channel_name}: {str(e)}")
                     continue
                 
-                # Process the channel name
-                processed_name = self.process_channel_name(base_name)
-                
-                # Only add the channel if we haven't seen this processed name before
-                if processed_name not in processed_names:
-                    self.channel_listbox.insert(tk.END, processed_name)
-                    processed_names.add(processed_name)
-                    self.channel_name_map[processed_name] = base_name  # Store mapping
+                # Add channel to listbox
+                self.channel_listbox.insert(tk.END, channel_name)
+                # Store mapping of friendly name to filename
+                self.channel_name_map[channel_name] = channel_info.filename
             
             # Select all channels by default
             for i in range(self.channel_listbox.size()):
@@ -229,7 +260,7 @@ class PvfsToEdfConverter:
             # Get time range from the first data channel
             if self.channel_listbox.size() > 0:
                 first_channel = self.channel_listbox.get(0)
-                original_name = self.channel_name_map[first_channel]  # Get original name
+                original_name = self.channel_name_map[first_channel]  # Get filename from mapping
                 indexed_file = IndexedDataFile(self.vfs, original_name)
                 start_time = indexed_file.get_start_time()
                 end_time = indexed_file.get_end_time()
@@ -284,9 +315,9 @@ class PvfsToEdfConverter:
                 self.progress_label.config(text=text)
             self.root.update_idletasks()
         
-    def convert_to_edf(self):
+    def convert_to_edf(self, suppress_message=False):
         if not hasattr(self, 'output_file'):
-            messagebox.showerror("Error", "Please select an output file")
+            self.show_message("Error", "Please select an output file", "error")
             return
             
         try:
@@ -296,7 +327,7 @@ class PvfsToEdfConverter:
             # Get selected channels
             selected_indices = self.channel_listbox.curselection()
             if not selected_indices:
-                messagebox.showerror("Error", "Please select at least one channel")
+                self.show_message("Error", "Please select at least one channel", "error")
                 return
                 
             selected_channels = [self.channel_listbox.get(i) for i in selected_indices]
@@ -306,7 +337,7 @@ class PvfsToEdfConverter:
                 start_time = self.parse_local_time(self.start_time_entry.get())
                 end_time = self.parse_local_time(self.end_time_entry.get())
             except ValueError as e:
-                messagebox.showerror("Error", str(e))
+                self.show_message("Error", str(e), "error")
                 return
                 
             # Create EDF file
@@ -379,9 +410,18 @@ class PvfsToEdfConverter:
                                 data_max = DEFAULT_MAX
                                 data_min = DEFAULT_MIN
                         
-                        # Round to 6 decimal places
-                        data_max = round(data_max, 6)
-                        data_min = round(data_min, 6)
+                        # Round to 4 decimal places to fit within EDF+'s 8-character limit
+                        # This ensures values like 101.9919 instead of 101.991913
+                        # For negative numbers, we need to account for the minus sign
+                        if data_max < 0:
+                            data_max = round(data_max, 3)  # One less decimal place for negative numbers
+                        else:
+                            data_max = round(data_max, 4)
+                            
+                        if data_min < 0:
+                            data_min = round(data_min, 3)  # One less decimal place for negative numbers
+                        else:
+                            data_min = round(data_min, 4)
                         
                     except Exception as e:
                         print(f"Warning: Error calculating min/max for channel {channel_name}: {str(e)}")
@@ -507,11 +547,12 @@ class PvfsToEdfConverter:
             except Exception as e:
                 raise Exception(f"Failed to close EDF file: {str(e)}")
             
-            messagebox.showinfo("Success", "Conversion completed successfully!")
+            if not suppress_message:
+                self.show_message("Success", "Conversion completed successfully!")
             
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"
-            messagebox.showerror("Error", error_msg)
+            self.show_message("Error", error_msg, "error")
         finally:
             # Reset progress bar
             self.update_progress(0, "")
@@ -531,7 +572,7 @@ class PvfsToEdfConverter:
         # Get list of PVFS files
         pvfs_files = [f for f in os.listdir(directory) if f.lower().endswith('.pvfs')]
         if not pvfs_files:
-            messagebox.showinfo("No Files", "No PVFS files found in selected directory")
+            self.show_message("No Files", "No PVFS files found in selected directory")
             return
             
         # Ask for output directory
@@ -580,13 +621,13 @@ class PvfsToEdfConverter:
                 # Update progress for conversion
                 self.update_progress(progress, f"Converting {pvfs_file}...")
                 
-                # Convert the file
-                self.convert_to_edf()
+                # Convert the file with message suppression
+                self.convert_to_edf(suppress_message=True)
                 successful += 1
                 
             except Exception as e:
                 failed += 1
-                messagebox.showerror("Error", f"Failed to convert {pvfs_file}: {str(e)}")
+                self.show_message("Error", f"Failed to convert {pvfs_file}: {str(e)}", "error")
                 continue
                 
         # Reset progress and hide cancel button
@@ -595,17 +636,17 @@ class PvfsToEdfConverter:
         
         # Show summary
         if self.cancel_conversion:
-            messagebox.showinfo("Cancelled", 
-                              f"Conversion cancelled:\n"
-                              f"Successfully converted: {successful} files\n"
-                              f"Failed to convert: {failed} files")
+            self.show_message("Cancelled", 
+                            f"Conversion cancelled:\n"
+                            f"Successfully converted: {successful} files\n"
+                            f"Failed to convert: {failed} files")
         elif failed == 0:
-            messagebox.showinfo("Complete", f"Successfully converted all {successful} files")
+            self.show_message("Complete", f"Successfully converted all {successful} files")
         else:
-            messagebox.showinfo("Complete", 
-                              f"Conversion complete:\n"
-                              f"Successfully converted: {successful} files\n"
-                              f"Failed to convert: {failed} files")
+            self.show_message("Complete", 
+                            f"Conversion complete:\n"
+                            f"Successfully converted: {successful} files\n"
+                            f"Failed to convert: {failed} files")
         
     def run(self):
         self.root.mainloop()
