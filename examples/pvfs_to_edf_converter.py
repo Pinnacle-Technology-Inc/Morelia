@@ -17,7 +17,8 @@ class PvfsToEdfConverter:
     def __init__(self):
         self.root = tk.Tk()
         self.root.title("PVFS to EDF+ Converter")
-        self.root.geometry("800x600")
+        # Increase window height to accommodate all elements
+        self.root.geometry("800x700")  # Increased from 600 to 700
         
         # Set theme if available
         try:
@@ -37,21 +38,34 @@ class PvfsToEdfConverter:
         self.start_time = None
         self.end_time = None
         self.channel_name_map = {}  # Map processed names to original names
+        self.cancel_conversion = False  # Flag for canceling batch conversion
         
-        self.setup_ui()
+        # Create main container with padding
+        main_container = ttk.Frame(self.root, padding="10")
+        main_container.pack(fill="both", expand=True)
         
-    def setup_ui(self):
+        self.setup_ui(main_container)
+        
+    def setup_ui(self, parent):
         # File selection
-        file_frame = ttk.LabelFrame(self.root, text="File Selection", padding="10")
-        file_frame.pack(fill="x", padx=10, pady=5)
+        file_frame = ttk.LabelFrame(parent, text="File Selection", padding="10")
+        file_frame.pack(fill="x", pady=5)
         
-        ttk.Button(file_frame, text="Select PVFS File", command=self.select_pvfs_file).pack(side="left", padx=5)
-        self.file_label = ttk.Label(file_frame, text="No file selected")
+        # Left side of file frame
+        left_frame = ttk.Frame(file_frame)
+        left_frame.pack(side="left", fill="x", expand=True)
+        ttk.Button(left_frame, text="Select PVFS File", command=self.select_pvfs_file).pack(side="left", padx=5)
+        self.file_label = ttk.Label(left_frame, text="No file selected")
         self.file_label.pack(side="left", padx=5)
         
+        # Right side of file frame
+        right_frame = ttk.Frame(file_frame)
+        right_frame.pack(side="right")
+        ttk.Button(right_frame, text="Convert Directory", command=self.convert_directory).pack(side="right", padx=5)
+        
         # Channel selection
-        channel_frame = ttk.LabelFrame(self.root, text="Channel Selection", padding="10")
-        channel_frame.pack(fill="both", expand=True, padx=10, pady=5)
+        channel_frame = ttk.LabelFrame(parent, text="Channel Selection", padding="10")
+        channel_frame.pack(fill="both", expand=True, pady=5)
         
         # Channel list with checkboxes
         self.channel_listbox = tk.Listbox(channel_frame, selectmode="multiple", 
@@ -65,8 +79,8 @@ class PvfsToEdfConverter:
         self.channel_listbox.configure(yscrollcommand=scrollbar.set)
         
         # Time range selection
-        time_frame = ttk.LabelFrame(self.root, text="Time Range", padding="10")
-        time_frame.pack(fill="x", padx=10, pady=5)
+        time_frame = ttk.LabelFrame(parent, text="Time Range", padding="10")
+        time_frame.pack(fill="x", pady=5)
         
         ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5, pady=5)
         self.start_time_entry = ttk.Entry(time_frame, width=25)
@@ -85,32 +99,41 @@ class PvfsToEdfConverter:
                  font=('TkDefaultFont', 9)).grid(row=1, column=0, columnspan=5, pady=5)
         
         # Output file selection
-        output_frame = ttk.LabelFrame(self.root, text="Output", padding="10")
-        output_frame.pack(fill="x", padx=10, pady=5)
+        output_frame = ttk.LabelFrame(parent, text="Output", padding="10")
+        output_frame.pack(fill="x", pady=5)
         
         ttk.Button(output_frame, text="Select Output File", command=self.select_output_file).pack(side="left", padx=5)
         self.output_label = ttk.Label(output_frame, text="No output file selected")
         self.output_label.pack(side="left", padx=5)
         
         # Convert button with more padding
-        convert_frame = ttk.Frame(self.root)
-        convert_frame.pack(fill="x", padx=10, pady=10)
+        convert_frame = ttk.Frame(parent)
+        convert_frame.pack(fill="x", pady=10)
         ttk.Button(convert_frame, text="Convert to EDF+", command=self.convert_to_edf).pack(pady=5)
         
         # Add progress bar with better styling
-        self.progress_frame = ttk.LabelFrame(self.root, text="Progress", padding="10")
-        self.progress_frame.pack(fill="x", padx=10, pady=5)
+        self.progress_frame = ttk.LabelFrame(parent, text="Progress", padding="10")
+        self.progress_frame.pack(fill="x", pady=5)
+        
+        # Progress bar and cancel button container
+        progress_container = ttk.Frame(self.progress_frame)
+        progress_container.pack(fill="x", padx=5, pady=5)
         
         self.progress_var = tk.DoubleVar()
         self.progress_bar = ttk.Progressbar(
-            self.progress_frame, 
+            progress_container, 
             variable=self.progress_var,
             maximum=100,
             mode='determinate',
             length=300,
             style='Horizontal.TProgressbar'
         )
-        self.progress_bar.pack(fill="x", padx=5, pady=5)
+        self.progress_bar.pack(side="left", fill="x", expand=True, padx=(0, 5))
+        
+        # Add cancel button
+        self.cancel_button = ttk.Button(progress_container, text="Cancel", command=self.cancel_batch)
+        self.cancel_button.pack(side="right")
+        self.cancel_button.pack_forget()  # Hide initially
         
         # Style the progress bar
         style = ttk.Style()
@@ -175,6 +198,19 @@ class PvfsToEdfConverter:
                 elif channel.endswith('.dat'):
                     base_name = channel[:-4]
                 else:
+                    continue
+                
+                # Check channel type from index file
+                try:
+                    indexed_file = IndexedDataFile(self.vfs, base_name)
+                    header = indexed_file._header
+                    # Only include channels of type 1 or 8
+                    if header.data_type not in [1, 8]:
+                        indexed_file.close()
+                        continue
+                    indexed_file.close()
+                except Exception as e:
+                    print(f"Warning: Could not read header for channel {base_name}: {str(e)}")
                     continue
                 
                 # Process the channel name
@@ -308,16 +344,58 @@ class PvfsToEdfConverter:
                     # Get the data
                     timestamps, values = indexed_file.get_data(start_ht, end_ht)
                     
-                    # Convert to numpy array
+                    # Convert to numpy array and handle any invalid values
                     data = np.array(values, dtype=np.float64)
+                    # Replace any NaN or infinite values with 0
+                    data = np.nan_to_num(data, nan=0.0, posinf=0.0, neginf=0.0)
+                    
+                    # Calculate physical min/max with safety checks
+                    try:
+                        data_max = float(np.max(data))
+                        data_min = float(np.min(data))
+                        
+                        # Define bounds and defaults
+                        MAX_ALLOWED = 1e6  # Maximum allowed absolute value
+                        DEFAULT_MAX = 100.0
+                        DEFAULT_MIN = -100.0
+                        
+                        # Check if values are within reasonable bounds
+                        if (not np.isfinite(data_max) or 
+                            not np.isfinite(data_min) or 
+                            abs(data_max) > MAX_ALLOWED or 
+                            abs(data_min) > MAX_ALLOWED):
+                            print(f"Warning: Channel {channel_name} has out-of-range values. Using defaults.")
+                            data_max = DEFAULT_MAX
+                            data_min = DEFAULT_MIN
+                        else:
+                            # Add a small buffer to min/max to avoid edge cases
+                            buffer = abs(data_max - data_min) * 0.01  # 1% buffer
+                            data_max += buffer
+                            data_min -= buffer
+                            
+                            # Ensure values are still within bounds after adding buffer
+                            if abs(data_max) > MAX_ALLOWED or abs(data_min) > MAX_ALLOWED:
+                                print(f"Warning: Channel {channel_name} buffer exceeded bounds. Using defaults.")
+                                data_max = DEFAULT_MAX
+                                data_min = DEFAULT_MIN
+                        
+                        # Round to 6 decimal places
+                        data_max = round(data_max, 6)
+                        data_min = round(data_min, 6)
+                        
+                    except Exception as e:
+                        print(f"Warning: Error calculating min/max for channel {channel_name}: {str(e)}")
+                        # Use safe default values if calculation fails
+                        data_max = 100.0
+                        data_min = -100.0
                     
                     # Get channel information
                     channel_info.append({
                         'label': channel_name,  # Use processed name for display
                         'dimension': channel_info_db.unit or 'uV',
                         'sample_frequency': channel_info_db.data_rate,
-                        'physical_max': round(data.max(), 6),  # Round to 6 decimal places
-                        'physical_min': round(data.min(), 6),  # Round to 6 decimal places
+                        'physical_max': data_max,
+                        'physical_min': data_min,
                         'digital_max': 32767,
                         'digital_min': -32768,
                         'prefilter': '',
@@ -438,6 +516,97 @@ class PvfsToEdfConverter:
             # Reset progress bar
             self.update_progress(0, "")
             
+    def cancel_batch(self):
+        """Cancel the current batch conversion."""
+        self.cancel_conversion = True
+        self.update_progress(0, "Canceling conversion...")
+        self.cancel_button.pack_forget()
+        
+    def convert_directory(self):
+        """Convert all PVFS files in a selected directory."""
+        directory = filedialog.askdirectory(title="Select Directory with PVFS Files")
+        if not directory:
+            return
+            
+        # Get list of PVFS files
+        pvfs_files = [f for f in os.listdir(directory) if f.lower().endswith('.pvfs')]
+        if not pvfs_files:
+            messagebox.showinfo("No Files", "No PVFS files found in selected directory")
+            return
+            
+        # Ask for output directory
+        output_dir = filedialog.askdirectory(title="Select Output Directory")
+        if not output_dir:
+            return
+            
+        # Reset cancel flag and show cancel button
+        self.cancel_conversion = False
+        self.cancel_button.pack(side="right")
+        
+        # Process each file
+        total_files = len(pvfs_files)
+        successful = 0
+        failed = 0
+        
+        for idx, pvfs_file in enumerate(pvfs_files):
+            if self.cancel_conversion:
+                break
+                
+            try:
+                # Update progress
+                progress = (idx / total_files) * 100
+                self.update_progress(progress, f"Loading {pvfs_file}...")
+                
+                # Set up file paths
+                input_path = os.path.join(directory, pvfs_file)
+                output_path = os.path.join(output_dir, os.path.splitext(pvfs_file)[0] + '.edf')
+                
+                # Load the PVFS file
+                self.pvfs_file = input_path
+                self.file_label.config(text=os.path.basename(input_path))
+                self.load_pvfs_file()
+                
+                # Wait for UI to update and ensure channels are selected
+                self.root.update()
+                if not self.channel_listbox.curselection():
+                    for i in range(self.channel_listbox.size()):
+                        self.channel_listbox.selection_set(i)
+                    self.root.update()
+                
+                # Set output file (will overwrite if exists)
+                self.output_file = output_path
+                self.output_label.config(text=os.path.basename(output_path))
+                
+                # Update progress for conversion
+                self.update_progress(progress, f"Converting {pvfs_file}...")
+                
+                # Convert the file
+                self.convert_to_edf()
+                successful += 1
+                
+            except Exception as e:
+                failed += 1
+                messagebox.showerror("Error", f"Failed to convert {pvfs_file}: {str(e)}")
+                continue
+                
+        # Reset progress and hide cancel button
+        self.update_progress(0, "")
+        self.cancel_button.pack_forget()
+        
+        # Show summary
+        if self.cancel_conversion:
+            messagebox.showinfo("Cancelled", 
+                              f"Conversion cancelled:\n"
+                              f"Successfully converted: {successful} files\n"
+                              f"Failed to convert: {failed} files")
+        elif failed == 0:
+            messagebox.showinfo("Complete", f"Successfully converted all {successful} files")
+        else:
+            messagebox.showinfo("Complete", 
+                              f"Conversion complete:\n"
+                              f"Successfully converted: {successful} files\n"
+                              f"Failed to convert: {failed} files")
+        
     def run(self):
         self.root.mainloop()
         
