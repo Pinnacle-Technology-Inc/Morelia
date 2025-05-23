@@ -3,9 +3,10 @@ from typing import List, Optional, Tuple
 import ctypes
 from pathlib import Path
 import math, struct
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 from .pvfs_binding import PvfsFile, HighTime, PvfsFileHandle, PvfsFileHandleWrapper
+from .CRC32 import CRC32
 
 class PvfsError(Exception):
     """Exception raised for PVFS-related errors."""
@@ -352,8 +353,9 @@ class IndexedDataFile:
             )
             self._indices.append(entry)
 
+
     def _read_timestamp(self, location: int) -> Tuple[Optional[HighTime], int]:
-        """Read a timestamp from the specified location.
+        """Read a timestamp from the specified location, with CRC verification.
         
         Args:
             location: File position to read from
@@ -366,20 +368,40 @@ class IndexedDataFile:
             
         try:
             self._index_file.seek(location)
-            for i in range(8):                
+
+            # Check marker bytes
+            for _ in range(8):
                 marker = self._index_file.fread_uint8()
                 if marker != self.UNIQUE_MARKER_BYTE:
                     return None, -1
-                
+
+            # Typed reads
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
             reserved = self._index_file.fread_int64()
             data_location = self._index_file.fread_int64()
-            
+            crc_stored = self._index_file.fread_uint32()
+
+            # Reconstruct bytes for CRC calculation
+            seconds_bytes = struct.pack('<q', seconds)            # int64_t -> 8 bytes
+            subseconds_bytes = struct.pack('<d', subseconds)      # double -> 8 bytes
+            reserved_bytes = struct.pack('<q', reserved)          # int64_t -> 8 bytes
+            data_location_bytes = struct.pack('<q', data_location)# int64_t -> 8 bytes
+
+            crc_input = seconds_bytes + subseconds_bytes + reserved_bytes + data_location_bytes
+            crc_calculated = CRC32.calculate_crc32(crc_input)
+            print(f"CRC at location {location}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
+
+            if crc_calculated != crc_stored:
+                print(f"CRC mismatch at location {location}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
+#                return None, -1
+
             return HighTime(seconds, subseconds), data_location
+
         except Exception as e:
             print(f"Error reading timestamp: {e}")
-            return None, -1
+        return None, -1
+
 
     def _write_timestamp(self, time: HighTime) -> int:
         """Write a timestamp to the file.

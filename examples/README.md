@@ -2,10 +2,10 @@
 
 This example application demonstrates how to convert PVFS files to EDF+ format. The converter provides a graphical user interface to:
 
-1. Select a PVFS file
+1. Select a PVFS file or directory of PVFFS files
 2. View and select channels to convert
 3. Specify the time range for conversion
-4. Choose the output EDF+ file location
+4. Choose the output EDF+ file location or directory
 
 ## Requirements
 
@@ -13,18 +13,19 @@ This example application demonstrates how to convert PVFS files to EDF+ format. 
 - Required packages (install using `pip install -r requirements.txt`):
   - numpy
   - pyedflib
+  - pytypes
 
 ## Usage
 
 1. Install the required dependencies:
-   ```bash
+   
    pip install -r requirements.txt
-   ```
+   
 
 2. Run the converter:
-   ```bash
+   
    python pvfs_to_edf_converter.py
-   ```
+
 
 3. Using the converter:
    - Click "Select PVFS File" to choose your input file
