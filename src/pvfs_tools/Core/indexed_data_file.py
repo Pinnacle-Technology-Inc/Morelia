@@ -390,7 +390,6 @@ class IndexedDataFile:
 
             crc_input = seconds_bytes + subseconds_bytes + reserved_bytes + data_location_bytes
             crc_calculated = CRC32.calculate_crc32(crc_input)
-            print(f"CRC at location {location}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
 
             if crc_calculated != crc_stored:
                 print(f"CRC mismatch at location {location}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
@@ -516,6 +515,7 @@ class IndexedDataFile:
         all_raw: List[float] = []
         markers:    List[Tuple[int, float]] = []
         raw_buffer = b''
+        crc_calculator = CRC32()  # Create CRC32 instance for accumulating CRC
 
         # preserve up to (HEADER_SIZE-1) bytes to catch split headers
         preserve = HEADER_SIZE - 1
@@ -534,19 +534,46 @@ class IndexedDataFile:
                 while True:
                     idx = raw_buffer.find(TIMESTAMP_MARKER, ptr)
                     if idx < 0:
+                        # No marker found, accumulate CRC only for the new data
+                        # Only add data from current read that hasn't been processed
+                        new_data = raw_buffer[ptr:ptr + len(data)]
+                        crc_calculator.append_bytes(new_data)
                         break
                     # require marker to align on float boundary
                     if idx % BYTES_PER_FLOAT != 0:
+                        # Accumulate CRC only up to the misaligned marker
+                        crc_calculator.append_bytes(raw_buffer[ptr:idx])
                         ptr = idx + 1
                         continue
                     # need full header in buffer
                     if len(raw_buffer) < idx + HEADER_SIZE:
+                        # Accumulate CRC only for the new data
+                        new_data = raw_buffer[ptr:ptr + len(data)]
+                        crc_calculator.append_bytes(new_data)
                         break
 
-                    # unpack floats before marker
-                    n_pre = (idx - ptr - 4) // BYTES_PER_FLOAT  #ignore the CRC for now (4 bytes before the time stamp)
+                    # Process data segment between markers
+                    n_pre = (idx - ptr - 4) // BYTES_PER_FLOAT  # 4 bytes before timestamp is the CRC
                     if n_pre > 0:
                         end_off = ptr + n_pre * BYTES_PER_FLOAT
+                        # Read stored CRC first
+                        crc_stored = struct.unpack('<I', raw_buffer[end_off:end_off + 4])[0]
+                        
+                        # Accumulate CRC for data up to CRC bytes (excluding the CRC bytes themselves)
+                        crc_calculator.append_bytes(raw_buffer[ptr:end_off])
+                        
+                        # Get calculated CRC and compare
+                        crc_calculated = crc_calculator.get_crc()
+                        print(f"Data segment CRC at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
+                        
+                        if crc_calculated != crc_stored:
+                            print(f"Data segment CRC mismatch at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
+                            # Continue processing but log the error
+                        
+                        # Reset CRC calculator for next segment
+                        crc_calculator.reset()
+                        
+                        # Unpack and add the values
                         vals = struct.unpack(f'<{n_pre}f', raw_buffer[ptr:end_off])
                         all_raw.extend(vals)
 
@@ -568,6 +595,8 @@ class IndexedDataFile:
                     if n_tail > 0:
                         start_off = ptr
                         end_off = ptr + n_tail * BYTES_PER_FLOAT
+                        # Add any remaining data to CRC before unpacking
+                        crc_calculator.append_bytes(raw_buffer[start_off:end_off])
                         vals = struct.unpack(f'<{n_tail}f', raw_buffer[start_off:end_off])
                         all_raw.extend(vals)
                         ptr = end_off
