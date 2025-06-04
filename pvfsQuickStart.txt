@@ -1,0 +1,30 @@
+QUICKSTART INSTRUCTIONS
+
+1. Run PowerShell from this directory.
+   (Shift + Right-click → "Open PowerShell window here")
+
+2. Activate the virtual environment:
+   .venv\Scripts\Activate.ps1
+
+3. Run a test (with print output enabled):
+   pytest -s -k "test_pvfs_get_channel_list" tests\
+
+4. When finished, deactivate the virtual environment:
+   deactivate
+
+---
+
+If starting from a clean Git download (no .venv yet):
+
+A. Create a new virtual environment:
+   python -m venv .venv
+
+B. Activate the virtual environment:
+   .venv\Scripts\Activate.ps1
+
+C. Install project dependencies:
+   pip install .[tests] (include -e if developing)
+
+Then continue with normal workflow (step 3).
+
+Useful command list available tests:  pytest --collect-only tests\
