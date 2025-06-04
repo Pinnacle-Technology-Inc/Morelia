@@ -340,7 +340,7 @@ class Pod :
         # return complete packet 
         return(packet)
     
-    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> PodPacket :
+    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
         Args:
@@ -355,7 +355,7 @@ class Pod :
                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
         """
         self.WritePacket(cmd, payload)
-        r = self.ReadPODpacket(validateChecksum)
+        r = self.ReadPODpacket(validateChecksum, timeout_sec)
         return(r)
 
 

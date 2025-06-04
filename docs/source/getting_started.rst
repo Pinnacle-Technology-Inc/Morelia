@@ -167,6 +167,7 @@ using Morelia:
     * :doc:`Streaming from data aquisition systems </streaming>`
     * :doc:`Controlling sleep deprivation system </sleep_dep>`
     * :doc:`Wielding stimulus controllers </stimulus>`
+    * :doc:`Low-level interactions with POD systems </low_level>`
 
 Happy experimenting! 😁
 

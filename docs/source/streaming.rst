@@ -1,6 +1,8 @@
 ######################################
-Harnessing Data Acquisition Systems 🤠
+Streaming From Data Acquisition Systems 🤠
 ######################################
+
+.. TODO: You cant use commands when streaming, you have to stop streaming.
 
 .. contents:: 
 
@@ -54,6 +56,35 @@ any devices you want in the API. As an example, let's connect to three 8206HR de
    pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
    pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
 
+
+At this point, we may want to set a sample rate other than the default.
+The sample rate of a device is acessible via to the ``sample_rate``
+attribute. Just like any attribute in Python, this can be 
+used to view the currenly set sample rate (in Hz) as well as change it.
+It is worth noting, you will not be allowed to set a sample rate higher
+than the maximum allowable for the device. The maximum allowable
+sample rate is available via the ``max_sample_rate`` attribute.
+
+As a quick example, if we wanted to set the sample rate of ``pod_2``
+to be 1300 Hz, we coud insert the following code:
+
+.. code-block:: python
+    
+   # Import the proper class.
+   from Morelia.Devices import Pod8206HR
+
+   # Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.
+   pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
+   pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
+   pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
+
+   # Change the sample rate of pod_2 to be 1300 Hz.
+   pod_2.sample_rate = 1300
+
+However, if we tried to set the sample rate of ``pod_2`` to be 5000 Hz
+(2000 Hz is the maximum allowable sample rate for an 8206HR),
+this would raise a ``ValueError``.
+
 The next step is to initialize our data sinks, which can be imported from the
 ``Morelia.Stream.sink`` subpackage. Currently, Morelia supports the following as
 destinations to send data to:
@@ -84,6 +115,9 @@ Continuing along with our example, let us build our sinks.
    pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
    pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
     
+   # Change the sample rate of pod_2 to be 1300 Hz.
+   pod_2.sample_rate = 1300
+
    # Create EDF sinks.
    edf_dump_1 = EDFSink('dump_1.edf', pod_1)
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
@@ -111,6 +145,9 @@ sentence, let's see what it looks like in our example.
    pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
    pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
     
+   # Change the sample rate of pod_2 to be 1300 Hz.
+   pod_2.sample_rate = 1300
+
    # Create EDF sinks.
    edf_dump_1 = EDFSink('dump_1.edf', pod_1)
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
