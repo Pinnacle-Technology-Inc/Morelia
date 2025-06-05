@@ -1,6 +1,6 @@
-######################################
+###########################################
 Streaming From Data Acquisition Systems 🤠
-######################################
+###########################################
 
 .. TODO: You cant use commands when streaming, you have to stop streaming.
 

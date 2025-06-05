@@ -8,9 +8,9 @@ POD devices. Using the three methods covered here, it is possible to take full a
 
 .. contents::
 
------------------------
+=======================
 When to Use This API 🧐
------------------------
+=======================
 Ideally, end-users should never have to interact with this, and it is 
 primarily used by developers extending Morelia's functionality to 
 support new devices. However, since Morelia is still in early
@@ -21,9 +21,9 @@ to use specific functions of their device.
 and move them to fully private.** However, for now, they are an option
 that can be utilized.
 
------------------
+=================
 Packet Types 📦
------------------
+=================
 The ``Morelia.packet`` subpackage contains several
 types of packets that can be read/written to
 POD devices. The class heirarchy of packets is as
@@ -41,9 +41,9 @@ be used to examine and analyze their contents.
 In-depth documentation of these attributes for each class can be found
 in the documentation for the ``Morelia.packet`` subpackage.
 
-------------------------------
+==============================
 Writing and Reading Packets 📮
-------------------------------
+==============================
 
 There are three methods Morelia uses to interact with devices:
 
@@ -71,7 +71,7 @@ a packet, you will need two pieces of information: the command number
 and payload. The command number is a unique number that identifies
 a specific command for a given POD devices (for example, 104 identifies the ``SET TTL OUT`` command in an 8206HR). The command numbers
 for each device can be found in the documentation for each respective
-device on the page for :doc:`Morelia.Devices </Morelia.Devices>`.
+device on the :doc:`command reference </command_ref>` page.
 Some commands require a payload, which are arguments passed to the device. ``WritePacket`` will optionally take these arguments as a tuple.
 The payloads of each command are also detailed in the :doc:`Morelia.Devices </Morelia.Devices>` page for each device.
 
@@ -91,7 +91,7 @@ timeout_sec parameter.**
 
 We will conclude this section with a small example. Though this only
 showcases a few specific commands on an 8206HR, **it can be adapted
-to any command in any device's documentation**.
+to any command in the command reference**.
 
 .. code-block:: python
 
@@ -104,7 +104,7 @@ to any command in any device's documentation**.
   pod = Pod8206HR('/dev/ttyUSB0', 10)
 
   # As our first example, let's set the lowpass filter on channel 2
-  # to 24 Hz. After consulting the 8206HR class documentation, we
+  # to 24 Hz. After consulting the command reference, we
   # can see that the SET LOWPASS command is number 103 and
   # takes two arguments: the channel number we want to set the filter
   # for and the value we would like to set it to.
@@ -121,7 +121,7 @@ to any command in any device's documentation**.
   pod.WritePacket(103, (1, 24))
 
   # Next, let's verify that the lowpass value on channel 2 is what
-  # we expect. Consulting the documentation, we can see that the
+  # we expect. Consulting the command reference, we can see that the
   # GET LOWPASS command (number 102) is what we are after. We
   # can also see that it takes one argument (the channel we want the lowpass value of)
   # and RETURNS the value of the lowpass filter on that channel. 
@@ -160,9 +160,9 @@ to any command in any device's documentation**.
   lowpass_channel_2_packet_payload = lowpass_channel_2_packet.payload
   print(lowpass_channel_2_packet_payload[0])
 
---------------------------------------
+======================================
 The Current Trouble with Streaming 😭
---------------------------------------
+======================================
 
 As a final note in this section, we need to talk about the low-level
 API and streaming. Due to current limitations within the API,

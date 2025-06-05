@@ -70,6 +70,9 @@ After the devices have been shared, you should see your serial devices in WSL.
 ================
 Installation 💽
 ================
+
+**If you are looking to contribute to Morelia, please see the documentation for :doc:`setting up a development environment </develop>`.**
+
 With our environment set up, we can now continue on our journey and install Morelia! Morelia can be installed one of two ways:
 
 * From the `Python Package Index (PyPI) (recommended) <https://pypi.org/>`_

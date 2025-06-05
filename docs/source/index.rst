@@ -13,4 +13,6 @@ Welcome to Morelia's documentation!
    sleep_dep
    stimulus
    low_level
+   command_ref
+   develop
    modules
