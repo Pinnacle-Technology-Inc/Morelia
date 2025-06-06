@@ -71,7 +71,7 @@ After the devices have been shared, you should see your serial devices in WSL.
 Installation 💽
 ================
 
-**If you are looking to contribute to Morelia, please see the documentation for :doc:`setting up a development environment </develop>`.**
+If you are looking to contribute to Morelia, please see the documentation for :doc:`setting up a development environment </develop>`.
 
 With our environment set up, we can now continue on our journey and install Morelia! Morelia can be installed one of two ways:
 
@@ -81,8 +81,13 @@ With our environment set up, we can now continue on our journey and install More
 -----------------------
 Installing From PyPI 📦
 -----------------------
-Unfortunately, Morelia has not been published to PyPI yet! 😭  Check back soon for more updates, 
-and please refer to the next subsection for installing from source!
+To install Morelia from PyPI, simply run the following command:
+
+.. code-block::
+
+   $ pip install ptech-morelia
+
+and hooray! You are ready to go 😁
 
 -------------------------
 Installing from Source 👷
