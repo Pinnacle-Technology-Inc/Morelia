@@ -16,3 +16,4 @@ dependencies:
   - sphinx-autodoc2
   - sqlalchemy
   - pydantic
+  - pip

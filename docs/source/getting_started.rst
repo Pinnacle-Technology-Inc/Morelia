@@ -46,7 +46,7 @@ Windows Subsystem for Linux 2 💾
 --------------------------------
 If using the Windows Subsystem for Linux 2 (WSL), special care must be taken to set up an environment
 in addition to the normal GNU/Linux instructions.
-First, we must load the proper driver into the kernel. We can do this by running the following command as root:
+First, we must load the proper driver into the kernel. We can do this by running the following command as root (# not included):
 
 .. code-block::
 
