@@ -28,10 +28,10 @@ jobs:
 
       # Upload built dists so next job can use them.
       - name: Upload distributions
-      uses: actions/upload-artifact@v4
-      with:
-        name: release-dists
-        path: dist/
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-dists
+          path: dist/
 
   # Upload packages to PyPI.
   pypi-publish:
