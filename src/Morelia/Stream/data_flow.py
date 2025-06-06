@@ -24,16 +24,12 @@ class DataFlow:
     """Class that use multiprocessing to efficiently collect data from many devices at once.
 
     :param network: A mapping of data sources (POD devices) to one or more data sinks.
-    :type network: list[tuple[:class: Pod8206HR | :class: Pod8401HR | :class: Pod8274D, list[ :class: SinkInterface]]]
 
     :param filter_method: Method to use to clean curropted data. Defaults to TAKE_PAST.
-    :type filter_method: FilterMethod, optional
 
     :param filter_insert_value: Value to insert when using the INSERT filter method. Defaults to NaN.
-    :type filter_insert_value: float, optional
     
     :param fail_tolerance: How many times in a row to fail reading before giving up on reading a "chunk" of data ("chunk" here is approximately 1 second of samples). Defaults to 3.
-    :type fail_tolerance: int, optional
     """
 
     def __init__(self, network: list[tuple[AquisitionDevice, list[pod_sink.SinkInterface]]]) -> None:
@@ -57,10 +53,9 @@ class DataFlow:
         self._workers = []
 
     def collect_for_seconds(self, duration_sec: float) -> None:
-        """Collect data for `duration_sec` seconds.
+        """Collect data for ``duration_sec`` seconds.
 
         :param duration_sec: How long to collect data for in seconds.
-        :type duration_sec: float
         """
         self._start_collecting(duration_sec)
 
@@ -72,7 +67,7 @@ class DataFlow:
         self._manual_stop_events = []
 
     def collect(self) -> None:
-        """Collect until `stop_collection` is called."""
+        """Collect until ``stop_collection`` is called."""
         self._start_collecting()
 
     def _start_collecting(self, duration_sec: float = float('inf')) -> None:
