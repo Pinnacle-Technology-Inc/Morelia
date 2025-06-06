@@ -5,10 +5,8 @@ name: packaging
 # Jobs run when PRs to integration are approved.
 on:
   push:
-    branches:
-      - integration
 
-    # Only run on new tag.
+    # Only run on new tag creation.
     tags:
       - '*'
 
