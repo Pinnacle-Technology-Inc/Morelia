@@ -1,5 +1,3 @@
-#TODO: update docs
-
 r"""
 This file implements the following commutative diagram:
 
