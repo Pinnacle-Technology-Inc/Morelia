@@ -9,6 +9,7 @@ dependencies:
   - pytest
   - sphinx
   - sphinx-rtd-theme
+  - sphinx-autodoc-typehints
   - texttable
   - pyedflib
   - influxdb-client

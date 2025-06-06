@@ -70,9 +70,9 @@ it's probably useful to know what they are.
 Building Documentation 📜
 ==========================
 
-Morelia's documentation is built using `Spinx <https://www.sphinx-doc.org/en/master/index.html>_`,
-and the source files can be found in the ``docs`` folder. To build the ``HTML`` documentation,
-simply run
+Morelia's documentation is built using `Spinx <https://www.sphinx-doc.org/en/master/index.html>`_,
+and the source files can be found in the ``docs`` folder. It also uses the `autodoc <https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_ and `sphinx-autodoc-typehints <https://github.com/tox-dev/sphinx-autodoc-typehints>`_ extensions to automatically build documenatation for all functions and classes using docstrings. 
+To build the ``HTML`` documentation, simply run
 
 .. code-block::
    

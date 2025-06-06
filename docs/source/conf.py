@@ -24,7 +24,8 @@ extensions = [
     'sphinx.ext.duration',
    'sphinx.ext.autosummary',
     'sphinx.ext.autodoc',
-    'sphinx.ext.githubpages'
+    'sphinx.ext.githubpages',
+    'sphinx_autodoc_typehints'
 ]
 
 templates_path = ['_templates']
