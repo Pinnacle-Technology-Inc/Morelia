@@ -26,7 +26,9 @@ jobs:
       - name: Install Morelia locally for build.
         run: python -m pip install .
 
-      - uses: ammaraskar/sphinx-action@7.0.0 # Build docs using sphinx.
+      - name: Build docs with Sphinx.
+        run: cd docs && make html && cd ..
+
       - uses: actions/upload-artifact@v4 # Upload built docs to a place where other jobs can acess them.
         with:
           name: html-docs
