@@ -63,7 +63,7 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.signal.html">Morelia.signal package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-contents">Module contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -102,20 +102,126 @@
 <section id="submodules">
 <h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
 </section>
-<section id="morelia-stream-sink-csv-sink-module">
-<h2>Morelia.Stream.sink.csv_sink module<a class="headerlink" href="#morelia-stream-sink-csv-sink-module" title="Link to this heading"></a></h2>
+<section id="module-Morelia.Stream.sink.csv_sink">
+<span id="morelia-stream-sink-csv-sink-module"></span><h2>Morelia.Stream.sink.csv_sink module<a class="headerlink" href="#module-Morelia.Stream.sink.csv_sink" title="Link to this heading"></a></h2>
+<p>Send data to CSV file.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.csv_sink.CSVSink">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.csv_sink.</span></span><span class="sig-name descname"><span class="pre">CSVSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.csv_sink.CSVSink" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Stream.sink.sink_interface.SinkInterface" title="Morelia.Stream.sink.sink_interface.SinkInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SinkInterface</span></code></a></p>
+<p>Stream data to a CSV file, truncates the destination file each time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>file_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to CSV file to write to.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
-<section id="morelia-stream-sink-edf-sink-module">
-<h2>Morelia.Stream.sink.edf_sink module<a class="headerlink" href="#morelia-stream-sink-edf-sink-module" title="Link to this heading"></a></h2>
+<section id="module-Morelia.Stream.sink.edf_sink">
+<span id="morelia-stream-sink-edf-sink-module"></span><h2>Morelia.Stream.sink.edf_sink module<a class="headerlink" href="#module-Morelia.Stream.sink.edf_sink" title="Link to this heading"></a></h2>
+<p>Send data to EDF file.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.edf_sink.EDFSink">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.edf_sink.</span></span><span class="sig-name descname"><span class="pre">EDFSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.edf_sink.EDFSink" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Stream.sink.sink_interface.SinkInterface" title="Morelia.Stream.sink.sink_interface.SinkInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SinkInterface</span></code></a></p>
+<p>Stream data to an EDF file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample_rate</strong> – Sample rate of device being streamed from. Used in setting up EDF file.</p></li>
+<li><p><strong>file_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to CSV file to write to.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
-<section id="morelia-stream-sink-influx-sink-module">
-<h2>Morelia.Stream.sink.influx_sink module<a class="headerlink" href="#morelia-stream-sink-influx-sink-module" title="Link to this heading"></a></h2>
+<section id="module-Morelia.Stream.sink.influx_sink">
+<span id="morelia-stream-sink-influx-sink-module"></span><h2>Morelia.Stream.sink.influx_sink module<a class="headerlink" href="#module-Morelia.Stream.sink.influx_sink" title="Link to this heading"></a></h2>
+<p>Send data to InfluxDB.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.influx_sink.</span></span><span class="sig-name descname"><span class="pre">InfluxSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">org</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#Morelia.Stream.sink.sink_interface.SinkInterface" title="Morelia.Stream.sink.sink_interface.SinkInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SinkInterface</span></code></a></p>
+<p>Stream data to InfluxDB for real-time monitoring.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>url</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – URL that points to an InfluxDB server.</p></li>
+<li><p><strong>api_token</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – API token to authenticate to InfluxDB. Needs write permissions.</p></li>
+<li><p><strong>org</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Organization within InfluxDB to write data to.</p></li>
+<li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Bucket within InfluxDB to write data to.</p></li>
+<li><p><strong>measurement</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Measurement within InfluxDB to write data to.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – 8206-HR/8401-HR/8274D POD device you are streaming data from.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.close" title="Link to this definition"></a></dt>
+<dd><p>Wrapper around <code class="docutils literal notranslate"><span class="pre">self.__exit__</span></code> for use outside of a context manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.flush">
+<span class="sig-name descname"><span class="pre">flush</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packet</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.flush" title="Link to this definition"></a></dt>
+<dd><p>Write data to InfluxDB.
+:meta private:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.open">
+<span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.open" title="Link to this definition"></a></dt>
+<dd><p>Wrapper around <code class="docutils literal notranslate"><span class="pre">self.__enter__</span></code> for use outside of a context manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
-<section id="morelia-stream-sink-sink-interface-module">
-<h2>Morelia.Stream.sink.sink_interface module<a class="headerlink" href="#morelia-stream-sink-sink-interface-module" title="Link to this heading"></a></h2>
+<section id="module-Morelia.Stream.sink.sink_interface">
+<span id="morelia-stream-sink-sink-interface-module"></span><h2>Morelia.Stream.sink.sink_interface module<a class="headerlink" href="#module-Morelia.Stream.sink.sink_interface" title="Link to this heading"></a></h2>
+<p>Interface for dataflow sink.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.sink_interface.SinkInterface">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.sink_interface.</span></span><span class="sig-name descname"><span class="pre">SinkInterface</span></span><a class="headerlink" href="#Morelia.Stream.sink.sink_interface.SinkInterface" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Interface that data sinks <strong>must</strong> implement.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.sink_interface.SinkInterface.flush">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">flush</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timestamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">packet</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.sink_interface.SinkInterface.flush" title="Link to this definition"></a></dt>
+<dd><p>Send data to destination (e.g. and EDF file).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
-<section id="module-contents">
-<h2>Module contents<a class="headerlink" href="#module-contents" title="Link to this heading"></a></h2>
+<section id="module-Morelia.Stream.sink">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-Morelia.Stream.sink" title="Link to this heading"></a></h2>
 </section>
 </section>
 
