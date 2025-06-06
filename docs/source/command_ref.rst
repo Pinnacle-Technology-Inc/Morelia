@@ -514,13 +514,13 @@ device (i.e. you should never send these). They are as follows
      - GET STIMULUS
      - U8
      - U8, U16 x 4, U32, U8
-     - Requires U8 channel. Gets the current stimulus configuration for the selected channel. See format in :doc:`8480 documentation </stimulus>`.
+     - Requires U8 channel. Gets the current stimulus configuration for the selected channel.
 
    * - 102
      - SET STIMULUS
      - U8, U16 x 4, U32, U8
      - None
-     - Sets the stimulus configuration on the selected channel. See format in :doc:`8480 documentation </stimulus>`.
+     - Sets the stimulus configuration on the selected channel.
 
    * - 108
      - GET TTL SETUP
@@ -625,3 +625,51 @@ device (i.e. you should never send these). They are as follows
      - EVENT LOW CURRENT
      - U8
      - Indicates a low current status on one or more of the LED channels. U8 bitmask indicates which channels have low current. Bit 0 = Ch0, Bit 1 = Ch1.
+
+The ``SET STIMULUS`` and ``GET STIMULUS`` command arguments/return values are more complex than others.
+In order to make sense of the arguments/response, see the following table.
+
+.. list-table:: SET/GET STIMULUS command format.
+   :header-rows: 1
+   :widths: auto
+
+   * - Index
+     - Type
+     - Name
+     - Description
+
+   * - 0
+     - U8
+     - Channel
+     - The channel for the stimulus, either 0 or 1.
+
+   * - 2
+     - U16
+     - Stimulus Period, ms portion
+     - The period (time between pulses) of the stimulus event in ms. Added with the us portion gives the total period.
+
+   * - 3
+     - U16
+     - Stimulus Period, us portion
+     - The sub-ms portion of the period. Added with the ms portion gives the total period.
+
+   * - 4
+     - U16
+     - Stimulus Width, ms portion
+     - The width of each stimulus pulse, in ms. Added with the us portion gives the total width. Note that if biphasic stimulation is configured for this channel, the total width cannot be greater than half the period.
+
+   * - 5
+     - U16
+     - Stimulus Width, us portion
+     - The sub-ms portion of the pulse width. Added with the ms portion gives the total period. Biphasic restriction applies to total of ms + us portions.
+
+   * - 6
+     - U32
+     - Stimulus Repeat Count
+     - The number of stimulus pulses to perform.
+
+   * - 7
+     - U8
+     - Config Flags
+     - Config Flags byte. See :doc:`8480 documentation </stimulus>` for format.
+
