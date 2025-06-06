@@ -12,4 +12,7 @@ Welcome to Morelia's documentation!
    streaming
    sleep_dep
    stimulus
+   low_level
+   command_ref
+   develop
    modules

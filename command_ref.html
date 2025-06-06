@@ -1,0 +1,821 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>POD Device Command Reference 📚 &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2d14e799"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Contributing to Morelia 👷‍♀️" href="develop.html" />
+    <link rel="prev" title="Low-Level Interaction with POD Systems 📊" href="low_level.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">POD Device Command Reference 📚</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#data-types-101">Data Types 101 🥗</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#device-commands">Device Commands 🔌</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#common-commands">Common Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#hr-specific-commands">8206HR-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">8401HR-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#specific-commands">8229-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">8480-Specific Commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">POD Device Command Reference 📚</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/command_ref.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="pod-device-command-reference">
+<h1>POD Device Command Reference 📚<a class="headerlink" href="#pod-device-command-reference" title="Link to this heading"></a></h1>
+<p>This page is meant to serve as a reference for all
+commands that can be sent to POD devices supported
+by Morelia using the <a class="reference internal" href="low_level.html"><span class="doc">low-level API</span></a>.
+<strong>If you haven’t read that page, read it first.</strong></p>
+<section id="data-types-101">
+<h2>Data Types 101 🥗<a class="headerlink" href="#data-types-101" title="Link to this heading"></a></h2>
+<p>Every POD device enforces <a class="reference external" href="https://en.wikipedia.org/wiki/Data_type">data types</a> for the values sent to/recieved
+from it. For the uninitiated, these are basically the valid values you are allowed to pass to a specific command. POD devices
+use three fundamental data types:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Type Name</p></th>
+<th class="head"><p>Shorthand Notation</p></th>
+<th class="head"><p>Valid Values</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Unsigned 8-Bit Integer</p></td>
+<td><p>U8</p></td>
+<td><p>[0-255]</p></td>
+</tr>
+<tr class="row-odd"><td><p>Unsigned 16-Bit Integer</p></td>
+<td><p>U16</p></td>
+<td><p>[0-65535]</p></td>
+</tr>
+<tr class="row-even"><td><p>Unsigned 32-Bit Integer</p></td>
+<td><p>U32</p></td>
+<td><p>[0-4294967295]</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="device-commands">
+<h2>Device Commands 🔌<a class="headerlink" href="#device-commands" title="Link to this heading"></a></h2>
+<section id="common-commands">
+<h3>Common Commands<a class="headerlink" href="#common-commands" title="Link to this heading"></a></h3>
+<p>These commands are common across all POD devices.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Arguments</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>ACK</p></td>
+<td><p>None</p></td>
+<td><p>None</p></td>
+<td><p>Basic ACK command. Unused, because in normal communications the sent command is echoed instead.</p></td>
+</tr>
+<tr class="row-odd"><td><p>1</p></td>
+<td><p>NACK</p></td>
+<td><p>None</p></td>
+<td><p>None</p></td>
+<td><p>Response to an unknown command number.</p></td>
+</tr>
+<tr class="row-even"><td><p>2</p></td>
+<td><p>PING</p></td>
+<td><p>None</p></td>
+<td><p>None</p></td>
+<td><p>Used to verify device is present and communicating.</p></td>
+</tr>
+<tr class="row-odd"><td><p>3</p></td>
+<td><p>RESET</p></td>
+<td><p>None</p></td>
+<td><p>None</p></td>
+<td><p>Indicates a device reset occurred. Also sent at startup.</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>BOOT</p></td>
+<td><p>None</p></td>
+<td><p>None</p></td>
+<td><p>Instructs the device to enter bootload mode. After issuing this command, the bootload process must be completed or the device must be manually reset.</p></td>
+</tr>
+<tr class="row-odd"><td><p>8</p></td>
+<td><p>TYPE</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Returns the device type value. This is a unique value for each device. (e.g. is 0x30 for 8206HR).</p></td>
+</tr>
+<tr class="row-even"><td><p>12</p></td>
+<td><p>FIRMWARE VERSION</p></td>
+<td><p>None</p></td>
+<td><p>U8, U8, U16</p></td>
+<td><p>Returns the device firmware version as 3 ASCII-encoded hex values. This is, the return values are meant to be intreprated as ASCII, which gives the version number in hexadecimal. Additonally, the U16 encodes two seperate ASCII characters, encoded by the leftmost and rightmost bytes respectively. So 1.0.10 would come back as 0x31, 0x30, 0x00, 0x41 (ASCII for 1.0.A).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="hr-specific-commands">
+<h3>8206HR-Specific Commands<a class="headerlink" href="#hr-specific-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Arguments</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>ERROR</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates an error has occurred, of the returned type. Not actually used.</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>STREAM</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Command to change streaming state. 0 = OFF, 1 = ON. Reply returns the argument sent. May reply <em>after</em> streaming starts.</p></td>
+</tr>
+<tr class="row-even"><td><p>100</p></td>
+<td><p>GET SAMPLE RATE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the current sample rate of the system, in Hz.</p></td>
+</tr>
+<tr class="row-odd"><td><p>101</p></td>
+<td><p>SET SAMPLE RATE</p></td>
+<td><p>U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently (could be up to 4000 in the future).</p></td>
+</tr>
+<tr class="row-even"><td><p>102</p></td>
+<td><p>GET LOWPASS</p></td>
+<td><p>U8</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG). Returns the value in Hz.</p></td>
+</tr>
+<tr class="row-odd"><td><p>103</p></td>
+<td><p>SET LOWPASS</p></td>
+<td><p>U8, U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.</p></td>
+</tr>
+<tr class="row-even"><td><p>104</p></td>
+<td><p>SET TTL OUT</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).</p></td>
+</tr>
+<tr class="row-odd"><td><p>105</p></td>
+<td><p>GET TTL IN</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Sets the selected TTL pin (0,1,2,3) to an input and returns the value (0-1).</p></td>
+</tr>
+<tr class="row-even"><td><p>106</p></td>
+<td><p>GET TTL PORT</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the value of the entire TTL port as a byte. Does not modify pin direction.</p></td>
+</tr>
+<tr class="row-odd"><td><p>107</p></td>
+<td><p>GET FILTER CONFIG</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpass).</p></td>
+</tr>
+</tbody>
+</table>
+<p>It is also worth noting that packets containing streaming data will
+have the command number 180.</p>
+</section>
+<section id="id1">
+<h3>8401HR-Specific Commands<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Arguments</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>ERROR</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates an error has occurred, of the returned type. Not actually used.</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>STREAM</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Command to change streaming state. 0 = OFF, 1 = ON. Reply returns the argument sent. May reply <em>after</em> streaming starts.</p></td>
+</tr>
+<tr class="row-even"><td><p>100</p></td>
+<td><p>GET SAMPLE RATE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the current sample rate of the system, in Hz.</p></td>
+</tr>
+<tr class="row-odd"><td><p>101</p></td>
+<td><p>SET SAMPLE RATE</p></td>
+<td><p>U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.</p></td>
+</tr>
+<tr class="row-even"><td><p>102</p></td>
+<td><p>GET HIGHPASS</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass.</p></td>
+</tr>
+<tr class="row-odd"><td><p>103</p></td>
+<td><p>SET HIGHPASS</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS.</p></td>
+</tr>
+<tr class="row-even"><td><p>104</p></td>
+<td><p>GET LOWPASS</p></td>
+<td><p>U8</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the lowpass filter for the desired channel. Requires the channel to read. Returns the value in Hz.</p></td>
+</tr>
+<tr class="row-odd"><td><p>105</p></td>
+<td><p>SET LOWPASS</p></td>
+<td><p>U8, U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the lowpass filter for the desired channel to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz.</p></td>
+</tr>
+<tr class="row-even"><td><p>106</p></td>
+<td><p>GET DC MODE</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the DC mode for the channel. Requires the channel to read. Returns 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG.</p></td>
+</tr>
+<tr class="row-odd"><td><p>107</p></td>
+<td><p>SET DC MODE</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the DC mode for the selected channel. Requires the channel and value to set. Values are the same as in GET DC MODE.</p></td>
+</tr>
+<tr class="row-even"><td><p>112</p></td>
+<td><p>GET BIAS</p></td>
+<td><p>U8</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V.</p></td>
+</tr>
+<tr class="row-odd"><td><p>113</p></td>
+<td><p>SET BIAS</p></td>
+<td><p>U8, U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio channels.</p></td>
+</tr>
+<tr class="row-even"><td><p>114</p></td>
+<td><p>GET EXT0 VALUE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Reads the analog value on the EXT0 pin. Returns an unsigned 12-bit value, representing a 3.3V input. Normally used to identify preamps. Note that this function takes some time and blocks, so it should not be called during data acquisition if possible.</p></td>
+</tr>
+<tr class="row-odd"><td><p>115</p></td>
+<td><p>GET EXT1 VALUE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Reads the analog value on the EXT1 pin. Returns an unsigned 12-bit value, representing a 3.3V input. Normally used to identify if an 8480 is present. Similar caveat regarding blocking as GET EXT0 VALUE.</p></td>
+</tr>
+<tr class="row-even"><td><p>116</p></td>
+<td><p>SET EXT0</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the digital value of EXT0, 0 or 1.</p></td>
+</tr>
+<tr class="row-odd"><td><p>117</p></td>
+<td><p>SET EXT1</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the digital value of EXT1, 0 or 1.</p></td>
+</tr>
+<tr class="row-even"><td><p>121</p></td>
+<td><p>SET INPUT GROUND</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets whether channel inputs are grounded or connected to the preamp. Bitfield: bits 0-3. High nibble should be 0s. 0 = Grounded, 1 = Connected to Preamp.</p></td>
+</tr>
+<tr class="row-odd"><td><p>122</p></td>
+<td><p>GET INPUT GROUND</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Returns the bitmask value from SET INPUT GROUND.</p></td>
+</tr>
+<tr class="row-even"><td><p>127</p></td>
+<td><p>SET TTL CONFIG</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Configures the TTL pins. First argument is output setup: 0 is open collector, 1 is push-pull. Second argument is input setup: 0 is analog, 1 is digital. Bit 7 = EXT0, bit 6 = EXT1, bits 4–5 unused, bits 0–3 = TTL pins.</p></td>
+</tr>
+<tr class="row-odd"><td><p>128</p></td>
+<td><p>GET TTL CONFIG</p></td>
+<td><p>None</p></td>
+<td><p>U8, U8</p></td>
+<td><p>Gets the TTL config byte. Values are as per SET TTL CONFIG.</p></td>
+</tr>
+<tr class="row-even"><td><p>129</p></td>
+<td><p>SET TTL OUTS</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the TTL pins. First byte is a bitmask: 0 = do not modify, 1 = modify. Second byte is bit field: 0 = low, 1 = high.</p></td>
+</tr>
+<tr class="row-odd"><td><p>130</p></td>
+<td><p>GET SS CONFIG</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.</p></td>
+</tr>
+<tr class="row-even"><td><p>131</p></td>
+<td><p>SET SS CONFIG</p></td>
+<td><p>U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG.</p></td>
+</tr>
+<tr class="row-odd"><td><p>132</p></td>
+<td><p>SET MUX MODE</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets mux mode on or off. This causes EXT1 to toggle periodically to control 2BIO/3EEG preamps. 0 = Off, 1 = On.</p></td>
+</tr>
+<tr class="row-even"><td><p>133</p></td>
+<td><p>GET MUX MODE</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the state of mux mode. See SET MUX MODE.</p></td>
+</tr>
+<tr class="row-odd"><td><p>134</p></td>
+<td><p>GET TTL ANALOG</p></td>
+<td><p>U8</p></td>
+<td><p>U16</p></td>
+<td><p>Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this.</p></td>
+</tr>
+</tbody>
+</table>
+<p>It is also worth noting that packets containing streaming data will
+have the command number 181.</p>
+</section>
+<section id="specific-commands">
+<h3>8229-Specific Commands<a class="headerlink" href="#specific-commands" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Arguments</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>128</p></td>
+<td><p>SET MOTOR DIRECTION</p></td>
+<td><p>U16</p></td>
+<td><p>U16</p></td>
+<td><p>Sets motor direction, 0 for clockwise and 1 for counterclockwise. Returns value set.</p></td>
+</tr>
+<tr class="row-odd"><td><p>129</p></td>
+<td><p>GET MOTOR DIRECTION</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Returns motor direction value.</p></td>
+</tr>
+<tr class="row-even"><td><p>132</p></td>
+<td><p>SET MODE</p></td>
+<td><p>U8</p></td>
+<td><p>U8</p></td>
+<td><p>Sets the current system mode. 0 = Manual, 1 = PC Control, 2 = Internal Schedule. Returns the current mode.</p></td>
+</tr>
+<tr class="row-odd"><td><p>133</p></td>
+<td><p>GET MODE</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the current system mode.</p></td>
+</tr>
+<tr class="row-even"><td><p>136</p></td>
+<td><p>SET MOTOR SPEED</p></td>
+<td><p>U16</p></td>
+<td><p>U16</p></td>
+<td><p>Sets motor speed as a percentage, 0–100. Replies with value set.</p></td>
+</tr>
+<tr class="row-odd"><td><p>137</p></td>
+<td><p>GET MOTOR SPEED</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the motor speed as a percentage, 0–100.</p></td>
+</tr>
+<tr class="row-even"><td><p>140</p></td>
+<td><p>SET TIME</p></td>
+<td><p>U8 x 7</p></td>
+<td><p>U8 x 7</p></td>
+<td><p>Sets the RTC time. Format is (Seconds, Minutes, Hours, Day, Month, Year [without century, so 23 for 2023], Weekday). Weekday is 0–6, with Sunday being 0. Binary Coded Decimal. Returns current time. Note that the seconds (and sometimes minutes field) can roll over during execution of this command and may not match what you sent.</p></td>
+</tr>
+<tr class="row-odd"><td><p>141</p></td>
+<td><p>SET DAY SCHEDULE</p></td>
+<td><p>U8, U8 x 24</p></td>
+<td><p>None</p></td>
+<td><p>Sets the schedule for the day. U8 day, followed by 24 hourly schedule values. MSB in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0–100).</p></td>
+</tr>
+<tr class="row-even"><td><p>142</p></td>
+<td><p>GET DAY SCHEDULE</p></td>
+<td><p>U8</p></td>
+<td><p>U8 x 24</p></td>
+<td><p>Gets the schedule for the selected weekday (0–6 with 0 being Sunday).</p></td>
+</tr>
+<tr class="row-odd"><td><p>144</p></td>
+<td><p>SET REVERSE PARAMS</p></td>
+<td><p>U16, U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets (Base Time, Variable Time) for random reverse in seconds. The random reverse time will be base time + a random value in the Variable Time range.</p></td>
+</tr>
+<tr class="row-even"><td><p>145</p></td>
+<td><p>GET REVERSE PARAMS</p></td>
+<td><p>None</p></td>
+<td><p>U16, U16</p></td>
+<td><p>Gets the base and variable times for random reverse, in seconds.</p></td>
+</tr>
+<tr class="row-odd"><td><p>146</p></td>
+<td><p>SET MOTOR STATE</p></td>
+<td><p>U16</p></td>
+<td><p>U16</p></td>
+<td><p>Sets whether the motor is on or off. 1 for On, 0 for Off. Returns the previous motor state.</p></td>
+</tr>
+<tr class="row-even"><td><p>147</p></td>
+<td><p>GET MOTOR STATE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the motor state.</p></td>
+</tr>
+<tr class="row-odd"><td><p>148</p></td>
+<td><p>LCD RESET</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Resets the LCD. Probably never needs to be sent. Can cause desync between LCD state and system state.</p></td>
+</tr>
+<tr class="row-even"><td><p>149</p></td>
+<td><p>SET ID</p></td>
+<td><p>U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the system ID displayed on the LCD.</p></td>
+</tr>
+<tr class="row-odd"><td><p>150</p></td>
+<td><p>SET RANDOM REVERSE</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Enables or disables Random Reverse function. 0 = disabled, non-zero = enabled.</p></td>
+</tr>
+<tr class="row-even"><td><p>151</p></td>
+<td><p>GET RANDOM REVERSE</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Reads the Random Reverse function. 0 = disabled, non-zero = enabled.</p></td>
+</tr>
+</tbody>
+</table>
+<p>For the 8229, there are some control packets that are only ever sent <em>from</em> the
+device (i.e. you should never send these). They are as follows</p>
+<table class="docutils align-default" id="id3">
+<caption><span class="caption-text">Recievable-only control packets for the 8229.</span><a class="headerlink" href="#id3" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>143</p></td>
+<td><p>REVERSE TIME EVENT</p></td>
+<td><p>U16</p></td>
+<td><p>Indicates the bar has just reversed. Returns the time in seconds until the next bar reversal.</p></td>
+</tr>
+<tr class="row-odd"><td><p>200</p></td>
+<td><p>LCD SET MOTOR STATE</p></td>
+<td><p>U16</p></td>
+<td><p>Indicates that the motor state has been changed by the LCD. 1 for On, 0 for Off.</p></td>
+</tr>
+<tr class="row-even"><td><p>201</p></td>
+<td><p>LCD SET MOTOR SPEED</p></td>
+<td><p>U16</p></td>
+<td><p>Indicates the motor speed has been changed by the LCD. 0–100 as a percentage. Returns previous motor speed.</p></td>
+</tr>
+<tr class="row-odd"><td><p>202</p></td>
+<td><p>LCD SET DAY SCHEDULE</p></td>
+<td><p>U8 x 4</p></td>
+<td><p>Indicates the LCD has changed the day schedule. Byte 3 is weekday, Byte 2 is hours 0–7, Byte 1 is hours 8–15, and Byte 0 is hours 16–23. Each bit represents the motor state in that hour, 1 for on and 0 for off. Speed is whatever the current motor speed is.</p></td>
+</tr>
+<tr class="row-even"><td><p>204</p></td>
+<td><p>LCD SET MODE</p></td>
+<td><p>U16</p></td>
+<td><p>Indicates the mode has been changed by the display. 0 = Manual, 1 = PC Control, 2 = Internal Schedule.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="id2">
+<h3>8480-Specific Commands<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Arguments</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>4</p></td>
+<td><p>ERROR</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates an error has occurred, of the returned type. Not actually used.</p></td>
+</tr>
+<tr class="row-odd"><td><p>100</p></td>
+<td><p>RUN STIMULUS</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Requires U8 channel. Runs the stimulus on the selected channel (0 or 1). Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.</p></td>
+</tr>
+<tr class="row-even"><td><p>101</p></td>
+<td><p>GET STIMULUS</p></td>
+<td><p>U8</p></td>
+<td><p>U8, U16 x 4, U32, U8</p></td>
+<td><p>Requires U8 channel. Gets the current stimulus configuration for the selected channel.</p></td>
+</tr>
+<tr class="row-odd"><td><p>102</p></td>
+<td><p>SET STIMULUS</p></td>
+<td><p>U8, U16 x 4, U32, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the stimulus configuration on the selected channel.</p></td>
+</tr>
+<tr class="row-even"><td><p>108</p></td>
+<td><p>GET TTL SETUP</p></td>
+<td><p>U8</p></td>
+<td><p>U8, U8</p></td>
+<td><p>Requires U8 channel. Returns U8 config flags, and U8 debounce value in ms. See <a class="reference internal" href="stimulus.html"><span class="doc">8480 documentation</span></a> for config flags format.</p></td>
+</tr>
+<tr class="row-odd"><td><p>109</p></td>
+<td><p>SET TTL SETUP</p></td>
+<td><p>U8, U8, U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the TTL setup for the channel. Format is Channel, Config Flags, Debounce in ms. See <a class="reference internal" href="stimulus.html"><span class="doc">8480 documentation</span></a> for config flags format.</p></td>
+</tr>
+<tr class="row-even"><td><p>110</p></td>
+<td><p>GET TTL PULLUPS</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets whether TTL pullups are enabled on the TTL lines. 0 = no pullups, non-zero = pullups enabled.</p></td>
+</tr>
+<tr class="row-odd"><td><p>111</p></td>
+<td><p>SET TTL PULLUPS</p></td>
+<td><p>U8</p></td>
+<td><p>NA</p></td>
+<td><p>Sets whether pullups are enabled on the TTL lines. 0 = pullups disabled, non-zero = pullups enabled.</p></td>
+</tr>
+<tr class="row-even"><td><p>116</p></td>
+<td><p>GET LED CURRENT</p></td>
+<td><p>None</p></td>
+<td><p>U16, U16</p></td>
+<td><p>Gets the setting for LED current for both channels in mA. CH0 CH1.</p></td>
+</tr>
+<tr class="row-odd"><td><p>117</p></td>
+<td><p>SET LED CURRENT</p></td>
+<td><p>U8, U16</p></td>
+<td><p>None</p></td>
+<td><p>Requires U8 channel. Sets the selected channel LED current to the given value in mA, from 0–600.</p></td>
+</tr>
+<tr class="row-even"><td><p>118</p></td>
+<td><p>GET ESTIM CURRENT</p></td>
+<td><p>None</p></td>
+<td><p>U16, U16</p></td>
+<td><p>Gets the setting for the ESTIM current for both channels, in percentage. CH0 then CH1.</p></td>
+</tr>
+<tr class="row-odd"><td><p>119</p></td>
+<td><p>SET ESTIM CURRENT</p></td>
+<td><p>U8, U16</p></td>
+<td><p>None</p></td>
+<td><p>Requires U8 channel. Sets the selected channel ESTIM current to the given value in percentage, from 0–100.</p></td>
+</tr>
+<tr class="row-even"><td><p>124</p></td>
+<td><p>GET PREAMP TYPE</p></td>
+<td><p>None</p></td>
+<td><p>U16</p></td>
+<td><p>Gets the stored preamp value.</p></td>
+</tr>
+<tr class="row-odd"><td><p>125</p></td>
+<td><p>SET PREAMP TYPE</p></td>
+<td><p>U16</p></td>
+<td><p>None</p></td>
+<td><p>Sets the preamp value, from 0–1023. This should match the table in Sirenia. It’s a 10-bit code that tells the 8401 what preamp is connected. Only needed when used with an 8401.</p></td>
+</tr>
+<tr class="row-even"><td><p>126</p></td>
+<td><p>GET SYNC CONFIG</p></td>
+<td><p>None</p></td>
+<td><p>U8</p></td>
+<td><p>Gets the sync config byte. See format in <a class="reference internal" href="stimulus.html"><span class="doc">8480 documentation</span></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p>127</p></td>
+<td><p>SET SYNC CONFIG</p></td>
+<td><p>U8</p></td>
+<td><p>None</p></td>
+<td><p>Sets the sync config byte. See format in <a class="reference internal" href="stimulus.html"><span class="doc">8480 documentation</span></a>.</p></td>
+</tr>
+</tbody>
+</table>
+<p>For the 8480, there are some control packets that are only ever sent <em>from</em> the
+device (i.e. you should never send these). They are as follows</p>
+<table class="docutils align-default" id="id4">
+<caption><span class="caption-text">Recievable-only control packets for the 8480.</span><a class="headerlink" href="#id4" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Command Number</p></th>
+<th class="head"><p>Command Name</p></th>
+<th class="head"><p>Returns</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>132</p></td>
+<td><p>EVENT TTL</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates a TTL event has occurred on the indicated U8 TTL input. If debounce is non-zero, then this will not occur until the debounce has completed successfully.</p></td>
+</tr>
+<tr class="row-odd"><td><p>133</p></td>
+<td><p>EVENT STIM START</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates the start of a stimulus. Returns U8 channel.</p></td>
+</tr>
+<tr class="row-even"><td><p>134</p></td>
+<td><p>EVENT STIM STOP</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates the end of a stimulus. Returns U8 channel.</p></td>
+</tr>
+<tr class="row-odd"><td><p>135</p></td>
+<td><p>EVENT LOW CURRENT</p></td>
+<td><p>U8</p></td>
+<td><p>Indicates a low current status on one or more of the LED channels. U8 bitmask indicates which channels have low current. Bit 0 = Ch0, Bit 1 = Ch1.</p></td>
+</tr>
+</tbody>
+</table>
+<p>The <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">STIMULUS</span></code> and <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">STIMULUS</span></code> command arguments/return values are more complex than others.
+In order to make sense of the arguments/response, see the following table.</p>
+<table class="docutils align-default" id="id5">
+<caption><span class="caption-text">SET/GET STIMULUS command format.</span><a class="headerlink" href="#id5" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>Index</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0</p></td>
+<td><p>U8</p></td>
+<td><p>Channel</p></td>
+<td><p>The channel for the stimulus, either 0 or 1.</p></td>
+</tr>
+<tr class="row-odd"><td><p>2</p></td>
+<td><p>U16</p></td>
+<td><p>Stimulus Period, ms portion</p></td>
+<td><p>The period (time between pulses) of the stimulus event in ms. Added with the us portion gives the total period.</p></td>
+</tr>
+<tr class="row-even"><td><p>3</p></td>
+<td><p>U16</p></td>
+<td><p>Stimulus Period, us portion</p></td>
+<td><p>The sub-ms portion of the period. Added with the ms portion gives the total period.</p></td>
+</tr>
+<tr class="row-odd"><td><p>4</p></td>
+<td><p>U16</p></td>
+<td><p>Stimulus Width, ms portion</p></td>
+<td><p>The width of each stimulus pulse, in ms. Added with the us portion gives the total width. Note that if biphasic stimulation is configured for this channel, the total width cannot be greater than half the period.</p></td>
+</tr>
+<tr class="row-even"><td><p>5</p></td>
+<td><p>U16</p></td>
+<td><p>Stimulus Width, us portion</p></td>
+<td><p>The sub-ms portion of the pulse width. Added with the ms portion gives the total period. Biphasic restriction applies to total of ms + us portions.</p></td>
+</tr>
+<tr class="row-odd"><td><p>6</p></td>
+<td><p>U32</p></td>
+<td><p>Stimulus Repeat Count</p></td>
+<td><p>The number of stimulus pulses to perform.</p></td>
+</tr>
+<tr class="row-even"><td><p>7</p></td>
+<td><p>U8</p></td>
+<td><p>Config Flags</p></td>
+<td><p>Config Flags byte. See <a class="reference internal" href="stimulus.html"><span class="doc">8480 documentation</span></a> for format.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="low_level.html" class="btn btn-neutral float-left" title="Low-Level Interaction with POD Systems 📊" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="develop.html" class="btn btn-neutral float-right" title="Contributing to Morelia 👷‍♀️" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Pinnacle Technology.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

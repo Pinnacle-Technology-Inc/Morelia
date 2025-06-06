@@ -1,4 +1,5 @@
 #########################################
 Controlling Sleep Deprivation Systems 😴
 #########################################
-Coming soon to a Morelia near you! 👀
+
+A pythonic API for controlling the 8229 is coming soon! For now, please use the :doc:`low-level API </low_level>`.

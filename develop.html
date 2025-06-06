@@ -1,0 +1,188 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Contributing to Morelia 👷‍♀️ &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2d14e799"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Morelia" href="modules.html" />
+    <link rel="prev" title="POD Device Command Reference 📚" href="command_ref.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing to Morelia 👷‍♀️</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#setting-up-a-morelia-development-enviornment">Setting Up a Morelia Development Enviornment 🧑‍🏭</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#constructing-a-python-environment-with-anaconda">Constructing a Python Environment with Anaconda 🧑‍🍳</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#installing-morelia-for-development">Installing Morelia for Development 🚜</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests 🧪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-documentation">Building Documentation 📜</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Contributing to Morelia 👷‍♀️</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/develop.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="contributing-to-morelia">
+<h1>Contributing to Morelia 👷‍♀️<a class="headerlink" href="#contributing-to-morelia" title="Link to this heading"></a></h1>
+<p>So, you want to contribute to Morelia? Well, this is the place to be!</p>
+<section id="setting-up-a-morelia-development-enviornment">
+<h2>Setting Up a Morelia Development Enviornment 🧑‍🏭<a class="headerlink" href="#setting-up-a-morelia-development-enviornment" title="Link to this heading"></a></h2>
+<p>The first step to setting up a Morelia development enviornment is
+to follow the “Setting Up Your Enviornment” section on the
+<a class="reference internal" href="getting_started.html"><span class="doc">getting started page</span></a>.</p>
+<p>After that, clone an up to date copy of the <a class="reference external" href="https://github.com/Pinnacle-Technology-Inc/Morelia">source code repository</a>.</p>
+<section id="constructing-a-python-environment-with-anaconda">
+<h3>Constructing a Python Environment with Anaconda 🧑‍🍳<a class="headerlink" href="#constructing-a-python-environment-with-anaconda" title="Link to this heading"></a></h3>
+<p>If you do not want to use Anaconda to install the project dependencies,
+<code class="docutils literal notranslate"><span class="pre">pip</span></code> will automatically install them when we install Morelia
+for development.
+Therefore, this step is technically optional, but <strong>highly recommended</strong>.
+Anaconda is a fantastic tool for managing Python environments
+and makes setting one up for Morelia a breeze.</p>
+<p>To get started, begin by installing Anaconda (or Miniconda) if
+you do not already have it. Download the installer <a class="reference external" href="https://www.anaconda.com/download">here</a>.</p>
+<p>After Anaconda is installed, running the following command
+in the top level directory of your cloned repo
+downloads and sets up all the dependencies for Morelia.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="n">create</span> <span class="o">-</span><span class="n">f</span> <span class="n">environment</span><span class="o">.</span><span class="n">yml</span>
+</pre></div>
+</div>
+</section>
+<section id="installing-morelia-for-development">
+<h3>Installing Morelia for Development 🚜<a class="headerlink" href="#installing-morelia-for-development" title="Link to this heading"></a></h3>
+<p>After you have cloned the source code (and hopefully set up and Anaconda environment, but again, that step is not strictly required),
+the last step is to install Morelia itself for development! Currently, the way to do this is using <code class="docutils literal notranslate"><span class="pre">pip</span></code> to creat an <strong>editable install</strong>.
+This allows us to Morelia as if it is a package installed in our environment, but the package will automatically update as we make
+changes to the source code. Therefore, <strong>there is no need to reinstall Morelia each time</strong>.</p>
+<p>To create this editable install, run the following in the top level of your repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="running-tests">
+<h2>Running Tests 🧪<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h2>
+<p>Building out tests for Morelia is an ongoing effort, but is done using the <a class="reference external" href="https://docs.pytest.org/en/stable/">pytest</a> framework.
+The current tests for Morelia can be found in the <code class="docutils literal notranslate"><span class="pre">tests</span></code> directory. To run the tests, use the following command from the top-level
+of your repository</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span>
+</pre></div>
+</div>
+<p>It is worth noting there is also an <code class="docutils literal notranslate"><span class="pre">old_tests</span></code> folder. These scripts from a deprecated testing framework that require physical devices to
+be plugged into your computer. Currently, these are still in the repository as they can be useful for in-house testing of devices or testing
+some older functionality that do not yet have pytest tests written. The future of these files is uncertain, but for now they are there so
+it’s probably useful to know what they are.</p>
+</section>
+<section id="building-documentation">
+<h2>Building Documentation 📜<a class="headerlink" href="#building-documentation" title="Link to this heading"></a></h2>
+<p>Morelia’s documentation is built using <a class="reference external" href="https://www.sphinx-doc.org/en/master/index.html">Spinx</a>,
+and the source files can be found in the <code class="docutils literal notranslate"><span class="pre">docs</span></code> folder. It also uses the <a class="reference external" href="https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html">autodoc</a> and <a class="reference external" href="https://github.com/tox-dev/sphinx-autodoc-typehints">sphinx-autodoc-typehints</a> extensions to automatically build documenatation for all functions and classes using docstrings.
+To build the <code class="docutils literal notranslate"><span class="pre">HTML</span></code> documentation, simply run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">make</span> <span class="n">html</span>
+</pre></div>
+</div>
+<p>in the <cite>docs</cite> folder. There is no need to commit <code class="docutils literal notranslate"><span class="pre">HTML</span></code> documentation to GitHub, as it is
+automatically built via a continuous integration (CI) pipeline when a branch is merged into <code class="docutils literal notranslate"><span class="pre">integration</span></code>.</p>
+<p>Sphinx offers a bunch of other formats to output documentation in! Fell free to explore, however we only
+use <code class="docutils literal notranslate"><span class="pre">HTML</span></code> for public facing docs.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="command_ref.html" class="btn btn-neutral float-left" title="POD Device Command Reference 📚" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="modules.html" class="btn btn-neutral float-right" title="Morelia" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Pinnacle Technology.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

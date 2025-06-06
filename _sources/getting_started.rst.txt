@@ -46,7 +46,7 @@ Windows Subsystem for Linux 2 💾
 --------------------------------
 If using the Windows Subsystem for Linux 2 (WSL), special care must be taken to set up an environment
 in addition to the normal GNU/Linux instructions.
-First, we must load the proper driver into the kernel. We can do this by running the following command as root:
+First, we must load the proper driver into the kernel. We can do this by running the following command as root (# not included):
 
 .. code-block::
 
@@ -70,6 +70,9 @@ After the devices have been shared, you should see your serial devices in WSL.
 ================
 Installation 💽
 ================
+
+**If you are looking to contribute to Morelia, please see the documentation for :doc:`setting up a development environment </develop>`.**
+
 With our environment set up, we can now continue on our journey and install Morelia! Morelia can be installed one of two ways:
 
 * From the `Python Package Index (PyPI) (recommended) <https://pypi.org/>`_
@@ -167,6 +170,7 @@ using Morelia:
     * :doc:`Streaming from data aquisition systems </streaming>`
     * :doc:`Controlling sleep deprivation system </sleep_dep>`
     * :doc:`Wielding stimulus controllers </stimulus>`
+    * :doc:`Low-level interactions with POD systems </low_level>`
 
 Happy experimenting! 😁
 

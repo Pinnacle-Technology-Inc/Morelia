@@ -1,22 +1,22 @@
 
 
 <!DOCTYPE html>
-<html class="writer-html5" lang="en">
+<html class="writer-html5" lang="en" data-content_root="./">
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Welcome to Morelia’s documentation! &mdash; Morelia v1.6.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
-      <link rel="stylesheet" type="text/css" href="_static/style.css" />
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
 
   
-      <script src="_static/jquery.js"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
-      <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
-      <script src="_static/doctools.js"></script>
-      <script src="_static/sphinx_highlight.js"></script>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2d14e799"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -45,9 +45,12 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
-<li class="toctree-l1"><a class="reference internal" href="streaming.html">Harnessing Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
+<li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
 </ul>
 
@@ -76,7 +79,7 @@
            <div itemprop="articleBody">
              
   <section id="welcome-to-morelia-s-documentation">
-<h1>Welcome to Morelia’s documentation!<a class="headerlink" href="#welcome-to-morelia-s-documentation" title="Permalink to this heading"></a></h1>
+<h1>Welcome to Morelia’s documentation!<a class="headerlink" href="#welcome-to-morelia-s-documentation" title="Link to this heading"></a></h1>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a><ul>
@@ -97,7 +100,7 @@
 <li class="toctree-l2"><a class="reference internal" href="getting_started.html#what-s-in-a-name">What’s in a Name? 🌹</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="streaming.html">Harnessing Data Acquisition Systems 🤠</a><ul>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="streaming.html#the-1000-foot-view">The 1000-Foot View 👀</a></li>
 <li class="toctree-l2"><a class="reference internal" href="streaming.html#defining-a-streaming-workflow">Defining a Streaming Workflow 📐</a></li>
 <li class="toctree-l2"><a class="reference internal" href="streaming.html#let-the-data-flow">Let the Data Flow! 🌊</a><ul>
@@ -109,7 +112,39 @@
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
-<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="stimulus.html#low-level-details">Low-Level Details ⚙️</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#when-to-use-this-api">When to Use This API 🧐</a></li>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#packet-types">Packet Types 📦</a></li>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#writing-and-reading-packets">Writing and Reading Packets 📮</a></li>
+<li class="toctree-l2"><a class="reference internal" href="low_level.html#the-current-trouble-with-streaming">The Current Trouble with Streaming 😭</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="command_ref.html#data-types-101">Data Types 101 🥗</a></li>
+<li class="toctree-l2"><a class="reference internal" href="command_ref.html#device-commands">Device Commands 🔌</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="command_ref.html#common-commands">Common Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_ref.html#hr-specific-commands">8206HR-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_ref.html#id1">8401HR-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_ref.html#specific-commands">8229-Specific Commands</a></li>
+<li class="toctree-l3"><a class="reference internal" href="command_ref.html#id2">8480-Specific Commands</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="develop.html#setting-up-a-morelia-development-enviornment">Setting Up a Morelia Development Enviornment 🧑‍🏭</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="develop.html#constructing-a-python-environment-with-anaconda">Constructing a Python Environment with Anaconda 🧑‍🍳</a></li>
+<li class="toctree-l3"><a class="reference internal" href="develop.html#installing-morelia-for-development">Installing Morelia for Development 🚜</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="develop.html#running-tests">Running Tests 🧪</a></li>
+<li class="toctree-l2"><a class="reference internal" href="develop.html#building-documentation">Building Documentation 📜</a></li>
+</ul>
+</li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="Morelia.html">Morelia package</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="Morelia.html#subpackages">Subpackages</a><ul>

@@ -1,0 +1,289 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Low-Level Interaction with POD Systems 📊 &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2d14e799"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="POD Device Command Reference 📚" href="command_ref.html" />
+    <link rel="prev" title="Wielding Stimulus Controllers 🤺" href="stimulus.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Low-Level Interaction with POD Systems 📊</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#when-to-use-this-api">When to Use This API 🧐</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#packet-types">Packet Types 📦</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writing-and-reading-packets">Writing and Reading Packets 📮</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#the-current-trouble-with-streaming">The Current Trouble with Streaming 😭</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
+<li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Low-Level Interaction with POD Systems 📊</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/low_level.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="low-level-interaction-with-pod-systems">
+<h1><a class="toc-backref" href="#id1" role="doc-backlink">Low-Level Interaction with POD Systems 📊</a><a class="headerlink" href="#low-level-interaction-with-pod-systems" title="Link to this heading"></a></h1>
+<p>This section of the documentation covers the low-level API
+provided Morelia that is used to read and write packets to
+POD devices. Using the three methods covered here, it is possible to take full advantage of every device Morelia has support for.</p>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#low-level-interaction-with-pod-systems" id="id1">Low-Level Interaction with POD Systems 📊</a></p>
+<ul>
+<li><p><a class="reference internal" href="#when-to-use-this-api" id="id2">When to Use This API 🧐</a></p></li>
+<li><p><a class="reference internal" href="#packet-types" id="id3">Packet Types 📦</a></p></li>
+<li><p><a class="reference internal" href="#writing-and-reading-packets" id="id4">Writing and Reading Packets 📮</a></p></li>
+<li><p><a class="reference internal" href="#the-current-trouble-with-streaming" id="id5">The Current Trouble with Streaming 😭</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="when-to-use-this-api">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">When to Use This API 🧐</a><a class="headerlink" href="#when-to-use-this-api" title="Link to this heading"></a></h2>
+<p>Ideally, end-users should never have to interact with this, and it is
+primarily used by developers extending Morelia’s functionality to
+support new devices. However, since Morelia is still in early
+development, it may be necessary for everday users to use these methods
+to use specific functions of their device.</p>
+<p><strong>Eventually, the goal is to fully deprecate these methods as public
+and move them to fully private.</strong> However, for now, they are an option
+that can be utilized.</p>
+</section>
+<section id="packet-types">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Packet Types 📦</a><a class="headerlink" href="#packet-types" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">Morelia.packet</span></code> subpackage contains several
+types of packets that can be read/written to
+POD devices. The class heirarchy of packets is as
+follows:</p>
+<img alt="_images/packet_hierarchy.png" src="_images/packet_hierarchy.png" />
+<p><code class="docutils literal notranslate"><span class="pre">ControlPacket</span></code> is used to model POD packets
+that are used to set up or configure the device
+(e.g. setting the sample rate)
+as <code class="docutils literal notranslate"><span class="pre">DataPacket</span></code> is used to model data that is recived from streaming
+off of a data aquisition device. Each of these
+packet classes has a host of attributes that can
+be used to examine and analyze their contents.
+In-depth documentation of these attributes for each class can be found
+in the documentation for the <code class="docutils literal notranslate"><span class="pre">Morelia.packet</span></code> subpackage.</p>
+</section>
+<section id="writing-and-reading-packets">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Writing and Reading Packets 📮</a><a class="headerlink" href="#writing-and-reading-packets" title="Link to this heading"></a></h2>
+<p>There are three methods Morelia uses to interact with devices:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ReadPODPacket</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WritePacket</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">WriteRead</span></code></p></li>
+</ul>
+<p>I will go over each of these breifly, but for in-depth documentation and
+coverage of all the parameters, please see the documentation for the
+<a class="reference internal" href="Morelia.Devices.html"><span class="doc">Morelia.Devices.BasicPodProtocol.Pod</span></a> class that defines these methods.</p>
+<p>First, let’s cover <code class="docutils literal notranslate"><span class="pre">ReadPODPacket</span></code>. This method is used to,
+as you might guess, read a packet off of a
+device. This method returns an instantiation of a
+subclass of the <code class="docutils literal notranslate"><span class="pre">PodPacket</span></code>
+object contructed from the raw data of the first unread packet
+in the buffer of the device being read from. It worth noting that
+<strong>this method is blocking for a number of seconds specified by the
+timeout_sec parameter.</strong></p>
+<p>Next is <code class="docutils literal notranslate"><span class="pre">WritePacket</span></code>. This method is used to write a <code class="docutils literal notranslate"><span class="pre">ControlPacket</span></code> to a device.
+If you are looking to configure a device in a way not acessible through
+the devices attributes, this method is your friend. In order to write
+a packet, you will need two pieces of information: the command number
+and payload. The command number is a unique number that identifies
+a specific command for a given POD devices (for example, 104 identifies the <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">TTL</span> <span class="pre">OUT</span></code> command in an 8206HR). The command numbers
+for each device can be found in the documentation for each respective
+device on the <a class="reference internal" href="command_ref.html"><span class="doc">command reference</span></a> page.
+Some commands require a payload, which are arguments passed to the device. <code class="docutils literal notranslate"><span class="pre">WritePacket</span></code> will optionally take these arguments as a tuple.
+The payloads of each command are also detailed in the <a class="reference internal" href="Morelia.Devices.html"><span class="doc">Morelia.Devices</span></a> page for each device.</p>
+<p>Finally, we have <code class="docutils literal notranslate"><span class="pre">WriteRead</span></code>. This method is a combination of
+<code class="docutils literal notranslate"><span class="pre">WritePacket</span></code> and <code class="docutils literal notranslate"><span class="pre">ReadPODPacket</span></code>. Simply put, this method is simply
+writes a <code class="docutils literal notranslate"><span class="pre">ControlPacket</span></code> to the device, and then immediately reads
+the next available packet in the device’s buffer and returns the packet.</p>
+<p>This method is especially for commands that return some sort of
+response. For example, in an 8206HR, after a <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">FILTER</span> <span class="pre">CONFIG</span></code>
+packet is sent, the device responds with packet that contains
+the hardware filter configuration. Therefore, it makes sense to
+immediately read next packet after a <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">FILTER</span> <span class="pre">CONFIG</span></code> control
+packet is sent. Like <code class="docutils literal notranslate"><span class="pre">ReadPODPacket</span></code>,
+<strong>this method is blocking for a number of seconds specified by the
+timeout_sec parameter.</strong></p>
+<p>We will conclude this section with a small example. Though this only
+showcases a few specific commands on an 8206HR, <strong>it can be adapted
+to any command in the command reference</strong>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class from Morelia.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pod8206HR</span>
+
+<span class="c1"># As always, the first step is to connect to our device.</span>
+<span class="c1"># For this example, let&#39;s assume there is an 8206HR on /dev/ttyUSB0.</span>
+<span class="c1"># Let&#39;s also sent the preamplifier gain to 10.</span>
+<span class="n">pod</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># As our first example, let&#39;s set the lowpass filter on channel 2</span>
+<span class="c1"># to 24 Hz. After consulting the command reference, we</span>
+<span class="c1"># can see that the SET LOWPASS command is number 103 and</span>
+<span class="c1"># takes two arguments: the channel number we want to set the filter</span>
+<span class="c1"># for and the value we would like to set it to.</span>
+
+<span class="c1"># We can also see that the SET LOWPASS command does not return any</span>
+<span class="c1"># value, so there will be no response packet. Therefore, WritePacket</span>
+<span class="c1"># is the right method for the job! If we were to use WriteRead, a</span>
+<span class="c1"># a TimeoutError would be raised. This is because there is no</span>
+<span class="c1"># response packet, si the device would time out when trying to read</span>
+<span class="c1"># a packet from the 8206HR&#39;s buffer.</span>
+
+<span class="c1"># Putting all of that together, we can set the lowpass filter value</span>
+<span class="c1"># using the following method call.</span>
+<span class="n">pod</span><span class="o">.</span><span class="n">WritePacket</span><span class="p">(</span><span class="mi">103</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">24</span><span class="p">))</span>
+
+<span class="c1"># Next, let&#39;s verify that the lowpass value on channel 2 is what</span>
+<span class="c1"># we expect. Consulting the command reference, we can see that the</span>
+<span class="c1"># GET LOWPASS command (number 102) is what we are after. We</span>
+<span class="c1"># can also see that it takes one argument (the channel we want the lowpass value of)</span>
+<span class="c1"># and RETURNS the value of the lowpass filter on that channel.</span>
+
+<span class="c1"># Since this command returns a value, that means the device will</span>
+<span class="c1"># RESPOND with a packet containing the requested data after we send</span>
+<span class="c1"># the GET LOWPASS command. We can handle this two ways, the first</span>
+<span class="c1"># is to manually use WritePacket to write the command, and then</span>
+<span class="c1"># read the response with ReadPODPacket. That looks like this:</span>
+
+<span class="c1"># First, send the GET LOWPASS command.</span>
+<span class="c1"># Note since GET LOWPASS does not require any arguments, we do not pass a payload.</span>
+<span class="n">pod</span><span class="o">.</span><span class="n">WritePacket</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+
+<span class="c1"># Next, we will read the response.</span>
+<span class="c1"># After this, the variable lowpass_channel_2 will contain a</span>
+<span class="c1"># ControlPacket object whose payload is the value of the lowpass</span>
+<span class="c1"># filter on channel 2.</span>
+<span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">ReadPODPacket</span><span class="p">()</span>
+
+<span class="c1"># As you might imagine, doing things this was with two method calls</span>
+<span class="c1"># can get a bit cumbersome and make our code cluttered. Situations</span>
+<span class="c1"># like this are exactly why we have WriteRead! Usinf WriteRead,</span>
+<span class="c1"># we can use one method call to send the GET LOWPASS command</span>
+<span class="c1"># and read the response. Let&#39;s see this alternative way of doing things.</span>
+<span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">WriteRead</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+
+<span class="c1"># Easy as pie! Now remember, both ReadPODPacket and WriteRead return</span>
+<span class="c1"># instances of subclasses of PodPacket. In our case, these will be</span>
+<span class="c1"># ControlPacket objects. If we look at the documentation for ControlPacket</span>
+<span class="c1"># We can see that we can access a tuple of the values contained in</span>
+<span class="c1"># the packet via the payload attribute. Since GET LOWPASS returns a</span>
+<span class="c1"># single value, the tuple will contain only one attribute.</span>
+<span class="c1"># Therefore, we can print the value the device has reported as the</span>
+<span class="c1"># value set for channel 2&#39;s lowpass filter as follows.</span>
+<span class="n">lowpass_channel_2_packet_payload</span> <span class="o">=</span> <span class="n">lowpass_channel_2_packet</span><span class="o">.</span><span class="n">payload</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">lowpass_channel_2_packet_payload</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="the-current-trouble-with-streaming">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">The Current Trouble with Streaming 😭</a><a class="headerlink" href="#the-current-trouble-with-streaming" title="Link to this heading"></a></h2>
+<p>As a final note in this section, we need to talk about the low-level
+API and streaming. Due to current limitations within the API,
+<strong>you cannot use the low-level API while streaming from a device</strong>.
+Ideally, this will not be a limit in future versions, but for now
+any ControlPacket objects recieved during streaming will be discarded.</p>
+<p>If you would like to use any commands during streaming, you must first
+stop any streaming, then issue your commands, and start streaming again
+afterwards.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="stimulus.html" class="btn btn-neutral float-left" title="Wielding Stimulus Controllers 🤺" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="command_ref.html" class="btn btn-neutral float-right" title="POD Device Command Reference 📚" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Pinnacle Technology.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
