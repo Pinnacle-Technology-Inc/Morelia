@@ -1,13 +1,14 @@
 # This CI pipeline builds our docs with sphinx and deploys them to GitHub pages.
 name: documentation
 
-needs: packaging
 
 # Jobs run when PRs to integration are approved.
 on:
-  push:
-    branches:
-      - integration
+  workflow_run:
+    workflows: ["packaging"]
+    branches: [integration]
+    types:
+        - completed
 
 jobs:
   
