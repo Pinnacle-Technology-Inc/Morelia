@@ -13,6 +13,9 @@ from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 
 class SinkInterface(metaclass=abc.ABCMeta):
+    """
+    Interface that data sinks **must** implement.
+    """
 
     @classmethod
     def __subclasshook__(cls, subclass) -> None:

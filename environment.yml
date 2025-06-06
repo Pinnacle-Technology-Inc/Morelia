@@ -3,20 +3,18 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - pip
   - numpy
   - pandas
   - pyserial
   - pytest
   - sphinx
   - sphinx-rtd-theme
+  - sphinx-autodoc-typehints
   - texttable
   - pyedflib
   - influxdb-client
   - reactivex
   - sphinx-autodoc2
-  - pip:
-    - cppyy==3.1.2
-    - cppyy-backend==1.15.2
-    - cppyy-cling==6.30.0
-    - cpycppyy==1.12.16
+  - sqlalchemy
+  - pydantic
+  - pip

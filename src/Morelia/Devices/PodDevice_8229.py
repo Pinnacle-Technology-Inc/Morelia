@@ -18,20 +18,17 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Pod8229(Pod) : 
-    """POD_8229 handles communication using an 8229 POD device.
-    """
+    """POD8229 handles communication with a 8229 POD device.
 
-    # ============ DUNDER METHODS ============      ========================================================================================================================
+    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param baudrate: Integer baud rate of the opened serial port. Used when initializing the COM_io instance. Defaults to 19200.
+    :param device_name: Virtual name used to identify device.
+    """
 
 
     def __init__(self, port: str|int, baudrate:int=19200, device_name: str | None = None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8229 POD device. 
-
-        Args:
-            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
-            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
-                the COM_io instance. Defaults to 19200.
         """
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate, device_name=device_name) 
@@ -71,6 +68,7 @@ class Pod8229(Pod) :
         self._commands.AddCommand(202, 'LCD SET DAY SCHEDULE',  (NOVALUE,),             (U8,U8,U8,U8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
         self._commands.AddCommand(204, 'LCD SET MODE',          (NOVALUE,),             (U16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
 
+        # Function used to decode payload of recieved control packets.
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             match cmd_number:
                 case 140:
@@ -87,22 +85,16 @@ class Pod8229(Pod) :
 
                 case _:
                     return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
-
+        
+        # Function used to construct recieved control packets from raw data.
         self._control_packet_factory = partial(ControlPacket, decode_payload)
-
-
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    # ------------ ENCODING ------------           ------------------------------------------------------------------------------------------------------------------------
 
 
     @staticmethod
     def GetCurrentTime() -> tuple[int] : 
         """Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time. 
 
-        Returns:
-            tuple[int]: Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year \
+        :return: Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year \
                 (without century, so 23 for 2023), Weekday (0 for Sunday))
         """
         now = datetime.now()
@@ -115,18 +107,15 @@ class Pod8229(Pod) :
     @staticmethod
     def BuildSetDayScheduleArgument(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
         """Appends the day of the week code to the front of the encoded hourly schedule. this tuple is \
-        formatted to be used as the #141 'SET DAY SCHEDULE' argument.
+        formatted to be used as the #141 ``SET DAY SCHEDULE`` argument.
 
-        Args:
-            day (str | int): Day of the week. Can be either the name of the day (i.e. Sunday, Monday, etc.) \
-                or the 0-6 day code (0 for Sunday increacing to 6 for Saturday). 
-            hours (list | tuple[bool | int]): Array of 24 items. The value is 1 for motor on and 0 for \
-                motor off.
-            speed (int | list | tuple[int]): Speed of the motor (0-100). This is an integer of all hours \
-                are the same speed. If there are multiple speeds, this should be an array of 24 items.
-
-        Returns:
-            tuple[int]: _description_
+        :param day: Day of the week. Can be either the name of the day (i.e. Sunday, Monday, etc.) \
+            or the 0-6 day code (0 for Sunday increacing to 6 for Saturday). 
+        :param hours: Array of 24 items. The value is 1 for motor on and 0 for motor off.
+        :param speed: Speed of the motor (0-100). This is an integer of all hours are the same speed. \
+            If there are multiple speeds, this should be an array of 24 items.
+        
+        :return: Argument to pass with packet for ``SET DAY SCHEDULE``.
         """
         # get good value
         validDay: int = Pod8229._Validate_Day(day)
@@ -139,17 +128,12 @@ class Pod8229(Pod) :
     @staticmethod
     def CodeDaySchedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
         """Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this \
-        for getting the command #141 'SET DAY SCHEDULE' U8x24 argument component.
+        for getting the command #141 ``SET DAY SCHEDULE`` U8x24 argument component.
 
-        Args:
-            hours (list | tuple[bool | int]): Array of 24 items. The value is 1 for motor on and 0 for \
-                motor off.
-            speed (int | list | tuple[int]): Speed of the motor (0-100). This is an integer of all hours \
-                are the same speed. If there are multiple speeds, this should be an array of 24 items.
+        :param hours: Array of 24 items. The value is 1 for motor on and 0 for motor off.
+        :param speed: Speed of the motor (0-100). This is an integer of all hours are the same speed. If there are multiple speeds, this should be an array of 24 items.
 
-        Returns:
-            list[int]: List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits \
-                are the speed.
+        :return: List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits are the speed.
         """
         # get good values 
         validHours = Pod8229._Validate_Hours(hours)
@@ -166,11 +150,9 @@ class Pod8229(Pod) :
     def DecodeDaySchedule(schedule: bytes) -> dict[str,int|tuple[int]] :
         """Interprets the return bytes from the command #142 'GET DAY SCHEDULE'.
 
-        Args:
-            schedule (bytes): 24 byte long bitstring with one U8 per hour in a day.
+        :param schedule: 24 byte long bitstring with one U8 per hour in a day.
 
-        Returns:
-            dict[str,int|tuple[int]]: Dictionary with 'Hour' as a tuple of 24 0/1 values (0 is motor off and \
+        :return: Dictionary with 'Hour' as a tuple of 24 0/1 values (0 is motor off and \
                 1 is motor on) and 'Speed' as the motor speed (0-100). If the motor speed is the same \
                 every hour, 'Speed' will be an integer; otherwise, 'Speed' will be a tuple of 24 items.
         """
@@ -200,12 +182,16 @@ class Pod8229(Pod) :
     
     
     @staticmethod
-    def DecodeDayAndSchedule(dayschedule: bytes) : 
+    def DecodeDayAndSchedule(dayschedule: bytes) -> tuple[int, dict[str,int|tuple[int]]]: 
+        """Decode the packet payload returned by the ``SET DAY SCHEDULE``.
+
+        :param dayschedule: Raw payload of packet.
+
+        :returns: Tupke containg day and schedule for day.
+        """
         U8 = Pod8229.GetU(8)
         day = conv.ascii_bytes_to_int(dayschedule[:U8])
-        print(dayschedule[:U8+1], day)
         schedule = Pod8229.DecodeDaySchedule(dayschedule[U8:])
-        print(schedule)
         return (day, schedule)
         
         
@@ -213,12 +199,9 @@ class Pod8229(Pod) :
     def DecodeLCDSchedule(schedule: bytes) -> dict[str,str|list[int]] : 
         """Interprets the return bytes from the command #202 'LCD SET DAY SCHEDULE'.
 
-        Args:
-            schedule (bytes): 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7, \
-                Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
+        :param schedule: 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
 
-        Returns:
-            dict[str,int|list[int]]: Dictionary with Day as the day of the week, and Hours \
+        :return: Dictionary with Day as the day of the week, and Hours \
                 containing a list of 24 0/1 values (one for each hour). Each bit represents the \
                 motor state in that hour, 1 for on and 0 for off.
         """
@@ -243,14 +226,9 @@ class Pod8229(Pod) :
         is determined by the first 1-2 characters of the string, which supports multiple abbreviations \
         for days of the week.  
 
-        Args:
-            day (str): Day of the week.
+        :param day: Day of the week.
 
-        Raises:
-            Exception: Invalid day of the week.
-
-        Returns:
-            int: Code for the day of the week. Values are 0-6, with 0 for Saturday, 1 for Monday, ..., \
+        :return: Code for the day of the week. Values are 0-6, with 0 for Saturday, 1 for Monday, ..., \
                 and 6 for Saturday.
         """
         # Weekday is 0-6, with Sunday being 0
@@ -270,11 +248,9 @@ class Pod8229(Pod) :
     def DecodeDayOfWeek(day: int) -> str :
         """Converts the integer code for a day of the week to a human-readable string. 
 
-        Args:
-            day (int): Day of the week code must be 0-6.
+        :param day: Day of the week code must be 0-6.
 
-        Returns:
-            str: Day of the week ('Sunday', 'Monday', etc.).
+        :return: Day of the week ('Sunday', 'Monday', etc.).
         """
         # Weekday is 0-6, with Sunday being 0
         match int(day):
@@ -288,19 +264,17 @@ class Pod8229(Pod) :
             case _ : Exception('[!] Day of the week code must be 0-6.')  
 
 
-    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
-
 
     def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket :
         """Builds a POD packet and writes it to the POD device. 
 
-        Args:
-            cmd (str | int): Command number.
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
+        :param cmd: Command number.
+        :param payload: (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
                 is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
-        Returns:
-            PacketStandard: Packet that was written to the POD device.
+        :return: Packet that was written to the POD device.
+
+        :meta private:
         """
         # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
@@ -311,8 +285,6 @@ class Pod8229(Pod) :
         # returns packet object
         return(packet)
 
-    # ============ PROTECTED METHODS ============      ========================================================================================================================    
-    
     
     @staticmethod
     def _CodeDecimalAsHex(val: int) -> int : 

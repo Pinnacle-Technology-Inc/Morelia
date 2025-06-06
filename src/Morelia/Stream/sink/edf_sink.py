@@ -19,15 +19,9 @@ from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
 class EDFSink(SinkInterface):
     """Stream data to an EDF file.
 
-    :param sample_rate: Sample rate of device being streamed from. Used in
-    setting up EDF file.
-    :type sample_rate: int
-
+    :param sample_rate: Sample rate of device being streamed from. Used in setting up EDF file.
     :param file_path: Path to CSV file to write to.
-    :type file_path: str
-
     :param pod: POD device data is being streamed from.
-    :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
 
     def __init__(self, file_path: str, pod: AquisitionDevice ) -> None:
@@ -87,6 +81,9 @@ class EDFSink(SinkInterface):
     #TODO: check if sink is open
     #TODO: 8274
     def flush(self, timestamp: int, packet: DataPacket) -> None:
+        """
+        :meta private:
+        """
         
         if isinstance(self._pod, Pod8206HR):
             self._buffer[0].append(packet.ch0)

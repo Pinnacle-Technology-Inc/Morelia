@@ -12,7 +12,17 @@ from typing import Self
 from Morelia.Devices import Pod
 
 class AquisitionDevice(Pod):
+    """
+    This class is the parent of any device that can stream (i.e. data aquisiton devices).
 
+    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param max_sample_rate: Maximum sample rate supported by the device (in Hz).
+    :param baudrate: Baud rate of the opened serial port. Default value is 9600.
+    :param device_name: Virtual Name used to indentify device.
+    :param get_sample_rate_cmd_no: Command number for the ``GET SAMPLE RATE`` command on the device.
+    :param set_sample_rate_cmd_no: Command number for the ``SET SAMPLE RATE`` command on the device.
+
+    """
     def __init__(self, port: str|int, max_sample_rate: int, baudrate:int=9600, device_name: str | None =  None, 
                  get_sample_rate_cmd_no: int = 100, set_sample_rate_cmd_no: int = 101) -> None:
 
@@ -30,10 +40,12 @@ class AquisitionDevice(Pod):
 
     @property
     def max_sample_rate(self) -> int:
+        """Maximum allowable sample rate."""
         return self._max_sample_rate
 
     @property
     def sample_rate(self) -> int:
+        """Currently set sample rate."""
         if self._sample_rate is None:
             self._sample_rate = self.WriteRead('GET SAMPLE RATE').payload
         return self._sample_rate

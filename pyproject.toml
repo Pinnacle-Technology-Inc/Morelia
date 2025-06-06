@@ -23,6 +23,7 @@ docs = [
   "sphinx",
   "autodoc",
   "sphinx-rtd-theme",
+  "sphinx-autodoc-typehints"
 ]
 
 tests = [

@@ -21,17 +21,11 @@ class InfluxSink(SinkInterface):
     """Stream data to InfluxDB for real-time monitoring.
 
             :param url: URL that points to an InfluxDB server.
-            :type url: str
             :param api_token: API token to authenticate to InfluxDB. Needs write permissions.
-            :type api_token: str
             :param org: Organization within InfluxDB to write data to.
-            :type org:
             :param bucket: Bucket within InfluxDB to write data to.
-            :type bucket: str
             :param measurement: Measurement within InfluxDB to write data to.
-            :type measurement: str
             :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
-            :type pod: :class: AquisitionDevice
     """
 
     def __init__(self, url: str, api_token: str, org: str, bucket: str, measurement: str, pod: AquisitionDevice) -> None:
@@ -97,7 +91,7 @@ class InfluxSink(SinkInterface):
         self._client.close()
         
         #delete these entirely so that the sink is detected as closed by 
-        #any later calls to `flush` if it isn't reopened prior.
+        #any later calls to ``flush`` if it isn't reopened prior.
         del self._writer
         del self._client
        
@@ -108,15 +102,17 @@ class InfluxSink(SinkInterface):
         return False
 
     def open(self) -> None:
-        """Wrapper around `self.__enter__` for use outside of a context manager."""
+        """Wrapper around ``self.__enter__`` for use outside of a context manager."""
         self.__enter__()
     
     def close(self) -> None:
-        """Wrapper around `self.__exit__` for use outside of a context manager."""
+        """Wrapper around ``self.__exit__`` for use outside of a context manager."""
         self.__exit__()
     
     def flush(self, timestamp: int, packet: DataPacket) -> None:
-        """Write data to InfluxDB."""
+        """Write data to InfluxDB.
+        :meta private:
+        """
         #with Profile() as prof:         
             #can't send data if no influx client/writer.
         if not hasattr(self, '_client') or not hasattr(self, '_writer'):

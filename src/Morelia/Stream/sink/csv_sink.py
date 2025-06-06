@@ -18,10 +18,8 @@ class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
     
     :param file_path: Path to CSV file to write to.
-    :type file_path: str
 
     :param pod: POD device data is being streamed from.
-    :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
 
     def __init__(self, file_path: str, pod: AquisitionDevice) -> None:
@@ -57,6 +55,9 @@ class CSVSink(SinkInterface):
 
     #TODO: check that sink is open
     def flush(self, timestamp: int, packet: DataPacket) -> None:
+        """
+        :meta private:
+        """
 
         if isinstance(self._pod, Pod8206HR):
             self._csv_writer.writerow((timestamp,) + (packet.ch0, packet.ch1, packet.ch2, packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4))
