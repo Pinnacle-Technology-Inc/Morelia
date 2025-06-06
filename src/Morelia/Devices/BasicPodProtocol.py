@@ -22,22 +22,14 @@ class Pod :
     packets and packet interpretation. This is the parent class for any device that communcates using the POD protocol.
     
     :param port: Serial port to be opened. Used when initializing the COM_io instance.
-    :type port: str | int
-    
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
-    :type baudrate: int, optional 
-
-    :param device_name: Name used to indentify device.
-    :type device_name: str, optional
+    :param device_name: Virtual Name used to indentify device.
     """
     
-    # ============ DUNDER METHODS ============      ========================================================================================================================
-
 
     def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None) -> None : 
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
-        the serial port communication (_port) and for the command handler (_commands). It also increments \
-        the POD device counter (__NUMPOD).
+        the serial port communication (_port) and for the command handler (_commands).
         """
 
         # initialize serial port 
@@ -54,21 +46,14 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
-    # ============ STATIC METHODS ============      ========================================================================================================================
-    
-
-    # ------------ CLASS GETTERS ------------   ------------------------------------------------------------------------------------------------------------------------
-
 
     @staticmethod
     def GetU(u: int) -> int : 
-        """number of hexadecimal characters for an unsigned u-bit value.
+        """Number of hexadecimal characters for an unsigned u-bit value.
 
         :param u: 8, 16, or 32 bits. Enter any other number for NOVALUE.
-        :type u: int
 
         :return: number of hexadecimal characters for an unsigned u-bit value.
-        :rtype: int
         """
         match u : 
             case  8: return(CommandSet.U8())
@@ -78,24 +63,16 @@ class Pod :
 
     @property
     def device_name(self) -> str:
-        """return the device name.
-
-           :return: number of hexadecimal characters for an unsigned u-bit value.
-           :rtype: int
-        """
+        """The virtual device name."""
         return self._device_name
-
-    # ------------ PORT ------------   ------------------------------------------------------------------------------------------------------------------------
 
     @staticmethod
     def ChoosePort(forbidden:list[str]=[]) -> str : 
         """Checks user's Operating System, and chooses ports accordingly.
 
         :param forbidden: List of port names that are already used. Defaults to an empty list.
-        :type forbidden: list[str], optional
 
         :return: Name of the port.
-        :rtype: str
         """
         return FindPorts.ChoosePort(forbidden)
 
@@ -108,10 +85,8 @@ class Pod :
         from the data matches the checksum written in the packet. 
 
         :param msg: Bytes message containing a POD packet: STX (1 bytes) + data (? bytes) + checksum (2 bytes) + ETX (1 byte). 
-        :type msg: bytes
 
         :return: True if the checksum is correct, false otherwise.
-        :rtype: bool
 
         :raises Exception: msg does not begin with STX or end with ETX. 
 
@@ -138,19 +113,15 @@ class Pod :
             return(False)
 
 
-    # ------------ BUILD PACKET ------------             ------------------------------------------------------------------------------------------------------------------------
- 
 
     @staticmethod
     def Checksum(bytesIn: bytes) -> bytes:
-        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the \
+        """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the 
         message, inverting, and taking the last byte.
 
-        Args:
-            bytesIn (bytes): Bytes message containing POD packet data.
+        :param bytesIn: Bytes message containing POD packet data.
 
-        Returns:
-            bytes: Two ASCII-encoded bytes containing the checksum for bytesIn.
+        :return: Two ASCII-encoded bytes containing the checksum for ``bytesIn``.
         """
         # sum together all bytes in byteArr
         sum = 0
@@ -166,16 +137,14 @@ class Pod :
 
     @staticmethod
     def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
-        """Builds a standard POD packet as bytes: STX (1 byte) + command number (4 bytes) \
+        """Builds a standard POD packet (control packet) as bytes: STX (1 byte) + command number (4 bytes) \
         + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
 
-        Args:
-            commandNumber (int): Integer representing the command number. This will be converted into \
-                a 4 byte long ASCII-encoded bytes string.
-            payload (bytes | None, optional): bytes string containing the payload. Defaults to None.
+        :param commandNumber: Integer representing the command number. This will be converted into a \
+        4 byte long ASCII-encoded bytes string.
+        :param payload: bytes string containing the payload. Defaults to None.
 
-        Returns:
-            bytes: Bytes string of a complete standard POD packet.
+        :return: Bytes string of a complete standard POD packet.
         """
         # prepare components of packet
         stx = PodPacket.STX                              # STX indicating start of packet (1 byte)
@@ -197,12 +166,10 @@ class Pod :
     def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
         """Converts a payload into a bytes string (assuming that the payload is for a valid command).
 
-        Args:
-            payload (int | bytes | tuple[int | bytes]): Integer, bytes, or tuple containing the payload.
-            argSizes (tuple[int]): Tuple of the argument sizes.
+            :param payload: Integer, bytes, or tuple containing the payload.
+            :param argSizes: Tuple of the argument sizes.
 
-        Returns:
-            bytes: Bytes string of the payload.
+            :return: Bytes string of the payload.
         """
         # if integer payload is given ... 
         if(isinstance(payload,int)):
@@ -229,17 +196,12 @@ class Pod :
         # return payload as bytes
         return(pld)
             
-    # ============ PUBLIC METHODS ============      ========================================================================================================================
-
-
-    # ------------ PORT HANDLING ------------ ------------------------------------------------------------------------------------------------------------------------
     
 
     def FlushPort(self) -> bool : 
         """Reset the input and output serial port buffer.
 
-        Returns:
-            bool: True of the buffers are flushed, False otherwise.
+        :return: True of the buffers are flushed, False otherwise.
         """
         return(self._port.Flush())
     
@@ -247,45 +209,31 @@ class Pod :
     def SetBaudrateOfDevice(self, baudrate: int) -> bool : 
         """If the port is open, it will change the baud rate to the parameter's value.
 
-        Args:
-            baudrate (int): Baud rate to set for the open serial port. 
+        :param baudrate: Baud rate to set for the open serial port. 
 
-        Returns:
-            bool: True if successful at setting the baud rate, false otherwise.
+        :return: True if successful at setting the baud rate, false otherwise.
         """
         # set baudrate of the open COM port. Returns true if successful.
         return(self._port.SetBaudrate(baudrate))
 
 
-    # ------------ COMMAND DICT ACCESS ------------ ------------------------------------------------------------------------------------------------------------------------
-        
-
     def GetDeviceCommands(self) -> dict[int, list[str|tuple[int]|bool]]:
         """Gets the dictionary containing the class instance's available POD commands.
 
-        Returns:
-            dict[int, list[str|tuple[int]|bool]]: Dictionary containing the available commands and their \
+        :return: Dictionary containing the available commands and their \
                 information.Formatted as key(command number) : value([command name, number of argument \
                 ASCII bytes, number of return bytes, binary flag ])
         """
         # Get commands from this instance's command dict object 
         return(self._commands.GetCommands())
     
-
-    # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
-
-
     def TestConnection(self, pingCmd:str|int='PING') -> bool :
         """Tests if a POD device can be read from or written. Sends a PING command. 
 
-        Args:
-            pingCmd (str | int, optional): Command name or number to ping. Defaults to 'PING'.
+        :param pingCmd: Command name or number to ping. Defaults to 'PING'.
 
-        Returns:
-            bool: True for successful connection, false otherwise.
+        :return: True for successful connection, false otherwise.
             
-        Raises:
-            Exception: Ping command does not exist for this POD device.
         """
         if(not self._commands.DoesCommandExist(pingCmd)) : 
             raise Exception('[!] Ping command \''+str(pingCmd)+'\' does not exist for this POD device.')
@@ -305,17 +253,10 @@ class Pod :
         the method will convert it into a bytes string of the length expected by the command. If a bytes \
         payload is given, it must be the correct length. 
 
-        Args:
-            cmd (str | int): Command number. 
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
-                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
+        :param cmd: Command number. 
+        :param payload: None when there is no payload. If there is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
-        Raises:
-            Exception: POD command does not exist.
-            Exception: POD command requires a payload.
-
-        Returns:
-            bytes: Bytes string of the POD packet. 
+        :return: Bytes string of the POD packet. 
         """
         # return False if command is not valid
         if(not self._commands.DoesCommandExist(cmd)) : 
@@ -343,16 +284,12 @@ class Pod :
     def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
-        Args:
-            cmd (str | int): Command number. 
-            payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
-                is a payload, set to an integer value or a bytes string. Defaults to None.
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
-                    validation. Defaults to True.
+        :param cmd: Command number. 
+        :param payload: None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may \
-                be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+        :return: POD packet beginning with STX and ending with ETX. This may \
+                be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         self.WritePacket(cmd, payload)
         r = self.ReadPODpacket(validateChecksum, timeout_sec)
@@ -362,13 +299,10 @@ class Pod :
     def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
         """Builds a POD packet and writes it to the POD device. 
 
-        Args:
-            cmd (str | int): Command number.
-            payload (int | bytes | tuple[int | bytes], optional): None when there is no payload. If there \
-                is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
+        :param cmd: Command number.
+        :param payload: None when there is no payload. If there is a payload, set to an integer value, bytes string, or tuple. Defaults to None.
 
-        Returns:
-            Packet_Standard: Packet that was written to the POD device.
+        :return: Packet that was written to the POD device.
         """
         # POD packet 
         packet = self.GetPODpacket(cmd, payload)
@@ -382,15 +316,11 @@ class Pod :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-            timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+        :param timeout_sec: Time in seconds to wait for serial data. Defaults to 5. 
 
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may be a \
-                standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
+        :return: POD packet beginning with STX and ending with ETX. This may be a \
+        control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
         b = None
@@ -402,27 +332,17 @@ class Pod :
         return(packet)
 
 
-    # ============ PROTECTED METHODS ============      ========================================================================================================================
 
-
-    # ------------ POD COMMUNICATION ------------   ------------------------------------------------------------------------------------------------------------------------
 
     def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
         binary and reads accordingly, then returns the packet.
 
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Raises:
-            Exception: Cannot read an invalid command.
-
-        Returns:
-            Packet|Packet_Standard|Packet_BinaryStandard: POD packet beginning with STX and ending \
-                with ETX. This may be a standard packet, binary packet, or an unformatted packet \
-                (STX+something+ETX). 
+        :return: POD packet beginning with STX and ending with ETX. This may be a \
+        control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # start packet with STX
         packet: bytes = PodPacket.STX
@@ -451,12 +371,9 @@ class Pod :
         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or \
         (3) continue building the command number. 
 
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
-                validation. Defaults to True.
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Returns:
-            bytes: 4 byte long string containing the ASCII-encoded command number.
+        :return: 4 byte long string containing the ASCII-encoded command number.
         """
         # initialize 
         cmd = None
@@ -485,12 +402,9 @@ class Pod :
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
         is found anywhere. 
 
-        Args:
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
-                validation. Defaults to True.
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Returns:
-            bytes: Bytes string ending with ETX.
+        :returns: Bytes string ending with ETX.
         """
         # initialize 
         packet = None
@@ -512,19 +426,12 @@ class Pod :
 
 
     def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> ControlPacket:
-        """Reads the payload, checksum, and ETX. Then it builds the complete standard POD packet in bytes. 
+        """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
 
-        Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
-                + command number (4 bytes).
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
+        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Raises:
-            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
-
-        Returns:
-            Packet_Standard: Complete standard POD packet.
+        :return: Complete standard POD packet.
         """
         # read until ETX 
         packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
@@ -542,17 +449,10 @@ class Pod :
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
         checksum+ETX. 
 
-        Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
-                + command number (4 bytes)
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
+        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes)
+        :param validateChecksum:  Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Raises:
-            Exception: An exception is raised if the checksum is invalid (only if validateChecksum=True).
-
-        Returns:
-            PacketBinary: Variable-length binary POD packet.
+        :return: Variable-length data POD packet.
         """
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 

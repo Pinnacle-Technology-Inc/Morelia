@@ -18,20 +18,17 @@ __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
 class Pod8274D(AquisitionDevice) : 
-    """POD_8274D handles communication using an 8274D POD device.
-    """
+    """POD_8274D handles communication using an 8274D POD device. Currently under construction and is unreliable.
 
-    # ============ DUNDER METHODS ============      ========================================================================================================================
+    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param baudrate: Baud rate of the opened serial port. Default value is 9600.
+    :param device_name: Virtual name used to indentify device.
+    """
 
 
     def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate command set for an 8274 POD device. 
-
-        Args:
-            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
-            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
-                the COM_io instance. Defaults to 921600.
         """
         # initialize POD_Basics
         super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210) 
@@ -113,18 +110,19 @@ class Pod8274D(AquisitionDevice) :
         8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
         Pod Device, in order to get the right payload back. Each Get and Set Command will generate a Procedure Complete (command 211) indicating a successful write/read.
 
-        Args:
-            cmd (str | int): Command number. 
-            payload (int | bytes | tuple[int|bytes], optional): None when there is no payload. If there \
+
+        :param cmd: Command number. 
+        :param payload: None when there is no payload. If there \
                 is a payload, set to an integer value or a bytes string. Defaults to None.
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to skip \
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip \
                     validation. Defaults to True.
 
-        Returns:
-            Packet: POD packet beginning with STX and ending with ETX. This may \
+        :return: POD packet beginning with STX and ending with ETX. This may \
                 be a standard packet, binary packet, or an unformatted packet (STX+something+ETX). 
                 There are some conditions for some commands. For example, if cmd is Local Scan, it returns Payload[1:7]
                 because that will be the bluetooth address that can be used to connect to the device.
+
+        :meta private:
         """
         #print(cmd)
         self.WritePacket(cmd, payload)

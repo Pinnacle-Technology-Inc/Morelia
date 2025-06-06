@@ -1,9 +1,10 @@
 # local imports 
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
-from Morelia.packet import ControlPacket
+from Morelia.packet import ControlPacket, PrimaryChannelMode, SecondaryChannelMode
 from Morelia.packet.data import DataPacket8401HR
 
 from functools import partial
+from typing import Union
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -15,18 +16,20 @@ __email__       = "sales@pinnaclet.com"
 
 class Pod8401HR(AquisitionDevice) : 
     """
-    POD_8401HR handles communication using an 8401-HR POD device. 
+    Pod8401HR handles communication using an 8401HR POD device. 
 
-    Attributes:
-        _ssGain (dict[str,int|None]): Instance-level dictionary storing the second-stage gain for all \
-            four channels. 
-        _preampGain (dict[str,int|None]): Instance-level dictionary storing the pramplifier gain for \
-            all four channels. 
+    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param preamp: Device/sensor connected to the the 8401HR.
+    :param primary_channel_mode: A tuple containing the mode of operation for each primary channel (EEG/EMG or Biosensor).
+    :param secondary_channel_modes: A tuple containing the mode of operation for each secondary (TTL/AEXT) channel (analog or digital).
+    :param ssGain: Dictionary storing the second-stage gain for all four channels. Defaults to ``{'A':None,'B':None,'C':None,'D':None}``.
+    :param preampGain: Dictionary storing the pramplifier gain for all four channels. Defaults to ``{'A':None,'B':None,'C':None,'D':None}``.
+    :param baudrate: Integer baud rate of the opened serial port. Used when initializing the COM_io instance. Defaults to 9600.
+    :param device_name: Virtual name used to indentify device.
     """
 
-    # ============ GLOBAL CONSTANTS ============    ========================================================================================================================
-
-    __CHANNELMAPALL : dict[str,dict[str,str]] = {
+    # Class-level dictionary containing the channel map for all preamplifier devices.
+    __CHANNELMAPALL : dict[Preamp,dict[str,str]] = {
         Preamp.Preamp8407_SE      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         Preamp.Preamp8407_SL      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
         Preamp.Preamp8407_SE3     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
@@ -43,19 +46,12 @@ class Pod8401HR(AquisitionDevice) :
         Preamp.Preamp8406_SE3     : {'A':'Bio' , 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'},
         Preamp.Preamp8406_SE4     : {'A':'EEG4', 'B':'EEG1', 'C':'EEG3', 'D':'EEG2'}
     }
-    """Class-level dictionary containing the channel map for \
-    all preamplifier devices.
-    """
-
-    # ============ METHODS ============      ========================================================================================================================
-    
-    # ------------ INITIALIZATION ------------           ------------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, 
                  port: str|int, 
                  preamp: Preamp,
-                 primary_channel_modes,
-                 secondary_channel_modes,
+                 primary_channel_modes: tuple[PrimaryChannelMode] ,
+                 secondary_channel_modes: tuple[SecondaryChannelMode],
                  ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
                  baudrate:int=9600,
@@ -64,33 +60,25 @@ class Pod8401HR(AquisitionDevice) :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ssGain \
         and _preampGain.
-
-        Args:
-            port (str | int): Serial port to be opened. Used when initializing the COM_io instance.
-            preampName (str): String of the corresponding device/sensor name.
-            ssGain (tuple|list|dict[str,int|None], optional): Dictionary storing the second-stage gain for all four \
-                channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            preampGain (tuple|list|dict[str,int|None], optional): Dictionary storing the pramplifier gain for all \
-                four channels. Defaults to {'A':None,'B':None,'C':None,'D':None}.
-            baudrate (int, optional): Integer baud rate of the opened serial port. Used when initializing \
-                the COM_io instance. Defaults to 9600.
         """
 
-        # initialize POD_Basics
+             # initialize POD_Basics
         super().__init__(port, 10000, baudrate=baudrate, device_name=device_name) 
 
+        # set preamp.
         self._preamp: Preamp = preamp
+
         # get constants for adding commands 
         U8  = Pod.GetU(8)
         U16 = Pod.GetU(16)
         B5  = 23
+
         # remove unimplemented commands 
         self._commands.RemoveCommand(5)  # STATUS
         self._commands.RemoveCommand(10) # SAMPLE RATE
         self._commands.RemoveCommand(11) # BINARY
+
         # add device specific commands
-        #self._commands.AddCommand( 100, 'GET SAMPLE RATE',  (0,),       (U16,),     False,  'Gets the current sample rate of the system, in Hz.')
-        #self._commands.AddCommand( 101, 'SET SAMPLE RATE',  (U16,),     (0,),       False,  'Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.')
         self._commands.AddCommand( 102,	'GET HIGHPASS',	    (U8,),	    (U8,),      False,  'Reads the highpass filter value for a channel. Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass.')
         self._commands.AddCommand( 103,	'SET HIGHPASS',	    (U8, U8),	(0,),       False,  'Sets the highpass filter for a channel. Requires channel to set, and filter value. Values are the same as returned in GET HIGHPASS.')
         self._commands.AddCommand( 104,	'GET LOWPASS',	    (U8,),	    (U16,),     False,  'Gets the lowpass filter for the desired channel. Requires the channel to read, Returns the value in Hz.')
@@ -114,48 +102,46 @@ class Pod8401HR(AquisitionDevice) :
         self._commands.AddCommand( 133,	'GET MUX MODE',	    (0,),	    (U8,),      False,  'Gets the state of mux mode. See SET MUX MODE.')
         self._commands.AddCommand( 134,	'GET TTL ANALOG',   (U8,),	    (U16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
         self._commands.AddCommand( 181, 'BINARY5 DATA',     (0,),	    (B5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
-        # second stage gain
+
+        # set second stage gain.
         ssGain_dict = self._FixABCDtype(ssGain, thisIs='ssGain ')
         self._ValidateSsGain(ssGain_dict)
         self._ssGain : dict[str,int|None] = ssGain_dict         
-        # preamplifier gain
+
+        # set preamplifier gain.
         preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain')
         self._ValidatePreampGain(preampGain_dict)
         self._preampGain : dict[str,int|None] = preampGain_dict
-
+        
+        # set channel modes.
         self._primary_channel_modes = primary_channel_modes
         self._secondary_channel_modes = secondary_channel_modes
-
+        
+        # function used for constructing packets from stream data.
         self._stream_packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
-
+        
+        # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
             if command_number in 127 | 128 | 129:
                 return Pod8401HR.DecodeTTLPayload(payload)
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
-
+        
+        # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, decode_payload)
-    
     
     @property
     def preamp(self) -> Preamp:
+        """Preamp connected to device."""
         return self._preamp
 
     @staticmethod
     def _FixABCDtype(info: tuple|list|dict, thisIs: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
 
-        Args:
-            info (tuple | list | dict): Variable to be converted into a dictionary. 
-            thisIs (str, optional): Description of the info argument, which is used in \
-                Exception statements. Defaults to ''.
+        :param info: Variable to be converted into a dictionary. 
+        :param thisIs: Description of the info argument, which is used in Exception statements. Defaults to ''.
 
-        Raises:
-            Exception: The dictionary has improper keys; keys must be ['A','B','C','D'].
-            Exception: The argument must have only four values.
-            Exception: The argument must be a tuple, list, or dict.
-
-        Returns:
-            dict: The info argument converted to a dictionary with A, B, C, and D as keys.  
+        :return: The info argument converted to a dictionary with A, B, C, and D as keys.  
         """
         # check for dict type 
         if(isinstance(info, dict)) : 
@@ -177,14 +163,10 @@ class Pod8401HR(AquisitionDevice) :
     
 
     @staticmethod
-    def _ValidateSsGain(ssgain: dict) : 
-        """Checks that the second stage gain dictionary has proper values (1, 5, or None).
+    def _ValidateSsGain(ssgain: dict) -> None: 
+        """Checks that the second stage gain dictionary has proper values (1, 5, or None). Otherwise raises exception.
 
-        Args:
-            ssgain (dict): Second stage gain dictionary.
-
-        Raises:
-            Exception: The ssGain must be 1 or 5; set ssGain to None if no-connect.
+        :param ssgain: Second stage gain dictionary.
         """
         for value in ssgain.values() :
             # both biosensors and EEG/EMG have ssGain. None when no connect 
@@ -193,13 +175,9 @@ class Pod8401HR(AquisitionDevice) :
             
     @staticmethod
     def _ValidatePreampGain(preampGain: dict) -> None:
-        """Checks that the preamplifier gain dictionary has proper values (10, 100, or None).
+        """Checks that the preamplifier gain dictionary has proper values (10, 100, or None). Otherwise raises exception.
 
-        Args:
-            preampGain (dict): preamplifier gain dictionary.
-
-        Raises:
-            Exception: EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.
+        :param preampGain: preamplifier gain dictionary.
         """
         for value in preampGain.values() :
             # None when biosensor or no connect 
@@ -207,19 +185,13 @@ class Pod8401HR(AquisitionDevice) :
                 raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
             
             
-    # ------------ MAPPING ------------           ------------------------------------------------------------------------------------------------------------------------
-    
-
     @staticmethod
-    def GetChannelMapForPreampDevice(preampName: str) -> dict[str,str]|None :
+    def GetChannelMapForPreampDevice(preampName: Preamp) -> dict[str,str]|None :
         """Get the channel mapping (channel labels for A,B,C,D) for a given device.
 
-        Args:
-            preampName (str): String for the device/sensor name.
+        :param preampName: Device/sensor for lookup.
 
-        Returns:
-            dict[str,str]|None: Dictionary with keys A,B,C,D with values of the channel names. Returns \
-                None if the device name does not exist.
+        :return: Dictionary with keys A,B,C,D with values of the channel names. Returns None if the device name does not exist.
         """
         if(preampName in Pod8401HR.__CHANNELMAPALL) : 
             return(Pod8401HR.__CHANNELMAPALL[preampName])
@@ -227,46 +199,19 @@ class Pod8401HR(AquisitionDevice) :
             return(None) # no device matched
 
 
-    @staticmethod
-    def GetSupportedPreampDevices() -> list[str]: 
-        """Gets a list of device/sensor names used for channel mapping. 
-
-        Returns:
-            list[str]: List of string names of all supported sensors. 
-        """
-        return(list(Pod8401HR.__CHANNELMAPALL.keys()))
-
 
     @staticmethod
-    def IsPreampDeviceSupported(name: Preamp) -> bool : 
-        """Checks if the argument exists in channel map for all preamp sensors. 
-
-        Args:
-            name (Preamp): name of the device
-
-        Returns:
-            bool: True if the name exists in __CHANNELMAPALL, false otherwise.
-        """
-        return(name in Pod8401HR.__CHANNELMAPALL)    
-
-
-    # ------------ BITMASKING ------------           ------------------------------------------------------------------------------------------------------------------------
-
-
-    @staticmethod
-    def GetTTLbitmask(ext0:bool=0, ext1:bool=0, ttl4:bool=0, ttl3:bool=0, ttl2:bool=0, ttl1:bool=0) -> int :
+    def GetTTLbitmask(ext0:int=0, ext1:int=0, ttl4:int=0, ttl3:int=0, ttl2:int=0, ttl1:int=0) -> int :
         """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
 
-        Args:
-            ext0 (bool, optional): boolean bit for ext0. Defaults to 0.
-            ext1 (bool, optional): boolean bit for ext1. Defaults to 0.
-            ttl4 (bool, optional): boolean bit for ttl4. Defaults to 0.
-            ttl3 (bool, optional): boolean bit for ttl3. Defaults to 0.
-            ttl2 (bool, optional): boolean bit for ttl2. Defaults to 0.
-            ttl1 (bool, optional): boolean bit for ttl1. Defaults to 0.
+        :param ext0: boolean bit for ext0. Defaults to 0.
+        :param ext1: boolean bit for ext1. Defaults to 0.
+        :param ttl4: boolean bit for ttl4. Defaults to 0.
+        :param ttl3: boolean bit for ttl3. Defaults to 0.
+        :param ttl2: boolean bit for ttl2. Defaults to 0.
+        :param ttl1: boolean bit for ttl1. Defaults to 0.
 
-        Returns:
-            int: Integer number to be used as a bit mask.
+        :return: Integer number to be used as a bit mask.
         """
         # use this for the argument/return for TTL-specific commands 
         # (msb) Bit 7 = EXT0, bit 6 = EXT1, bits 4+5 unused, bits 0-3 TTL pins (lsb) 
@@ -277,11 +222,9 @@ class Pod8401HR(AquisitionDevice) :
     def DecodeTTLPayload(payload: bytes) -> tuple[dict[str, int]] : 
         """Decodes a paylaod with the two TTL bytes.
 
-        Args:
-            payload (bytes): Bytes string of the POD packet payload.
+        :param payload: Bytes string of the POD packet payload.
 
-        Returns:
-            tuple[dict[str, int]]: Tuple with two TTL dictionaries.
+        :return: Tuple with two TTL dictionaries.
         """
         return ( Pod8401HR.DecodeTTLByte(payload[:2]), Pod8401HR.DecodeTTLByte(payload[2:]))
 
@@ -290,12 +233,11 @@ class Pod8401HR(AquisitionDevice) :
     def DecodeTTLByte(ttlByte: bytes) -> dict[str,int] : 
         """Converts the TTL bytes argument into a dictionary of integer TTL values.
 
-        Args:
-            ttlByte (bytes): U8 byte containing the TTL bitmask. 
+        :param ttlByte: U8 byte containing the TTL bitmask. 
 
-        Returns:
-            dict[str,int]: Dictinoary with TTL name keys and integer TTL values. 
+        :return: Dictinoary with TTL name keys and integer TTL values. 
         """
+
         return({
             'EXT0' : conv.ascii_bytes_to_int_split(ttlByte, 8, 7),
             'EXT1' : conv.ascii_bytes_to_int_split(ttlByte, 7, 6),
@@ -308,14 +250,11 @@ class Pod8401HR(AquisitionDevice) :
 
     @staticmethod
     def GetSSConfigBitmask(gain: int, highpass: float) -> int :
-        """Gets a bitmask, represented by an unsigned integer, used for 'SET SS CONFIG' command. 
+        """Gets a bitmask, represented by an unsigned integer, used for ``SET SS CONFIG`` command. 
 
-        Args:
-            gain (int): 1 for 1x gain. else for 5x gain.
-            highpass (float): 0 for DC highpass, else for 0.5Hz highpass.
+        :param gain: 1 for 1x gain. else for 5x gain. highpass (float): 0 for DC highpass, else for 0.5Hz highpass.
 
-        Returns:
-            int: Integer representing a bitmask.
+        :return: Integer representing a bitmask.
         """
         # interpret highpass (lsb)
         if(highpass == 0.0) :   bit0 = True  # DC highpass
@@ -328,13 +267,10 @@ class Pod8401HR(AquisitionDevice) :
 
     
     @staticmethod
-    def DecodeSSConfigBitmask(config: bytes) : 
-        """Converts the SS configuration byte to a dictionary with the high-pass and gain. \
-        Use for 'GET SS CONFIG' command payloads.
+    def DecodeSSConfigBitmask(config: bytes) -> dict[str, Union[float,int]]: 
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain. Use for ``GET SS CONFIG`` command payloads.
 
-        Args:
-            config (bytes): U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, \
-                1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
+        :param config: U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
         """
         # high-pass
         if(Packet.AsciiBytesToInt(config[0:1]) == 0) : 
@@ -355,31 +291,25 @@ class Pod8401HR(AquisitionDevice) :
 
     @staticmethod
     def GetChannelBitmask(a: bool, b: bool, c: bool, d: bool) -> int :
-        """Gets a bitmask, represented by an unsigned integer, used for 'SET INPUT GROUND' command. 
+        """Gets a bitmask, represented by an unsigned integer, used for ``SET INPUT GROUND`` command. 
 
-        Args:
-            a (bool): State for channel A, 0=Grounded and 1=Connected to Preamp.
-            b (bool): State for channel B, 0=Grounded and 1=Connected to Preamp.
-            c (bool): State for channel C, 0=Grounded and 1=Connected to Preamp.
-            d (bool): State for channel D, 0=Grounded and 1=Connected to Preamp.
+            :param a: State for channel A, 0=Grounded and 1=Connected to Preamp.
+            :param b: State for channel B, 0=Grounded and 1=Connected to Preamp.
+            :param c: State for channel C, 0=Grounded and 1=Connected to Preamp.
+            :param d: State for channel D, 0=Grounded and 1=Connected to Preamp.
 
-        Returns:
-            int: Integer representing a bitmask.
+            :return: Integer representing a bitmask.
         """
         return( 0 | (d << 3) | (c << 2) | (b << 1) | a )
 
 
     @staticmethod
     def DecodeChannelBitmask(channels: bytes) -> dict[str,int] :
-        """Converts the channel bitmask byte to a dictionary with each channel value. \
-        Use for 'GET INPUT GROUND' command payloads.
+        """Converts the channel bitmask byte to a dictionary with each channel value. Use for ``GET INPUT GROUND`` command payloads.
 
-        Args:
-            channels (bytes): U8 byte containing the channel configuration. 
+        :param channels: U8 byte containing the channel configuration. 
 
-        Returns:
-            dict[str,int]: Dictionary with the channels as keys and values as the state. \
-                0=Grounded and 1=Connected to Preamp.
+        :return: Dictionary with the channels as keys and values as the state. 0=Grounded and 1=Connected to Preamp.
         """
         return({
             'A' : conv.ascii_bytes_to_int_split(channels, 4, 3),
@@ -389,18 +319,14 @@ class Pod8401HR(AquisitionDevice) :
         })
 
 
-    # ------------ CALCULATIONS ------------           ------------------------------------------------------------------------------------------------------------------------
-
 
     @staticmethod
     def CalculateBiasDAC_GetVout(value: int) -> float :
-        """Calculates the output voltage given the DAC value. Used for 'GET/SET BIAS' commands. 
+        """Calculates the output voltage given the DAC value. Used for ``GET/SET BIAS`` commands. 
 
-        Args:
-            value (int): DAC value (16 bit 2's complement).
+        :param value: DAC value (16 bit 2's complement).
 
-        Returns:
-            float: Float of the output bias voltage [V].
+        :return: Float of the output bias voltage [V].
         """
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
@@ -409,72 +335,27 @@ class Pod8401HR(AquisitionDevice) :
 
     @staticmethod
     def CalculateBiasDAC_GetDACValue(vout: int|float) -> int :
-        """Calculates the DAC value given the output voltage. Used for 'GET/SET BIAS' commands. 
+        """Calculates the DAC value given the output voltage. Used for ``GET/SET BIAS`` commands. 
 
-        Args:
-            vout (int | float): Output voltage (+/- 2.048 V).
+        :param vout: Output voltage (+/- 2.048 V).
 
-        Returns:
-            int: Integer of the DAC value (16 bit 2's complement).
+        :return: Integer of the DAC value (16 bit 2's complement).
         """
         # Use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return(int( (vout / 2.048) * 32768. ))
         
 
-    # ------------ OVERWRITE ------------           ------------------------------------------------------------------------------------------------------------------------
+    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8401HR:
+        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. See documentation of DataPacket8401HR 
+        for what the recieved packet looks like on a binary level.
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) :
-        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. 
+        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        Args:
-            prePacket (bytes): Bytes string containing the beginning of a POD packet: STX (1 byte) \
-                + command number (4 bytes).
-            validateChecksum (bool, optional): Set to True to validate the checksum. Set to False to \
-                skip validation. Defaults to True.
-
-        Raises:
-            Exception: Bad checksum for binary POD packet read.
+        :return: Packet recieved from device.
         """
         
-        # -----------------------------------------------------------------------------
-        # Binary 5 Data Format
-        # -----------------------------------------------------------------------------		
-        # Byte    Value	                        Format      Description 
-        # -----------------------------------------------------------------------------		
-        # 0	    0x02	                        Binary		STX
-        # 1	    0	                            ASCII		Command Number Byte 0
-        # 2	    0	                            ASCII		Command Number Byte 1
-        # 3	    B	                            ASCII		Command Number Byte 2
-        # 4	    5	                            ASCII		Command Number Byte 3
-        # 5	    Packet Number 	                Binary		A rolling value that increases with each packet, and rolls over to 0 after it hits 255
-        # 6	    Status	                        Binary		Status byte, currently unused
-        # 7	    CH3 17~10	                    Binary		Top 8 bits of CH3.  Data is 18 bits, packed over 3 bytes.  Because of this the number of bits in each byte belonging to each chanenl changes.  Values are sent MSB/MSb first
-        # 8	    CH3 9~2	                        Binary		Middle 8 bits of CH3
-        # 9	    CH3 1~0, CH2 17~12	            Binary		Bottom 2 bits of CH3 and top 6 bits of CH2
-        # 10	CH2 11~4	                    Binary		Middle 8 bits of Ch2
-        # 11	CH2 3~0, CH1 17~14	            Binary		Bottom 4 bits of CH2 and top 4 bits of CH1
-        # 12	CH1 13~6	                    Binary		Middle 8 bits of CH1
-        # 13	CH1 5~0, CH0 17~16	            Binary		Bottom 6 bits of CH1 and top 2 bits of CH0
-        # 14	CH0 15~8	                    Binary		Middle 8 bits of Ch0
-        # 15	CH0 7~0	                        Binary		Bottom 8 bits of CH0
-        # 16	EXT0 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT0 analog value.  Sent MSB/MSb first
-        # 17	EXT0 Analog Value Low Byte	    Binary		Bottom nibble of the EXT0 value
-        # 18	EXT1 Analog Value High Byte	    Binary		Top nibble of the 12-bit EXT1 analog value.  Sent MSB/MSb first
-        # 19	EXT1 Analog Value Low Byte	    Binary		Bottom nibble of the EXT1 value
-        # 20	TTL1 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        # 21	TTL1 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        # 22	TTL2 Analog Value High Byte	    Binary		Top nibble of the TTL1 pin read as a 12-bit analog value
-        # 23	TTL2 Analog Value Low Byte	    Binary		Bottom nibble of the TTL2 pin analog value
-        # 24	TTL3 Analog Value High Byte	    Binary		Top nibble of the TTL3 pin read as a 12-bit analog value
-        # 25	TTL3 Analog Value Low Byte	    Binary		Bottom nibble of the TTL3 pin analog value
-        # 26	TTL4 Analog Value High Byte	    Binary		Top nibble of the TTL4 pin read as a 12-bit analog value
-        # 27	TTL4 Analog Value Low Byte	    Binary		Bottom nibble of the TTL4 pin analog value
-        # 28	Checksum MSB	                ASCII		Checksum
-        # 29	Checksum LSB	                ASCII		Checksum 
-        # 30	0x03	                        Binary		ETX
-        # -----------------------------------------------------------------------------
-
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = prePacket + self._port.Read(23) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
