@@ -40,6 +40,8 @@ jobs:
   # Upload packages to PyPI.
   pypi-publish:
 
+    needs: build-dists
+
     name: Upload release to PyPI
     runs-on: ubuntu-latest
 
