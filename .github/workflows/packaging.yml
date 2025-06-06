@@ -8,6 +8,10 @@ on:
     branches:
       - integration
 
+    # Only run on new tag.
+    tags:
+      - '*'
+
 jobs:
  
   # Build packages 
