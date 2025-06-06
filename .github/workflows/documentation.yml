@@ -1,6 +1,8 @@
 # This CI pipeline builds our docs with sphinx and deploys them to GitHub pages.
 name: documentation
 
+needs: packaging
+
 # Jobs run when PRs to integration are approved.
 on:
   push:
