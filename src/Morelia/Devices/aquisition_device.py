@@ -48,14 +48,14 @@ class AquisitionDevice(Pod):
         """Currently set sample rate."""
         if self._sample_rate is None:
             self._sample_rate = self.WriteRead('GET SAMPLE RATE').payload
-        return self._sample_rate
+        return self._sample_rate[0]
 
     @sample_rate.setter
     def sample_rate(self, rate: int) -> None:
         if rate > self.max_sample_rate:
             raise ValueError(f'The maximum allowable sample rate is {self.max_sample_rate} Hz.')
 
-        self.WriteRead('SET SAMPLE RATE', rate)
+        self.WriteRead('SET SAMPLE RATE', (rate,))
         self._sample_rate: int = rate
     
     def __enter__(self) -> Self:
