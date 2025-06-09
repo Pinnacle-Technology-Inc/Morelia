@@ -9,7 +9,6 @@ Subpackages
 
    Morelia.Commands
    Morelia.Devices
-   Morelia.Parameters
    Morelia.Stream
    Morelia.packet
    Morelia.signal
