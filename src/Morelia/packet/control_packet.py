@@ -6,16 +6,13 @@ import Morelia.packet.conversion as conv
 
 from Morelia.Commands import CommandSet
 
-#: honesty the way to do this might be draw it in excalidarw and include an image... yeah i think so...
+
 class ControlPacket(PodPacket):
     """ Class for parsing "Standard" POD packets from raw bytes. These are associated with controlling or configuring a device, hence the name
     These packets take the following form
 
-    .. code-block::
+    .. image:: _static/control_packet.png
 
-        -------------------------------------------------------------------------------------------------------------------------------------------------------
-        | 0x02 (1 byte) | command number (4 ascii-encoded bytes) | payload (variable even number of ascii-encoded bytes) | checksum (2 bytes) | 0x03 (1 byte) |
-        -------------------------------------------------------------------------------------------------------------------------------------------------------
 
     The payload is normally several values that need to parsed into a tuple of integers.
     Oftentimes, this class is used a "factory" of sorts. For any given device, you might partially apply the constructor with the
@@ -26,10 +23,8 @@ class ControlPacket(PodPacket):
         the payload is decoded according to that. Otherwise, a function must be passed that takes a command number and ``bytes`` object to decode,
         and returns a ``tuple``. For a simple example of how passing a ``decode_from`` function directly may be used,
         see the constructor of the ``Pod8206HR`` class.
-    :type decode_from: ``CommandSet`` | Callable[[int, bytes], tuple]
 
     :param raw_packet: The raw bytes to be parsed as a control packet.
-    :type raw_packet: bytes
     """
 
     def __init__(self, decode_from: CommandSet | Callable[[int, bytes], tuple], raw_packet: bytes) -> None:
@@ -50,7 +45,6 @@ class ControlPacket(PodPacket):
         """Parses the packet payload in a lazy, memoized fashion.
         
         :return: The parsed payload as a tuple.
-        :rtype: tuple 
         """
         
         #If payload has already been parsed, so need to do it again.
@@ -75,13 +69,9 @@ class ControlPacket(PodPacket):
         but have the capability to handle edge-cases on a per-command basis. For an example of how this is used, see the constructor of the ``Pod8206HR`` class.
 
         :param cmds: The CommandSet to decode from.
-        :type cmds: ``CommandSet``
         :param cmd_number: Command number of the packet that the payload corresponds to.
-        :type cmd_number: int
         :param payload: Raw bytes of the payload you wish to decode.
-        :type payload: bytes
         :return: The parsed payload as a tuple.
-        :rtype: tuple
         """
         
         #get a tuple of sizes (in bytes) each argument is expected to have, in order.
