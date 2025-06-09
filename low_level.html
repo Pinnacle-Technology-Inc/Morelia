@@ -213,8 +213,7 @@ to any command in the command reference</strong>.</p>
 <span class="c1"># read the response with ReadPODPacket. That looks like this:</span>
 
 <span class="c1"># First, send the GET LOWPASS command.</span>
-<span class="c1"># Note since GET LOWPASS does not require any arguments, we do not pass a payload.</span>
-<span class="n">pod</span><span class="o">.</span><span class="n">WritePacket</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+<span class="n">pod</span><span class="o">.</span><span class="n">WritePacket</span><span class="p">(</span><span class="mi">102</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
 
 <span class="c1"># Next, we will read the response.</span>
 <span class="c1"># After this, the variable lowpass_channel_2 will contain a</span>
@@ -227,7 +226,7 @@ to any command in the command reference</strong>.</p>
 <span class="c1"># like this are exactly why we have WriteRead! Usinf WriteRead,</span>
 <span class="c1"># we can use one method call to send the GET LOWPASS command</span>
 <span class="c1"># and read the response. Let&#39;s see this alternative way of doing things.</span>
-<span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">WriteRead</span><span class="p">(</span><span class="mi">102</span><span class="p">)</span>
+<span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">WriteRead</span><span class="p">(</span><span class="mi">102</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
 
 <span class="c1"># Easy as pie! Now remember, both ReadPODPacket and WriteRead return</span>
 <span class="c1"># instances of subclasses of PodPacket. In our case, these will be</span>
