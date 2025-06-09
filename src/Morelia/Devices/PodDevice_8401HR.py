@@ -22,8 +22,8 @@ class Pod8401HR(AquisitionDevice) :
     :param preamp: Device/sensor connected to the the 8401HR.
     :param primary_channel_mode: A tuple containing the mode of operation for each primary channel (EEG/EMG or Biosensor).
     :param secondary_channel_modes: A tuple containing the mode of operation for each secondary (TTL/AEXT) channel (analog or digital).
-    :param ssGain: Dictionary storing the second-stage gain for all four channels. Defaults to ``{'A':None,'B':None,'C':None,'D':None}``.
-    :param preampGain: Dictionary storing the pramplifier gain for all four channels. Defaults to ``{'A':None,'B':None,'C':None,'D':None}``.
+    :param ssGain: Tuple storing the second-stage gain for all four channels. Defaults to ``(None, None, None, None)``.
+    :param preampGain: Tuple storing the pramplifier gain for all four channels. Defaults to ``(None, None, None, None)``.
     :param baudrate: Integer baud rate of the opened serial port. Used when initializing the COM_io instance. Defaults to 9600.
     :param device_name: Virtual name used to indentify device.
     """
@@ -52,8 +52,8 @@ class Pod8401HR(AquisitionDevice) :
                  preamp: Preamp,
                  primary_channel_modes: tuple[PrimaryChannelMode] ,
                  secondary_channel_modes: tuple[SecondaryChannelMode],
-                 ssGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
-                 preampGain: tuple|list|dict[str,int|None]={'A':None,'B':None,'C':None,'D':None}, 
+                 ssGain: tuple[int|None]=(None, None, None, None), 
+                 preampGain: tuple[int|None]=(None, None, None, None), 
                  baudrate:int=9600,
                  device_name: str | None = None
                 ) -> None :
@@ -103,12 +103,16 @@ class Pod8401HR(AquisitionDevice) :
         self._commands.AddCommand( 134,	'GET TTL ANALOG',   (U8,),	    (U16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
         self._commands.AddCommand( 181, 'BINARY5 DATA',     (0,),	    (B5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
 
+
+        # so, currently we do this weird thing where we turn tuples into
+        # dictionaries for preamp and ss gains. we shouldnt do this, but do it right now as an artifact of legacy code. please remove this
+        # at some point as this class containes to be rewritten.
+
         # set second stage gain.
         ssGain_dict = self._FixABCDtype(ssGain, thisIs='ssGain ')
         self._ValidateSsGain(ssGain_dict)
         self._ssGain : dict[str,int|None] = ssGain_dict         
 
-        # set preamplifier gain.
         preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain')
         self._ValidatePreampGain(preampGain_dict)
         self._preampGain : dict[str,int|None] = preampGain_dict
