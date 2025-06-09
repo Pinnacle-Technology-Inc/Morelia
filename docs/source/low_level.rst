@@ -133,8 +133,7 @@ to any command in the command reference**.
   # read the response with ReadPODPacket. That looks like this:
   
   # First, send the GET LOWPASS command.
-  # Note since GET LOWPASS does not require any arguments, we do not pass a payload.
-  pod.WritePacket(102)
+  pod.WritePacket(102, (1,))
 
   # Next, we will read the response.
   # After this, the variable lowpass_channel_2 will contain a
@@ -147,7 +146,7 @@ to any command in the command reference**.
   # like this are exactly why we have WriteRead! Usinf WriteRead,
   # we can use one method call to send the GET LOWPASS command
   # and read the response. Let's see this alternative way of doing things.
-  lowpass_channel_2_packet = pod.WriteRead(102)
+  lowpass_channel_2_packet = pod.WriteRead(102, (1,))
 
   # Easy as pie! Now remember, both ReadPODPacket and WriteRead return
   # instances of subclasses of PodPacket. In our case, these will be
