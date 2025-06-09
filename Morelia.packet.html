@@ -113,7 +113,6 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch0"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ch0</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch1"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ch1</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch2"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ch2</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.get_primary_channel_value"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.get_primary_channel_value()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl1"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ttl1</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl2"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ttl2</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl3"><code class="docutils literal notranslate"><span class="pre">DataPacket8206HR.ttl3</span></code></a></li>
@@ -130,8 +129,6 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ch3</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ext0</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ext1</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_primary_channel_value"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.get_primary_channel_value()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_secondary_channel_value"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.get_secondary_channel_value()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl1"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl1</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl2"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl2</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl3"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl3</span></code></a></li>
@@ -236,11 +233,7 @@ Currently, the only device Morelia supports that takes advantage of modal channe
 <dd><p>Bases: <a class="reference internal" href="#Morelia.packet.pod_packet.PodPacket" title="Morelia.packet.pod_packet.PodPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">PodPacket</span></code></a></p>
 <p>Class for parsing “Standard” POD packets from raw bytes. These are associated with controlling or configuring a device, hence the name
 These packets take the following form</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-------------------------------------------------------------------------------------------------------------------------------------------------------</span>
-<span class="o">|</span> <span class="mh">0x02</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">)</span> <span class="o">|</span> <span class="n">command</span> <span class="n">number</span> <span class="p">(</span><span class="mi">4</span> <span class="n">ascii</span><span class="o">-</span><span class="n">encoded</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">|</span> <span class="n">payload</span> <span class="p">(</span><span class="n">variable</span> <span class="n">even</span> <span class="n">number</span> <span class="n">of</span> <span class="n">ascii</span><span class="o">-</span><span class="n">encoded</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">|</span> <span class="n">checksum</span> <span class="p">(</span><span class="mi">2</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">|</span> <span class="mh">0x03</span> <span class="p">(</span><span class="mi">1</span> <span class="n">byte</span><span class="p">)</span> <span class="o">|</span>
-<span class="o">-------------------------------------------------------------------------------------------------------------------------------------------------------</span>
-</pre></div>
-</div>
+<img alt="_images/control_packet.png" src="_images/control_packet.png" />
 <p>The payload is normally several values that need to parsed into a tuple of integers.
 Oftentimes, this class is used a “factory” of sorts. For any given device, you might partially apply the constructor with the
 <code class="docutils literal notranslate"><span class="pre">decode_from</span></code> argument, and then any time you need to make a packet, just call the curried constructor with
@@ -248,11 +241,11 @@ the raw bytes of the packet you want to parse. For a concrete example of this, s
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>decode_from</strong> (<code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> | Callable[[int, bytes], tuple]) – Instructs the packet how to parse the payload from raw bytes to a Python object. If a <code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> object is passed,
+<li><p><strong>decode_from</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommandSet</span></code></a>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>]]</span>) – Instructs the packet how to parse the payload from raw bytes to a Python object. If a <code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> object is passed,
 the payload is decoded according to that. Otherwise, a function must be passed that takes a command number and <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object to decode,
 and returns a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>. For a simple example of how passing a <code class="docutils literal notranslate"><span class="pre">decode_from</span></code> function directly may be used,
 see the constructor of the <code class="docutils literal notranslate"><span class="pre">Pod8206HR</span></code> class.</p></li>
-<li><p><strong>raw_packet</strong> (<em>bytes</em>) – The raw bytes to be parsed as a control packet.</p></li>
+<li><p><strong>raw_packet</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – The raw bytes to be parsed as a control packet.</p></li>
 </ul>
 </dd>
 </dl>
@@ -266,16 +259,16 @@ but have the capability to handle edge-cases on a per-command basis. For an exam
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>cmds</strong> (<code class="docutils literal notranslate"><span class="pre">CommandSet</span></code>) – The CommandSet to decode from.</p></li>
-<li><p><strong>cmd_number</strong> (<em>int</em>) – Command number of the packet that the payload corresponds to.</p></li>
-<li><p><strong>payload</strong> (<em>bytes</em>) – Raw bytes of the payload you wish to decode.</p></li>
+<li><p><strong>cmds</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommandSet</span></code></a></span>) – The CommandSet to decode from.</p></li>
+<li><p><strong>cmd_number</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Command number of the packet that the payload corresponds to.</p></li>
+<li><p><strong>payload</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – Raw bytes of the payload you wish to decode.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p>The parsed payload as a tuple.</p>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></span></p>
 </dd>
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p>tuple</p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The parsed payload as a tuple.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -287,9 +280,6 @@ but have the capability to handle edge-cases on a per-command basis. For an exam
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The parsed payload as a tuple.</p>
-</dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p>tuple</p>
 </dd>
 </dl>
 </dd></dl>
@@ -547,6 +537,7 @@ Python integer.</p>
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.pod_packet.</span></span><span class="sig-name descname"><span class="pre">PodPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>The parent class of all POD protocol packets. Contains basic attributes common to all.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.ETX">
 <span class="sig-name descname"><span class="pre">ETX</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">b'\x03'</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.ETX" title="Link to this definition"></a></dt>
@@ -560,12 +551,22 @@ Python integer.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.command_number">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">command_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.command_number" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Packet command number. Decoded lazily and memoized for speed.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.raw_packet">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">raw_packet</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.raw_packet" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Raw bytes of packet.</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

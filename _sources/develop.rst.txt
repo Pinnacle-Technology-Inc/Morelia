@@ -83,3 +83,14 @@ automatically built via a continuous integration (CI) pipeline when a branch is 
 
 Sphinx offers a bunch of other formats to output documentation in! Fell free to explore, however we only
 use ``HTML`` for public facing docs.
+
+=========================
+Uploading to PyPI 📦
+=========================
+
+Morelia is on the Python Package Index! New versions are automatically packaged an uploaded by a GitHub Actions CI pipeline within the repo that runs
+*every time a new tag is pushed*. In order to make sure that the run succeeds, **make sure that the version of the tag you pushed matches
+the version number in the pyproject.toml file.** If these versions do not match, the run will likely fail. Specifically,
+if the version number is not updated, it will try to upload a version to PyPI that is already present, causing things to implode.
+Note that if you are not a maintainer,
+you will not have permissions to push a tag to GitHub.

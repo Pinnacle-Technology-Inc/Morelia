@@ -108,6 +108,7 @@
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet.DataPacket">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.data.data_packet.</span></span><span class="sig-name descname"><span class="pre">DataPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet.DataPacket" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="Morelia.packet.html#Morelia.packet.pod_packet.PodPacket" title="Morelia.packet.pod_packet.PodPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">PodPacket</span></code></a></p>
+<p>The parent class of all data packets. Purely used for strengthening type safety.</p>
 </dd></dl>
 
 </section>
@@ -117,50 +118,92 @@
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.data.data_packet_8206hr.</span></span><span class="sig-name descname"><span class="pre">DataPacket8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.packet.data.data_packet.DataPacket" title="Morelia.packet.data.data_packet.DataPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPacket</span></code></a></p>
+<p>This class handles decoding 8206HR data packets (previously known as Binary4 packets). It is optimized to be as effectient as possible
+for quick streaming by implementing lazy decoding via properties,
+slots, and memoization. On a binary level, data packets for the 8206HR look as
+follows:</p>
+<img alt="_images/data_packet_8206hr.png" src="_images/data_packet_8206hr.png" />
+<p>The raw packet and several values from the device (with the same names as the parameters)
+needed for calculations are passed to the constructor. Outside
+of testing, users should never be instantiating this class directly,
+that should be limited to instances of the <code class="docutils literal notranslate"><span class="pre">Pod8206HR</span></code> class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>raw_packet</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – Raw bytes of packet read from device.</p>
+</dd>
+<dt class="field-even">Preamp_gain<span class="colon">:</span></dt>
+<dd class="field-even"><p>Desired preamplifer gain. Used for decoding read values from device. Must be 10 or 100.</p>
+</dd>
+</dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch0">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch0" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 0.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch1">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch1" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 1.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch2">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ch2" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.get_primary_channel_value">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_primary_channel_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.get_primary_channel_value" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 2.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl1">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl1" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl1" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The first bit of the TTL byte.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl2">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl2" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl2" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The second bit of the TTL byte.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl3">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl3</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl3" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl3</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl3" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The third bit of the TTL byte.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl4">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl4</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl4" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl4</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8206hr.DataPacket8206HR.ttl4" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The fourth bit of the TTL byte.</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 
@@ -171,52 +214,90 @@
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR">
 <em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.data.data_packet_8401hr.</span></span><span class="sig-name descname"><span class="pre">DataPacket8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ss_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.packet.data.data_packet.DataPacket" title="Morelia.packet.data.data_packet.DataPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataPacket</span></code></a></p>
+<p>This class handles decoding 8401HR data packets (previously known as Binary5 packets). It is optimized to be as effectient as possible
+for quick streaming by implementing lazy decoding via properties, slots, and memoization. On a binary level, data packets for the 8401HR look as
+follows (this packet is big, so you may need to zoom in… sorry about that 😭):</p>
+<img alt="_images/data_packet_8401hr.png" src="_images/data_packet_8401hr.png" />
+<p>There are a couple things to note. Firstly, you may see that some
+of the byte indices are repeated between the segements containing
+the channels. That is because each 18-bit channel value is packed over 3 bytes. Meaning, for example, that bytes 7 and 8 contain entirely
+data related to CH3’s value but byte 9 is <em>mixed</em>. The first two bits
+contain the 2 least significant bits of CH3’s value, and the
+remaining six bits contain the six most significant bits of CH2’s value.</p>
+<p>Secondly, you may notice we capture both analog and digital information for each secondary channel. Based on the <code class="docutils literal notranslate"><span class="pre">secondary</span> <span class="pre">channel</span> <span class="pre">modes</span></code> passed to the packet constructor, we will present the proper value read (analog or digital) to the user.</p>
+<p>In terms of reading the digital status values, the byte is decoded as follows:</p>
+<img alt="_images/digital_byte_8401hr.png" src="_images/digital_byte_8401hr.png" />
+<p>The raw packet and several values from the device (with the same names as the parameters)
+needed for calculations are passed to the constructor. Outside
+of testing, users should never be instantiating this class directly,
+that should be limited to instances of the <code class="docutils literal notranslate"><span class="pre">Pod8401HR</span></code> class.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>preamp_gain</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Tuple storing the pramplifier gain for all four channels.</p></li>
+<li><p><strong>ss_gain</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Tuple storing the second-stage gain for all four channels.</p></li>
+<li><p><strong>primary_channel_mode</strong> – A tuple containing the mode of operation for each primary channel (EEG/EMG or Biosensor).</p></li>
+<li><p><strong>secondary_channel_modes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<a class="reference internal" href="Morelia.packet.html#Morelia.packet.channel_mode.SecondaryChannelMode" title="Morelia.packet.channel_mode.SecondaryChannelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SecondaryChannelMode</span></code></a>]</span>) – A tuple containing the mode of operation for each secondary (TTL/AEXT) channel (analog or digital).</p></li>
+<li><p><strong>raw_packet</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – Raw bytes of packet read from device.</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch0">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch0" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch1">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch1" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch2">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch2" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch3</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ext0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ext1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1" title="Link to this definition"></a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_primary_channel_value">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_primary_channel_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ss_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_primary_channel_value" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 0.</p>
 </dd>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_secondary_channel_value">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_secondary_channel_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel_mode</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_secondary_channel_value" title="Link to this definition"></a></dt>
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch1">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch1" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">DigitalSignal</span></code></a></span></p>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 1.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch2">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch2" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 2.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ch3</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from channel 3.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ext0</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from EXT0.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ext1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from EXT1.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -224,22 +305,42 @@
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl1">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl1</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl1" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from TTL1.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl2">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl2</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl2" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from TTL2.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl3">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl3</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl3" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from TTL3.</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl4">
 <em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl4</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="Morelia.signal.html#Morelia.signal.digital_signal.DigitalSignal" title="Morelia.signal.digital_signal.DigitalSignal"><span class="pre">DigitalSignal</span></a></em><a class="headerlink" href="#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl4" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Value read from TTL4.</p>
+</dd>
+</dl>
+</dd></dl>
 
 </dd></dl>
 

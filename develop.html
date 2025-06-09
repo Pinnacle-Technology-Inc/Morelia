@@ -59,6 +59,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#running-tests">Running Tests 🧪</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#building-documentation">Building Documentation 📜</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#uploading-to-pypi">Uploading to PyPI 📦</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
@@ -151,6 +152,15 @@ To build the <code class="docutils literal notranslate"><span class="pre">HTML</
 automatically built via a continuous integration (CI) pipeline when a branch is merged into <code class="docutils literal notranslate"><span class="pre">integration</span></code>.</p>
 <p>Sphinx offers a bunch of other formats to output documentation in! Fell free to explore, however we only
 use <code class="docutils literal notranslate"><span class="pre">HTML</span></code> for public facing docs.</p>
+</section>
+<section id="uploading-to-pypi">
+<h2>Uploading to PyPI 📦<a class="headerlink" href="#uploading-to-pypi" title="Link to this heading"></a></h2>
+<p>Morelia is on the Python Package Index! New versions are automatically packaged an uploaded by a GitHub Actions CI pipeline within the repo that runs
+<em>every time a new tag is pushed</em>. In order to make sure that the run succeeds, <strong>make sure that the version of the tag you pushed matches
+the version number in the pyproject.toml file.</strong> If these versions do not match, the run will likely fail. Specifically,
+if the version number is not updated, it will try to upload a version to PyPI that is already present, causing things to implode.
+Note that if you are not a maintainer,
+you will not have permissions to push a tag to GitHub.</p>
 </section>
 </section>
 
