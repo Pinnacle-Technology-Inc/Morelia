@@ -30,8 +30,8 @@ class AquisitionDevice(Pod):
 
         U16: int = Pod.GetU(16)
         
-        self._commands.AddCommand(get_sample_rate_cmd_no, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
-        self._commands.AddCommand(set_sample_rate_cmd_no, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
+        self._commands.add_command(get_sample_rate_cmd_no, 'GET SAMPLE RATE',      (0,),       (U16,),    False,   'Gets the current sample rate of the system, in Hz.')
+        self._commands.add_command(set_sample_rate_cmd_no, 'SET SAMPLE RATE',      (U16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
         
         #initialize as none so that when we ask for the sample rate later, it uses the overidden WriteRead.
         self._sample_rate: int = None

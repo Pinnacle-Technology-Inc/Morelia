@@ -206,7 +206,7 @@ class Pod :
         return(self._port.Flush())
     
     
-    def SetBaudrateOfDevice(self, baudrate: int) -> bool : 
+    def set_baudrateOfDevice(self, baudrate: int) -> bool : 
         """If the port is open, it will change the baud rate to the parameter's value.
 
         :param baudrate: Baud rate to set for the open serial port. 
@@ -214,7 +214,7 @@ class Pod :
         :return: True if successful at setting the baud rate, false otherwise.
         """
         # set baudrate of the open COM port. Returns true if successful.
-        return(self._port.SetBaudrate(baudrate))
+        return(self._port.set_baudrate(baudrate))
 
 
     def GetDeviceCommands(self) -> dict[int, list[str|tuple[int]|bool]]:

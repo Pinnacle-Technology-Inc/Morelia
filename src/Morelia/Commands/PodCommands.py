@@ -151,7 +151,7 @@ class CommandSet :
     # ============ PUBLIC METHODS ============      ========================================================================================================================
 
 
-    def GetCommands(self) -> dict[int, list[str|tuple[int]|bool|str]] :
+    def get_commands(self) -> dict[int, list[str|tuple[int]|bool|str]] :
         """Gets the contents of the current command dictionary (__commands).
 
         Returns:
@@ -163,13 +163,13 @@ class CommandSet :
         return(self.__commands)
 
 
-    def RestoreBasicCommands(self) -> None : 
+    def restore_basic_commands(self) -> None : 
         """Sets the current commands (__commands) to the basic POD command set."""
         # set commands to the basic command set 
         self.__commands = CommandSet.get_basic_commands()
 
 
-    def AddCommand(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool, description: str) -> bool:
+    def add_command(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool, description: str) -> bool:
         """Adds a command entry to the current commands dictionary (__commands) if the command does \
         not exist.
 
@@ -197,7 +197,7 @@ class CommandSet :
         return(True)
 
 
-    def RemoveCommand(self, cmd: int|str) -> bool :
+    def remove_command(self, cmd: int|str) -> bool :
         """Removes the entry for a given command in __commands dictionary. 
 
         Args:

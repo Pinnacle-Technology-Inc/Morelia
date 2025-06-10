@@ -35,33 +35,33 @@ class Pod8480SC(Pod) :
         U32 = Pod.GetU(32)
 
         # remove unimplemented commands in POD-device 8480.
-        self._commands.RemoveCommand(5)  # STATUS
-        self._commands.RemoveCommand(6)  # STREAM
-        self._commands.RemoveCommand(9)  # ID
-        self._commands.RemoveCommand(10) # SRATE
-        self._commands.RemoveCommand(11) # BINARY
+        self._commands.remove_command(5)  # STATUS
+        self._commands.remove_command(6)  # STREAM
+        self._commands.remove_command(9)  # ID
+        self._commands.remove_command(10) # SRATE
+        self._commands.remove_command(11) # BINARY
 
         # add device specific commands
-        self._commands.AddCommand( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
-        self._commands.AddCommand( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  , 'Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. ')
-        self._commands.AddCommand( 102,	'SET STIMULUS',	        (U8, U16, U16, U16, U16, U32, U8),	(0,),                                False  , 'Sets the stimulus configuration on the selected channel.  See format below.')  
-        self._commands.AddCommand( 108,	'GET TTL SETUP',	    (U8,),	                            (U8, U8),                            False  , 'Requires U8 channel.  Returns U8 config flags, and U8 debounce value in ms.  See below for config flags format.')
-        self._commands.AddCommand( 109,	'SET TTL SETUP',	    (U8,U8, U8),	                    (U8, U8),                            False  , 'Sets the TTL setup for the channel.  Format is Channel, Config Flags, Debounce in ms.  See below for config flags format.')
-        self._commands.AddCommand( 110,	'GET TTL PULLUPS',	    (0,),	                            (U8,),                               False  , 'Gets whether TTL pullups are enabled on the TTL lines.  0 = no pullups, non-zero = pullups enabled.')
-        self._commands.AddCommand( 111,	'SET TTL PULLUPS',	    (U8,),	                            (0,),                                False  , 'Sets whether pullups are enabled on the TTL lines.  0 = pullups disabled, non-zero = pullups enabled.')
-        self._commands.AddCommand( 116,	'GET LED CURRENT',	    (0,),	                            (U16, U16),                          False  , 'Gets the setting for LED current for both channels in mA.  CH0 CH1.')
-        self._commands.AddCommand( 117, 'SET LED CURRENT',	    (U8, U16),	                        (0,),                                False  , 'Requires U8 channel.  Sets the selected channel LED current to the given value in mA, from 0-600.')
-        self._commands.AddCommand( 118,	'GET ESTIM CURRENT',	(0,),	                            (U16, U16),                          False  , 'Gets the setting for the ESTIM current for both channels, in percentage.  CH0 then CH1.')
-        self._commands.AddCommand( 119,	'SET ESTIM CURRENT',	(U8, U16),	                        (0,),                                False  , 'Requires U8 channel.  Sets the selected chanenl ESTIM current to the given value in percentage, from 0-100.')
-        self._commands.AddCommand( 124,	'GET PREAMP TYPE',	    (0,),	                            (U16,),                              False  , 'Gets the store preamp value.')
-        self._commands.AddCommand( 125,	'SET PREAMP TYPE',	    (U16,),	                            (0,),                                False  , 'Sets the preamp value, from 0-1023.  This should match the table in Sirenia, it is a 10-bit code that tells the 8401 what preamp is connected.  Only needed when used with an 8401. See table below.')
-        self._commands.AddCommand( 126,	'GET SYNC CONFIG',	    (0,),	                            (U8,),                               False  , 'Gets the sync config byte.  See format below.')
-        self._commands.AddCommand( 127,	'SET SYNC CONFIG',	    (U8,),	                            (0,),                                False  , 'Sets the sync config byte.  See format below.')
+        self._commands.add_command( 100, 'RUN STIMULUS',         (U8,),                              (0,),                                False  , 'Requires U8 Channel.  Runs the stimulus on the selected channel (0 or 1).  Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes.')
+        self._commands.add_command( 101, 'GET STIMULUS',         (U8,),                              (U8, U16, U16, U16, U16, U32, U8),   False  , 'Requires U8 Channel.  Gets the current stimulus configuration for the selected channel.  See format below. ')
+        self._commands.add_command( 102,	'SET STIMULUS',	        (U8, U16, U16, U16, U16, U32, U8),	(0,),                                False  , 'Sets the stimulus configuration on the selected channel.  See format below.')  
+        self._commands.add_command( 108,	'GET TTL SETUP',	    (U8,),	                            (U8, U8),                            False  , 'Requires U8 channel.  Returns U8 config flags, and U8 debounce value in ms.  See below for config flags format.')
+        self._commands.add_command( 109,	'SET TTL SETUP',	    (U8,U8, U8),	                    (U8, U8),                            False  , 'Sets the TTL setup for the channel.  Format is Channel, Config Flags, Debounce in ms.  See below for config flags format.')
+        self._commands.add_command( 110,	'GET TTL PULLUPS',	    (0,),	                            (U8,),                               False  , 'Gets whether TTL pullups are enabled on the TTL lines.  0 = no pullups, non-zero = pullups enabled.')
+        self._commands.add_command( 111,	'SET TTL PULLUPS',	    (U8,),	                            (0,),                                False  , 'Sets whether pullups are enabled on the TTL lines.  0 = pullups disabled, non-zero = pullups enabled.')
+        self._commands.add_command( 116,	'GET LED CURRENT',	    (0,),	                            (U16, U16),                          False  , 'Gets the setting for LED current for both channels in mA.  CH0 CH1.')
+        self._commands.add_command( 117, 'SET LED CURRENT',	    (U8, U16),	                        (0,),                                False  , 'Requires U8 channel.  Sets the selected channel LED current to the given value in mA, from 0-600.')
+        self._commands.add_command( 118,	'GET ESTIM CURRENT',	(0,),	                            (U16, U16),                          False  , 'Gets the setting for the ESTIM current for both channels, in percentage.  CH0 then CH1.')
+        self._commands.add_command( 119,	'SET ESTIM CURRENT',	(U8, U16),	                        (0,),                                False  , 'Requires U8 channel.  Sets the selected chanenl ESTIM current to the given value in percentage, from 0-100.')
+        self._commands.add_command( 124,	'GET PREAMP TYPE',	    (0,),	                            (U16,),                              False  , 'Gets the store preamp value.')
+        self._commands.add_command( 125,	'SET PREAMP TYPE',	    (U16,),	                            (0,),                                False  , 'Sets the preamp value, from 0-1023.  This should match the table in Sirenia, it is a 10-bit code that tells the 8401 what preamp is connected.  Only needed when used with an 8401. See table below.')
+        self._commands.add_command( 126,	'GET SYNC CONFIG',	    (0,),	                            (U8,),                               False  , 'Gets the sync config byte.  See format below.')
+        self._commands.add_command( 127,	'SET SYNC CONFIG',	    (U8,),	                            (0,),                                False  , 'Sets the sync config byte.  See format below.')
         # The commands below are event commands and as such are outbound only.The API should handle these commands but should not send them. 
-        self._commands.AddCommand( 132,	'EVENT TTL',	        (0,),	                            (U8,),                               False  , 'Indicates a TTL event has occurred on the indicated U8 TTL input.  If debounce is non-zero then this will not occur until the debounce has completed successfully.')
-        self._commands.AddCommand( 133,	'EVENT STIM START',	    (0,),	                            (U8,),                               False  , 'Indicates the start of a stimulus.  Returns U8 channel.')
-        self._commands.AddCommand( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ,'Indicates the end of a stimulus. Returns U8 channel.')
-        self._commands.AddCommand( 135,	'EVENT LOW CURRENT',	(0,),	                            (U8,),                               False  , 'Indicates a low current status on one or more of the LED channels.  U8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1.')
+        self._commands.add_command( 132,	'EVENT TTL',	        (0,),	                            (U8,),                               False  , 'Indicates a TTL event has occurred on the indicated U8 TTL input.  If debounce is non-zero then this will not occur until the debounce has completed successfully.')
+        self._commands.add_command( 133,	'EVENT STIM START',	    (0,),	                            (U8,),                               False  , 'Indicates the start of a stimulus.  Returns U8 channel.')
+        self._commands.add_command( 134,	'EVENT STIM STOP',	    (0,),	                            (U8,),                               False  ,'Indicates the end of a stimulus. Returns U8 channel.')
+        self._commands.add_command( 135,	'EVENT LOW CURRENT',	(0,),	                            (U8,),                               False  , 'Indicates a low current status on one or more of the LED channels.  U8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1.')
         
         # function used to decode payloads of recieved control packets.
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
