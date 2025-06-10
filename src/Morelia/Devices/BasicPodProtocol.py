@@ -67,14 +67,14 @@ class Pod :
         return self._device_name
 
     @staticmethod
-    def ChoosePort(forbidden:list[str]=[]) -> str : 
+    def choose_port(forbidden:list[str]=[]) -> str : 
         """Checks user's Operating System, and chooses ports accordingly.
 
         :param forbidden: List of port names that are already used. Defaults to an empty list.
 
         :return: Name of the port.
         """
-        return FindPorts.ChoosePort(forbidden)
+        return FindPorts.choose_port(forbidden)
 
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
