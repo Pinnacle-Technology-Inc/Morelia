@@ -159,7 +159,7 @@ sentence, let's see what it looks like in our example.
    # List that defines how sources map to sinks. 
    mapping = [ (pod_1, [edf_dump_1]),
                (pod_2, [edf_dump_2, influx_sink_1]),
-               (pod_2, [influx_sink_2])]
+               (pod_3, [influx_sink_2])]
 
    flowgraph = data_flow(mapping)
 
