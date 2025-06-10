@@ -72,7 +72,7 @@ class CommandSet :
         """Runs whan an instance is constructed. It sents the commands dictionary to the basic \
         command set.
         """
-        self.__commands : dict[int,list[str|tuple[int]|bool]] = CommandSet.GetBasicCommands()
+        self.__commands : dict[int,list[str|tuple[int]|bool]] = CommandSet.get_basic_commands()
 
 
     # ============ STATIC METHODS ============  ========================================================================================================================
@@ -117,7 +117,7 @@ class CommandSet :
     
 
     @staticmethod
-    def GetBasicCommands() -> dict[int,list[str|tuple[int]|bool|str]] : 
+    def get_basic_commands() -> dict[int,list[str|tuple[int]|bool|str]] : 
         """Creates a dictionary containing the basic POD command set (0,1,2,3,4,5,6,7,8,9,10,11,12).
 
         Returns:
@@ -166,7 +166,7 @@ class CommandSet :
     def RestoreBasicCommands(self) -> None : 
         """Sets the current commands (__commands) to the basic POD command set."""
         # set commands to the basic command set 
-        self.__commands = CommandSet.GetBasicCommands()
+        self.__commands = CommandSet.get_basic_commands()
 
 
     def AddCommand(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool, description: str) -> bool:
