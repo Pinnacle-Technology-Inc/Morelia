@@ -186,8 +186,8 @@ class CommandSet :
                 because it already exists.
         """
         # command number and name must not already exist 
-        if(    self.DoesCommandExist(commandNumber)
-            or self.DoesCommandExist(commandName)
+        if(    self.does_command_exist(commandNumber)
+            or self.does_command_exist(commandName)
         ):
             # return false to mark failed add 
             return(False)
@@ -207,11 +207,11 @@ class CommandSet :
             bool: True if the command was successfully removed, False if the command does not exist. 
         """
         # return false if command is not in dict 
-        if(not self.DoesCommandExist(cmd)): 
+        if(not self.does_command_exist(cmd)): 
             return(False)
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.CommandNumberFromName(cmd)
+            cmdNum = self.command_number_from_name(cmd)
         else: 
             cmdNum = cmd
         # remove entry in dict
@@ -220,7 +220,7 @@ class CommandSet :
         return(True)
 
 
-    def CommandNumberFromName(self, name: str) -> int|None : 
+    def command_number_from_name(self, name: str) -> int|None : 
         """Gets the command number from the command dictionary using the command's name.
 
         Args:
@@ -238,7 +238,7 @@ class CommandSet :
         return(None)
 
 
-    def ArgumentHexChar(self, cmd: int|str) -> tuple[int]|None : 
+    def argument_hex_char(self, cmd: int|str) -> tuple[int]|None : 
         """Gets the tuple for the number of hex characters in the argument for a given command.
 
         Args:
@@ -248,10 +248,10 @@ class CommandSet :
             tuple[int]|None: Tuple representing the number of bytes in the argument for cmd. If the \
                 command could not be found, return None.
         """
-        return( self.Search(cmd, self.__ARGUMENTS) )
+        return( self.search(cmd, self.__ARGUMENTS) )
 
 
-    def ReturnHexChar(self, cmd: int|str) -> tuple[int]|None : 
+    def return_hex_char(self, cmd: int|str) -> tuple[int]|None : 
         """Gets the tuple for the number of hex characters in the return for a given command.
 
         Args:
@@ -261,10 +261,10 @@ class CommandSet :
             tuple[int]|None: Tuple representing the number of hex characters in the return for cmd. If the \
                 command could not be found, return None.
         """
-        return( self.Search(cmd, self.__RETURNS) )
+        return( self.search(cmd, self.__RETURNS) )
 
 
-    def IsCommandBinary(self, cmd: int|str) -> bool|None :
+    def is_command_binary(self, cmd: int|str) -> bool|None :
         """Gets the binary flag for a given command.
 
         Args:
@@ -274,10 +274,10 @@ class CommandSet :
             bool|None: Boolean flag that is True if the command is binary and False if standard. If the \
                 command could not be found, return None.
         """
-        return( self.Search(cmd, self.__BINARY) )
+        return( self.search(cmd, self.__BINARY) )
 
 
-    def Description(self, cmd: int|str) -> str|None : 
+    def description(self, cmd: int|str) -> str|None : 
         """Gets the description for a given command.
 
         Args:
@@ -287,11 +287,11 @@ class CommandSet :
             str|None: String description for the command. If the command could not be found, \
                 return None.
         """
-        return( self.Search(cmd, self.__DESCRIPTION) )
+        return( self.search(cmd, self.__DESCRIPTION) )
 
 
 
-    def DoesCommandExist(self, cmd: int|str) -> bool : 
+    def does_command_exist(self, cmd: int|str) -> bool : 
         """Checks if a command exists in the __commands dictionary.
 
         Args:
@@ -300,10 +300,10 @@ class CommandSet :
         Returns:
             bool: True if the command exists, false otherwise.
         """
-        return( self.Search(cmd) )
+        return( self.search(cmd) )
 
 
-    def Search(self, cmd: int|str, idx: int = None) -> str|tuple[int]|bool|str|None :
+    def search(self, cmd: int|str, idx: int = None) -> str|tuple[int]|bool|str|None :
         """Searches the __commands dictionary for the command. 
 
         Args:
@@ -327,7 +327,7 @@ class CommandSet :
         else:               return(False)
         
         
-    def ValidateCommand(self, cmd: str|int, pld: int|bytes|tuple[int|bytes]|None=None) : 
+    def validate_command(self, cmd: str|int, pld: int|bytes|tuple[int|bytes]|None=None) : 
         """Raises an exception if the command and its payload are invalid for this POD device. 
 
         Args:
@@ -347,11 +347,11 @@ class CommandSet :
         """
         
         # check if command exists first 
-        if( not self.DoesCommandExist(cmd) ) :
+        if( not self.does_command_exist(cmd) ) :
             raise Exception('[!] Command '+str(cmd)+' does not exist.')
 
         # get argument lengths  
-        args: tuple[int] = self.ArgumentHexChar(cmd)
+        args: tuple[int] = self.argument_hex_char(cmd)
         
         # check if no payload is needed
         if(sum(args) == 0) : 

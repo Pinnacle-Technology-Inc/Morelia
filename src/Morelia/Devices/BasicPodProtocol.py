@@ -235,7 +235,7 @@ class Pod :
         :return: True for successful connection, false otherwise.
             
         """
-        if(not self._commands.DoesCommandExist(pingCmd)) : 
+        if(not self._commands.does_command_exist(pingCmd)) : 
             raise Exception('[!] Ping command \''+str(pingCmd)+'\' does not exist for this POD device.')
         # returns True when connection is successful, false otherwise
         try:
@@ -259,19 +259,19 @@ class Pod :
         :return: Bytes string of the POD packet. 
         """
         # return False if command is not valid
-        if(not self._commands.DoesCommandExist(cmd)) : 
+        if(not self._commands.does_command_exist(cmd)) : 
             raise Exception('POD command does not exist.')
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum : int = self._commands.CommandNumberFromName(cmd)
+            cmdNum : int = self._commands.command_number_from_name(cmd)
         else: 
             cmdNum : int = cmd
         # get length of expected paylaod 
-        argSizes = self._commands.ArgumentHexChar(cmdNum)
+        argSizes = self._commands.argument_hex_char(cmdNum)
         # check if command requires a payload
         if( sum(argSizes) > 0 ): 
             # raise exception if command is invalid
-            self._commands.ValidateCommand(cmdNum, payload)
+            self._commands.validate_command(cmdNum, payload)
             # get payload in bytes
             pld = Pod.PayloadToBytes(payload, argSizes)
         else :
@@ -355,10 +355,10 @@ class Pod :
         # determine the command number
         cmdNum: int = conv.ascii_bytes_to_int(cmd)
         # check if command number is valid
-        if( not self._commands.DoesCommandExist(cmdNum) ) :
+        if( not self._commands.does_command_exist(cmdNum) ) :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
-        if( self._commands.IsCommandBinary(cmdNum) ) : # binary read
+        if( self._commands.is_command_binary(cmdNum) ) : # binary read
             packet: DataPacket = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read
             packet: ControlPacket = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
