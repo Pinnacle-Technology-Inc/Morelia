@@ -93,7 +93,7 @@ class Pod8206HR(AquisitionDevice) :
         """
 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._ValidateChecksum(packet) ) :

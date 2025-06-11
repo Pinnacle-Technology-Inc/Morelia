@@ -307,7 +307,7 @@ class Pod :
         # POD packet 
         packet = self.GetPODpacket(cmd, payload)
         # write packet to serial port 
-        self._port.Write(packet)
+        self._port.write(packet)
         # returns packet that was written
         return ControlPacket(self._commands, packet)
 
@@ -325,7 +325,7 @@ class Pod :
         # read until STX is found
         b = None
         while(b != PodPacket.STX) :
-            b = self._port.Read(1,timeout_sec)     # read next byte  
+            b = self._port.read(1,timeout_sec)     # read next byte  
         # continue reading packet  
         packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
         # return final packet
@@ -381,7 +381,7 @@ class Pod :
         # read next 4 bytes to get command number
         while(cmdCounter < 4) : 
             # read next byte 
-            b = self._port.Read(1)
+            b = self._port.read(1)
             cmdCounter += 1
             # build command packet 
             if(cmd == None) : 
@@ -412,7 +412,7 @@ class Pod :
         # stop reading after finding ETX
         while(b != PodPacket.ETX) : 
             # read next byte
-            b = self._port.Read(1)
+            b = self._port.read(1)
             # build packet 
             if(packet == None) : 
                 packet = b
@@ -462,7 +462,7 @@ class Pod :
         # get length of binary packet 
         numOfbinaryBytes: int = startPacket.payload[0]
         # read binary packet
-        binaryMsg = self._port.Read(numOfbinaryBytes)
+        binaryMsg = self._port.read(numOfbinaryBytes)
         # read csm and etx
         binaryEnd = self._Read_ToETX(validateChecksum=validateChecksum)
         # build complete message
