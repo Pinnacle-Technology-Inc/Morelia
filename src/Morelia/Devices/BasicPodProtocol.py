@@ -347,7 +347,7 @@ class Pod :
         # start packet with STX
         packet: bytes = PodPacket.STX
         # read next 4 bytes of the command number 
-        cmd: bytes = self._Read_GetCommand(validateChecksum=validateChecksum)
+        cmd: bytes = self._read_get_command(validateChecksum=validateChecksum)
         packet += cmd 
         # return packet if cmd ends in ETX
         if(cmd[len(cmd)-1].to_bytes(1,'big') == PodPacket.ETX) : 
@@ -359,14 +359,14 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmdNum)
         # then check if it is standard or binary
         if( self._commands.is_command_binary(cmdNum) ) : # binary read
-            packet: DataPacket = self._Read_Binary(prePacket=packet, validateChecksum=validateChecksum)
+            packet: DataPacket = self._read_binary(prePacket=packet, validateChecksum=validateChecksum)
         else : # standard read
-            packet: ControlPacket = self._Read_Standard(prePacket=packet, validateChecksum=validateChecksum)
+            packet: ControlPacket = self._read_standard(prePacket=packet, validateChecksum=validateChecksum)
         # return packet
         return(packet)
 
 
-    def _Read_GetCommand(self, validateChecksum:bool=True) -> bytes : 
+    def _read_get_command(self, validateChecksum:bool=True) -> bytes : 
         """Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each \
         byte read, it can (1) start the recursion over if an STX is found, (2) returns if ETX is found, or \
         (3) continue building the command number. 
@@ -398,7 +398,7 @@ class Pod :
         return(cmd)
 
 
-    def _Read_ToETX(self, validateChecksum:bool=True) -> bytes : 
+    def _read_to_etx(self, validateChecksum:bool=True) -> bytes : 
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
         is found anywhere. 
 
@@ -425,7 +425,7 @@ class Pod :
         return(packet)
 
 
-    def _Read_Standard(self, prePacket: bytes, validateChecksum:bool=True) -> ControlPacket:
+    def _read_standard(self, prePacket: bytes, validateChecksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
 
         :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
@@ -434,7 +434,7 @@ class Pod :
         :return: Complete standard POD packet.
         """
         # read until ETX 
-        packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._read_to_etx(validateChecksum=validateChecksum)
         # check for valid  
         if(validateChecksum) :
             if( not self._validate_checksum(packet) ) :
@@ -443,7 +443,7 @@ class Pod :
         return self._control_packet_factory(packet)
 
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket :
+    def _read_binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
         packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
@@ -458,13 +458,13 @@ class Pod :
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
         # read standard POD packet 
-        startPacket: ControlPacket = self._Read_Standard(prePacket, validateChecksum=validateChecksum)
+        startPacket: ControlPacket = self._read_standard(prePacket, validateChecksum=validateChecksum)
         # get length of binary packet 
         numOfbinaryBytes: int = startPacket.payload[0]
         # read binary packet
         binaryMsg = self._port.read(numOfbinaryBytes)
         # read csm and etx
-        binaryEnd = self._Read_ToETX(validateChecksum=validateChecksum)
+        binaryEnd = self._read_to_etx(validateChecksum=validateChecksum)
         # build complete message
         packet = startPacket.raw_packet + binaryMsg + binaryEnd
         # check if checksum is correct 

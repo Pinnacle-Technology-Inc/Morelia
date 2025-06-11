@@ -350,7 +350,7 @@ class Pod8401HR(AquisitionDevice) :
         return(int( (vout / 2.048) * 32768. ))
         
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8401HR:
+    def _read_binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8401HR:
         """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. See documentation of DataPacket8401HR 
         for what the recieved packet looks like on a binary level.
 
@@ -361,7 +361,7 @@ class Pod8401HR(AquisitionDevice) :
         """
         
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(23) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.Read(23) + self._read_to_etx(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._validate_checksum(packet) ) :

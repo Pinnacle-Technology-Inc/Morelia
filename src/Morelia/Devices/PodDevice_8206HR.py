@@ -48,7 +48,7 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(105, 'GET TTL IN',           (U8,),      (U8,),     False,   'Sets the selected TTL pin (0,1,2,3) to an input and returns the value (0-1).')
         self._commands.add_command(106, 'GET TTL PORT',         (0,),       (U8,),     False,   'Gets the value of the entire TTL port as a byte. Does not modify pin direction.')
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (U8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
-        self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (B4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _Read_Binary()
+        self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (B4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
 
         # preamplifier gain (should be 10x or 100x)
         if(preampGain != 10 and preampGain != 100):
@@ -82,7 +82,7 @@ class Pod8206HR(AquisitionDevice) :
             'TTL4' : conv.ascii_bytes_to_int_split(ttlByte, 5, 4)  # TTL 3 
         }, )   
 
-    def _Read_Binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8206HR :
+    def _read_binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8206HR :
         """After receiving the prePacket, it reads the 8 bytes(TTL+channels) and then reads to ETX (checksum+ETX). 
         See the documentation of ``DataPacket8206HR`` for my details on what this packet looks like at a protocol level.
 
@@ -93,7 +93,7 @@ class Pod8206HR(AquisitionDevice) :
         """
 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.read(8) + self._Read_ToETX(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.read(8) + self._read_to_etx(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._validate_checksum(packet) ) :
