@@ -30,9 +30,9 @@ class Pod8480SC(Pod) :
         super().__init__(port, baudrate=baudrate, device_name=device_name) 
 
         # get constants for adding commands 
-        U8  = Pod.GetU(8)
-        U16 = Pod.GetU(16)
-        U32 = Pod.GetU(32)
+        U8  = Pod.get_u(8)
+        U16 = Pod.get_u(16)
+        U32 = Pod.get_u(32)
 
         # remove unimplemented commands in POD-device 8480.
         self._commands.remove_command(5)  # STATUS

@@ -33,9 +33,9 @@ class Pod8229(Pod) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate, device_name=device_name) 
         # get constants for adding commands 
-        U8  = Pod.GetU(8)
-        U16 = Pod.GetU(16)
-        NOVALUE = Pod.GetU(0)
+        U8  = Pod.get_u(8)
+        U16 = Pod.get_u(16)
+        NOVALUE = Pod.get_u(0)
         # remove unimplemented commands 
         self._commands.remove_command( 4) # ERROR
         self._commands.remove_command( 5) # STATUS
@@ -189,7 +189,7 @@ class Pod8229(Pod) :
 
         :returns: Tupke containg day and schedule for day.
         """
-        U8 = Pod8229.GetU(8)
+        U8 = Pod8229.get_u(8)
         day = conv.ascii_bytes_to_int(dayschedule[:U8])
         schedule = Pod8229.DecodeDaySchedule(dayschedule[U8:])
         return (day, schedule)
@@ -212,7 +212,7 @@ class Pod8229(Pod) :
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
-        topBit = Pod.GetU(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
+        topBit = Pod.get_u(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
         while(topBit > 0 ) : 
             hours.append( conv.ascii_bytes_to_int_split( hourBytes, topBit, topBit-1))
             topBit -= 1
@@ -444,6 +444,6 @@ class Pod8229(Pod) :
         """
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
-        if( len(schedule) != size * Pod.GetU(8) ) : 
+        if( len(schedule) != size * Pod.get_u(8) ) : 
             raise Exception('[!] The schedule must have U8x'+str(size)+'.')
         return(schedule)

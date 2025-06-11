@@ -33,10 +33,10 @@ class Pod8274D(AquisitionDevice) :
         # initialize POD_Basics
         super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210) 
         # get constants for adding commands 
-        U8  = Pod.GetU(8)
-        U16 = Pod.GetU(16)
-        U32 = Pod.GetU(32)
-        NOVALUE = Pod.GetU(0)
+        U8  = Pod.get_u(8)
+        U16 = Pod.get_u(16)
+        U32 = Pod.get_u(32)
+        NOVALUE = Pod.get_u(0)
         # add device specific commands
         self._commands.add_command(100, 'LOCAL SCAN',               (U8,),                   (U16,),              False, 'Enables or disables scan.  1 enables, 0 disables.  Returns SL_STATUS_T status code, 0x0000 is success, all others are error codes.')
         self._commands.add_command(101, 'DEVICE LIST INFO',         (U8,),                   tuple([U8]*24),      False, 'Information string about a scanned device - includes advertising index, bluetooth address, and device name.')

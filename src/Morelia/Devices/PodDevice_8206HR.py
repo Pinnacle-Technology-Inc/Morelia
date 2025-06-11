@@ -31,8 +31,8 @@ class Pod8206HR(AquisitionDevice) :
         super().__init__(port, 2000, baudrate, device_name) 
 
         # get constants for adding commands 
-        U8  = Pod.GetU(8)
-        U16 = Pod.GetU(16)
+        U8  = Pod.get_u(8)
+        U16 = Pod.get_u(16)
         B4  = 8
 
         # remove unimplemented commands 

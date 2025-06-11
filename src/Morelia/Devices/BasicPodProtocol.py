@@ -48,7 +48,7 @@ class Pod :
 
 
     @staticmethod
-    def GetU(u: int) -> int : 
+    def get_u(u: int) -> int : 
         """Number of hexadecimal characters for an unsigned u-bit value.
 
         :param u: 8, 16, or 32 bits. Enter any other number for NOVALUE.

@@ -69,8 +69,8 @@ class Pod8401HR(AquisitionDevice) :
         self._preamp: Preamp = preamp
 
         # get constants for adding commands 
-        U8  = Pod.GetU(8)
-        U16 = Pod.GetU(16)
+        U8  = Pod.get_u(8)
+        U16 = Pod.get_u(16)
         B5  = 23
 
         # remove unimplemented commands 
