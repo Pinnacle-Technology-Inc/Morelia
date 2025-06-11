@@ -80,7 +80,7 @@ class Pod :
 
 
     @staticmethod
-    def _ValidateChecksum(msg: bytes) -> bool :
+    def _validate_checksum(msg: bytes) -> bool :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
@@ -105,7 +105,7 @@ class Pod :
         msgPacket = msg[1:packetBytes-3]
         msgCsm = msg[packetBytes-3:packetBytes-1]
         # calculate checksum from content packet  
-        csmValid = Pod.Checksum(msgPacket)
+        csmValid = Pod.checksum(msgPacket)
         # return True if checksums match 
         if(msgCsm == csmValid) :
             return(True)
@@ -115,7 +115,7 @@ class Pod :
 
 
     @staticmethod
-    def Checksum(bytesIn: bytes) -> bytes:
+    def checksum(bytesIn: bytes) -> bytes:
         """Calculates the checksum of a given bytes message. This is achieved by summing each byte in the 
         message, inverting, and taking the last byte.
 
@@ -136,7 +136,7 @@ class Pod :
 
 
     @staticmethod
-    def BuildPODpacket_Standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
+    def build_pod_packet_standard(commandNumber: int, payload:bytes|None=None) -> bytes : 
         """Builds a standard POD packet (control packet) as bytes: STX (1 byte) + command number (4 bytes) \
         + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).
 
@@ -152,18 +152,18 @@ class Pod :
         etx = PodPacket.ETX                              # ETX indicating end of packet (1 byte)
         # build packet with payload 
         if(payload) :
-            csm = Pod.Checksum(cmd+payload)         # checksum (2 bytes)
+            csm = Pod.checksum(cmd+payload)         # checksum (2 bytes)
             packet = stx + cmd + payload + csm + etx        # pod packet with payload (8 + payload bytes)
         # build packet with NO payload 
         else :
-            csm = Pod.Checksum(cmd)                 # checksum (2 bytes)
+            csm = Pod.checksum(cmd)                 # checksum (2 bytes)
             packet = stx + cmd + csm + etx                  # pod packet (8 bytes)
         # return complete bytes packet
         return(packet)
 
     
     @staticmethod
-    def PayloadToBytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
+    def payload_to_bytes(payload: int|bytes|tuple[int|bytes], argSizes: tuple[int]) -> bytes :
         """Converts a payload into a bytes string (assuming that the payload is for a valid command).
 
             :param payload: Integer, bytes, or tuple containing the payload.
@@ -198,7 +198,7 @@ class Pod :
             
     
 
-    def FlushPort(self) -> bool : 
+    def flush_port(self) -> bool : 
         """Reset the input and output serial port buffer.
 
         :return: True of the buffers are flushed, False otherwise.
@@ -206,7 +206,7 @@ class Pod :
         return(self._port.Flush())
     
     
-    def set_baudrateOfDevice(self, baudrate: int) -> bool : 
+    def set_baudrate_of_device(self, baudrate: int) -> bool : 
         """If the port is open, it will change the baud rate to the parameter's value.
 
         :param baudrate: Baud rate to set for the open serial port. 
@@ -217,7 +217,7 @@ class Pod :
         return(self._port.set_baudrate(baudrate))
 
 
-    def GetDeviceCommands(self) -> dict[int, list[str|tuple[int]|bool]]:
+    def get_device_commands(self) -> dict[int, list[str|tuple[int]|bool]]:
         """Gets the dictionary containing the class instance's available POD commands.
 
         :return: Dictionary containing the available commands and their \
@@ -227,7 +227,7 @@ class Pod :
         # Get commands from this instance's command dict object 
         return(self._commands.GetCommands())
     
-    def TestConnection(self, pingCmd:str|int='PING') -> bool :
+    def test_connection(self, pingCmd:str|int='PING') -> bool :
         """Tests if a POD device can be read from or written. Sends a PING command. 
 
         :param pingCmd: Command name or number to ping. Defaults to 'PING'.
@@ -239,16 +239,16 @@ class Pod :
             raise Exception('[!] Ping command \''+str(pingCmd)+'\' does not exist for this POD device.')
         # returns True when connection is successful, false otherwise
         try:
-            self.FlushPort() # clear out any unread packets 
-            w: ControlPacket = self.WritePacket(cmd=pingCmd)
-            r: PodPacket = self.ReadPODpacket()
+            self.flush_port() # clear out any unread packets 
+            w: ControlPacket = self.write_packet(cmd=pingCmd)
+            r: PodPacket = self.read_pod_packet()
         except:   return(False)
         # check that read matches ping write
         if(w ==r ): return(True)
         return(False)
     
 
-    def GetPODpacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
+    def get_pod_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> bytes :
         """Builds a POD packet and writes it to a POD device via COM port. If an integer payload is give, \
         the method will convert it into a bytes string of the length expected by the command. If a bytes \
         payload is given, it must be the correct length. 
@@ -273,15 +273,15 @@ class Pod :
             # raise exception if command is invalid
             self._commands.validate_command(cmdNum, payload)
             # get payload in bytes
-            pld = Pod.PayloadToBytes(payload, argSizes)
+            pld = Pod.payload_to_bytes(payload, argSizes)
         else :
             pld = None
         # build POD packet 
-        packet = Pod.BuildPODpacket_Standard(cmdNum, payload=pld)
+        packet = Pod.build_pod_packet_standard(cmdNum, payload=pld)
         # return complete packet 
         return(packet)
     
-    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
+    def write_read(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Writes a command with optional payload to POD device, then reads (once) the device response.
 
         :param cmd: Command number. 
@@ -291,12 +291,12 @@ class Pod :
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
-        self.WritePacket(cmd, payload)
-        r = self.ReadPODpacket(validateChecksum, timeout_sec)
+        self.write_packet(cmd, payload)
+        r = self.read_pod_packet(validateChecksum, timeout_sec)
         return(r)
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
+    def write_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
         """Builds a POD packet and writes it to the POD device. 
 
         :param cmd: Command number.
@@ -305,14 +305,14 @@ class Pod :
         :return: Packet that was written to the POD device.
         """
         # POD packet 
-        packet = self.GetPODpacket(cmd, payload)
+        packet = self.get_pod_packet(cmd, payload)
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
         return ControlPacket(self._commands, packet)
 
 
-    def ReadPODpacket(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
+    def read_pod_packet(self, validateChecksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
         ending with ETX. Reads first STX and then starts recursion. 
 
@@ -327,14 +327,14 @@ class Pod :
         while(b != PodPacket.STX) :
             b = self._port.read(1,timeout_sec)     # read next byte  
         # continue reading packet  
-        packet = self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
+        packet = self._read_pod_packet_recursive(validateChecksum=validateChecksum)
         # return final packet
         return(packet)
 
 
 
 
-    def _ReadPODpacket_Recursive(self, validateChecksum:bool=True) -> PodPacket : 
+    def _read_pod_packet_recursive(self, validateChecksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
         binary and reads accordingly, then returns the packet.
@@ -390,7 +390,7 @@ class Pod :
                 cmd += b
             # start over if STX is found 
             if(b == PodPacket.STX ) : 
-                self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
+                self._read_pod_packet_recursive(validateChecksum=validateChecksum)
             # return if ETX is found
             if(b == PodPacket.ETX ) : 
                 return(cmd)
@@ -420,7 +420,7 @@ class Pod :
                 packet += b
             # start over if STX
             if(b == PodPacket.STX) : 
-                self._ReadPODpacket_Recursive(validateChecksum=validateChecksum)
+                self._read_pod_packet_recursive(validateChecksum=validateChecksum)
         # return packet
         return(packet)
 
@@ -437,7 +437,7 @@ class Pod :
         packet = prePacket + self._Read_ToETX(validateChecksum=validateChecksum)
         # check for valid  
         if(validateChecksum) :
-            if( not self._ValidateChecksum(packet) ) :
+            if( not self._validate_checksum(packet) ) :
                 raise Exception('Bad checksum for standard POD packet read.')
         # return packet
         return self._control_packet_factory(packet)
@@ -469,7 +469,7 @@ class Pod :
         packet = startPacket.raw_packet + binaryMsg + binaryEnd
         # check if checksum is correct 
         if(validateChecksum):
-            csmCalc = Pod.Checksum(binaryMsg)
+            csmCalc = Pod.checksum(binaryMsg)
             csm = binaryEnd[0:2]
             if(csm != csmCalc) : 
                 raise Exception('Bad checksum for binary POD packet read.')

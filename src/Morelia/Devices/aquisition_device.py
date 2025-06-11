@@ -47,7 +47,7 @@ class AquisitionDevice(Pod):
     def sample_rate(self) -> int:
         """Currently set sample rate."""
         if self._sample_rate is None:
-            self._sample_rate = self.WriteRead('GET SAMPLE RATE').payload
+            self._sample_rate = self.write_read('GET SAMPLE RATE').payload
         return self._sample_rate[0]
 
     @sample_rate.setter
@@ -55,7 +55,7 @@ class AquisitionDevice(Pod):
         if rate > self.max_sample_rate:
             raise ValueError(f'The maximum allowable sample rate is {self.max_sample_rate} Hz.')
 
-        self.WriteRead('SET SAMPLE RATE', (rate,))
+        self.write_read('SET SAMPLE RATE', (rate,))
         self._sample_rate: int = rate
     
     def __enter__(self) -> Self:
@@ -64,20 +64,20 @@ class AquisitionDevice(Pod):
         #after streaming data due to a race condition in the device's
         #firmware. Therefore, we leave dealing with the response packet
         #to the user.
-        self.WritePacket('STREAM', 1)
+        self.write_packet('STREAM', 1)
 
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
 
-        self.WritePacket('STREAM', 0)
+        self.write_packet('STREAM', 0)
         
         #get any packets that may have arrived between the user ending stream
         #and the command being received from the device + plus the response
         #packet from earlier.
         while True:
             try:
-                self.ReadPODpacket(timeout_sec=1)
+                self.read_pod_packet(timeout_sec=1)
             except TimeoutError:
                 break
         

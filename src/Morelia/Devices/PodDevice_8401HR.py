@@ -364,7 +364,7 @@ class Pod8401HR(AquisitionDevice) :
         packet = prePacket + self._port.Read(23) + self._Read_ToETX(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
-            if(not self._ValidateChecksum(packet) ) :
+            if(not self._validate_checksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return self._stream_packet_factory(packet)

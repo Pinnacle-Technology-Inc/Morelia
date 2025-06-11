@@ -265,7 +265,7 @@ class Pod8229(Pod) :
 
 
 
-    def WritePacket(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket :
+    def write_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket :
         """Builds a POD packet and writes it to the POD device. 
 
         :param cmd: Command number.
@@ -278,9 +278,9 @@ class Pod8229(Pod) :
         """
         # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
-            packet: ControlPacket = super().WritePacket(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
+            packet: ControlPacket = super().write_packet(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
         else :
-            packet: ControlPacket = super().WritePacket(cmd,payload)
+            packet: ControlPacket = super().write_packet(cmd,payload)
 
         # returns packet object
         return(packet)

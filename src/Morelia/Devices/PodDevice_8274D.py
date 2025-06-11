@@ -105,7 +105,7 @@ class Pod8274D(AquisitionDevice) :
     
     #------------------------OVERWRITE---------------------------------------------#
     
-    def WriteRead(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
+    def write_read(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validateChecksum:bool=True) -> Packet:
         """Writes a command with optional payload to POD device, then reads (once) the device response.
         8274D works differently compared to other devices as it is bluetooth based. Some commands require a re-read from the
         Pod Device, in order to get the right payload back. Each Get and Set Command will generate a Procedure Complete (command 211) indicating a successful write/read.
@@ -125,13 +125,13 @@ class Pod8274D(AquisitionDevice) :
         :meta private:
         """
         #print(cmd)
-        self.WritePacket(cmd, payload)
-        r = self.ReadPODpacket()
+        self.write_packet(cmd, payload)
+        r = self.read_pod_packet()
         if cmd in ['LOCAL SCAN'] :
             max_retries = 3  # Maximum number of retries
             retries = 0
             while retries < max_retries:
-                r = self.ReadPODpacket()
+                r = self.read_pod_packet()
                 if not r:
                     print("No response from device. Waiting for 5 seconds before retrying...")
                     time.sleep(5)  # Wait for 5 seconds
@@ -140,9 +140,9 @@ class Pod8274D(AquisitionDevice) :
                 if r.command_number == 101 and len(r.payload) > 1:
                     return r  
         if cmd in ['CONNECT BY ADDRESS', 'GET NAME', 'SET SAMPLE RATE', 'GET SAMPLE RATE', 'SET PERIOD']:
-            read: Packet = self.ReadPODpacket()
+            read: Packet = self.read_pod_packet()
             if cmd == 'GET NAME':
-                read: Packet = self.ReadPODpacket()
+                read: Packet = self.read_pod_packet()
                 name = read.payload
                 return name
             if cmd == 'GET SAMPLE RATE':
@@ -150,6 +150,6 @@ class Pod8274D(AquisitionDevice) :
                 return data['Payload'][0]
         elif cmd == 'STREAM':
             while True:
-                x = self.ReadPODpacket(validateChecksum)
+                x = self.read_pod_packet(validateChecksum)
                 data: dict = x.TranslateAll()
         return r
