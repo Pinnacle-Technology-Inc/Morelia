@@ -22,8 +22,8 @@ class Pod8401HR(AquisitionDevice) :
     :param preamp: Device/sensor connected to the the 8401HR.
     :param primary_channel_mode: A tuple containing the mode of operation for each primary channel (EEG/EMG or Biosensor).
     :param secondary_channel_modes: A tuple containing the mode of operation for each secondary (TTL/AEXT) channel (analog or digital).
-    :param ssGain: Tuple storing the second-stage gain for all four channels. Defaults to ``(None, None, None, None)``.
-    :param preampGain: Tuple storing the pramplifier gain for all four channels. Defaults to ``(None, None, None, None)``.
+    :param ss_gain: Tuple storing the second-stage gain for all four channels. Defaults to ``(None, None, None, None)``.
+    :param preamp_gain: Tuple storing the pramplifier gain for all four channels. Defaults to ``(None, None, None, None)``.
     :param baudrate: Integer baud rate of the opened serial port. Used when initializing the COM_io instance. Defaults to 9600.
     :param device_name: Virtual name used to indentify device.
     """
@@ -52,14 +52,14 @@ class Pod8401HR(AquisitionDevice) :
                  preamp: Preamp,
                  primary_channel_modes: tuple[PrimaryChannelMode] ,
                  secondary_channel_modes: tuple[SecondaryChannelMode],
-                 ssGain: tuple[int|None]=(None, None, None, None), 
-                 preampGain: tuple[int|None]=(None, None, None, None), 
+                 ss_gain: tuple[int|None]=(None, None, None, None), 
+                 preamp_gain: tuple[int|None]=(None, None, None, None), 
                  baudrate:int=9600,
                  device_name: str | None = None
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
-        the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ssGain \
-        and _preampGain.
+        the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ss_gain \
+        and _preamp_gain.
         """
 
              # initialize POD_Basics
@@ -109,20 +109,20 @@ class Pod8401HR(AquisitionDevice) :
         # at some point as this class containes to be rewritten.
 
         # set second stage gain.
-        ssGain_dict = self._fix_abcd_type(ssGain, thisIs='ssGain ')
-        self._validate_ss_gain(ssGain_dict)
-        self._ssGain : dict[str,int|None] = ssGain_dict         
+        ss_gain_dict = self._fix_abcd_type(ss_gain, this_is='ss_gain ')
+        self._validate_ss_gain(ss_gain_dict)
+        self._ss_gain : dict[str,int|None] = ss_gain_dict         
 
-        preampGain_dict = self._fix_abcd_type(preampGain, thisIs='preampGain')
-        self._validate_preamp_gain(preampGain_dict)
-        self._preampGain : dict[str,int|None] = preampGain_dict
+        preamp_gain_dict = self._fix_abcd_type(preamp_gain, this_is='preamp_gain')
+        self._validate_preamp_gain(preamp_gain_dict)
+        self._preamp_gain : dict[str,int|None] = preamp_gain_dict
         
         # set channel modes.
         self._primary_channel_modes = primary_channel_modes
         self._secondary_channel_modes = secondary_channel_modes
         
         # function used for constructing packets from stream data.
-        self._stream_packet_factory = partial(DataPacket8401HR, preampGain, ssGain, self._primary_channel_modes, self._secondary_channel_modes)
+        self._stream_packet_factory = partial(DataPacket8401HR, preamp_gain, ss_gain, self._primary_channel_modes, self._secondary_channel_modes)
         
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
@@ -139,11 +139,11 @@ class Pod8401HR(AquisitionDevice) :
         return self._preamp
 
     @staticmethod
-    def _fix_abcd_type(info: tuple|list|dict, thisIs: str = '') -> dict : 
+    def _fix_abcd_type(info: tuple|list|dict, this_is: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
 
         :param info: Variable to be converted into a dictionary. 
-        :param thisIs: Description of the info argument, which is used in Exception statements. Defaults to ''.
+        :param this_is: Description of the info argument, which is used in Exception statements. Defaults to ''.
 
         :return: The info argument converted to a dictionary with A, B, C, and D as keys.  
         """
@@ -151,7 +151,7 @@ class Pod8401HR(AquisitionDevice) :
         if(isinstance(info, dict)) : 
             # check keys
             if(list(info.keys()).sort() != ['A','B','C','D'].sort()) : 
-                raise Exception('[!] The '+str(thisIs)+'dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')        
+                raise Exception('[!] The '+str(this_is)+'dictionary has improper keys; keys must be [\'A\',\'B\',\'C\',\'D\'].')        
             return info
         # check for array-like type 
         if(isinstance(info, tuple|list) ) : 
@@ -162,8 +162,8 @@ class Pod8401HR(AquisitionDevice) :
                         'B' : info[1],
                         'C' : info[2],
                         'D' : info[3] }
-            raise Exception('[!] The '+str(thisIs)+'argument must have only four values.') 
-        raise Exception('[!] The '+str(thisIs)+'argument must be a tuple, list, or dict.')
+            raise Exception('[!] The '+str(this_is)+'argument must have only four values.') 
+        raise Exception('[!] The '+str(this_is)+'argument must be a tuple, list, or dict.')
     
 
     @staticmethod
@@ -173,32 +173,32 @@ class Pod8401HR(AquisitionDevice) :
         :param ssgain: Second stage gain dictionary.
         """
         for value in ssgain.values() :
-            # both biosensors and EEG/EMG have ssGain. None when no connect 
+            # both biosensors and EEG/EMG have ss_gain. None when no connect 
             if(value != 1 and value != 5 and value != None): 
-                raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
+                raise Exception('[!] The ss_gain must be 1 or 5; set ss_gain to None if no-connect.')
             
     @staticmethod
-    def _validate_preamp_gain(preampGain: dict) -> None:
+    def _validate_preamp_gain(preamp_gain: dict) -> None:
         """Checks that the preamplifier gain dictionary has proper values (10, 100, or None). Otherwise raises exception.
 
-        :param preampGain: preamplifier gain dictionary.
+        :param preamp_gain: preamplifier gain dictionary.
         """
-        for value in preampGain.values() :
+        for value in preamp_gain.values() :
             # None when biosensor or no connect 
             if(value != 10 and value != 100 and value != None): 
-                raise Exception('[!] EEG/EMG preampGain must be 10 or 100. For biosensors, the preampGain is None.')
+                raise Exception('[!] EEG/EMG preamp_gain must be 10 or 100. For biosensors, the preamp_gain is None.')
             
             
     @staticmethod
-    def get_channel_map_for_preamp_device(preampName: Preamp) -> dict[str,str]|None :
+    def get_channel_map_for_preamp_device(preamp_name: Preamp) -> dict[str,str]|None :
         """Get the channel mapping (channel labels for A,B,C,D) for a given device.
 
-        :param preampName: Device/sensor for lookup.
+        :param preamp_name: Device/sensor for lookup.
 
         :return: Dictionary with keys A,B,C,D with values of the channel names. Returns None if the device name does not exist.
         """
-        if(preampName in Pod8401HR.__CHANNELMAPALL) : 
-            return(Pod8401HR.__CHANNELMAPALL[preampName])
+        if(preamp_name in Pod8401HR.__CHANNELMAPALL) : 
+            return(Pod8401HR.__CHANNELMAPALL[preamp_name])
         else : 
             return(None) # no device matched
 
@@ -234,21 +234,21 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def decode_ttl_byte(ttlByte: bytes) -> dict[str,int] : 
+    def decode_ttl_byte(ttl_byte: bytes) -> dict[str,int] : 
         """Converts the TTL bytes argument into a dictionary of integer TTL values.
 
-        :param ttlByte: U8 byte containing the TTL bitmask. 
+        :param ttl_byte: U8 byte containing the TTL bitmask. 
 
         :return: Dictinoary with TTL name keys and integer TTL values. 
         """
 
         return({
-            'EXT0' : conv.ascii_bytes_to_int_split(ttlByte, 8, 7),
-            'EXT1' : conv.ascii_bytes_to_int_split(ttlByte, 7, 6),
-            'TTL4' : conv.ascii_bytes_to_int_split(ttlByte, 4, 3),
-            'TTL3' : conv.ascii_bytes_to_int_split(ttlByte, 3, 2),
-            'TTL2' : conv.ascii_bytes_to_int_split(ttlByte, 2, 1),
-            'TTL1' : conv.ascii_bytes_to_int_split(ttlByte, 1, 0)
+            'EXT0' : conv.ascii_bytes_to_int_split(ttl_byte, 8, 7),
+            'EXT1' : conv.ascii_bytes_to_int_split(ttl_byte, 7, 6),
+            'TTL4' : conv.ascii_bytes_to_int_split(ttl_byte, 4, 3),
+            'TTL3' : conv.ascii_bytes_to_int_split(ttl_byte, 3, 2),
+            'TTL2' : conv.ascii_bytes_to_int_split(ttl_byte, 2, 1),
+            'TTL1' : conv.ascii_bytes_to_int_split(ttl_byte, 1, 0)
         })
     
 
@@ -350,20 +350,20 @@ class Pod8401HR(AquisitionDevice) :
         return(int( (vout / 2.048) * 32768. ))
         
 
-    def _read_binary(self, prePacket: bytes, validateChecksum:bool=True) -> DataPacket8401HR:
-        """After receiving the prePacket, it reads the 23 bytes (binary data) and then reads to ETX. See documentation of DataPacket8401HR 
+    def _read_binary(self, pre_packet: bytes, validate_checksum:bool=True) -> DataPacket8401HR:
+        """After receiving the pre_packet, it reads the 23 bytes (binary data) and then reads to ETX. See documentation of DataPacket8401HR 
         for what the recieved packet looks like on a binary level.
 
-        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
-        :param validateChecksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+        :param pre_packet: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+        :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
         :return: Packet recieved from device.
         """
         
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.read(23) + self._read_to_etx(validateChecksum=validateChecksum)
+        packet = pre_packet + self._port.read(23) + self._read_to_etx(validate_checksum=validate_checksum)
         # check if checksum is correct 
-        if(validateChecksum):
+        if(validate_checksum):
             if(not self._validate_checksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
