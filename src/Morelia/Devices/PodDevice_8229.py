@@ -78,7 +78,7 @@ class Pod8229(Pod) :
                     return Pod8229.decode_day_and_schedule(payload)
 
                 case 142:
-                    return Pod8229.DecodeDaySchedule(payload)
+                    return Pod8229.decode_day_schedule(payload)
 
                 case 202:
                     return Pod8229.decode_lcd_schedule(payload)
@@ -91,7 +91,7 @@ class Pod8229(Pod) :
 
 
     @staticmethod
-    def GetCurrentTime() -> tuple[int] : 
+    def get_current_time() -> tuple[int] : 
         """Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time. 
 
         :return: Tuple of 7 integer values. The format is (Seconds, Minutes, Hours, Day, Month, Year \
@@ -105,7 +105,7 @@ class Pod8229(Pod) :
         return(arg)
 
     @staticmethod
-    def BuildSetDayScheduleArgument(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
+    def build_set_day_schedule_argument(day: str|int, hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> tuple[int] :
         """Appends the day of the week code to the front of the encoded hourly schedule. this tuple is \
         formatted to be used as the #141 ``SET DAY SCHEDULE`` argument.
 
@@ -118,15 +118,15 @@ class Pod8229(Pod) :
         :return: Argument to pass with packet for ``SET DAY SCHEDULE``.
         """
         # get good value
-        validDay: int = Pod8229._validate_day(day)
+        valid_day: int = Pod8229._validate_day(day)
         # get encoded schedule
-        encodedSched: list = Pod8229.CodeDaySchedule(hours,speed)
+        encoded_sched: list = Pod8229.code_day_schedule(hours,speed)
         # prepend the day to the schedule  
-        return( tuple( [validDay]+encodedSched ) )
+        return( tuple( [valid_day]+encoded_sched ) )
 
 
     @staticmethod
-    def CodeDaySchedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
+    def code_day_schedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
         """Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this \
         for getting the command #141 ``SET DAY SCHEDULE`` U8x24 argument component.
 
@@ -136,18 +136,18 @@ class Pod8229(Pod) :
         :return: List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits are the speed.
         """
         # get good values 
-        validHours = Pod8229._validate_hours(hours)
-        validSpeed = Pod8229._validate_speed(speed) 
+        valid_hours = Pod8229._validate_hours(hours)
+        valid_speed = Pod8229._validate_speed(speed) 
         # modify bits of each hour 
         schedule = [0] * 24
         for i in range(24) : 
             # msb is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100)
-            schedule[i] = ( validHours[i] << 7 ) | validSpeed[i]
+            schedule[i] = ( valid_hours[i] << 7 ) | valid_speed[i]
         # return tuple that works as an argument for command #141 'SET DAY SCHEDULE'
         return( list(schedule) )
 
     @staticmethod
-    def DecodeDaySchedule(schedule: bytes) -> dict[str,int|tuple[int]] :
+    def decode_day_schedule(schedule: bytes) -> dict[str,int|tuple[int]] :
         """Interprets the return bytes from the command #142 'GET DAY SCHEDULE'.
 
         :param schedule: 24 byte long bitstring with one U8 per hour in a day.
@@ -158,12 +158,12 @@ class Pod8229(Pod) :
         """
         # use this for getting the command #argument 
         # check for valid arguments 
-        validSchedule = Pod8229._validate_schedule(schedule, 24)
+        valid_schedule = Pod8229._validate_schedule(schedule, 24)
         # decode each hour
         hours  = [None] * 24
         speeds = [None] * 24
         for i in range(24) : 
-            thisHr = validSchedule[2*i:2*i+2]
+            thisHr = valid_schedule[2*i:2*i+2]
             # msb in each byte is a flag for motor on (1) or off (0)
             hours[i]  = conv.ascii_bytes_to_int_split(thisHr, 8, 7) 
             # remaining 7 bits are the speed (0-100)
@@ -191,7 +191,7 @@ class Pod8229(Pod) :
         """
         U8 = Pod8229.get_u(8)
         day = conv.ascii_bytes_to_int(dayschedule[:U8])
-        schedule = Pod8229.DecodeDaySchedule(dayschedule[U8:])
+        schedule = Pod8229.decode_day_schedule(dayschedule[U8:])
         return (day, schedule)
         
         
@@ -206,16 +206,16 @@ class Pod8229(Pod) :
                 motor state in that hour, 1 for on and 0 for off.
         """
         # check for valid arguments 
-        validSchedule = Pod8229._validate_schedule(schedule, 4)
+        valid_schedule = Pod8229._validate_schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = Pod8229.decode_day_of_week( conv.ascii_bytes_to_int( validSchedule[0:2] ) )
-        hourBytes = validSchedule[2:]
+        day = Pod8229.decode_day_of_week( conv.ascii_bytes_to_int( valid_schedule[0:2] ) )
+        hour_bytes = valid_schedule[2:]
         # Get each hour bit 
         hours = []
-        topBit = Pod.get_u(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
-        while(topBit > 0 ) : 
-            hours.append( conv.ascii_bytes_to_int_split( hourBytes, topBit, topBit-1))
-            topBit -= 1
+        top_bit = Pod.get_u(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
+        while(top_bit > 0 ) : 
+            hours.append( conv.ascii_bytes_to_int_split( hour_bytes, top_bit, top_bit-1))
+            top_bit -= 1
         # return decoded LCD SET DAY SCHEDULE value
         return{'Day' : day, 'Hours' : hours} # Each bit represents the motor state in that hour, 1 for on and 0 for off.
 
@@ -301,15 +301,15 @@ class Pod8229(Pod) :
         Returns:
             int: integer that equals the val argument when converted into hexadecimal.
         """
-        decAsHex: int = 0
+        dec_as_hex: int = 0
         # get each digit and reverse order
         decimal: list[int] = [ int(x) for x in [*str(val)] ]
         decimal.reverse()
         # calculate hex: dn-1 … d1 d0 (hex) = dn-1 * 16^n-1 + … + d1 * 16^1 + d0 * 16^0 (decimal)
         for i,digit in enumerate(decimal) :
-            decAsHexDigit = digit * 16**i
-            decAsHex += decAsHexDigit
-        return(decAsHex)
+            dec_as_hex_digit = digit * 16**i
+            dec_as_hex += dec_as_hex_digit
+        return(dec_as_hex)
 
 
     @staticmethod
@@ -356,14 +356,14 @@ class Pod8229(Pod) :
             int: Integer code representing a day of the week.
         """
         if(isinstance(day,str)) : 
-            dayCode = Pod8229.code_day_of_week(day)
+            day_code = Pod8229.code_day_of_week(day)
         elif(isinstance(day,int)) : 
             if(day < 0 or day > 6) : 
                 raise Exception('[!] The day integer argument must be 0-6.')
-            dayCode = day
+            day_code = day
         else: 
             raise Exception('[!] The day argument must be a str or int.')
-        return(dayCode)
+        return(day_code)
         
 
     @staticmethod
@@ -416,15 +416,15 @@ class Pod8229(Pod) :
         if(isinstance(speed,int)) : 
             if( speed < 0 or speed > 100 ) : 
                 raise Exception('[!] The speed must be between 0 and 100.')
-            speedArr = [speed] * 24 
+            speed_arr = [speed] * 24 
         else : 
             if(len(speed) != 24 ) : 
                 raise Exception('[!] The speed argument must have exactly 24 items as a list/tuple.')
             for s in speed : 
                 if( s < 0 or s > 100 ) : 
                     raise Exception('[!] The speed must be between 0 and 100 for every list/tuple item.')
-            speedArr = speed
-        return(list(speedArr))
+            speed_arr = speed
+        return(list(speed_arr))
 
 
     @staticmethod
