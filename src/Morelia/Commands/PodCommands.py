@@ -45,22 +45,22 @@ class CommandSet :
     """
 
     # flag used to mark if self.__commands dict value has no real value 
-    __NOVALUE : int = -1
+    __NO_VALUE : int = -1
     """Class-level integer used to mark when a list item in __commands means 'no value' \
     or is undefined.
     """
 
-    __U8 : int = 2
+    __UINT8 : int = 2
     """Class-level integer representing the number of hexadecimal characters for an \
     unsigned 8-bit value.
     """
 
-    __U16 : int = 2*__U8
+    __UINT16 : int = 2*__UINT8
     """Class-level integer representing the number of hexadecimal characters for an \
     unsigned 16-bit value.
     """
 
-    __U32 : int = 4*__U8
+    __UINT32 : int = 4*__UINT8
     """Class-level integer representing the number of hexadecimal characters for an \
     unsigned 32-bit value.
     """
@@ -79,41 +79,41 @@ class CommandSet :
 
 
     @staticmethod
-    def NoValue() -> int : 
-        """Gets value of __NOVALUE.
+    def no_value() -> int : 
+        """Gets value of __NO_VALUE.
 
         Returns:
-            int: Value of __NOVALUE.
+            int: Value of __NO_VALUE.
         """
-        return(CommandSet.__NOVALUE)
+        return(CommandSet.__NO_VALUE)
 
     @staticmethod
-    def U8() -> int : 
-        """Gets value of __U8.
+    def get_uint8 () -> int : 
+        """Gets value of __UINT8.
 
         Returns:
-            int: Value of __U8.
+            int: Value of __UINT8.
         """
-        return(CommandSet.__U8)
+        return(CommandSet.__UINT8)
 
     @staticmethod
-    def U16() -> int : 
-        """Gets value of __U16.
+    def get_uint16() -> int : 
+        """Gets value of __UINT16.
 
         Returns:
-            int: Value of __U16.
+            int: Value of __UINT16.
         """
-        return(CommandSet.__U16)
+        return(CommandSet.__UINT16)
     
     @staticmethod
-    def U32() -> int : 
-        """Gets value of __U32.
+    def get_uint32() -> int : 
+        """Gets value of __UINT32.
 
         Returns:
-            int: Value of __U32.
+            int: Value of __UINT32.
         """
         # returns the no value marker for commands dict 
-        return(CommandSet.__U32)
+        return(CommandSet.__UINT32)
     
 
     @staticmethod
@@ -126,24 +126,24 @@ class CommandSet :
                 argument ASCII bytes, number of return bytes, binary flag, description) }.
         """
         # constants 
-        U8  = CommandSet.U8()
-        U16 = CommandSet.U16()
-        NOVALUE = CommandSet.NoValue()
+        UINT8  = CommandSet.UINT8()
+        UINT16 = CommandSet.UINT16()
+        NO_VALUE = CommandSet.NoValue()
         # basic standard POD commands 
         basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag, description]), 
             0  : [ 'ACK',               (0,),   (0,),        False,  'Deprecated in favor of responding with the command number received.'                    ],
             1  : [ 'NACK',              (0,),   (0,),        False,  'Used to indicate an unsupported command was received.'                                  ],
             2  : [ 'PING',              (0,),   (0,),        False,  'Basic ping command to check if a device is alive and communicating.'                    ],
             3  : [ 'RESET',             (0,),   (0,),        False,  'Causes the device to reset.  Devices also send this command upon bootup.'               ],
-            4  : [ 'ERROR',             (0,),   (U8,),       False,  'Reports error codes; mostly unused.'                                                    ],
+            4  : [ 'ERROR',             (0,),   (UINT8,),       False,  'Reports error codes; mostly unused.'                                                    ],
             5  : [ 'STATUS',            (0,),   (0,),        False,  'Reports status codes; mostly unused.'                                                   ],
-            6  : [ 'STREAM',            (U8,),  (U8,),       False,  'Enables or disables streaming of binary packets on the device'                          ], 
+            6  : [ 'STREAM',            (UINT8,),  (UINT8,),       False,  'Enables or disables streaming of binary packets on the device'                          ], 
             7  : [ 'BOOT',              (0,),   (0,),        False,  'Instructs the device to enter bootload mode.'                                           ],
-            8  : [ 'TYPE',              (0,),   (U8,),       False,  'Gets the device type. Often unused due to USB descriptor duplicating this function.'    ],
+            8  : [ 'TYPE',              (0,),   (UINT8,),       False,  'Gets the device type. Often unused due to USB descriptor duplicating this function.'    ],
             9  : [ 'ID',                (0,),   (0,),        False,  'ID number for the device. Often unused due to USB descriptor duplicating this function.'],
             10 : [ 'SAMPLE RATE',       (0,),   (0,),        False,  'Gets the sample rate of the device.  Often unused in favor of just setting it.'         ],
-            11 : [ 'BINARY',            (0,),   (NOVALUE,),   True,  'Indicates a binary packet.'                                                             ],  # No return bytes because the length depends on the message
-            12 : [ 'FIRMWARE VERSION',  (0,),   (U8,U8,U16), False,  'Returns firmware version of the device.'                                                ]
+            11 : [ 'BINARY',            (0,),   (NO_VALUE,),   True,  'Indicates a binary packet.'                                                             ],  # No return bytes because the length depends on the message
+            12 : [ 'FIRMWARE VERSION',  (0,),   (UINT8,UINT8,UINT16), False,  'Returns firmware version of the device.'                                                ]
         }
         # return dict of commands 
         return(basics)
