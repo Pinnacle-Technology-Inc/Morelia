@@ -114,7 +114,7 @@ class Pod8480SC(Pod) :
         return (0 | (signal_trigger << 2) | (sync_idle << 1) | (sync_level))
 
     @staticmethod    
-    def TtlConfigBits(trigger: bool, stimtrig : bool, input_sync : bool) -> int :
+    def ttl_config_bits(trigger: bool, stimtrig : bool, input_sync : bool) -> int :
         """Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to \
         command #109 'SET TTL SETUP'. This commands accepts 3 items in the payload, and the return value of this function \
         is given as the second item.
@@ -209,17 +209,17 @@ class Pod8480SC(Pod) :
         return tuple(data)
         
     @staticmethod
-    def _custom_stimulus(payload: bytes, defaultPayload: tuple) -> tuple : 
+    def _custom_stimulus(payload: bytes, default_payload: tuple) -> tuple : 
         """_summary_
 
         Args:
             payload (bytes): Bytes string of the POD packet payload.
-            defaultPayload (tuple): Default translated payload.
+            default_payload (tuple): Default translated payload.
 
         Returns:
             tuple: Tuple of the translated stimulus payload.
         """
-        pld = list(defaultPayload[:-1])
+        pld = list(default_payload[:-1])
         pld.append(Pod8480SC.decode_stimulus_config_bits(conv.ascii_bytes_to_int( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            
         
