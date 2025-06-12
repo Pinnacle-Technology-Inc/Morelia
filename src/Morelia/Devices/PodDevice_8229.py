@@ -33,9 +33,9 @@ class Pod8229(Pod) :
         # initialize POD_Basics
         super().__init__(port, baudrate=baudrate, device_name=device_name) 
         # get constants for adding commands 
-        U8  = Pod.get_u(8)
-        U16 = Pod.get_u(16)
-        NOVALUE = Pod.get_u(0)
+        UINT8  = Pod.get_u(8)
+        UINT16 = Pod.get_u(16)
+        NO_VALUE = Pod.get_u(0)
         # remove unimplemented commands 
         self._commands.remove_command( 4) # ERROR
         self._commands.remove_command( 5) # STATUS
@@ -43,30 +43,30 @@ class Pod8229(Pod) :
         self._commands.remove_command(10) # SRATE
         self._commands.remove_command(11) # BINARY
         # add device specific commands
-        self._commands.add_command(128, 'SET MOTOR DIRECTION',   (U16,),                 (U16,),                 False, 'Sets motor direction, 0 for clockwise and 1 for counterclockwise.  Returns value set.')
-        self._commands.add_command(129, 'GET MOTOR DIRECTION',   (0,),                   (U16,),                 False, 'Returns motor direction value.')
-        self._commands.add_command(132, 'SET MODE',              (U8,),                  (U8,),                  False, 'Sets the current system mode - 0 = Manual, 1 = PC Control, 2 = Internal Schedule.  Returns the current mode.')
-        self._commands.add_command(133, 'GET MODE',              (0,),                   (U8,),                  False, 'Gets the current system mode.')
-        self._commands.add_command(136, 'SET MOTOR SPEED',       (U16,),                 (U16,),                 False, 'Sets motor speed as a percentage, 0-100.  Replies with PREVIOUS value.')
-        self._commands.add_command(137, 'GET MOTOR SPEED',       (0,),                   (U16,),                 False, 'Gets the motor speed as a percentage, 0-100.')
-        self._commands.add_command(140, 'SET TIME',              (U8,U8,U8,U8,U8,U8,U8), (U8,U8,U8,U8,U8,U8,U8), False, 'Sets the RTC time.  Format is (Seconds, Minutes, Hours, Day, Month, Year (without century, so 23 for 2023), Weekday).  Weekday is 0-6, with Sunday being 0.  Binary Coded Decimal. Returns current time.  Note that the the seconds (and sometimes minutes field) can rollover during execution of this command and may not match what you sent.')
-        self._commands.add_command(141, 'SET DAY SCHEDULE',      (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), # ( U8, U8 x 24 )
-                                                                                        (0,),                   False, 'Sets the schedule for the day.  U8 day, followed by 24 hourly schedule values.  MSb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100).')
-        self._commands.add_command(142, 'GET DAY SCHEDULE',      (U8,),                  (U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8,U8), # ( U8 x 24 )
+        self._commands.add_command(128, 'SET MOTOR DIRECTION',   (UINT16,),                 (UINT16,),                 False, 'Sets motor direction, 0 for clockwise and 1 for counterclockwise.  Returns value set.')
+        self._commands.add_command(129, 'GET MOTOR DIRECTION',   (0,),                   (UINT16,),                 False, 'Returns motor direction value.')
+        self._commands.add_command(132, 'SET MODE',              (UINT8,),                  (UINT8,),                  False, 'Sets the current system mode - 0 = Manual, 1 = PC Control, 2 = Internal Schedule.  Returns the current mode.')
+        self._commands.add_command(133, 'GET MODE',              (0,),                   (UINT8,),                  False, 'Gets the current system mode.')
+        self._commands.add_command(136, 'SET MOTOR SPEED',       (UINT16,),                 (UINT16,),                 False, 'Sets motor speed as a percentage, 0-100.  Replies with PREVIOUS value.')
+        self._commands.add_command(137, 'GET MOTOR SPEED',       (0,),                   (UINT16,),                 False, 'Gets the motor speed as a percentage, 0-100.')
+        self._commands.add_command(140, 'SET TIME',              (UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8), (UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8), False, 'Sets the RTC time.  Format is (Seconds, Minutes, Hours, Day, Month, Year (without century, so 23 for 2023), Weekday).  Weekday is 0-6, with Sunday being 0.  Binary Coded Decimal. Returns current time.  Note that the the seconds (and sometimes minutes field) can rollover during execution of this command and may not match what you sent.')
+        self._commands.add_command(141, 'SET DAY SCHEDULE',      (UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8), # ( UINT8, UINT8 x 24 )
+                                                                                        (0,),                   False, 'Sets the schedule for the day.  UINT8 day, followed by 24 hourly schedule values.  MSb in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0-100).')
+        self._commands.add_command(142, 'GET DAY SCHEDULE',      (UINT8,),                  (UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8), # ( UINT8 x 24 )
                                                                                                                 False, 'Gets the schedule for the selected week day (0-6 with 0 being Sunday).')
-        self._commands.add_command(144, 'SET REVERSE PARAMS',    (U16,U16),              (0,),                   False, 'Sets (Base Time, Variable Time) for random reverse in seconds.  The random reverse time will be base time + a random value in Variable Time range.')
-        self._commands.add_command(145, 'GET REVERSE PARAMS',    (0,),                   (U16,U16),              False, 'Gets the base and variable times for random reverse, in seconds.')
-        self._commands.add_command(146, 'SET MOTOR STATE',       (U16,),                 (U16,),                 False, 'Sets whether the motor is on or off.  1 for On, 0 for Off. Returns the PREVIOUS motor state.')
-        self._commands.add_command(147, 'GET MOTOR STATE',       (0,),                   (U16,),                 False, 'Gets the motor state.')
-        self._commands.add_command(149, 'SET ID',                (U16,),                 (0,),                   False, 'Sets the system ID displayed on the LCD.')
-        self._commands.add_command(150, 'SET RANDOM REVERSE',    (U8,),                  (0,),                   False, 'Enables or Disables Random Reverse function.  0 = disabled, Non-Zero = enabled.')
-        self._commands.add_command(151, 'GET RANDOM REVERSE',    (0,),                   (U8,),                  False, 'Reads the Random Reverse function.  0 = disabled, non-zero = enabled.')
+        self._commands.add_command(144, 'SET REVERSE PARAMS',    (UINT16,UINT16),              (0,),                   False, 'Sets (Base Time, Variable Time) for random reverse in seconds.  The random reverse time will be base time + a random value in Variable Time range.')
+        self._commands.add_command(145, 'GET REVERSE PARAMS',    (0,),                   (UINT16,UINT16),              False, 'Gets the base and variable times for random reverse, in seconds.')
+        self._commands.add_command(146, 'SET MOTOR STATE',       (UINT16,),                 (UINT16,),                 False, 'Sets whether the motor is on or off.  1 for On, 0 for Off. Returns the PREVIOUS motor state.')
+        self._commands.add_command(147, 'GET MOTOR STATE',       (0,),                   (UINT16,),                 False, 'Gets the motor state.')
+        self._commands.add_command(149, 'SET ID',                (UINT16,),                 (0,),                   False, 'Sets the system ID displayed on the LCD.')
+        self._commands.add_command(150, 'SET RANDOM REVERSE',    (UINT8,),                  (0,),                   False, 'Enables or Disables Random Reverse function.  0 = disabled, Non-Zero = enabled.')
+        self._commands.add_command(151, 'GET RANDOM REVERSE',    (0,),                   (UINT8,),                  False, 'Reads the Random Reverse function.  0 = disabled, non-zero = enabled.')
         # recieved only commands below vvv 
-        self._commands.add_command(143, 'REVERSE TIME EVENT',    (0,),                   (U16,),                 False, 'Indicates the bar has just reveresed.  Returns the time in seconds until the next bar reversal.')
-        self._commands.add_command(200, 'LCD SET MOTOR STATE',   (NOVALUE,),             (U16,),                 False, 'Indicates that the motor state has been changed by the LCD.  1 for On, 0 for Off.')
-        self._commands.add_command(201, 'LCD SET MOTOR SPEED',   (NOVALUE,),             (U16,),                 False, 'Indicates the motor speed has been changed by the LCD.  0-100 as a percentage.')
-        self._commands.add_command(202, 'LCD SET DAY SCHEDULE',  (NOVALUE,),             (U8,U8,U8,U8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
-        self._commands.add_command(204, 'LCD SET MODE',          (NOVALUE,),             (U16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
+        self._commands.add_command(143, 'REVERSE TIME EVENT',    (0,),                   (UINT16,),                 False, 'Indicates the bar has just reveresed.  Returns the time in seconds until the next bar reversal.')
+        self._commands.add_command(200, 'LCD SET MOTOR STATE',   (NO_VALUE,),             (UINT16,),                 False, 'Indicates that the motor state has been changed by the LCD.  1 for On, 0 for Off.')
+        self._commands.add_command(201, 'LCD SET MOTOR SPEED',   (NO_VALUE,),             (UINT16,),                 False, 'Indicates the motor speed has been changed by the LCD.  0-100 as a percentage.')
+        self._commands.add_command(202, 'LCD SET DAY SCHEDULE',  (NO_VALUE,),             (UINT8,UINT8,UINT8,UINT8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
+        self._commands.add_command(204, 'LCD SET MODE',          (NO_VALUE,),             (UINT16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
 
         # Function used to decode payload of recieved control packets.
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
@@ -128,7 +128,7 @@ class Pod8229(Pod) :
     @staticmethod
     def code_day_schedule(hours: list|tuple[bool|int], speed: int|list|tuple[int]) -> list[int] : 
         """Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this \
-        for getting the command #141 ``SET DAY SCHEDULE`` U8x24 argument component.
+        for getting the command #141 ``SET DAY SCHEDULE`` UINT8x24 argument component.
 
         :param hours: Array of 24 items. The value is 1 for motor on and 0 for motor off.
         :param speed: Speed of the motor (0-100). This is an integer of all hours are the same speed. If there are multiple speeds, this should be an array of 24 items.
@@ -150,7 +150,7 @@ class Pod8229(Pod) :
     def decode_day_schedule(schedule: bytes) -> dict[str,int|tuple[int]] :
         """Interprets the return bytes from the command #142 'GET DAY SCHEDULE'.
 
-        :param schedule: 24 byte long bitstring with one U8 per hour in a day.
+        :param schedule: 24 byte long bitstring with one UINT8 per hour in a day.
 
         :return: Dictionary with 'Hour' as a tuple of 24 0/1 values (0 is motor off and \
                 1 is motor on) and 'Speed' as the motor speed (0-100). If the motor speed is the same \
@@ -189,9 +189,9 @@ class Pod8229(Pod) :
 
         :returns: Tupke containg day and schedule for day.
         """
-        U8 = Pod8229.get_u(8)
-        day = conv.ascii_bytes_to_int(dayschedule[:U8])
-        schedule = Pod8229.decode_day_schedule(dayschedule[U8:])
+        UINT8 = Pod8229.get_u(8)
+        day = conv.ascii_bytes_to_int(dayschedule[:UINT8])
+        schedule = Pod8229.decode_day_schedule(dayschedule[UINT8:])
         return (day, schedule)
         
         
@@ -212,7 +212,7 @@ class Pod8229(Pod) :
         hour_bytes = valid_schedule[2:]
         # Get each hour bit 
         hours = []
-        top_bit = Pod.get_u(8) * 3 * 4 # (hex chars per U8) * (number of U8s) * (bits per hex char)
+        top_bit = Pod.get_u(8) * 3 * 4 # (hex chars per UINT8) * (number of UINT8s) * (bits per hex char)
         while(top_bit > 0 ) : 
             hours.append( conv.ascii_bytes_to_int_split( hour_bytes, top_bit, top_bit-1))
             top_bit -= 1
@@ -433,7 +433,7 @@ class Pod8229(Pod) :
 
         Args:
             schedule (bytes): Bytes string containing the day schedule.
-            size (int): Number of U8 bytes.
+            size (int): Number of UINT8 bytes.
 
         Raises:
             Exception: The schedule must be bytes.
@@ -445,5 +445,5 @@ class Pod8229(Pod) :
         if(not isinstance(schedule, bytes)) : 
             raise Exception('[!] The schedule must be bytes.')
         if( len(schedule) != size * Pod.get_u(8) ) : 
-            raise Exception('[!] The schedule must have U8x'+str(size)+'.')
+            raise Exception('[!] The schedule must have UINT8x'+str(size)+'.')
         return(schedule)
