@@ -359,9 +359,9 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmd_num)
         # then check if it is standard or binary
         if( self._commands.is_command_binary(cmd_num) ) : # binary read
-            packet: DataPacket = self._read_binary(prePacket=packet, validate_checksum=validate_checksum)
+            packet: DataPacket = self._read_binary(pre_packet=packet, validate_checksum=validate_checksum)
         else : # standard read
-            packet: ControlPacket = self._read_standard(prePacket=packet, validate_checksum=validate_checksum)
+            packet: ControlPacket = self._read_standard(pre_packet=packet, validate_checksum=validate_checksum)
         # return packet
         return(packet)
 
@@ -425,16 +425,16 @@ class Pod :
         return(packet)
 
 
-    def _read_standard(self, prePacket: bytes, validate_checksum:bool=True) -> ControlPacket:
+    def _read_standard(self, pre_packet: bytes, validate_checksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
 
-        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
+        :param pre_packet: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes).
         :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
         :return: Complete standard POD packet.
         """
         # read until ETX 
-        packet = prePacket + self._read_to_etx(validate_checksum=validate_checksum)
+        packet = pre_packet + self._read_to_etx(validate_checksum=validate_checksum)
         # check for valid  
         if(validate_checksum) :
             if( not self._validate_checksum(packet) ) :
@@ -443,13 +443,13 @@ class Pod :
         return self._control_packet_factory(packet)
 
 
-    def _read_binary(self, prePacket: bytes, validate_checksum:bool=True) -> DataPacket :
+    def _read_binary(self, pre_packet: bytes, validate_checksum:bool=True) -> DataPacket :
         """Reads the remaining part of the variable-length binary packet. It first reads the standard \
-        packet (prePacket+payload+checksum+ETX). Then it determines how long the binary packet is from the \
+        packet (pre_packet+payload+checksum+ETX). Then it determines how long the binary packet is from the \
         payload of the standard POD packet and reads that many bytes. It then reads to ETX to get the \
         checksum+ETX. 
 
-        :param prePacket: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes)
+        :param pre_packet: Bytes string containing the beginning of a POD packet: STX (1 byte) + command number (4 bytes)
         :param validate_checksum:  Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
         :return: Variable-length data POD packet.
@@ -458,7 +458,7 @@ class Pod :
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        
         # read standard POD packet 
-        start_packet: ControlPacket = self._read_standard(prePacket, validate_checksum=validate_checksum)
+        start_packet: ControlPacket = self._read_standard(pre_packet, validate_checksum=validate_checksum)
         # get length of binary packet 
         num_of_binary_bytes: int = start_packet.payload[0]
         # read binary packet
