@@ -169,16 +169,16 @@ class CommandSet :
         self.__commands = CommandSet.get_basic_commands()
 
 
-    def add_command(self, commandNumber: int, commandName: str, argumentBytes: tuple[int], returnBytes: tuple[int], isBinary: bool, description: str) -> bool:
+    def add_command(self, command_number: int, command_name: str, argument_bytes: tuple[int], return_bytes: tuple[int], is_binary: bool, description: str) -> bool:
         """Adds a command entry to the current commands dictionary (__commands) if the command does \
         not exist.
 
         Args:
-            commandNumber (int): Integer of the command number.
-            commandName (str): String of the command's name.
-            argumentBytes (tuple[int]): Integer of the number of bytes in the argument.
-            returnBytes (tuple[int]): Integer of the number of bytes in the return.
-            isBinary (bool): Boolean flag to mark if the command is binary (True) or standard (False). 
+            command_number (int): Integer of the command number.
+            command_name (str): String of the command's name.
+            argument_bytes (tuple[int]): Integer of the number of bytes in the argument.
+            return_bytes (tuple[int]): Integer of the number of bytes in the return.
+            is_binary (bool): Boolean flag to mark if the command is binary (True) or standard (False). 
             description (str): String description of the command.
 
         Returns:
@@ -186,13 +186,13 @@ class CommandSet :
                 because it already exists.
         """
         # command number and name must not already exist 
-        if(    self.does_command_exist(commandNumber)
-            or self.does_command_exist(commandName)
+        if(    self.does_command_exist(command_number)
+            or self.does_command_exist(command_name)
         ):
             # return false to mark failed add 
             return(False)
         # add entry to dict 
-        self.__commands[int(commandNumber)] = [str(commandName).upper(),tuple(argumentBytes),tuple(returnBytes),bool(isBinary),str(description)]
+        self.__commands[int(command_number)] = [str(command_name).upper(),tuple(argument_bytes),tuple(return_bytes),bool(is_binary),str(description)]
         # return true to mark successful add
         return(True)
 
@@ -211,11 +211,11 @@ class CommandSet :
             return(False)
         # get command number 
         if(isinstance(cmd,str)):
-            cmdNum = self.command_number_from_name(cmd)
+            cmd_num = self.command_number_from_name(cmd)
         else: 
-            cmdNum = cmd
+            cmd_num = cmd
         # remove entry in dict
-        self.__commands.pop(cmdNum)
+        self.__commands.pop(cmd_num)
         # return true to mark that cmd was removed from dict
         return(True)
 

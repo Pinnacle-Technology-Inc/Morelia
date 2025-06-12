@@ -126,7 +126,7 @@ class Pod8401HR(AquisitionDevice) :
         
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
-            if command_number in 127 | 128 | 129:
+            if command_number == 127 | 128 | 129:
                 return Pod8401HR.decode_ttl_payload(payload)
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
         
@@ -361,7 +361,7 @@ class Pod8401HR(AquisitionDevice) :
         """
         
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        packet = prePacket + self._port.Read(23) + self._read_to_etx(validateChecksum=validateChecksum)
+        packet = prePacket + self._port.read(23) + self._read_to_etx(validateChecksum=validateChecksum)
         # check if checksum is correct 
         if(validateChecksum):
             if(not self._validate_checksum(packet) ) :
