@@ -34,7 +34,7 @@ class EDFSink(SinkInterface):
 
         elif isinstance(self._pod, Pod8401HR):
 
-            preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
+            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
             self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 

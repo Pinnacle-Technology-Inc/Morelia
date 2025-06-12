@@ -58,7 +58,7 @@ class Pod8206HR(AquisitionDevice) :
         # define function used to decode packet from binary data.
         def decode_packet(command_number: int, payload: bytes) -> tuple:
             if command_number == 106:
-                return Pod8206HR._TranslateTTLbyte_ASCII(payload)
+                return Pod8206HR._translate_ttlbyte_ascii(payload)
 
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
         
@@ -67,7 +67,7 @@ class Pod8206HR(AquisitionDevice) :
 
 
     @staticmethod
-    def _TranslateTTLbyte_ASCII(ttlByte: bytes) -> dict[str,int] : 
+    def _translate_ttlbyte_ascii(ttlByte: bytes) -> dict[str,int] : 
         """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
 
         :param ttlByte: One byte string for the TTL (ASCII encoded).

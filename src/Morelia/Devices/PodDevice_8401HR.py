@@ -109,12 +109,12 @@ class Pod8401HR(AquisitionDevice) :
         # at some point as this class containes to be rewritten.
 
         # set second stage gain.
-        ssGain_dict = self._FixABCDtype(ssGain, thisIs='ssGain ')
-        self._ValidateSsGain(ssGain_dict)
+        ssGain_dict = self._fix_abcd_type(ssGain, thisIs='ssGain ')
+        self._validate_ss_gain(ssGain_dict)
         self._ssGain : dict[str,int|None] = ssGain_dict         
 
-        preampGain_dict = self._FixABCDtype(preampGain, thisIs='preampGain')
-        self._ValidatePreampGain(preampGain_dict)
+        preampGain_dict = self._fix_abcd_type(preampGain, thisIs='preampGain')
+        self._validate_preamp_gain(preampGain_dict)
         self._preampGain : dict[str,int|None] = preampGain_dict
         
         # set channel modes.
@@ -127,7 +127,7 @@ class Pod8401HR(AquisitionDevice) :
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
             if command_number in 127 | 128 | 129:
-                return Pod8401HR.DecodeTTLPayload(payload)
+                return Pod8401HR.decode_ttl_payload(payload)
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
         
         # the constructor used to create control packets as they are recieved.
@@ -139,7 +139,7 @@ class Pod8401HR(AquisitionDevice) :
         return self._preamp
 
     @staticmethod
-    def _FixABCDtype(info: tuple|list|dict, thisIs: str = '') -> dict : 
+    def _fix_abcd_type(info: tuple|list|dict, thisIs: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
 
         :param info: Variable to be converted into a dictionary. 
@@ -167,7 +167,7 @@ class Pod8401HR(AquisitionDevice) :
     
 
     @staticmethod
-    def _ValidateSsGain(ssgain: dict) -> None: 
+    def _validate_ss_gain(ssgain: dict) -> None: 
         """Checks that the second stage gain dictionary has proper values (1, 5, or None). Otherwise raises exception.
 
         :param ssgain: Second stage gain dictionary.
@@ -178,7 +178,7 @@ class Pod8401HR(AquisitionDevice) :
                 raise Exception('[!] The ssGain must be 1 or 5; set ssGain to None if no-connect.')
             
     @staticmethod
-    def _ValidatePreampGain(preampGain: dict) -> None:
+    def _validate_preamp_gain(preampGain: dict) -> None:
         """Checks that the preamplifier gain dictionary has proper values (10, 100, or None). Otherwise raises exception.
 
         :param preampGain: preamplifier gain dictionary.
@@ -190,7 +190,7 @@ class Pod8401HR(AquisitionDevice) :
             
             
     @staticmethod
-    def GetChannelMapForPreampDevice(preampName: Preamp) -> dict[str,str]|None :
+    def get_channel_map_for_preamp_device(preampName: Preamp) -> dict[str,str]|None :
         """Get the channel mapping (channel labels for A,B,C,D) for a given device.
 
         :param preampName: Device/sensor for lookup.
@@ -205,7 +205,7 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def GetTTLbitmask(ext0:int=0, ext1:int=0, ttl4:int=0, ttl3:int=0, ttl2:int=0, ttl1:int=0) -> int :
+    def get_ttl_bitmask(ext0:int=0, ext1:int=0, ttl4:int=0, ttl3:int=0, ttl2:int=0, ttl1:int=0) -> int :
         """Builds an integer, which represents a binary mask, that can be used for TTL command arguments.
 
         :param ext0: boolean bit for ext0. Defaults to 0.
@@ -223,18 +223,18 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def DecodeTTLPayload(payload: bytes) -> tuple[dict[str, int]] : 
+    def decode_ttl_payload(payload: bytes) -> tuple[dict[str, int]] : 
         """Decodes a paylaod with the two TTL bytes.
 
         :param payload: Bytes string of the POD packet payload.
 
         :return: Tuple with two TTL dictionaries.
         """
-        return ( Pod8401HR.DecodeTTLByte(payload[:2]), Pod8401HR.DecodeTTLByte(payload[2:]))
+        return ( Pod8401HR.decode_ttl_byte(payload[:2]), Pod8401HR.decode_ttl_byte(payload[2:]))
 
 
     @staticmethod
-    def DecodeTTLByte(ttlByte: bytes) -> dict[str,int] : 
+    def decode_ttl_byte(ttlByte: bytes) -> dict[str,int] : 
         """Converts the TTL bytes argument into a dictionary of integer TTL values.
 
         :param ttlByte: U8 byte containing the TTL bitmask. 
@@ -253,7 +253,7 @@ class Pod8401HR(AquisitionDevice) :
     
 
     @staticmethod
-    def GetSSConfigBitmask(gain: int, highpass: float) -> int :
+    def get_ss_config_bitmask(gain: int, highpass: float) -> int :
         """Gets a bitmask, represented by an unsigned integer, used for ``SET SS CONFIG`` command. 
 
         :param gain: 1 for 1x gain. else for 5x gain. highpass (float): 0 for DC highpass, else for 0.5Hz highpass.
@@ -271,7 +271,7 @@ class Pod8401HR(AquisitionDevice) :
 
     
     @staticmethod
-    def DecodeSSConfigBitmask(config: bytes) -> dict[str, Union[float,int]]: 
+    def decode_ss_config_bitmask(config: bytes) -> dict[str, Union[float,int]]: 
         """Converts the SS configuration byte to a dictionary with the high-pass and gain. Use for ``GET SS CONFIG`` command payloads.
 
         :param config: U8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
@@ -294,7 +294,7 @@ class Pod8401HR(AquisitionDevice) :
         
 
     @staticmethod
-    def GetChannelBitmask(a: bool, b: bool, c: bool, d: bool) -> int :
+    def get_channel_bitmask(a: bool, b: bool, c: bool, d: bool) -> int :
         """Gets a bitmask, represented by an unsigned integer, used for ``SET INPUT GROUND`` command. 
 
             :param a: State for channel A, 0=Grounded and 1=Connected to Preamp.
@@ -308,7 +308,7 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def DecodeChannelBitmask(channels: bytes) -> dict[str,int] :
+    def decode_channel_bitmask(channels: bytes) -> dict[str,int] :
         """Converts the channel bitmask byte to a dictionary with each channel value. Use for ``GET INPUT GROUND`` command payloads.
 
         :param channels: U8 byte containing the channel configuration. 
@@ -325,7 +325,7 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def CalculateBiasDAC_GetVout(value: int) -> float :
+    def calculate_bias_dac_get_vout(value: int) -> float :
         """Calculates the output voltage given the DAC value. Used for ``GET/SET BIAS`` commands. 
 
         :param value: DAC value (16 bit 2's complement).
@@ -338,7 +338,7 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def CalculateBiasDAC_GetDACValue(vout: int|float) -> int :
+    def calculate_bias_dac_get_dac_value(vout: int|float) -> int :
         """Calculates the DAC value given the output voltage. Used for ``GET/SET BIAS`` commands. 
 
         :param vout: Output voltage (+/- 2.048 V).
