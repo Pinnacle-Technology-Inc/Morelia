@@ -72,16 +72,16 @@ class Pod8229(Pod) :
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             match cmd_number:
                 case 140:
-                    return Pod8229._Custom140SETTIME(ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
+                    return Pod8229._custom_140_set_time(ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
 
                 case 141:
-                    return Pod8229.DecodeDayAndSchedule(payload)
+                    return Pod8229.decode_day_and_schedule(payload)
 
                 case 142:
                     return Pod8229.DecodeDaySchedule(payload)
 
                 case 202:
-                    return Pod8229.DecodeLCDSchedule(payload)
+                    return Pod8229.decode_lcd_schedule(payload)
 
                 case _:
                     return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
@@ -118,7 +118,7 @@ class Pod8229(Pod) :
         :return: Argument to pass with packet for ``SET DAY SCHEDULE``.
         """
         # get good value
-        validDay: int = Pod8229._Validate_Day(day)
+        validDay: int = Pod8229._validate_day(day)
         # get encoded schedule
         encodedSched: list = Pod8229.CodeDaySchedule(hours,speed)
         # prepend the day to the schedule  
@@ -136,8 +136,8 @@ class Pod8229(Pod) :
         :return: List of 24 integer items. The msb is the motor on/off flag and the remaining 7 bits are the speed.
         """
         # get good values 
-        validHours = Pod8229._Validate_Hours(hours)
-        validSpeed = Pod8229._Validate_Speed(speed) 
+        validHours = Pod8229._validate_hours(hours)
+        validSpeed = Pod8229._validate_speed(speed) 
         # modify bits of each hour 
         schedule = [0] * 24
         for i in range(24) : 
@@ -158,7 +158,7 @@ class Pod8229(Pod) :
         """
         # use this for getting the command #argument 
         # check for valid arguments 
-        validSchedule = Pod8229._Validate_Schedule(schedule, 24)
+        validSchedule = Pod8229._validate_schedule(schedule, 24)
         # decode each hour
         hours  = [None] * 24
         speeds = [None] * 24
@@ -182,7 +182,7 @@ class Pod8229(Pod) :
     
     
     @staticmethod
-    def DecodeDayAndSchedule(dayschedule: bytes) -> tuple[int, dict[str,int|tuple[int]]]: 
+    def decode_day_and_schedule(dayschedule: bytes) -> tuple[int, dict[str,int|tuple[int]]]: 
         """Decode the packet payload returned by the ``SET DAY SCHEDULE``.
 
         :param dayschedule: Raw payload of packet.
@@ -196,7 +196,7 @@ class Pod8229(Pod) :
         
         
     @staticmethod
-    def DecodeLCDSchedule(schedule: bytes) -> dict[str,str|list[int]] : 
+    def decode_lcd_schedule(schedule: bytes) -> dict[str,str|list[int]] : 
         """Interprets the return bytes from the command #202 'LCD SET DAY SCHEDULE'.
 
         :param schedule: 4 Byte long bitstring. Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
@@ -206,9 +206,9 @@ class Pod8229(Pod) :
                 motor state in that hour, 1 for on and 0 for off.
         """
         # check for valid arguments 
-        validSchedule = Pod8229._Validate_Schedule(schedule, 4)
+        validSchedule = Pod8229._validate_schedule(schedule, 4)
         # Byte 3 is weekday, Byte 2 is hours 0-7, Byte 1 is hours 8-15, and byte 0 is hours 16-23. 
-        day = Pod8229.DecodeDayOfWeek( conv.ascii_bytes_to_int( validSchedule[0:2] ) )
+        day = Pod8229.decode_day_of_week( conv.ascii_bytes_to_int( validSchedule[0:2] ) )
         hourBytes = validSchedule[2:]
         # Get each hour bit 
         hours = []
@@ -221,7 +221,7 @@ class Pod8229(Pod) :
 
 
     @staticmethod
-    def CodeDayOfWeek(day : str) -> int :
+    def code_day_of_week(day : str) -> int :
         """Converts the day of the week to an integer code understandable by the POD device. The day \
         is determined by the first 1-2 characters of the string, which supports multiple abbreviations \
         for days of the week.  
@@ -245,7 +245,7 @@ class Pod8229(Pod) :
     
 
     @staticmethod
-    def DecodeDayOfWeek(day: int) -> str :
+    def decode_day_of_week(day: int) -> str :
         """Converts the integer code for a day of the week to a human-readable string. 
 
         :param day: Day of the week code must be 0-6.
@@ -278,7 +278,7 @@ class Pod8229(Pod) :
         """
         # check for commands with special encoding
         if(cmd == 140 or cmd == 'SET TIME') : 
-            packet: ControlPacket = super().write_packet(cmd,tuple([self._CodeDecimalAsHex(x) for x in payload ]))
+            packet: ControlPacket = super().write_packet(cmd,tuple([self._code_decimal_as_hex(x) for x in payload ]))
         else :
             packet: ControlPacket = super().write_packet(cmd,payload)
 
@@ -287,12 +287,12 @@ class Pod8229(Pod) :
 
     
     @staticmethod
-    def _CodeDecimalAsHex(val: int) -> int : 
+    def _code_decimal_as_hex(val: int) -> int : 
         """Builds an integer that equals the val argument when converted into hexadecimal. \
         All integers are converted to hexadecimal ASCII encoded bytes. Some commands \
         (i.e. 8229 #140) need decimal ASCII encoded bytes; to do this, give the return \
-        value of _CodeDecimalAsHex() as the payload. Example: I want a number that is \
-        equal to 16 in hex. 1*16^1 + 6*16^0 = 22. Calling _CodeDecimalAsHex(16) will \
+        value of _code_decimal_as_hex() as the payload. Example: I want a number that is \
+        equal to 16 in hex. 1*16^1 + 6*16^0 = 22. Calling _code_decimal_as_hex(16) will \
         return 22.
 
         Args:
@@ -313,9 +313,9 @@ class Pod8229(Pod) :
 
 
     @staticmethod
-    def _DecodeDecimalAsHex(val: int) -> int : 
+    def _decode_decimal_as_hex(val: int) -> int : 
         """Interprets an integer that was converted to a hexadecimal representation of a \
-        decimal value. In other words, this method reverses _CodeDecimalAsHex().
+        decimal value. In other words, this method reverses _code_decimal_as_hex().
 
         Args:
             val (int): Unsigned integer that was converted to a hexadecimal representation of a \
@@ -328,7 +328,7 @@ class Pod8229(Pod) :
 
 
     @staticmethod
-    def _Custom140SETTIME(payload: tuple[int]) -> tuple[int] : 
+    def _custom_140_set_time(payload: tuple[int]) -> tuple[int] : 
         """Custom function to translate the payload for command #140 SET TIME.
 
         Args:
@@ -337,11 +337,11 @@ class Pod8229(Pod) :
         Returns:
             tuple[int]: Tuple of times.
         """
-        return tuple([Pod8229._DecodeDecimalAsHex(x) for x in payload]) 
+        return tuple([Pod8229._decode_decimal_as_hex(x) for x in payload]) 
     
     
     @staticmethod
-    def _Validate_Day(day: str|int) -> int : 
+    def _validate_day(day: str|int) -> int : 
         """Raises an exception if the day is incorrectly formatted. If the day is given as \
         a string, it will be converted to its integer code. 
 
@@ -356,7 +356,7 @@ class Pod8229(Pod) :
             int: Integer code representing a day of the week.
         """
         if(isinstance(day,str)) : 
-            dayCode = Pod8229.CodeDayOfWeek(day)
+            dayCode = Pod8229.code_day_of_week(day)
         elif(isinstance(day,int)) : 
             if(day < 0 or day > 6) : 
                 raise Exception('[!] The day integer argument must be 0-6.')
@@ -367,7 +367,7 @@ class Pod8229(Pod) :
         
 
     @staticmethod
-    def _Validate_Hours(hours: list|tuple[bool|int]) -> list[bool|int] :
+    def _validate_hours(hours: list|tuple[bool|int]) -> list[bool|int] :
         """Raises an exception if the hours is incorrectly formatted. Converts the hours \
         into a list before returning it.
 
@@ -394,7 +394,7 @@ class Pod8229(Pod) :
             
 
     @staticmethod
-    def _Validate_Speed(speed: int|list|tuple[int]) -> list[int] :
+    def _validate_speed(speed: int|list|tuple[int]) -> list[int] :
         """Raises an exception if the speed is incorrectly formatted. If an integer speed \
         is given, it will convert it to a list. 
 
@@ -428,7 +428,7 @@ class Pod8229(Pod) :
 
 
     @staticmethod
-    def _Validate_Schedule(schedule: bytes, size: int) -> bytes:
+    def _validate_schedule(schedule: bytes, size: int) -> bytes:
         """Raises an exception if the schedule is incorrectly formatted 
 
         Args:

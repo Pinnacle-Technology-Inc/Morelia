@@ -67,16 +67,16 @@ class Pod8480SC(Pod) :
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             match cmd_number:
                 case 126 | 127:
-                    return Pod8480SC._CustomSYNCCONFIG(payload)
+                    return Pod8480SC._custom_sync_config(payload)
 
                 case 108:
-                    return Pod8480SC._Custom108GETTTLSETUP(payload)
+                    return Pod8480SC._custom_108_get_ttl_setup(payload)
 
                 case 109:
-                    return Pod8480SC._Custom109SETTTLSETUP(payload)
+                    return Pod8480SC._custom_109_set_ttl_setup(payload)
 
                 case 101 | 102:
-                    return Pod8480SC._CustomSTIMULUS(payload, ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
+                    return Pod8480SC._custom_stimulus(payload, ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload))
 
                 case _:
                     return ControlPacket.decode_payload_from_cmd_set(self._commands, cmd_number, payload)
@@ -87,7 +87,7 @@ class Pod8480SC(Pod) :
 
 
     @staticmethod
-    def StimulusConfigBits(optoElec: bool, monoBiphasic: bool, Simul: bool) -> int :
+    def stimulus_config_bits(optoElec: bool, monoBiphasic: bool, Simul: bool) -> int :
         """ Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload \
         to command #102 'SET STIMULUS'.
     
@@ -101,7 +101,7 @@ class Pod8480SC(Pod) :
         return (0 | (Simul << 2) | (monoBiphasic << 1) | (optoElec))
     
     @staticmethod
-    def SyncConfigBits(sync_level: bool, sync_idle: bool, signal_trigger: bool) -> int :
+    def sync_config_bits(sync_level: bool, sync_idle: bool, signal_trigger: bool) -> int :
         """Incoming inputs are bitmasked into an integer value. This value is later given \
         as the payload to command #127 'SET SYNC CONFIG'.
 
@@ -128,7 +128,7 @@ class Pod8480SC(Pod) :
         return (0 | (input_sync << 7) | (stimtrig << 1) | (trigger))
 
     @staticmethod
-    def DecodeStimulusConfigBits(config: int) -> dict :
+    def decode_stimulus_config_bits(config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits. 
             
         :param config: an integer is passed in, and it represents the Config Flag byte. 
@@ -142,7 +142,7 @@ class Pod8480SC(Pod) :
         }
 
     @staticmethod
-    def DecodeSyncConfigBits(config: int) -> dict :
+    def decode_sync_config_bits(config: int) -> dict :
         """Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits. 
             
         :param config: an integer is passed in, and it represents the Sync Config Flag byte. 
@@ -156,7 +156,7 @@ class Pod8480SC(Pod) :
         }
 
     @staticmethod
-    def DecodeTTlConfigBits(config: int) -> dict :
+    def decode_ttl_config_bits(config: int) -> dict :
         """Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.
             
         :param config: an integer is passed in, and it represents the TTL Setup Config Flag Byte.
@@ -170,7 +170,7 @@ class Pod8480SC(Pod) :
         }
     
     @staticmethod
-    def _CustomSYNCCONFIG(payload: bytes) -> dict : 
+    def _custom_sync_config(payload: bytes) -> dict : 
         """Custom function to translate the sync config.
 
         Args:
@@ -179,10 +179,10 @@ class Pod8480SC(Pod) :
         Returns:
             dict: Keys as the names of the bits, the values representing values at each bit.
         """
-        return Pod8480SC.DecodeSyncConfigBits(conv.ascii_bytes_to_int( payload[:2]))
+        return Pod8480SC.decode_sync_config_bits(conv.ascii_bytes_to_int( payload[:2]))
 
     @staticmethod
-    def _Custom108GETTTLSETUP(payload: bytes) -> tuple[int|dict] : 
+    def _custom_108_get_ttl_setup(payload: bytes) -> tuple[int|dict] : 
         """Custom function to translate the TTL setup for command #108 GET TTL SETUP.
 
         Args:
@@ -191,11 +191,11 @@ class Pod8480SC(Pod) :
         Returns:
             tuple[int|dict]: Tuple of the TTL setup.
         """
-        return ( Pod8480SC.DecodeTTlConfigBits(conv.ascii_bytes_to_int( payload[0:2] )), # dict
+        return ( Pod8480SC.decode_ttl_config_bits(conv.ascii_bytes_to_int( payload[0:2] )), # dict
                  conv.ascii_bytes_to_int( payload[2:4]) ) # int
     
     @staticmethod
-    def _Custom109SETTTLSETUP(payload: bytes) -> tuple[int|dict] :
+    def _custom_109_set_ttl_setup(payload: bytes) -> tuple[int|dict] :
         """Custom function to translate the TTL setup for command #109 SET TTL SETUP.
 
         Args:
@@ -205,11 +205,11 @@ class Pod8480SC(Pod) :
             tuple[int|dict]: Tuple of the TTL setup.
         """
         data: list = [ conv.ascii_bytes_to_int(payload[:2]) ]
-        data.append( Pod8480SC._Custom108GETTTLSETUP(payload[2:]) )
+        data.append( Pod8480SC._custom_108_get_ttl_setup(payload[2:]) )
         return tuple(data)
         
     @staticmethod
-    def _CustomSTIMULUS(payload: bytes, defaultPayload: tuple) -> tuple : 
+    def _custom_stimulus(payload: bytes, defaultPayload: tuple) -> tuple : 
         """_summary_
 
         Args:
@@ -220,6 +220,6 @@ class Pod8480SC(Pod) :
             tuple: Tuple of the translated stimulus payload.
         """
         pld = list(defaultPayload[:-1])
-        pld.append(Pod8480SC.DecodeStimulusConfigBits(conv.ascii_bytes_to_int( payload[-2:] ))) # bits part of the payload
+        pld.append(Pod8480SC.decode_stimulus_config_bits(conv.ascii_bytes_to_int( payload[-2:] ))) # bits part of the payload
         return tuple( pld )            
         
