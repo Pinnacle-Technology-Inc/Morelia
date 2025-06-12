@@ -56,9 +56,9 @@ class Pod :
         :return: number of hexadecimal characters for an unsigned u-bit value.
         """
         match u : 
-            case  8: return(CommandSet.U8())
-            case 16: return(CommandSet.U16())
-            case 32: return(CommandSet.U32())
+            case  8: return(CommandSet.UINT8())
+            case 16: return(CommandSet.UINT16())
+            case 32: return(CommandSet.UINT32())
             case  _: return(CommandSet.NoValue())
 
     @property
