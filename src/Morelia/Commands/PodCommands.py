@@ -126,9 +126,9 @@ class CommandSet :
                 argument ASCII bytes, number of return bytes, binary flag, description) }.
         """
         # constants 
-        UINT8  = CommandSet.UINT8()
-        UINT16 = CommandSet.UINT16()
-        NO_VALUE = CommandSet.NoValue()
+        UINT8  = CommandSet.get_uint8()
+        UINT16 = CommandSet.get_uint16()
+        NO_VALUE = CommandSet.no_value()
         # basic standard POD commands 
         basics = { # key(command number) : value([command name, (number of argument ASCII hex chars), (number of return ASCII hex chars), binary flag, description]), 
             0  : [ 'ACK',               (0,),   (0,),        False,  'Deprecated in favor of responding with the command number received.'                    ],

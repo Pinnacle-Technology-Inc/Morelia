@@ -56,10 +56,10 @@ class Pod :
         :return: number of hexadecimal characters for an unsigned u-bit value.
         """
         match u : 
-            case  8: return(CommandSet.UINT8())
-            case 16: return(CommandSet.UINT16())
-            case 32: return(CommandSet.UINT32())
-            case  _: return(CommandSet.NoValue())
+            case  8: return(CommandSet.get_uint8())
+            case 16: return(CommandSet.get_uint16())
+            case 32: return(CommandSet.get_uint32())
+            case  _: return(CommandSet.no_value())
 
     @property
     def device_name(self) -> str:
