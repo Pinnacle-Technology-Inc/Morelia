@@ -248,7 +248,7 @@ sentence, let’s see what it looks like in our example.</p>
 <span class="c1"># List that defines how sources map to sinks.</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_dump_1</span><span class="p">]),</span>
             <span class="p">(</span><span class="n">pod_2</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_dump_2</span><span class="p">,</span> <span class="n">influx_sink_1</span><span class="p">]),</span>
-            <span class="p">(</span><span class="n">pod_2</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_2</span><span class="p">])]</span>
+            <span class="p">(</span><span class="n">pod_3</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_2</span><span class="p">])]</span>
 
 <span class="n">flowgraph</span> <span class="o">=</span> <span class="n">data_flow</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
 </pre></div>
@@ -274,7 +274,7 @@ to collect for 5 minutes using our example from earlier.</p>
 <section id="infinite-streaming">
 <h3><a class="toc-backref" href="#id6" role="doc-backlink">Infinite Streaming 🌌</a><a class="headerlink" href="#infinite-streaming" title="Link to this heading"></a></h3>
 <p>The other way to stream is for an undefined amount of time. To begin streaming, use <code class="docutils literal notranslate"><span class="pre">data_flow</span></code>’s <code class="docutils literal notranslate"><span class="pre">collect</span></code> method. This method takes no parameters and is <strong>non-blocking</strong>.
-When ready to stop streaming, the <code class="docutils literal notranslate"><span class="pre">stop_collecting</span></code>. This behavior is also supported through context managers, where you can use a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement to automatically start
+When you are ready to stop streaming, use the <code class="docutils literal notranslate"><span class="pre">stop_collecting</span></code> method. This behavior is also supported through context managers, where you can use a <code class="docutils literal notranslate"><span class="pre">with</span></code> statement to automatically start
 and stop streaming. For example,</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">with</span> <span class="n">flowgraph</span><span class="p">:</span>
 

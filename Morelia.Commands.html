@@ -112,8 +112,8 @@
 </dd>
 </dl>
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.AddCommand">
-<span class="sig-name descname"><span class="pre">AddCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">commandNumber</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commandName</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argumentBytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">returnBytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">isBinary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.AddCommand" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.add_command">
+<span class="sig-name descname"><span class="pre">add_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">command_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">argument_bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_binary</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.add_command" title="Link to this definition"></a></dt>
 <dd><p>Adds a command entry to the current commands dictionary (__commands) if the command does         not exist.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -121,11 +121,11 @@
 </dd>
 </dl>
 <dl class="simple">
-<dt>Args:</dt><dd><p>commandNumber (int): Integer of the command number.
-commandName (str): String of the command’s name.
-argumentBytes (tuple[int]): Integer of the number of bytes in the argument.
-returnBytes (tuple[int]): Integer of the number of bytes in the return.
-isBinary (bool): Boolean flag to mark if the command is binary (True) or standard (False). 
+<dt>Args:</dt><dd><p>command_number (int): Integer of the command number.
+command_name (str): String of the command’s name.
+argument_bytes (tuple[int]): Integer of the number of bytes in the argument.
+return_bytes (tuple[int]): Integer of the number of bytes in the return.
+is_binary (bool): Boolean flag to mark if the command is binary (True) or standard (False). 
 description (str): String description of the command.</p>
 </dd>
 <dt>Returns:</dt><dd><p>bool: True if the command was successfully added, False if the command could not be added                 because it already exists.</p>
@@ -134,8 +134,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.ArgumentHexChar">
-<span class="sig-name descname"><span class="pre">ArgumentHexChar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.ArgumentHexChar" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.argument_hex_char">
+<span class="sig-name descname"><span class="pre">argument_hex_char</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.argument_hex_char" title="Link to this definition"></a></dt>
 <dd><p>Gets the tuple for the number of hex characters in the argument for a given command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -151,8 +151,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.CommandNumberFromName">
-<span class="sig-name descname"><span class="pre">CommandNumberFromName</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.CommandNumberFromName" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.command_number_from_name">
+<span class="sig-name descname"><span class="pre">command_number_from_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.command_number_from_name" title="Link to this definition"></a></dt>
 <dd><p>Gets the command number from the command dictionary using the command’s name.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -168,8 +168,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.Description">
-<span class="sig-name descname"><span class="pre">Description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.Description" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.description">
+<span class="sig-name descname"><span class="pre">description</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.description" title="Link to this definition"></a></dt>
 <dd><p>Gets the description for a given command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -185,8 +185,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.DoesCommandExist">
-<span class="sig-name descname"><span class="pre">DoesCommandExist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.DoesCommandExist" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.does_command_exist">
+<span class="sig-name descname"><span class="pre">does_command_exist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.does_command_exist" title="Link to this definition"></a></dt>
 <dd><p>Checks if a command exists in the __commands dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -202,8 +202,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.GetBasicCommands">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">GetBasicCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.GetBasicCommands" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.get_basic_commands">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_basic_commands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.get_basic_commands" title="Link to this definition"></a></dt>
 <dd><p>Creates a dictionary containing the basic POD command set (0,1,2,3,4,5,6,7,8,9,10,11,12).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -217,8 +217,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.GetCommands">
-<span class="sig-name descname"><span class="pre">GetCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.GetCommands" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.get_commands">
+<span class="sig-name descname"><span class="pre">get_commands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.get_commands" title="Link to this definition"></a></dt>
 <dd><p>Gets the contents of the current command dictionary (__commands).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -232,8 +232,53 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.IsCommandBinary">
-<span class="sig-name descname"><span class="pre">IsCommandBinary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.IsCommandBinary" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.get_uint16">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_uint16</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.get_uint16" title="Link to this definition"></a></dt>
+<dd><p>Gets value of __UINT16.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>int: Value of __UINT16.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.get_uint32">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_uint32</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.get_uint32" title="Link to this definition"></a></dt>
+<dd><p>Gets value of __UINT32.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>int: Value of __UINT32.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.get_uint8">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_uint8</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.get_uint8" title="Link to this definition"></a></dt>
+<dd><p>Gets value of __UINT8.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>int: Value of __UINT8.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.is_command_binary">
+<span class="sig-name descname"><span class="pre">is_command_binary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.is_command_binary" title="Link to this definition"></a></dt>
 <dd><p>Gets the binary flag for a given command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -249,23 +294,23 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.NoValue">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NoValue</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.NoValue" title="Link to this definition"></a></dt>
-<dd><p>Gets value of __NOVALUE.</p>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.no_value">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">no_value</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.no_value" title="Link to this definition"></a></dt>
+<dd><p>Gets value of __NO_VALUE.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
 </dd>
 </dl>
 <dl class="simple">
-<dt>Returns:</dt><dd><p>int: Value of __NOVALUE.</p>
+<dt>Returns:</dt><dd><p>int: Value of __NO_VALUE.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.RemoveCommand">
-<span class="sig-name descname"><span class="pre">RemoveCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.RemoveCommand" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.remove_command">
+<span class="sig-name descname"><span class="pre">remove_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.remove_command" title="Link to this definition"></a></dt>
 <dd><p>Removes the entry for a given command in __commands dictionary.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -281,8 +326,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.RestoreBasicCommands">
-<span class="sig-name descname"><span class="pre">RestoreBasicCommands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.RestoreBasicCommands" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.restore_basic_commands">
+<span class="sig-name descname"><span class="pre">restore_basic_commands</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.restore_basic_commands" title="Link to this definition"></a></dt>
 <dd><p>Sets the current commands (__commands) to the basic POD command set.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -292,8 +337,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.ReturnHexChar">
-<span class="sig-name descname"><span class="pre">ReturnHexChar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.ReturnHexChar" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.return_hex_char">
+<span class="sig-name descname"><span class="pre">return_hex_char</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.return_hex_char" title="Link to this definition"></a></dt>
 <dd><p>Gets the tuple for the number of hex characters in the return for a given command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -309,8 +354,8 @@ description (str): String description of the command.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.Search">
-<span class="sig-name descname"><span class="pre">Search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.Search" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.search">
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.search" title="Link to this definition"></a></dt>
 <dd><p>Searches the __commands dictionary for the command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -327,53 +372,8 @@ idx (int, optional): Index for the desired value in the command information list
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.U16">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">U16</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.U16" title="Link to this definition"></a></dt>
-<dd><p>Gets value of __U16.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>int: Value of __U16.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.U32">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">U32</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.U32" title="Link to this definition"></a></dt>
-<dd><p>Gets value of __U32.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>int: Value of __U32.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.U8">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">U8</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.U8" title="Link to this definition"></a></dt>
-<dd><p>Gets value of __U8.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Return type<span class="colon">:</span></dt>
-<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
-</dd>
-</dl>
-<dl class="simple">
-<dt>Returns:</dt><dd><p>int: Value of __U8.</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.ValidateCommand">
-<span class="sig-name descname"><span class="pre">ValidateCommand</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pld</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.ValidateCommand" title="Link to this definition"></a></dt>
+<dt class="sig sig-object py" id="Morelia.Commands.PodCommands.CommandSet.validate_command">
+<span class="sig-name descname"><span class="pre">validate_command</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmd</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pld</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Commands.PodCommands.CommandSet.validate_command" title="Link to this definition"></a></dt>
 <dd><p>Raises an exception if the command and its payload are invalid for this POD device.</p>
 <dl class="simple">
 <dt>Args:</dt><dd><p>cmd (str | int): Command name or number.
