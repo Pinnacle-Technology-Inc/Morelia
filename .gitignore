@@ -14,3 +14,15 @@ extracted_database.db
 tests/pvfs/test.edf
 
 tests/pvfs/sine.db3
+
+examples/c\+\+VideoCode/ExportVideoDialog.cpp
+
+examples/c\+\+VideoCode/ExportVideoDialog.h
+
+examples/c\+\+VideoCode/MJPGVideoFile.cpp
+
+examples/c\+\+VideoCode/MJPGVideoFile.h
+
+examples/c\+\+VideoCode/MJPGVideoFilter.cpp
+
+examples/c\+\+VideoCode/MJPGVideoFilter.h
