@@ -8,12 +8,15 @@ terraform {
       source  = "komminarlabs/influxdb"
       version = "~> 1.1.2"
     }
-    //grafana = {
-      //source  = "grafana/grafana"
-      //version = "~> 2.0"
-    //}
+    grafana = {
+      source  = "grafana/grafana"
+      version = "~> 2.0"
+    }
+  
   }
 }
 
 
 provider "docker" {}
+
+//perhaps add in a volume for storage of api keys or other important information

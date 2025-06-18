@@ -2,7 +2,7 @@
 // if you want to change the variables, do so here. 
 
 grafana_admin_user="admin"
-grafana_admin_password="admin-password" 
+grafana_admin_password="admin" 
 
 grafana_internal=3000
 grafana_external=3000
