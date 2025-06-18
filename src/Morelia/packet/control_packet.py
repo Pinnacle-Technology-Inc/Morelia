@@ -75,10 +75,10 @@ class ControlPacket(PodPacket):
         """
         
         #get a tuple of sizes (in bytes) each argument is expected to have, in order.
-        arg_sizes: tuple[int] = cmds.ArgumentHexChar(cmd_number)
+        arg_sizes: tuple[int] = cmds.argument_hex_char(cmd_number)
 
         #get a tuple of sizes (in bytes) each element of the return value is expected to have, in order.
-        retval_sizes: tuple[int] = cmds.ReturnHexChar(cmd_number)
+        retval_sizes: tuple[int] = cmds.return_hex_char(cmd_number)
         
         #If the total size of the arguments is equal to the length of the payload, this must be an outgoing packet. Therefore, parse as such.
         if sum(arg_sizes) == len(payload):
