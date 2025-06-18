@@ -1,0 +1,21 @@
+// default variables for information in influx/grafana
+// if you want to change the variables, do so here. 
+
+grafana_admin_user="admin"
+grafana_admin_password="admin-password" 
+
+grafana_internal=3000
+grafana_external=3000
+grafana_url="http://localhost:3000"
+
+influxdb_admin_user="admin"
+influxdb_admin_password="admin123!!" 
+
+influxdb_token="blah123!!blah"
+influxdb_org="default-org"
+influxdb_bucket="default"
+
+influxdb_internal=8181
+influxdb_external=8181
+influxdb_url="http://localhost:8181"
+
