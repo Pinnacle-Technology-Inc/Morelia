@@ -159,7 +159,7 @@ sentence, let's see what it looks like in our example.
    # List that defines how sources map to sinks. 
    mapping = [ (pod_1, [edf_dump_1]),
                (pod_2, [edf_dump_2, influx_sink_1]),
-               (pod_2, [influx_sink_2])]
+               (pod_3, [influx_sink_2])]
 
    flowgraph = data_flow(mapping)
 
@@ -192,7 +192,7 @@ to collect for 5 minutes using our example from earlier.
 Infinite Streaming 🌌
 ---------------------
 The other way to stream is for an undefined amount of time. To begin streaming, use ``data_flow``'s ``collect`` method. This method takes no parameters and is **non-blocking**.
-When ready to stop streaming, the ``stop_collecting``. This behavior is also supported through context managers, where you can use a ``with`` statement to automatically start
+When you are ready to stop streaming, use the ``stop_collecting`` method. This behavior is also supported through context managers, where you can use a ``with`` statement to automatically start
 and stop streaming. For example,
 
 .. code-block:: python
