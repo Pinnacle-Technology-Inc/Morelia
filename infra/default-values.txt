@@ -18,5 +18,5 @@ influxdb_bucket="influx_dump"
 // measurement="default-measurement"
 
 influxdb_internal=8086
-influxdb_external=8181
-influxdb_url="http://influxdb:8181"
+influxdb_external=8086
+influxdb_url="http://influxdb:8086"
