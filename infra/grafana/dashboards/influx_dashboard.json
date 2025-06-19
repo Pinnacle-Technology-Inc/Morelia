@@ -125,7 +125,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\"\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -238,7 +238,7 @@
           },
           "editorMode": "code",
           "format": "table",
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\"\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "rawQuery": true,
           "rawSql": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )\r\n",
           "refId": "A",
@@ -366,7 +366,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\"\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -460,7 +460,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\"\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -570,7 +570,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -680,7 +680,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -790,7 +790,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
