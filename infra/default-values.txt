@@ -11,7 +11,7 @@ grafana_url="http://localhost:3000"
 influxdb_admin_user="admin"
 influxdb_admin_password="admin123!!" 
 
-influxdb_token="blah123!!blah"
+influxdb_token="admin-token"
 influxdb_org="default-org"
 influxdb_bucket="influx_dump"
 

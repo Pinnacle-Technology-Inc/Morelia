@@ -28,7 +28,7 @@ class InfluxSink(SinkInterface):
             :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
     """
 
-    def __init__(self, url: str, pod: AquisitionDevice, api_token: str = 'blah123!!blah', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement')  -> None:
+    def __init__(self, url: str, pod: AquisitionDevice, api_token: str = 'admin-token', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement')  -> None:
         """Set instance variables."""
 
         self.__api_token: str = api_token
