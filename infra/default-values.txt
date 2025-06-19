@@ -13,9 +13,10 @@ influxdb_admin_password="admin123!!"
 
 influxdb_token="blah123!!blah"
 influxdb_org="default-org"
-influxdb_bucket="default"
+influxdb_bucket="influx_dump"
 
-influxdb_internal=8181
+// measurement="default-measurement"
+
+influxdb_internal=8086
 influxdb_external=8181
-influxdb_url="http://localhost:8181"
-
+influxdb_url="http://influxdb:8181"

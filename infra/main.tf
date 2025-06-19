@@ -16,6 +16,9 @@ terraform {
   }
 }
 
+resource "docker_network" "monitoring"{
+  name = "monitoring"
+}
 
 provider "docker" {}
 

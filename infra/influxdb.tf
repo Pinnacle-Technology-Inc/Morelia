@@ -20,6 +20,11 @@ resource "docker_container" "influxdb" {
     external = var.influxdb_external
   }
 
+  networks_advanced {
+    name = docker_network.monitoring.name
+    aliases = ["influxdb"]
+  }
+
   env = [ "DOCKER_INFLUXDB_INIT_MODE=setup"
         , "DOCKER_INFLUXDB_INIT_USERNAME=${var.influxdb_admin_user}"
         , "DOCKER_INFLUXDB_INIT_PASSWORD=${var.influxdb_admin_password}"
@@ -37,7 +42,6 @@ resource "docker_container" "influxdb" {
     volume_name = "influx-sink-influx-config"
     container_path = "/etc/influxdb2"
   }
-
   
 }
 

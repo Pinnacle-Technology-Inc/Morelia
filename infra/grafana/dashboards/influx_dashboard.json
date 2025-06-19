@@ -19,13 +19,13 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 2,
+  "id": 1,
   "links": [],
   "panels": [
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -118,14 +118,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -135,7 +135,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -228,7 +228,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "dataset": "iox",
@@ -238,7 +238,7 @@
           },
           "editorMode": "code",
           "format": "table",
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "rawQuery": true,
           "rawSql": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )\r\n",
           "refId": "A",
@@ -266,7 +266,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -359,14 +359,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -376,7 +376,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -453,14 +453,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\r\n      r._value < 2\r\n  )   \r\n  |> aggregateWindow(every: 50ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -470,7 +470,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -563,14 +563,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -580,7 +580,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -673,14 +673,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -690,7 +690,7 @@
     {
       "datasource": {
         "type": "influxdb",
-        "uid": "bep9c12b1hnuoe"
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -783,14 +783,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.1+security-01",
+      "pluginVersion": "12.0.2",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\r\n      r._value > 2\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -813,5 +813,5 @@
   "timezone": "browser",
   "title": "InfluxDB2 Dashboard",
   "uid": "6d15c4dd-3679-4733-9c13-dddff6eff235",
-  "version": 20
+  "version": 1
 }
