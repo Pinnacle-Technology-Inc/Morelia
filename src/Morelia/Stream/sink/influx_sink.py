@@ -28,11 +28,11 @@ class InfluxSink(SinkInterface):
             :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
     """
 
-    def __init__(self, pod: AquisitionDevice, port: int = 8086, api_token: str = 'admin-token', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement')  -> None:
+    def __init__(self, pod: AquisitionDevice, url: str = "http://localhost:8086", api_token: str = 'admin-token', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement')  -> None:
         """Set instance variables."""
 
         self.__api_token: str = api_token
-        self._url: str = f"http://localhost:{port}" 
+        self._url: str = url 
         self._pod: AquisitionDevice = pod
 
         self._org: str = org
