@@ -1,0 +1,78 @@
+"""Send data to QuestDB."""
+
+__author__      = 'Josselyn T. Bui'
+
+
+import socket
+import reactivex as rx
+import reactivex.operators as ops
+from typing import Self
+
+from Morelia.Stream.sink import SinkInterface
+from Morelia.Devices import Pod8206HR, Pod8401HR, AquisitionDevice
+from Morelia.packet.data import DataPacket
+
+"""Stream data to QuestDB for real-time monitoring.
+
+    :param host: Specifies the source of data. For local hosting use "localhost".
+    :param port: Default QuestDB port is 9009 for ILP TCP service (InfluxDB Line Protocol).
+    :param measurement: Measurement within QuestDB to write data to.
+    :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
+"""
+class QuestSink(SinkInterface):
+    def __init__(self, host: str, port: int, measurement: str, pod: AquisitionDevice) -> None:
+        """Set instance variables"""
+        self._host = host
+        self._port = port
+        self._measurement = measurement
+        self._pod = pod
+
+        if isinstance(self._pod, Pod8401HR):
+            def _line_protocol_factory(timestamp, packet) -> str:
+                return f"""{self._measurement},channel=CHA,name={self._pod.device_name} value={packet.ch0} {timestamp}
+{self._measurement},channel=CHB,name={self._pod.device_name} value={packet.ch1} {timestamp}
+{self._measurement},channel=CHC,name={self._pod.device_name} value={packet.ch2} {timestamp}
+{self._measurement},channel=CHD,name={self._pod.device_name} value={packet.ch3} {timestamp}
+{self._measurement},channel=aEXT0,name={self._pod.device_name} value={packet.ext0} {timestamp}
+{self._measurement},channel=aEXT1,name={self._pod.device_name} value={packet.ext1} {timestamp}
+{self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
+{self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
+{self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
+{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}"""
+        else:
+            def _line_protocol_factory(timestamp, packet) -> str:
+                return f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={packet.ch0} {timestamp}
+{self._measurement},channel=CH1,name={self._pod.device_name} value={packet.ch1} {timestamp}
+{self._measurement},channel=CH2,name={self._pod.device_name} value={packet.ch2} {timestamp}
+{self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
+{self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
+{self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
+{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}"""
+
+        self._subject = rx.Subject()
+        self._data = self._subject.pipe(
+            ops.starmap(_line_protocol_factory),
+            ops.buffer_with_count(self._pod.sample_rate // 2),
+            ops.map(lambda lines: '\n'.join(lines).encode('utf-8'))
+        )
+
+    def __enter__(self) -> Self:
+        self._sock = socket.create_connection((self._host, self._port))
+        self._data.subscribe(lambda data: self._sock.sendall(data + b'\n'))
+        return self
+
+    def __exit__(self, *args, **kwargs) -> bool:
+        self._sock.close()
+        del self._sock
+        return False
+
+    def open(self) -> None:
+        self.__enter__()
+
+    def close(self) -> None:
+        self.__exit__()
+
+    def flush(self, timestamp: int, packet: DataPacket) -> None:
+        if not hasattr(self, '_sock'):
+            raise RuntimeError("Sink must be opened before flushing.")
+        self._subject.on_next((timestamp, packet))
