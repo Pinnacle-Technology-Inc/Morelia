@@ -1,3 +1,5 @@
+#!/bin/bash
+sed -i 's/\r$//' create-variables.sh
 # Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
@@ -15,7 +17,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 sudo apt-get install terraform
 
 touch terraform.tfvars
-cat "default-values.txt" > "terraform.tfvars"
+cp "default-values.txt" "terraform.tfvars"
 sudo terraform init
 sudo terraform refresh
-sudo terraform apply
+sudo terraform apply -auto-approve
