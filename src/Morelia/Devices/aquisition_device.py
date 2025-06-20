@@ -56,7 +56,7 @@ class AquisitionDevice(Pod):
             raise ValueError(f'The maximum allowable sample rate is {self.max_sample_rate} Hz.')
 
         self.write_read('SET SAMPLE RATE', (rate,))
-        self._sample_rate: int = rate
+        self._sample_rate: int = (rate,)
     
     def __enter__(self) -> Self:
 
