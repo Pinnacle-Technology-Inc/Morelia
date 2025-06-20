@@ -17,7 +17,7 @@ terraform {
 }
 
 resource "docker_network" "monitoring"{
-  name = "monitoring"
+  name = "monitoring-${terraform.workspace}"
 }
 
 provider "docker" {}

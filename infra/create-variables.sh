@@ -15,6 +15,7 @@ sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin 
 sudo apt-get install terraform
 
 touch terraform.tfvars
-cat default-values.txt > "terraform.tfvars"
+cat "default-values.txt" > "terraform.tfvars"
 sudo terraform init
+sudo terraform refresh
 sudo terraform apply
