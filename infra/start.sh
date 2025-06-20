@@ -1,5 +1,5 @@
 #!/bin/bash
-sed -i 's/\r$//' start-grafana.sh
+sed -i 's/\r$//' start.sh
 # Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl

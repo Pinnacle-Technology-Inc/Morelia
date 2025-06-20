@@ -27,6 +27,18 @@ variable "grafana_url" {
   default = "http://localhost:3000"
 }
 
+variable "use_influxdb" {
+  description = "Deploy and connect to InfluxDB"
+  type        = bool
+  default     = true
+}
+
+variable "use_questdb" {
+  description = "Deploy and connect to QuestDB"
+  type        = bool
+  default     = false
+}
+
 variable "influxdb_admin_user" {
   type = string
   description = "Admin username for InfluxDB"
@@ -73,3 +85,30 @@ variable "influxdb_url" {
   sensitive = true
 }
 
+
+variable "questdb_admin_user" { 
+	type = string 
+	description = "Admin username for QuestDB"
+	sensitive = true
+}
+
+variable "questdb_admin_password" {
+	type = string
+	description = "Admin password for QuestDB"
+	sensitive = true
+}
+
+variable "questdb_ui_port" {
+	type = number
+	description = "Internal port for QuestDB"
+}
+
+variable "questdb_pg_port" {
+	type = number 
+	description = "External port for QuestDB"
+}
+
+variable "questdb_ilp_port"{
+	type = number
+	description = "Influx Line Protocol port for QuestDB"
+}
