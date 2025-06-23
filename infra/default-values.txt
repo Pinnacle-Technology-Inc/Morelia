@@ -1,6 +1,9 @@
 // default variables for information in influx/grafana
 // if you want to change the variables, do so here. 
 
+use_influxdb = true
+use_questdb = true
+
 grafana_admin_user="admin"
 grafana_admin_password="admin" 
 
@@ -20,3 +23,10 @@ influxdb_bucket="influx_dump"
 influxdb_internal=8086
 influxdb_external=8086
 influxdb_url="http://influxdb:8086"
+
+questdb_admin_user="admin"
+questdb_admin_password="admin"
+
+questdb_ui_port=9000
+questdb_pg_port=8812
+questdb_ilp_port=9009

@@ -12,7 +12,9 @@ terraform {
       source  = "grafana/grafana"
       version = "~> 2.0"
     }
-  
+    /* QuestDB is not a Terraform provider. It will be run in a Docker container.
+	source = "https://github.com/questdb"
+	version = "~> 8.3.3" */
   }
 }
 
