@@ -12,14 +12,15 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, AquisitionDevice
 from Morelia.packet.data import DataPacket
 
-"""Stream data to QuestDB for real-time monitoring.
 
-    :param host: Specifies the source of data. For local hosting use "localhost".
-    :param port: Default QuestDB port is 9009 for ILP TCP service (InfluxDB Line Protocol).
-    :param measurement: Measurement within QuestDB to write data to.
-    :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
-"""
 class QuestSink(SinkInterface):
+    """Stream data to QuestDB for real-time monitoring.
+
+        :param host: Specifies the source of data. For local hosting use "localhost".
+        :param port: Default QuestDB port is 9009 for ILP TCP service (InfluxDB Line Protocol).
+        :param measurement: Measurement within QuestDB to write data to.
+        :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
+    """
     def __init__(self, host: str, port: int, measurement: str, pod: AquisitionDevice) -> None:
         """Set instance variables"""
         self._host = host
@@ -38,7 +39,7 @@ class QuestSink(SinkInterface):
 {self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
 {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
 {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
-{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}"""
+{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
         else:
             def _line_protocol_factory(timestamp, packet) -> str:
                 return f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={packet.ch0} {timestamp}
@@ -47,13 +48,13 @@ class QuestSink(SinkInterface):
 {self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
 {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
 {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
-{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}"""
+{self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
 
         self._subject = rx.Subject()
         self._data = self._subject.pipe(
             ops.starmap(_line_protocol_factory),
             ops.buffer_with_count(self._pod.sample_rate // 2),
-            ops.map(lambda lines: '\n'.join(lines).encode('utf-8'))
+            ops.map(lambda x: b'\n'.join(x))
         )
 
     def __enter__(self) -> Self:

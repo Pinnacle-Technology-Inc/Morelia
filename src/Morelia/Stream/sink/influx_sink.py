@@ -38,7 +38,7 @@ class InfluxSink(SinkInterface):
         self._org: str = org
         self._bucket: str = bucket
         self._measurement: str = measurement
-
+         
         if isinstance(self._pod, Pod8401HR):
             def _line_protocol_factory(timestamp, packet) -> str:
                 return f"""{self._measurement},channel=CHA,name={self._pod.device_name} value={packet.ch0} {timestamp}
@@ -61,18 +61,13 @@ class InfluxSink(SinkInterface):
                        {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
                        {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
                        {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
-
-        #self._line_protocol_factory = _line_protocol_factory
-
+        
         self._subject = rx.Subject()
-
         self._data = self._subject.pipe(
             ops.starmap(_line_protocol_factory),
             ops.buffer_with_count(self._pod.sample_rate//2),
             ops.map(lambda x: b'\n'.join(x))
         )
-
-    
     #the following two methods implement the context manager protocol to allow
     #this sink to work within a `with` block. To illuminate why these methods are the
     #they are, see the relevent section of the python manual:
