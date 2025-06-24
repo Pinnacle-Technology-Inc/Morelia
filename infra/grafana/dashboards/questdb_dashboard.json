@@ -126,7 +126,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='TTL1'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -255,7 +255,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='TTL2'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL2'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -384,7 +384,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='TTL3'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL3'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -497,7 +497,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='TTL4'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL4'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -626,7 +626,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='CH0'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH0'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -755,7 +755,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='CH1'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH1'",
           "refId": "A",
           "sql": {
             "columns": [
@@ -884,7 +884,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM questdb_default WHERE channel='CH2'",
+          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH2'",
           "refId": "A",
           "sql": {
             "columns": [
