@@ -38,6 +38,7 @@ sudo apt-get install terraform
 
 touch terraform.tfvars
 cp "default-values.txt" "terraform.tfvars"
+
 sudo terraform init
 sudo terraform refresh
 sudo terraform apply -auto-approve
