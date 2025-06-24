@@ -24,8 +24,9 @@ class Pod8206HR(AquisitionDevice) :
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual name used to indentify device.
    """ 
-
     def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None) -> None :
+        
+        #self._port_value = port
 
         # initialize POD_Basics
         super().__init__(port, 2000, baudrate, device_name) 
@@ -55,16 +56,15 @@ class Pod8206HR(AquisitionDevice) :
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preamp_gain : int = preamp_gain 
         
-        # define function used to decode packet from binary data.
-        def decode_packet(command_number: int, payload: bytes) -> tuple:
-            if command_number == 106:
-                return Pod8206HR._translate_ttlbyte_ascii(payload)
-
-            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
-        
         # the constructor used to create control packets as they are recieved.
-        self._control_packet_factory = partial(ControlPacket, decode_packet)
+        self._control_packet_factory = partial(ControlPacket, self.decode_packet)
 
+    # define function used to decode packet from binary data.
+    def decode_packet(self, command_number: int, payload: bytes) -> tuple:
+        if command_number == 106:
+            return Pod8206HR._translate_ttlbyte_ascii(payload)
+
+        return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
 
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
@@ -100,3 +100,11 @@ class Pod8206HR(AquisitionDevice) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
+
+    def get_dict(self):
+        return {
+            'port': self._port_value,
+            'preamp_gain': self._preamp_gain,
+            'baudrate': self._baudrate,
+            'device_name': self._device_name
+        }

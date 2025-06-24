@@ -24,21 +24,22 @@ class EDFSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod: AquisitionDevice ) -> None:
+    def __init__(self, file_path: str, pod_type: str, sample_rate) -> None:
         """ Class constructor."""
         self._file_path = file_path
-        self._pod = pod
+        self._pod_type = pod_type
+        self._sample_rate = sample_rate
 
-        if isinstance(self._pod, Pod8206HR):
+        if self._pod_type == "Pod8206HR":
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
 
-        elif isinstance(self._pod, Pod8401HR):
+        elif self._pod_type == "Pod8401HR":
 
             preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
             self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 
-        elif isinstance(self._pod, Pod8274D):
+        elif self._pod_type == "Pod8274D":
                 self._channels('length_in_bytes', 'data')
 
 
@@ -112,3 +113,9 @@ class EDFSink(SinkInterface):
     def _write_buffer_to_edf(self) -> None:
         self._edf_writer.writeSamples(list(map(np.array, self._buffer)))
         self._buffer = [ [] for _ in self._channels ]
+
+    def get_dict(self):
+        return {
+            'file_path': self._file_path,
+            'pod': self._pod
+        }

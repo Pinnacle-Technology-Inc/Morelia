@@ -31,21 +31,26 @@ class Pod :
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
         the serial port communication (_port) and for the command handler (_commands).
         """
+        self._baudrate = baudrate
 
         # initialize serial port 
-        self._port : PortIO = PortIO(port, baudrate)
+        self._port_value = port 
+        #: PortIO = PortIO(port, baudrate)
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
-       
+
         #set device name.
         self._device_name: str = device_name if device_name else str(port)
-    
+
         #function that will be used to create new control packets from this device.
         #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
+    def open_port(self):
+        # initialize serial port 
+        self._port : PortIO = PortIO(self._port_value, self._baudrate)
 
     @staticmethod
     def get_u(u: int) -> int : 

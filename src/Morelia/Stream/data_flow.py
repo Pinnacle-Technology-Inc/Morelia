@@ -19,6 +19,15 @@ from Morelia.Stream.source import get_data
 import Morelia.Stream.sink as pod_sink
 
 import time
+import inspect
+import pickle
+
+def _get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
+    source = source_class(**source_dict)
+    source.open_port()
+    sinks = [sink_class(**sink_dict) for sink_class, sink_dict in sinks_list]
+
+    get_data(duration_sec, manual_stop_event, source, sinks)
 
 class DataFlow:
     """Class that use multiprocessing to efficiently collect data from many devices at once.
@@ -75,22 +84,42 @@ class DataFlow:
 
         :raises ValueError: Raise an error for invalid combinations of sink and filter method.
         """
+        if not hasattr(self, "_manager"):
+            self._manager = mp.Manager()
         
         #to begin, create all the process objects necessary for each source, sinks pair.
         for source, sinks in self._network:
 
             #event that signals the stream has been stopped by `stop_collecting`.
-            manual_stop_event: mp.Event = mp.Event()
-            self._manual_stop_events.append(manual_stop_event)
+            manual_stop_event = self._manager.Event()
+            #manual_stop_event: mp.Event = mp.Event()
             
+            self._manual_stop_events.append(manual_stop_event)
+
+            #TODO implement source.get_dict (turns source parameters into list)
+            source_class = type(source)
+            source_dict = source.get_dict()
+
+            sinks_list = [
+                (type(sink), sink.get_dict()) for sink in sinks
+            ]
+            #pickle.dumps(source_dict)  # this should succeed
             #create worker process.
-            worker: mp.Process = mp.Process(target=get_data, args=(duration_sec, manual_stop_event, source, sinks))
+            worker: mp.Process = mp.Process(target=_get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
 
             self._workers.append(worker)
 
         #start processes
         for worker in self._workers:
             worker.start()
+
+    def get_init_args(self, obj):
+        sig = inspect.signature(obj.__init__)
+        return {
+            k: getattr(obj, k)
+            for k in sig.parameters
+            if k != 'self' and hasattr(obj, k)
+        }
 
     def __enter__(self) -> None:
         self.collect()
