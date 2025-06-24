@@ -24,18 +24,19 @@ class EDFSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod_type: str, sample_rate) -> None:
+    def __init__(self, file_path: str, pod_type: str, sample_rate, preamp) -> None:
         """ Class constructor."""
         self._file_path = file_path
         self._pod_type = pod_type
         self._sample_rate = sample_rate
+        self._preamp = preamp
 
         if self._pod_type == "Pod8206HR":
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
 
         elif self._pod_type == "Pod8401HR":
 
-            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
+            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(preamp).values() if not preamp is None else ['A', 'B', 'C', 'D']
 
             self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 
@@ -57,7 +58,7 @@ class EDFSink(SinkInterface):
            self._edf_writer.setSignalHeader( idx, {
                 'label'         :  channel,
                 'dimension'     :  'uV',
-                'sample_frequency'   :  self._pod.sample_rate,
+                'sample_frequency'   :  self._sample_rate,
                 'physical_max'  :  EDF_PHYSICAL_BOUND,
                 'physical_min'  : -EDF_PHYSICAL_BOUND,
                 'digital_max'   :  EDF_DIGITAL_MAX,
@@ -86,7 +87,7 @@ class EDFSink(SinkInterface):
         :meta private:
         """
         
-        if isinstance(self._pod, Pod8206HR):
+        if self._pod_type == 'Pod8206HR':
             self._buffer[0].append(packet.ch0)
             self._buffer[1].append(packet.ch1)
             self._buffer[2].append(packet.ch2)
@@ -95,7 +96,7 @@ class EDFSink(SinkInterface):
             self._buffer[5].append(float(packet.ttl3))
             self._buffer[6].append(float(packet.ttl4))
 
-        elif isinstance(self._pod, Pod8401HR):
+        elif self._pod_type == 'Pod8401HR':
             self._buffer[0].append(packet.ch0)
             self._buffer[1].append(packet.ch1)
             self._buffer[2].append(packet.ch2)
@@ -107,7 +108,7 @@ class EDFSink(SinkInterface):
             self._buffer[8].append(float(packet.ttl3))
             self._buffer[9].append(float(packet.ttl4))
 
-        if len(self._buffer[0]) >= self._pod.sample_rate:
+        if len(self._buffer[0]) >= self._sample_rate:
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:
@@ -117,5 +118,7 @@ class EDFSink(SinkInterface):
     def get_dict(self):
         return {
             'file_path': self._file_path,
-            'pod': self._pod
+            'pod_type': self._pod_type,
+            'sample_rate': self._sample_rate,
+            'preamp': self._preamp
         }
