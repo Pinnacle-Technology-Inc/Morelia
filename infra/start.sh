@@ -44,4 +44,7 @@ sudo terraform refresh
 sudo terraform apply -auto-approve
 
 echo "Grafana server started on http://localhost:3000 (default unless explicitly changed)"
-echo "Influx server started on http://localhost:8086 (default unless explicitly changed)" 
+echo "Influx server started on http://localhost:8086 (default unless explicitly changed)"
+
+# Run the live demo !!
+python3 live_demo.py
