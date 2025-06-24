@@ -301,6 +301,7 @@ class PvfsToVideoConverter:
                     
                     # Get frame size
                     width, height = video_file.get_frame_size()
+                    print(f"Frame size {width} {height}")
                     
                     # Extract frames to temporary directory
                     frame_count = 0

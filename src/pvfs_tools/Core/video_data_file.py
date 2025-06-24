@@ -81,7 +81,6 @@ class VideoDataFile:
         print("Reading header...")
         # Read magic bytes ("PVID")
         magic = self._index_file.read(4)
-        print(f"Magic bytes: {magic.hex()}")
         if magic != b'PVID':
             raise RuntimeError(f"Invalid magic bytes: {magic.hex()}")
             
@@ -90,20 +89,16 @@ class VideoDataFile:
         minor = self._index_file.fread_uint8()
         release = self._index_file.fread_uint16()
         self._version = (major, minor, release)
-        print(f"Version: {self._version}")
         
         # Read dimensions
         self._height = self._index_file.fread_uint32()
         self._width = self._index_file.fread_uint32()
-        print(f"Dimensions: {self._width}x{self._height}")
         
         # Read compression type
         self._compression_type = self._index_file.fread_uint16()
-        print(f"Compression type: {self._compression_type}")
         
         # Read differencing frame number
         self._differencing_frame_number = self._index_file.fread_uint8()
-        print(f"Differencing frame number: {self._differencing_frame_number}")
         
         # Skip remaining header bytes
         current_pos = self._index_file.tell()
@@ -113,28 +108,21 @@ class VideoDataFile:
         # Read frame count from file size
         info = self._index_file.get_file_info()
         self._frame_count = (info.size - self.INDEX_HEADER_SIZE) // self.FRAME_ENTRY_SIZE
-        print(f"Frame count: {self._frame_count}")
-        
-        # Calculate frame rate from first two frames
-        if self._frame_count >= 2:
-            print("Reading first two frames for frame rate calculation...")
-            time1, _ = self._read_frame_header(0)  # First frame is at index 0
-            time2, _ = self._read_frame_header(1)  # Second frame is at index 1
-            print(f"First frame time: {time1}")
-            print(f"Second frame time: {time2}")
-            if time1 and time2:
-                dt = (time2.seconds + time2.subseconds) - (time1.seconds + time1.subseconds)
-                if dt > 0:
-                    self._frame_rate = 1.0 / dt
-                    print(f"Frame rate: {self._frame_rate}")
                     
         # Set start and end times
-        if self._frame_count > 0:
+        if self._frame_count > 1:
             print("Reading start and end times...")
             self._start_time, _ = self._read_frame_header(0)  # First frame
             print(f"Start time: {self._start_time}")
             self._end_time, _ = self._read_frame_header(self._frame_count - 1)  # Last frame
             print(f"End time: {self._end_time}")
+
+            if self._start_time and self._end_time:
+                dt = (self._end_time.seconds + self._end_time.subseconds) - (self._start_time.seconds + self._start_time.subseconds)
+                if dt > 0:
+                    self._frame_rate = (self._frame_count - 1) / dt
+
+            print(f"Frame rate {self._frame_rate}")
             
     def close(self) -> None:
         """Close the video stream files."""
@@ -193,7 +181,6 @@ class VideoDataFile:
         try:
             # Calculate location in file
             location = self.INDEX_HEADER_SIZE + frame_index * self.FRAME_ENTRY_SIZE
-            print(f"Reading frame header at location {location} (frame {frame_index})")
             self._index_file.seek(location)
             
             # Check marker bytes
@@ -207,18 +194,48 @@ class VideoDataFile:
             # Read timestamp
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
+            print(f"timestamp {seconds}  {subseconds}")
             timestamp = HighTime(seconds, subseconds)
-            print(f"Read timestamp: {timestamp}")
             
             # Read frame location
             frame_location = self._index_file.fread_int64()
-            print(f"Frame location: {frame_location}")
+            print(f"frame location {frame_location}")
             
             return timestamp, frame_location
             
         except Exception as e:
             print(f"Error reading frame header: {e}")
             return None, -1
+        
+    @staticmethod
+    def check_vp8_header(frame_data: bytes) -> bool:
+        if len(frame_data) < 10:
+            print("Too short to be valid VP8")
+            return False
+
+        # Parse the first 3 bytes (Frame Tag)
+        b0, b1, b2 = frame_data[0], frame_data[1], frame_data[2]
+        frame_type = b0 & 0x01  # LSB is 0 for key frame
+        version = (b0 >> 1) & 0x07
+        show_frame = (b0 >> 4) & 0x01
+        first_partition_size = ((b0 >> 5) | (b1 << 3) | (b2 << 11)) & 0x7FFFF
+
+        print(f"Frame type: {'key' if frame_type == 0 else 'inter'}")
+        print(f"Version: {version}")
+        print(f"Show Frame: {show_frame}")
+        print(f"First partition size: {first_partition_size}")
+
+        # If it's a key frame, check for the magic number
+        if frame_type == 0:
+            if frame_data[3:6] != b'\x9D\x01\x2A':
+                print("Missing VP8 sync code")
+                return False
+            else:
+                print("Valid VP8 keyframe header")
+        else:
+            print("Non-keyframe — sync code not required")
+
+        return True
             
     def _read_frame_data(self, location: int) -> Optional[bytes]:
         """Read frame data from the specified location.
@@ -233,22 +250,29 @@ class VideoDataFile:
             return None
             
         try:
+#            location  = 101807
             self._frames_file.seek(location)
             
             # Check marker byte
-            marker = self._frames_file.fread_uint8()
-            if marker != self.UNIQUE_MARKER_BYTE:
-                print(f"Invalid marker byte at location {location}: {marker:02x}")
-                return None
+#            marker = self._frames_file.fread_uint8()
+#            if marker != self.UNIQUE_MARKER_BYTE:
+#                print(f"Invalid marker byte at location {location}: {marker:02x}")
+#                return None
                 
             # Read frame size
             frame_size = self._frames_file.fread_uint32()
+            print(f"Frame size {frame_size}")
             if frame_size <= 0 or frame_size > 1024 * 1024 * 10:  # Sanity check: max 10MB per frame
                 print(f"Invalid frame size at location {location}: {frame_size}")
                 return None
             
             # Read frame data
             frame_data = self._frames_file.read(frame_size)
+
+            if frame_data:
+                is_valid = self.check_vp8_header(frame_data)
+                print(f"VP8 header valid: {is_valid}")
+
             if len(frame_data) != frame_size:
                 print(f"Failed to read complete frame data. Expected {frame_size} bytes, got {len(frame_data)}")
                 return None
@@ -258,7 +282,7 @@ class VideoDataFile:
         except Exception as e:
             print(f"Error reading frame data at location {location}: {e}")
             return None
-            
+
     def _decode_vpx_frame(self, frame_data: bytes) -> Optional[np.ndarray]:
         """Decode a VPX frame using imageio.
         
@@ -306,14 +330,16 @@ class VideoDataFile:
             return self._frame_buffer[frame_index]
             
         # Calculate frame header location using FRAME_ENTRY_SIZE
-        header_location = self.INDEX_HEADER_SIZE + frame_index * self.FRAME_ENTRY_SIZE
+#        frame_index = self.INDEX_HEADER_SIZE + frame_index * self.FRAME_ENTRY_SIZE
         
         # Read frame header
         _, frame_location = self._read_frame_header(frame_index)
         if frame_location < 0:
             return None
+        print(f"frame index and location {frame_index}  {frame_location}")
             
         # Read frame data
+        self._current_frame_index = frame_index
         frame_data = self._read_frame_data(frame_location)
         if not frame_data:
             return None
