@@ -2,7 +2,7 @@
 // if you want to change the variables, do so here. 
 
 use_influxdb = true
-use_questdb = true
+use_questdb = false
 
 grafana_admin_user="admin"
 grafana_admin_password="admin" 
