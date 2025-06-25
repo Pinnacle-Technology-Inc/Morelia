@@ -41,6 +41,9 @@ class PvfsToVideoConverter:
         self.cancel_conversion = False
         self.channel_name_map = {}
         
+        # Set default output file
+        self.output_file = os.path.join(os.getcwd(), "output.webm")
+        
         # Create main container with padding
         main_container = ttk.Frame(self.root, padding="10")
         main_container.pack(fill="both", expand=True)
@@ -121,7 +124,7 @@ class PvfsToVideoConverter:
         output_frame.pack(fill="x", pady=5)
         
         ttk.Button(output_frame, text="Select Output File", command=self.select_output_file).pack(side="left", padx=5)
-        self.output_label = ttk.Label(output_frame, text="No output file selected")
+        self.output_label = ttk.Label(output_frame, text=os.path.basename(self.output_file))
         self.output_label.pack(side="left", padx=5)
         
         # Convert button
@@ -241,6 +244,7 @@ class PvfsToVideoConverter:
             
     def select_output_file(self):
         file_path = filedialog.asksaveasfilename(
+            initialfile=os.path.basename(self.output_file),
             defaultextension=".webm",
             filetypes=[("WebM files", "*.webm"), ("All files", "*.*")]
         )
@@ -290,6 +294,7 @@ class PvfsToVideoConverter:
                 self.show_message("Error", str(e), "error")
                 return
                 
+            self.update_progress(10, "Opening video file...")
             
             # Get the video data
             with VideoDataFile(self.vfs, stream_name) as video_file:
@@ -298,23 +303,65 @@ class PvfsToVideoConverter:
                 width, height = video_file.get_frame_size()
                 frame_rate = video_file.get_frame_rate()
                 print(f"Frame  {width} {height} {frame_rate}")
-                with WebMWriter("output.webm", frame_rate, width, height) as writer:                
+                
+                # Convert time range to frame indices
+                file_start_time = video_file.get_start_time()
+                file_start_seconds = file_start_time.seconds + file_start_time.subseconds
+                start_seconds = start_ht.seconds + start_ht.subseconds
+                end_seconds = end_ht.seconds + end_ht.subseconds
+                
+                # Calculate frame indices based on time
+                start_index = int((start_seconds - file_start_seconds) * frame_rate)
+                end_index = int((end_seconds - file_start_seconds) * frame_rate)
+                
+                # Clamp to valid range
+                start_index = max(0, min(start_index, video_file.get_frame_count() - 1))
+                end_index = max(start_index, min(end_index, video_file.get_frame_count() - 1))
+                
+                # Find nearest keyframe indices if time range doesn't match file boundaries
+                file_end_time = video_file.get_end_time()
+                file_end_seconds = file_end_time.seconds + file_end_time.subseconds
+                
+                if (abs(start_seconds - file_start_seconds) > 0.1 or 
+                    abs(end_seconds - file_end_seconds) > 0.1):
+                    self.update_progress(15, "Finding nearest keyframes...")
+                    start_index, end_index = video_file.find_nearest_keyframe_indices(start_index, end_index)
+                    self.update_progress(20, f"Adjusted to keyframes: {start_index} to {end_index}")
+                else:
+                    self.update_progress(20, f"Using full file range: 0 to {video_file.get_frame_count() - 1}")
                     start_index = 0
+                    end_index = video_file.get_frame_count() - 1
+                
+                self.update_progress(25, "Initializing WebM writer...")
+                
+                with WebMWriter(self.output_file, frame_rate, width, height) as writer:                
                     write_index = 0
-                    end_index = video_file.get_frame_count()
-                    for i in range(start_index, end_index):
+                    total_frames = end_index - start_index + 1
+                    
+                    self.update_progress(30, f"Processing {total_frames} frames...")
+                    
+                    for i in range(start_index, end_index + 1):
+                        # Update progress every 10 frames or at least every 1%
+                        if (i - start_index) % 10 == 0 or (i - start_index) % max(1, total_frames // 100) == 0:
+                            progress = 30 + ((i - start_index) / total_frames) * 65  # 30% to 95%
+                            self.update_progress(progress, f"Processing frame {i+1} of {end_index+1}")
+                        
                         ts, loc = video_file._read_frame_header(i)
                         frame = video_file._read_frame_data(loc)
                         is_key = video_file.check_vp8_header(frame) and (frame[0] & 0x01 == 0)
                         writer.write_frame(frame, is_keyframe=is_key, frame_index = write_index, frame_rate = frame_rate)
                         write_index += 1
                 
+                self.update_progress(95, "Finalizing video file...")
+                
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"
             self.show_message("Error", error_msg, "error")
         finally:
             # Reset progress bar
-            self.update_progress(0, "")
+            self.update_progress(100, "Conversion complete!")
+            # Reset after a short delay
+            self.root.after(2000, lambda: self.update_progress(0, ""))
             
     def run(self):
         self.root.mainloop()
