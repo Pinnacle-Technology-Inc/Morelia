@@ -47,6 +47,12 @@ else
     fi
 fi
 
+# Install Morelia from Morelia-develop branch (will have to change PATH later)
+echo "Installing Morelia..."
+cd .. 
+pip install . 
+cd infra
+
 # Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
