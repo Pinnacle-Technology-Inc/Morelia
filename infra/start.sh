@@ -1,5 +1,52 @@
 #!/bin/bash
 sed -i 's/\r$//' start.sh
+
+# Check if Anaconda is installed and install if not
+if command -v conda &>/dev/null; then
+    echo "Anaconda is already installed."
+else
+    echo "Anaconda is not installed. Installing now..."
+
+    # Download Anaconda installer
+    wget -q https://repo.anaconda.com/archive/Anaconda3-2023.03-Linux-x86_64.sh -O Anaconda3.sh
+
+    if [ $? -eq 0 ]; then
+        echo "Anaconda installer downloaded successfully."
+    else
+        echo "Failed to download Anaconda installer."
+        exit 1
+    fi
+
+    # Run the Anaconda installer
+    bash Anaconda3.sh -b
+
+    if [ $? -eq 0 ]; then
+        echo "Anaconda installation successful."
+    else
+        echo "Anaconda installation failed."
+        exit 1
+    fi
+
+    # Remove the installer file after installation
+    rm Anaconda3.sh
+
+    # Initialize Anaconda and add it to the PATH
+    echo "Initializing Anaconda..."
+    source ~/anaconda3/bin/activate
+
+    # Add Anaconda to PATH in .bashrc
+    echo 'export PATH="~/anaconda3/bin:$PATH"' >> ~/.bashrc
+    source ~/.bashrc
+
+    # Verify installation
+    if command -v conda &>/dev/null; then
+        echo "Anaconda installed and configured successfully."
+    else
+        echo "Failed to set up Anaconda in PATH."
+        exit 1
+    fi
+fi
+
 # Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
@@ -50,6 +97,3 @@ echo "Influx server started on http://localhost:8086 (default unless explicitly 
 chmod +x wsl-setup.sh
 before=($(ls /dev/ttyUSB* 2>/dev/null))
        ./wsl-setup.sh "${before[@]}"
-
-
-
