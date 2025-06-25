@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import subprocess
 import tempfile
+from pvfs_tools.Core.webm_helpers import WebMWriter
 
 # Add the parent directory to sys.path to import pvfs_tools
 sys.path.append(str(Path(__file__).parent.parent))
@@ -289,71 +290,22 @@ class PvfsToVideoConverter:
                 self.show_message("Error", str(e), "error")
                 return
                 
-            # Create temporary directory for frame extraction
-            with tempfile.TemporaryDirectory() as temp_dir:
-                # Extract frames
-                self.update_progress(10, "Extracting video frames...")
-                
-                # Get the video data
-                with VideoDataFile(self.vfs, stream_name) as video_file:
-                    start_ht = HighTime(start_time)
-                    end_ht = HighTime(end_time)
-                    
-                    # Get frame size
-                    width, height = video_file.get_frame_size()
-                    print(f"Frame size {width} {height}")
-                    
-                    # Extract frames to temporary directory
-                    frame_count = 0
-                    frames = video_file.get_frames(start_ht, end_ht)
-                    
-                    for frame in frames:
-                        # Save frame to temporary file
-                        frame_path = os.path.join(temp_dir, f"frame_{frame_count:06d}.raw")
-                        frame.tofile(frame_path)
-                        frame_count += 1
-                        
-                        # Update progress
-                        progress = 10 + (frame_count / len(frames)) * 80
-                        self.update_progress(progress, f"Extracting frame {frame_count}...")
-                    
-                    if frame_count == 0:
-                        raise Exception("No frames were extracted from the video")
-                    
-                    # Convert frames to WebM using ffmpeg
-                    self.update_progress(90, "Converting to WebM...")
-                    
-                    # Build ffmpeg command
-                    ffmpeg_cmd = [
-                        'ffmpeg',
-                        '-y',  # Overwrite output file if it exists
-                        '-f', 'rawvideo',
-                        '-vcodec', 'rawvideo',
-                        '-s', f'{width}x{height}',
-                        '-pix_fmt', 'rgb24',
-                        '-r', str(video_file.get_frame_rate()),
-                        '-i', os.path.join(temp_dir, 'frame_%06d.raw'),
-                        '-c:v', 'libvpx',
-                        '-crf', '30',  # Quality (lower is better, 0-63)
-                        '-b:v', '2M',  # Bitrate
-                        self.output_file
-                    ]
-                    
-                    # Run ffmpeg
-                    process = subprocess.Popen(
-                        ffmpeg_cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE
-                    )
-                    
-                    # Wait for completion
-                    stdout, stderr = process.communicate()
-                    
-                    if process.returncode != 0:
-                        raise Exception(f"FFmpeg conversion failed: {stderr.decode()}")
-                    
-                    self.update_progress(100, "Conversion completed!")
-                    self.show_message("Success", "Video conversion completed successfully!")
+            
+            # Get the video data
+            with VideoDataFile(self.vfs, stream_name) as video_file:
+                start_ht = HighTime(start_time)
+                end_ht = HighTime(end_time)
+                width, height = video_file.get_frame_size()
+                frame_rate = video_file.get_frame_rate()
+                print(f"Frame  {width} {height} {frame_rate}")
+                with WebMWriter("output.webm", frame_rate, width, height) as writer:                
+                    start_index = 0
+                    end_index = video_file.get_frame_count()
+                    for i in range(start_index, end_index + 1):
+                        ts, loc = video_file._read_frame_header(i)
+                        frame = video_file._read_frame_data(loc)
+                        is_key = video_file.check_vp8_header(frame) and (frame[0] & 0x01 == 0)
+                        writer.write_frame(frame, is_keyframe=is_key)
                 
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"

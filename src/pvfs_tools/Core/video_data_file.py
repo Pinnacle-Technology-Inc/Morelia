@@ -4,7 +4,6 @@ from .pvfs_binding import PvfsFile, HighTime
 import struct
 from PIL import Image
 import io
-import imageio.v3 as iio
 
 class VideoDataFile:
     """Python implementation for accessing video data stored in a PVFS file.
@@ -283,36 +282,6 @@ class VideoDataFile:
             print(f"Error reading frame data at location {location}: {e}")
             return None
 
-    def _decode_vpx_frame(self, frame_data: bytes) -> Optional[np.ndarray]:
-        """Decode a VPX frame using imageio.
-        
-        Args:
-            frame_data: The raw VPX frame data
-            
-        Returns:
-            The decoded frame as a numpy array, or None if decoding failed
-        """
-        try:
-            # Create a temporary WebM container with the frame
-            with io.BytesIO() as f:
-                # Write WebM header
-                f.write(b'\x1A\x45\xDF\xA3')  # EBML header
-                f.write(b'\x01\x00\x00\x00\x00\x00\x00')  # Version 1
-                f.write(b'\x42\x82\x84\x77\x65\x62\x6D')  # WebM
-                f.write(b'\x42\x87\x81\x01')  # DocTypeVersion
-                f.write(b'\x42\x85\x81\x02')  # DocTypeReadVersion
-                
-                # Write VP8 frame
-                f.write(frame_data)
-                
-                # Seek to start and decode
-                f.seek(0)
-                frame = iio.imread(f, format='webm', index=0)
-                return frame
-        except Exception as e:
-            print(f"Error decoding VPX frame: {e}")
-            return None
-
     def get_frame(self, frame_index: int) -> Optional[np.ndarray]:
         """Get a specific frame by index.
         
@@ -344,28 +313,8 @@ class VideoDataFile:
         if not frame_data:
             return None
             
-        # Handle VPX frames
-        if self._compression_type == 2:  # VPX
-            frame = self._decode_vpx_frame(frame_data)
-            if frame is not None:
-                # Cache the decoded frame
-                self._frame_buffer[frame_index] = frame
-                # Limit buffer size
-                if len(self._frame_buffer) > 10:  # Keep last 10 frames
-                    oldest_key = min(self._frame_buffer.keys())
-                    del self._frame_buffer[oldest_key]
-            return frame
-        else:
-            # Non-VPX frame handling
-            try:
-                img = Image.open(io.BytesIO(frame_data))
-                frame = np.array(img)
-                # Cache the decoded frame
-                self._frame_buffer[frame_index] = frame
-                return frame
-            except Exception as e:
-                print(f"Error converting frame data to image: {e}")
-                return None
+        frame = np.array(frame_data)
+        return frame
             
     def get_frame_at_time(self, time: HighTime) -> Optional[np.ndarray]:
         """Get the frame closest to the specified time.
@@ -420,3 +369,25 @@ class VideoDataFile:
                 self._index_file is not None and 
                 self._start_time is not None and 
                 self._end_time is not None) 
+
+    def find_nearest_keyframe_indices(video, start_index: int, end_index: int) -> Tuple[int, int]:
+        adjusted_start = start_index
+        adjusted_end = end_index
+
+            # Move forward from start_index to find the next keyframe (inclusive)
+        for i in range(start_index, video.get_frame_count()):
+            ts, loc = video._read_frame_header(i)
+            data = video._read_frame_data(loc)
+            if video.check_vp8_header(data) and (data[0] & 0x01 == 0):  # keyframe
+                adjusted_start = i
+                break
+
+        # Move backward from end_index to find the previous keyframe (inclusive)
+        for i in range(end_index, -1, -1):
+            ts, loc = video._read_frame_header(i)
+            data = video._read_frame_data(loc)
+            if video.check_vp8_header(data) and (data[0] & 0x01 == 0):  # keyframe
+                adjusted_end = i
+                break
+
+        return adjusted_start, adjusted_end
