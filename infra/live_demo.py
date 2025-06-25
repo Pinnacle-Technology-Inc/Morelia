@@ -14,11 +14,6 @@ devices = sys.argv[1:]
 # Inital live demo set up
 print("Starting the live demo...")
 
-<<<<<<< HEAD
-# Connect to 8206HR devices on /dev/ttyUSB0-2 and set the preamplifer gain to 10.
-print(f"Connecting to pod device on {devices[0]} and setting the preamp gain to 10")
-pod_influxdb = Pod8206HR(devices[0], 10)
-=======
 # Create an array to store pod devices 
 pods = {} 
 
@@ -26,7 +21,6 @@ pods = {}
 for idx, device in enumerate(devices):
     print(f"Connecting to pod device on {device} and setting the preamp gain to 10")
     pods[f"pod_{idx}"] = Pod8206HR(device, 10)
->>>>>>> terraform-feature
 
 # Create InfluxDB Sink
 influx_sink = InfluxSink(pods["pod_0"])
