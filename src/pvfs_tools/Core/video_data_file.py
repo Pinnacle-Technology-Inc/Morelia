@@ -193,12 +193,12 @@ class VideoDataFile:
             # Read timestamp
             seconds = self._index_file.fread_int64()
             subseconds = self._index_file.fread_double()
-            print(f"timestamp {seconds}  {subseconds}")
+#            print(f"timestamp {seconds}  {subseconds}")
             timestamp = HighTime(seconds, subseconds)
             
             # Read frame location
             frame_location = self._index_file.fread_int64()
-            print(f"frame location {frame_location}")
+#            print(f"frame location {frame_location}")
             
             return timestamp, frame_location
             
@@ -219,20 +219,20 @@ class VideoDataFile:
         show_frame = (b0 >> 4) & 0x01
         first_partition_size = ((b0 >> 5) | (b1 << 3) | (b2 << 11)) & 0x7FFFF
 
-        print(f"Frame type: {'key' if frame_type == 0 else 'inter'}")
-        print(f"Version: {version}")
-        print(f"Show Frame: {show_frame}")
-        print(f"First partition size: {first_partition_size}")
+#        print(f"Frame type: {'key' if frame_type == 0 else 'inter'}")
+#        print(f"Version: {version}")
+#        print(f"Show Frame: {show_frame}")
+#        print(f"First partition size: {first_partition_size}")
 
         # If it's a key frame, check for the magic number
         if frame_type == 0:
             if frame_data[3:6] != b'\x9D\x01\x2A':
-                print("Missing VP8 sync code")
+#                print("Missing VP8 sync code")
                 return False
-            else:
-                print("Valid VP8 keyframe header")
-        else:
-            print("Non-keyframe — sync code not required")
+#            else:
+#                print("Valid VP8 keyframe header")
+#        else:
+#            print("Non-keyframe — sync code not required")
 
         return True
             
@@ -260,7 +260,7 @@ class VideoDataFile:
                 
             # Read frame size
             frame_size = self._frames_file.fread_uint32()
-            print(f"Frame size {frame_size}")
+#            print(f"Frame size {frame_size}")
             if frame_size <= 0 or frame_size > 1024 * 1024 * 10:  # Sanity check: max 10MB per frame
                 print(f"Invalid frame size at location {location}: {frame_size}")
                 return None
@@ -270,7 +270,7 @@ class VideoDataFile:
 
             if frame_data:
                 is_valid = self.check_vp8_header(frame_data)
-                print(f"VP8 header valid: {is_valid}")
+#                print(f"VP8 header valid: {is_valid}")
 
             if len(frame_data) != frame_size:
                 print(f"Failed to read complete frame data. Expected {frame_size} bytes, got {len(frame_data)}")
@@ -305,7 +305,7 @@ class VideoDataFile:
         _, frame_location = self._read_frame_header(frame_index)
         if frame_location < 0:
             return None
-        print(f"frame index and location {frame_index}  {frame_location}")
+#        print(f"frame index and location {frame_index}  {frame_location}")
             
         # Read frame data
         self._current_frame_index = frame_index

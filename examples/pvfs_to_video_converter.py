@@ -300,12 +300,14 @@ class PvfsToVideoConverter:
                 print(f"Frame  {width} {height} {frame_rate}")
                 with WebMWriter("output.webm", frame_rate, width, height) as writer:                
                     start_index = 0
+                    write_index = 0
                     end_index = video_file.get_frame_count()
-                    for i in range(start_index, end_index + 1):
+                    for i in range(start_index, end_index):
                         ts, loc = video_file._read_frame_header(i)
                         frame = video_file._read_frame_data(loc)
                         is_key = video_file.check_vp8_header(frame) and (frame[0] & 0x01 == 0)
-                        writer.write_frame(frame, is_keyframe=is_key)
+                        writer.write_frame(frame, is_keyframe=is_key, frame_index = write_index, frame_rate = frame_rate)
+                        write_index += 1
                 
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"
