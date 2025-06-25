@@ -46,5 +46,10 @@ sudo terraform apply -auto-approve
 echo "Grafana server started on http://localhost:3000 (default unless explicitly changed)"
 echo "Influx server started on http://localhost:8086 (default unless explicitly changed)"
 
-# Run the live demo !!
-python3 live_demo.py
+# Detect new /dev/ttyUSB device
+chmod +x wsl-setup.sh
+before=($(ls /dev/ttyUSB* 2>/dev/null))
+       ./wsl-setup.sh "${before[@]}"
+
+# Run the wsl-setup script to bind the new /dev/ttyUSB devices
+bash wsl-setup.sh
