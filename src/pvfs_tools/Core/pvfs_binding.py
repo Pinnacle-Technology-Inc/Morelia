@@ -588,6 +588,48 @@ class HighTime:
     def __radd__(self, other):
         return self.__add__(other)
 
+    def __lt__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() < other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() < other.to_seconds()
+        return NotImplemented
+
+    def __le__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() <= other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() <= other.to_seconds()
+        return NotImplemented
+
+    def __gt__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() > other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() > other.to_seconds()
+        return NotImplemented
+
+    def __ge__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() >= other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() >= other.to_seconds()
+        return NotImplemented
+
+    def __eq__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() == other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() == other.to_seconds()
+        return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, (int, float)):
+            return self.to_seconds() != other
+        elif isinstance(other, HighTime):
+            return self.to_seconds() != other.to_seconds()
+        return NotImplemented
+
     def __repr__(self):
         return f"HighTime(seconds={self.seconds}, subseconds={self.subseconds})"
 

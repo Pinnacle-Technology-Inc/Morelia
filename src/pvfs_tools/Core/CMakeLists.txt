@@ -21,6 +21,7 @@ endif()
 # Create the shared library
 add_library(pvfs_wrapper SHARED
     pvfs_wrapper.cpp
+    mjpg_video_wrapper.cpp
 )
 
 # Set the output name of the DLL
@@ -40,8 +41,15 @@ if(NOT PVFS_LIBRARY)
     message(FATAL_ERROR "PVFS library not found. Please ensure pvfs.dll is in the source directory.")
 endif()
 
-# Link against the PVFS library
-target_link_libraries(pvfs_wrapper PRIVATE ${PVFS_LIBRARY})
+# Find Qt libraries
+find_package(Qt5 COMPONENTS Core Gui REQUIRED)
+
+# Link against the PVFS library and Qt
+target_link_libraries(pvfs_wrapper PRIVATE 
+    ${PVFS_LIBRARY}
+    Qt5::Core
+    Qt5::Gui
+)
 
 # Copy PVFS DLL to build directory
 add_custom_command(TARGET pvfs_wrapper POST_BUILD

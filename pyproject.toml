@@ -16,6 +16,8 @@ dependencies = [
   "reactivex",
   "pydantic",     
   "SQLAlchemy",  
+  "Pillow>=10.0.0",
+  "PyAV"
 ]
 
 [project.optional-dependencies]
