@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import subprocess
 import tempfile
+import threading
 from pvfs_tools.Core.webm_helpers import WebMWriter
 
 # Add the parent directory to sys.path to import pvfs_tools
@@ -20,41 +21,29 @@ class PvfsToVideoConverter:
         self.root = tk.Tk()
         self.root.title("PVFS to WebM Converter")
         self.root.geometry("800x600")
-        
-        # Set theme if available
+
         try:
             self.root.tk.call('source', 'azure.tcl')
             self.root.tk.call('set_theme', 'light')
         except:
-            pass  # Use default theme if custom theme not available
-        
+            pass
+
         style = ttk.Style()
         style.theme_use('clam')
-        
+
         self.pvfs_file = None
         self.vfs = None
         self.db = None
-        self.video_channels = []
-        self.selected_channel = None
-        self.start_time = None
-        self.end_time = None
-        self.cancel_conversion = False
-        self.channel_name_map = {}
-        
-        # Set default output file
         self.output_file = os.path.join(os.getcwd(), "output.webm")
-        
-        # Create main container with padding
-        main_container = ttk.Frame(self.root, padding="10")
-        main_container.pack(fill="both", expand=True)
-        
-        self.setup_ui(main_container)
-        
-        # Center the window on screen
+        self.channel_name_map = {}
+
+        self.main_container = ttk.Frame(self.root, padding="10")
+        self.main_container.pack(fill="both", expand=True)
+
+        self.setup_ui()
         self.center_window()
-        
+
     def center_window(self):
-        """Center the window on the screen."""
         self.root.update_idletasks()
         width = self.root.winfo_width()
         height = self.root.winfo_height()
@@ -80,74 +69,60 @@ class PvfsToVideoConverter:
         dialog.geometry(f'+{x}+{y}')
         dialog.destroy()
         
-    def setup_ui(self, parent):
-        # File selection
-        file_frame = ttk.LabelFrame(parent, text="File Selection", padding="10")
-        file_frame.pack(fill="x", pady=5)
-        
+    def setup_ui(self):
+        # File Selection
+        file_frame = ttk.LabelFrame(self.main_container, text="File Selection", padding="10")
+        file_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Button(file_frame, text="Select PVFS File", command=self.select_pvfs_file).pack(side="left", padx=5)
         self.file_label = ttk.Label(file_frame, text="No file selected")
         self.file_label.pack(side="left", padx=5)
-        
-        # Video channel selection
-        channel_frame = ttk.LabelFrame(parent, text="Video Channel Selection", padding="10")
-        channel_frame.pack(fill="both", expand=True, pady=5)
-        
-        self.channel_listbox = tk.Listbox(channel_frame, selectmode="single", 
-                                        font=('TkDefaultFont', 10),
-                                        highlightthickness=1,
-                                        highlightbackground='#cccccc')
+
+        # Channel Selection
+        channel_frame = ttk.LabelFrame(self.main_container, text="Video Channel Selection", padding="10")
+        channel_frame.grid(row=1, column=0, columnspan=2, sticky="nsew", pady=5)
+        self.main_container.rowconfigure(1, weight=1)
+        self.channel_listbox = tk.Listbox(channel_frame, selectmode="single")
         self.channel_listbox.pack(side="left", fill="both", expand=True, padx=5, pady=5)
-        
         scrollbar = ttk.Scrollbar(channel_frame, orient="vertical", command=self.channel_listbox.yview)
-        scrollbar.pack(side="right", fill="y", pady=5)
+        scrollbar.pack(side="right", fill="y")
         self.channel_listbox.configure(yscrollcommand=scrollbar.set)
-        
-        # Time range selection
-        time_frame = ttk.LabelFrame(parent, text="Time Range", padding="10")
-        time_frame.pack(fill="x", pady=5)
-        
+
+        # Time Range
+        time_frame = ttk.LabelFrame(self.main_container, text="Time Range", padding="10")
+        time_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Label(time_frame, text="Start Time:").grid(row=0, column=0, padx=5, pady=5)
         self.start_time_entry = ttk.Entry(time_frame, width=25)
         self.start_time_entry.grid(row=0, column=1, padx=5, pady=5)
-        
         ttk.Label(time_frame, text="End Time:").grid(row=0, column=2, padx=5, pady=5)
         self.end_time_entry = ttk.Entry(time_frame, width=25)
         self.end_time_entry.grid(row=0, column=3, padx=5, pady=5)
-        
-        # Add time format help label
-        ttk.Label(time_frame, text="Format: YYYY-MM-DD HH:MM:SS.ss", 
-                 font=('TkDefaultFont', 9)).grid(row=1, column=0, columnspan=4, pady=5)
-        
-        # Output file selection
-        output_frame = ttk.LabelFrame(parent, text="Output", padding="10")
-        output_frame.pack(fill="x", pady=5)
-        
+        ttk.Label(time_frame, text="Format: YYYY-MM-DD HH:MM:SS.ss").grid(row=1, column=0, columnspan=4, pady=5)
+
+        # Output
+        output_frame = ttk.LabelFrame(self.main_container, text="Output", padding="10")
+        output_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Button(output_frame, text="Select Output File", command=self.select_output_file).pack(side="left", padx=5)
         self.output_label = ttk.Label(output_frame, text=os.path.basename(self.output_file))
         self.output_label.pack(side="left", padx=5)
-        
-        # Convert button
-        convert_frame = ttk.Frame(parent)
-        convert_frame.pack(fill="x", pady=10)
-        ttk.Button(convert_frame, text="Convert to WebM", command=self.convert_to_webm).pack(pady=5)
-        
-        # Progress bar
-        self.progress_frame = ttk.LabelFrame(parent, text="Progress", padding="10")
-        self.progress_frame.pack(fill="x", pady=5)
-        
+
+        # Convert Button
+        convert_frame = ttk.Frame(self.main_container)
+        convert_frame.grid(row=4, column=0, columnspan=2, sticky="ew", pady=5)
+        self.convert_button = ttk.Button(convert_frame, text="Convert to WebM", command=self.convert_to_webm)
+        self.convert_button.pack(pady=5)
+
+        # Progress
+        progress_frame = ttk.LabelFrame(self.main_container, text="Progress", padding="10")
+        progress_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=5)
         self.progress_var = tk.DoubleVar()
-        self.progress_bar = ttk.Progressbar(
-            self.progress_frame, 
-            variable=self.progress_var,
-            maximum=100,
-            mode='determinate',
-            length=300
-        )
-        self.progress_bar.pack(fill="x", padx=5, pady=5)
-        
-        self.progress_label = ttk.Label(self.progress_frame, text="")
-        self.progress_label.pack(pady=5)
+        self.progress_bar = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100, mode='determinate')
+        self.progress_bar.grid(row=0, column=0, columnspan=2, sticky="ew", padx=5)
+        self.progress_label = ttk.Label(progress_frame, text="Ready")
+        self.progress_label.grid(row=1, column=0, columnspan=2, pady=5)
+
+        progress_frame.columnconfigure(0, weight=1)
+        self.main_container.columnconfigure(0, weight=1)
+        self.main_container.columnconfigure(1, weight=1)
         
     def select_pvfs_file(self):
         file_path = filedialog.askopenfilename(
@@ -261,40 +236,65 @@ class PvfsToVideoConverter:
             raise ValueError(f"Invalid time format: {time_str}. Expected format: YYYY-MM-DD HH:MM:SS.ss")
             
     def update_progress(self, value: float, text: str = ""):
-        """Update the progress bar and label."""
-        if abs(self.progress_var.get() - value) > 1.0:
-            self.progress_var.set(value)
-            if text:
-                self.progress_label.config(text=text)
-            self.root.update_idletasks()
+        """Update the progress bar and label."""       
+        # Set the value directly
+        self.progress_var.set(value)
+        
+        # Also try setting the widget value directly
+        self.progress_bar.configure(value=value)
+        
+        if text:
+            self.progress_label.config(text=text)
+            
+        # Force immediate update with multiple methods
+        self.progress_bar.update_idletasks()
+        self.root.update_idletasks()
+        
+            
+    def update_progress_thread_safe(self, value: float, text: str = ""):
+        """Thread-safe progress update that can be called from worker thread."""
+        self.root.after(0, lambda: self.update_progress(value, text))
             
     def convert_to_webm(self):
         if not hasattr(self, 'output_file'):
             self.show_message("Error", "Please select an output file", "error")
             return
             
+        # Get selected channel
+        selected_indices = self.channel_listbox.curselection()
+        if not selected_indices:
+            self.show_message("Error", "Please select a video channel", "error")
+            return
+            
+        selected_channel = self.channel_listbox.get(selected_indices[0])
+        stream_name = self.channel_name_map[selected_channel]
+        
+        # Get time range
+        try:
+            start_time = self.parse_local_time(self.start_time_entry.get())
+            end_time = self.parse_local_time(self.end_time_entry.get())
+        except ValueError as e:
+            self.show_message("Error", str(e), "error")
+            return
+            
+        # Disable the convert button during conversion
+        self.convert_button.config(state='disabled')
+        
+        # Start conversion in a separate thread
+        conversion_thread = threading.Thread(
+            target=self._convert_to_webm_worker,
+            args=(stream_name, start_time, end_time),
+            daemon=True
+        )
+        conversion_thread.start()
+        
+    def _convert_to_webm_worker(self, stream_name: str, start_time: float, end_time: float):
+        """Worker method that runs the actual conversion in a separate thread."""
         try:
             # Reset progress
-            self.update_progress(0, "Starting conversion...")
+            self.update_progress_thread_safe(0, "Starting conversion...")
             
-            # Get selected channel
-            selected_indices = self.channel_listbox.curselection()
-            if not selected_indices:
-                self.show_message("Error", "Please select a video channel", "error")
-                return
-                
-            selected_channel = self.channel_listbox.get(selected_indices[0])
-            stream_name = self.channel_name_map[selected_channel]
-            
-            # Get time range
-            try:
-                start_time = self.parse_local_time(self.start_time_entry.get())
-                end_time = self.parse_local_time(self.end_time_entry.get())
-            except ValueError as e:
-                self.show_message("Error", str(e), "error")
-                return
-                
-            self.update_progress(10, "Opening video file...")
+            self.update_progress_thread_safe(10, "Opening video file...")
             
             # Get the video data
             with VideoDataFile(self.vfs, stream_name) as video_file:
@@ -324,27 +324,27 @@ class PvfsToVideoConverter:
                 
                 if (abs(start_seconds - file_start_seconds) > 0.1 or 
                     abs(end_seconds - file_end_seconds) > 0.1):
-                    self.update_progress(15, "Finding nearest keyframes...")
+                    self.update_progress_thread_safe(15, "Finding nearest keyframes...")
                     start_index, end_index = video_file.find_nearest_keyframe_indices(start_index, end_index)
-                    self.update_progress(20, f"Adjusted to keyframes: {start_index} to {end_index}")
+                    self.update_progress_thread_safe(20, f"Adjusted to keyframes: {start_index} to {end_index}")
                 else:
-                    self.update_progress(20, f"Using full file range: 0 to {video_file.get_frame_count() - 1}")
+                    self.update_progress_thread_safe(20, f"Using full file range: 0 to {video_file.get_frame_count() - 1}")
                     start_index = 0
                     end_index = video_file.get_frame_count() - 1
                 
-                self.update_progress(25, "Initializing WebM writer...")
+                self.update_progress_thread_safe(25, "Initializing WebM writer...")
                 
                 with WebMWriter(self.output_file, frame_rate, width, height) as writer:                
                     write_index = 0
                     total_frames = end_index - start_index + 1
                     
-                    self.update_progress(30, f"Processing {total_frames} frames...")
+                    self.update_progress_thread_safe(30, f"Processing {total_frames} frames...")
                     
                     for i in range(start_index, end_index + 1):
-                        # Update progress every 10 frames or at least every 1%
-                        if (i - start_index) % 10 == 0 or (i - start_index) % max(1, total_frames // 100) == 0:
+                        # Update progress every 100 frames or at least every 5%
+                        if (i - start_index) % 100 == 0 or (i - start_index) % max(1, total_frames // 20) == 0:
                             progress = 30 + ((i - start_index) / total_frames) * 65  # 30% to 95%
-                            self.update_progress(progress, f"Processing frame {i+1} of {end_index+1}")
+                            self.update_progress_thread_safe(progress, f"Processing frame {i+1} of {end_index+1}")
                         
                         ts, loc = video_file._read_frame_header(i)
                         frame = video_file._read_frame_data(loc)
@@ -352,17 +352,23 @@ class PvfsToVideoConverter:
                         writer.write_frame(frame, is_keyframe=is_key, frame_index = write_index, frame_rate = frame_rate)
                         write_index += 1
                 
-                self.update_progress(95, "Finalizing video file...")
+                self.update_progress_thread_safe(95, "Finalizing video file...")
                 
         except Exception as e:
             error_msg = f"Conversion failed: {str(e)}"
-            self.show_message("Error", error_msg, "error")
+            self.root.after(0, lambda: self.show_message("Error", error_msg, "error"))
         finally:
-            # Reset progress bar
-            self.update_progress(100, "Conversion complete!")
-            # Reset after a short delay
-            self.root.after(2000, lambda: self.update_progress(0, ""))
+            # Reset progress bar and re-enable button
+            self.root.after(0, lambda: self._conversion_complete())
             
+    def _conversion_complete(self):
+        """Called when conversion is complete to update UI."""
+        self.update_progress(100, "Conversion complete!")
+        # Re-enable the convert button
+        self.convert_button.config(state='normal')
+        # Reset after a short delay
+        self.root.after(2000, lambda: self.update_progress(0, "Ready"))
+        
     def run(self):
         self.root.mainloop()
         
