@@ -48,6 +48,7 @@ cp "default-values.txt" "terraform.tfvars"
 
 sudo terraform init
 sudo terraform refresh
+sudo terraform destroy -auto-approve
 sudo terraform apply -auto-approve
 
 echo "Grafana server started on http://localhost:3000 (default unless explicitly changed)"
