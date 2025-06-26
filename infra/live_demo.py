@@ -15,21 +15,21 @@ devices = sys.argv[1:]
 print("Starting the live demo...")
 
 # Create an array to store pod devices 
-pods = {} 
+pods = {}
 
 # Connect to 8206HR devices on /dev/ttyUSB0-2 and set the preamplifer gain to 10.
 for idx, device in enumerate(devices):
     print(f"Connecting to pod device on {device} and setting the preamp gain to 10")
-    pods[f"pod_{idx}"] = Pod8206HR(device, 10)
+    pods[idx] = Pod8206HR(device, 10)
 
-# Create InfluxDB Sink
-influx_sink = InfluxSink(pods["pod_0"])
+print(f"Devices available for connection: {pods} ")
 
-# Create EDF sink
-edf_sink = EDFSink("edf_dump", pods["pod_1"])
+# Confirm there is one device and create InfluxDB Sink for that device
+# And change the mapping to include only that device
+influx_sink = InfluxSink(pods[0])
+mapping = [(pods[0], [influx_sink])]
 
-mapping = [(pods["pod_0"], [influx_sink]),
-           (pods["pod_1"], [edf_sink])]
+# Write your own dump for the second Pod device here! 
 
 flowgraph = DataFlow(mapping)
 
