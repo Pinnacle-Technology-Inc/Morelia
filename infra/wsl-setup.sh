@@ -18,6 +18,7 @@ shopt -u nocasematch
 
 after=($(ls /dev/ttyUSB* 2>/dev/null))
 
+echo "Finding new Pod devices..."
 # Find entries in $after that weren't in $before
 new_nodes=()
 for dev in "${after[@]}"; do
@@ -49,6 +50,7 @@ fi
 
 echo "Ubuntu setup complete!"
 
+echo "Starting up the live demo streaming script..."
 # Run the live demo !!
 chmod +x live_demo.py
 python3 live_demo.py "${new_nodes[@]}"
