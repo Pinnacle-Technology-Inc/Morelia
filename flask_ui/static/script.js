@@ -1,4 +1,4 @@
-
+/*
 function sayHello() {
     alert("Hello from JavaScript!");
 }
@@ -24,4 +24,4 @@ document.addEventListener('DOMContentLoaded', () => {
       });
   });
 })
-
+*/

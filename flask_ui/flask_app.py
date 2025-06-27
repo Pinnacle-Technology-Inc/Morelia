@@ -1,18 +1,23 @@
-from flask import Flask, request, render_template
+from flask import Flask, request, render_template, redirect, url_for, flash
 import toml
 import os
+import pdb
 
 app = Flask(__name__)
+#flash in Flask needs a key to temporarily store data for this session
+app.secret_key = b'_5#y2L"F4Q8z\n\ggff'
+
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("test.html")
 
 @app.route("/submit", methods=["POST"])
 def submit():
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Device Configuration File',
+        'filename': request.form.get('filename'),
         'channel_names': {
             'channel_1': request.form.get('channel_1'),
             'channel_2': request.form.get('channel_2'),
@@ -78,10 +83,13 @@ def submit():
         filename += ".toml"
 
     if os.path.exists(filename):
-        return f"{filename} already exists! Not overwriting"
+        flash(f"{filename} already exists! Not overwriting")
     else:
         #create a toml dump out of the dictionary, and write it to the file
         toml_str = toml.dumps(data)
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(toml_str)
-        return f"{filename} created successfully!"
+        flash(f"{filename} created successfully!")
+
+    #return to home page
+    return redirect(url_for("index"))

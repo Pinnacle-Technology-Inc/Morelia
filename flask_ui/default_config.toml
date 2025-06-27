@@ -1,0 +1,44 @@
+title = "Device Configuration File"
+
+[channel_names]
+channel_1 = "1"
+channel_2 = "2"
+channel_3 = "3"
+
+[information]
+sample_rate = "400"
+preamp_gain = "100"
+
+[channel_settings]
+eeg1 = "100"
+eeg2 = "100"
+emg = "100"
+notch_enabled = "true"
+notch_value = "100"
+
+[ttl_controls.ttl1]
+output = "false"
+rising_event = "false"
+falling_event = "false"
+event_comment = "TTL 1"
+
+[ttl_controls.ttl2]
+output = "false"
+set_state = "false"
+rising_event = "false"
+falling_event = "false"
+event_comment = "TTL 2"
+
+[ttl_controls.ttl3]
+output = "false"
+set_state = "false"
+rising_event = "false"
+falling_event = "false"
+event_comment = "TTL 3"
+
+[ttl_controls.ttl4]
+output = "false"
+set_state = "false"
+rising_event = "false"
+falling_event = "false"
+event_comment = "TTL 4"

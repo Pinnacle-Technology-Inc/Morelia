@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Device Config</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+    body {
+      display: flex;
+      font-family: Arial, sans-serif;
+      margin: 0;
+    }
+    .sidebar {
+      background-color: #2d5b3b;
+      color: white;
+      width: 250px;
+      padding: 20px;
+    }
+    .logo {
+      background-color: white;
+      color: #2d5b3b;
+      font-weight: bold;
+      text-align: center;
+      border-radius: 50%;
+      margin: 0 auto 10px;
+      padding: 10px;
+      width: 60px;
+      height: 60px;
+    }
+    .title {
+      font-size: 24px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .sidebar input[type="text"],
+    .sidebar select, .sidebar button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .main-content {
+      background-color: #f4f4f4;
+      flex-grow: 1;
+      padding: 20px;
+    }
+    fieldset {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: white;
+    }
+    legend {
+      font-weight: bold;
+    }
+    #ttl-controls {
+      background-color: #dad7cd;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(9, auto);
+      gap: 10px;
+      align-items: center;
+    }
+    #ttl-controls label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    .ttl-label {
+      background-color: #588157;
+      color: white;
+      padding: 5px 10px;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .ttl-header {
+      grid-column: span 9;
+      display: grid;
+      grid-template-columns: repeat(9, auto);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .ttl-row {
+      display: contents;
+    }
+    .ttl-row input[type="text"] {
+      width: 100px;
+    }
+    .form-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .form-buttons button {
+      padding: 5px 15px;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="device-bar">
+    <div class="logo">LOGO</div>
+    <h1 class="title" id="morelia">Morelia</h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type">
+      <option selected>Pod8206HR</option>
+      <option>Pod8229</option>
+      <option>Pod8274D</option>
+      <option>Pod8401HR</option>
+      <option>Pod8480SC</option>
+    </select>
+    <button id="upload_firmware">Upload New Firmware</button>
+    <button id="load_config">Load Device Configuration</button>
+    <button id="save_config">Save Device Configuration</button>
+  </div>
+
+  <div class="main-content" id="8206-device-config">
+    <h2>Devices | Configuration</h2>
+    <h3>Settings > 8206HR</h3>
+
+    <form id="device-form" action="/submit" method="post">
+	<label for="config_name">Config. File Name</label>
+    	<input type="text" name="filename" id="filename" placeholder="Untitled">
+      <fieldset id="information">
+        <legend>Information</legend>
+        <label>Firmware Version: X.X.X</label><br>
+        <label>Sample Rate (Hz)</label>
+        <select name="sample_rate">
+          <option value="400">400</option>
+        </select>
+        <label>Preamp Gain</label>
+        <select name="preamp_gain">
+          <option value="100">100</option>
+        </select>
+      </fieldset>
+
+      <fieldset id="channel_names">
+        <legend>Channel Names</legend>
+        <label>Channel 1</label>
+        <input type="text" name="channel_1" value="EEG1">
+        <label>Channel 2</label>
+        <input type="text" name="channel_2" value="EEG2">
+        <label>Channel 3</label>
+        <input type="text" name="channel_3" value="EEG3">
+      </fieldset>
+
+      <fieldset id="channel_settings">
+        <legend>Channel Settings</legend>
+        <label>EEG1</label>
+        <input type="number" name="eeg1" value="40">
+        <label>EEG2</label>
+        <input type="number" name="eeg2" value="40">
+        <label>EMG</label>
+        <input type="number" name="emg" value="100">
+        <label>Notch</label>
+        <input type="number" name="notch_value" value="60">
+        <input type="checkbox" name="notch_enabled" value="true" id="notch_enabled">
+      </fieldset>
+
+           <fieldset>
+        <legend>TTL Controls</legend>
+        <div id="ttl-controls">
+          <div class="ttl-header">
+            <label></label>
+            <label>Output?</label>
+            <label>Set State</label>
+            <label>Current State</label>
+            <label>Rising Event</label>
+            <label>Falling Event</label>
+            <label>Event Comment</label>
+            <label>Debounce</label>
+            <label>Synchronous</label>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL1</div>
+            <input type="checkbox" name="ttl1_output" value="true" id="ttl1_output">
+            <input type="checkbox" name="ttl1_set_state" value="true" id="ttl1_set_state">
+            <input type="checkbox" name="ttl1_set_current_state" value="true" id="ttl1_set_current_state">
+            <input type="checkbox" name="ttl1_rising_event" value="true" id="ttl1_rising_event">
+            <input type="checkbox" name="ttl1_falling_event" value="true" id="ttl1_falling_event">
+            <input type="text" name="ttl1_event_comment" value="TTL 1">
+            <input type="checkbox" name="debounce" value="true" id="debounce">
+            <input type="checkbox" name="synchronous" value="true" id="synchronous">
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL2</div>
+            <input type="checkbox" name="ttl2_output" value="true" id="ttl2_output">
+            <input type="checkbox" name="ttl2_set_state" value="true" id="ttl2_set_state">
+            <input type="checkbox" name="ttl2_set_current_state" value="true" id="ttl2_set_current_state">
+            <input type="checkbox" name="ttl2_rising_event" value="true" id="ttl2_rising_event">
+            <input type="checkbox" name="ttl2_falling_event" value="true" id="ttl2_falling_event">
+            <input type="text" name="ttl2_event_comment" value="TTL 2">
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL3</div>
+            <input type="checkbox" name="ttl3_output" value="true" id="ttl3_output">
+            <input type="checkbox" name="ttl3_set_state" value="true" id="ttl3_set_state">
+            <input type="checkbox" name="ttl3_set_current_state" value="true" id="ttl3_set_current_state">
+            <input type="checkbox" name="ttl3_rising_event" value="true" id="ttl3_rising_event">
+            <input type="checkbox" name="ttl3_falling_event" value="true" id="ttl3_falling_event">
+            <input type="text" name="ttl3_event_comment" value="TTL 3">
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL4</div>
+            <input type="checkbox" name="ttl4_output" value="true" id="ttl4_output">
+            <input type="checkbox" name="ttl4_set_state" value="true" id="ttl4_set_state">
+            <input type="checkbox" name="ttl4_set_current_state" value="true" id="ttl4_set_current_state">
+            <input type="checkbox" name="ttl4_rising_event" value="true" id="ttl4_rising_event">
+            <input type="checkbox" name="ttl4_falling_event" value="true" id="ttl4_falling_event">
+            <input type="text" name="ttl4_event_comment" value="TTL 4">
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </fieldset>
+
+
+      <div class="form-buttons">
+        <button type="submit" style="background-color:#678b5b; color:white;">OK</button>
+        <button type="reset" style="background-color:#d9d9d9;">Cancel</button>
+      </div>
+    </form>
+  </div>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+
