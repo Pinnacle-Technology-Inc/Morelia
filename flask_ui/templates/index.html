@@ -1,151 +1,82 @@
-:<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
-  <head>
-    <title>Device Config</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
-  </head>
-  <body>
-    <div id="device-bar">
-      <!--Place Morelia logo here-->
-      <h1 id="morelia">Morelia</h1>
-      <div id="device-type">
-        <div>
-        </div>
+<head>
+  <title>Homepage</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+	@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+	 
+    .main {
+      flex: 1;
+      padding: 50px;
+      text-align: center;
+    }
 
-        <div id="device-bar-buttons">
+    .main h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
 
-        </div>
-      </div>
-    </div> 
-    <div id="8206-device-config">
-      <form id="device-form" action="/submit" method="post">
- 
-      <div id="information">
-        <select name="sample_rate">
-          <option value="400" selected>400</option>
-        </select>
-        <select name="preamp_gain">
-          <option value="100" selected>100</option>
-        </select>
-      </div>
+    .main img {
+      border-radius: 50%;
+      margin: 25px auto 0px;
+      padding: 10px;
+      width: 200px;
+      height: 200px;
+    }
 
-      <div>
-	<h2>Channel Settings</h2>
-      </div>
-      <div id="channel_names">
-        <input type="text" name="channel_1" value="EEG1" placeholder="Enter name"/> 
-        <input type="text" name="channel_2" value="EEG2" placeholder="Enter name"/>
-        <input type="text" name="channel_3" value="EEG3" placeholder="Enter name"/>
-      </div>
-      
-      <div id="channel_settings">
-        <input type="number" name="eeg1" value="40"/>
-        <input type="number" name="eeg2" value="40"/>
-        <input type="number" name="emg" value="100"/>
-        <input type="hidden" name="notch_enabled" value="false">
-        <input type="checkbox" name="notch_enabled" value="true" id="notch_enabled"/>
-        <input type="number" name="notch_value" value="60"/>
-      </div>
+    .main button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 30px;
+      background-color: #4a704d;
+      color: white;
+      cursor: pointer;
+    }
 
-      <div id="ttl-controls">
-        
-        <div id="ttl1">
-          <input type="hidden" name="ttl1_output" value="false">
-          <input type="checkbox" name="ttl1_output" value="true" id="ttl1_output"/>
+    .menu {
 
-          <input type="hidden" name="ttl1_set_state" value="false">
-          <input type="checkbox" name="ttl1_set_state" value="true" id="ttl1_set_state"/> 
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="device-bar">
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type" size="6" onchange="goToPage()">
+      <option value="">-- Select a device --</option>
+      <option value="/Pod8206HR">Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC">Pod8480SC</option>
+    </select>
+    <button id="load_config">Load Device Configuration</button>
+    <button id="save_config">Save Device Configuration</button>
+  </div>
 
-          <input type="hidden" name="ttl1_set_current_state" value="false">
-          <input type="checkbox" name="ttl1_set_current_state" value="true" id="ttl1_set_current_state"/> 
+  <div class="main">
 
-          <input type="hidden" name="ttl1_rising_event" value="false">
-          <input type="checkbox" name="ttl1_rising_event" value="true" id="ttl1_rising_event"/>
-            
-          <input type="hidden" name="ttl1_falling_event" value="false">
-          <input type="checkbox" name="ttl1_falling_event" value="true" id="ttl1_falling_event"/>
+    <h1>Welcome to <br> Morelia!</h1>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Python_Australia_Zoo.JPG/1200px-Python_Australia_Zoo.JPG" alt="Morelia Logo">
 
-          <input type="text" name="ttl1_event_comment" value="TTL 1">
-        </div>
-
-        <div id="ttl2">
-          <input type="hidden" name="ttl2_output" value="false">
-          <input type="checkbox" name="ttl2_output" value="true" id="ttl2_output"/>
-
-          <input type="hidden" name="ttl2_set_state" value="false">
-          <input type="checkbox" name="ttl2_set_state" value="true" id="ttl2_set_state"/> 
-
-          <input type="hidden" name="ttl2_set_current_state" value="false">
-          <input type="checkbox" name="ttl2_set_current_state" value="true" id="ttl2_set_current_state"/> 
-
-          <input type="hidden" name="ttl2_rising_event" value="false">
-          <input type="checkbox" name="ttl2_rising_event" value="true" id="ttl2_rising_event"/>
-            
-          <input type="hidden" name="ttl2_falling_event" value="false">
-          <input type="checkbox" name="ttl2_falling_event" value="true" id="ttl2_falling_event"/>
-
-          <input type="text" name="ttl2_event_comment" value="TTL 2">
-        </div>
-
-        <div id="ttl3">
-          <input type="hidden" name="ttl3_output" value="false">
-          <input type="checkbox" name="ttl3_output" value="true" id="ttl3_output"/>
-
-          <input type="hidden" name="ttl3_set_state" value="false">
-          <input type="checkbox" name="ttl3_set_state" value="true" id="ttl3_set_state"/> 
-
-          <input type="hidden" name="ttl3_set_current_state" value="false">
-          <input type="checkbox" name="ttl3_set_current_state" value="true" id="ttl3_set_current_state"/> 
-
-          <input type="hidden" name="ttl3_rising_event" value="false">
-          <input type="checkbox" name="ttl3_rising_event" value="true" id="ttl3_rising_event"/>
-            
-          <input type="hidden" name="ttl3_falling_event" value="false">
-          <input type="checkbox" name="ttl3_falling_event" value="true" id="ttl3_falling_event"/>
-
-          <input type="text" name="ttl3_event_comment" value="TTL 3">
-        </div>
-
-        <div id="ttl4">
-          <input type="hidden" name="ttl4_output" value="false">
-          <input type="checkbox" name="ttl4_output" value="true" id="ttl4_output"/>
-
-          <input type="hidden" name="ttl4_set_state" value="false">
-          <input type="checkbox" name="ttl4_set_state" value="true" id="ttl4_set_state"/> 
-
-          <input type="hidden" name="ttl4_set_current_state" value="false">
-          <input type="checkbox" name="ttl4_set_current_state" value="true" id="ttl4_set_current_state"/> 
-
-          <input type="hidden" name="ttl4_rising_event" value="false">
-          <input type="checkbox" name="ttl4_rising_event" value="true" id="ttl4_rising_event"/>
-            
-          <input type="hidden" name="ttl4_falling_event" value="false">
-          <input type="checkbox" name="ttl4_falling_event" value="true" id="ttl4_falling_event"/>
-
-          <input type="text" name="ttl4_event_comment" value="TTL 4">
-        </div>
-             
-      <input type="hidden" name="debounce" value="false">
-      <input type="checkbox" name="debounce" value="true" id="debounce"/>
-       
-      <input type="hidden" name="synchronous" value="false">
-      <input type="checkbox" name="synchronous" value="true" id="synchronous"/>
-
-      </div>
-
-      <button type="submit">Submit</button>
-      </form>
+    <h3 style="margin-bottom:0px;">Get Started</h3>
+    <h3 style="color:#A3B18A; margin-top: 0px; margin-bottom: 10px;">_____________</h3>
+    <div class="menu">
+	<button style="background-color: #A3B18A; color: black; margin-bottom: 45px;"><a href="https://pinnacle-technology-inc.github.io/Morelia/getting_started.html" target="_blank">Read Morelia Docs</a></button>
+    	<button><a href="/Pod8206HR">Configure Pod8206HR Device</a></button>
+    	<button><a href="/Pod8229">Configure Pod8229 Device</a></button>
+    	<button><a href="/Pod8274D">Configure Pod8274D Device</a></button>
+    	<button><a href="/Pod8401HR">Configure Pod8401HR Device</a></button>
+    	<button><a href="/Pod8480SC">Configure Pod8480SC Device</a></button>
     </div>
-        <script src="{{ url_for('static', filename='script.js') }}"></script>
-  
-	{% with messages = get_flashed_messages() %}
-  	{% if messages %}
-    <div class="bg-green-200 text-green-900 p-2 mb-4 rounded">
-	{% for m in messages %}
-        <p>{{ m }}</p>
-	{% endfor %}
-    </div>
-  	{% endif %}
-	{% endwith %}
-  </body>
+  </div>
+    
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
 </html>
+

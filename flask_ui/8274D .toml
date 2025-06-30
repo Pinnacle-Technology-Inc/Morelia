@@ -1,21 +1,21 @@
-title = "Pod8206HR Device Configuration File"
-filename = "test-one"
+title = "Pod8274D Device Configuration File"
+filename = "8274D "
 
 [channel_names]
-channel_1 = "11"
-channel_2 = "22"
-channel_3 = "33"
+channel_1 = "EEG1"
+channel_2 = "EEG2"
+channel_3 = "EEG3"
 
 [information]
 sample_rate = "400"
 preamp_gain = "100"
 
 [channel_settings]
-eeg1 = "100"
-eeg2 = "100"
-emg = "100"
+eeg1 = "1"
+eeg2 = "2"
+emg = "3"
 notch_enabled = "false"
-notch_value = "100"
+notch_value = "4"
 
 [ttl_controls.ttl1]
 event_comment = "TTL 1"

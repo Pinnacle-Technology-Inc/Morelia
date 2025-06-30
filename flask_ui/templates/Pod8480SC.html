@@ -1,121 +1,38 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Device Config</title>
+  <title>Pod8480SC Device Config</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
   <style>
-    body {
-      display: flex;
-      font-family: Arial, sans-serif;
-      margin: 0;
-    }
-    .sidebar {
-      background-color: #2d5b3b;
-      color: white;
-      width: 250px;
-      padding: 20px;
-    }
-    .logo {
-      background-color: white;
-      color: #2d5b3b;
-      font-weight: bold;
-      text-align: center;
-      border-radius: 50%;
-      margin: 0 auto 10px;
-      padding: 10px;
-      width: 60px;
-      height: 60px;
-    }
-    .title {
-      font-size: 24px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    .sidebar input[type="text"],
-    .sidebar select, .sidebar button {
-      width: 100%;
-      margin-bottom: 10px;
-    }
-    .main-content {
-      background-color: #f4f4f4;
-      flex-grow: 1;
-      padding: 20px;
-    }
-    fieldset {
-      border: 1px solid #ccc;
-      padding: 15px;
-      margin-bottom: 20px;
-      background-color: white;
-    }
-    legend {
-      font-weight: bold;
-    }
-    #ttl-controls {
-      background-color: #dad7cd;
-      padding: 10px;
-      display: grid;
-      grid-template-columns: repeat(9, auto);
-      gap: 10px;
-      align-items: center;
-    }
-    #ttl-controls label {
-      font-weight: bold;
-      margin-bottom: 5px;
-      text-align: center;
-    }
-    .ttl-label {
-      background-color: #588157;
-      color: white;
-      padding: 5px 10px;
-      text-align: center;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-    .ttl-header {
-      grid-column: span 9;
-      display: grid;
-      grid-template-columns: repeat(9, auto);
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .ttl-row {
-      display: contents;
-    }
-    .ttl-row input[type="text"] {
-      width: 100px;
-    }
-    .form-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-    .form-buttons button {
-      padding: 5px 15px;
-    }
+	@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
   </style>
 </head>
 <body>
   <div class="sidebar" id="device-bar">
-    <div class="logo">LOGO</div>
-    <h1 class="title" id="morelia">Morelia</h1>
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
     <label for="device_type">Device Type</label>
-    <select id="device_type">
-      <option selected>Pod8206HR</option>
-      <option>Pod8229</option>
-      <option>Pod8274D</option>
-      <option>Pod8401HR</option>
-      <option>Pod8480SC</option>
-    </select>
-    <button id="upload_firmware">Upload New Firmware</button>
-    <button id="load_config">Load Device Configuration</button>
+    <select id="device_type" size="5" onchange="goToPage()">
+      <option value="/Pod8206HR">Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC"selected>Pod8480SC</option>
+    </select>   
+   <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
     <button id="save_config">Save Device Configuration</button>
   </div>
 
-  <div class="main-content" id="8206-device-config">
+  <div class="main-content" id="device-config">
     <h2>Devices | Configuration</h2>
-    <h3>Settings > 8206HR</h3>
+  <div class="settings-bar">
+    <h3 style="margin:10px;">Settings > 8480SC</h3>
+  </div>
 
-    <form id="device-form" action="/submit" method="post">
+    <form id="device-form" action="/submit5" method="post">
 	<label for="config_name">Config. File Name</label>
     	<input type="text" name="filename" id="filename" placeholder="Untitled">
       <fieldset id="information">
@@ -150,8 +67,8 @@
         <label>EMG</label>
         <input type="number" name="emg" value="100">
         <label>Notch</label>
-        <input type="number" name="notch_value" value="60">
-        <input type="checkbox" name="notch_enabled" value="true" id="notch_enabled">
+        <input type="checkbox" name="notch_enabled" value="false" id="notch_enabled">
+	<input type="number" name="notch_value" value="0">
       </fieldset>
 
            <fieldset>
@@ -221,8 +138,8 @@
 
 
       <div class="form-buttons">
-        <button type="submit" style="background-color:#678b5b; color:white;">OK</button>
-        <button type="reset" style="background-color:#d9d9d9;">Cancel</button>
+        <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
+        <button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Cancel</button>
       </div>
     </form>
   </div>
