@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Load Config button logic
-  document.getElementById('load_config').addEventListener('click', () => {
+  /*document.getElementById('load_config').addEventListener('click', () => {
     document.getElementById('file_input').click();
   });
 
@@ -66,3 +66,4 @@ document.addEventListener("DOMContentLoaded", function () {
       document.getElementById('ttl3_output').checked = parsed.ttl_controls?.ttl3?.output === 'true';
       document.getElementById('ttl3_set_state').checked = parsed.ttl_controls?.ttl3?.set_state === 'true';
       document.getElementById('ttl3_set_current_state').checked = parsed
+      */
