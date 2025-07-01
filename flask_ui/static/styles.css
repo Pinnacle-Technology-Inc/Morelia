@@ -59,6 +59,7 @@ body {
       margin-bottom: 20px;
       border-top: 1px solid #B7B6B6; 
       border-bottom: 1px solid #B7B6B6;
+      color: #588157;
     }
 
     .device_type_
@@ -143,4 +144,11 @@ body {
   background-color: #D9D9D9;
   height: 73vh;
   width: 90%;
+}
+
+.success {
+    color: green;
+}
+.error {
+    color: red;
 }

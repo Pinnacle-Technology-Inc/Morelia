@@ -36,13 +36,14 @@ def page5():
 def upload_config():
     uploaded_file = request.files.get("config_file")
     if not uploaded_file or uploaded_file.filename == "":
-        flash("No file selected!")
+        flash("No file selected!", "error")
         return redirect(url_for("homepage"))
 
     try:
         config_data = toml.loads(uploaded_file.read().decode("utf-8"))
         session["loaded_config"] = config_data  # Store config in session
         # redirect to correct form page based on title
+        session["loaded_filename"] = uploaded_file.filename
         title = config_data.get("title", "")
         if "8206HR" in title:
             return redirect(url_for("page1"))
@@ -55,16 +56,22 @@ def upload_config():
         elif "8480SC" in title:
             return redirect(url_for("page5"))
         else:
-            flash("Unknown device type in configuration file.")
+            flash("Unknown device type in configuration file.", "error")
             return redirect(url_for("homepage"))
     except Exception as e:
-        flash(f"Failed to load configuration: {str(e)}")
+        flash(f"Failed to load configuration: {str(e)}", "error")
         return redirect(url_for("homepage"))
 
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
 def submit1():
     session.pop("loaded_config", None)
+    
+    if "loaded_config" in session:
+        print("Session still has loaded_config")
+    else:
+        print("Session does NOT have loaded_config")
+    
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8206HR Device Configuration File',
@@ -89,8 +96,8 @@ def submit1():
         'ttl_controls': {   
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
-                'set_state': request.form.get('ttl_set_state'),
-                'current_state': request.form.get('ttl1_current_state'),
+                'set_state': request.form.get('ttl1_set_state'),
+                'current_state': request.form.get('ttl1_set_current_state'),
                 'rising_event': request.form.get('ttl1_rising_event'),
                 'falling_event': request.form.get('ttl1_falling_event'),
                 'event_comment': request.form.get('ttl1_event_comment'),
@@ -98,7 +105,7 @@ def submit1():
             'ttl2': {
                 'output': request.form.get('ttl2_output'),
                 'set_state': request.form.get('ttl2_set_state'),
-                'current_state': request.form.get('ttl2_current_state'),
+                'current_state': request.form.get('ttl2_set_current_state'),
                 'rising_event': request.form.get('ttl2_rising_event'),
                 'falling_event': request.form.get('ttl2_falling_event'),
                 'event_comment': request.form.get('ttl2_event_comment'),
@@ -106,7 +113,7 @@ def submit1():
             'ttl3': {
                 'output': request.form.get('ttl3_output'),
                 'set_state': request.form.get('ttl3_set_state'),
-                'current_state': request.form.get('ttl3_current_state'),
+                'current_state': request.form.get('ttl3_set_current_state'),
                 'rising_event': request.form.get('ttl3_rising_event'),
                 'falling_event': request.form.get('ttl3_falling_event'),
                 'event_comment': request.form.get('ttl3_event_comment'),
@@ -114,11 +121,12 @@ def submit1():
             'ttl4': {
                 'output': request.form.get('ttl4_output'),
                 'set_state': request.form.get('ttl4_set_state'),
-                'current_state': request.form.get('ttl4_current_state'),
+                'current_state': request.form.get('ttl4_set_current_state'),
                 'rising_event': request.form.get('ttl4_rising_event'),
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
             },
+
             'debounce': request.form.get('debounce'),
             'synchronous': request.form.get('synchronous'),
         },
@@ -126,34 +134,35 @@ def submit1():
     }
 
     #use filename part of dictionary to create new file
-    filename = request.form.get('filename')
-    if not filename:
-        filename = "default_config"
-
+    filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
 
     loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename and filename == loaded_filename:
-        # User loaded this file, allow overwrite
-        toml_str = toml.dumps(data)
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(toml_str)
-        flash(f"{filename} updated successfully!")
-    else:
-        # New file: block overwrite if exists
-        if os.path.exists(filename):
-            flash(f"{filename} already exists! Not overwriting")
-        else:
-            toml_str = toml.dumps(data)
+    if loaded_filename:
+        if filename == loaded_filename:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(toml_str)
-            flash(f"{filename} created successfully!")
+                f.write(toml.dumps(data))
+            flash(f"{filename} updated successfully!", "success")
+        else:
+            if os.path.exists(filename):
+                flash(f"{filename} already exists! Please choose a new name.", "error")
+            else:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(toml.dumps(data))
+                flash(f"{filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(filename):
+            flash(f"{filename} already exists! Please choose a new name.", "error")
+        else:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(toml.dumps(data))
+            flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
-
-    return redirect(url_for("homepage"))
+    return redirect(url_for("page1"))
 
 #Pod8229 Form
 @app.route("/submit2", methods=["POST"])
@@ -183,8 +192,8 @@ def submit2():
         'ttl_controls': {   
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
-                'set_state': request.form.get('ttl_set_state'),
-                'current_state': request.form.get('ttl1_current_state'),
+                'set_state': request.form.get('ttl1_set_state'),
+                'current_state': request.form.get('ttl1_set_current_state'),
                 'rising_event': request.form.get('ttl1_rising_event'),
                 'falling_event': request.form.get('ttl1_falling_event'),
                 'event_comment': request.form.get('ttl1_event_comment'),
@@ -192,7 +201,7 @@ def submit2():
             'ttl2': {
                 'output': request.form.get('ttl2_output'),
                 'set_state': request.form.get('ttl2_set_state'),
-                'current_state': request.form.get('ttl2_current_state'),
+                'current_state': request.form.get('ttl2_set_current_state'),
                 'rising_event': request.form.get('ttl2_rising_event'),
                 'falling_event': request.form.get('ttl2_falling_event'),
                 'event_comment': request.form.get('ttl2_event_comment'),
@@ -200,7 +209,7 @@ def submit2():
             'ttl3': {
                 'output': request.form.get('ttl3_output'),
                 'set_state': request.form.get('ttl3_set_state'),
-                'current_state': request.form.get('ttl3_current_state'),
+                'current_state': request.form.get('ttl3_set_current_state'),
                 'rising_event': request.form.get('ttl3_rising_event'),
                 'falling_event': request.form.get('ttl3_falling_event'),
                 'event_comment': request.form.get('ttl3_event_comment'),
@@ -208,11 +217,12 @@ def submit2():
             'ttl4': {
                 'output': request.form.get('ttl4_output'),
                 'set_state': request.form.get('ttl4_set_state'),
-                'current_state': request.form.get('ttl4_current_state'),
+                'current_state': request.form.get('ttl4_set_current_state'),
                 'rising_event': request.form.get('ttl4_rising_event'),
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
             },
+
             'debounce': request.form.get('debounce'),
             'synchronous': request.form.get('synchronous'),
         },
@@ -220,34 +230,35 @@ def submit2():
     }
 
     #use filename part of dictionary to create new file
-    filename = request.form.get('filename')
-    if not filename:
-        filename = "default_config"
-
+    filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
 
     loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename and filename == loaded_filename:
-        # User loaded this file, allow overwrite
-        toml_str = toml.dumps(data)
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(toml_str)
-        flash(f"{filename} updated successfully!")
-    else:
-        # New file: block overwrite if exists
-        if os.path.exists(filename):
-            flash(f"{filename} already exists! Not overwriting")
-        else:
-            toml_str = toml.dumps(data)
+    if loaded_filename:
+        if filename == loaded_filename:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(toml_str)
-            flash(f"{filename} created successfully!")
+                f.write(toml.dumps(data))
+            flash(f"{filename} updated successfully!", "success")
+        else:
+            if os.path.exists(filename):
+                flash(f"{filename} already exists! Please choose a new name.", "error")
+            else:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(toml.dumps(data))
+                flash(f"{filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(filename):
+            flash(f"{filename} already exists! Please choose a new name.", "error")
+        else:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(toml.dumps(data))
+            flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
-
-    return redirect(url_for("homepage"))
+    return redirect(url_for("page2"))
 
 #Pod8274D Form
 @app.route("/submit3", methods=["POST"])
@@ -277,8 +288,8 @@ def submit3():
         'ttl_controls': {   
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
-                'set_state': request.form.get('ttl_set_state'),
-                'current_state': request.form.get('ttl1_current_state'),
+                'set_state': request.form.get('ttl1_set_state'),
+                'current_state': request.form.get('ttl1_set_current_state'),
                 'rising_event': request.form.get('ttl1_rising_event'),
                 'falling_event': request.form.get('ttl1_falling_event'),
                 'event_comment': request.form.get('ttl1_event_comment'),
@@ -286,7 +297,7 @@ def submit3():
             'ttl2': {
                 'output': request.form.get('ttl2_output'),
                 'set_state': request.form.get('ttl2_set_state'),
-                'current_state': request.form.get('ttl2_current_state'),
+                'current_state': request.form.get('ttl2_set_current_state'),
                 'rising_event': request.form.get('ttl2_rising_event'),
                 'falling_event': request.form.get('ttl2_falling_event'),
                 'event_comment': request.form.get('ttl2_event_comment'),
@@ -294,7 +305,7 @@ def submit3():
             'ttl3': {
                 'output': request.form.get('ttl3_output'),
                 'set_state': request.form.get('ttl3_set_state'),
-                'current_state': request.form.get('ttl3_current_state'),
+                'current_state': request.form.get('ttl3_set_current_state'),
                 'rising_event': request.form.get('ttl3_rising_event'),
                 'falling_event': request.form.get('ttl3_falling_event'),
                 'event_comment': request.form.get('ttl3_event_comment'),
@@ -302,11 +313,12 @@ def submit3():
             'ttl4': {
                 'output': request.form.get('ttl4_output'),
                 'set_state': request.form.get('ttl4_set_state'),
-                'current_state': request.form.get('ttl4_current_state'),
+                'current_state': request.form.get('ttl4_set_current_state'),
                 'rising_event': request.form.get('ttl4_rising_event'),
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
             },
+
             'debounce': request.form.get('debounce'),
             'synchronous': request.form.get('synchronous'),
         },
@@ -314,34 +326,35 @@ def submit3():
     }
 
     #use filename part of dictionary to create new file
-    filename = request.form.get('filename')
-    if not filename:
-        filename = "default_config"
-
+    filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
 
     loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename and filename == loaded_filename:
-        # User loaded this file, allow overwrite
-        toml_str = toml.dumps(data)
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(toml_str)
-        flash(f"{filename} updated successfully!")
-    else:
-        # New file: block overwrite if exists
-        if os.path.exists(filename):
-            flash(f"{filename} already exists! Not overwriting")
-        else:
-            toml_str = toml.dumps(data)
+    if loaded_filename:
+        if filename == loaded_filename:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(toml_str)
-            flash(f"{filename} created successfully!")
+                f.write(toml.dumps(data))
+            flash(f"{filename} updated successfully!", "success")
+        else:
+            if os.path.exists(filename):
+                flash(f"{filename} already exists! Please choose a new name.", "error")
+            else:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(toml.dumps(data))
+                flash(f"{filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(filename):
+            flash(f"{filename} already exists! Please choose a new name.", "error")
+        else:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(toml.dumps(data))
+            flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
-
-    return redirect(url_for("homepage"))
+    return redirect(url_for("page3"))
 
 #Pod8401HR Form
 @app.route("/submit4", methods=["POST"])
@@ -371,8 +384,8 @@ def submit4():
         'ttl_controls': {   
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
-                'set_state': request.form.get('ttl_set_state'),
-                'current_state': request.form.get('ttl1_current_state'),
+                'set_state': request.form.get('ttl1_set_state'),
+                'current_state': request.form.get('ttl1_set_current_state'),
                 'rising_event': request.form.get('ttl1_rising_event'),
                 'falling_event': request.form.get('ttl1_falling_event'),
                 'event_comment': request.form.get('ttl1_event_comment'),
@@ -380,7 +393,7 @@ def submit4():
             'ttl2': {
                 'output': request.form.get('ttl2_output'),
                 'set_state': request.form.get('ttl2_set_state'),
-                'current_state': request.form.get('ttl2_current_state'),
+                'current_state': request.form.get('ttl2_set_current_state'),
                 'rising_event': request.form.get('ttl2_rising_event'),
                 'falling_event': request.form.get('ttl2_falling_event'),
                 'event_comment': request.form.get('ttl2_event_comment'),
@@ -388,7 +401,7 @@ def submit4():
             'ttl3': {
                 'output': request.form.get('ttl3_output'),
                 'set_state': request.form.get('ttl3_set_state'),
-                'current_state': request.form.get('ttl3_current_state'),
+                'current_state': request.form.get('ttl3_set_current_state'),
                 'rising_event': request.form.get('ttl3_rising_event'),
                 'falling_event': request.form.get('ttl3_falling_event'),
                 'event_comment': request.form.get('ttl3_event_comment'),
@@ -396,11 +409,12 @@ def submit4():
             'ttl4': {
                 'output': request.form.get('ttl4_output'),
                 'set_state': request.form.get('ttl4_set_state'),
-                'current_state': request.form.get('ttl4_current_state'),
+                'current_state': request.form.get('ttl4_set_current_state'),
                 'rising_event': request.form.get('ttl4_rising_event'),
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
             },
+
             'debounce': request.form.get('debounce'),
             'synchronous': request.form.get('synchronous'),
         },
@@ -408,34 +422,35 @@ def submit4():
     }
 
     #use filename part of dictionary to create new file
-    filename = request.form.get('filename')
-    if not filename:
-        filename = "default_config"
-
+    filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
 
     loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename and filename == loaded_filename:
-        # User loaded this file, allow overwrite
-        toml_str = toml.dumps(data)
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(toml_str)
-        flash(f"{filename} updated successfully!")
-    else:
-        # New file: block overwrite if exists
-        if os.path.exists(filename):
-            flash(f"{filename} already exists! Not overwriting")
-        else:
-            toml_str = toml.dumps(data)
+    if loaded_filename:
+        if filename == loaded_filename:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(toml_str)
-            flash(f"{filename} created successfully!")
+                f.write(toml.dumps(data))
+            flash(f"{filename} updated successfully!", "success")
+        else:
+            if os.path.exists(filename):
+                flash(f"{filename} already exists! Please choose a new name.", "error")
+            else:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(toml.dumps(data))
+                flash(f"{filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(filename):
+            flash(f"{filename} already exists! Please choose a new name.", "error")
+        else:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(toml.dumps(data))
+            flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
-
-    return redirect(url_for("homepage"))
+    return redirect(url_for("page4"))
 
 #Pod8480SC Form
 @app.route("/submit5", methods=["POST"])
@@ -465,8 +480,8 @@ def submit5():
         'ttl_controls': {   
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
-                'set_state': request.form.get('ttl_set_state'),
-                'current_state': request.form.get('ttl1_current_state'),
+                'set_state': request.form.get('ttl1_set_state'),
+                'current_state': request.form.get('ttl1_set_current_state'),
                 'rising_event': request.form.get('ttl1_rising_event'),
                 'falling_event': request.form.get('ttl1_falling_event'),
                 'event_comment': request.form.get('ttl1_event_comment'),
@@ -474,7 +489,7 @@ def submit5():
             'ttl2': {
                 'output': request.form.get('ttl2_output'),
                 'set_state': request.form.get('ttl2_set_state'),
-                'current_state': request.form.get('ttl2_current_state'),
+                'current_state': request.form.get('ttl2_set_current_state'),
                 'rising_event': request.form.get('ttl2_rising_event'),
                 'falling_event': request.form.get('ttl2_falling_event'),
                 'event_comment': request.form.get('ttl2_event_comment'),
@@ -482,7 +497,7 @@ def submit5():
             'ttl3': {
                 'output': request.form.get('ttl3_output'),
                 'set_state': request.form.get('ttl3_set_state'),
-                'current_state': request.form.get('ttl3_current_state'),
+                'current_state': request.form.get('ttl3_set_current_state'),
                 'rising_event': request.form.get('ttl3_rising_event'),
                 'falling_event': request.form.get('ttl3_falling_event'),
                 'event_comment': request.form.get('ttl3_event_comment'),
@@ -490,7 +505,7 @@ def submit5():
             'ttl4': {
                 'output': request.form.get('ttl4_output'),
                 'set_state': request.form.get('ttl4_set_state'),
-                'current_state': request.form.get('ttl4_current_state'),
+                'current_state': request.form.get('ttl4_set_current_state'),
                 'rising_event': request.form.get('ttl4_rising_event'),
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
@@ -502,31 +517,32 @@ def submit5():
     }
 
     #use filename part of dictionary to create new file
-    filename = request.form.get('filename')
-    if not filename:
-        filename = "default_config"
-
+    filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
 
     loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename and filename == loaded_filename:
-        # User loaded this file, allow overwrite
-        toml_str = toml.dumps(data)
-        with open(filename, 'w', encoding='utf-8') as f:
-            f.write(toml_str)
-        flash(f"{filename} updated successfully!")
-    else:
-        # New file: block overwrite if exists
-        if os.path.exists(filename):
-            flash(f"{filename} already exists! Not overwriting")
-        else:
-            toml_str = toml.dumps(data)
+    if loaded_filename:
+        if filename == loaded_filename:
             with open(filename, 'w', encoding='utf-8') as f:
-                f.write(toml_str)
-            flash(f"{filename} created successfully!")
+                f.write(toml.dumps(data))
+            flash(f"{filename} updated successfully!", "success")
+        else:
+            if os.path.exists(filename):
+                flash(f"{filename} already exists! Please choose a new name.", "error")
+            else:
+                with open(filename, 'w', encoding='utf-8') as f:
+                    f.write(toml.dumps(data))
+                flash(f"{filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(filename):
+            flash(f"{filename} already exists! Please choose a new name.", "error")
+        else:
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(toml.dumps(data))
+            flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
-
-    return redirect(url_for("homepage"))
+    return redirect(url_for("page5"))

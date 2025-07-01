@@ -26,7 +26,7 @@
       <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
     </form>
 
-    <button id="save_config">Save Device Configuration</button>
+    <button id="save_config" type="submit" form="device-form">Save Device Configuration</button>
   </div>
   <div class="main-content" id="device-config">
     <h2>Devices | Configuration</h2>
@@ -138,9 +138,20 @@
         </div>
       </fieldset>
 
+    <div id="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    </div>
       <div class="form-buttons">
         <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
-        <button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Cancel</button>
+	<button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Cancel</button>
       </div>
     </form>
   </div>  
