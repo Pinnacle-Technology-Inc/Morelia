@@ -4,7 +4,7 @@ __author__      = 'Josselyn Bui'
 __maintainer__  = 'Josselyn Bui'
 __credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Andrew Huang', 'Josselyn Bui']
 __license__     = 'New BSD License'
-__copyright__   = 'Copyright (c) 2024, Josselyn Bui'
+__copyright__   = 'Copyright (c) 2025, Josselyn Bui'
 __email__       = 'sales@pinnaclet.com'
 
 import socket
