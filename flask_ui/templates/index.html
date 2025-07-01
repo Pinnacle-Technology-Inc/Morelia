@@ -55,8 +55,11 @@
       <option value="/Pod8401HR">Pod8401HR</option>
       <option value="/Pod8480SC">Pod8480SC</option>
     </select>
-    <button id="load_config">Load Device Configuration</button>
-    <button id="save_config">Save Device Configuration</button>
+    <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
   </div>
 
   <div class="main">
