@@ -105,23 +105,39 @@ class PortIO :
         """
         # true if serial port is closed, false otherwise 
         return(not self.is_serial_open())
-
-    # ----- SERIAL MANAGEMENT -----
-
+    # ----- QUEUE MANAGEMENT -----
+    
     def obtain_queue(self):
+        """
+        returns the PacketManager's queue
+        """
         return self._manager.obtain_queue()
 
     def initialize_control_queue(self):
+        """
+        initializes the control Queue in the PacketManager
+        """
         self._manager.initialize_control_queue()
 
     def register_control_queue(self):
+        """
+        initializes the control Queue in the PacketManager
+        """
         self._manager.register_control_queue()
- 
+    
     def queue_initialized(self):
+        """
+        Verifies if the Queue has been initialized in the PacketManager
+        """
         return self._manager.queue_initialized()
 
     def queue_registered(self):
+        """
+        Verifies if the Queue has been registered in the PacketManager
+        """
         return self._manager.queue_registered()
+
+    # ----- SERIAL MANAGEMENT -----
 
     def close_serial_port(self) -> None :
         """Closes the instance serial port if it is open."""

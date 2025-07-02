@@ -199,10 +199,11 @@ class Pod :
         return(pld)
             
     
-
+    # calls the port's initialize control queue function
     def initialize_control_queue(self):
         self._port.initialize_control_queue()
 
+    # calls the port's register control queue function
     def register_control_queue(self):
         self._port.register_control_queue()
 
