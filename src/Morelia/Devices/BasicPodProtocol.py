@@ -45,6 +45,8 @@ class Pod :
         #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
+        
+        self._queue = None
 
 
     @staticmethod
@@ -198,6 +200,12 @@ class Pod :
             
     
 
+    def initialize_control_queue(self):
+        self._port.initialize_control_queue()
+
+    def register_control_queue(self):
+        self._port.register_control_queue()
+
     def flush_port(self) -> bool : 
         """Reset the input and output serial port buffer.
 
@@ -306,6 +314,10 @@ class Pod :
         """
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
+        if self._port.queue_initialized() or self._port.queue_registered():
+            if self._queue is None:
+                self._queue = self._port.obtain_queue()
+            self._queue.put(packet)
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written

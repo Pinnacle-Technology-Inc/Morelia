@@ -1,5 +1,7 @@
 # enviornment imports 
 from    serial import Serial, serial_for_url
+from Morelia.Devices.SerialPorts.queue_manager import PacketManager
+from queue import Empty
 import  platform
 import  time
 
@@ -29,6 +31,7 @@ class PortIO :
             port (str | int): String of the serial port to be opened. 
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
+        self._manager = PacketManager()
 
         if (port == 'TEST') :
 
@@ -104,6 +107,21 @@ class PortIO :
         return(not self.is_serial_open())
 
     # ----- SERIAL MANAGEMENT -----
+
+    def obtain_queue(self):
+        return self._manager.obtain_queue()
+
+    def initialize_control_queue(self):
+        self._manager.initialize_control_queue()
+
+    def register_control_queue(self):
+        self._manager.register_control_queue()
+ 
+    def queue_initialized(self):
+        return self._manager.queue_initialized()
+
+    def queue_registered(self):
+        return self._manager.queue_registered()
 
     def close_serial_port(self) -> None :
         """Closes the instance serial port if it is open."""
@@ -257,4 +275,24 @@ class PortIO :
         """
         # write message to open port 
         if(self.is_serial_open()) : 
+            queue = self._manager.obtain_queue()
+            if queue is None: 
+                pass
+
+            else: 
+                try: 
+                    item = queue.get_nowait()
+                    self.__serial_inst.write(item)
+
+                    while True:
+                        try:
+                            item = queue.get_nowait()
+                            self.__serial_inst.write(item)
+                        except Empty:
+                            return
+
+                except Empty:
+                    self.__serial_inst.write(message)
+                    return
+                    
             self.__serial_inst.write(message)
