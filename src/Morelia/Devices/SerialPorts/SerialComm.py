@@ -275,22 +275,29 @@ class PortIO :
         """
         # write message to open port 
         if(self.is_serial_open()) : 
+            
+            # obtain queue from the PacketManager class
             queue = self._manager.obtain_queue()
+
+            # if the queue has not been instantiated yet, write directly to the Serial port
             if queue is None: 
                 pass
-
+            
+            # otherwise, take the first item of the queue and write it to the Serial port
             else: 
                 try: 
                     item = queue.get_nowait()
                     self.__serial_inst.write(item)
-
+                    
+                    # if the Queue has multiple items, write the items to the serial port
                     while True:
                         try:
                             item = queue.get_nowait()
                             self.__serial_inst.write(item)
+                            print(item)
                         except Empty:
                             return
-
+                # if the Queue is instantiated but empty, write directly to the serial port.
                 except Empty:
                     self.__serial_inst.write(message)
                     return
