@@ -33,7 +33,7 @@ class PortIO :
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
         self._manager = PacketManager()
-        self._serial_lock = Lock()
+        self._lock = None
 
         if (port == 'TEST') :
 
@@ -243,8 +243,15 @@ class PortIO :
         t = 0.0
         while (t < timeout_sec) :
             ti = (round(time.time(),9)) # initial time (sec)          
-            if self.__serial_inst.in_waiting : 
-                # read packet
+            if self.__serial_inst.in_waiting: 
+                #read packet
+                if self._lock is not None:
+                    self._lock.acquire()
+                    try:
+                        read_value = self.__serial_inst.read(numBytes)
+                    finally:
+                        self._lock.release()
+                    return read_value
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
@@ -298,10 +305,10 @@ class PortIO :
             
         # obtain queue from the PacketManager class
         queue = self._manager.obtain_queue()
-        lock = self._manager.obtain_lock()
+        self._lock = self._manager.obtain_lock()
 
         # if the queue has not been instantiated yet, write directly to the Serial port
-        if queue is None or lock is None: 
+        if queue is None or self._lock is None: 
             self._write_serial_safely(bytes)
             pass
         
@@ -318,12 +325,12 @@ class PortIO :
 
 
     def _write_serial_safely(self, data: bytes) -> None:
-        lock = self._manager.obtain_lock()
-        if lock is None:
+        self._lock = self._manager.obtain_lock()
+        if self._lock is None:
             self.__serial_inst.write(data)
             return
-        lock.acquire()
+        self._lock.acquire()
         try:
             self.__serial_inst.write(data)
         finally:
-            lock.release()
+            self._lock.release()
