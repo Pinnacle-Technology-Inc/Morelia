@@ -245,13 +245,13 @@ class PortIO :
             ti = (round(time.time(),9)) # initial time (sec)          
             if self.__serial_inst.in_waiting: 
                 #read packet
-                if self._lock is not None:
-                    self._lock.acquire()
-                    try:
-                        read_value = self.__serial_inst.read(numBytes)
-                    finally:
-                        self._lock.release()
-                    return read_value
+                #if self._lock is not None:
+                #    self._lock.acquire()
+                #    try:
+                #        read_value = self.__serial_inst.read(numBytes)
+                #    finally:
+                #        self._lock.release()
+                #    return read_value
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
@@ -309,8 +309,8 @@ class PortIO :
 
         # if the queue has not been instantiated yet, write directly to the Serial port
         if queue is None or self._lock is None: 
-            self._write_serial_safely(bytes)
-            pass
+            self._write_serial_safely(message)
+            return
         
         # otherwise, take the first item of the queue and write it to the Serial port
 
