@@ -33,7 +33,7 @@ class PortIO :
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
         self._manager = PacketManager()
-        self._lock = None
+        #self._lock = Lock()
 
         if (port == 'TEST') :
 
@@ -138,6 +138,9 @@ class PortIO :
         Verifies if the Queue has been registered in the PacketManager
         """
         return self._manager.queue_registered()
+
+    def obtain_lock(self):
+        return self._manager.obtain_lock()
 
     # ----- SERIAL MANAGEMENT -----
 
@@ -245,13 +248,7 @@ class PortIO :
             ti = (round(time.time(),9)) # initial time (sec)          
             if self.__serial_inst.in_waiting: 
                 #read packet
-                #if self._lock is not None:
-                #    self._lock.acquire()
-                #    try:
-                #        read_value = self.__serial_inst.read(numBytes)
-                #    finally:
-                #        self._lock.release()
-                #    return read_value
+                #with self._lock:
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
@@ -292,7 +289,7 @@ class PortIO :
                 # read packet until end of line (eol) character 
                 return(self.__serial_inst.read_until(eol) )
 
-    def write(self, message: bytes) -> None : 
+    def write(self, message: bytes = b'') -> None : 
         """Write a set message to the open serial port. 
 
         Args:
@@ -300,37 +297,30 @@ class PortIO :
         """
         # write message to open port 
 
+
         if not self.is_serial_open():
             return
             
         # obtain queue from the PacketManager class
         queue = self._manager.obtain_queue()
-        self._lock = self._manager.obtain_lock()
-
+        #self._lock = self._manager.obtain_lock()
+        
         # if the queue has not been instantiated yet, write directly to the Serial port
-        if queue is None or self._lock is None: 
-            self._write_serial_safely(message)
+        if queue is None: 
+            self.__serial_inst.write(message)
             return
         
         # otherwise, take the first item of the queue and write it to the Serial port
+        if self._manager.queue_initialized():
+            try:
+                
+                while True:
+                    item = queue.get_nowait()
+                    #with self._lock:
+                    self.__serial_inst.write(item)
 
-        try: 
-            while True:
-                item = queue.get_nowait()
-                self._write_serial_safely(item)
+            # if the Queue is instantiated but empty, write directly to the serial port.
 
-        # if the Queue is instantiated but empty, write directly to the serial port.
-        except Empty:
-            self._write_serial_safely(message)
+            except Empty:
+                pass
 
-
-    def _write_serial_safely(self, data: bytes) -> None:
-        self._lock = self._manager.obtain_lock()
-        if self._lock is None:
-            self.__serial_inst.write(data)
-            return
-        self._lock.acquire()
-        try:
-            self.__serial_inst.write(data)
-        finally:
-            self._lock.release()

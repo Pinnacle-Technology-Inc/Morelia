@@ -35,6 +35,8 @@ class Pod :
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
 
+        self._lock = None
+
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
        
@@ -207,6 +209,20 @@ class Pod :
     def register_control_queue(self):
         self._port.register_control_queue()
 
+ 
+    def queue_initialized(self):
+        """
+        Verifies if the Queue has been initialized in the PacketManager
+        """
+        return self._port.queue_initialized()
+
+    def queue_registered(self):
+        """
+        Verifies if the Queue has been registered in the PacketManager
+        """
+        return self._port.queue_registered()
+
+
     def flush_port(self) -> bool : 
         """Reset the input and output serial port buffer.
 
@@ -316,14 +332,24 @@ class Pod :
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
         if self._port.queue_initialized() or self._port.queue_registered():
+            if self._lock is None:
+                self._lock = self._port.obtain_lock()
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
-            self._queue.put(packet)
+
+            self._lock.acquire()
+            try: 
+                self._queue.put_nowait(packet)
+            finally:
+                self._lock.release()
+
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
         return ControlPacket(self._commands, packet)
-
+    
+    def check_write(self):
+        self._port.write()
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \

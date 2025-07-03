@@ -22,7 +22,7 @@ class PacketManager:
         Runs when the PacketManager is instantiated within the PortIO object belonging to the Acquisition device.
         """
         self._queue = None
-        self._lock = None
+        #self._lock = None
         self._queue_initialized = False
         self._queue_registered = False
 

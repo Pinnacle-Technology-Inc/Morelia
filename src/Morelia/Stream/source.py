@@ -72,6 +72,8 @@ def _stream_from_pod_device(pod: AquisitionDevice, duration: float, manual_stop_
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
             
                 observer.on_next(pod.read_pod_packet())
+                if pod.queue_initialized():
+                    pod.check_write()
 
         # tell the observer we are finished.
         observer.on_completed()
