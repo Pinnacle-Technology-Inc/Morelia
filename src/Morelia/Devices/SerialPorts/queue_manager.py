@@ -10,9 +10,9 @@ __email__       = 'sales@pinnaclet.com'
 #environment imports
 
 from multiprocessing.managers import BaseManager
-from multiprocessing import Queue
+from multiprocessing import Queue, Lock
 
-class ControlPacketQueue(BaseManager): 
+class ControlPacketManager(BaseManager): 
     pass
 
 class PacketManager:
@@ -22,6 +22,7 @@ class PacketManager:
         Runs when the PacketManager is instantiated within the PortIO object belonging to the Acquisition device.
         """
         self._queue = None
+        self._lock = None
         self._queue_initialized = False
         self._queue_registered = False
 
@@ -29,27 +30,41 @@ class PacketManager:
         """
         Initializes multiprocessing Queue for use between processes. 
         """
-        q = Queue()
-        ControlPacketQueue.register('get_queue', callable=lambda: q)
-        manager = ControlPacketQueue(address=('', 50000), authkey=b'secret')
+        shared_queue = Queue()
+        shared_lock = Lock()
+        ControlPacketManager.register('get_queue', callable=lambda: shared_queue)
+        ControlPacketManager.register('get_lock', callable=lambda: shared_lock)
+
+        manager = ControlPacketManager(address=('', 50000), authkey=b'secret')
         manager.start()
-        q = manager.get_queue()
-        self._queue = q
+        queue = manager.get_queue()
+        lock = manager.get_lock()
+        self._queue = queue
+        self._lock = lock
         self._queue_initialized = True
 
     def register_control_queue(self):
         """
         Registers the initialized Queue for an acquisition device.
         """
-        ControlPacketQueue.register('get_queue')
-        manager = ControlPacketQueue(address=('', 50000), authkey=b'secret')
+        ControlPacketManager.register('get_queue')
+        ControlPacketManager.register('get_lock')
+
+        manager = ControlPacketManager(address=('', 50000), authkey=b'secret')
         manager.connect()
-        q = manager.get_queue()
-        self._queue = q
+
+        queue = manager.get_queue()
+        lock = manager.get_lock()
+
+        self._queue = queue
+        self._lock = lock
         self._queue_registered = True
 
     def obtain_queue(self):
         return self._queue
+
+    def obtain_lock(self):
+        return self._lock
 
     def queue_initialized(self):
         return self._queue_initialized

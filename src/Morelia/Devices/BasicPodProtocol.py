@@ -318,7 +318,7 @@ class Pod :
         if self._port.queue_initialized() or self._port.queue_registered():
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
-            self._queue.put_nowait(packet)
+            self._queue.put(packet)
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
