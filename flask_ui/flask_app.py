@@ -11,6 +11,9 @@ app.secret_key = b'_5#y2L"F4Q8z\c\ggff'
 def homepage():
     return render_template("index.html")
 
+@app.route("/Experiment_Config")
+def exp_config():
+    return render_template("exp_config.html")
 
 @app.route("/Pod8206HR")
 def page1():
@@ -55,6 +58,8 @@ def upload_config():
             return redirect(url_for("page4"))
         elif "8480SC" in title:
             return redirect(url_for("page5"))
+        elif "Experiment" in title:
+            return redirect(url_for("exp_config"))
         else:
             flash("Unknown device type in configuration file.", "error")
             return redirect(url_for("homepage"))
@@ -153,7 +158,7 @@ def submit1():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        # No file was loaded — treat as new file
+        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -249,7 +254,7 @@ def submit2():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        # No file was loaded — treat as new file
+        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -345,7 +350,7 @@ def submit3():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        # No file was loaded — treat as new file
+        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -441,7 +446,7 @@ def submit4():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        # No file was loaded — treat as new file
+        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -536,7 +541,7 @@ def submit5():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        # No file was loaded — treat as new file
+        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -546,3 +551,59 @@ def submit5():
 
     session.pop("loaded_filename", None)
     return redirect(url_for("page5"))
+
+
+#Experiment Config. Form
+@app.route("/submit_exp", methods=["POST"])
+def submit_exp():
+    session.pop("loaded_config", None)
+
+    experiment_name = request.form.get("filename") or "default-experiment"
+
+    device_names = request.form.getlist("device_name[]")
+    config_files = request.files.getlist("config_file[]")
+    device_types = request.form.getlist("device_type[]")
+    device_ports = request.form.getlist("device_port[]")
+    placeholder_1 = request.form.getlist("placeholder1[]")
+    placeholder_4 = request.form.getlist("placeholder4[]")
+
+    # Check for at least one valid device
+    if not device_names or all(name.strip() == "" for name in device_names):
+        flash("At least one device must be submitted.", "error")
+        return render_template("exp_config.html", retain_form=True, form_data=request.form)
+
+    devices = []
+    for i in range(len(device_names)):
+        if i >= len(config_files) or not config_files[i] or config_files[i].filename.strip() == "":
+            flash(f"No configuration file uploaded for device {device_names[i] or 'unnamed device'}.", "error")
+            return render_template("exp_config.html", retain_form=True, form_data=request.form)
+
+        devices.append({
+            "device_name": device_names[i],
+            "config_file": config_files[i].filename,
+            "device_type": device_types[i],
+            "device_port": device_ports[i],
+            "placeholder_1": placeholder_1[i],
+            "placeholder_2": "true" if f"PH2_{i}" in request.form else "false",
+            "placeholder_3": "true" if f"PH3_{i}" in request.form else "false",
+            "placeholder_4": placeholder_4[i],
+        })
+
+    data = {
+        "title": "Experiment Configuration File",
+        "experiment_name": experiment_name,
+        "devices": devices
+    }
+
+    filename = experiment_name if experiment_name.endswith(".toml") else f"{experiment_name}.toml"
+
+    if os.path.exists(filename):
+        flash(f"{filename} already exists! Please choose a new name.", "error")
+        return render_template("exp_config.html", retain_form=True, form_data=request.form)
+
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(toml.dumps(data))
+    flash(f"{filename} created successfully!", "success")
+
+    return redirect(url_for("exp_config"))
+
