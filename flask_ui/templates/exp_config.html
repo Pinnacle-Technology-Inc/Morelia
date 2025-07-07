@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Experiment Configuration</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+    .main {
+      width: 75%;
+      background: #f5f3ef;
+      padding: 1.5rem;
+      box-sizing: border-box;
+    }
+    .main h2 {
+      color: #4f6d47;
+    }
+    .device-table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    select, input[type="text"], input[type="number"] {
+      width: 90%;
+      padding: 0.25rem;
+    }
+    input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+    .device-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
+    .device-buttons button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+    }
+    .device-buttons .remove {
+      background: #c0392b;
+      color: white;
+    }
+    .device-buttons .add {
+      background: #2ecc71;
+      color: white;
+    }
+    .footer-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+    .footer-buttons button {
+      padding: 0.75rem 1.25rem;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .footer-buttons .ok {
+      background: #4f6d47;
+      color: white;
+    }
+    .footer-buttons .reset, .footer-buttons .home {
+      background: white;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar" id="device-bar">
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type" size="6" onchange="goToPage()">
+      <option value="">-- Select a device --</option>
+      <option value="/Pod8206HR">Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC">Pod8480SC</option>
+    </select>    
+
+    <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
+
+    <button id="save_config" type="submit" form="device-form">Save Device Configuration</button>
+  </div>
+  <div class="main-content" id="device-config">
+    <h2>Experiment | Configuration</h2>
+    <div class="settings-bar">
+      <h3 style="margin:10px;"> Devices > Manager</h3>
+    </div>
+
+   <form id="experiment-config-form" action="/submit_exp" method="POST">
+      <label for="experiment">Experiment Name</label>
+      <input type="text" name="filename" id="filename" placeholder="Untitled" value="{{ session.get('loaded_config', {}).get('filename', '') }}">
+
+      <div class="upload-section">
+         <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Experiment Configuration</button>
+
+   	 <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      	 	<input type="file" id="config-file" name="config_file" accept=".toml" style="display: none;" onchange="document.getElementById('load-config-form').submit();">
+	 </form>
+      </div>
+
+      <div class="device-table">
+        <div class="device-table-container">
+          <table id="deviceTable">
+            <thead>
+              <tr>
+                <th>Device Name</th>
+                <th>Config File</th>
+                <th>Device Type</th>
+                <th>Device Port</th>
+                <th>Placeholder1</th>
+                <th>PH2</th>
+                <th>PH3</th>
+                <th>Placeholder4</th>
+                <th>Remove</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><input type="text" name="device_name[]" value="Pod_1" /></td>
+                <td><input type="file" name="config_file[]" /></td>
+                <td>
+                  <select name="device_type[]">
+                    <option value="Pod8206HR">Pod8206HR</option>
+                    <option value="Pod8229">Pod8229</option>
+                    <option value="Pod8274D">Pod8274D</option>
+                    <option value="Pod8401HR">Pod8401HR</option>
+                    <option value="Pod8480SC">Pod8480SC</option>
+                  </select>
+                </td>
+                <td><input type="text" name="device_port[]" value="/dev/ttyUSB0" /></td>
+                <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
+                <td><input type="checkbox" name="placeholder2" value="true" /></td>
+                <td><input type="checkbox" name="placeholder3" value="true" /></td>
+                <td><input type="number" name="placeholder4[]" value="1000" /></td>
+                <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="device-buttons">
+          <button class="remove" type="button" onclick="removeAllDevices()">Remove All Devices</button>
+          <button class="add" type="button" onclick="addNewDevice()">Add New Device</button>
+        </div>
+      </div>
+
+    <div id="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    </div>
+      <div class="form-buttons">
+        <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
+	<button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Reset</button>
+        <button id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
+      </div>
+   </form>
+  </div>  
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+
+
+</body>
+</html>
+
