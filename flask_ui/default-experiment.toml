@@ -1,0 +1,12 @@
+title = "Experiment Configuration File"
+experiment_name = "default-experiment"
+[[devices]]
+device_name = "Pod_1"
+config_file = ""
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB0"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "1000"
+

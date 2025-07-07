@@ -70,3 +70,34 @@ function addNewDevice() {
 
   tbody.appendChild(row);
 }
+
+// Drag-and-Drop File Support
+document.addEventListener("DOMContentLoaded", () => {
+  const dropZone = document.getElementById("drop-zone");
+  const fileInput = document.getElementById("file-input");
+
+  dropZone.addEventListener("click", () => fileInput.click());
+
+  dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = "#4f6d47";
+    dropZone.style.background = "#f0fff0";
+  });
+
+  dropZone.addEventListener("dragleave", () => {
+    dropZone.style.borderColor = "#ccc";
+    dropZone.style.background = "";
+  });
+
+  dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.style.borderColor = "#ccc";
+    dropZone.style.background = "";
+    
+    if (e.dataTransfer.files.length > 0) {
+      fileInput.files = e.dataTransfer.files;
+      // Optionally auto-submit:
+      // document.getElementById("exp-config-upload-form").submit();
+    }
+  });
+});

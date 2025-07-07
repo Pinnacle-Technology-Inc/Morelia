@@ -1,5 +1,5 @@
 title = "Pod8206HR Device Configuration File"
-filename = "test-two"
+filename = ""
 
 [channel_names]
 channel_1 = "EEG1"
@@ -11,23 +11,19 @@ sample_rate = "400"
 preamp_gain = "100"
 
 [channel_settings]
-eeg1 = "100"
-eeg2 = "100"
+eeg1 = "40"
+eeg2 = "40"
 emg = "100"
 notch_value = "0"
 
 [ttl_controls.ttl1]
-output = "true"
 event_comment = "TTL 1"
 
 [ttl_controls.ttl2]
-output = "true"
 event_comment = "TTL 2"
 
 [ttl_controls.ttl3]
-output = "true"
 event_comment = "TTL 3"
 
 [ttl_controls.ttl4]
-output = "true"
 event_comment = "TTL 4"

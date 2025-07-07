@@ -2,6 +2,7 @@ from flask import Flask, request, render_template, redirect, url_for, flash, ses
 import toml
 import os
 import pdb
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 #flash in Flask needs a key to temporarily store data for this session
@@ -559,7 +560,11 @@ def submit_exp():
     session.pop("loaded_config", None)
 
     experiment_name = request.form.get("filename") or "default-experiment"
+    folder_name = f"{experiment_name}_folder"
 
+    os.makedirs(folder_name, exist_ok=True)
+
+    # Validate devices
     device_names = request.form.getlist("device_name[]")
     config_files = request.files.getlist("config_file[]")
     device_types = request.form.getlist("device_type[]")
@@ -567,7 +572,6 @@ def submit_exp():
     placeholder_1 = request.form.getlist("placeholder1[]")
     placeholder_4 = request.form.getlist("placeholder4[]")
 
-    # Check for at least one valid device
     if not device_names or all(name.strip() == "" for name in device_names):
         flash("At least one device must be submitted.", "error")
         return render_template("exp_config.html", retain_form=True, form_data=request.form)
@@ -578,9 +582,14 @@ def submit_exp():
             flash(f"No configuration file uploaded for device {device_names[i] or 'unnamed device'}.", "error")
             return render_template("exp_config.html", retain_form=True, form_data=request.form)
 
+        file_obj = config_files[i]
+        config_filename = secure_filename(file_obj.filename)
+        config_path = os.path.join(folder_name, config_filename)
+        file_obj.save(config_path)
+
         devices.append({
             "device_name": device_names[i],
-            "config_file": config_files[i].filename,
+            "config_file": config_filename,
             "device_type": device_types[i],
             "device_port": device_ports[i],
             "placeholder_1": placeholder_1[i],
@@ -589,21 +598,56 @@ def submit_exp():
             "placeholder_4": placeholder_4[i],
         })
 
-    data = {
+    # Save experiment .toml file inside the folder
+    config_data = {
         "title": "Experiment Configuration File",
         "experiment_name": experiment_name,
         "devices": devices
     }
 
-    filename = experiment_name if experiment_name.endswith(".toml") else f"{experiment_name}.toml"
-
-    if os.path.exists(filename):
-        flash(f"{filename} already exists! Please choose a new name.", "error")
+    exp_file_path = os.path.join(folder_name, f"{experiment_name}.toml")
+    if os.path.exists(exp_file_path):
+        flash(f"Experiment file {experiment_name}.toml already exists in {folder_name}.", "error")
         return render_template("exp_config.html", retain_form=True, form_data=request.form)
 
-    with open(filename, "w", encoding="utf-8") as f:
-        f.write(toml.dumps(data))
-    flash(f"{filename} created successfully!", "success")
+    with open(exp_file_path, "w", encoding="utf-8") as f:
+        f.write(toml.dumps(config_data))
+
+    flash(f"Experiment saved successfully to {exp_file_path}!", "success")
+    
+    toml_files = [f for f in os.listdir(folder_name) if f.endswith(".toml")]
+    return render_template("exp_config.html", retain_form=True, form_data=request.form, toml_files=toml_files, current_folder=folder_name)
 
     return redirect(url_for("exp_config"))
 
+@app.route("/upload_file_to_folder", methods=["POST"])
+def upload_file_to_folder():
+    uploaded_file = request.files.get("file")
+    folder = request.form.get("folder")
+
+    if uploaded_file and uploaded_file.filename.endswith(".toml"):
+        os.makedirs(folder, exist_ok=True)
+        path = os.path.join(folder, secure_filename(uploaded_file.filename))
+        uploaded_file.save(path)
+        flash(f"{uploaded_file.filename} uploaded to {folder}", "success")
+    else:
+        flash("Only .toml files are allowed", "error")
+
+    return redirect(url_for("exp_config"))
+
+@app.route("/exp_config_upload_config_file", methods=["POST"])
+def exp_config_upload_config_file():
+    uploaded_file = request.files.get("config_file")
+    experiment_name = request.form.get("filename") or "default-experiment"
+    folder = f"{experiment_name}_folder"
+    os.makedirs(folder, exist_ok=True)
+
+    if uploaded_file and uploaded_file.filename.endswith(".toml"):
+        filename = secure_filename(uploaded_file.filename)
+        save_path = os.path.join(folder, filename)
+        uploaded_file.save(save_path)
+        flash(f"{filename} uploaded to {folder}", "success")
+    else:
+        flash("Invalid file. Please upload a .toml file.", "error")
+
+    return redirect(url_for("exp_config"))
