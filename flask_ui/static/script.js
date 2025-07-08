@@ -27,9 +27,16 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 });
 
+// Clear Config File
+function clearLoadedConfig() {
+  fetch("/clear_config", {
+    method: "POST"
+  }).then(() => {
+    window.location.reload(); // Reload page without session config
+  });
+}
 
 // Experiment Configuration Functions
-
 // Delete a device row
 function deleteRow(btn) {
   const row = btn.closest("tr");

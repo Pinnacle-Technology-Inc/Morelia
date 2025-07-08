@@ -1,12 +1,12 @@
 from flask import Flask, request, render_template, redirect, url_for, flash, session
 import toml
 import os
-import pdb
+import shutil
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 #flash in Flask needs a key to temporarily store data for this session
-app.secret_key = b'_5#y2L"F4Q8z\c\ggff'
+app.secret_key = b'_5#y2L"F4Q8zww\ggff'
 
 @app.route("/")
 def homepage():
@@ -67,6 +67,13 @@ def upload_config():
     except Exception as e:
         flash(f"Failed to load configuration: {str(e)}", "error")
         return redirect(url_for("homepage"))
+
+@app.route("/clear_config", methods=["POST"])
+def clear_config():
+    session.pop("loaded_config", None)
+    session.pop("loaded_filename", None)
+    flash("Configuration cleared.")
+    return redirect(request.referrer or url_for("homepage"))
 
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
@@ -553,20 +560,34 @@ def submit5():
     session.pop("loaded_filename", None)
     return redirect(url_for("page5"))
 
+# Experiment Config. Form
+def save_toml_file_to_folder(file, folder):
+    """Save a single TOML file to the given folder."""
+    os.makedirs(folder, exist_ok=True)
+    if file and file.filename.endswith(".toml"):
+        filename = secure_filename(file.filename)
+        path = os.path.join(folder, filename)
+        file.save(path)
+        return filename, path
+    return None, None
 
-#Experiment Config. Form
+
 @app.route("/submit_exp", methods=["POST"])
 def submit_exp():
+    is_loaded_session = 'loaded_config' in session
+    loaded_folder = session.get("loaded_config", {}).get("folder_name")
     session.pop("loaded_config", None)
 
     experiment_name = request.form.get("filename") or "default-experiment"
-    folder_name = f"{experiment_name}_folder"
-
+    if loaded_folder:
+        folder_name = loaded_folder
+    else: 
+        folder_name = request.form.get("folder") or f"{experiment_name}_folder"
     os.makedirs(folder_name, exist_ok=True)
 
-    # Validate devices
     device_names = request.form.getlist("device_name[]")
-    config_files = request.files.getlist("config_file[]")
+    new_config_files = request.files.getlist("config_file_new[]")
+    existing_config_files = request.form.getlist("config_file_existing[]")
     device_types = request.form.getlist("device_type[]")
     device_ports = request.form.getlist("device_port[]")
     placeholder_1 = request.form.getlist("placeholder1[]")
@@ -574,21 +595,39 @@ def submit_exp():
 
     if not device_names or all(name.strip() == "" for name in device_names):
         flash("At least one device must be submitted.", "error")
-        return render_template("exp_config.html", retain_form=True, form_data=request.form)
+        return render_template("exp_config.html",
+                               retain_form=True,
+                               form_data=dict(request.form),
+                               current_folder=folder_name)
 
     devices = []
-    for i in range(len(device_names)):
-        if i >= len(config_files) or not config_files[i] or config_files[i].filename.strip() == "":
-            flash(f"No configuration file uploaded for device {device_names[i] or 'unnamed device'}.", "error")
-            return render_template("exp_config.html", retain_form=True, form_data=request.form)
+    for i, name in enumerate(device_names):
+        file_obj = new_config_files[i] if i < len(new_config_files) else None
+        config_filename = ""
 
-        file_obj = config_files[i]
-        config_filename = secure_filename(file_obj.filename)
-        config_path = os.path.join(folder_name, config_filename)
-        file_obj.save(config_path)
+        if file_obj and file_obj.filename.strip():
+            config_filename, _ = save_toml_file_to_folder(file_obj, folder_name)
+        else:
+            config_filename = existing_config_files[i] if i < len(existing_config_files) else ""
+
+            if config_filename:
+                # Try copying from previous folder
+                previous_folder = request.form.get("previous_folder")
+                if previous_folder:
+                    src_path = os.path.join(previous_folder, config_filename)
+                    dst_path = os.path.join(folder_name, config_filename)
+
+                    if os.path.exists(src_path) and not os.path.exists(dst_path):
+                        shutil.copy2(src_path, dst_path)
+            else:
+                flash(f"No configuration file uploaded or found for device {name or 'unnamed device'}.", "error")
+                return render_template("exp_config.html",
+                                       retain_form=True,
+                                       form_data=dict(request.form),
+                                       current_folder=folder_name)
 
         devices.append({
-            "device_name": device_names[i],
+            "device_name": name,
             "config_file": config_filename,
             "device_type": device_types[i],
             "device_port": device_ports[i],
@@ -598,56 +637,32 @@ def submit_exp():
             "placeholder_4": placeholder_4[i],
         })
 
-    # Save experiment .toml file inside the folder
-    config_data = {
-        "title": "Experiment Configuration File",
-        "experiment_name": experiment_name,
-        "devices": devices
-    }
-
     exp_file_path = os.path.join(folder_name, f"{experiment_name}.toml")
-    if os.path.exists(exp_file_path):
+    if os.path.exists(exp_file_path) and not is_loaded_session:
         flash(f"Experiment file {experiment_name}.toml already exists in {folder_name}.", "error")
-        return render_template("exp_config.html", retain_form=True, form_data=request.form)
+        return render_template("exp_config.html",
+                               retain_form=True,
+                               form_data=dict(request.form),
+                               current_folder=folder_name)
 
+    # Save experiment-level TOML file
     with open(exp_file_path, "w", encoding="utf-8") as f:
-        f.write(toml.dumps(config_data))
+        f.write(toml.dumps({
+            "title": "Experiment Configuration File",
+            "folder_name": folder_name,
+            "experiment_name": experiment_name,
+            "devices": devices
+        }))
 
     flash(f"Experiment saved successfully to {exp_file_path}!", "success")
-    
     toml_files = [f for f in os.listdir(folder_name) if f.endswith(".toml")]
-    return render_template("exp_config.html", retain_form=True, form_data=request.form, toml_files=toml_files, current_folder=folder_name)
 
-    return redirect(url_for("exp_config"))
+    return render_template("exp_config.html",
+                           retain_form=True,
+                           form_data=dict(request.form),
+                           toml_files=toml_files,
+                           current_folder=folder_name)
 
-@app.route("/upload_file_to_folder", methods=["POST"])
-def upload_file_to_folder():
-    uploaded_file = request.files.get("file")
-    folder = request.form.get("folder")
-
-    if uploaded_file and uploaded_file.filename.endswith(".toml"):
-        os.makedirs(folder, exist_ok=True)
-        path = os.path.join(folder, secure_filename(uploaded_file.filename))
-        uploaded_file.save(path)
-        flash(f"{uploaded_file.filename} uploaded to {folder}", "success")
-    else:
-        flash("Only .toml files are allowed", "error")
-
-    return redirect(url_for("exp_config"))
-
-@app.route("/exp_config_upload_config_file", methods=["POST"])
-def exp_config_upload_config_file():
-    uploaded_file = request.files.get("config_file")
-    experiment_name = request.form.get("filename") or "default-experiment"
-    folder = f"{experiment_name}_folder"
-    os.makedirs(folder, exist_ok=True)
-
-    if uploaded_file and uploaded_file.filename.endswith(".toml"):
-        filename = secure_filename(uploaded_file.filename)
-        save_path = os.path.join(folder, filename)
-        uploaded_file.save(save_path)
-        flash(f"{filename} uploaded to {folder}", "success")
-    else:
-        flash("Invalid file. Please upload a .toml file.", "error")
-
-    return redirect(url_for("exp_config"))
+# Debugging Purposes
+if __name__ == "__main__":
+    app.run(debug=True)

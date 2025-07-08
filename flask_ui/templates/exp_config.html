@@ -5,27 +5,32 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-    .main {
-      width: 75%;
-      background: #f5f3ef;
-      padding: 1.5rem;
-      box-sizing: border-box;
-    }
-    .main h2 {
-      color: #4f6d47;
+ 
+   #information input[type="text"] {
+	padding: 6px 10px;
+  	font-size: 14px;
+  	width: 250px;
+  	box-sizing: border-box;
     }
     .device-table-container {
       max-height: 300px;
       overflow-y: auto;
       border: 1px solid #ccc;
       margin-top: 1rem;
+      background-color: #D9D9D9;
     }
     table {
       width: 100%;
       border-collapse: collapse;
     }
+
+    thead th {
+	background-color: #588157;
+	position: sticky; top: 0;
+	z-index: 2;	
+    }
     th, td {
-      border: 1px solid #ccc;
+      border: 1.5px solid gray;
       padding: 0.5rem;
       text-align: center;
     }
@@ -48,30 +53,12 @@
       cursor: pointer;
     }
     .device-buttons .remove {
-      background: #c0392b;
+      background: #A9364A;
       color: white;
     }
     .device-buttons .add {
-      background: #2ecc71;
+      background: #588157;
       color: white;
-    }
-    .footer-buttons {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-    }
-    .footer-buttons button {
-      padding: 0.75rem 1.25rem;
-      font-size: 1rem;
-      cursor: pointer;
-    }
-    .footer-buttons .ok {
-      background: #4f6d47;
-      color: white;
-    }
-    .footer-buttons .reset, .footer-buttons .home {
-      background: white;
-      border: 1px solid #ccc;
     }
   </style>
 </head>
@@ -90,13 +77,18 @@
       <option value="/Pod8480SC">Pod8480SC</option>
     </select>    
 
+
     <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
 
     <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
       <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
     </form>
 
-    <button id="save_config" type="submit" form="device-form">Save Device Configuration</button>
+    <button id="clear_config" type="button" style="background-color: #B7B6B6" onclick="clearLoadedConfig()" {% if not session.get("loaded_config") %}disabled{% endif %}>
+    Clear Loaded Configuration</button>
+    
+    <button id="save_config" type="submit" form="device-form" style="background-color: #A3B18A">Save Device Configuration</button>
+ 
   </div>
   <div class="main-content" id="device-config">
     <h2>Experiment | Configuration</h2>
@@ -105,11 +97,23 @@
     </div>
 
    <form id="experiment-config-form" action="/submit_exp" method="POST" enctype="multipart/form-data">
+    <fieldset id="information">
+      <legend>Information</legend>
+      <label for="experiment-folder" style="width:50%">Folder Name</label>
+      	<input type="text" name="folder" id="folder+name" placeholder="Untitled"
+	  value="{% if form_data is defined and form_data.get('folder_name') %}{{ form_data.get('folder_name') }}
+		 {% elif current_folder %}{{ current_folder }}
+		 {% else %}Untitled{% endif %}">
+      </br>
+      </br>
       <label for="experiment">Experiment Name</label>
-      <input type="text" name="filename" id="filename" placeholder="Untitled" value="{{ session.get('loaded_config', {}).get('filename', '') }}">
+      <input type="text" name="filename" id="filename" placeholder="Untitled"
+       value="{% if session.get('loaded_config') %}{{ session['loaded_config'].get('experiment_name', '') }}{% elif form_data %}{{ form_data.get('filename', '') }}{% else %}Untitled{% endif %}">
+   </fieldset>
 
-      <div class="device-table">
-        <div class="device-table-container">
+   <fieldset id="device-table">
+   <legend>Device Manager</legend>
+	<div class="device-table-container">
           <table id="deviceTable">
             <thead>
               <tr>
@@ -124,54 +128,71 @@
                 <th>Remove</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td><input type="text" name="device_name[]" value="Pod_1" /></td>
-                <td><input type="file" name="config_file[]" /></td>
-                <td>
-                  <select name="device_type[]">
-                    <option value="Pod8206HR">Pod8206HR</option>
-                    <option value="Pod8229">Pod8229</option>
-                    <option value="Pod8274D">Pod8274D</option>
-                    <option value="Pod8401HR">Pod8401HR</option>
-                    <option value="Pod8480SC">Pod8480SC</option>
-                  </select>
-                </td>
-                <td><input type="text" name="device_port[]" value="/dev/ttyUSB0" /></td>
-                <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
-                <td><input type="checkbox" name="placeholder2" value="true" /></td>
-                <td><input type="checkbox" name="placeholder3" value="true" /></td>
-                <td><input type="number" name="placeholder4[]" value="1000" /></td>
-                <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
-              </tr>
-            </tbody>
-          </table>
+		<tbody>
+		  {% set devices = session.get('loaded_config', {}).get('devices', []) %}
+		  {% if devices %}
+		    {% for device in devices %}
+		      <tr>
+			<td><input type="text" name="device_name[]" value="{{ device.device_name }}" /></td>
+			<td>
+			  <div>
+			    <small style="color: #A3B18A">Current: {{ device.config_file or "No file selected" }}</small>
+			  </div>
+			  <input type="file" name="config_file_new[]" />
+			  <input type="hidden" name="config_file_existing[]" value="{{ device.config_file }}" />
+			</td>
+			<td>
+			  <select name="device_type[]">
+			    {% for type in ["Pod8206HR", "Pod8229", "Pod8274D", "Pod8401HR", "Pod8480SC"] %}
+			      <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
+			    {% endfor %}
+			  </select>
+			</td>
+			<td><input type="text" name="device_port[]" value="{{ device.device_port }}" /></td>
+			<td><input type="text" name="placeholder1[]" value="{{ device.placeholder_1 }}" /></td>
+			<td>
+			  <input type="checkbox" name="PH2_{{ loop.index0 }}" value="true" {% if device.placeholder_2 == "true" %}checked{% endif %} />
+			</td>
+			<td>
+			  <input type="checkbox" name="PH3_{{ loop.index0 }}" value="true" {% if device.placeholder_3 == "true" %}checked{% endif %} />
+			</td>
+			<td><input type="number" name="placeholder4[]" value="{{ device.placeholder_4 }}" /></td>
+			<td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
+		      </tr>
+		    {% endfor %}
+		  {% else %}
+		    <!-- fallback to one blank row if nothing loaded -->
+		    <tr>
+		      <td><input type="text" name="device_name[]" value="Pod_1" /></td>
+		      <td><input type="file" name="config_file[]" /></td>
+		      <td>
+			<select name="device_type[]">
+			  <option value="Pod8206HR">Pod8206HR</option>
+			  <option value="Pod8229">Pod8229</option>
+			  <option value="Pod8274D">Pod8274D</option>
+			  <option value="Pod8401HR">Pod8401HR</option>
+			  <option value="Pod8480SC">Pod8480SC</option>
+			</select>
+		      </td>
+		      <td><input type="text" name="device_port[]" value="/dev/ttyUSB0" /></td>
+		      <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
+		      <td><input type="checkbox" name="PH2_0" value="true" /></td>
+		      <td><input type="checkbox" name="PH3_0" value="true" /></td>
+		      <td><input type="number" name="placeholder4[]" value="1000" /></td>
+		      <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
+		    </tr>
+		  {% endif %}
+		</tbody>
+
+	  </table>
         </div>
 
         <div class="device-buttons">
           <button class="remove" type="button" onclick="removeAllDevices()">Remove All Devices</button>
           <button class="add" type="button" onclick="addNewDevice()">Add New Device</button>
         </div>
-      </div>
+   </fieldset> 
 
-
-    
-   <div id="file-list">
-     <h3>Current Config. Files:</h3>
-     <ul>
-       {% for file in config_files %}
-         <li>• {{ file }}</li>
-       {% endfor %}
-     </ul>
-    </div>
-
-    <form id="exp-config-upload-form" action="/exp_config_upload_config_file" method="post" enctype="multipart/form-data">
-	<div id="drop-zone" style="border: 2px dashed #ccc; padding: 20px; text-align: center;">
-	Drag and drop your .toml files here, or click to select files<input type="file" id="file-input" name="config_file" accept=".toml" hidden />
-	</div>
-	<button type="submit">Upload</button>
-    </form>
- 
     <div id="flash-messages">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -192,10 +213,8 @@
    </form>
   </div>  
 
+
   <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
-
-
 </body>
 </html>
 

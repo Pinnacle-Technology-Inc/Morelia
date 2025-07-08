@@ -26,7 +26,10 @@
       <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
     </form>
 
-    <button id="save_config" type="submit" form="device-form">Save Device Configuration</button>
+    <button id="clear_config" type="button" style="background-color: #B7B6B6" onclick="clearLoadedConfig()" {% if not session.get("loaded_config") %}disabled{% endif %}>
+    Clear Loaded Configuration</button>
+    
+    <button id="save_config" type="submit" form="device-form" style="background-color: #A3B18A">Save Device Configuration</button>
   </div>
   <div class="main-content" id="device-config">
     <h2>Devices | Configuration</h2>
@@ -155,6 +158,7 @@
         <button id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
       </div>
     </form>
+
   </div>  
   <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
