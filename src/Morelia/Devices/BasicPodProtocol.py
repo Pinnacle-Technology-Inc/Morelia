@@ -7,6 +7,7 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
+from threading import Lock
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -35,7 +36,7 @@ class Pod :
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
 
-        self._lock = None
+        self._lock = Lock()
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
@@ -228,7 +229,7 @@ class Pod :
 
         :return: True of the buffers are flushed, False otherwise.
         """
-        return(self._port.Flush())
+        return(self._port.flush())
     
     
     def set_baudrate_of_device(self, baudrate: int) -> bool : 
@@ -332,16 +333,21 @@ class Pod :
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
         if self._port.queue_initialized() or self._port.queue_registered():
-            if self._lock is None:
-                self._lock = self._port.obtain_lock()
+            #if self._lock is None:
+                #self._lock = self._port.obtain_lock()
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
-
-            self._lock.acquire()
+            with self._lock:
+                try:
+                    pass
+                finally:
+                    self._queue.put_nowait(packet)
+            '''self._lock.acquire()
             try: 
+                print(f"write packet: {cmd}, {payload}")
                 self._queue.put_nowait(packet)
             finally:
-                self._lock.release()
+                self._lock.release()'''
 
         # write packet to serial port 
         self._port.write(packet)
@@ -362,16 +368,30 @@ class Pod :
         control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
-        b = None
-        while(b != PodPacket.STX) :
-            b = self._port.read(1,timeout_sec)     # read next byte  
-        # continue reading packet  
-        packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-        # return final packet
-        return(packet)
-
-
-
+        #if self._port.lock_initialized() and self._lock is None:
+            #self._lock = self._port.obtain_lock()
+        '''if self._lock is not None:
+            self._lock.acquire()
+            print("acquired lock read")
+            try:
+                b = None
+                while(b != PodPacket.STX) :
+                    b = self._port.read(1,timeout_sec)     # read next byte  
+                # continue reading packet  
+                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+                # return final packet
+                return(packet)
+            finally:
+                self._lock.release()
+        else:'''
+        with self._lock:
+            b = None
+            while(b != PodPacket.STX) :
+                b = self._port.read(1,timeout_sec)     # read next byte  
+            # continue reading packet  
+            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+            # return final packet
+            return(packet)
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
@@ -390,6 +410,7 @@ class Pod :
         packet += cmd 
         # return packet if cmd ends in ETX
         if(cmd[len(cmd)-1].to_bytes(1,'big') == PodPacket.ETX) : 
+            print("Pod packet error(?)")
             return(PodPacket(packet))
         # determine the command number
         cmd_num: int = conv.ascii_bytes_to_int(cmd)
@@ -398,6 +419,7 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmd_num)
         # then check if it is standard or binary
         if( self._commands.is_command_binary(cmd_num) ) : # binary read
+            print(packet)
             packet: DataPacket = self._read_binary(pre_packet=packet, validate_checksum=validate_checksum)
         else : # standard read
             packet: ControlPacket = self._read_standard(pre_packet=packet, validate_checksum=validate_checksum)

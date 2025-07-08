@@ -5,6 +5,10 @@ from queue import Empty
 from multiprocessing import Lock
 import  platform
 import  time
+import threading
+from filelock import FileLock
+
+LOCK_FILE = "/tmp/queue_global.lock"
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -33,14 +37,16 @@ class PortIO :
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
         self._manager = PacketManager()
-        #self._lock = Lock()
+        self._lock = None
+        
+        print("inside init")
 
         if (port == 'TEST') :
 
             self.__serial_inst : Serial = serial_for_url('loop://')
 
         else:
-
+            print("initialize Serial object")
             # initialize port 
             self.__serial_inst : Serial = Serial()
             # open port  
@@ -97,7 +103,7 @@ class PortIO :
             bool: True if the COM port is open, False otherwise. 
         """
         # true if serial port is open, false otherwise 
-        return(self.__serial_inst.isOpen())
+        return(self.__serial_inst.is_open)
 
     def is_serial_closed(self) -> bool :
         """Returns False if the serial instance port is open, True otherwise.
@@ -141,6 +147,12 @@ class PortIO :
 
     def obtain_lock(self):
         return self._manager.obtain_lock()
+ 
+    def lock_initialized(self):
+        """
+        Verifies if the Queue has been initialized in the PacketManager
+        """
+        return self._manager.lock_initialized()
 
     # ----- SERIAL MANAGEMENT -----
 
@@ -163,7 +175,9 @@ class PortIO :
         """
         # close current port if it is open
         if(self.is_serial_open()) : 
-            self.close_serial_port()
+            print("serial is open")
+            return
+            #self.close_serial_port()
         # get name 
         name = self.__build_port_name(port)
         # if the 'Name' is not None
@@ -288,6 +302,17 @@ class PortIO :
             if self.__serial_inst.in_waiting : 
                 # read packet until end of line (eol) character 
                 return(self.__serial_inst.read_until(eol) )
+    
+    def check_queue(self) -> None:
+        if self._manager.queue_initialized():
+            queue = self._manager.obtain_queue()
+            try:
+                while True:
+                    with FileLock(LOCK_FILE):
+                        item = queue.get_nowait()
+                    self.__serial_inst.write(item)
+            except Empty:
+                return
 
     def write(self, message: bytes = b'') -> None : 
         """Write a set message to the open serial port. 
@@ -309,18 +334,29 @@ class PortIO :
         if queue is None: 
             self.__serial_inst.write(message)
             return
-        
+        #if self._lock is None:
+            #self._lock = self._manager.obtain_lock()
+
         # otherwise, take the first item of the queue and write it to the Serial port
         if self._manager.queue_initialized():
             try:
                 
                 while True:
-                    item = queue.get_nowait()
-                    #with self._lock:
+                    with FileLock(LOCK_FILE):
+                        item = queue.get_nowait()
+
+                    #if self._manager.lock_initialized():
+                    #    self._lock.acquire()
+                    #    print("acquired lock write")
+                    #    try:
+                    #        item = queue.get_nowait()
+                    #        #self.__serial_inst.write(item)
+                    #    finally:
+                    #        self._lock.release()
                     self.__serial_inst.write(item)
 
             # if the Queue is instantiated but empty, write directly to the serial port.
 
             except Empty:
-                pass
+                return
 

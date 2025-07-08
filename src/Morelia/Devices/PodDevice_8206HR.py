@@ -6,6 +6,9 @@ from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
 from functools import partial
+from datetime import datetime
+import time
+import traceback
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -97,6 +100,11 @@ class Pod8206HR(AquisitionDevice) :
         # check if checksum is correct 
         if(validate_checksum):
             if(not self._validate_checksum(packet) ) :
+                print(packet)
+                with open("external_error.log", "w") as f:
+                    f.write(f"\n--- Exception at {time.ctime()} ---\n")
+                    f.write("".join(traceback.format_stack()))
+                    f.write("\n")
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
