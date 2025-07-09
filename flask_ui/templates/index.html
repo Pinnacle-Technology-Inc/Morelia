@@ -37,10 +37,38 @@
       cursor: pointer;
     }
 
-    .menu {
-
+    #device-select {
+	  display: block;
+	  margin: 10px auto;
+	  padding: 12px 24px;
+	  font-size: 16px;
+	  border: none;
+	  border-radius: 30px;
+	  background-color: #4a704d;
+	  color: white;
+	  cursor: pointer;
+	  text-align: center;
+	  text-align-last: center;
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;   
+	  background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10'><polygon points='0,0 14,0 7,10' fill='white'/></svg>");
+	  background-repeat: no-repeat;
+	  background-position: right 1rem center;
+	  background-size: 12px;
+	  padding-right: 40px;
     }
+
   </style>
+
+	<script>
+	  function handleDeviceSelect(select) {
+	    const path = select.value;
+	    if (path) {
+	      window.location.href = path;
+	    }
+	  }
+	</script>
 </head>
 <body>
   <div class="sidebar" id="device-bar">
@@ -71,11 +99,19 @@
     <h3 style="color:#A3B18A; margin-top: 0px; margin-bottom: 10px;">_____________</h3>
     <div class="menu">
 	<button style="background-color: #A3B18A; color: black; margin-bottom: 45px;"><a href="https://pinnacle-technology-inc.github.io/Morelia/getting_started.html" target="_blank">Read Morelia Docs</a></button>
-    	<button><a href="/Pod8206HR">Configure Pod8206HR Device</a></button>
-    	<button><a href="/Pod8229">Configure Pod8229 Device</a></button>
-    	<button><a href="/Pod8274D">Configure Pod8274D Device</a></button>
-    	<button><a href="/Pod8401HR">Configure Pod8401HR Device</a></button>
-    	<button><a href="/Pod8480SC">Configure Pod8480SC Device</a></button>
+	
+	<h4>Select a Pod Device to Configure</h4>
+	<select id="device-select" onchange="handleDeviceSelect(this)">
+	  <option value="">-- Select a Pod Device --</option>
+	  <option value="/Pod8206HR">Configure Pod8206HR Device</option>
+	  <option value="/Pod8229">Configure Pod8229 Device</option>
+	  <option value="/Pod8274D">Configure Pod8274D Device</option>
+	  <option value="/Pod8401HR">Configure Pod8401HR Device</option>
+	  <option value="/Pod8480SC">Configure Pod8480SC Device</option>
+	</select>
+
+	
+	<h4>Configure an Experiment</h4>
     	<button><a href="/Experiment_Config">Experiment Configuration</a></button>
     </div>
   </div>

@@ -575,14 +575,18 @@ def save_toml_file_to_folder(file, folder):
 @app.route("/submit_exp", methods=["POST"])
 def submit_exp():
     is_loaded_session = 'loaded_config' in session
-    loaded_folder = session.get("loaded_config", {}).get("folder_name")
-    session.pop("loaded_config", None)
 
     experiment_name = request.form.get("filename") or "default-experiment"
-    if loaded_folder:
-        folder_name = loaded_folder
-    else: 
-        folder_name = request.form.get("folder") or f"{experiment_name}_folder"
+    folder_name = request.form.get("folder", "").strip()
+
+    if not folder_name:
+        folder_name = session.get("loaded_config", {}).get("folder_name", "")
+        
+    if not folder_name:
+        folder_name = f"{experiment_name}_folder"
+
+    session.pop("loaded_config", None)
+
     os.makedirs(folder_name, exist_ok=True)
 
     device_names = request.form.getlist("device_name[]")
@@ -592,6 +596,17 @@ def submit_exp():
     device_ports = request.form.getlist("device_port[]")
     placeholder_1 = request.form.getlist("placeholder1[]")
     placeholder_4 = request.form.getlist("placeholder4[]")
+
+ 
+    # Check for any empty or invalid selections for device type
+    invalid_types = [dt for dt in device_types if dt.strip() == "" or dt == "null"]
+
+    if invalid_types:
+        flash("Every device must have a device type.", "error")
+        return render_template("exp_config.html",
+                               retain_form=True,
+                               form_data=dict(request.form),
+                               current_folder=folder_name)
 
     if not device_names or all(name.strip() == "" for name in device_names):
         flash("At least one device must be submitted.", "error")

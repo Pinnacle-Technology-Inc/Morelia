@@ -57,9 +57,10 @@ function addNewDevice() {
 
   row.innerHTML = `
     <td><input type="text" name="device_name[]" value="Pod_${rowCount + 1}" /></td>
-    <td><input type="file" name="config_file[]" /></td>
+    <td><input type="file" name="config_file_new[]" /></td>
     <td>
       <select name="device_type[]">
+      	<option value="None">--Select--</option>
         <option value="Pod8206HR">Pod8206HR</option>
         <option value="Pod8229">Pod8229</option>
         <option value="Pod8274D">Pod8274D</option>
@@ -75,36 +76,7 @@ function addNewDevice() {
     <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
   `;
 
-  tbody.appendChild(row);
+  tbody.appendChild(row);  
 }
 
-// Drag-and-Drop File Support
-document.addEventListener("DOMContentLoaded", () => {
-  const dropZone = document.getElementById("drop-zone");
-  const fileInput = document.getElementById("file-input");
 
-  dropZone.addEventListener("click", () => fileInput.click());
-
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = "#4f6d47";
-    dropZone.style.background = "#f0fff0";
-  });
-
-  dropZone.addEventListener("dragleave", () => {
-    dropZone.style.borderColor = "#ccc";
-    dropZone.style.background = "";
-  });
-
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropZone.style.borderColor = "#ccc";
-    dropZone.style.background = "";
-    
-    if (e.dataTransfer.files.length > 0) {
-      fileInput.files = e.dataTransfer.files;
-      // Optionally auto-submit:
-      // document.getElementById("exp-config-upload-form").submit();
-    }
-  });
-});

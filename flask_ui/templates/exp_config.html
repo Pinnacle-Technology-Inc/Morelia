@@ -99,11 +99,9 @@
    <form id="experiment-config-form" action="/submit_exp" method="POST" enctype="multipart/form-data">
     <fieldset id="information">
       <legend>Information</legend>
-      <label for="experiment-folder" style="width:50%">Folder Name</label>
+      <label for="experiment-folder" style="width:15%; height: 7px;">Folder Name</label>
       	<input type="text" name="folder" id="folder+name" placeholder="Untitled"
-	  value="{% if form_data is defined and form_data.get('folder_name') %}{{ form_data.get('folder_name') }}
-		 {% elif current_folder %}{{ current_folder }}
-		 {% else %}Untitled{% endif %}">
+	  value="{% if session.get('loaded_config') %}{{ session['loaded_config'].get('folder_name', '') }}{% elif form_data %}{{ form_data.get('current_folder', '') }}{% else %}Untitled{% endif %}">
       </br>
       </br>
       <label for="experiment">Experiment Name</label>
@@ -142,12 +140,12 @@
 			  <input type="hidden" name="config_file_existing[]" value="{{ device.config_file }}" />
 			</td>
 			<td>
-			  <select name="device_type[]">
-			    {% for type in ["Pod8206HR", "Pod8229", "Pod8274D", "Pod8401HR", "Pod8480SC"] %}
-			      <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
-			    {% endfor %}
-			  </select>
-			</td>
+				<select name="device_type[]">
+				  <option value="">--Select--</option>
+				  {% for type in ["Pod8206HR", "Pod8229", "Pod8274D", "Pod8401HR", "Pod8480SC"] %}
+				    <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
+				  {% endfor %}
+				</select>			</td>
 			<td><input type="text" name="device_port[]" value="{{ device.device_port }}" /></td>
 			<td><input type="text" name="placeholder1[]" value="{{ device.placeholder_1 }}" /></td>
 			<td>
@@ -164,9 +162,10 @@
 		    <!-- fallback to one blank row if nothing loaded -->
 		    <tr>
 		      <td><input type="text" name="device_name[]" value="Pod_1" /></td>
-		      <td><input type="file" name="config_file[]" /></td>
+		      <td><input type="file" name="config_file_new[]" /></td>
 		      <td>
 			<select name="device_type[]">
+			  <option value="null">--Select--</option>
 			  <option value="Pod8206HR">Pod8206HR</option>
 			  <option value="Pod8229">Pod8229</option>
 			  <option value="Pod8274D">Pod8274D</option>
@@ -208,13 +207,13 @@
       <div class="form-buttons">
         <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
 	<button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Reset</button>
-        <button id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
+        <button type="reset" id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
       </div>
    </form>
   </div>  
 
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 
-  <script src="{{ url_for('static', filename='script.js') }}"></script>
-</body>
+ </body>
 </html>
 
