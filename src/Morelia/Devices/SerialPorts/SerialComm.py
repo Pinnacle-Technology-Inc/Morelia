@@ -2,14 +2,10 @@
 from    serial import Serial, serial_for_url
 from Morelia.Devices.SerialPorts.queue_manager import PacketManager
 from queue import Empty
-from multiprocessing import Lock
 import  platform
 import  time
-import threading
-from filelock import FileLock
 import subprocess
 
-LOCK_FILE = "/tmp/queue_global.lock"
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -38,7 +34,6 @@ class PortIO :
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
         self._manager = PacketManager()
-        self._lock = None
         
         if (port == 'TEST') :
 
@@ -153,15 +148,6 @@ class PortIO :
         """
         return self._manager.queue_registered()
 
-    def obtain_lock(self):
-        return self._manager.obtain_lock()
- 
-    def lock_initialized(self):
-        """
-        Verifies if the Queue has been initialized in the PacketManager
-        """
-        return self._manager.lock_initialized()
-
     # ----- SERIAL MANAGEMENT -----
 
     def close_serial_port(self) -> None :
@@ -272,7 +258,6 @@ class PortIO :
             ti = (round(time.time(),9)) # initial time (sec)          
             if self.__serial_inst.in_waiting: 
                 #read packet
-                #with self._lock:
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
@@ -318,7 +303,6 @@ class PortIO :
             queue = self._manager.obtain_queue()
             try:
                 while True:
-                    #with FileLock(LOCK_FILE):
                     item = queue.get_nowait()
                     self.__serial_inst.write(item)
             except Empty:
@@ -338,21 +322,17 @@ class PortIO :
             
         # obtain queue from the PacketManager class
         queue = self._manager.obtain_queue()
-        #self._lock = self._manager.obtain_lock()
         
         # if the queue has not been instantiated yet, write directly to the Serial port
         if queue is None: 
             self.__serial_inst.write(message)
             return
-        #if self._lock is None:
-            #self._lock = self._manager.obtain_lock()
 
         # otherwise, take the first item of the queue and write it to the Serial port
         if self._manager.queue_initialized():
             try:
                 
                 while True:
-                    #with FileLock(LOCK_FILE):
                     item = queue.get_nowait()
 
                     # write message to open port 

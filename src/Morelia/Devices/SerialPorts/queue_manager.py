@@ -10,13 +10,11 @@ __email__       = 'sales@pinnaclet.com'
 #environment imports
 
 from multiprocessing.managers import BaseManager
-from multiprocessing import Queue, Lock
+from multiprocessing import Queue
 import multiprocessing as mp
 import socket
 import time
-from filelock import FileLock
 
-LOCK_FILE = "/tmp/queue_global.lock"
 
 class ControlPacketManager(BaseManager): 
     pass
@@ -28,10 +26,8 @@ class PacketManager:
         Runs when the PacketManager is instantiated within the PortIO object belonging to the Acquisition device.
         """
         self._queue = None
-        self._lock = None
         self._queue_initialized = False
         self._queue_registered = False
-        self._lock_initialized = False
 
     def port_in_use(self, host, port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -52,14 +48,11 @@ class PacketManager:
 
         self.register_control_queue()
         self._queue_initialized = True
-        self._lock_initialized = True
 
     def create_control_queue_process(self):
 
         shared_queue = Queue()
-        shared_lock = Lock()
         ControlPacketManager.register('get_queue', callable=lambda: shared_queue)
-        ControlPacketManager.register('get_lock', callable=lambda: shared_lock)
 
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
         server = manager.get_server()
@@ -70,11 +63,9 @@ class PacketManager:
         Registers the initialized Queue for an acquisition device.
         """
         ControlPacketManager.register('get_queue')
-        ControlPacketManager.register('get_lock')
         
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
         
-        #with FileLock(LOCK_FILE):
         manager.connect()
 
         #connected = False
@@ -90,24 +81,16 @@ class PacketManager:
         #if not connected: 
         #    raise RuntimeError("Failed to connect to the manager")
         queue = manager.get_queue()
-        lock = manager.get_lock()
 
         self._queue = queue
-        self._lock = lock
         self._queue_registered = True
 
     def obtain_queue(self):
         return self._queue
-
-    def obtain_lock(self):
-        return self._lock
 
     def queue_initialized(self):
         return self._queue_initialized
 
     def queue_registered(self):
         return self._queue_registered
-
-    def lock_initialized(self):
-        return self._lock_initialized
     

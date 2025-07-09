@@ -333,8 +333,6 @@ class Pod :
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
         if self._port.queue_initialized() or self._port.queue_registered():
-            #if self._lock is None:
-                #self._lock = self._port.obtain_lock()
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
             with self._lock:
@@ -342,13 +340,7 @@ class Pod :
                     pass
                 finally:
                     self._queue.put_nowait(packet)
-            '''self._lock.acquire()
-            try: 
-                print(f"write packet: {cmd}, {payload}")
-                self._queue.put_nowait(packet)
-            finally:
-                self._lock.release()'''
-
+            
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
@@ -368,22 +360,6 @@ class Pod :
         control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
-        #if self._port.lock_initialized() and self._lock is None:
-            #self._lock = self._port.obtain_lock()
-        '''if self._lock is not None:
-            self._lock.acquire()
-            print("acquired lock read")
-            try:
-                b = None
-                while(b != PodPacket.STX) :
-                    b = self._port.read(1,timeout_sec)     # read next byte  
-                # continue reading packet  
-                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-                # return final packet
-                return(packet)
-            finally:
-                self._lock.release()
-        else:'''
         with self._lock:
             b = None
             while(b != PodPacket.STX) :
