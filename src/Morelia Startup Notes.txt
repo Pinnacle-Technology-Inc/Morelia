@@ -1,0 +1,14 @@
+1) Enable Hyper V and windows virtualization
+2) Install WSL and Ubuntu
+3) Install miniconda inside WSL - say yes
+4) Inside WSL: conda env create -f environment.yml
+5) Inside WSL: conda activate Morelia
+6) In Windows: Install usbipd-win
+7) Insure device is plugged in you want to connect to
+8) In admin powershell: usbipd list.  Identify device "USB serial converter" and note the bus ID
+9) usbpd bind --busid <bus id>
+10) usbpid attach --wsl --busid <bus id>
+11) use lsusb to list usb devices (may have to install)
+12) sudo chmod 666 /dev/ttyUSBX where X is the number
+13) Edit morelia-test to have the correct /dev/ttyUSBX value
+14) run morelia-test

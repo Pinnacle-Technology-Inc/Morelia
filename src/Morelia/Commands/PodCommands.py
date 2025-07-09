@@ -143,7 +143,9 @@ class CommandSet :
             9  : [ 'ID',                (0,),   (0,),        False,  'ID number for the device. Often unused due to USB descriptor duplicating this function.'],
             10 : [ 'SAMPLE RATE',       (0,),   (0,),        False,  'Gets the sample rate of the device.  Often unused in favor of just setting it.'         ],
             11 : [ 'BINARY',            (0,),   (NO_VALUE,),   True,  'Indicates a binary packet.'                                                             ],  # No return bytes because the length depends on the message
-            12 : [ 'FIRMWARE VERSION',  (0,),   (UINT8,UINT8,UINT16), False,  'Returns firmware version of the device.'                                                ]
+            12 : [ 'FIRMWARE VERSION',  (0,),   (UINT8,UINT8,UINT16), False,  'Returns firmware version of the device.'                                                ],
+            13 : [ 'SET ID',            (UINT16,), (0,),        False,  'Sets the System ID read from command 9'],
+            14 : [ 'SAVE SETTINGS',     (UINT8,),  (0,),        False,  'Instructs the system to save its settings in EEPROM']
         }
         # return dict of commands 
         return(basics)

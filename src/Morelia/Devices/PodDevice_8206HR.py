@@ -37,20 +37,25 @@ class Pod8206HR(AquisitionDevice) :
 
         # remove unimplemented commands 
         self._commands.remove_command(5)  # STATUS
-        self._commands.remove_command(9)  # ID
         self._commands.remove_command(10) # SAMPLE RATE
         self._commands.remove_command(11) # BINARY
 
         # add device specific commands
+        self._commands.add_command(100, 'GET SAMPLE RATE',      (0,),       (UINT16,),    False,   'Gets the current sample rate of the system, in Hz.')
+        self._commands.add_command(101, 'SET SAMPLE RATE',      (UINT16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
         self._commands.add_command(102, 'GET LOWPASS',          (UINT8,),      (UINT16,),    False,   'Gets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG). Returns the value in Hz.')
         self._commands.add_command(103, 'SET LOWPASS',          (UINT8,UINT16),   (0,),      False,   'Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.')
         self._commands.add_command(104, 'SET TTL OUT',          (UINT8,UINT8),    (0,),      False,   'Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).')
         self._commands.add_command(105, 'GET TTL IN',           (UINT8,),      (UINT8,),     False,   'Sets the selected TTL pin (0,1,2,3) to an input and returns the value (0-1).')
         self._commands.add_command(106, 'GET TTL PORT',         (0,),       (UINT8,),     False,   'Gets the value of the entire TTL port as a byte. Does not modify pin direction.')
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
+        self._commands.add_command(108, 'GET TTL DIRECTION',    (0,),       (UINT8,UINT8,),  False,   'Returns the direction and state for each TTL pin.  1=input, 0=output')
+        self._commands.add_command(109, 'SET FILTER CONFIG',    (UINT8,),      (0,),      False,   'Sets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
+        self._commands.add_command(110, 'GET PREAMP TYPE',      (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
+        self._commands.add_command(111, 'SET PREAMP TYPE',      (UINT8,),      (0,),      False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
         self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (BINARY_4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
 
-        # preamplifier gain (should be 10x or 100x)
+        # preamplifier gain (should be 10x or 100x) - NOTE: We should do some error checkign here, but this is the wrong way to do it because there can be non 10/100 gains
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preamp_gain : int = preamp_gain 

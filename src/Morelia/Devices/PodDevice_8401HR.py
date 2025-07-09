@@ -2,6 +2,8 @@
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
 from Morelia.packet import ControlPacket, PrimaryChannelMode, SecondaryChannelMode
 from Morelia.packet.data import DataPacket8401HR
+import Morelia.packet.conversion as conv
+import Morelia.packet.legacy.Packet as Packet
 
 from functools import partial
 from typing import Union
@@ -79,6 +81,8 @@ class Pod8401HR(AquisitionDevice) :
         self._commands.remove_command(11) # BINARY
 
         # add device specific commands
+        self._commands.add_command( 100, 'GET SAMPLE RATE',      (0,),       (UINT16,),    False,   'Gets the current sample rate of the system, in Hz.')
+        self._commands.add_command( 101, 'SET SAMPLE RATE',      (UINT16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
         self._commands.add_command( 102,	'GET HIGHPASS',	    (UINT8,),	    (UINT8,),      False,  'Reads the highpass filter value for a channel. Requires the channel to read, returns 0-3, 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass.')
         self._commands.add_command( 103,	'SET HIGHPASS',	    (UINT8, UINT8),	(0,),       False,  'Sets the highpass filter for a channel. Requires channel to set, and filter value. Values are the same as returned in GET HIGHPASS.')
         self._commands.add_command( 104,	'GET LOWPASS',	    (UINT8,),	    (UINT16,),     False,  'Gets the lowpass filter for the desired channel. Requires the channel to read, Returns the value in Hz.')

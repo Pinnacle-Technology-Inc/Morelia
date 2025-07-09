@@ -29,10 +29,7 @@ class AquisitionDevice(Pod):
         super().__init__(port, baudrate=baudrate, device_name=device_name) 
 
         UINT16: int = Pod.get_u(16)
-        
-        self._commands.add_command(get_sample_rate_cmd_no, 'GET SAMPLE RATE',      (0,),       (UINT16,),    False,   'Gets the current sample rate of the system, in Hz.')
-        self._commands.add_command(set_sample_rate_cmd_no, 'SET SAMPLE RATE',      (UINT16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
-        
+                    
         #initialize as none so that when we ask for the sample rate later, it uses the overidden WriteRead.
         self._sample_rate: int = None
 
