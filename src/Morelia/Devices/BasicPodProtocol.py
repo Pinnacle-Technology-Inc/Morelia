@@ -419,7 +419,7 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmd_num)
         # then check if it is standard or binary
         if( self._commands.is_command_binary(cmd_num) ) : # binary read
-            print(packet)
+            #print(packet)
             packet: DataPacket = self._read_binary(pre_packet=packet, validate_checksum=validate_checksum)
         else : # standard read
             packet: ControlPacket = self._read_standard(pre_packet=packet, validate_checksum=validate_checksum)

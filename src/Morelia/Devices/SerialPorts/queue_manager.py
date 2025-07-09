@@ -74,8 +74,8 @@ class PacketManager:
         
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
         
-        with FileLock(LOCK_FILE):
-            manager.connect()
+        #with FileLock(LOCK_FILE):
+        manager.connect()
 
         #connected = False
         #for attempt in range(retries):

@@ -7,6 +7,7 @@ import  platform
 import  time
 import threading
 from filelock import FileLock
+import subprocess
 
 LOCK_FILE = "/tmp/queue_global.lock"
 
@@ -39,18 +40,20 @@ class PortIO :
         self._manager = PacketManager()
         self._lock = None
         
-        print("inside init")
-
         if (port == 'TEST') :
 
             self.__serial_inst : Serial = serial_for_url('loop://')
 
         else:
-            print("initialize Serial object")
-            # initialize port 
-            self.__serial_inst : Serial = Serial()
-            # open port  
-            self.open_serial_port(port, baudrate=baudrate)
+            if self.is_port_in_use(port):
+                self.__serial_inst = None       
+            else:
+
+                print("initialize Serial object")
+                # initialize port 
+                self.__serial_inst : Serial = Serial()
+                # open port  
+                self.open_serial_port(port, baudrate=baudrate)
 
     def __del__(self) -> None :
         """Runs when the object is destructed. It closes the serial port, if open."""
@@ -58,6 +61,11 @@ class PortIO :
         self.close_serial_port()
 
     # ====== PRIVATE METHODS ======
+
+    def is_port_in_use(self, port: str) -> bool:
+        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return result.returncode == 0
+
         
     def __build_port_name(self, port: str|int) -> str :
         """Converts the port parameter into the "COM"+<number> format for Windows or \
@@ -159,6 +167,8 @@ class PortIO :
     def close_serial_port(self) -> None :
         """Closes the instance serial port if it is open."""
         # close port if open 
+        if self.__serial_inst is None:
+            return
         if(self.is_serial_open()) :
             self.__serial_inst.close()
 
@@ -308,8 +318,8 @@ class PortIO :
             queue = self._manager.obtain_queue()
             try:
                 while True:
-                    with FileLock(LOCK_FILE):
-                        item = queue.get_nowait()
+                    #with FileLock(LOCK_FILE):
+                    item = queue.get_nowait()
                     self.__serial_inst.write(item)
             except Empty:
                 return
@@ -320,8 +330,8 @@ class PortIO :
         Args:
             message (bytes): byte string containing the message to write.
         """
-        # write message to open port 
-
+        if self.__serial_inst is None:
+            return
 
         if not self.is_serial_open():
             return
@@ -342,17 +352,10 @@ class PortIO :
             try:
                 
                 while True:
-                    with FileLock(LOCK_FILE):
-                        item = queue.get_nowait()
+                    #with FileLock(LOCK_FILE):
+                    item = queue.get_nowait()
 
-                    #if self._manager.lock_initialized():
-                    #    self._lock.acquire()
-                    #    print("acquired lock write")
-                    #    try:
-                    #        item = queue.get_nowait()
-                    #        #self.__serial_inst.write(item)
-                    #    finally:
-                    #        self._lock.release()
+                    # write message to open port 
                     self.__serial_inst.write(item)
 
             # if the Queue is instantiated but empty, write directly to the serial port.
