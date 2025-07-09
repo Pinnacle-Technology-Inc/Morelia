@@ -203,7 +203,7 @@ class Pod :
 
         :return: True of the buffers are flushed, False otherwise.
         """
-        return(self._port.Flush())
+        return(self._port.flush())
     
     
     def set_baudrate_of_device(self, baudrate: int) -> bool : 
@@ -330,8 +330,6 @@ class Pod :
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
         return(packet)
-
-
 
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
