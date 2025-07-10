@@ -15,6 +15,7 @@
       }
     ]
   },
+  "description": "Grafana dashboard for 8206HR devices that are streaming to an QuestDB data source",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
