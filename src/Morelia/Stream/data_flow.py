@@ -15,19 +15,12 @@ from functools import partial
 
 # local imports
 from Morelia.Devices import AcquisitionDevice
-from Morelia.Stream.source import get_data
+from Morelia.Stream.source import get_data_wrapper
 import Morelia.Stream.sink as pod_sink
 
 import time
 import inspect
 import pickle
-
-def _get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
-    source = source_class(**source_dict)
-    source.open_port()
-    sinks = [sink_class(**sink_dict) for sink_class, sink_dict in sinks_list]
-
-    get_data(duration_sec, manual_stop_event, source, sinks)
 
 class DataFlow:
     """Class that use multiprocessing to efficiently collect data from many devices at once.
@@ -105,7 +98,7 @@ class DataFlow:
             ]
             #pickle.dumps(source_dict)  # this should succeed
             #create worker process.
-            worker: mp.Process = mp.Process(target=_get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
+            worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
 
             self._workers.append(worker)
 

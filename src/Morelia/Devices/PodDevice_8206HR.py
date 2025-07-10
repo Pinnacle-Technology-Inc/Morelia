@@ -64,6 +64,10 @@ class Pod8206HR(AcquisitionDevice) :
         # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, self.decode_packet)
 
+    @property
+    def preamp_gain(self):
+        return self._preamp_gain
+    
     # define function used to decode packet from binary data.
     def decode_packet(self, command_number: int, payload: bytes) -> tuple:
         if command_number == 106:

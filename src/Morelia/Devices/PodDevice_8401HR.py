@@ -142,6 +142,23 @@ class Pod8401HR(AcquisitionDevice) :
         """Preamp connected to device."""
         return self._preamp
 
+    @property
+    def primary_channel_modes(self):
+        return self._primary_channel_modes
+    
+    @property
+    def secondary_channel_modes(self):
+        return self._secondary_channel_modes,
+
+    @property
+    def ss_gain(self):
+        return self._ss_gain,
+        
+    @property
+    def preamp_gain(self) -> Preamp:
+        """Preamp connected to device."""
+        return self._preamp_gain
+
     @staticmethod
     def _fix_abcd_type(info: tuple|list|dict, this_is: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
@@ -373,3 +390,14 @@ class Pod8401HR(AcquisitionDevice) :
         # return complete variable length binary packet
         return self._stream_packet_factory(packet)
  
+    def get_dict(self):
+        return {
+            'port': self._port_value,
+            'preamp': self._preamp,
+            'primary_channel_modes': self._primary_channel_modes,
+            'secondary_channel_modes': self._secondary_channel_modes,
+            'ss_gain': self._ss_gain,
+            'preamp_gain': self._preamp_gain,
+            'baudrate': self._baudrate,
+            'device_name': self._device_name
+        }

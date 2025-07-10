@@ -71,6 +71,22 @@ class Pod :
         """The virtual device name."""
         return self._device_name
 
+    @device_name.setter
+    def device_name(self, name: int) -> None:
+        self.device_name = name
+    
+    @property
+    def baudrate(self) -> int:
+        return self._baudrate
+    
+    @baudrate.setter
+    def baudrate(self, rate: int) -> None:
+        self._baudrate = rate
+
+    @property
+    def port(self):
+        return port
+
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 
         """Checks user's Operating System, and chooses ports accordingly.
@@ -478,3 +494,10 @@ class Pod :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket(packet)
+
+    def get_dict(self):
+        return {
+            'port': self._port_value,
+            'baudrate': self._baudrate,
+            'device_name': self._device_name
+        }
