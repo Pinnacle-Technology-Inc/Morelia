@@ -20,7 +20,7 @@ graph (in Morelia) consists of three parts:
 Let's expand on each of those concepts.
 
 A **data source** (or more simply *source*) is anything that supplies :doc:`POD data packets </Morelia.packet.data>`. For almost all use-cases, this will be a
-data aquisition device such as an 8206HR, 8401HR, or 8274D.
+data acquisition device such as an 8206HR, 8401HR, or 8274D.
 
 A **data sink** (oftentimes just called a *sink*), is a place to you want to send data. Some examples of this are EDF files, PVFS files, or even
 a time-series database like InfluxDB.

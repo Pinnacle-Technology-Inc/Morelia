@@ -11,7 +11,7 @@ import csv
 from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Devices import AquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
+from Morelia.Devices import AcquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
 from Morelia.packet.data import DataPacket
 
 class BufferSink(SinkInterface):
@@ -21,7 +21,7 @@ class BufferSink(SinkInterface):
     :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
     """
 
-    def __init__(self, buffer, pod: AquisitionDevice) -> None:
+    def __init__(self, buffer, pod: AcquisitionDevice) -> None:
         """Class constructor."""
         self._pod = pod
         self._buffer = buffer

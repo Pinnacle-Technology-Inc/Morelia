@@ -1,5 +1,5 @@
 # local imports 
-from Morelia.Devices import AquisitionDevice, Pod, Preamp
+from Morelia.Devices import AcquisitionDevice, Pod, Preamp
 from Morelia.packet import ControlPacket, PrimaryChannelMode, SecondaryChannelMode
 from Morelia.packet.data import DataPacket8401HR
 import Morelia.packet.conversion as conv
@@ -16,7 +16,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8401HR(AquisitionDevice) : 
+class Pod8401HR(AcquisitionDevice) : 
     """
     Pod8401HR handles communication using an 8401HR POD device. 
 

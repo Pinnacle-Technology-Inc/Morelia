@@ -1,5 +1,5 @@
 # local imports 
-from Morelia.Devices import AquisitionDevice, Pod
+from Morelia.Devices import AcquisitionDevice, Pod
 
 # authorship
 __author__      = "Mackenzie Meier"
@@ -9,7 +9,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2025, Mackenzie Meier"
 __email__       = "sales@pinnaclet.com"
 
-class PodATD(AquisitionDevice) :
+class PodATD(AcquisitionDevice) :
     """
     POD_8206HRTest handles communication using an 8206HR Testing Pod device
 

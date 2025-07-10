@@ -1,5 +1,5 @@
 # local imports 
-from Morelia.Devices import AquisitionDevice, Pod
+from Morelia.Devices import AcquisitionDevice, Pod
 from Morelia.packet.data import DataPacket8206HR
 from Morelia.packet import ControlPacket
 from Morelia.Commands import CommandSet
@@ -15,9 +15,9 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8206HR(AquisitionDevice) : 
+class Pod8206HR(AcquisitionDevice) : 
     """
-    Pod8206HR is used to interact with a 8206HR data aquisition device.
+    Pod8206HR is used to interact with a 8206HR data acquisition device.
 
     :param port: Serial port to be opened. Used when initializing the COM_io instance.
     :param preamp_gain: A unitless number used to add gain to vlues recived from the preamplifier. Used in converting streaming data from the device into something human-readable. Must be 10 or 100.

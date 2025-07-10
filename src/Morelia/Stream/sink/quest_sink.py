@@ -13,7 +13,7 @@ import reactivex.operators as ops
 from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Devices import Pod8206HR, Pod8401HR, AquisitionDevice
+from Morelia.Devices import Pod8206HR, Pod8401HR, AcquisitionDevice
 from Morelia.packet.data import DataPacket
 
 
@@ -25,7 +25,7 @@ class QuestSink(SinkInterface):
         :param measurement: Measurement within QuestDB to write data to.
         :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
     """
-    def __init__(self, pod: AquisitionDevice, host: str = "localhost", port: int = "9009", measurement: str = "default_measurement") -> None:
+    def __init__(self, pod: AcquisitionDevice, host: str = "localhost", port: int = "9009", measurement: str = "default_measurement") -> None:
         """Set instance variables"""
         self._host = host
         self._port = port

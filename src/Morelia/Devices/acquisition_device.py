@@ -11,9 +11,9 @@ from typing import Self
 
 from Morelia.Devices import Pod
 
-class AquisitionDevice(Pod):
+class AcquisitionDevice(Pod):
     """
-    This class is the parent of any device that can stream (i.e. data aquisiton devices).
+    This class is the parent of any device that can stream (i.e. data acquisiton devices).
 
     :param port: Serial port to be opened. Used when initializing the COM_io instance.
     :param max_sample_rate: Maximum sample rate supported by the device (in Hz).

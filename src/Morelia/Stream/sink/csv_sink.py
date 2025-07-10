@@ -11,7 +11,7 @@ import csv
 from typing import Self
 
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Devices import AquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
+from Morelia.Devices import AcquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
 from Morelia.packet.data import DataPacket
 
 class CSVSink(SinkInterface):
@@ -22,7 +22,7 @@ class CSVSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod: AquisitionDevice) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
         """Class constructor."""
         self._file_path = file_path
         
