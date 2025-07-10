@@ -54,7 +54,33 @@ sudo terraform apply -auto-approve
 echo "Grafana server started on http://localhost:3000 (default unless explicitly changed)"
 echo "Influx server started on http://localhost:8086 (default unless explicitly changed)"
 
-# Detect new /dev/ttyUSB device and run the wsl-setup script to bind the new /dev/ttyUSB devices
-chmod +x wsl-setup.sh
-before=($(ls /dev/ttyUSB* 2>/dev/null))
-       ./wsl-setup.sh "${before[@]}"
+wait_for_service() {
+  local name=$1
+  local url=$2
+  local max_retries=10
+  local attempt=1
+
+  echo "Waiting for $name at $url..."
+  until curl -s "$url" >/dev/null; do
+    if [ $attempt -ge $max_retries ]; then
+      echo "$name did not respond at $url after $max_retries tries."
+      exit 1
+    fi
+    printf "Attempt %d: %s not ready. Retrying in 2s...\n" "$attempt" "$name"
+    sleep 2
+    attempt=$((attempt+1))
+  done
+  echo "$name is running at $url"
+}
+
+# Extract values from file
+GRAFANA_PORT=$(grep '^grafana_external=' default-values.txt | cut -d'=' -f2 | tr -d '"')
+INFLUX_PORT=$(grep '^influxdb_external=' default-values.txt | cut -d'=' -f2 | tr -d '"')
+
+GRAFANA_PORT=${GRAFANA_PORT:-3000}
+INFLUX_PORT=${INFLUX_PORT:-8086}
+
+# Check Grafana and InfluxDB
+wait_for_service "Grafana" "http://localhost:$GRAFANA_PORT"
+wait_for_service "InfluxDB" "http://localhost:$INFLUX_PORT"
+
