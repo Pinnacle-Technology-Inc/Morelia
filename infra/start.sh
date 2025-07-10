@@ -1,5 +1,12 @@
 #!/bin/bash
-sed -i 's/\r$//' start-grafana.sh
+sed -i 's/\r$//' start.sh
+
+# Install Morelia from Morelia-develop branch (will have to change PATH later)
+echo "Installing Morelia..."
+cd .. 
+pip install . 
+cd infra
+
 # Add Docker's official GPG key:
 sudo apt-get update
 sudo apt-get install ca-certificates curl
@@ -38,9 +45,56 @@ sudo apt-get install terraform
 
 touch terraform.tfvars
 cp "default-values.txt" "terraform.tfvars"
+
 sudo terraform init
 sudo terraform refresh
+sudo terraform destroy -auto-approve
 sudo terraform apply -auto-approve
 
-echo "Grafana server started on http://localhost:3000 (default unless explicitly changed)"
-echo "Influx server started on http://localhost:8086 (default unless explicitly changed)" 
+wait_for_service() {
+  local name=$1
+  local url=$2
+  local max_retries=10
+  local attempt=1
+
+  echo "Waiting for $name at $url..."
+  until curl -s "$url" >/dev/null; do
+    if [ $attempt -ge $max_retries ]; then
+      echo "$name did not respond at $url after $max_retries tries."
+      exit 1
+    fi
+    printf "Attempt %d: %s not ready. Retrying in 2s...\n" "$attempt" "$name"
+    sleep 2
+    attempt=$((attempt+1))
+  done
+  echo "$name is running at $url"
+}
+
+# Extract boolean flags for influx/quest
+USE_INFLUX=$(awk -F= '/^use_influxdb/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}' default-values.txt)
+USE_QUEST=$(awk -F= '/^use_questdb/ {gsub(/^[ \t]+|[ \t]+$/, "", $2); print $2}' default-values.txt)
+
+# Extract port values from file
+GRAFANA_PORT=$(grep '^grafana_external=' default-values.txt | cut -d'=' -f2 | tr -d '"')
+INFLUX_PORT=$(grep '^influxdb_external=' default-values.txt | cut -d'=' -f2 | tr -d '"')
+QUEST_PORT=$(grep '^questdb_ui_port=' default-values.txt | cut -d'=' -f2 | tr -d '"')
+
+# set default values in case empty
+GRAFANA_PORT=${GRAFANA_PORT:-3000}
+INFLUX_PORT=${INFLUX_PORT:-8086}
+QUEST_PORT=${QUEST_PORT:-9000}
+
+# conditional service checks
+if [[ "$USE_INFLUX" == "true" ]]; then
+  echo "InfluxDB enabled"
+  wait_for_service "InfluxDB" "http://localhost:$INFLUX_PORT"
+fi
+
+if [[ "$USE_QUEST" == "true" ]]; then
+  echo "QuestDB enabled"
+  wait_for_service "QuestDB" "http://localhost:$QUEST_PORT"
+fi
+
+# Check Grafana
+wait_for_service "Grafana" "http://localhost:$GRAFANA_PORT"
+

@@ -14,7 +14,7 @@ import functools as ft
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
+from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
 class EDFSink(SinkInterface):
     """Stream data to an EDF file.
@@ -25,6 +25,7 @@ class EDFSink(SinkInterface):
     """
 
     def __init__(self, file_path: str, pod_type: str, sample_rate, preamp) -> None:
+    #def __init__(self, file_path: str, pod: AcquisitionDevice ) -> None:
         """ Class constructor."""
         self._file_path = file_path
         self._pod_type = pod_type

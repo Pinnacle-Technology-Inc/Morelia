@@ -1,2 +1,3 @@
 numpy>=1.21.0
 pyedflib>=0.1.28 
+PyAV

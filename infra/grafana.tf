@@ -45,13 +45,15 @@ provider "grafana" {
 }
 
 resource "grafana_data_source" "influxdb" {
+  count = var.use_influxdb ? 1 : 0
+
   name = "InfluxDB"
   uid = "fepg8hwzyq9dsd"
   type = "influxdb"
 
   url = "http://influxdb:${var.influxdb_internal}"
   access_mode = "proxy"
-  is_default = "true"
+  is_default = var.use_questdb ? false : true
   
   json_data_encoded = jsonencode({
     version       = "Flux"
@@ -64,4 +66,27 @@ resource "grafana_data_source" "influxdb" {
   })
 
   depends_on = [docker_container.grafana]
+}
+
+resource "grafana_data_source" "questdb" {
+	count = var.use_questdb ? 1 : 0
+
+	name = "QuestDB" 
+	type = "postgres"
+	uid = "fepg8hwzyq8dsd"
+	username = "admin"
+
+	url = "questdb:${var.questdb_pg_port}"
+	access_mode = "proxy"
+	is_default = var.use_influxdb ? false : true
+	
+	json_data_encoded = jsonencode({
+		database = "postgres"
+		sslmode = "disable"
+	})
+
+	secure_json_data_encoded = jsonencode({
+		password = var.questdb_admin_password
+	})
+	depends_on = [docker_container.grafana]
 }
