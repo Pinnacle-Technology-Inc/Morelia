@@ -35,30 +35,49 @@ class PacketManager:
 
     def initialize_control_queue(self):
         """
-        Initializes multiprocessing Queue for use between processes. 
+        Initializes a new process to run the Queue server/socket.
         """
         if self.port_in_use('localhost', 50000):
             raise RuntimeError("Queue manager is already running on the port. Use register_control_queue instead")
         
+        # creates a new process
         worker = mp.Process(target=self.create_control_queue_process)
+
+        # destroy the process when the parent process exits
         worker.daemon = True
+
+        # begin the process
         worker.start()
 
+        # wait for half a second for server to begin
         time.sleep(0.5)
 
+        # register the queue in the parent process
         self.register_control_queue()
         self._queue_initialized = True
 
     def create_control_queue_process(self):
-
+        """
+        Creates a new queue and starts the server to run until the parent process dies. 
+        """
+        
+        # creates a multiprocessing queue object
         shared_queue = Queue()
+
+        # register a function in the BaseManager that returns the shared queue
         ControlPacketManager.register('get_queue', callable=lambda: shared_queue)
 
+        # create the ControlPacketManager on the localhost port 500000 and set an authentication key
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
+
+
+        # gets the server from the manager
         server = manager.get_server()
+
+        # runs the server forever (blocking)
         server.serve_forever()
 
-    def register_control_queue(self, retries=5):
+    def register_control_queue(self):
         """
         Registers the initialized Queue for an acquisition device.
         """
@@ -68,18 +87,6 @@ class PacketManager:
         
         manager.connect()
 
-        #connected = False
-        #for attempt in range(retries):
-        #    try:
-        #        manager.connect()
-        #        connected = True
-        #        break
-        #    except ConnectionRefusedError:
-        #        if attempt == retries - 1:
-        #            raise
-        #        time.sleep(0.1 * (2 ** attempt))
-        #if not connected: 
-        #    raise RuntimeError("Failed to connect to the manager")
         queue = manager.get_queue()
 
         self._queue = queue

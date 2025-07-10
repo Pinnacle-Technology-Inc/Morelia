@@ -116,6 +116,7 @@ class PortIO :
         """
         # true if serial port is closed, false otherwise 
         return(not self.is_serial_open())
+
     # ----- QUEUE MANAGEMENT -----
     
     def obtain_queue(self):
