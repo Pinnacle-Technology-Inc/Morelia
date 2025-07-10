@@ -112,8 +112,8 @@ class Pod8206HR(AcquisitionDevice) :
 
     def get_dict(self):
         return {
-            'port': self._port_value,
-            'preamp_gain': self._preamp_gain,
-            'baudrate': self._baudrate,
-            'device_name': self._device_name
+            'port': self.port,
+            'preamp_gain': self.preamp_gain,
+            'baudrate': self.baudrate,
+            'device_name': self.device_name
         }

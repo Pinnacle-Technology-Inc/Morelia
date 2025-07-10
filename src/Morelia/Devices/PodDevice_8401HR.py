@@ -392,12 +392,12 @@ class Pod8401HR(AcquisitionDevice) :
  
     def get_dict(self):
         return {
-            'port': self._port_value,
-            'preamp': self._preamp,
-            'primary_channel_modes': self._primary_channel_modes,
-            'secondary_channel_modes': self._secondary_channel_modes,
-            'ss_gain': self._ss_gain,
-            'preamp_gain': self._preamp_gain,
-            'baudrate': self._baudrate,
-            'device_name': self._device_name
+            'port': self.port,
+            'preamp': self.preamp,
+            'primary_channel_modes': self.primary_channel_modes,
+            'secondary_channel_modes': self.secondary_channel_modes,
+            'ss_gain': self.ss_gain,
+            'preamp_gain': self.preamp_gain,
+            'baudrate': self.baudrate,
+            'device_name': self.device_name
         }

@@ -120,7 +120,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
 
 def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
     source = source_class(**source_dict)
-    source.open_port()
+    #   source.open_port()
     sinks = [sink_class(**sink_dict) for sink_class, sink_dict in sinks_list]
-
+    source.open_port()
     get_data(duration_sec, manual_stop_event, source, sinks)

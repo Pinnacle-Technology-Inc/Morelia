@@ -91,6 +91,7 @@ class DataFlow:
 
             #TODO implement source.get_dict (turns source parameters into list)
             source_class = type(source)
+            #self.to_picklable(source)
             source_dict = source.get_dict()
 
             sinks_list = [
@@ -113,6 +114,18 @@ class DataFlow:
             for k in sig.parameters
             if k != 'self' and hasattr(obj, k)
         }
+
+    '''def to_picklable(self, obj):
+        result = {}
+
+        for k, v in vars(obj).items():
+            try:
+                pickle.dumps(v)
+                result[k] = valid
+            except Exception:
+                pass
+        print(result)
+        return result'''
 
     def __enter__(self) -> None:
         self.collect()

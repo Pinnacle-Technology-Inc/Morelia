@@ -14,7 +14,7 @@ import functools as ft
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
+from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice, Preamp
 
 class EDFSink(SinkInterface):
     """Stream data to an EDF file.
@@ -24,28 +24,43 @@ class EDFSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod_type: str, sample_rate, preamp) -> None:
-    #def __init__(self, file_path: str, pod: AcquisitionDevice ) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice | tuple[str, dict]) -> None:
         """ Class constructor."""
         self._file_path = file_path
-        self._pod_type = pod_type
-        self._sample_rate = sample_rate
-        self._preamp = preamp
 
-        if self._pod_type == "Pod8206HR":
+        if isinstance(pod, tuple) and len(pod) == 2 and isinstance(pod[0], str) and isinstance(pod[1], dict):
+            self._pod = self.convert_to_device(pod)
+            self._pod.open_port()
+        else:
+            self._pod = pod
+
+        if isinstance(self._pod, Pod8206HR):
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
 
-        elif self._pod_type == "Pod8401HR":
+        elif isinstance(self._pod, Pod8401HR):
 
-            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(preamp).values() if not preamp is None else ['A', 'B', 'C', 'D']
+            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
             self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 
-        elif self._pod_type == "Pod8274D":
+        elif isinstance(self._pod, Pod8274D):
                 self._channels('length_in_bytes', 'data')
 
-
         self._buffer = [ [] for _ in self._channels ]
+
+        print(self._pod.get_dict())
+
+    @property 
+    def pod(self):
+        return self._pod
+    
+    @pod.setter
+    def pod(self, device: AcquisitionDevice | tuple[str, dict]):
+        self._pod = value
+    
+    @property
+    def file_path(self):
+        return self._file_path
 
     def __enter__(self) -> Self:
 
@@ -59,7 +74,7 @@ class EDFSink(SinkInterface):
            self._edf_writer.setSignalHeader( idx, {
                 'label'         :  channel,
                 'dimension'     :  'uV',
-                'sample_frequency'   :  self._sample_rate,
+                'sample_frequency'   :  self._pod.sample_rate,
                 'physical_max'  :  EDF_PHYSICAL_BOUND,
                 'physical_min'  : -EDF_PHYSICAL_BOUND,
                 'digital_max'   :  EDF_DIGITAL_MAX,
@@ -88,7 +103,7 @@ class EDFSink(SinkInterface):
         :meta private:
         """
         
-        if self._pod_type == 'Pod8206HR':
+        if isinstance(self._pod, Pod8206HR):
             self._buffer[0].append(packet.ch0)
             self._buffer[1].append(packet.ch1)
             self._buffer[2].append(packet.ch2)
@@ -97,7 +112,7 @@ class EDFSink(SinkInterface):
             self._buffer[5].append(float(packet.ttl3))
             self._buffer[6].append(float(packet.ttl4))
 
-        elif self._pod_type == 'Pod8401HR':
+        elif isinstance(self._pod, Pod8401HR):
             self._buffer[0].append(packet.ch0)
             self._buffer[1].append(packet.ch1)
             self._buffer[2].append(packet.ch2)
@@ -109,7 +124,7 @@ class EDFSink(SinkInterface):
             self._buffer[8].append(float(packet.ttl3))
             self._buffer[9].append(float(packet.ttl4))
 
-        if len(self._buffer[0]) >= self._sample_rate:
+        if len(self._buffer[0]) >= self._pod_sample_rate:
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:
@@ -119,7 +134,5 @@ class EDFSink(SinkInterface):
     def get_dict(self):
         return {
             'file_path': self._file_path,
-            'pod_type': self._pod_type,
-            'sample_rate': self._sample_rate,
-            'preamp': self._preamp
+            'pod': self.get_device_type_and_dict(self._pod)
         }

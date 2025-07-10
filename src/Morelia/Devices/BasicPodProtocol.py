@@ -34,7 +34,7 @@ class Pod :
         self._baudrate = baudrate
 
         # initialize serial port 
-        self._port_value = port 
+        self._port_value = port
         #: PortIO = PortIO(port, baudrate)
 
         # create object to handle commands 
@@ -51,6 +51,12 @@ class Pod :
     def open_port(self):
         # initialize serial port 
         self._port : PortIO = PortIO(self._port_value, self._baudrate)
+    
+    def close_port(self):
+        if self._port is not None:
+            self._port.close_serial_port()
+        else:
+            return
 
     @staticmethod
     def get_u(u: int) -> int : 
@@ -81,11 +87,13 @@ class Pod :
     
     @baudrate.setter
     def baudrate(self, rate: int) -> None:
+        if rate < 0:
+            raise ValueError("Cannot set baudrate to a negative value")
         self._baudrate = rate
 
     @property
     def port(self):
-        return port
+        return self._port_value
 
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 
@@ -497,7 +505,7 @@ class Pod :
 
     def get_dict(self):
         return {
-            'port': self._port_value,
-            'baudrate': self._baudrate,
-            'device_name': self._device_name
+            'port_value': self.port,
+            'baudrate': self.baudrate,
+            'device_name': self.device_name
         }
