@@ -570,6 +570,13 @@ def save_toml_file_to_folder(file, folder):
         return filename, path
     return None, None
 
+# Auto-populates Device Type Field in Experiment Config. Form
+def extract_device_type_from_title(title):
+    """Extract device type from the title of a TOML file."""
+    if "Device Configuration File" in title:
+        return title.split("Device Configuration File")[0].strip()
+    return title.strip()
+
 
 @app.route("/submit_exp", methods=["POST"])
 def submit_exp():
@@ -620,7 +627,20 @@ def submit_exp():
         config_filename = ""
 
         if file_obj and file_obj.filename.strip():
-            config_filename, _ = save_toml_file_to_folder(file_obj, folder_name)
+            config_filename, saved_path = save_toml_file_to_folder(file_obj, folder_name)
+
+            # Parse device type from title field in uploaded .toml
+            inferred_type = device_types[i].strip()
+            if (not inferred_type or inferred_type == "null") and saved_path:
+                try:
+                    with open(saved_path, "r", encoding="utf-8") as f:
+                        parsed = toml.load(f)
+                        title = parsed.get("title", "")
+                        inferred_type = extract_device_type_from_title(title)
+                except Exception as e:
+                    flash(f"Error parsing {config_filename}: {str(e)}", "error")
+                    inferred_type = "Unknown"
+
         else:
             config_filename = existing_config_files[i] if i < len(existing_config_files) else ""
 
@@ -640,16 +660,16 @@ def submit_exp():
                                        form_data=dict(request.form),
                                        current_folder=folder_name)
 
-        devices.append({
-            "device_name": name,
-            "config_file": config_filename,
-            "device_type": device_types[i],
-            "device_port": device_ports[i],
-            "placeholder_1": placeholder_1[i],
-            "placeholder_2": "true" if f"PH2_{i}" in request.form else "false",
-            "placeholder_3": "true" if f"PH3_{i}" in request.form else "false",
-            "placeholder_4": placeholder_4[i],
-        })
+    devices.append({
+        "device_name": name,
+        "config_file": config_filename,
+        "device_type": inferred_type,
+        "device_port": device_ports[i],
+        "placeholder_1": placeholder_1[i],
+        "placeholder_2": "true" if f"PH2_{i}" in request.form else "false",
+        "placeholder_3": "true" if f"PH3_{i}" in request.form else "false",
+        "placeholder_4": placeholder_4[i],
+    })
 
     exp_filename = f"{experiment_name}.toml"
     exp_file_path = os.path.join(folder_name, exp_filename)

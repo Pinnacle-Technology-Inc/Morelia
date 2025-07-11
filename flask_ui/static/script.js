@@ -57,10 +57,10 @@ function addNewDevice() {
 
   row.innerHTML = `
     <td><input type="text" name="device_name[]" value="Pod_${rowCount + 1}" /></td>
-    <td><input type="file" name="config_file_new[]" /></td>
+    <td><input type="file" name="config_file_new[]" class="config-upload" accept=".toml" /></td>
     <td>
-      <select name="device_type[]">
-      	<option value="None">--Select--</option>
+      <select name="device_type[]" class="device-type-dropdown">
+        <option value="">--Select--</option>
         <option value="Pod8206HR">Pod8206HR</option>
         <option value="Pod8229">Pod8229</option>
         <option value="Pod8274D">Pod8274D</option>
@@ -76,7 +76,39 @@ function addNewDevice() {
     <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
   `;
 
-  tbody.appendChild(row);  
+  tbody.appendChild(row);
+
+  // Also, add the event listener to the new file input so it triggers the device type auto-population
+  const newFileInput = row.querySelector(".config-upload");
+  if (newFileInput) {
+    newFileInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file || !file.name.endsWith(".toml")) return;
+
+      try {
+        const text = await file.text();
+        const data = simpleTomlParse(text);
+        const title = data.title || "";
+        let inferredType = title.replace("Device Configuration File", "").trim();
+
+        const dropdown = row.querySelector(".device-type-dropdown");
+        if (dropdown) {
+          const found = Array.from(dropdown.options).some(opt => opt.value === inferredType);
+          if (found) {
+            dropdown.value = inferredType;
+          } else if (inferredType.length > 0) {
+            const newOption = new Option(inferredType, inferredType);
+            dropdown.add(newOption);
+            dropdown.value = inferredType;
+          }
+        }
+      } catch (err) {
+        alert("Failed to read TOML file: " + err.message);
+        console.error(err);
+      }
+    });
+  }
 }
+
 
 

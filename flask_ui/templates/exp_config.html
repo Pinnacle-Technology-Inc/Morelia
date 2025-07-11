@@ -100,7 +100,7 @@
     <fieldset id="information">
       <legend>Information</legend>
       <label for="experiment-folder" style="width:15%; height: 7px;">Folder Name</label>
-      	<input type="text" name="folder" id="folder+name" placeholder="Untitled"
+      	<input type="text" name="folder" id="folder_name" placeholder="Untitled"
 	  value="{% if session.get('loaded_config') %}{{ session['loaded_config'].get('folder_name', '') }}{% elif form_data %}{{ form_data.get('current_folder', '') }}{% else %}Untitled{% endif %}">
       </br>
       </br>
@@ -136,11 +136,11 @@
 			  <div>
 			    <small style="color: #A3B18A">Current: {{ device.config_file or "No file selected" }}</small>
 			  </div>
-			  <input type="file" name="config_file_new[]" />
-			  <input type="hidden" name="config_file_existing[]" value="{{ device.config_file }}" />
+			   <input type="file" name="config_file_new[]" class="config-upload" accept=".toml" />
+         <input type="hidden" name="config_file_existing[]" value="{{ device.config_file }}" />
 			</td>
 			<td>
-				<select name="device_type[]">
+				<select name="device_type[]" class="device-type-dropdown">
 				  <option value="">--Select--</option>
 				  {% for type in ["Pod8206HR", "Pod8229", "Pod8274D", "Pod8401HR", "Pod8480SC"] %}
 				    <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
@@ -162,9 +162,9 @@
 		    <!-- fallback to one blank row if nothing loaded -->
 		    <tr>
 		      <td><input type="text" name="device_name[]" value="Pod_1" /></td>
-		      <td><input type="file" name="config_file_new[]" /></td>
+		      <td><input type="file" name="config_file_new[]" class="config-upload" accept=".toml" /></td>
 		      <td>
-			<select name="device_type[]">
+			<select name="device_type[]" class="device-type-dropdown">
 			  <option value="null">--Select--</option>
 			  <option value="Pod8206HR">Pod8206HR</option>
 			  <option value="Pod8229">Pod8229</option>
@@ -212,7 +212,59 @@
    </form>
   </div>  
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <script>
+
+  function simpleTomlParse(text) {
+  // Very naive parse: find the line starting with `title = `
+  const match = text.match(/^title\s*=\s*["']([^"']+)["']/m);
+  if (match) return { title: match[1] };
+  return {};
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Select all file inputs with class "config-upload"
+    const fileInputs = document.querySelectorAll(".config-upload");
+
+    fileInputs.forEach((input, index) => {
+      input.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file || !file.name.endsWith(".toml")) return;
+
+        try {
+          const text = await file.text();
+          // Parse TOML using toml-es
+          const data = simpleTomlParse(text);
+
+          const title = data.title || "";
+          let inferredType = title.replace("Device Configuration File", "").trim();
+
+          // Find the device type select in the same row
+          const row = input.closest("tr");
+          const dropdown = row.querySelector(".device-type-dropdown");
+
+          if (dropdown) {
+            // If inferred type is one of the options, select it, else add it dynamically
+            const found = Array.from(dropdown.options).some(opt => opt.value === inferredType);
+            if (found) {
+              dropdown.value = inferredType;
+            } else if (inferredType.length > 0) {
+              const newOption = new Option(inferredType, inferredType);
+              dropdown.add(newOption);
+              dropdown.value = inferredType;
+            }
+          }
+        } catch (err) {
+          alert("Failed to read TOML file: " + err.message);
+          console.error(err);
+        }
+      });
+    });
+  });
+  </script>
+
+
 
  </body>
 </html>
