@@ -55,6 +55,9 @@ class PortIO :
         # close port 
         self.close_serial_port()
 
+    def __exit__(self) -> None:
+        self.close_serial_port()
+
     # ====== PRIVATE METHODS ======
 
     def is_port_in_use(self, port: str) -> bool:
@@ -156,7 +159,7 @@ class PortIO :
         # close port if open 
         if self.__serial_inst is None:
             return
-        if(self.is_serial_open()) :
+        elif(self.is_serial_open()) :
             self.__serial_inst.close()
 
     def open_serial_port(self, port: str|int, baudrate:int=9600) -> None : 
@@ -172,9 +175,7 @@ class PortIO :
         """
         # close current port if it is open
         if(self.is_serial_open()) : 
-            print("serial is open")
-            return
-            #self.close_serial_port()
+            self.close_serial_port()
         # get name 
         name = self.__build_port_name(port)
         # if the 'Name' is not None
@@ -183,6 +184,9 @@ class PortIO :
             self.__serial_inst.baudrate = baudrate
             self.__serial_inst.port = name
             self.__serial_inst.open()
+            # if any leftover binary exists, read/clear it
+            if self.__serial_inst and self.__serial_inst.in_waiting > 0:
+                self.__serial_inst.read(self.__serial_inst.in_waiting)
         else : 
             # throw an error 
             raise Exception('Port does not exist.')

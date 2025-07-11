@@ -8,6 +8,7 @@ import Morelia.packet.conversion as conv
 
 from functools import partial
 from threading import Lock
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -317,11 +318,25 @@ class Pod :
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
+        #flushes leftover data in case of interrupt
+        self._port.flush()
+
+        #writes packet to the device
         self.write_packet(cmd, payload)
-        r = self.read_pod_packet(validate_checksum, timeout_sec)
-        return(r)
 
+        start = time.time()
 
+        #loops until it finds a control packet, and returns the found control packet
+        while time.time() - start < timeout_sec:
+            packet = self.read_pod_packet(validate_checksum, timeout_sec)
+
+            if isinstance(packet, ControlPacket):  # or however your control packets are defined
+                return packet
+
+            continue
+
+        raise TimeoutError(f"Did not receive expected control response to command {cmd}")
+        
     def write_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
         """Builds a POD packet and writes it to the POD device. 
 
@@ -335,11 +350,11 @@ class Pod :
         if self._port.queue_initialized() or self._port.queue_registered():
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
-            with self._lock:
-                try:
-                    pass
-                finally:
-                    self._queue.put_nowait(packet)
+            #with self._lock:
+            try:
+                pass
+            finally:
+                self._queue.put_nowait(packet)
             
         # write packet to serial port 
         self._port.write(packet)
@@ -360,14 +375,29 @@ class Pod :
         control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
-        with self._lock:
-            b = None
-            while(b != PodPacket.STX) :
-                b = self._port.read(1,timeout_sec)     # read next byte  
-            # continue reading packet  
-            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-            # return final packet
-            return(packet)
+        #with self._lock:
+
+        b = None
+        start_time = time.time()
+        while time.time() - start_time < timeout_sec:
+            b = self._port.read(1,timeout_sec)     # read next byte  
+            if b != PodPacket.STX:
+                continue
+
+            try:
+                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+                return packet
+            except Exception as e:
+                print(f"[Resync] Dropped packet after STX due to error: {e}")
+                continue
+        raise TimeoutError("Timed out waiting for valid Pod Packet")
+
+        #while(b != PodPacket.STX) :
+        #    b = self._port.read(1,timeout_sec)     # read next byte  
+        ## continue reading packet  
+        #packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+        ## return final packet
+        #return(packet)
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
@@ -395,13 +425,11 @@ class Pod :
             raise Exception('Cannot read an invalid command: ', cmd_num)
         # then check if it is standard or binary
         if( self._commands.is_command_binary(cmd_num) ) : # binary read
-            #print(packet)
             packet: DataPacket = self._read_binary(pre_packet=packet, validate_checksum=validate_checksum)
         else : # standard read
             packet: ControlPacket = self._read_standard(pre_packet=packet, validate_checksum=validate_checksum)
         # return packet
         return(packet)
-
 
     def _read_get_command(self, validate_checksum:bool=True) -> bytes : 
         """Reads one byte at a time up to 4 bytes to get the ASCII-encoded bytes command number. For each \
