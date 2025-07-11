@@ -36,6 +36,7 @@ class Pod :
 
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
+        self.flush_port()
 
         self._lock = Lock()
 
@@ -116,6 +117,7 @@ class Pod :
         if(msg_csm == csm_valid) :
             return(True)
         else:
+            print(msg)
             return(False)
 
 
@@ -319,7 +321,7 @@ class Pod :
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         #flushes leftover data in case of interrupt
-        self._port.flush()
+        self.flush_port()
 
         #writes packet to the device
         self.write_packet(cmd, payload)
@@ -362,7 +364,11 @@ class Pod :
         return ControlPacket(self._commands, packet)
     
     def check_write(self):
-        self._port.write()
+        start = time.perf_counter()
+        # existing check logic
+        self._port.check_queue()
+        end = time.perf_counter()
+        print(f"check_write took {(end - start)*1000:.2f} ms")
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -379,6 +385,8 @@ class Pod :
 
         b = None
         start_time = time.time()
+
+        # while loop that is active for the duration of timeout
         while time.time() - start_time < timeout_sec:
             b = self._port.read(1,timeout_sec)     # read next byte  
             if b != PodPacket.STX:
@@ -387,9 +395,11 @@ class Pod :
             try:
                 packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
                 return packet
+
             except Exception as e:
                 print(f"[Resync] Dropped packet after STX due to error: {e}")
                 continue
+
         raise TimeoutError("Timed out waiting for valid Pod Packet")
 
         #while(b != PodPacket.STX) :
@@ -416,7 +426,6 @@ class Pod :
         packet += cmd 
         # return packet if cmd ends in ETX
         if(cmd[len(cmd)-1].to_bytes(1,'big') == PodPacket.ETX) : 
-            print("Pod packet error(?)")
             return(PodPacket(packet))
         # determine the command number
         cmd_num: int = conv.ascii_bytes_to_int(cmd)

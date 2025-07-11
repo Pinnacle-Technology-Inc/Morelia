@@ -50,7 +50,7 @@ class PacketManager:
         worker.start()
 
         # wait for half a second for server to begin
-        time.sleep(0.5)
+        time.sleep(0.1)
 
         # register the queue in the parent process
         self.register_control_queue()

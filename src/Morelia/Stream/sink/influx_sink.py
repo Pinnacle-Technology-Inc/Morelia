@@ -11,6 +11,7 @@ from influxdb_client import InfluxDBClient, WriteApi, WriteOptions
 import reactivex as rx
 import reactivex.operators as ops
 from typing import Self
+from datetime import datetime
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice

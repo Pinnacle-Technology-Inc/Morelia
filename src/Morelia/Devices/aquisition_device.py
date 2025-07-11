@@ -48,11 +48,7 @@ class AquisitionDevice(Pod):
     def sample_rate(self) -> int:
         """Currently set sample rate."""
         if self._sample_rate is None:
-            #response = self.write_read('GET SAMPLE RATE')
-            #print(f"DEBUG: got response of type {type(response)}, value = {response}")
-            print("in None")
             self._sample_rate = self.write_read('GET SAMPLE RATE').payload
-        print(self._sample_rate)
         return self._sample_rate[0]
 
     @sample_rate.setter
