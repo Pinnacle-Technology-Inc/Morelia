@@ -78,12 +78,6 @@ def clear_config():
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
 def submit1():
-    session.pop("loaded_config", None)
-    
-    if "loaded_config" in session:
-        print("Session still has loaded_config")
-    else:
-        print("Session does NOT have loaded_config")
     
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
@@ -175,12 +169,13 @@ def submit1():
             flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
     return redirect(url_for("page1"))
 
 #Pod8229 Form
 @app.route("/submit2", methods=["POST"])
 def submit2():
-    session.pop("loaded_config", None)
+
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8229 Device Configuration File',
@@ -271,12 +266,13 @@ def submit2():
             flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
     return redirect(url_for("page2"))
 
 #Pod8274D Form
 @app.route("/submit3", methods=["POST"])
 def submit3():
-    session.pop("loaded_config", None)
+
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8274D Device Configuration File',
@@ -367,12 +363,13 @@ def submit3():
             flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
     return redirect(url_for("page3"))
 
 #Pod8401HR Form
 @app.route("/submit4", methods=["POST"])
 def submit4():
-    session.pop("loaded_config", None)
+
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8401HR Device Configuration File',
@@ -463,12 +460,13 @@ def submit4():
             flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
     return redirect(url_for("page4"))
 
 #Pod8480SC Form
 @app.route("/submit5", methods=["POST"])
 def submit5():
-    session.pop("loaded_config", None)
+
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8480SC Device Configuration File',
@@ -558,6 +556,7 @@ def submit5():
             flash(f"{filename} created successfully!", "success")
 
     session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
     return redirect(url_for("page5"))
 
 # Experiment Config. Form
@@ -574,7 +573,8 @@ def save_toml_file_to_folder(file, folder):
 
 @app.route("/submit_exp", methods=["POST"])
 def submit_exp():
-    is_loaded_session = 'loaded_config' in session
+
+    loaded_filename = session.get("loaded_filename")
 
     experiment_name = request.form.get("filename") or "default-experiment"
     folder_name = request.form.get("folder", "").strip()
@@ -585,8 +585,7 @@ def submit_exp():
     if not folder_name:
         folder_name = f"{experiment_name}_folder"
 
-    session.pop("loaded_config", None)
-
+  
     os.makedirs(folder_name, exist_ok=True)
 
     device_names = request.form.getlist("device_name[]")
@@ -652,26 +651,60 @@ def submit_exp():
             "placeholder_4": placeholder_4[i],
         })
 
-    exp_file_path = os.path.join(folder_name, f"{experiment_name}.toml")
-    if os.path.exists(exp_file_path) and not is_loaded_session:
-        flash(f"Experiment file {experiment_name}.toml already exists in {folder_name}.", "error")
-        return render_template("exp_config.html",
-                               retain_form=True,
-                               form_data=dict(request.form),
-                               current_folder=folder_name)
+    exp_filename = f"{experiment_name}.toml"
+    exp_file_path = os.path.join(folder_name, exp_filename)
+    loaded_filename = session.get("loaded_filename")
 
-    # Save experiment-level TOML file
-    with open(exp_file_path, "w", encoding="utf-8") as f:
-        f.write(toml.dumps({
-            "title": "Experiment Configuration File",
-            "folder_name": folder_name,
-            "experiment_name": experiment_name,
-            "devices": devices
-        }))
+    if loaded_filename:
+        if exp_filename == loaded_filename:
+            # Overwrite same file
+            with open(exp_file_path, "w", encoding="utf-8") as f:
+                f.write(toml.dumps({
+                    "title": "Experiment Configuration File",
+                    "folder_name": folder_name,
+                    "experiment_name": experiment_name,
+                    "devices": devices
+                }))
+            flash(f"{exp_filename} updated successfully!", "success")
+        else:
+            if os.path.exists(exp_file_path):
+                flash(f"{exp_filename} already exists in {folder_name}! Please choose a new name.", "error")
+                return render_template("exp_config.html",
+                                    retain_form=True,
+                                    form_data=dict(request.form),
+                                    current_folder=folder_name)
+            else:
+                with open(exp_file_path, "w", encoding="utf-8") as f:
+                    f.write(toml.dumps({
+                        "title": "Experiment Configuration File",
+                        "folder_name": folder_name,
+                        "experiment_name": experiment_name,
+                        "devices": devices
+                    }))
+                flash(f"{exp_filename} created successfully!", "success")
+    else:
+        # No file was loaded — treat as new file
+        if os.path.exists(exp_file_path):
+            flash(f"{exp_filename} already exists in {folder_name}! Please choose a new name.", "error")
+            return render_template("exp_config.html",
+                                retain_form=True,
+                                form_data=dict(request.form),
+                                current_folder=folder_name)
+        else:
+            with open(exp_file_path, "w", encoding="utf-8") as f:
+                f.write(toml.dumps({
+                    "title": "Experiment Configuration File",
+                    "folder_name": folder_name,
+                    "experiment_name": experiment_name,
+                    "devices": devices
+                }))
+            flash(f"{exp_filename} created successfully!", "success")
 
-    flash(f"Experiment saved successfully to {exp_file_path}!", "success")
+
+    session.pop("loaded_filename", None)
+    session.pop("loaded_config", None)
+
     toml_files = [f for f in os.listdir(folder_name) if f.endswith(".toml")]
-
     return render_template("exp_config.html",
                            retain_form=True,
                            form_data=dict(request.form),

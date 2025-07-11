@@ -1,0 +1,53 @@
+title = "Experiment Configuration File"
+folder_name = "exp-folder"
+experiment_name = "exp-config"
+[[devices]]
+device_name = "Pod_1"
+config_file = "8206HR.toml"
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB0"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "1000"
+
+[[devices]]
+device_name = "Pod_2"
+config_file = "default_config.toml"
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB1"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "1000"
+
+[[devices]]
+device_name = "Pod_3"
+config_file = "8206HR.toml"
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB2"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "5010"
+
+[[devices]]
+device_name = "Pod_4"
+config_file = "default_config.toml"
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB3"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "1000"
+
+[[devices]]
+device_name = "Pod_5"
+config_file = "8206HR.toml"
+device_type = "Pod8206HR"
+device_port = "/dev/ttyUSB4"
+placeholder_1 = "placeholder"
+placeholder_2 = "false"
+placeholder_3 = "false"
+placeholder_4 = "1000"
+
