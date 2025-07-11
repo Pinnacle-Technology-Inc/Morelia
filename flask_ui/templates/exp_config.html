@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Experiment Configuration</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+ 
+   #information input[type="text"] {
+	padding: 6px 10px;
+  	font-size: 14px;
+  	width: 250px;
+  	box-sizing: border-box;
+    }
+    .device-table-container {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      margin-top: 1rem;
+      background-color: #D9D9D9;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+	background-color: #588157;
+	position: sticky; top: 0;
+	z-index: 2;	
+    }
+    th, td {
+      border: 1.5px solid gray;
+      padding: 0.5rem;
+      text-align: center;
+    }
+    select, input[type="text"], input[type="number"] {
+      width: 90%;
+      padding: 0.25rem;
+    }
+    input[type="checkbox"] {
+      transform: scale(1.2);
+    }
+    .device-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1rem;
+    }
+    .device-buttons button {
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      border: none;
+      cursor: pointer;
+    }
+    .device-buttons .remove {
+      background: #A9364A;
+      color: white;
+    }
+    .device-buttons .add {
+      background: #588157;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar" id="device-bar">
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type" size="6" onchange="goToPage()">
+      <option value="">-- Select a device --</option>
+      <option value="/Pod8206HR">Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC">Pod8480SC</option>
+    </select>    
+
+
+    <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
+
+    <button id="clear_config" type="button" style="background-color: #B7B6B6" onclick="clearLoadedConfig()" {% if not session.get("loaded_config") %}disabled{% endif %}>
+    Clear Loaded Configuration</button>
+    
+    <button id="save_config" type="submit" form="device-form" style="background-color: #A3B18A">Save Device Configuration</button>
+ 
+  </div>
+  <div class="main-content" id="device-config">
+    <h2>Experiment | Configuration</h2>
+    <div class="settings-bar">
+      <h3 style="margin:10px;"> Devices > Manager</h3>
+    </div>
+
+   <form id="experiment-config-form" action="/submit_exp" method="POST" enctype="multipart/form-data">
+    <fieldset id="information">
+      <legend>Information</legend>
+      <label for="experiment-folder" style="width:15%; height: 7px;">Folder Name</label>
+      	<input type="text" name="folder" id="folder_name" placeholder="Untitled"
+	  value="{% if session.get('loaded_config') %}{{ session['loaded_config'].get('folder_name', '') }}{% elif form_data %}{{ form_data.get('current_folder', '') }}{% else %}Untitled{% endif %}">
+      </br>
+      </br>
+      <label for="experiment">Experiment Name</label>
+      <input type="text" name="filename" id="filename" placeholder="Untitled"
+       value="{% if session.get('loaded_config') %}{{ session['loaded_config'].get('experiment_name', '') }}{% elif form_data %}{{ form_data.get('filename', '') }}{% else %}Untitled{% endif %}">
+   </fieldset>
+
+   <fieldset id="device-table">
+   <legend>Device Manager</legend>
+	<div class="device-table-container">
+          <table id="deviceTable">
+            <thead>
+              <tr>
+                <th>Device Name</th>
+                <th>Config File</th>
+                <th>Device Type</th>
+                <th>Device Port</th>
+                <th>Placeholder1</th>
+                <th>PH2</th>
+                <th>PH3</th>
+                <th>Placeholder4</th>
+                <th>Remove</th>
+              </tr>
+            </thead>
+		<tbody>
+		  {% set devices = session.get('loaded_config', {}).get('devices', []) %}
+		  {% if devices %}
+		    {% for device in devices %}
+		      <tr>
+			<td><input type="text" name="device_name[]" value="{{ device.device_name }}" /></td>
+			<td>
+			  <div>
+			    <small style="color: #A3B18A">Current: {{ device.config_file or "No file selected" }}</small>
+			  </div>
+			   <input type="file" name="config_file_new[]" class="config-upload" accept=".toml" />
+         <input type="hidden" name="config_file_existing[]" value="{{ device.config_file }}" />
+			</td>
+			<td>
+				<select name="device_type[]" class="device-type-dropdown">
+				  <option value="">--Select--</option>
+				  {% for type in ["Pod8206HR", "Pod8229", "Pod8274D", "Pod8401HR", "Pod8480SC"] %}
+				    <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
+				  {% endfor %}
+				</select>			</td>
+			<td><input type="text" name="device_port[]" value="{{ device.device_port }}" /></td>
+			<td><input type="text" name="placeholder1[]" value="{{ device.placeholder_1 }}" /></td>
+			<td>
+			  <input type="checkbox" name="PH2_{{ loop.index0 }}" value="true" {% if device.placeholder_2 == "true" %}checked{% endif %} />
+			</td>
+			<td>
+			  <input type="checkbox" name="PH3_{{ loop.index0 }}" value="true" {% if device.placeholder_3 == "true" %}checked{% endif %} />
+			</td>
+			<td><input type="number" name="placeholder4[]" value="{{ device.placeholder_4 }}" /></td>
+			<td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
+		      </tr>
+		    {% endfor %}
+		  {% else %}
+		    <!-- fallback to one blank row if nothing loaded -->
+		    <tr>
+		      <td><input type="text" name="device_name[]" value="Pod_1" /></td>
+		      <td><input type="file" name="config_file_new[]" class="config-upload" accept=".toml" /></td>
+		      <td>
+			<select name="device_type[]" class="device-type-dropdown">
+			  <option value="null">--Select--</option>
+			  <option value="Pod8206HR">Pod8206HR</option>
+			  <option value="Pod8229">Pod8229</option>
+			  <option value="Pod8274D">Pod8274D</option>
+			  <option value="Pod8401HR">Pod8401HR</option>
+			  <option value="Pod8480SC">Pod8480SC</option>
+			</select>
+		      </td>
+		      <td><input type="text" name="device_port[]" value="/dev/ttyUSB0" /></td>
+		      <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
+		      <td><input type="checkbox" name="PH2_0" value="true" /></td>
+		      <td><input type="checkbox" name="PH3_0" value="true" /></td>
+		      <td><input type="number" name="placeholder4[]" value="1000" /></td>
+		      <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
+		    </tr>
+		  {% endif %}
+		</tbody>
+
+	  </table>
+        </div>
+
+        <div class="device-buttons">
+          <button class="remove" type="button" onclick="removeAllDevices()">Remove All Devices</button>
+          <button class="add" type="button" onclick="addNewDevice()">Add New Device</button>
+        </div>
+   </fieldset> 
+
+    <div id="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    </div>
+
+      <div class="form-buttons">
+        <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
+	<button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Reset</button>
+        <button type="reset" id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
+      </div>
+   </form>
+  </div>  
+
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+  <script>
+
+  function simpleTomlParse(text) {
+  // Very naive parse: find the line starting with `title = `
+  const match = text.match(/^title\s*=\s*["']([^"']+)["']/m);
+  if (match) return { title: match[1] };
+  return {};
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    // Select all file inputs with class "config-upload"
+    const fileInputs = document.querySelectorAll(".config-upload");
+
+    fileInputs.forEach((input, index) => {
+      input.addEventListener("change", async (event) => {
+        const file = event.target.files[0];
+        if (!file || !file.name.endsWith(".toml")) return;
+
+        try {
+          const text = await file.text();
+          // Parse TOML using toml-es
+          const data = simpleTomlParse(text);
+
+          const title = data.title || "";
+          let inferredType = title.replace("Device Configuration File", "").trim();
+
+          // Find the device type select in the same row
+          const row = input.closest("tr");
+          const dropdown = row.querySelector(".device-type-dropdown");
+
+          if (dropdown) {
+            // If inferred type is one of the options, select it, else add it dynamically
+            const found = Array.from(dropdown.options).some(opt => opt.value === inferredType);
+            if (found) {
+              dropdown.value = inferredType;
+            } else if (inferredType.length > 0) {
+              const newOption = new Option(inferredType, inferredType);
+              dropdown.add(newOption);
+              dropdown.value = inferredType;
+            }
+          }
+        } catch (err) {
+          alert("Failed to read TOML file: " + err.message);
+          console.error(err);
+        }
+      });
+    });
+  });
+  </script>
+
+
+
+ </body>
+</html>
+

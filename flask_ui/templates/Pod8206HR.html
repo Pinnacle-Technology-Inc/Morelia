@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Pod 8206HR Device Config</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+	@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+  </style>
+</head>
+<body>
+  <div class="sidebar" id="device-bar">
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type" size="5">
+      <option value="/Pod8206HR" selected>Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC">Pod8480SC</option>
+    </select>    
+
+    <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
+
+    <button id="clear_config" type="button" style="background-color: #B7B6B6" onclick="clearLoadedConfig()" {% if not session.get("loaded_config") %}disabled{% endif %}>
+    Clear Loaded Configuration</button>
+    
+    <button id="save_config" type="submit" form="device-form" style="background-color: #A3B18A">Save Device Configuration</button>
+  </div>
+  <div class="main-content" id="device-config">
+    <h2>Devices | Configuration</h2>
+    <div class="settings-bar">
+      <h3 style="margin:10px;">Settings > 8206HR</h3>
+    </div>
+
+    <form id="device-form" action="/submit1" method="post">
+      <label for="config_name">Config. File Name</label>
+      <input type="text" name="filename" id="filename" placeholder="Untitled" value="{{ session.get('loaded_config', {}).get('filename', '') }}">
+      <fieldset id="information">
+        <legend>Information</legend>
+        <label>Firmware Version: X.X.X</label><br>
+        <label>Sample Rate (Hz)</label>
+        <select name="sample_rate" id="sample_rate">
+          <option value="400" {% if session.get('loaded_config', {}).get('information', {}).get('sample_rate', '') == '400' %}selected{% endif %}>400</option>
+        </select>
+        <label>Preamp Gain</label>
+        <select name="preamp_gain" id="preamp_gain">
+          <option value="100" {% if session.get('loaded_config', {}).get('information', {}).get('preamp_gain', '') == '100' %}selected{% endif %}>100</option>
+        </select>
+      </fieldset>
+
+      <fieldset id="channel_names">
+        <legend>Channel Names</legend>
+        <label>Channel 1</label>
+        <input type="text" name="channel_1" id="channel_1" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_1', 'EEG1') }}">
+        <label>Channel 2</label>
+        <input type="text" name="channel_2" id="channel_2" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_2', 'EEG2') }}">
+        <label>Channel 3</label>
+        <input type="text" name="channel_3" id="channel_3" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_3', 'EEG3') }}">
+      </fieldset>
+
+      <fieldset id="channel_settings">
+        <legend>Channel Settings</legend>
+        <label>EEG1</label>
+        <input type="number" name="eeg1" id="eeg1" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('eeg1', '40') }}">
+        <label>EEG2</label>
+        <input type="number" name="eeg2" id="eeg2" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('eeg2', '40') }}">
+        <label>EMG</label>
+        <input type="number" name="emg" id="emg" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('emg', '100') }}">
+        <label>Notch</label>
+        <input type="checkbox" name="notch_enabled" id="notch_enabled" value="true" {% if session.get('loaded_config', {}).get('channel_settings', {}).get('notch_enabled', '') == 'true' %}checked{% endif %}>
+        <input type="number" name="notch_value" id="notch_value" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('notch_value', '0') }}">
+      </fieldset>
+
+      <fieldset>
+        <legend>TTL Controls</legend>
+        <div id="ttl-controls">
+          <div class="ttl-header">
+            <label>TTL Channel</label>
+	    <label>Output?</label>
+            <label>Set State</label>
+            <label>Current State</label>
+            <label>Rising Event</label>
+            <label>Falling Event</label>
+            <label>Event Comment</label>
+            <label>Debounce</label>
+            <label>Synchronous</label>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL1</div>
+            <input type="checkbox" name="ttl1_output" id="ttl1_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('output', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl1_set_state" id="ttl1_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('set_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl1_set_current_state" id="ttl1_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('current_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl1_rising_event" id="ttl1_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl1_falling_event" id="ttl1_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
+            <input type="text" name="ttl1_event_comment" id="ttl1_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('event_comment', 'TTL 1') }}">
+            <input type="checkbox" name="debounce" id="debounce" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('debounce', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="synchronous" id="synchronous" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('synchronous', '') == 'true' %}checked{% endif %}>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL2</div>
+            <input type="checkbox" name="ttl2_output" id="ttl2_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('output', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl2_set_state" id="ttl2_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('set_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl2_set_current_state" id="ttl2_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('current_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl2_rising_event" id="ttl2_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl2_falling_event" id="ttl2_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
+            <input type="text" name="ttl2_event_comment" id="ttl2_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('event_comment', 'TTL 2') }}">
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL3</div>
+            <input type="checkbox" name="ttl3_output" id="ttl3_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('output', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl3_set_state" id="ttl3_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('set_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl3_set_current_state" id="ttl3_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('current_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl3_rising_event" id="ttl3_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl3_falling_event" id="ttl3_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
+            <input type="text" name="ttl3_event_comment" id="ttl3_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('event_comment', 'TTL 3') }}">
+            <span></span>
+            <span></span>
+          </div>
+
+          <div class="ttl-row">
+            <div class="ttl-label">TTL4</div>
+            <input type="checkbox" name="ttl4_output" id="ttl4_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('output', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl4_set_state" id="ttl4_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('set_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl4_set_current_state" id="ttl4_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('current_state', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl4_rising_event" id="ttl4_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
+            <input type="checkbox" name="ttl4_falling_event" id="ttl4_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
+            <input type="text" name="ttl4_event_comment" id="ttl4_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('event_comment', 'TTL 4') }}">
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+      </fieldset>
+
+    <div id="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <ul class="flashes">
+      {% for category, message in messages %}
+        <li class="{{ category }}">{{ message }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+    {% endwith %}
+    </div>
+      <div class="form-buttons">
+        <button type="submit" style="background-color:#678b5b; color:white; margin-top:25px;">OK</button>
+	<button type="reset" style="background-color:#d9d9d9; margin-top:25px;">Reset</button>
+        <button type="reset" id="home-button" style="background-color: #A3B18A; color:white; margin-top:25px;"><a href="/" target="_self">Home</a></button>
+      </div>
+    </form>
+
+  </div>  
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
