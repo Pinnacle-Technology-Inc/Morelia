@@ -44,10 +44,21 @@ def upload_config():
         return redirect(url_for("homepage"))
 
     try:
-        config_data = toml.loads(uploaded_file.read().decode("utf-8"))
-        session["loaded_config"] = config_data  # Store config in session
-        # redirect to correct form page based on title
-        session["loaded_filename"] = uploaded_file.filename
+        filename = uploaded_file.filename
+        filepath = os.path.join(os.getcwd(), filename)
+
+        # Save uploaded file to disk immediately
+        uploaded_file.save(filepath)
+
+        # Load config from the saved file on disk
+        with open(filepath, "r", encoding="utf-8") as f:
+            config_data = toml.load(f)
+
+        # Save in session for editing/saving later
+        session["loaded_config"] = config_data
+        session["loaded_filename"] = filename
+
+        # Redirect to correct form
         title = config_data.get("title", "")
         if "8206HR" in title:
             return redirect(url_for("page1"))
@@ -68,6 +79,7 @@ def upload_config():
         flash(f"Failed to load configuration: {str(e)}", "error")
         return redirect(url_for("homepage"))
 
+
 @app.route("/clear_config", methods=["POST"])
 def clear_config():
     session.pop("loaded_config", None)
@@ -78,8 +90,6 @@ def clear_config():
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
 def submit1():
-    
-    #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8206HR Device Configuration File',
         'filename': request.form.get('filename'),
@@ -91,16 +101,18 @@ def submit1():
         'information': {
             'sample_rate': request.form.get('sample_rate'),
             'preamp_gain': request.form.get('preamp_gain'),
+            'aux_input': request.form.get('aux_input'),
         },
-
-        'channel_settings': {   
+        'channel_settings': {
             'eeg1': request.form.get('eeg1'),
             'eeg2': request.form.get('eeg2'),
             'emg': request.form.get('emg'),
+            'ecg': request.form.get('ecg'),
+            'accel': request.form.get('accel'),
             'notch_enabled': request.form.get('notch_enabled'),
-            'notch_value' : request.form.get('notch_value'),
-        },    
-        'ttl_controls': {   
+            'notch_value': request.form.get('notch_value'),
+        },
+        'ttl_controls': {
             'ttl1': {
                 'output': request.form.get('ttl1_output'),
                 'set_state': request.form.get('ttl1_set_state'),
@@ -133,14 +145,11 @@ def submit1():
                 'falling_event': request.form.get('ttl4_falling_event'),
                 'event_comment': request.form.get('ttl4_event_comment'),
             },
-
             'debounce': request.form.get('debounce'),
             'synchronous': request.form.get('synchronous'),
         },
-
     }
 
-    #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
         filename += ".toml"
@@ -160,7 +169,6 @@ def submit1():
                     f.write(toml.dumps(data))
                 flash(f"{filename} created successfully!", "success")
     else:
-        #no file was loaded — treat as new file
         if os.path.exists(filename):
             flash(f"{filename} already exists! Please choose a new name.", "error")
         else:
@@ -170,7 +178,9 @@ def submit1():
 
     session.pop("loaded_filename", None)
     session.pop("loaded_config", None)
+
     return redirect(url_for("page1"))
+
 
 #Pod8229 Form
 @app.route("/submit2", methods=["POST"])
@@ -560,8 +570,8 @@ def submit5():
     return redirect(url_for("page5"))
 
 # Experiment Config. Form
+# Save a single TOML file to the given folder
 def save_toml_file_to_folder(file, folder):
-    """Save a single TOML file to the given folder."""
     os.makedirs(folder, exist_ok=True)
     if file and file.filename.endswith(".toml"):
         filename = secure_filename(file.filename)
@@ -570,29 +580,22 @@ def save_toml_file_to_folder(file, folder):
         return filename, path
     return None, None
 
-# Auto-populates Device Type Field in Experiment Config. Form
+# Extract device type from title field in TOML
 def extract_device_type_from_title(title):
-    """Extract device type from the title of a TOML file."""
     if "Device Configuration File" in title:
         return title.split("Device Configuration File")[0].strip()
     return title.strip()
 
-
 @app.route("/submit_exp", methods=["POST"])
 def submit_exp():
-
     loaded_filename = session.get("loaded_filename")
 
-    experiment_name = request.form.get("filename") or "default-experiment"
+    experiment_name = request.form.get("filename", "default-experiment").strip()
     folder_name = request.form.get("folder", "").strip()
-
     if not folder_name:
         folder_name = session.get("loaded_config", {}).get("folder_name", "")
-        
     if not folder_name:
         folder_name = f"{experiment_name}_folder"
-
-  
     os.makedirs(folder_name, exist_ok=True)
 
     device_names = request.form.getlist("device_name[]")
@@ -603,10 +606,8 @@ def submit_exp():
     placeholder_1 = request.form.getlist("placeholder1[]")
     placeholder_4 = request.form.getlist("placeholder4[]")
 
- 
-    # Check for any empty or invalid selections for device type
+    # Validate device types
     invalid_types = [dt for dt in device_types if dt.strip() == "" or dt == "null"]
-
     if invalid_types:
         flash("Every device must have a device type.", "error")
         return render_template("exp_config.html",
@@ -623,61 +624,74 @@ def submit_exp():
 
     devices = []
     for i, name in enumerate(device_names):
+        name = name.strip() or f"Pod_{i+1}"
+
+        # Uploaded file for this device row (may be empty)
         file_obj = new_config_files[i] if i < len(new_config_files) else None
-        config_filename = ""
+
+        # Default to existing config filename if no new file
+        config_filename = existing_config_files[i] if i < len(existing_config_files) else ""
+
+        inferred_type = device_types[i].strip() if i < len(device_types) else ""
 
         if file_obj and file_obj.filename.strip():
-            config_filename, saved_path = save_toml_file_to_folder(file_obj, folder_name)
+            # Save uploaded config file
+            saved_filename, saved_path = save_toml_file_to_folder(file_obj, folder_name)
+            if saved_filename:
+                config_filename = saved_filename
 
-            # Parse device type from title field in uploaded .toml
-            inferred_type = device_types[i].strip()
-            if (not inferred_type or inferred_type == "null") and saved_path:
+                # Try to infer device type from uploaded file content
                 try:
                     with open(saved_path, "r", encoding="utf-8") as f:
                         parsed = toml.load(f)
                         title = parsed.get("title", "")
-                        inferred_type = extract_device_type_from_title(title)
+                        inferred_type = extract_device_type_from_title(title) or inferred_type
                 except Exception as e:
-                    flash(f"Error parsing {config_filename}: {str(e)}", "error")
-                    inferred_type = "Unknown"
+                    flash(f"Error parsing {saved_filename}: {str(e)}", "error")
+                    # fallback keep inferred_type as is
 
         else:
-            config_filename = existing_config_files[i] if i < len(existing_config_files) else ""
-
+            # No new uploaded file, try copy from previous folder if different
             if config_filename:
-                # Try copying from previous folder
-                previous_folder = request.form.get("previous_folder")
-                if previous_folder:
+                previous_folder = request.form.get("previous_folder", "").strip()
+                if previous_folder and previous_folder != folder_name:
                     src_path = os.path.join(previous_folder, config_filename)
                     dst_path = os.path.join(folder_name, config_filename)
-
                     if os.path.exists(src_path) and not os.path.exists(dst_path):
-                        shutil.copy2(src_path, dst_path)
-            else:
-                flash(f"No configuration file uploaded or found for device {name or 'unnamed device'}.", "error")
+                        try:
+                            shutil.copy2(src_path, dst_path)
+                        except Exception as e:
+                            flash(f"Failed to copy config file for device '{name}': {e}", "error")
+
+            if not config_filename:
+                flash(f"No configuration file uploaded or found for device '{name}'.", "error")
                 return render_template("exp_config.html",
                                        retain_form=True,
                                        form_data=dict(request.form),
                                        current_folder=folder_name)
 
-    devices.append({
-        "device_name": name,
-        "config_file": config_filename,
-        "device_type": inferred_type,
-        "device_port": device_ports[i],
-        "placeholder_1": placeholder_1[i],
-        "placeholder_2": "true" if f"PH2_{i}" in request.form else "false",
-        "placeholder_3": "true" if f"PH3_{i}" in request.form else "false",
-        "placeholder_4": placeholder_4[i],
-    })
+        placeholder_2_val = "true" if request.form.get(f"PH2_{i}") == "true" else "false"
+        placeholder_3_val = "true" if request.form.get(f"PH3_{i}") == "true" else "false"
 
+        devices.append({
+            "device_name": name,
+            "config_file": config_filename,
+            "device_type": inferred_type,
+            "device_port": device_ports[i] if i < len(device_ports) else "",
+            "placeholder_1": placeholder_1[i] if i < len(placeholder_1) else "",
+            "placeholder_2": placeholder_2_val,
+            "placeholder_3": placeholder_3_val,
+            "placeholder_4": placeholder_4[i] if i < len(placeholder_4) else "",
+        })
+
+    # Save experiment config TOML file
     exp_filename = f"{experiment_name}.toml"
     exp_file_path = os.path.join(folder_name, exp_filename)
-    loaded_filename = session.get("loaded_filename")
 
-    if loaded_filename:
-        if exp_filename == loaded_filename:
-            # Overwrite same file
+    # Check if overwriting same file in same folder or new file
+    if os.path.exists(exp_file_path):
+        if exp_filename == loaded_filename and folder_name == session.get("loaded_config", {}).get("folder_name"):
+            # Overwrite safely
             with open(exp_file_path, "w", encoding="utf-8") as f:
                 f.write(toml.dumps({
                     "title": "Experiment Configuration File",
@@ -685,52 +699,37 @@ def submit_exp():
                     "experiment_name": experiment_name,
                     "devices": devices
                 }))
-            flash(f"{exp_filename} updated successfully!", "success")
+            flash(f"{exp_filename} updated successfully in {folder_name}!", "success")
         else:
-            if os.path.exists(exp_file_path):
-                flash(f"{exp_filename} already exists in {folder_name}! Please choose a new name.", "error")
-                return render_template("exp_config.html",
-                                    retain_form=True,
-                                    form_data=dict(request.form),
-                                    current_folder=folder_name)
-            else:
-                with open(exp_file_path, "w", encoding="utf-8") as f:
-                    f.write(toml.dumps({
-                        "title": "Experiment Configuration File",
-                        "folder_name": folder_name,
-                        "experiment_name": experiment_name,
-                        "devices": devices
-                    }))
-                flash(f"{exp_filename} created successfully!", "success")
-    else:
-        # No file was loaded — treat as new file
-        if os.path.exists(exp_file_path):
-            flash(f"{exp_filename} already exists in {folder_name}! Please choose a new name.", "error")
+            flash(f"{exp_filename} already exists in {folder_name}! Please choose a different name or folder.", "error")
             return render_template("exp_config.html",
-                                retain_form=True,
-                                form_data=dict(request.form),
-                                current_folder=folder_name)
-        else:
-            with open(exp_file_path, "w", encoding="utf-8") as f:
-                f.write(toml.dumps({
-                    "title": "Experiment Configuration File",
-                    "folder_name": folder_name,
-                    "experiment_name": experiment_name,
-                    "devices": devices
-                }))
-            flash(f"{exp_filename} created successfully!", "success")
+                                   retain_form=True,
+                                   form_data=dict(request.form),
+                                   current_folder=folder_name)
+    else:
+        # New save
+        with open(exp_file_path, "w", encoding="utf-8") as f:
+            f.write(toml.dumps({
+                "title": "Experiment Configuration File",
+                "folder_name": folder_name,
+                "experiment_name": experiment_name,
+                "devices": devices
+            }))
+        flash(f"{exp_filename} saved successfully in {folder_name}!", "success")
 
-
+    # Clear session loaded config and filename after save
     session.pop("loaded_filename", None)
     session.pop("loaded_config", None)
 
+    # List all toml files in folder to show in template
     toml_files = [f for f in os.listdir(folder_name) if f.endswith(".toml")]
+
     return render_template("exp_config.html",
+                           devices=devices,
                            retain_form=True,
                            form_data=dict(request.form),
                            toml_files=toml_files,
                            current_folder=folder_name)
-
 # Debugging Purposes
 if __name__ == "__main__":
     app.run(debug=True)
