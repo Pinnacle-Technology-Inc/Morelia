@@ -1,8 +1,13 @@
-from flask import Flask, request, render_template, redirect, url_for, flash, session
+from flask import Flask, request, render_template, redirect, url_for, flash, session, jsonify
 import toml
+import sys
 import os
 import shutil
 from werkzeug.utils import secure_filename
+
+# Add src folder to PYTHONPATH so Flask can find the Morelia package
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from Morelia.PodScan import detect_pod_devices
 
 app = Flask(__name__)
 #flash in Flask needs a key to temporarily store data for this session
@@ -12,7 +17,7 @@ app.secret_key = b'_5#y2L"F4Q8zww\ggff'
 def homepage():
     return render_template("index.html")
 
-@app.route("/Experiment_Config")
+@app.route("/experiment-config")
 def exp_config():
     return render_template("exp_config.html")
 
@@ -36,6 +41,18 @@ def page4():
 def page5():
     return render_template("Pod8480SC.html")
 
+
+# Detecting Devices
+@app.route('/api/devices', methods=['GET'])
+def get_devices():
+    try:
+        devices = detect_pod_devices()
+        print(devices, "success")
+        return jsonify(devices)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Loading Configurations
 @app.route("/load_config", methods=["POST"])
 def upload_config():
     uploaded_file = request.files.get("config_file")
@@ -599,6 +616,7 @@ def submit_exp():
     os.makedirs(folder_name, exist_ok=True)
 
     device_names = request.form.getlist("device_name[]")
+    device_ids = request.form.getlist("device_id[]")
     new_config_files = request.files.getlist("config_file_new[]")
     existing_config_files = request.form.getlist("config_file_existing[]")
     device_types = request.form.getlist("device_type[]")
@@ -675,6 +693,7 @@ def submit_exp():
 
         devices.append({
             "device_name": name,
+            "device_id": device_id,
             "config_file": config_filename,
             "device_type": inferred_type,
             "device_port": device_ports[i] if i < len(device_ports) else "",

@@ -96,6 +96,11 @@
       <h3 style="margin:10px;"> Devices > Manager</h3>
     </div>
 
+    <button type="button" onclick="detectDevices()" style="margin: 15px 0;">
+  Detect Devices
+    </button>
+    <div id="device-flash" style="margin-top: 1em; color: green; font-weight: bold;"></div>
+
    <form id="experiment-config-form" action="/submit_exp" method="POST" enctype="multipart/form-data">
     <fieldset id="information">
       <legend>Information</legend>
@@ -132,6 +137,7 @@
 		    {% for device in devices %}
 		      <tr>
 			<td><input type="text" name="device_name[]" value="{{ device.device_name }}" /></td>
+			<td><input type="text" name="device_id[]" value="{{ device.device_id }}" /></td>
 			<td>
 			  <div>
 			    <small style="color: #A3B18A">Current: {{ device.config_file or "No file selected" }}</small>
