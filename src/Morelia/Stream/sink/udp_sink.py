@@ -32,6 +32,10 @@ class UDPSink(SinkInterface):
         self._connection, self._address = self._socket.listen()
         self._counter = 0
    
+    @property
+    def port(self):
+        return self._port
+    
     #def __enter__(self) -> Self:
         
         # if isinstance(self._pod, Pod8206HR):
@@ -65,3 +69,8 @@ class UDPSink(SinkInterface):
             self._buffer.append( timestamp,  (channel_data + aext_data + attl_data))
 
         #TODO: 8274D
+
+    def get_dict(self):
+        return {
+            'port' = self.port
+        }
