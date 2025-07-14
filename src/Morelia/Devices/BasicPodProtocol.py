@@ -36,7 +36,7 @@ class Pod :
 
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
-        self.flush_port()
+        #self.flush_port()
 
         self._lock = Lock()
 
@@ -364,11 +364,11 @@ class Pod :
         return ControlPacket(self._commands, packet)
     
     def check_write(self):
-        start = time.perf_counter()
+        #start = time.perf_counter()
         # existing check logic
         self._port.check_queue()
-        end = time.perf_counter()
-        print(f"check_write took {(end - start)*1000:.2f} ms")
+        #end = time.perf_counter()
+        #print(f"check_write took {(end - start)*1000:.2f} ms")
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \

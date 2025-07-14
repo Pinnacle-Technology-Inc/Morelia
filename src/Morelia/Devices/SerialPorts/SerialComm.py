@@ -211,6 +211,9 @@ class PortIO :
         Returns:
             bool: True of the buffers are flushed, False otherwise.
         """
+        if self.__serial_inst is None:
+            return False
+
         if(self.is_serial_open()) : 
             self.__serial_inst.reset_input_buffer()
             self.__serial_inst.reset_output_buffer()
@@ -236,7 +239,7 @@ class PortIO :
 
     # ----- INPUT/OUTPUT -----
 
-    '''def read(self, numBytes: int, timeout_sec: int|float = 5) -> bytes|None :
+    def read(self, numBytes: int, timeout_sec: int|float = 5) -> bytes|None :
         """Reads a specified number of bytes from the open serial port.
 
         Args:
@@ -262,9 +265,9 @@ class PortIO :
                 #read packet
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
-        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')'''
+        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
 
-    def read(self, num_bytes: int, timeout_sec: float = 0.01) -> bytes | None:
+    '''def read(self, num_bytes: int, timeout_sec: float = 0.01) -> bytes | None:
         
         if self.is_serial_closed():
             return None
@@ -280,7 +283,7 @@ class PortIO :
             if time.time() - start > timeout_sec:
                 raise TimeoutError(f"Timeout: wanted {num_bytes} bytes, got {len(buf)}")
 
-        return buf
+        return buf'''
 
 
     def read_line(self) -> bytes|None :

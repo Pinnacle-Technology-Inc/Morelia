@@ -101,10 +101,10 @@ class Pod8206HR(AquisitionDevice) :
         # check if checksum is correct 
         if(validate_checksum):
             if(not self._validate_checksum(packet) ) :
-                #with open("external_error.log", "w") as f:
-                #    f.write(f"\n--- Exception at {time.ctime()} ---\n")
-                #    f.write("".join(traceback.format_stack()))
-                #    f.write("\n")
+                with open("external_error.log", "w") as f:
+                    f.write(f"\n--- Exception at {time.ctime()} ---\n")
+                    f.write("".join(traceback.format_stack()))
+                    f.write("\n")
                 #pdb.set_trace()
                 #raise Exception('Bad checksum for binary POD packet read.')
                 #try:
