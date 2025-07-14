@@ -89,15 +89,17 @@ class DataFlow:
             
             self._manual_stop_events.append(manual_stop_event)
 
-            #TODO implement source.get_dict (turns source parameters into list)
+            # gets the type (class) of the pod device
             source_class = type(source)
-            #self.to_picklable(source)
+
+            # uses the pod devices' get_dict function to return parameter values in a dictionary 
             source_dict = source.get_dict()
 
+            # gets the class and dictionary of parameters of each sink in the sink list
             sinks_list = [
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
-            #pickle.dumps(source_dict)  # this should succeed
+
             #create worker process.
             worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
 
@@ -106,14 +108,6 @@ class DataFlow:
         #start processes
         for worker in self._workers:
             worker.start()
-
-    def get_init_args(self, obj):
-        sig = inspect.signature(obj.__init__)
-        return {
-            k: getattr(obj, k)
-            for k in sig.parameters
-            if k != 'self' and hasattr(obj, k)
-        }
 
     def __enter__(self) -> None:
         self.collect()
