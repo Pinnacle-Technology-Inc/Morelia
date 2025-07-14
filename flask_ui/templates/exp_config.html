@@ -120,10 +120,10 @@
           <table id="deviceTable">
             <thead>
               <tr>
-                <th>Device Name</th>
+		<th>Name</th>
+		<th>Device ID</th>
                 <th>Config File</th>
                 <th>Device Type</th>
-                <th>Device Port</th>
                 <th>Placeholder1</th>
                 <th>PH2</th>
                 <th>PH3</th>
@@ -152,7 +152,6 @@
 				    <option value="{{ type }}" {% if device.device_type == type %}selected{% endif %}>{{ type }}</option>
 				  {% endfor %}
 				</select>			</td>
-			<td><input type="text" name="device_port[]" value="{{ device.device_port }}" /></td>
 			<td><input type="text" name="placeholder1[]" value="{{ device.placeholder_1 }}" /></td>
 			<td>
 			  <input type="checkbox" name="PH2_{{ loop.index0 }}" value="true" {% if device.placeholder_2 == "true" %}checked{% endif %} />
@@ -168,6 +167,7 @@
 		    <!-- fallback to one blank row if nothing loaded -->
 		    <tr>
 		      <td><input type="text" name="device_name[]" value="Pod_1" /></td>
+		      <td><input type="text" name="device_id[]" value="-Enter Number-" /></td>
 		      <td><input type="file" name="config_file_new[]" class="config-upload" accept=".toml" /></td>
 		      <td>
 			<select name="device_type[]" class="device-type-dropdown">
@@ -179,7 +179,6 @@
 			  <option value="Pod8480SC">Pod8480SC</option>
 			</select>
 		      </td>
-		      <td><input type="text" name="device_port[]" value="/dev/ttyUSB0" /></td>
 		      <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
 		      <td><input type="checkbox" name="PH2_0" value="true" /></td>
 		      <td><input type="checkbox" name="PH3_0" value="true" /></td>

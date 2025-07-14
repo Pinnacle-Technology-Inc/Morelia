@@ -5,9 +5,9 @@ import os
 import shutil
 from werkzeug.utils import secure_filename
 
-# Add src folder to PYTHONPATH so Flask can find the Morelia package
+# Add src folder to PATH so Flask can find the Morelia package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from Morelia.PodScan import detect_pod_devices
+from Morelia.pod_scan import detect_pod_devices
 
 app = Flask(__name__)
 #flash in Flask needs a key to temporarily store data for this session
@@ -620,7 +620,6 @@ def submit_exp():
     new_config_files = request.files.getlist("config_file_new[]")
     existing_config_files = request.form.getlist("config_file_existing[]")
     device_types = request.form.getlist("device_type[]")
-    device_ports = request.form.getlist("device_port[]")
     placeholder_1 = request.form.getlist("placeholder1[]")
     placeholder_4 = request.form.getlist("placeholder4[]")
 
@@ -696,7 +695,6 @@ def submit_exp():
             "device_id": device_id,
             "config_file": config_filename,
             "device_type": inferred_type,
-            "device_port": device_ports[i] if i < len(device_ports) else "",
             "placeholder_1": placeholder_1[i] if i < len(placeholder_1) else "",
             "placeholder_2": placeholder_2_val,
             "placeholder_3": placeholder_3_val,

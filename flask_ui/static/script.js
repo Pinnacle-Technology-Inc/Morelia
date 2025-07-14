@@ -69,7 +69,6 @@ function addNewDevice() {
         <option value="Pod8480SC">Pod8480SC</option>
       </select>
     </td>
-    <td><input type="text" name="device_port[]" value="/dev/ttyUSB${rowCount}" /></td>
     <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
     <td><input type="checkbox" name="PH2_${rowCount}" value="true" /></td>
     <td><input type="checkbox" name="PH3_${rowCount}" value="true" /></td>
@@ -119,17 +118,17 @@ const detectedDeviceKeys = new Set();
 function getDeviceTypeLabel(typeCode) {
   const typeMap = {
     "48": "Pod8206HR",
-    "49": "Pod8229",
+    "46": "Pod8229",
     "50": "Pod8274D",
-    "51": "Pod8401HR",
-    "52": "Pod8480SC"
+    "49": "Pod8401HR",
+    "50": "Pod8480SC"
   };
   return typeMap[typeCode] || "Unknown Device";
 }
 
 function detectDevices() {
   const tbody = document.querySelector("#deviceTable tbody");
-  tbody.innerHTML = ""; // 🔥 Clear old rows
+  tbody.innerHTML = ""; // Clear old rows
 
   const flashBox = document.getElementById("device-flash");
   detectedDeviceKeys.clear(); // Clear old device key tracking
@@ -148,13 +147,13 @@ function detectDevices() {
 
         setTimeout(() => {
           flashBox.style.display = "none";
-        }, 5000);
+        }, 7000);
       } else {
         flashBox.innerText = "No Pod devices found.";
         flashBox.style.display = "block";
         setTimeout(() => {
           flashBox.style.display = "none";
-        }, 3000);
+        }, 5000);
       }
 
       devices.forEach(device => {
@@ -175,12 +174,11 @@ function addDetectedDeviceRow(device) {
   const tbody = document.querySelector("#deviceTable tbody");
   const rowCount = tbody.children.length;
   const row = document.createElement("tr");
-
-  const deviceName = `Pod_${device.ID}`;
   const defaultType = getDeviceTypeLabel(device.TYPE);
 
   row.innerHTML = `
-    <td><input type="text" name="device_name[]" value="${deviceName}" /></td>
+    <td><input type="text" name="device_name[]" value="Pod_${rowCount+1}" /></td>
+    <td><input type="text" name="device_id[]" value="${device.ID}" /></td>
     <td><input type="file" name="config_file_new[]" class="config-upload" accept=".toml" /></td>
     <td>
       <select name="device_type[]" class="device-type-dropdown">
@@ -193,7 +191,6 @@ function addDetectedDeviceRow(device) {
         ${defaultType === "Unknown Device" ? `<option value="Unknown Device" selected>Unknown Device</option>` : ""}
       </select>
     </td>
-    <td><input type="text" name="device_port[]" value="${device.PORT}" /></td>
     <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
     <td><input type="checkbox" name="PH2_${rowCount}" value="true" /></td>
     <td><input type="checkbox" name="PH3_${rowCount}" value="true" /></td>

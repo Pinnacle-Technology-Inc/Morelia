@@ -52,6 +52,7 @@ class ControlPacket(PodPacket):
             return self._payload
         
         if not len(self._raw_packet) - self._min_length > 0:
+            print(self.raw_packet)
             #NOTE: This function used to return an empty tuple in the case that the bytes were too short, so old tests that rely on this behavior might break.
             raise ValueError('Not enough bytes to construct a control packet!')
         
