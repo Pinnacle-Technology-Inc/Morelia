@@ -27,6 +27,10 @@ class CSVSink(SinkInterface):
         self._file_path = file_path
         
         self._pod = pod
+
+    @property
+    def file_path(self):
+        return self._file_path
    
     def __enter__(self) -> Self:
         self._file_handle = open(self._file_path, 'w', newline='') 
@@ -69,3 +73,8 @@ class CSVSink(SinkInterface):
             self._csv_writer.writerow((timestamp,) + channel_data + aext_data + attl_data)
         
         #TODO: 8274D
+
+    def get_dict(self):
+        return {
+            'file_path': self._file_path
+        }

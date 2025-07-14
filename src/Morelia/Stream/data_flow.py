@@ -115,18 +115,6 @@ class DataFlow:
             if k != 'self' and hasattr(obj, k)
         }
 
-    '''def to_picklable(self, obj):
-        result = {}
-
-        for k, v in vars(obj).items():
-            try:
-                pickle.dumps(v)
-                result[k] = valid
-            except Exception:
-                pass
-        print(result)
-        return result'''
-
     def __enter__(self) -> None:
         self.collect()
 

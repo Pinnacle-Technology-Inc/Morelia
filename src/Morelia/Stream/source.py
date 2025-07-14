@@ -118,9 +118,17 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         # start streaming data from the observable!
         stream.connect()
 
+# wrapper function for get_data which reconstructs pod devices and sources after the process is created
 def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
+
+    # obtain the source class
     source = source_class(**source_dict)
-    #   source.open_port()
-    sinks = [sink_class(**sink_dict) for sink_class, sink_dict in sinks_list]
+
+    # open the port of the source class
     source.open_port()
+
+    # create list of sinks to use based on sink class/sink dictionary pair in the list
+    sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
+
+    # run get_data with the pod device and list of sinks 
     get_data(duration_sec, manual_stop_event, source, sinks)

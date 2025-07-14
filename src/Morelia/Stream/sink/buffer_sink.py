@@ -25,7 +25,11 @@ class BufferSink(SinkInterface):
         """Class constructor."""
         self._pod = pod
         self._buffer = buffer
-   
+    
+    @property
+    def buffer(self):
+        return self._buffer
+
     def __enter__(self) -> Self:
         
         if isinstance(self._pod, Pod8206HR):
@@ -58,3 +62,8 @@ class BufferSink(SinkInterface):
             self._buffer.append( timestamp,  (channel_data + aext_data + attl_data))
 
         #TODO: 8274D
+    
+    def get_dict(self):
+        return {
+            'buffer': self.buffer
+        }

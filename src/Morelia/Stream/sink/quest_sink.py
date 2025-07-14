@@ -61,6 +61,18 @@ class QuestSink(SinkInterface):
             ops.map(lambda x: b'\n'.join(x))
         )
 
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def measurement(self):
+        return self._measurement
+
     def __enter__(self) -> Self:
         self._sock = socket.create_connection((self._host, self._port))
         self._data.subscribe(lambda data: self._sock.sendall(data + b'\n'))
@@ -81,3 +93,11 @@ class QuestSink(SinkInterface):
         if not hasattr(self, '_sock'):
             raise RuntimeError("Sink must be opened before flushing.")
         self._subject.on_next((timestamp, packet))
+
+    def get_dict(self):
+        return {
+            'host': self.host, 
+            'port': self.port, 
+            'measurement': self.measurement
+        }
+      

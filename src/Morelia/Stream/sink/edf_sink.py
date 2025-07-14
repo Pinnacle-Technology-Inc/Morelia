@@ -24,15 +24,11 @@ class EDFSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice | tuple[str, dict]) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
         """ Class constructor."""
         self._file_path = file_path
 
-        if isinstance(pod, tuple) and len(pod) == 2 and isinstance(pod[0], str) and isinstance(pod[1], dict):
-            self._pod = self.convert_to_device(pod)
-            self._pod.open_port()
-        else:
-            self._pod = pod
+        self._pod = pod
 
         if isinstance(self._pod, Pod8206HR):
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
@@ -124,7 +120,7 @@ class EDFSink(SinkInterface):
             self._buffer[8].append(float(packet.ttl3))
             self._buffer[9].append(float(packet.ttl4))
 
-        if len(self._buffer[0]) >= self._pod_sample_rate:
+        if len(self._buffer[0]) >= self._pod.sample_rate:
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:
@@ -133,6 +129,5 @@ class EDFSink(SinkInterface):
 
     def get_dict(self):
         return {
-            'file_path': self._file_path,
-            'pod': self.get_device_type_and_dict(self._pod)
+            'file_path': self.file_path
         }

@@ -68,6 +68,27 @@ class InfluxSink(SinkInterface):
             ops.buffer_with_count(self._pod.sample_rate//2),
             ops.map(lambda x: b'\n'.join(x))
         )
+
+    @property
+    def url(self):
+        return self._url
+
+    @property 
+    def api_token(self):
+        return self.__api_token
+
+    @property
+    def org(self):
+        return self._org
+    
+    @property
+    def bucket(self):
+        return self._bucket
+    
+    @property
+    def measurement(self):
+        return self._measurement
+
     #the following two methods implement the context manager protocol to allow
     #this sink to work within a `with` block. To illuminate why these methods are the
     #they are, see the relevent section of the python manual:
@@ -118,3 +139,12 @@ class InfluxSink(SinkInterface):
         #self._writer.write(bucket='pinnacle', org='pinnacle', record=self._line_protocol_factory(timestamp, packet))
         self._subject.on_next((timestamp, packet))
             #Stats(prof).strip_dirs().sort_stats('tottime').print_stats()
+
+    def get_dict(self):
+        return {
+            'url': self.url,
+            'api_token': self.api_token,
+            'org': self.org,
+            'bucket': self.bucket,
+            'measurement': self.measurement
+        }
