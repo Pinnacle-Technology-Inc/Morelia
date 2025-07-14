@@ -366,3 +366,14 @@ class PortIO :
             except Empty:
                 return
 
+    '''def write(self, message: bytes) -> None : 
+        """Write a set message to the open serial port. 
+
+        Args:
+            message (bytes): byte string containing the message to write.
+        """
+        if not self.is_serial_open():
+            return
+            
+        self.__serial_inst.write(message)'''
+

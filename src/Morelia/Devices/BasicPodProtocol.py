@@ -1,5 +1,5 @@
 # local imports
-from Morelia.Devices.SerialPorts import PortIO, FindPorts
+from Morelia.Devices.SerialPorts import PortIO, FindPorts, PacketManager
 from Morelia.Commands import CommandSet
 from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket
@@ -9,6 +9,7 @@ import Morelia.packet.conversion as conv
 from functools import partial
 from threading import Lock
 import time
+import subprocess
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -33,9 +34,18 @@ class Pod :
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
         the serial port communication (_port) and for the command handler (_commands).
         """
-
+        
+        self._manager = PacketManager()
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
+
+        #if not self.is_port_in_use(port):
+        #    self._port : PortIO = PortIO(port, baudrate)
+        #    self._manager.initialize_control_queue()
+        #else:
+        #    self._port = None
+        #    self._manager.register_control_queue()
+
         #self.flush_port()
 
         self._lock = Lock()
@@ -53,6 +63,9 @@ class Pod :
         
         self._queue = None
 
+    def is_port_in_use(self, port: str) -> bool:
+        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return result.returncode == 0
 
     @staticmethod
     def get_u(u: int) -> int : 
@@ -349,6 +362,19 @@ class Pod :
         """
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
+
+        #if port exists, write to the port using PortIO
+        
+        '''if self._port is not None:
+            self._port.write(packet)
+        else:
+            try:
+                pass
+            finally:
+                self._queue.put_nowait(packet)
+        return ControlPacket(self._commands, packet)'''
+
+        #if port is none, then write to the queue using the queue_manager function
         if self._port.queue_initialized() or self._port.queue_registered():
             if self._queue is None:
                 self._queue = self._port.obtain_queue()
