@@ -172,7 +172,7 @@ Where to Next? 🤔
 Now that you have connected and configured all of your devices, the world is your neurological oyster! From this point, there are several different things you can do 
 using Morelia:
 
-    * :doc:`Streaming from data aquisition systems </streaming>`
+    * :doc:`Streaming from data acquisition systems </streaming>`
     * :doc:`Controlling sleep deprivation system </sleep_dep>`
     * :doc:`Wielding stimulus controllers </stimulus>`
     * :doc:`Low-level interactions with POD systems </low_level>`

@@ -1,5 +1,5 @@
 """
-This file contains types used for indicating the types of various channels read from aquisition devices.
+This file contains types used for indicating the types of various channels read from acquisition devices.
 Currently, the only device Morelia supports that takes advantage of modal channels is the 8401HR.
 """
 

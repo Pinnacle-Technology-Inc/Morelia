@@ -1,6 +1,6 @@
 # local imports 
 import time
-from Morelia.Devices import Pod, AquisitionDevice
+from Morelia.Devices import Pod, AcquisitionDevice
 
 from Morelia.packet.legacy import PacketBinary, Packet
 
@@ -17,7 +17,7 @@ __license__     = "New BSD License"
 __copyright__   = "Copyright (c) 2023, Thresa Kelly"
 __email__       = "sales@pinnaclet.com"
 
-class Pod8274D(AquisitionDevice) : 
+class Pod8274D(AcquisitionDevice) : 
     """POD_8274D handles communication using an 8274D POD device. Currently under construction and is unreliable.
 
     :param port: Serial port to be opened. Used when initializing the COM_io instance.
