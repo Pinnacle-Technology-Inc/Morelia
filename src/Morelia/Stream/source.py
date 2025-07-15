@@ -78,6 +78,15 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
         observer.on_completed()
     return _stream_from_pod_device_observable
 
+def make_packet_putter(read_queue):
+    def put_read_packet(item):
+        if isinstance(item, ControlPacket):
+            try:
+                read_queue.put_nowait(item)
+            except Exception as e:
+                print(f"[!] Failed to queue control packet: {e}")
+    return put_read_packet
+
 def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, sinks) -> None: 
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved. 
@@ -88,6 +97,9 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     :param pod: The device to collect data from.
     """
     
+    read_queue = pod.obtain_read_queue()
+    put_read_packet = make_packet_putter(read_queue)
+
     # create an observable to stream from POD device.
     device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
     
@@ -95,10 +107,15 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     # a seperate place these get put so they can still be read during streaming to enable feedback.),
     # and them timestamp packets.
     data = device.pipe(
-           do_action(lambda _: pod.check_write() if pod.queue_initialized() else None),
+           do_action(lambda _: pod.check_write_queue() if pod.queues_initialized() else None),
+           #do_action(put_read_packet),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
            _timestamp_via_adjusted_sample_rate(pod.sample_rate)
        )
+
+    control = device.pipe(
+        ops.filter(lambda i: isinstance(i, ControlPacket))
+    )
     
     # create a function that outputs a connectable observable.
     streamer = ops.publish()
@@ -116,6 +133,8 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
             context_manager_stack.enter_context(sink)
             
             stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
+
+        #control.subscribe(on_next=put_read_packet, on_error=lambda e: print(f"[!] Control stream error: {e}")
         
         # start streaming data from the observable!
         stream.connect()

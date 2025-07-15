@@ -33,7 +33,6 @@ class PortIO :
             port (str | int): String of the serial port to be opened. 
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
-        self._manager = PacketManager()
         
         if (port == 'TEST') :
 
@@ -116,39 +115,7 @@ class PortIO :
         """
         # true if serial port is closed, false otherwise 
         return(not self.is_serial_open())
-
-    # ----- QUEUE MANAGEMENT -----
-    
-    def obtain_queue(self):
-        """
-        returns the PacketManager's queue
-        """
-        return self._manager.obtain_queue()
-
-    def initialize_control_queue(self):
-        """
-        initializes the control Queue in the PacketManager
-        """
-        self._manager.initialize_control_queue()
-
-    def register_control_queue(self):
-        """
-        initializes the control Queue in the PacketManager
-        """
-        self._manager.register_control_queue()
-    
-    def queue_initialized(self):
-        """
-        Verifies if the Queue has been initialized in the PacketManager
-        """
-        return self._manager.queue_initialized()
-
-    def queue_registered(self):
-        """
-        Verifies if the Queue has been registered in the PacketManager
-        """
-        return self._manager.queue_registered()
-
+  
     # ----- SERIAL MANAGEMENT -----
 
     def close_serial_port(self) -> None :
@@ -321,17 +288,17 @@ class PortIO :
                 # read packet until end of line (eol) character 
                 return(self.__serial_inst.read_until(eol) )
     
-    def check_queue(self) -> None:
+    '''def check_write_queue(self) -> None:
         if self._manager.queue_initialized():
-            queue = self._manager.obtain_queue()
+            queue = self._manager.obtain_write_queue()
             try:
                 while True:
                     item = queue.get_nowait()
                     self.__serial_inst.write(item)
             except Empty:
-                return
+                return'''
 
-    def write(self, message: bytes = b'') -> None : 
+    '''def write(self, message: bytes = b'') -> None : 
         """Write a set message to the open serial port. 
 
         Args:
@@ -344,7 +311,7 @@ class PortIO :
             return
             
         # obtain queue from the PacketManager class
-        queue = self._manager.obtain_queue()
+        queue = self._manager.obtain_write_queue()
         
         # if the queue has not been instantiated yet, write directly to the Serial port
         if queue is None: 
@@ -364,9 +331,9 @@ class PortIO :
             # if the Queue is instantiated but empty, write directly to the serial port.
 
             except Empty:
-                return
+                return'''
 
-    '''def write(self, message: bytes) -> None : 
+    def write(self, message: bytes) -> None : 
         """Write a set message to the open serial port. 
 
         Args:
@@ -375,5 +342,5 @@ class PortIO :
         if not self.is_serial_open():
             return
             
-        self.__serial_inst.write(message)'''
+        self.__serial_inst.write(message)
 

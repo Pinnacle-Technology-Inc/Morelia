@@ -9,6 +9,7 @@ import Morelia.packet.conversion as conv
 from functools import partial
 from threading import Lock
 import time
+from queue import Empty
 import subprocess
 
 # authorship
@@ -37,14 +38,15 @@ class Pod :
         
         self._manager = PacketManager()
         # initialize serial port 
-        self._port : PortIO = PortIO(port, baudrate)
+        #self._port : PortIO = PortIO(port, baudrate)
 
-        #if not self.is_port_in_use(port):
-        #    self._port : PortIO = PortIO(port, baudrate)
-        #    self._manager.initialize_control_queue()
-        #else:
-        #    self._port = None
-        #    self._manager.register_control_queue()
+        if not self.is_port_in_use(port):
+            print("manager initialized")
+            self._port : PortIO = PortIO(port, baudrate)
+            self._manager.initialize_control_queue()
+        else:
+            self._port = None
+            self._manager.register_control_queue()
 
         #self.flush_port()
 
@@ -61,11 +63,30 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
         
-        self._queue = None
+        self._write_queue = self._manager.obtain_write_queue()
+        self._read_queue = self._manager.obtain_read_queue()
 
     def is_port_in_use(self, port: str) -> bool:
         result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result.returncode == 0
+
+    def obtain_write_queue(self):
+        return self._manager.obtain_write_queue()
+
+    def obtain_read_queue(self):
+        return self._manager.obtain_read_queue()
+    
+    def queues_initialized(self):
+        """
+        Verifies if the Queue has been initialized in the PacketManager
+        """
+        return self._manager.queues_initialized()
+
+    def queues_registered(self):
+        """
+        Verifies if the Queue has been registered in the PacketManager
+        """
+        return self._manager.queues_registered()
 
     @staticmethod
     def get_u(u: int) -> int : 
@@ -220,31 +241,21 @@ class Pod :
     
     # calls the port's initialize control queue function
     def initialize_control_queue(self):
-        self._port.initialize_control_queue()
+        self._manager.initialize_control_queue()
 
     # calls the port's register control queue function
     def register_control_queue(self):
-        self._port.register_control_queue()
-
- 
-    def queue_initialized(self):
-        """
-        Verifies if the Queue has been initialized in the PacketManager
-        """
-        return self._port.queue_initialized()
-
-    def queue_registered(self):
-        """
-        Verifies if the Queue has been registered in the PacketManager
-        """
-        return self._port.queue_registered()
-
+        self._manager.register_control_queue()
 
     def flush_port(self) -> bool : 
         """Reset the input and output serial port buffer.
 
         :return: True of the buffers are flushed, False otherwise.
         """
+        if self._port is None:
+            print("PortIO object does not exist!")
+            return False
+
         return(self._port.flush())
     
     
@@ -255,6 +266,12 @@ class Pod :
 
         :return: True if successful at setting the baud rate, false otherwise.
         """
+
+        #TODO write (or write/read) pod packet to set baudrate of device
+        if self._port is None:
+            print("PortIO object does not exist!")
+            return False
+
         # set baudrate of the open COM port. Returns true if successful.
         return(self._port.set_baudrate(baudrate))
 
@@ -300,6 +317,10 @@ class Pod :
 
         :return: Bytes string of the POD packet. 
         """
+
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+
         # return False if command is not valid
         if(not self._commands.does_command_exist(cmd)) : 
             raise Exception('POD command does not exist.')
@@ -334,21 +355,33 @@ class Pod :
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         #flushes leftover data in case of interrupt
-        self.flush_port()
+        
+        if self._port is not None:
+            self.flush_port()
 
         #writes packet to the device
         self.write_packet(cmd, payload)
-
+        
         start = time.time()
+        if self._port is not None:
 
-        #loops until it finds a control packet, and returns the found control packet
-        while time.time() - start < timeout_sec:
-            packet = self.read_pod_packet(validate_checksum, timeout_sec)
+            #loops until it finds a control packet, and returns the found control packet
+            while time.time() - start < timeout_sec:
+                packet = self.read_pod_packet(validate_checksum, timeout_sec)
 
-            if isinstance(packet, ControlPacket):  # or however your control packets are defined
-                return packet
+                if isinstance(packet, ControlPacket):  # or however your control packets are defined
+                    return packet
 
-            continue
+                continue
+
+        else:
+            #poll at the read queue for a small amount of time, and return the packet
+            while time.time() - start < timeout_sec:
+
+                packet = self._read_queue.get_nowait()
+                
+                if isinstance(packet, ControlPacket):
+                    return packet
 
         raise TimeoutError(f"Did not receive expected control response to command {cmd}")
         
@@ -365,19 +398,19 @@ class Pod :
 
         #if port exists, write to the port using PortIO
         
-        '''if self._port is not None:
+        if self._port is not None:
             self._port.write(packet)
         else:
             try:
                 pass
             finally:
-                self._queue.put_nowait(packet)
-        return ControlPacket(self._commands, packet)'''
-
+                self._write_queue.put_nowait(packet)
+        return ControlPacket(self._commands, packet)
+        
         #if port is none, then write to the queue using the queue_manager function
-        if self._port.queue_initialized() or self._port.queue_registered():
+        '''if self._port.queue_initialized() or self._port.queue_registered():
             if self._queue is None:
-                self._queue = self._port.obtain_queue()
+                self._queue = self._port.obtain_write_queue()
             #with self._lock:
             try:
                 pass
@@ -387,14 +420,23 @@ class Pod :
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
-        return ControlPacket(self._commands, packet)
+        return ControlPacket(self._commands, packet)'''
     
-    def check_write(self):
+    '''def check_write(self):
         #start = time.perf_counter()
         # existing check logic
-        self._port.check_queue()
+        self._port.check_write_queue()
         #end = time.perf_counter()
-        #print(f"check_write took {(end - start)*1000:.2f} ms")
+        #print(f"check_write took {(end - start)*1000:.2f} ms")'''
+ 
+    def check_write_queue(self) -> None:
+        if self._manager.queues_initialized():
+            try:
+                while True:
+                    item = self._write_queue.get_nowait()
+                    self.__serial_inst.write(item)
+            except Empty:
+                return
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -408,6 +450,9 @@ class Pod :
         """
         # read until STX is found
         #with self._lock:
+
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
 
         b = None
         start_time = time.time()
@@ -506,6 +551,10 @@ class Pod :
 
         :returns: Bytes string ending with ETX.
         """
+
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+
         # initialize 
         packet = None
         b = None
@@ -554,6 +603,10 @@ class Pod :
 
         :return: Variable-length data POD packet.
         """
+
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+
         # Variable binary packet: contain a normal POD packet with the binary command, 
         #   and the payload is the length of the binary portion. The binary portion also 
         #   includes an ASCII checksum and ETX.        

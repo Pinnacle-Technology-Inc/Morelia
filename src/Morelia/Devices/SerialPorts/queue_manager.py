@@ -26,8 +26,10 @@ class PacketManager:
         Runs when the PacketManager is instantiated within the PortIO object belonging to the Acquisition device.
         """
         self._queue = None
-        self._queue_initialized = False
-        self._queue_registered = False
+        self._write_queue = None
+        self._read_queue = None
+        self._queues_initialized = False
+        self._queues_registered = False
 
     def port_in_use(self, host, port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -54,7 +56,7 @@ class PacketManager:
 
         # register the queue in the parent process
         self.register_control_queue()
-        self._queue_initialized = True
+        self._queues_initialized = True
 
     def create_control_queue_process(self):
         """
@@ -62,10 +64,12 @@ class PacketManager:
         """
         
         # creates a multiprocessing queue object
-        shared_queue = Queue()
+        write_queue = Queue()
+        read_queue = Queue()
 
         # register a function in the BaseManager that returns the shared queue
-        ControlPacketManager.register('get_queue', callable=lambda: shared_queue)
+        ControlPacketManager.register('get_write_queue', callable=lambda: write_queue)
+        ControlPacketManager.register('get_read_queue', callable=lambda: read_queue)
 
         # create the ControlPacketManager on the localhost port 500000 and set an authentication key
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
@@ -81,23 +85,29 @@ class PacketManager:
         """
         Registers the initialized Queue for an acquisition device.
         """
-        ControlPacketManager.register('get_queue')
+        ControlPacketManager.register('get_write_queue')
+        ControlPacketManager.register('get_read_queue')
         
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
         
         manager.connect()
 
-        queue = manager.get_queue()
+        write_queue = manager.get_write_queue()
+        read_queue = manager.get_read_queue()
 
-        self._queue = queue
-        self._queue_registered = True
+        self._write_queue = write_queue
+        self._read_queue = read_queue
+        self._queues_registered = True
 
-    def obtain_queue(self):
-        return self._queue
+    def obtain_write_queue(self):
+        return self._write_queue
+ 
+    def obtain_read_queue(self):
+        return self._read_queue
+ 
+    def queues_initialized(self):
+        return self._queues_initialized
 
-    def queue_initialized(self):
-        return self._queue_initialized
-
-    def queue_registered(self):
-        return self._queue_registered
-    
+    def queues_registered(self):
+        return self._queues_registered
+        
