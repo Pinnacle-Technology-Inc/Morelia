@@ -39,11 +39,12 @@ class PacketManager:
         """
         Initializes a new process to run the Queue server/socket.
         """
-        if self.port_in_use('localhost', 50000):
-            raise RuntimeError("Queue manager is already running on the port. Use register_control_queue instead")
+        port_num = 50000
+        while self.port_in_use('localhost', port_num):
+            port_num += 1
         
         # creates a new process
-        worker = mp.Process(target=self.create_control_queue_process)
+        worker = mp.Process(target=self.create_control_queue_process, args=(port_num,))
 
         # destroy the process when the parent process exits
         worker.daemon = True
@@ -58,7 +59,7 @@ class PacketManager:
         self.register_control_queue()
         self._queues_initialized = True
 
-    def create_control_queue_process(self):
+    def create_control_queue_process(self, port_num):
         """
         Creates a new queue and starts the server to run until the parent process dies. 
         """
@@ -71,9 +72,8 @@ class PacketManager:
         ControlPacketManager.register('get_write_queue', callable=lambda: write_queue)
         ControlPacketManager.register('get_read_queue', callable=lambda: read_queue)
 
-        # create the ControlPacketManager on the localhost port 500000 and set an authentication key
-        manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
-
+        # create the ControlPacketManager on the localhost port 50000 and set an authentication key
+        manager = ControlPacketManager(address=('localhost', port_num), authkey=b'secret')
 
         # gets the server from the manager
         server = manager.get_server()
@@ -88,6 +88,7 @@ class PacketManager:
         ControlPacketManager.register('get_write_queue')
         ControlPacketManager.register('get_read_queue')
         
+        #this will need to be changed for a different port depending on physical device
         manager = ControlPacketManager(address=('localhost', 50000), authkey=b'secret')
         
         manager.connect()

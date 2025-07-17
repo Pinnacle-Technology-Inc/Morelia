@@ -47,19 +47,19 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 #predicted_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
                 observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
 
-                #drift_ns = now_real_time_ns - observer.last_timestamp
+                drift_ns = now_real_time_ns - observer.last_timestamp
                 #print(f"[Drift] {drift_ns / 1e6:.3f} ms")
                 #correction = drift_ns * 0.05
                 #observer.last_timestamp = int(predicted_timestamp + correction)
 
                 observer.packet_count += 1
-                #print(f"Observer packet count: {observer.packet_count}")
+                print(f"Observer packet count: {observer.packet_count}")
 
                 # if it's been more than a second...
                 if time.perf_counter() - observer.time_at_last_update >= 1:
 
-                    #if abs(drift_ns) > 1_000_000:
-                    #    observer.last_timestamp = now_real_time_ns
+                    if abs(drift_ns) > 5_000_000:
+                        observer.last_timestamp = now_real_time_ns
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)

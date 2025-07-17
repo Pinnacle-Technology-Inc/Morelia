@@ -41,7 +41,7 @@ class Pod :
         #self._port : PortIO = PortIO(port, baudrate)
 
         if not self.is_port_in_use(port):
-            print("manager initialized")
+            #print("manager initialized")
             self._port : PortIO = PortIO(port, baudrate)
             self._manager.initialize_control_queue()
         else:
@@ -408,7 +408,6 @@ class Pod :
         # POD packet 
 
         #if port exists, write to the port using PortIO
-        
         packet = self.get_pod_packet(cmd, payload)
 
         if self._port is not None:
@@ -435,13 +434,6 @@ class Pod :
         # returns packet that was written
         return ControlPacket(self._commands, packet)'''
     
-    '''def check_write(self):
-        #start = time.perf_counter()
-        # existing check logic
-        self._port.check_write_queue()
-        #end = time.perf_counter()
-        #print(f"check_write took {(end - start)*1000:.2f} ms")'''
- 
     def check_write_queue(self) -> None:
         if self._manager.queues_initialized():
             try:

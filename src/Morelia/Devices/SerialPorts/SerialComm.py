@@ -43,7 +43,7 @@ class PortIO :
                 self._serial_inst = None       
             else:
 
-                print("initialize Serial object")
+                #print("initialize Serial object")
                 # initialize port 
                 self._serial_inst : Serial = Serial()
                 # open port  
