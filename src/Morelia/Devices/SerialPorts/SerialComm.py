@@ -234,43 +234,6 @@ class PortIO :
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
 
-    '''def read(self, num_bytes: int, timeout_sec: float = 0.1) -> bytes | None:
-        
-        if self.is_serial_closed():
-            return None
-
-        buf = b''
-        start = time.perf_counter()
-
-        while len(buf) < num_bytes:
-            waiting = self._serial_inst.in_waiting
-            if waiting:
-                buf += self._serial_inst.read(min(waiting, num_bytes - len(buf)))
-
-            if time.perf_counter() - start > timeout_sec:
-                raise TimeoutError(f"Timeout: wanted {num_bytes} bytes, got {len(buf)}")
-
-        return buf'''
-
-    '''def read(self, num_bytes: int, timeout_sec: float = 0.1) -> bytes | None:
-        if self.is_serial_closed():
-            return None
-
-        buf = self._serial_inst.read(1)
-        if not buf:
-            raise TimeoutError("Initial byte timeout")
-
-        start = time.perf_counter()
-
-        while len(buf) < num_bytes:
-            chunk = self._serial_inst.read(num_bytes - len(buf))
-            if not chunk:
-                if time.perf_counter() - start > timeout_sec:
-                    raise TimeoutError(f"Timeout: wanted {num_bytes} bytes, got {len(buf)}")
-            buf += chunk
-
-        return buf'''
-
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
 
@@ -305,51 +268,6 @@ class PortIO :
             if self._serial_inst.in_waiting : 
                 # read packet until end of line (eol) character 
                 return(self._serial_inst.read_until(eol) )
-    
-    '''def check_write_queue(self) -> None:
-        if self._manager.queue_initialized():
-            queue = self._manager.obtain_write_queue()
-            try:
-                while True:
-                    item = queue.get_nowait()
-                    self._serial_inst.write(item)
-            except Empty:
-                return'''
-
-    '''def write(self, message: bytes = b'') -> None : 
-        """Write a set message to the open serial port. 
-
-        Args:
-            message (bytes): byte string containing the message to write.
-        """
-        if self._serial_inst is None:
-            return
-
-        if not self.is_serial_open():
-            return
-            
-        # obtain queue from the PacketManager class
-        queue = self._manager.obtain_write_queue()
-        
-        # if the queue has not been instantiated yet, write directly to the Serial port
-        if queue is None: 
-            self._serial_inst.write(message)
-            return
-
-        # otherwise, take the first item of the queue and write it to the Serial port
-        if self._manager.queue_initialized():
-            try:
-                
-                while True:
-                    item = queue.get_nowait()
-
-                    # write message to open port 
-                    self._serial_inst.write(item)
-
-            # if the Queue is instantiated but empty, write directly to the serial port.
-
-            except Empty:
-                return'''
 
     def write(self, message: bytes) -> None : 
         """Write a set message to the open serial port. 

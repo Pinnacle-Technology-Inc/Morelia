@@ -38,13 +38,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.starting_time = time.perf_counter()
             observer.last_timestamp = time.time_ns()
             observer.packet_count = 0
-
-            #sample_rate = starting_sample_rate
-            #last_real_time = time.time_ns()
-            #last_timestamp = last_real_time
-            #count = 0
-            #start_perf = time.perf_counter()
-
+            
             def on_next(value):
 
                 now_real_time_ns = time.time_ns()
@@ -72,39 +66,6 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                     #count_total_sample(observer.sample_rate)
                     #print(observer.sample_rate)
                     observer.time_at_last_update = time.perf_counter()
-
-                #nonlocal last_timestamp, count, sample_rate, start_perf, last_real_time
-
-                ## Increment timestamp by synthetic interval
-                #delta_ns = int(1e9 / sample_rate)
-                #last_timestamp += delta_ns
-                #count += 1
-
-                ## Re-anchor every second using real time
-                #now_perf = time.perf_counter()
-                #if now_perf - start_perf >= 1.0:
-                #    real_now = time.time_ns()
-                #    drift = real_now - last_timestamp
-                #    print(f"[Drift] {drift / 1e6:.3f} ms")
-
-                ## If large drift, forcibly reset
-                #    if abs(drift) > 200_000_000:  # >200 ms
-                #        print("[!] Large drift detected — resetting synthetic timestamp.")
-                #        last_timestamp = real_now
-
-                #    # Smooth sample rate (exponential moving avg)
-                #    elapsed = now_perf - start_perf
-                #    measured_rate = count / elapsed
-                #    alpha = 0.1
-                #    sample_rate = (1 - alpha) * sample_rate + alpha * measured_rate
-
-                #    # Optional: prevent drift explosion
-                #    if abs(drift) > 1_000_000:  # >1 ms
-                #        last_timestamp = real_now
-
-                #    # Reset counters
-                #    start_perf = now_perf
-                #    count = 0
                 
                 # send packet and timestamp on its way.
                 observer.on_next((observer.last_timestamp, value))
@@ -171,12 +132,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
            do_action(count_packet),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
            _timestamp_via_adjusted_sample_rate(pod.sample_rate),
-           #do_action(drift_logger.log),
        )
-
-    #control = stream.pipe(
-    #    ops.filter(lambda i: isinstance(i, ControlPacket))
-    #)
      
     # create a function that outputs a connectable observable.
     streamer = ops.publish()
@@ -194,17 +150,6 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
             context_manager_stack.enter_context(sink)
             
             stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
-            #data.subscribe(
-            #    on_next=lambda args, s=sink: s.flush(*args),
-            #    on_error=lambda e: print(f"[!] Sink error: {e}")
-            #)
-
-            #stream.subscribe(
-            #    on_next=lambda args, s=sink: s.flush(*args),
-            #    on_error=lambda e: print(f"[!] Sink error: {e}")
-            #)
-
-        #control.subscribe(on_next=put_read_packet, on_error=lambda e: print(f"[!] Control stream error: {e}"))
         
         # start streaming data from the observable!
         stream.connect()
@@ -227,17 +172,3 @@ def get_sample():
     global total_sample
     return total_sample
 
-#class DriftLogger:
-#    def __init__(self):
-#        self.count = 0
-#        self.last_log = time.time()
-#
-#    def log(self, packet_tuple):
-#        synthetic_ts_ns, _ = packet_tuple
-#        real_ts_ns = time.time_ns()
-#        drift_ms = (real_ts_ns - synthetic_ts_ns) / 1_000_000  # convert to ms
-#
-#        self.count += 1
-#        if time.time() - self.last_log > 1:  # log every 1 second
-#            print(f"[DriftLogger] Drift: {drift_ms:.2f} ms")
-#            self.last_log = time.time()
