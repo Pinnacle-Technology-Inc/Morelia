@@ -39,21 +39,76 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.last_timestamp = time.time_ns()
             observer.packet_count = 0
 
+            #sample_rate = starting_sample_rate
+            #last_real_time = time.time_ns()
+            #last_timestamp = last_real_time
+            #count = 0
+            #start_perf = time.perf_counter()
+
             def on_next(value):
 
+                now_real_time_ns = time.time_ns()
+
                 # add on a fraction of the sample rate to last timestamp.
+                #predicted_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
                 observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
+
+                #drift_ns = now_real_time_ns - observer.last_timestamp
+                #print(f"[Drift] {drift_ns / 1e6:.3f} ms")
+                #correction = drift_ns * 0.05
+                #observer.last_timestamp = int(predicted_timestamp + correction)
+
                 observer.packet_count += 1
-                
+                #print(f"Observer packet count: {observer.packet_count}")
+
                 # if it's been more than a second...
-                if time.perf_counter() - observer.time_at_last_update > 1:
+                if time.perf_counter() - observer.time_at_last_update >= 1:
+
+                    #if abs(drift_ns) > 1_000_000:
+                    #    observer.last_timestamp = now_real_time_ns
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
+                    #count_total_sample(observer.sample_rate)
+                    #print(observer.sample_rate)
                     observer.time_at_last_update = time.perf_counter()
+
+                #nonlocal last_timestamp, count, sample_rate, start_perf, last_real_time
+
+                ## Increment timestamp by synthetic interval
+                #delta_ns = int(1e9 / sample_rate)
+                #last_timestamp += delta_ns
+                #count += 1
+
+                ## Re-anchor every second using real time
+                #now_perf = time.perf_counter()
+                #if now_perf - start_perf >= 1.0:
+                #    real_now = time.time_ns()
+                #    drift = real_now - last_timestamp
+                #    print(f"[Drift] {drift / 1e6:.3f} ms")
+
+                ## If large drift, forcibly reset
+                #    if abs(drift) > 200_000_000:  # >200 ms
+                #        print("[!] Large drift detected — resetting synthetic timestamp.")
+                #        last_timestamp = real_now
+
+                #    # Smooth sample rate (exponential moving avg)
+                #    elapsed = now_perf - start_perf
+                #    measured_rate = count / elapsed
+                #    alpha = 0.1
+                #    sample_rate = (1 - alpha) * sample_rate + alpha * measured_rate
+
+                #    # Optional: prevent drift explosion
+                #    if abs(drift) > 1_000_000:  # >1 ms
+                #        last_timestamp = real_now
+
+                #    # Reset counters
+                #    start_perf = now_perf
+                #    count = 0
                 
                 # send packet and timestamp on its way.
                 observer.on_next((observer.last_timestamp, value))
+                #observer.on_next((last_timestamp, value))
 
             return source.subscribe(on_next,
                 observer.on_error,
@@ -73,6 +128,8 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
             
                 observer.on_next(pod.read_pod_packet())
+            print(f"Total packets: {get_packets()}")
+            print(f"Total sample: {get_sample()}")
 
         # tell the observer we are finished.
         observer.on_completed()
@@ -82,7 +139,7 @@ def make_packet_putter(read_queue):
     def put_read_packet(item):
         if isinstance(item, ControlPacket):
             try:
-                read_queue.put_nowait(item)
+                read_queue.put_nowait(item._raw_packet)
             except Exception as e:
                 print(f"[!] Failed to queue control packet: {e}")
     return put_read_packet
@@ -102,27 +159,31 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
 
     # create an observable to stream from POD device.
     device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
+
+    #drift_logger = DriftLogger()
     
     # pipe the packets from ``device`` into a filter that throws out control packets (eventually we don't want to do this, but have
     # a seperate place these get put so they can still be read during streaming to enable feedback.),
     # and them timestamp packets.
     data = device.pipe(
            do_action(lambda _: pod.check_write_queue() if pod.queues_initialized() else None),
-           #do_action(put_read_packet),
+           do_action(lambda item: put_read_packet(item) if isinstance(item, ControlPacket) else None),
+           do_action(count_packet),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
-           _timestamp_via_adjusted_sample_rate(pod.sample_rate)
+           _timestamp_via_adjusted_sample_rate(pod.sample_rate),
+           #do_action(drift_logger.log),
        )
 
-    control = device.pipe(
-        ops.filter(lambda i: isinstance(i, ControlPacket))
-    )
-    
+    #control = stream.pipe(
+    #    ops.filter(lambda i: isinstance(i, ControlPacket))
+    #)
+     
     # create a function that outputs a connectable observable.
     streamer = ops.publish()
     
     # create a connectable observable from the pipeline we constructed earlier.
     stream = streamer(data)
-    
+   
     # now, subscribe each sink to the connectable observable. Since sinks implment the context manager protocol, we can use an ExitStack.
     #TODO: handle errors (via on_error, right now we just print them).
     with ExitStack() as context_manager_stack:
@@ -133,8 +194,50 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
             context_manager_stack.enter_context(sink)
             
             stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
+            #data.subscribe(
+            #    on_next=lambda args, s=sink: s.flush(*args),
+            #    on_error=lambda e: print(f"[!] Sink error: {e}")
+            #)
 
-        #control.subscribe(on_next=put_read_packet, on_error=lambda e: print(f"[!] Control stream error: {e}")
+            #stream.subscribe(
+            #    on_next=lambda args, s=sink: s.flush(*args),
+            #    on_error=lambda e: print(f"[!] Sink error: {e}")
+            #)
+
+        #control.subscribe(on_next=put_read_packet, on_error=lambda e: print(f"[!] Control stream error: {e}"))
         
         # start streaming data from the observable!
         stream.connect()
+
+num_packets = 0
+def count_packet(_):
+    global num_packets
+    num_packets += 1
+
+def get_packets():
+    global num_packets
+    return num_packets
+
+total_sample = 0
+def count_total_sample(sample):
+    global total_sample
+    total_sample += sample
+
+def get_sample():
+    global total_sample
+    return total_sample
+
+#class DriftLogger:
+#    def __init__(self):
+#        self.count = 0
+#        self.last_log = time.time()
+#
+#    def log(self, packet_tuple):
+#        synthetic_ts_ns, _ = packet_tuple
+#        real_ts_ns = time.time_ns()
+#        drift_ms = (real_ts_ns - synthetic_ts_ns) / 1_000_000  # convert to ms
+#
+#        self.count += 1
+#        if time.time() - self.last_log > 1:  # log every 1 second
+#            print(f"[DriftLogger] Drift: {drift_ms:.2f} ms")
+#            self.last_log = time.time()

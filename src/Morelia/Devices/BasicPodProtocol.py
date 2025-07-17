@@ -318,9 +318,6 @@ class Pod :
         :return: Bytes string of the POD packet. 
         """
 
-        if self._port is None:
-            raise TypeError("PortIO object does not exist!")
-
         # return False if command is not valid
         if(not self._commands.does_command_exist(cmd)) : 
             raise Exception('POD command does not exist.')
@@ -362,6 +359,11 @@ class Pod :
         #writes packet to the device
         self.write_packet(cmd, payload)
         
+        if isinstance(cmd, str):
+            expected_cmd_num = self._commands.command_number_from_name(cmd)
+        else:
+            expected_cmd_num = cmd
+        
         start = time.time()
         if self._port is not None:
 
@@ -377,11 +379,21 @@ class Pod :
         else:
             #poll at the read queue for a small amount of time, and return the packet
             while time.time() - start < timeout_sec:
-
-                packet = self._read_queue.get_nowait()
+                try:
+                    raw_packet = self._read_queue.get_nowait()
+                except Empty:
+                    continue
                 
-                if isinstance(packet, ControlPacket):
-                    return packet
+                if isinstance(raw_packet, bytes):
+                    packet = ControlPacket(self._commands, raw_packet)
+                
+                    if isinstance(packet, ControlPacket):
+                        if packet.command_number == expected_cmd_num:
+                            return packet
+                    else:
+                        print(f"Reconstructed packed is not a ControlPacket: {type(packet)}")
+                else:
+                    print(f"[!] Got invalid packet of type {type(raw_packet)} and size {len(raw_packet) if isinstance(raw_packet, bytes) else 'N/A'}")
 
         raise TimeoutError(f"Did not receive expected control response to command {cmd}")
         
@@ -394,10 +406,11 @@ class Pod :
         :return: Packet that was written to the POD device.
         """
         # POD packet 
-        packet = self.get_pod_packet(cmd, payload)
 
         #if port exists, write to the port using PortIO
         
+        packet = self.get_pod_packet(cmd, payload)
+
         if self._port is not None:
             self._port.write(packet)
         else:
@@ -434,7 +447,7 @@ class Pod :
             try:
                 while True:
                     item = self._write_queue.get_nowait()
-                    self.__serial_inst.write(item)
+                    self._port.write(item)
             except Empty:
                 return
 
