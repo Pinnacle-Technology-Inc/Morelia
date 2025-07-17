@@ -39,7 +39,7 @@ class Pod :
         self._manager = PacketManager()
         # initialize serial port 
         #self._port : PortIO = PortIO(port, baudrate)
-
+        
         if not self.is_port_in_use(port):
             #print("manager initialized")
             self._port : PortIO = PortIO(port, baudrate)
@@ -69,6 +69,12 @@ class Pod :
     def is_port_in_use(self, port: str) -> bool:
         result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result.returncode == 0
+
+    def close_port(self):
+        if self._port is None:
+            return
+        else:
+            self._port.close_serial_port()
 
     def obtain_write_queue(self):
         return self._manager.obtain_write_queue()
@@ -354,6 +360,7 @@ class Pod :
         #flushes leftover data in case of interrupt
         
         if self._port is not None:
+            print("reached flush")
             self.flush_port()
 
         #writes packet to the device
@@ -389,6 +396,7 @@ class Pod :
                 
                     if isinstance(packet, ControlPacket):
                         if packet.command_number == expected_cmd_num:
+                            
                             return packet
                     else:
                         print(f"Reconstructed packed is not a ControlPacket: {type(packet)}")
