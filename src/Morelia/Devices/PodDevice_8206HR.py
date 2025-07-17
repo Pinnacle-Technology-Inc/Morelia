@@ -4,6 +4,7 @@ from Morelia.packet.data import DataPacket8206HR
 from Morelia.packet import ControlPacket
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
+import time
 
 from functools import partial
 
@@ -37,8 +38,6 @@ class Pod8206HR(AquisitionDevice) :
 
         # remove unimplemented commands 
         self._commands.remove_command(5)  # STATUS
-        self._commands.remove_command(9)  # ID
-        self._commands.remove_command(10) # SAMPLE RATE
         self._commands.remove_command(11) # BINARY
 
         # add device specific commands

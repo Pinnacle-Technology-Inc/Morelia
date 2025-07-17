@@ -386,3 +386,19 @@ class CommandSet :
                     
             case _ :
                 raise Exception('[!] Payload is of incorrect type. It must be an int, bytes, or tuple of int/bytes.')
+
+    def get_command_signature(self, cmd: int) -> tuple | None:
+        """
+        Returns the (arguments, returns) tuple for the given command number.
+
+        :param cmd_num: The command number.
+        :type cmd_num: int
+        :returns: A tuple of (arg_types, return_types) if the command exists, else None.
+        """
+        command_info = self.get_commands().get(cmd)
+        if command_info:
+            arg_types = command_info[1]  # argument type tuple
+            return_types = command_info[2]  # return type tuple
+            return arg_types, return_types
+        return None
+

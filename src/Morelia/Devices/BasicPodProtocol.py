@@ -5,6 +5,9 @@ from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket
 from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
+import os
+import toml
+import time
 
 from functools import partial
 
@@ -75,6 +78,7 @@ class Pod :
         :return: Name of the port.
         """
         return FindPorts.choose_port(forbidden)
+
 
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
@@ -203,7 +207,7 @@ class Pod :
 
         :return: True of the buffers are flushed, False otherwise.
         """
-        return(self._port.Flush())
+        return(self._port.flush())
     
     
     def set_baudrate_of_device(self, baudrate: int) -> bool : 
@@ -225,7 +229,7 @@ class Pod :
                 ASCII bytes, number of return bytes, binary flag ])
         """
         # Get commands from this instance's command dict object 
-        return(self._commands.GetCommands())
+        return(self._commands.get_commands())
     
     def test_connection(self, ping_cmd:str|int='PING') -> bool :
         """Tests if a POD device can be read from or written. Sends a PING command. 
@@ -282,19 +286,45 @@ class Pod :
         return(packet)
     
     def write_read(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
-        """Writes a command with optional payload to POD device, then reads (once) the device response.
+            """Writes a command with optional payload to POD device, then reads (once) the device response.
 
-        :param cmd: Command number. 
-        :param payload: None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.
-        :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+            :param cmd: Command number. 
+            :param payload: None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.
+            :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
 
-        :return: POD packet beginning with STX and ending with ETX. This may \
-                be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
-        """
-        self.write_packet(cmd, payload)
-        r = self.read_pod_packet(validate_checksum, timeout_sec)
-        return(r)
+            :return: POD packet beginning with STX and ending with ETX. This may \
+                    be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
+            """
+            #flushes leftover data in case of interrupt
 
+            # if self._port is not None:
+                # self.flush_port()
+
+            #writes packet to the device
+            # Convert name to number if needed
+            expected_cmd_num = (
+                self._commands.command_number_from_name(cmd) if isinstance(cmd, str) else cmd
+            )
+            
+            self.write_packet(cmd, payload)
+
+            start = time.time()
+            if self._port is not None:
+
+                #loops until it finds a control packet, and returns the found control packet
+                while time.time() - start < timeout_sec:
+                    packet = self.read_pod_packet(validate_checksum, timeout_sec)
+
+                    if isinstance(packet, ControlPacket):
+                        if packet.command_number == 0:
+                            # is an ACK packet, ignore and continue waiting
+                            continue
+                        if packet.command_number == expected_cmd_num:
+                            return packet
+                        else: # silently filter for unexpected cmds
+                            continue
+
+                    continue
 
     def write_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
         """Builds a POD packet and writes it to the POD device. 
@@ -306,6 +336,7 @@ class Pod :
         """
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
+
         # write packet to serial port 
         self._port.write(packet)
         # returns packet that was written
@@ -475,3 +506,170 @@ class Pod :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket(packet)
+
+
+    def set_config(self, folder_path: str):
+        """Consumes an experiment configuration folder and identifies files based on the 'title' in the .toml files. Uses "Experiment Configuration" files to map devices to "Device Configuration" files based on device ID and device virtual name. 
+        :param folder_path: The folder path of the experiment configuration folder.  
+
+        :return: 
+        """
+        experiment_config = None
+        for fname in os.listdir(folder_path):
+            if fname.endswith(".toml"):
+                full_path = os.path.join(folder_path, fname)
+                data = toml.load(full_path)
+                if "experiment" in data.get("title", "").lower():
+
+                    experiment_config = data
+                    break
+        if experiment_config is None:
+            raise FileNotFoundError("No experiment config found.")
+
+        matched_device = None
+
+        try:
+            device_id_packet = self.write_read("ID")
+            device_id = str(device_id_packet.payload[0])
+        except Exception as e:
+            raise ValueError("Failed to get device ID: {e}")
+
+        for device in experiment_config.get("devices", []):
+            config_device_id = device.get("device_id")
+            config_device_name = device.get("device_name")
+            
+            # compare both ID and name to find match
+            if str(config_device_id) == str(device_id) and config_device_name == self._device_name:
+                matched_device = device
+                break
+
+        if not matched_device:
+            raise ValueError("No matching device found in experiment config.")
+
+        config_filename = matched_device.get("config_file")
+        if not config_filename:
+            raise ValueError("Device config file name not specified.")
+        
+        config_path = os.path.join(folder_path, config_filename)
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file '{config_filename}' not found.")
+
+        config_data = toml.load(config_path)
+
+        self.apply_config(config_data)
+
+
+    def apply_config(self, config: dict):
+        """
+        Recursively applies device configuration by looking up commands, sending values,
+        and verifying responses. Skips keys like 'title', 'filename', and nested dicts.
+        
+        :param config: Device configuration dictionary.
+        :type config: dict
+        :returns: None
+        """
+        # lines to skip in the .toml file
+        skip_keys = {"title", "filename"}
+        self._apply_config_recursive(config, skip_keys)
+
+    def _apply_config_recursive(self, config: dict, skip_keys: set):
+        for prop_name, prop_value in config.items():
+            if prop_name in skip_keys:
+                continue
+            
+            if isinstance(prop_value, dict):
+                self._apply_config_recursive(prop_value, skip_keys)
+                continue
+            
+            # SET and GET commands for each property name
+            set_prop = f"SET " + prop_name
+            print(f"set_prop is {set_prop}")
+
+            # set command number to SET (PROPERTY)
+            cmd_num = self._commands.command_number_from_name(set_prop)
+            if cmd_num is None:
+                print(f"[WARN] Unknown command: {set_prop}")
+                continue
+            
+            # decide what arguments to pass to write_packet
+            arg_types, return_types = self._commands.get_command_signature(cmd_num)
+            print(f"[DEBUG] arg_types for {set_prop} is {arg_types}")
+            print(f"[DEBUG] return_types for {set_prop} is {return_types}")
+
+            print(f"[DEBUG] prop_value before is: {prop_value}")
+            # convert single int/str/float to tuple if needed
+            if isinstance(prop_value, (int, float, str)) and len(arg_types) == 1:
+                prop_value = (prop_value,)
+            elif isinstance(prop_value, (bytes, bytearray)) and len(arg_types) == 1:
+                prop_value = (prop_value,)
+            elif isinstance(prop_value, list):
+                prop_value = tuple(prop_value)
+            elif not isinstance(prop_value, tuple):
+                raise TypeError(f"Command '{name}' expects arguments {arg_types}, but got invalid type: {type(prop_value)}: {original_value}")
+           
+            
+            print(f"[DEBUG] prop_value after is: {prop_value}")
+            
+            # checks the length of the prop_value
+            if len(prop_value) != len(arg_types):
+                raise ValueError(f"Command '{name}' expects {len(arg_types)} arguments, but got {len(prop_value)}: {original_value}")
+            
+            # validate command number and name
+            try:
+                self._commands.validate_command(cmd_num, prop_value)
+            except Exception as e:
+                print(f"[ERROR] Validation failed for {set_prop} ({prop_value}): {e}")
+                continue
+
+            # use write_packet to send the command to the pod device
+            self.write_packet(cmd_num, prop_value)
+            
+            # set command number to GET (PROPERTY)
+            cmd_num = (cmd_num-1)
+            print(f"get cmd_num is {cmd_num}")
+            # GET (PROPERTY) name for messages
+            get_prop_info = self._commands.get_commands().get(cmd_num)
+            if get_prop_info:
+                get_prop = get_prop_info[0]
+                print(f"get_prop is {get_prop}")
+            else: 
+                print(f"No information for GET command for {prop_name}")
+
+
+            # decide what arguments to pass to write_read
+            arg_types, return_types = self._commands.get_command_signature(cmd_num)
+            print(f"[DEBUG] write_read cmd_num is {get_prop}")
+            print(f"[DEBUG] arg_types for {get_prop} is {arg_types}")
+            print(f"[DEBUG] return_types is {return_types}")
+            print(f"[DEBUG] return_type[0] is {return_types[0]}")
+
+            # only send write_read if the command has a non-empty return type
+            if return_types[0] != 0:                
+                print("[DEBUG] inside write_read validation")
+                print(f"[DEBUG] prop_value[0] is {prop_value[0]}")
+                response_packet = self.write_read(cmd_num, prop_value[0])
+                returned_payload = response_packet.payload
+                print(f"returned_payload is {returned_payload}")
+                print(f"returned_payload[0] is {returned_payload[0]}")
+                print(f"[DEBUG] arg_types length for {get_prop} is {len(arg_types)}")
+               
+                if arg_types[0] == 0:
+                    if isinstance(prop_value, tuple):
+                        match = tuple(returned_payload) == prop_value
+                    else:
+                        match = returned_payload[0] == prop_value
+                else: 
+                    if isinstance(prop_value, tuple):
+                        print(f"[DEBUG] inside tuple instance")
+                        print(f"[DEBUG] prop_value is {prop_value}")
+                        match = (prop_value[0], returned_payload[0]) == prop_value
+                    else:
+                        print(f"[DEBUG] inside else")
+                        match = returned_payload[0] == prop_value[1]
+                
+
+                if not match:
+                    raise ValueError(f"Mismatch for {get_prop}: expected {prop_value}, got {returned_payload}")
+
+                else:
+                    print(f"{prop_name}: Write complete, no return value to verify")

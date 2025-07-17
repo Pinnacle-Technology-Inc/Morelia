@@ -651,6 +651,8 @@ def submit_exp():
 
         inferred_type = device_types[i].strip() if i < len(device_types) else ""
 
+        device_id = device_ids[i].strip() if i < len(device_ids) else ""
+
         if file_obj and file_obj.filename.strip():
             # Save uploaded config file
             saved_filename, saved_path = save_toml_file_to_folder(file_obj, folder_name)
