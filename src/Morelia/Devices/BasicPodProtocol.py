@@ -36,7 +36,8 @@ class Pod :
         the serial port communication (_port) and for the command handler (_commands).
         """
         
-        self._manager = PacketManager()
+        name = PortIO.build_port_name(port)
+        self._manager = PacketManager(name)
         # initialize serial port 
         #self._port : PortIO = PortIO(port, baudrate)
         

@@ -60,8 +60,8 @@ class PortIO :
         result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result.returncode == 0
 
-        
-    def __build_port_name(self, port: str|int) -> str :
+    @staticmethod 
+    def build_port_name(port: str|int) -> str :
         """Converts the port parameter into the "COM"+<number> format for Windows or \
         "/dev/tty..."+<number> for Linux.
 
@@ -141,7 +141,7 @@ class PortIO :
         if(self.is_serial_open()) : 
             self.close_serial_port()
         # get name 
-        name = self.__build_port_name(port)
+        name = PortIO.build_port_name(port)
         # if the 'Name' is not None
         if(name) : 
             # initialize and open serial port 
