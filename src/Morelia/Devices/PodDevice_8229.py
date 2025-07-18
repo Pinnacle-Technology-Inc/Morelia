@@ -68,6 +68,79 @@ class Pod8229(Pod) :
         self._commands.add_command(202, 'LCD SET DAY SCHEDULE',  (NO_VALUE,),             (UINT8,UINT8,UINT8,UINT8),          False, 'Indicates the LCD has changed the day schedule.  Byte 3 is weekday, Byte 2 is hours 0-7, Byte 3 is hours 8-15, and byte is hours 16-23.  Each bit represents the motor state in that hour, 1 for on and 0 for off.  Speed is whatever the current motor speed is.')
         self._commands.add_command(204, 'LCD SET MODE',          (NO_VALUE,),             (UINT16,),                 False, 'Indicates the mode has been changed by the display.  0 = Manual, 1 = PC Control, 2 = Internal Schedule.')
 
+        @property
+        def motor_direction(self) -> int:
+            direction_value = self.write_read("GET MOTOR DIRECTION")
+            return direction_value.payload[0]
+         
+
+        @motor_direction.setter
+        def motor_direction(self, direction: int) -> int:
+            self._motor_direction = self.write_packet("SET MOTOR DIRECTION", (direction, ))
+
+        @property
+        def mode(self) -> int: 
+            current_mode = self.write_read("GET MODE")
+            return current_mode.payload
+
+        @mode.setter 
+        def mode(self, new_mode: int) -> int:
+            self._mode = self.write_packet("SET MODE", (new_mode, ))
+            #RETURN THE RESPONSE
+        
+        @property
+        def motor_speed(self) -> int:
+            current_motor_speed = self.write_read("GET MOTOR SPEED")
+            return current_motor_speed[0]
+
+        @motor_speed.setter
+        def motor_speed(self, speed: int) -> int:
+            self._motor_speed = self.write_packet("SET MOTOR SPEED", (speed,))
+            #return response
+            
+        @property
+        def set_time(self, seconds: int, minutes: int, hours: int, day: int, month: int, year: int, weekday: int): # -> output format..
+            self._set_time = self.write_packet("SET TIME", (seconds, minutes, hours, day, month, year, weekday))
+        #return response
+        
+        """
+        @property
+        #need to edit...
+        def day_schedule(self, day)
+        
+        @day_schedule.setter
+        """
+
+        @property
+        def motor_state(self) -> int:
+            current_state = self.write_read("GET MOTOR STATE")
+            return current_state[0]
+
+        @motor_state.setter
+        def motor_state(self, new_state: int) -> int: 
+            self._motor_state = self.write_packet("SET MOTOR STATE", (new_state,))
+            # return response
+
+        @property
+        def lcd_reset(self, lcd_value: int) -> None:
+            self._lcd_reset = self.write_packet("LCD RESET", (lcd_value,))
+
+        @property
+        def set_id(self, new_id: int) -> None:
+            self._set_id = self.write_packet("SET ID", (new_id, ))
+
+        @property
+        def random_reverse(self) -> int: 
+            random_reverse_state = self.write_read("GET RANDOM REVERSE")
+            return random_reverse_state[0]
+
+        @random_reverse.setter
+        def random_reverse(self, random_value: int) -> None: 
+            self._random_reverse = self.write_packet("SET RANDOM REVERSE", (random_value, ))
+            
+
+
+        
         # Function used to decode payload of recieved control packets.
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             match cmd_number:

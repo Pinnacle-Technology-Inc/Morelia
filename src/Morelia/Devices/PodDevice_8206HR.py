@@ -48,7 +48,7 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(106, 'GET TTL PORT',         (0,),       (UINT8,),     False,   'Gets the value of the entire TTL port as a byte. Does not modify pin direction.')
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
         self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (BINARY_4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
-
+        
         # preamplifier gain (should be 10x or 100x)
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
@@ -64,6 +64,79 @@ class Pod8206HR(AquisitionDevice) :
         # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, decode_packet)
 
+
+    @property
+    def lowpass(self) -> dict[int, int]:
+        """Return a dict mapping each channel to its current lowpass filter value."""
+        lowpass_values = {}
+        for channel in range(3):
+            packet = self.write_read("GET LOWPASS", (channel,))
+            value = packet.payload[0] if isinstance(packet, ControlPacket) else packet[0]
+            # Get the numeric value in Hz
+            lowpass_values[channel] = value
+        return lowpass_values
+
+    @lowpass.setter 
+    def lowpass(self, channel_value_list: list[str] | list[tuple[int, int]]) -> None:
+        """
+        Accepts a list of strings like ["0:500", "1:200", ...] or a list of tuples [(0,500),         (1,200), ...] and sends SET LOWPASS commands for each.
+        """
+        if not isinstance(channel_value_list, list):
+            raise ValueError("Expected a list of channel-value pairs for lowpass")
+
+        for item in channel_value_list:
+            if isinstance(item, str):
+                channel_str, value_str = item.split(":")
+                channel = int(channel_str.strip())
+                value = int(value_str.strip())
+            elif isinstance(item, (tuple, list)) and len(item) == 2:
+                channel, value = item
+            else:
+                raise ValueError(f"Invalid lowpass item: {item}")
+            # Send command for each channel-value pair
+            self.write_packet("SET LOWPASS", (channel, value))
+
+    @property
+    def ttl(self) -> dict[int, int]:
+        """Return a dic mapping of each pin to its current value"""
+        ttl_values = {}
+        for pin in range(4):
+            packet = self.write_read("GET TTL IN", (pin, ))
+            value = packet.payload[0] if isinstance(packet, ControlPacket) else packet[0]
+            # Get the current value (0-1)
+            ttl_values[pin] = value
+        return ttl_values
+
+    @ttl.setter 
+    def ttl(self, pin_value_list: list[str] | list[tuple[int, int]]) -> None:
+        """
+        Accepts a list of strings or a list of tuples and sends SET TTL OUT command for each.
+        """
+        if not isinstance(pin_value_list, list):
+            raise ValueError("Expected a list of channel-value pairs for lowpass")
+
+        for item in pin_value_list:
+            if isinstance(item, str):
+                pin_str, value_str = item.split(":")
+                pin = int(pin_str.strip())
+                value = int(value_str.strip())
+            elif isinstance(item, (tuple, list)) and len(item) == 2:
+                pin, value = item
+            else:
+                raise ValueError(f"Invalid lowpass item: {item}")
+
+            # Send command for each channel-value pair
+            self.write_packet("SET TTL OUT", (pin, value))
+
+    @property
+    def ttl_port(self) -> int:
+        port = self.write_read("GET TTL PORT")
+        return port[0]
+
+    @property 
+    def filter_config(self) -> int: 
+        config = self.write_read("GET FILTER CONFIG")
+        return config[0]
 
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
@@ -99,3 +172,9 @@ class Pod8206HR(AquisitionDevice) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
+
+    def _apply_config_recursive(self, config: dict, skip_keys):
+        super()._apply_config_recursive(config, skip_keys)
+        # some overriding properties like:
+        # if "lowpass" in config:
+        #   self.lowpass = config["LOWPASS"]

@@ -573,103 +573,23 @@ class Pod :
         self._apply_config_recursive(config, skip_keys)
 
     def _apply_config_recursive(self, config: dict, skip_keys: set):
-        for prop_name, prop_value in config.items():
-            if prop_name in skip_keys:
+        if skip_keys is None:
+            skip_keys = set()
+
+        for prop, prop_value in config.items():
+            if prop in skip_keys:
                 continue
-            
+
             if isinstance(prop_value, dict):
                 self._apply_config_recursive(prop_value, skip_keys)
-                continue
-            
-            # SET and GET commands for each property name
-            set_prop = f"SET " + prop_name
-            print(f"set_prop is {set_prop}")
-
-            # set command number to SET (PROPERTY)
-            cmd_num = self._commands.command_number_from_name(set_prop)
-            if cmd_num is None:
-                print(f"[WARN] Unknown command: {set_prop}")
-                continue
-            
-            # decide what arguments to pass to write_packet
-            arg_types, return_types = self._commands.get_command_signature(cmd_num)
-            print(f"[DEBUG] arg_types for {set_prop} is {arg_types}")
-            print(f"[DEBUG] return_types for {set_prop} is {return_types}")
-
-            print(f"[DEBUG] prop_value before is: {prop_value}")
-            # convert single int/str/float to tuple if needed
-            if isinstance(prop_value, (int, float, str)) and len(arg_types) == 1:
-                prop_value = (prop_value,)
-            elif isinstance(prop_value, (bytes, bytearray)) and len(arg_types) == 1:
-                prop_value = (prop_value,)
-            elif isinstance(prop_value, list):
-                prop_value = tuple(prop_value)
-            elif not isinstance(prop_value, tuple):
-                raise TypeError(f"Command '{name}' expects arguments {arg_types}, but got invalid type: {type(prop_value)}: {original_value}")
-           
-            
-            print(f"[DEBUG] prop_value after is: {prop_value}")
-            
-            # checks the length of the prop_value
-            if len(prop_value) != len(arg_types):
-                raise ValueError(f"Command '{name}' expects {len(arg_types)} arguments, but got {len(prop_value)}: {original_value}")
-            
-            # validate command number and name
-            try:
-                self._commands.validate_command(cmd_num, prop_value)
-            except Exception as e:
-                print(f"[ERROR] Validation failed for {set_prop} ({prop_value}): {e}")
-                continue
-
-            # use write_packet to send the command to the pod device
-            self.write_packet(cmd_num, prop_value)
-            
-            # set command number to GET (PROPERTY)
-            cmd_num = (cmd_num-1)
-            print(f"get cmd_num is {cmd_num}")
-            # GET (PROPERTY) name for messages
-            get_prop_info = self._commands.get_commands().get(cmd_num)
-            if get_prop_info:
-                get_prop = get_prop_info[0]
-                print(f"get_prop is {get_prop}")
-            else: 
-                print(f"No information for GET command for {prop_name}")
-
-
-            # decide what arguments to pass to write_read
-            arg_types, return_types = self._commands.get_command_signature(cmd_num)
-            print(f"[DEBUG] write_read cmd_num is {get_prop}")
-            print(f"[DEBUG] arg_types for {get_prop} is {arg_types}")
-            print(f"[DEBUG] return_types is {return_types}")
-            print(f"[DEBUG] return_type[0] is {return_types[0]}")
-
-            # only send write_read if the command has a non-empty return type
-            if return_types[0] != 0:                
-                print("[DEBUG] inside write_read validation")
-                print(f"[DEBUG] prop_value[0] is {prop_value[0]}")
-                response_packet = self.write_read(cmd_num, prop_value[0])
-                returned_payload = response_packet.payload
-                print(f"returned_payload is {returned_payload}")
-                print(f"returned_payload[0] is {returned_payload[0]}")
-                print(f"[DEBUG] arg_types length for {get_prop} is {len(arg_types)}")
-               
-                if arg_types[0] == 0:
-                    if isinstance(prop_value, tuple):
-                        match = tuple(returned_payload) == prop_value
-                    else:
-                        match = returned_payload[0] == prop_value
-                else: 
-                    if isinstance(prop_value, tuple):
-                        print(f"[DEBUG] inside tuple instance")
-                        print(f"[DEBUG] prop_value is {prop_value}")
-                        match = (prop_value[0], returned_payload[0]) == prop_value
-                    else:
-                        print(f"[DEBUG] inside else")
-                        match = returned_payload[0] == prop_value[1]
-                
-
-                if not match:
-                    raise ValueError(f"Mismatch for {get_prop}: expected {prop_value}, got {returned_payload}")
-
+            else:
+                # check if the class has a setter for this property
+                class_attr = getattr(self.__class__, prop, None)
+                if isinstance(class_attr, property) and class_attr.fset is not None:
+                    try:
+                        setattr(self, prop, prop_value)
+                    except Exception as e:
+                        print(f"[ERROR] Failed to set {prop} to {prop_value}: {e}")
                 else:
-                    print(f"{prop_name}: Write complete, no return value to verify")
+                    print(f"[SKIP] No setter found for {prop}")
+
