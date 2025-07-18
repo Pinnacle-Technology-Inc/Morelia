@@ -67,9 +67,9 @@ class AcquisitionDevice(Pod):
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
-        with open("exit_log.txt", "w") as f:
-            f.write("Program exited. Stack trace at exit:\n")
-            f.writelines(traceback.format_stack())
+        #with open("exit_log.txt", "w") as f:
+        #    f.write("Program exited. Stack trace at exit:\n")
+        #    f.writelines(traceback.format_stack())
         self.write_packet('STREAM', 0)
         
         #get any packets that may have arrived between the user ending stream

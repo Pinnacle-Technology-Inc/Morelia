@@ -94,7 +94,6 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
         
         with pod:
             stream_start_time : float = time.perf_counter()
-
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
             
                 observer.on_next(pod.read_pod_packet())

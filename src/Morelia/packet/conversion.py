@@ -118,7 +118,7 @@ def int_to_ascii_bytes(value: int, num_chars: int) -> bytes :
     for i in range(num_chars-1) : 
         # concatenate next byte to end of the message 
         msg = msg + post[i+1]
-
+    
     # return a byte message of a desired size 
     return(msg)
 

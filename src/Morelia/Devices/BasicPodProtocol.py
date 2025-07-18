@@ -470,7 +470,6 @@ class Pod :
 
         b = None
         start_time = time.time()
-
         # while loop that is active for the duration of timeout
         while time.time() - start_time < timeout_sec:
             b = self._port.read(1,timeout_sec)     # read next byte  
