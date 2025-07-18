@@ -47,7 +47,7 @@ class Pod :
             self._manager.initialize_control_queue()
         else:
             self._port = None
-            self._manager.register_control_queue()
+            self._manager.register_control_queue(name)
 
         #self.flush_port()
 

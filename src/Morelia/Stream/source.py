@@ -60,9 +60,6 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
 
                 # if it's been more than a second...
                 if time.perf_counter() - observer.time_at_last_update >= 1:
-
-                    #if abs(drift_ns) > 5_000_000:
-                        #observer.last_timestamp = now_real_time_ns
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
@@ -70,6 +67,15 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                     #print(observer.sample_rate)
                     observer.time_at_last_update = time.perf_counter()
                 
+                # hard reset if the drift gets too large
+                #if abs(drift_ns) > 5_000_000: 5ms of time
+                    #observer.last_timestamp = now_real_time_ns
+               
+                #moving average for sample rate
+                #alpha = 0.05
+                #new_rate = observer.packet_count / (now - observer.starting_time)
+                #observer.sample_rate = (1 - alpha) * observer.sample_rate * new_rate
+
                 # send packet and timestamp on its way.
                 observer.on_next((observer.last_timestamp, value))
                 #observer.on_next((last_timestamp, value))
