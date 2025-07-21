@@ -45,7 +45,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 observer.packet_count += 1
                 
                 # if it's been more than a second...
-                if time.perf_counter() - observer.time_at_last_update > 1:
+                if time.perf_counter() - observer.time_at_last_update >= 1:
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
