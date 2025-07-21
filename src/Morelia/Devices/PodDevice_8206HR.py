@@ -64,70 +64,84 @@ class Pod8206HR(AquisitionDevice) :
         # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, decode_packet)
 
+    @property
+    def lowpass_ch0(self) -> int:
+        """Gets the lowpass filter for the desired channel (0 = EEG1). Returns the value in Hz."""
+        ch0_lowpass = self.write_read("GET LOWPASS", (0, ))
+        return ch0_lowpass.payload[0]
+
+    @lowpass_ch0.setter
+    def lowpass_ch0(self, value: int) -> None:
+        """Sets the lowpass filter for the desired channel (0 = EEG1) to the desired value (11 - 500) in Hz."""
+        self.write_packet("SET LOWPASS", (0, value))
 
     @property
-    def lowpass(self) -> dict[int, int]:
-        """Return a dict mapping each channel to its current lowpass filter value."""
-        lowpass_values = {}
-        for channel in range(3):
-            packet = self.write_read("GET LOWPASS", (channel,))
-            value = packet.payload[0] if isinstance(packet, ControlPacket) else packet[0]
-            # Get the numeric value in Hz
-            lowpass_values[channel] = value
-        return lowpass_values
+    def lowpass_ch1(self) -> int:
+        """Gets the lowpass filter for the desired channel (1 = EEG2). Returns the value in Hz."""
+        ch1_lowpass = self.write_read("GET LOWPASS", (1, ))
+        return ch1_lowpass.payload[0]
 
-    @lowpass.setter 
-    def lowpass(self, channel_value_list: list[str] | list[tuple[int, int]]) -> None:
-        """
-        Accepts a list of strings like ["0:500", "1:200", ...] or a list of tuples [(0,500),         (1,200), ...] and sends SET LOWPASS commands for each.
-        """
-        if not isinstance(channel_value_list, list):
-            raise ValueError("Expected a list of channel-value pairs for lowpass")
-
-        for item in channel_value_list:
-            if isinstance(item, str):
-                channel_str, value_str = item.split(":")
-                channel = int(channel_str.strip())
-                value = int(value_str.strip())
-            elif isinstance(item, (tuple, list)) and len(item) == 2:
-                channel, value = item
-            else:
-                raise ValueError(f"Invalid lowpass item: {item}")
-            # Send command for each channel-value pair
-            self.write_packet("SET LOWPASS", (channel, value))
+    @lowpass_ch1.setter
+    def lowpass_ch1(self, value: int) -> None:
+        """Sets the lowpass filter for the desired channel (1 = EEG2) to the desired value (11 - 500) in Hz."""
+        self.write_packet("SET LOWPASS", (1, value))
 
     @property
-    def ttl(self) -> dict[int, int]:
-        """Return a dic mapping of each pin to its current value"""
-        ttl_values = {}
-        for pin in range(4):
-            packet = self.write_read("GET TTL IN", (pin, ))
-            value = packet.payload[0] if isinstance(packet, ControlPacket) else packet[0]
-            # Get the current value (0-1)
-            ttl_values[pin] = value
-        return ttl_values
+    def lowpass_ch2(self) -> int:
+        """Gets the lowpass filter for the desired channel (2 = EEG3/EMG). Returns the value in Hz."""
+        ch2_lowpass = self.write_read("GET LOWPASS", (2, ))
+        return ch2_lowpass.payload[0]
 
-    @ttl.setter 
-    def ttl(self, pin_value_list: list[str] | list[tuple[int, int]]) -> None:
-        """
-        Accepts a list of strings or a list of tuples and sends SET TTL OUT command for each.
-        """
-        if not isinstance(pin_value_list, list):
-            raise ValueError("Expected a list of channel-value pairs for lowpass")
+    @lowpass_ch2.setter
+    def lowpass_ch2(self, value: int) -> None:
+        """Sets the lowpass filter for the desired channel (2 = EEG3/EMG) to the desired value (11 - 500) in Hz."""
+        self.write_packet("SET LOWPASS", (2, value))
 
-        for item in pin_value_list:
-            if isinstance(item, str):
-                pin_str, value_str = item.split(":")
-                pin = int(pin_str.strip())
-                value = int(value_str.strip())
-            elif isinstance(item, (tuple, list)) and len(item) == 2:
-                pin, value = item
-            else:
-                raise ValueError(f"Invalid lowpass item: {item}")
+    @property
+    def ttl_pin0(self) -> int:  
+        """Gets the selected TTL pin (0,1,2,3) input and returns the value (0-1)."""
+        p0_ttl = self.write_read("GET TTL IN", (0, ))
+        return p0_ttl.payload[0]
 
-            # Send command for each channel-value pair
-            self.write_packet("SET TTL OUT", (pin, value))
+    @ttl_pin0.setter
+    def ttl_pin0(self, value: int) -> None:
+        """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
+        self.write_read("SET TTL OUT", (0, value))
 
+
+    @property
+    def ttl_pin1(self) -> int:  
+        """Gets the selected TTL pin (0,1,2,3) input and returns the value (0-1)."""
+        p1_ttl = self.write_read("GET TTL IN", (1, ))
+        return p1_ttl.payload[0]
+
+    @ttl_pin1.setter
+    def ttl_pin1(self, value: int) -> None:
+        """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
+        self.write_read("SET TTL OUT", (1, value))
+
+    @property
+    def ttl_pin2(self) -> int:  
+        """Gets the selected TTL pin (0,1,2,3) input and returns the value (0-1)."""
+        p2_ttl = self.write_read("GET TTL IN", (2, ))
+        return p2_ttl.payload[0]
+
+    @ttl_pin2.setter
+    def ttl_pin2(self, value: int) -> None:
+        """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
+        self.write_read("SET TTL OUT", (2, value))
+
+    @property
+    def ttl_pin3(self) -> int:  
+        """Gets the selected TTL pin (0,1,2,3) input and returns the value (0-1)."""
+        p3_ttl = self.write_read("GET TTL IN", (3, ))
+        return p3_ttl.payload[0]
+
+    @ttl_pin3.setter
+    def ttl_pin3(self, value: int) -> None:
+        """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
+        self.write_read("SET TTL OUT", (3, value))
+    
     @property
     def ttl_port(self) -> int:
         port = self.write_read("GET TTL PORT")
