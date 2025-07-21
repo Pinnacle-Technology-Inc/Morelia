@@ -18,6 +18,13 @@ Build Instructions:
 #include <iostream>
 #include <fstream>
 #include <memory>
+#include <cstring>
+
+#ifdef _WIN32
+    #define WRAPPER_DLL_EXPORT __declspec(dllexport)
+#else
+    #define WRAPPER_DLL_EXPORT __attribute__((visibility("default")))
+#endif
 
 extern "C" {
 
@@ -91,7 +98,7 @@ struct PvfsHighTimeWrapper {
 };
 
 // Basic VFS operations
-__declspec(dllexport) PvfsFileWrapper* create_vfs(uint32_t block_size) {
+WRAPPER_DLL_EXPORT PvfsFileWrapper* create_vfs(uint32_t block_size) {
     auto wrapper = new PvfsFileWrapper();
     // Create a temporary file with the specified block size
     std::string temp_filename = "temp.vfs";
@@ -103,13 +110,13 @@ __declspec(dllexport) PvfsFileWrapper* create_vfs(uint32_t block_size) {
     return wrapper;
 }
 
-__declspec(dllexport) void delete_vfs(PvfsFileWrapper* vfs) {
+WRAPPER_DLL_EXPORT void delete_vfs(PvfsFileWrapper* vfs) {
     if (vfs) {
         delete vfs;
     }
 }
 
-__declspec(dllexport) PvfsFileWrapper* open_vfs(const char* filename) {
+WRAPPER_DLL_EXPORT PvfsFileWrapper* open_vfs(const char* filename) {
     try {
         // Check if file exists
         std::ifstream file(filename);
@@ -139,7 +146,7 @@ __declspec(dllexport) PvfsFileWrapper* open_vfs(const char* filename) {
     }
 }
 
-__declspec(dllexport) PvfsFileHandleWrapper* create_file(PvfsFileWrapper* vfs, const char* filename) {
+WRAPPER_DLL_EXPORT PvfsFileHandleWrapper* create_file(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
     int32_t result = pvfs::PVFS_add(vfs->ptr, filename, filename);
@@ -151,7 +158,7 @@ __declspec(dllexport) PvfsFileHandleWrapper* create_file(PvfsFileWrapper* vfs, c
     return handle;
 }
 
-__declspec(dllexport) PvfsFileHandleWrapper* open_file(PvfsFileWrapper* vfs, const char* filename) {
+WRAPPER_DLL_EXPORT PvfsFileHandleWrapper* open_file(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
     handle->ptr = pvfs::PVFS_fopen(vfs->ptr, filename);
@@ -162,35 +169,35 @@ __declspec(dllexport) PvfsFileHandleWrapper* open_file(PvfsFileWrapper* vfs, con
     return handle;
 }
 
-__declspec(dllexport) int32_t write_file(PvfsFileHandleWrapper* handle, const uint8_t* buffer, uint32_t size) {
+WRAPPER_DLL_EXPORT int32_t write_file(PvfsFileHandleWrapper* handle, const uint8_t* buffer, uint32_t size) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write(handle->ptr, buffer, size);
 }
 
-__declspec(dllexport) int32_t read_file(PvfsFileHandleWrapper* handle, uint8_t* buffer, uint32_t size) {
+WRAPPER_DLL_EXPORT int32_t read_file(PvfsFileHandleWrapper* handle, uint8_t* buffer, uint32_t size) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read(handle->ptr, buffer, size);
 }
 
-__declspec(dllexport) void close_file(PvfsFileHandleWrapper* handle) {
+WRAPPER_DLL_EXPORT void close_file(PvfsFileHandleWrapper* handle) {
     if (handle) {
         delete handle;
     }
 }
 
-__declspec(dllexport) int32_t pvfs_close(int32_t fd) {
+WRAPPER_DLL_EXPORT int32_t pvfs_close(int32_t fd) {
     return pvfs::PVFS_close(fd);
 }
 
 // String vector operations
-__declspec(dllexport) StringVectorWrapper* create_string_vector() {
+WRAPPER_DLL_EXPORT StringVectorWrapper* create_string_vector() {
     auto wrapper = new StringVectorWrapper();
     wrapper->strings = nullptr;
     wrapper->size = 0;
     return wrapper;
 }
 
-__declspec(dllexport) void delete_string_vector(StringVectorWrapper* vec) {
+WRAPPER_DLL_EXPORT void delete_string_vector(StringVectorWrapper* vec) {
     if (vec) {
         if (vec->strings) {
             for (size_t i = 0; i < vec->size; i++) {
@@ -202,18 +209,18 @@ __declspec(dllexport) void delete_string_vector(StringVectorWrapper* vec) {
     }
 }
 
-__declspec(dllexport) const char* get_string_at(StringVectorWrapper* vec, size_t index) {
+WRAPPER_DLL_EXPORT const char* get_string_at(StringVectorWrapper* vec, size_t index) {
     if (!vec || !vec->strings || index >= vec->size) return nullptr;
     return vec->strings[index];
 }
 
-__declspec(dllexport) size_t get_string_vector_size(StringVectorWrapper* vec) {
+WRAPPER_DLL_EXPORT size_t get_string_vector_size(StringVectorWrapper* vec) {
     if (!vec) return 0;
     return vec->size;
 }
 
 // File operations
-__declspec(dllexport) int32_t get_channel_list(PvfsFileWrapper* vfs, StringVectorWrapper* names) {
+WRAPPER_DLL_EXPORT int32_t get_channel_list(PvfsFileWrapper* vfs, StringVectorWrapper* names) {
     try {
         if (!vfs || !vfs->ptr || !names) {
             return pvfs::PVFS_ARG_NULL;
@@ -231,7 +238,7 @@ __declspec(dllexport) int32_t get_channel_list(PvfsFileWrapper* vfs, StringVecto
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = channel_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                strcpy_s(names->strings[i], str.length() + 1, str.c_str());
+                strncpy(names->strings[i], str.c_str(), str.length() + 1 );
             }
         }
         return result;
@@ -242,7 +249,7 @@ __declspec(dllexport) int32_t get_channel_list(PvfsFileWrapper* vfs, StringVecto
     }
 }
 
-__declspec(dllexport) int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapper* names) {
+WRAPPER_DLL_EXPORT int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapper* names) {
     try {
         if (!vfs || !vfs->ptr || !names) {
             return pvfs::PVFS_ARG_NULL;
@@ -260,7 +267,7 @@ __declspec(dllexport) int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWr
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = file_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                strcpy_s(names->strings[i], str.length() + 1, str.c_str());
+                std::strncpy(names->strings[i],  str.c_str(), str.length() + 1);
             }
         }
         return result;
@@ -271,13 +278,13 @@ __declspec(dllexport) int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWr
     }
 }
 
-__declspec(dllexport) int32_t extract(PvfsFileWrapper* vfs, const char* in_file, const char* out_file) {
+WRAPPER_DLL_EXPORT int32_t extract(PvfsFileWrapper* vfs, const char* in_file, const char* out_file) {
     if (!vfs || !vfs->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_extract(vfs->ptr, in_file, out_file);
 }
 
 // Index file operations
-__declspec(dllexport) int32_t read_index_file_header(PvfsFileHandleWrapper* handle, PvfsIndexHeaderWrapper* header) {
+WRAPPER_DLL_EXPORT int32_t read_index_file_header(PvfsFileHandleWrapper* handle, PvfsIndexHeaderWrapper* header) {
     if (!handle || !handle->ptr || !header) return pvfs::PVFS_ARG_NULL;
     pvfs::PvfsIndexHeader index_header;
     int32_t result = pvfs::PVFS_read_index_file_header(handle->ptr, index_header);
@@ -292,7 +299,7 @@ __declspec(dllexport) int32_t read_index_file_header(PvfsFileHandleWrapper* hand
     return result;
 }
 
-__declspec(dllexport) int32_t write_index_file_header(PvfsFileHandleWrapper* handle, PvfsIndexHeaderWrapper* header) {
+WRAPPER_DLL_EXPORT int32_t write_index_file_header(PvfsFileHandleWrapper* handle, PvfsIndexHeaderWrapper* header) {
     if (!handle || !handle->ptr || !header) return pvfs::PVFS_ARG_NULL;
     pvfs::PvfsIndexHeader index_header;
     index_header.magicNumber = header->magicNumber;
@@ -304,7 +311,7 @@ __declspec(dllexport) int32_t write_index_file_header(PvfsFileHandleWrapper* han
     return pvfs::PVFS_write_index_file_header(handle->ptr, index_header);
 }
 
-__declspec(dllexport) PvfsFileHandleWrapper* open_data_channel(PvfsFileWrapper* vfs, const char* channel_name) {
+WRAPPER_DLL_EXPORT PvfsFileHandleWrapper* open_data_channel(PvfsFileWrapper* vfs, const char* channel_name) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
     handle->ptr = std::make_shared<pvfs::PvfsFileHandle>();
@@ -312,51 +319,51 @@ __declspec(dllexport) PvfsFileHandleWrapper* open_data_channel(PvfsFileWrapper* 
 }
 
 // HighTime operations
-__declspec(dllexport) PvfsHighTimeWrapper* create_high_time(int64_t seconds, double subseconds) {
+WRAPPER_DLL_EXPORT PvfsHighTimeWrapper* create_high_time(int64_t seconds, double subseconds) {
     auto wrapper = new PvfsHighTimeWrapper();
     wrapper->time = pvfs::HighTime(seconds, subseconds);
     return wrapper;
 }
 
-__declspec(dllexport) void delete_high_time(PvfsHighTimeWrapper* time) {
+WRAPPER_DLL_EXPORT void delete_high_time(PvfsHighTimeWrapper* time) {
     if (time) {
         delete time;
     }
 }
 
-__declspec(dllexport) int64_t get_high_time_seconds(PvfsHighTimeWrapper* time) {
+WRAPPER_DLL_EXPORT int64_t get_high_time_seconds(PvfsHighTimeWrapper* time) {
     if (!time) return 0;
     return time->time.seconds;
 }
 
-__declspec(dllexport) double get_high_time_subseconds(PvfsHighTimeWrapper* time) {
+WRAPPER_DLL_EXPORT double get_high_time_subseconds(PvfsHighTimeWrapper* time) {
     if (!time) return 0.0;
     return time->time.subSeconds;
 }
 
 // Lock operations
-__declspec(dllexport) void lock_vfs(PvfsFileWrapper* vfs) {
+WRAPPER_DLL_EXPORT void lock_vfs(PvfsFileWrapper* vfs) {
     if (!vfs || !vfs->ptr) return;
     pvfs::PVFS_lock(vfs->ptr);
 }
 
-__declspec(dllexport) void unlock_vfs(PvfsFileWrapper* vfs) {
+WRAPPER_DLL_EXPORT void unlock_vfs(PvfsFileWrapper* vfs) {
     if (!vfs || !vfs->ptr) return;
     pvfs::PVFS_unlock(vfs->ptr);
 }
 
 // Add new file operations
-__declspec(dllexport) int32_t pvfs_fclose(PvfsFileHandleWrapper* handle) {
+WRAPPER_DLL_EXPORT int32_t pvfs_fclose(PvfsFileHandleWrapper* handle) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return static_cast<int32_t>(pvfs::PVFS_fclose(handle->ptr));
 }
 
-__declspec(dllexport) int32_t pvfs_flush(PvfsFileHandleWrapper* handle) {
+WRAPPER_DLL_EXPORT int32_t pvfs_flush(PvfsFileHandleWrapper* handle) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return static_cast<int32_t>(pvfs::PVFS_flush(handle->ptr));
 }
 
-__declspec(dllexport) PvfsFileHandleWrapper* pvfs_fcreate(PvfsFileWrapper* vfs, const char* filename) {
+WRAPPER_DLL_EXPORT PvfsFileHandleWrapper* pvfs_fcreate(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
     handle->ptr = pvfs::PVFS_fcreate(vfs->ptr, filename);
@@ -367,7 +374,7 @@ __declspec(dllexport) PvfsFileHandleWrapper* pvfs_fcreate(PvfsFileWrapper* vfs, 
     return handle;
 }
 
-__declspec(dllexport) PvfsFileHandleWrapper* pvfs_fopen(PvfsFileWrapper* vfs, const char* filename) {
+WRAPPER_DLL_EXPORT PvfsFileHandleWrapper* pvfs_fopen(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return nullptr;
     auto handle = new PvfsFileHandleWrapper();
     handle->ptr = pvfs::PVFS_fopen(vfs->ptr, filename);
@@ -378,197 +385,197 @@ __declspec(dllexport) PvfsFileHandleWrapper* pvfs_fopen(PvfsFileWrapper* vfs, co
     return handle;
 }
 
-__declspec(dllexport) int32_t pvfs_delete_file(PvfsFileWrapper* vfs, const char* filename) {
+WRAPPER_DLL_EXPORT int32_t pvfs_delete_file(PvfsFileWrapper* vfs, const char* filename) {
     if (!vfs || !vfs->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_delete_file(vfs->ptr, filename);
 }
 
 // Add low-level file operations
-__declspec(dllexport) int64_t pvfs_tell(PvfsFileHandleWrapper* handle) {
+WRAPPER_DLL_EXPORT int64_t pvfs_tell(PvfsFileHandleWrapper* handle) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_tell(handle->ptr);
 }
 
-__declspec(dllexport) int64_t pvfs_seek(PvfsFileHandleWrapper* handle, int64_t offset) {
+WRAPPER_DLL_EXPORT int64_t pvfs_seek(PvfsFileHandleWrapper* handle, int64_t offset) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_seek(handle->ptr, offset);
 }
 
-__declspec(dllexport) int32_t pvfs_write(PvfsFileHandleWrapper* handle, const uint8_t* buffer, uint32_t size) {
+WRAPPER_DLL_EXPORT int32_t pvfs_write(PvfsFileHandleWrapper* handle, const uint8_t* buffer, uint32_t size) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write(handle->ptr, buffer, size);
 }
 
-__declspec(dllexport) int32_t pvfs_read(PvfsFileHandleWrapper* handle, uint8_t* buffer, uint32_t size) {
+WRAPPER_DLL_EXPORT int32_t pvfs_read(PvfsFileHandleWrapper* handle, uint8_t* buffer, uint32_t size) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read(handle->ptr, buffer, size);
 }
 
 // Add type-specific write functions
-__declspec(dllexport) int64_t pvfs_write_uint8(PvfsFileHandleWrapper* handle, uint8_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_uint8(PvfsFileHandleWrapper* handle, uint8_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_uint8(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_sint8(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_sint16(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_uint16(PvfsFileHandleWrapper* handle, uint16_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_uint16(PvfsFileHandleWrapper* handle, uint16_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_uint16(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_sint32(PvfsFileHandleWrapper* handle, int32_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_sint32(PvfsFileHandleWrapper* handle, int32_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_sint32(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_uint32(PvfsFileHandleWrapper* handle, uint32_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_uint32(PvfsFileHandleWrapper* handle, uint32_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_uint32(handle->ptr->vfs->fd, value);
 }
 
-__declspec(dllexport) int64_t pvfs_write_sint64(PvfsFileHandleWrapper* handle, int64_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_write_sint64(PvfsFileHandleWrapper* handle, int64_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_write_sint64(handle->ptr->vfs->fd, value);
 }
 
 // Add type-specific read functions
-__declspec(dllexport) int64_t pvfs_read_uint8(PvfsFileHandleWrapper* handle, uint8_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_uint8(PvfsFileHandleWrapper* handle, uint8_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_uint8(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_sint8(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_sint16(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_uint16(PvfsFileHandleWrapper* handle, uint16_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_uint16(PvfsFileHandleWrapper* handle, uint16_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_uint16(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_sint32(PvfsFileHandleWrapper* handle, int32_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_sint32(PvfsFileHandleWrapper* handle, int32_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_sint32(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_uint32(PvfsFileHandleWrapper* handle, uint32_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_uint32(PvfsFileHandleWrapper* handle, uint32_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_uint32(handle->ptr->vfs->fd, *value);
 }
 
-__declspec(dllexport) int64_t pvfs_read_sint64(PvfsFileHandleWrapper* handle, int64_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_read_sint64(PvfsFileHandleWrapper* handle, int64_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read_sint64(handle->ptr->vfs->fd, *value);
 }
 
 // Add type-specific fwrite functions
-__declspec(dllexport) int64_t pvfs_fwrite_uint8(PvfsFileHandleWrapper* handle, uint8_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_uint8(PvfsFileHandleWrapper* handle, uint8_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_uint8(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_sint8(PvfsFileHandleWrapper* handle, int8_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_sint8(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_sint16(PvfsFileHandleWrapper* handle, int16_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_sint16(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_uint16(PvfsFileHandleWrapper* handle, uint16_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_uint16(PvfsFileHandleWrapper* handle, uint16_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_uint16(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_sint32(PvfsFileHandleWrapper* handle, int32_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_sint32(PvfsFileHandleWrapper* handle, int32_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_sint32(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_uint32(PvfsFileHandleWrapper* handle, uint32_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_uint32(PvfsFileHandleWrapper* handle, uint32_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_uint32(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_sint64(PvfsFileHandleWrapper* handle, int64_t value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_sint64(PvfsFileHandleWrapper* handle, int64_t value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_sint64(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_float(PvfsFileHandleWrapper* handle, float value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_float(PvfsFileHandleWrapper* handle, float value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_float(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fwrite_double(PvfsFileHandleWrapper* handle, double value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fwrite_double(PvfsFileHandleWrapper* handle, double value) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fwrite_double(handle->ptr, value);
 }
 
 // Add type-specific fread functions
-__declspec(dllexport) int64_t pvfs_fread_uint8(PvfsFileHandleWrapper* handle, uint8_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_uint8(PvfsFileHandleWrapper* handle, uint8_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_uint8(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_sint8(PvfsFileHandleWrapper* handle, int8_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_sint8(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_sint16(PvfsFileHandleWrapper* handle, int16_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_sint16(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_uint16(PvfsFileHandleWrapper* handle, uint16_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_uint16(PvfsFileHandleWrapper* handle, uint16_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_uint16(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_sint32(PvfsFileHandleWrapper* handle, int32_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_sint32(PvfsFileHandleWrapper* handle, int32_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_sint32(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_uint32(PvfsFileHandleWrapper* handle, uint32_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_uint32(PvfsFileHandleWrapper* handle, uint32_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_uint32(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_sint64(PvfsFileHandleWrapper* handle, int64_t* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_sint64(PvfsFileHandleWrapper* handle, int64_t* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_sint64(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_float(PvfsFileHandleWrapper* handle, float* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_float(PvfsFileHandleWrapper* handle, float* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_float(handle->ptr, value);
 }
 
-__declspec(dllexport) int64_t pvfs_fread_double(PvfsFileHandleWrapper* handle, double* value) {
+WRAPPER_DLL_EXPORT int64_t pvfs_fread_double(PvfsFileHandleWrapper* handle, double* value) {
     if (!handle || !handle->ptr || !value) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_fread_double(handle->ptr, value);
 }
 
-__declspec(dllexport) PvfsFileEntryWrapper get_file_info(PvfsFileHandleWrapper* handle) 
+WRAPPER_DLL_EXPORT PvfsFileEntryWrapper get_file_info(PvfsFileHandleWrapper* handle) 
 {
     PvfsFileEntryWrapper result = {0};
     if (!handle || !handle->ptr) {
@@ -582,17 +589,17 @@ __declspec(dllexport) PvfsFileEntryWrapper get_file_info(PvfsFileHandleWrapper* 
     result.size       = entry.size;
 
     // Copy the filename (up to 256 bytes in PvfsFileEntryWrapper)
-    std::memcpy(result.filename, entry.filename, sizeof(result.filename));
+    memcpy(result.filename, entry.filename, sizeof(result.filename));
     return result;
 }
 
-__declspec(dllexport) void pvfs_close_file_handle(PvfsFileHandleWrapper* handle) {
+WRAPPER_DLL_EXPORT void pvfs_close_file_handle(PvfsFileHandleWrapper* handle) {
     if (handle && handle->ptr) {
         handle->ptr.reset();  // Force shared_ptr to release
     }
 }
 
-__declspec(dllexport) void pvfs_close_vfs(PvfsFileWrapper* wrapper) {
+WRAPPER_DLL_EXPORT void pvfs_close_vfs(PvfsFileWrapper* wrapper) {
     if (wrapper && wrapper->ptr) {
         wrapper->ptr.reset();  //  release shared_ptr to PvfsFile
     }
