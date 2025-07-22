@@ -79,6 +79,8 @@ class Pod8274D(AquisitionDevice) :
         self._commands.add_command(222, 'CONNECT BY ADDRESS',       tuple([UINT8]*6),           (UINT16,),              False, 'Requires a BT address to connect to directly, returns SL_STATUS_T ')
         # self._commands.add_command(223, 'SERVICE DISCOVERY',      (0,),                    (UINT16,),              False, 'Returns SL_STATUS_T, and then will start generating characteristic responses.  Those are currently unhandled. Likely this command wont be exposed in the long run ')
 
+        
+        
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             if cmd_number == 12:
                 """

@@ -62,7 +62,187 @@ class Pod8480SC(Pod) :
         self._commands.add_command( 133,	'EVENT STIM START',	    (0,),	                            (UINT8,),                               False  , 'Indicates the start of a stimulus.  Returns UINT8 channel.')
         self._commands.add_command( 134,	'EVENT STIM STOP',	    (0,),	                            (UINT8,),                               False  ,'Indicates the end of a stimulus. Returns UINT8 channel.')
         self._commands.add_command( 135,	'EVENT LOW CURRENT',	(0,),	                            (UINT8,),                               False  , 'Indicates a low current status on one or more of the LED channels.  UINT8 bitmask indication which channesl have low current.  Bit 0 = Ch0, Bit 1 = Ch1.')
-        
+
+
+        @run_stimulus.setter
+        def run_stimulus(self, channel: int) -> None:
+            """Requires U8 channel. Runs the stimulus on the selected channel (0 or 1). Will generally be immediately followed by a 133 EVENT STIM START packet, and followed by a 134 EVENT STIM END packet after the stimulus completes."""
+            self.write_packet("RUN STIMULUS", (channel,))
+
+        @property
+        def stimulus_0(self) -> list[int]:
+            """Returns [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul] for channel 0."""
+            result = self.write_read("GET STIMULUS", (0,))
+            amplitude1, amplitude2, width1, width2, interphase, _, config_byte = result
+            config = self.decode_stimulus_config_bits(config_byte)
+            return [
+                amplitude1,
+                amplitude2,
+                width1,
+                width2,
+                interphase,
+                config["optoElec"],
+                config["monoBiphasic"],
+                config["Simul"]
+            ]
+
+        @stimulus_0.setter
+        def stimulus_0(self, values: list[int]) -> None:
+            """Sets [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul] for channel 0."""
+            if len(values) != 8:
+                raise ValueError("Expected 8 values: [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul]")
+            a1, a2, w1, w2, inter, opto, mono, sim = values
+            config_byte = self.stimulus_config_bits(opto, mono, sim)
+            self.write_packet("SET STIMULUS", (0, a1, a2, w1, w2, inter, config_byte))
+
+
+        @property
+        def stimulus_1(self) -> list[int]:
+            """Returns [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul] for channel 1."""
+            result = self.write_read("GET STIMULUS", (1,))
+            amplitude1, amplitude2, width1, width2, interphase, _, config_byte = result
+            config = self.decode_stimulus_config_bits(config_byte)
+            return [
+                amplitude1,
+                amplitude2,
+                width1,
+                width2,
+                interphase,
+                config["optoElec"],
+                config["monoBiphasic"],
+                config["Simul"]
+            ]
+
+        @stimulus_1.setter
+        def stimulus_1(self, values: list[int]) -> None:
+            """Sets [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul] for channel 1."""
+            if len(values) != 8:
+                raise ValueError("Expected 8 values: [amplitude1, amplitude2, width1, width2, interphase, optoElec, monoBiphasic, Simul]")
+            a1, a2, w1, w2, inter, opto, mono, sim = values
+            config_byte = self.stimulus_config_bits(opto, mono, sim)
+            self.write_packet("SET STIMULUS", (1, a1, a2, w1, w2, inter, config_byte))
+
+        @property
+        def ttl_setup_0(self) -> list[int]:
+            """For Channel 0. Returns U8 config flags, and U8 debounce value in ms. See 8480 documentation for config flags format."""
+            config, debounce = self.write_read("GET TTL SETUP", (0,))
+            return [
+                config["RisingFalling"],
+                config["StimulusTrig"],
+                config["TTLInputSync"],
+                debounce
+            ]
+
+        @ttl_setup_0.setter
+        def ttl_setup_0(self, values: list[int]):
+            """Sets the TTL setup for channel 0. Format is Channel, Config Flags, Debounce in ms. See 8480 documentation for config flags format."""
+            if len(values) != 4:
+                raise ValueError("Expected 4 values: [trigger, stimtrig, input_sync, debounce_ms]")
+            trigger, stimtrig, input_sync, debounce = values
+            flags = self.ttl_config_bits(trigger, stimtrig, input_sync)
+            self.write_packet("SET TTL SETUP", (0, flags, debounce))
+
+
+        @property
+        def ttl_setup_1(self) -> list[int]:
+            """For Channel 1. Returns U8 config flags, and U8 debounce value in ms. See 8480 documentation for config flags format."""
+            config, debounce = self.write_read("GET TTL SETUP", (1,))
+            return [
+                config["RisingFalling"],
+                config["StimulusTrig"],
+                config["TTLInputSync"],
+                debounce
+            ]
+
+        @ttl_setup_1.setter
+        def ttl_setup_1(self, values: list[int]):
+            """Sets the TTL setup for channel 1. Format is Channel, Config Flags, Debounce in ms. See 8480 documentation for config flags format."""
+            if len(values) != 4:
+                raise ValueError("Expected 4 values: [trigger, stimtrig, input_sync, debounce_ms]")
+            trigger, stimtrig, input_sync, debounce = values
+            flags = self.ttl_config_bits(trigger, stimtrig, input_sync)
+            self.write_packet("SET TTL SETUP", (1, flags, debounce))
+
+        @property
+        def ttl_pullups(self) -> int:
+            """ Gets whether TTL pullups are enabled on the TTL lines. 0 = no pullups, non-zero = pullups enabled."""
+            pullups_state = self.write_read("GET TTL PULLUPS")
+            return pullups_state.payload[0]
+
+        @ttl_pullups.setter
+        def ttl_pullups(self, value) -> None:
+            """Sets whether pullups are enabled on the TTL lines. 0 = pullups disabled, non-zero = pullups enabled."""
+            self.write_packet("SET TTL PULLUPS", (value,))
+
+        @property
+        def led_current(self) -> tuple:
+            """Gets the setting for LED current for both channels in mA. CH0 CH1."""
+            led_current_settings = self.write_read("GET LED CURRENT")
+            return led_current_settings.payload
+
+        @led_current.setter
+        def led_current(self, led_settings: list[int]) -> None:
+            """Requires U8 channel. Sets the selected channel LED current to the given value in mA, from 0–600."""
+            if not isinstance(led_settings, list):
+                raise TypeError("Unexpected type {type(led_settings)}. Expected a list of integers")
+            channel, value = led_settings
+            self.write_packet("SET LED CURRENT", (channel, value))
+
+        @property
+        def estim_current(self) -> tuple:
+            """Gets the setting for the ESTIM current for both channels, in percentage. CH0 then CH1."""
+            estim_current_settings = self.write_read("GET ESTIM CURRENT")
+            return estim_current_settings.payload
+
+        @estim_current.setter
+        def estim_current(self, estim_settings: list[int]) -> None:
+            """Requires U8 channel. Sets the selected channel ESTIM current to the given value in percentage, from 0–100."""
+            if not instance(estim_settings, list): 
+                raise TypeError("Unexpected type {type(estim_settings)}. Expected a list of integers")
+            channel, value = estim_settings
+            self.write_packet("SET ESTIM CURRENT", (channel, value))
+
+        @property
+        def preamp_type(self) -> int: 
+            """Gets the stored preamp value."""
+            current_type = self.write_read("GET PREAMP TYPE")
+            return current_type.payload[0]
+
+        @preamp_type.setter
+        def preamp_type(self, value: int) -> None:
+            """Sets the preamp value, from 0–1023. This should match the table in Sirenia. It’s a 10-bit code that tells the 8401 what preamp is connected. Only needed when used with an 8401."""
+            self.write_packet("SET PREAMP TYPE", (value, ))
+
+        @property
+        def sync_config(self) -> list[int]:
+            """
+            Gets the sync config byte. See format in 8480 documentation.
+            Returns [sync_level, sync_idle, signal_trigger] as list of ints (0 or 1).
+            Each value corresponds to a bit in the SYNC CONFIG command.
+            """
+            config = self.write_read("GET SYNC CONFIG")
+            decoded = self._custom_sync_config(config)
+            return [
+                decoded["SyncLevel"],
+                decoded["SyncIdle"],
+                decoded["SignalTrigger"]
+            ]
+
+        @sync_config.setter
+        def sync_config(self, values: list[int]):
+            """
+            Sets the sync config byte. See format in 8480 documentation.
+            Sets [sync_level, sync_idle, signal_trigger] as bitmasked UINT16.
+            """
+            if len(values) != 3:
+                raise ValueError("Expected 3 values: [sync_level, sync_idle, signal_trigger]")
+            sync_level, sync_idle, signal_trigger = values
+            flags = self.sync_config_bits(sync_level, sync_idle, signal_trigger)
+            self.write_packet("SET SYNC CONFIG", (flags,))
+
+        """
+        Need to complete section for SET STIMULUS (timing) and GET STIMULUS (timing) at the bottom of the POD Device Command Reference DOCS.
+        """
         # function used to decode payloads of recieved control packets.
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             match cmd_number:

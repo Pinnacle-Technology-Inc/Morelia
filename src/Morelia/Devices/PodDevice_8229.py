@@ -70,72 +70,137 @@ class Pod8229(Pod) :
 
         @property
         def motor_direction(self) -> int:
+            """Returns motor direction value."""
             direction_value = self.write_read("GET MOTOR DIRECTION")
             return direction_value.payload[0]
          
 
         @motor_direction.setter
-        def motor_direction(self, direction: int) -> int:
+        def motor_direction(self, direction: int) -> set:
+            """Sets motor direction, 0 for clockwise and 1 for counterclockwise. Returns value set."""
             self._motor_direction = self.write_packet("SET MOTOR DIRECTION", (direction, ))
 
         @property
-        def mode(self) -> int: 
+        def mode(self) -> int:
+            """Gets the current system mode."""
             current_mode = self.write_read("GET MODE")
-            return current_mode.payload
+            return current_mode.payload[0]
 
         @mode.setter 
         def mode(self, new_mode: int) -> int:
+            """Sets the current system mode. 0 = Manual, 1 = PC Control, 2 = Internal Schedule. Returns the current mode."""
             self._mode = self.write_packet("SET MODE", (new_mode, ))
-            #RETURN THE RESPONSE
         
         @property
         def motor_speed(self) -> int:
+            """Gets the motor speed as a percentage, 0–100."""
             current_motor_speed = self.write_read("GET MOTOR SPEED")
             return current_motor_speed[0]
 
         @motor_speed.setter
-        def motor_speed(self, speed: int) -> int:
+        def motor_speed(self, speed: int) -> set:
+            """Sets motor speed as a percentage, 0–100. Replies with value set."""
             self._motor_speed = self.write_packet("SET MOTOR SPEED", (speed,))
-            #return response
-            
+                      
+        @set_time.setter
+        def set_time(self, time: str | list) -> None:
+            """
+            Sets the RTC time. Format is (Seconds, Minutes, Hours, Day, Month, Year [without century, so 23 for 2023], Weekday). Weekday is 0–6, with Sunday being 0. Binary Coded Decimal. Returns current time. Note that the seconds (and sometimes minutes field) can roll over during execution of this command and may not match what you sent
+            """
+            if isinstance(time, str): 
+                try:
+                    seconds, minutes, hours, day, month, year, weekday = time.strip().split(",")
+                except Exception as e:
+                    raise ValueError(f"Invalid time format: {time}. Expected 'seconds, minutes, hours, day, month, year, weekday'") from e
+            elif isinstance(time, list):
+                if len(time) != 7:
+                    raise ValueError("Time list must contain exactly 7 elements.")
+                try:
+                    seconds, minutes, hours, day, month, year, weekday = map(int, time)
+                except Exception:
+                    raise ValueError("All elements in the time list must be integers.")
+            else:                     
+                raise TypeError(
+                    f"Invalid input type: {type(time)}. Expected a string or a list of integers."
+                )
+
+            self.write_packet("SET TIME", (seconds, minutes, hours, day, month, year, weekday))
+
         @property
-        def set_time(self, seconds: int, minutes: int, hours: int, day: int, month: int, year: int, weekday: int): # -> output format..
-            self._set_time = self.write_packet("SET TIME", (seconds, minutes, hours, day, month, year, weekday))
-        #return response
-        
-        """
-        @property
-        #need to edit...
-        def day_schedule(self, day)
-        
+        def day_schedule(self) -> list: 
+            week_schedule = [] 
+            for weekday in range(7):
+                week_schedule.append(f"weekday {weekday}: {self.write_read('GET DAY SCHEDULE', (weekday, ))}")
+            return week_schedule
+                
+
         @day_schedule.setter
-        """
+        def day_schedule(self, day: str | list) -> None:
+            """Sets the schedule for the day. U8 day, followed by 24 hourly schedule values. MSB in each byte is a flag for motor on (1) or off (0), and the remaining 7 bits are the speed (0–100). Format is (weekday, hour schedule x24) (UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8,UINT8)"""
+            if isinstance(day, str): 
+                try:
+                    weekday, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23, h24 = day.strip().split(",")
+                except Exception as e:
+                    raise ValueError(f"Invalid time format: {day}. Expected 'weekday, hour1, hour2, hour3, hour4, hour5, hour6, hour7, hour8, hour9, hour10, hour11, hour12, hour13, hour14, hour15, hour16, hour17, hour18, hour19, hour20, hour21, hour22, hour23, hour24") from e
+            elif isinstance(time, list):
+                if len(time) != 25:
+                    raise ValueError("Time list must contain exactly 25 elements.")
+                try:
+                    weekday, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23, h24 = map(int, day)
+                except Exception:
+                    raise ValueError("All elements in the day list must be integers.")
+            else:                     
+                raise TypeError(
+                    f"Invalid input type: {type(day)}. Expected a string or a list of integers."
+                )
+
+            self.write_packet("SET TIME", (weekday, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17, h18, h19, h20, h21, h22, h23, h24))
+
+        @property
+        def reverse_params(self) -> tuple:
+            """Gets the base and variable times for random reverse, in seconds."""
+            current_params = self.write_read("GET REVERSE PARAMS")
+            return current_params.payload
+
+        @reverse_params.setter
+        def reverse_params(self, base_var list) -> None:
+            """Sets (Base Time, Variable Time) for random reverse in seconds. The random reverse time will be base time + a random value in the Variable Time range."""
+            if isinstance (base_var list):
+                base_time, var_time = base_var
+            else: 
+                raise TypeError(f"Invalid input type: {type(base_var)}. Expected a list of integers.")
+            self.write_packet("SET REVERSE PARAMS", (base_time, var_time))
 
         @property
         def motor_state(self) -> int:
+            """Gets the motor state."""
             current_state = self.write_read("GET MOTOR STATE")
-            return current_state[0]
+            return current_state.payload[0]
 
         @motor_state.setter
-        def motor_state(self, new_state: int) -> int: 
+        def motor_state(self, new_state: int) -> int:
+            """Sets whether the motor is on or off. 1 for On, 0 for Off. Returns the previous motor state."""
             self._motor_state = self.write_packet("SET MOTOR STATE", (new_state,))
-            # return response
 
-        @property
+        @lcd_reset.setter
         def lcd_reset(self, lcd_value: int) -> None:
+            """Resets the LCD. Probably never needs to be sent. Can cause desync between LCD state and system state."""
             self._lcd_reset = self.write_packet("LCD RESET", (lcd_value,))
 
-        @property
+        @set_id.setter
         def set_id(self, new_id: int) -> None:
+            """Sets the system ID displayed on the LCD."""
             self._set_id = self.write_packet("SET ID", (new_id, ))
 
         @property
-        def random_reverse(self) -> int: 
+        def random_reverse(self) -> int:
+            """Reads the Random Reverse function. 0 = disabled, non-zero = enabled."""
             random_reverse_state = self.write_read("GET RANDOM REVERSE")
             return random_reverse_state[0]
 
         @random_reverse.setter
-        def random_reverse(self, random_value: int) -> None: 
+        def random_reverse(self, random_value: int) -> None:
+            """Enables or disables Random Reverse function. 0 = disabled, non-zero = enabled."""
             self._random_reverse = self.write_packet("SET RANDOM REVERSE", (random_value, ))
             
 
