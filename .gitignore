@@ -14,3 +14,15 @@ extracted_database.db
 tests/pvfs/test.edf
 
 tests/pvfs/sine.db3
+
+# Terraform state/backup files
+*.tfstate
+*.tfstate.backup
+
+*.tfvars
+
+infra/.terraform
+
+infra/.terraform.lock.hcl
+
+*generated.toml

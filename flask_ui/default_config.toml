@@ -1,0 +1,29 @@
+title = "Pod8206HR Device Configuration File"
+filename = ""
+
+[channel_names]
+channel_1 = "EEG1"
+channel_2 = "EEG2"
+channel_3 = "EEG3"
+
+[information]
+sample_rate = "400"
+preamp_gain = "100"
+
+[channel_settings]
+eeg1 = "40"
+eeg2 = "40"
+emg = "100"
+notch_value = "0"
+
+[ttl_controls.ttl1]
+event_comment = "TTL 1"
+
+[ttl_controls.ttl2]
+event_comment = "TTL 2"
+
+[ttl_controls.ttl3]
+event_comment = "TTL 3"
+
+[ttl_controls.ttl4]
+event_comment = "TTL 4"

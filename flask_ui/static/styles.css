@@ -1,0 +1,154 @@
+body {
+      display: flex;
+      font-family: Arial, sans-serif;
+      margin: 0;
+    }
+
+.sidebar {
+      background-color: #2d5b3b;
+      color: white;
+      width: 250px;
+      padding: 20px;
+      margin: 10 px;
+    }
+    .logo {
+      background-color: white;
+      color: #2d5b3b;
+      border-radius: 50%;
+      margin: 25px auto 0px;
+      padding: 10px;
+      width: 100px;
+      height: 100px;
+      display: flex;
+    }
+    #morelia {
+      font-family: "Playfair Display", sans-serif; 
+      font-size: 50px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    a:link {
+  	color: white;
+	text-decoration: none;
+    }
+    
+    a:visited {
+	color: white;
+	text-decoration: none;
+    }
+
+    a:hover {
+	color: #A3B18A;
+	text-decoration: underline;
+    }
+
+    .sidebar input[type="text"],
+    .sidebar select, .sidebar button {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .main-content {
+      background-color: #f4f4f4;
+      flex-grow: 1;
+      padding: 20px;
+    }
+    .settings-bar {
+      background-color: #D9D9D9;
+      flex-grow: 1;
+      padding: 5px;
+      margin-bottom: 20px;
+      border-top: 1px solid #B7B6B6; 
+      border-bottom: 1px solid #B7B6B6;
+      color: #588157;
+    }
+
+    .device_type_
+    fieldset {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 20px;
+      background-color: white;
+    }
+    legend {
+      font-weight: bold;
+    }
+
+    #information {
+	margin: 20px 0px;
+    } 
+
+    #channel_names {
+	margin-bottom: 20px;
+    }
+
+    #channel_settings{
+	margin-bottom: 20px;
+    }
+    #ttl-controls {
+      background-color: #D9D9D9;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: repeat(9, auto);
+      gap: 10px;
+      align-items: center;
+    }
+    #ttl-controls label {
+      font-weight: bold;
+      margin-bottom: 5px;
+      text-align: center;
+    }
+    .ttl-label {
+      background-color: #588157;
+      color: white;
+      padding: 5px 10px;
+      text-align: center;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+    .ttl-header {
+      grid-column: span 9;
+      display: grid;
+      grid-template-columns: repeat(9, auto);
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .ttl-row {
+      display: contents;
+    }
+    .ttl-row input[type="text"] {
+      width: 100px;
+    }
+    .form-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+    .form-buttons button {
+      padding: 5px 15px;
+    }
+
+#device-bar {
+  position: relative;
+  background-color: #588157;
+  height: 100vh;
+  width: 20%;
+  margin: 0;
+  padding: 20px;
+  text-align: left;
+}
+
+#device-type {
+  position: absolute;
+  bottom: 2%;
+  left: 5%;
+  background-color: #D9D9D9;
+  height: 73vh;
+  width: 90%;
+}
+
+.success {
+    color: green;
+}
+.error {
+    color: red;
+}

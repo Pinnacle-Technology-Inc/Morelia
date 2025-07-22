@@ -1,4 +1,4 @@
-r"""
+"""
 This file implements the following commutative diagram:
 
     .. image:: _static/conv_comm_diagram.png

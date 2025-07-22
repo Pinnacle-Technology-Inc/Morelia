@@ -1,0 +1,151 @@
+:<!DOCTYPE html>
+<html>
+  <head>
+    <title>Device Config</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  </head>
+  <body>
+    <div id="device-bar">
+      <!--Place Morelia logo here-->
+      <h1 id="morelia">Morelia</h1>
+      <div id="device-type">
+        <div>
+        </div>
+
+        <div id="device-bar-buttons">
+
+        </div>
+      </div>
+    </div> 
+    <div id="8206-device-config">
+      <form id="device-form" action="/submit" method="post">
+ 
+      <div id="information">
+        <select name="sample_rate">
+          <option value="400" selected>400</option>
+        </select>
+        <select name="preamp_gain">
+          <option value="100" selected>100</option>
+        </select>
+      </div>
+
+      <div>
+	<h2>Channel Settings</h2>
+      </div>
+      <div id="channel_names">
+        <input type="text" name="channel_1" value="EEG1" placeholder="Enter name"/> 
+        <input type="text" name="channel_2" value="EEG2" placeholder="Enter name"/>
+        <input type="text" name="channel_3" value="EEG3" placeholder="Enter name"/>
+      </div>
+      
+      <div id="channel_settings">
+        <input type="number" name="eeg1" value="40"/>
+        <input type="number" name="eeg2" value="40"/>
+        <input type="number" name="emg" value="100"/>
+        <input type="hidden" name="notch_enabled" value="false">
+        <input type="checkbox" name="notch_enabled" value="true" id="notch_enabled"/>
+        <input type="number" name="notch_value" value="60"/>
+      </div>
+
+      <div id="ttl-controls">
+        
+        <div id="ttl1">
+          <input type="hidden" name="ttl1_output" value="false">
+          <input type="checkbox" name="ttl1_output" value="true" id="ttl1_output"/>
+
+          <input type="hidden" name="ttl1_set_state" value="false">
+          <input type="checkbox" name="ttl1_set_state" value="true" id="ttl1_set_state"/> 
+
+          <input type="hidden" name="ttl1_set_current_state" value="false">
+          <input type="checkbox" name="ttl1_set_current_state" value="true" id="ttl1_set_current_state"/> 
+
+          <input type="hidden" name="ttl1_rising_event" value="false">
+          <input type="checkbox" name="ttl1_rising_event" value="true" id="ttl1_rising_event"/>
+            
+          <input type="hidden" name="ttl1_falling_event" value="false">
+          <input type="checkbox" name="ttl1_falling_event" value="true" id="ttl1_falling_event"/>
+
+          <input type="text" name="ttl1_event_comment" value="TTL 1">
+        </div>
+
+        <div id="ttl2">
+          <input type="hidden" name="ttl2_output" value="false">
+          <input type="checkbox" name="ttl2_output" value="true" id="ttl2_output"/>
+
+          <input type="hidden" name="ttl2_set_state" value="false">
+          <input type="checkbox" name="ttl2_set_state" value="true" id="ttl2_set_state"/> 
+
+          <input type="hidden" name="ttl2_set_current_state" value="false">
+          <input type="checkbox" name="ttl2_set_current_state" value="true" id="ttl2_set_current_state"/> 
+
+          <input type="hidden" name="ttl2_rising_event" value="false">
+          <input type="checkbox" name="ttl2_rising_event" value="true" id="ttl2_rising_event"/>
+            
+          <input type="hidden" name="ttl2_falling_event" value="false">
+          <input type="checkbox" name="ttl2_falling_event" value="true" id="ttl2_falling_event"/>
+
+          <input type="text" name="ttl2_event_comment" value="TTL 2">
+        </div>
+
+        <div id="ttl3">
+          <input type="hidden" name="ttl3_output" value="false">
+          <input type="checkbox" name="ttl3_output" value="true" id="ttl3_output"/>
+
+          <input type="hidden" name="ttl3_set_state" value="false">
+          <input type="checkbox" name="ttl3_set_state" value="true" id="ttl3_set_state"/> 
+
+          <input type="hidden" name="ttl3_set_current_state" value="false">
+          <input type="checkbox" name="ttl3_set_current_state" value="true" id="ttl3_set_current_state"/> 
+
+          <input type="hidden" name="ttl3_rising_event" value="false">
+          <input type="checkbox" name="ttl3_rising_event" value="true" id="ttl3_rising_event"/>
+            
+          <input type="hidden" name="ttl3_falling_event" value="false">
+          <input type="checkbox" name="ttl3_falling_event" value="true" id="ttl3_falling_event"/>
+
+          <input type="text" name="ttl3_event_comment" value="TTL 3">
+        </div>
+
+        <div id="ttl4">
+          <input type="hidden" name="ttl4_output" value="false">
+          <input type="checkbox" name="ttl4_output" value="true" id="ttl4_output"/>
+
+          <input type="hidden" name="ttl4_set_state" value="false">
+          <input type="checkbox" name="ttl4_set_state" value="true" id="ttl4_set_state"/> 
+
+          <input type="hidden" name="ttl4_set_current_state" value="false">
+          <input type="checkbox" name="ttl4_set_current_state" value="true" id="ttl4_set_current_state"/> 
+
+          <input type="hidden" name="ttl4_rising_event" value="false">
+          <input type="checkbox" name="ttl4_rising_event" value="true" id="ttl4_rising_event"/>
+            
+          <input type="hidden" name="ttl4_falling_event" value="false">
+          <input type="checkbox" name="ttl4_falling_event" value="true" id="ttl4_falling_event"/>
+
+          <input type="text" name="ttl4_event_comment" value="TTL 4">
+        </div>
+             
+      <input type="hidden" name="debounce" value="false">
+      <input type="checkbox" name="debounce" value="true" id="debounce"/>
+       
+      <input type="hidden" name="synchronous" value="false">
+      <input type="checkbox" name="synchronous" value="true" id="synchronous"/>
+
+      </div>
+
+      <button type="submit">Submit</button>
+      </form>
+    </div>
+        <script src="{{ url_for('static', filename='script.js') }}"></script>
+  
+	{% with messages = get_flashed_messages() %}
+  	{% if messages %}
+    <div class="bg-green-200 text-green-900 p-2 mb-4 rounded">
+	{% for m in messages %}
+        <p>{{ m }}</p>
+	{% endfor %}
+    </div>
+  	{% endif %}
+	{% endwith %}
+  </body>
+</html>

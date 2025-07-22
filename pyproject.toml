@@ -16,6 +16,7 @@ dependencies = [
   "reactivex",
   "pydantic",     
   "SQLAlchemy",  
+  "Pillow>=10.0.0",
 ]
 
 [project.optional-dependencies]
@@ -28,6 +29,10 @@ docs = [
 
 tests = [
   "pytest",
+]
+
+video = [
+  "av; python_version < '3.11'"
 ]
 
 [tool.setuptools]

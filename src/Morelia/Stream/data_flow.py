@@ -14,7 +14,7 @@ import multiprocessing as mp
 from functools import partial
 
 # local imports
-from Morelia.Devices import AquisitionDevice
+from Morelia.Devices import AcquisitionDevice
 from Morelia.Stream.source import get_data
 import Morelia.Stream.sink as pod_sink
 
@@ -32,7 +32,7 @@ class DataFlow:
     :param fail_tolerance: How many times in a row to fail reading before giving up on reading a "chunk" of data ("chunk" here is approximately 1 second of samples). Defaults to 3.
     """
 
-    def __init__(self, network: list[tuple[AquisitionDevice, list[pod_sink.SinkInterface]]]) -> None:
+    def __init__(self, network: list[tuple[AcquisitionDevice, list[pod_sink.SinkInterface]]]) -> None:
         """Set class instance variables."""
 
         self._manual_stop_events: list[mp.Event] = [] #events that stop collection stored here.

@@ -14,7 +14,7 @@ from functools import partial
 from contextlib import ExitStack
 
 #local imports
-from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AquisitionDevice
+from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
 from Morelia.packet import ControlPacket
 
@@ -62,8 +62,8 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
     return(_timestamp_via_adjusted_sample_rate_operator)
 
 #TODO: type hints
-#function used by reactivex to create an observable from a packet stream from an aquisition device.
-def _stream_from_pod_device(pod: AquisitionDevice, duration: float, manual_stop_event: Event):
+#function used by reactivex to create an observable from a packet stream from an acquisition device.
+def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop_event: Event):
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
         
         with pod:
@@ -77,7 +77,7 @@ def _stream_from_pod_device(pod: AquisitionDevice, duration: float, manual_stop_
         observer.on_completed()
     return _stream_from_pod_device_observable
 
-def get_data(duration: float, manual_stop_event: Event, pod: AquisitionDevice, sinks) -> None: 
+def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, sinks) -> None: 
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved. 
 

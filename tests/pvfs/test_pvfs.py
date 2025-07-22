@@ -1,6 +1,12 @@
 import os
 import pytest
 from datetime import datetime
+
+try:
+    import av
+except ImportError:
+    pytest.skip("PyAV not installed, skipping pvfs tests.", allow_module_level =True)
+    
 from pvfs_tools.Core.pvfs_binding import PvfsFile, HighTime, StringVector, _lib
 from pvfs_tools.Database.database import ExperimentDatabase
 from pvfs_tools.Database.models import ExperimentInformation, ChannelInformation, Annotation
@@ -350,7 +356,7 @@ def test_file_handle_get_info(vfs, file_name):
 
     try:
         # Open a known file inside the VFS (adjust filename if needed)
-        handle = vfs.open_file("EEG10.index")
+        handle = vfs.open_file("CH A0.index")
         
         # Call the new get_file_info method (which must be implemented in the binding)
         info = handle.get_file_info()

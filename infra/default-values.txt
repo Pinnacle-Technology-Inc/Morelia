@@ -1,0 +1,32 @@
+// default variables for information in influx/grafana
+// if you want to change the variables, do so here. 
+
+use_influxdb = true
+use_questdb = false
+
+grafana_admin_user="admin"
+grafana_admin_password="admin" 
+
+grafana_internal=3000
+grafana_external=3000
+grafana_url="http://localhost:3000"
+
+influxdb_admin_user="admin"
+influxdb_admin_password="admin123!!" 
+
+influxdb_token="admin-token"
+influxdb_org="default-org"
+influxdb_bucket="influx_dump"
+
+// measurement="default-measurement"
+
+influxdb_internal=8086
+influxdb_external=8086
+influxdb_url="http://influxdb:8086"
+
+questdb_admin_user="admin"
+questdb_admin_password="admin"
+
+questdb_ui_port=9000
+questdb_pg_port=8812
+questdb_ilp_port=9009
