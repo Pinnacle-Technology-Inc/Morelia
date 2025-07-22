@@ -229,7 +229,7 @@ class Pod8480SC(Pod) :
             ]
 
         @sync_config.setter
-        def sync_config(self, values: list[int]):
+        def sync_config(self, values: list[int]) -> None:
             """
             Sets the sync config byte. See format in 8480 documentation.
             Sets [sync_level, sync_idle, signal_trigger] as bitmasked UINT16.

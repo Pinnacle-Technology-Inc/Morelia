@@ -270,7 +270,7 @@ class Pod :
             cmd_num : int = self._commands.command_number_from_name(cmd)
         else: 
             cmd_num : int = cmd
-        # get length of expected paylaod 
+        # get length of expected payload 
         arg_sizes = self._commands.argument_hex_char(cmd_num)
         # check if command requires a payload
         if( sum(arg_sizes) > 0 ): 
