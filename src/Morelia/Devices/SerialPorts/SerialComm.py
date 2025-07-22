@@ -1,7 +1,6 @@
 # enviornment imports 
 from    serial import Serial, serial_for_url
 import  platform
-import  time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -203,16 +202,15 @@ class PortIO :
         # do not continue of serial is not open 
         if(self.is_serial_closed()) :
             return(None)
-        # wait until port is in waiting, then read 
-        t = 0.0
-        while (t < timeout_sec) :
-            ti = (round(time.time(),9)) # initial time (sec)          
-            if self.__serial_inst.in_waiting : 
-                # read packet
-                return(self.__serial_inst.read(numBytes) )
-            t += (round(time.time(),9)) - ti
-        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
 
+        self.__serial_inst.timeout = timeout_sec
+        
+        result = self.__serial_inst.read(numBytes)
+        
+        if len(result) < numBytes:
+            raise TimeoutError(f"[!] Serial read returned only {len(result)} of {numBytes} bytes.")
+        
+        return result
 
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.

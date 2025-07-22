@@ -1,7 +1,7 @@
 # local imports 
 from Morelia.Devices import AcquisitionDevice, Pod
 from Morelia.packet.data import DataPacket8206HR
-from Morelia.packet import ControlPacket
+from Morelia.packet import ControlPacket, PodPacket
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 

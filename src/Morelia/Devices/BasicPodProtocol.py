@@ -7,6 +7,7 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -102,14 +103,29 @@ class Pod :
         ) : 
             raise InvalidChecksumError('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
-        msg_packet = msg[1:packet_bytes-3]
-        msg_csm = msg[packet_bytes-3:packet_bytes-1]
+        msg_packet = msg[1:-3]
+        msg_csm = msg[-3:-1]
         # calculate checksum from content packet  
         csm_valid = Pod.checksum(msg_packet)
         # return True if checksums match 
         if(msg_csm == csm_valid) :
             return(True)
         else:
+            # Debug statements for checksum: 
+
+            #print(f"Checksum payload: {msg_packet.hex(' ')}")
+            #print(f"Sum of payload bytes: {sum(msg_packet)}")
+            #print(f"Inverted (1 byte): {~sum(msg_packet) & 0xFF}")
+            #print(f"Expected checksum ASCII: {msg_csm} | as int: {int(msg_csm, 16)}")
+
+            #print("[!] Checksum mismatch:")
+            #print(f"    → Payload:    {msg_packet.hex(' ')}")
+            #print(f"    → Expected:   {msg_csm} (from packet)")
+            #print(f"    → Calculated: {csm_valid}")
+            #print(f"    → Full Msg:   {msg.hex(' ')}")
+            #print(f"msg_csm: {msg_csm}")
+            #print(f"csm_valid: {csm_valid}")
+
             return(False)
 
 
@@ -324,12 +340,23 @@ class Pod :
         """
         # read until STX is found
         b = None
-        while(b != PodPacket.STX) :
-            b = self._port.read(1,timeout_sec)     # read next byte  
-        # continue reading packet  
-        packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+        start_time = time.time()
+        while time.time() - start_time < timeout_sec:
+            b = self._port.read(1, timeout_sec)
+            if b != PodPacket.STX:
+                continue
+            
+            try: 
+                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+                return packet
+
+            except Exception as e:
+                print(f"Dropped packet due to: {e}")
+                continue
+        
         # return final packet
-        return(packet)
+        raise TimeoutError("Timed out waiting for pod packet")
+        #return(packet)
 
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
@@ -395,8 +422,7 @@ class Pod :
         # return complete 4 byte long command packet
         return(cmd)
 
-
-    def _read_to_etx(self, validate_checksum:bool=True) -> bytes : 
+    def _read_to_etx(self, validate_checksum:bool=True, timeout_sec: float = 5.0) -> bytes : 
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
         is found anywhere. 
 
@@ -405,23 +431,26 @@ class Pod :
         :returns: Bytes string ending with ETX.
         """
         # initialize 
-        packet = None
-        b = None
-        # stop reading after finding ETX
-        while(b != PodPacket.ETX) : 
-            # read next byte
-            b = self._port.read(1)
-            # build packet 
-            if(packet == None) : 
-                packet = b
-            else : 
-                packet += b
-            # start over if STX
-            if(b == PodPacket.STX) : 
-                self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-        # return packet
-        return(packet)
+        packet = b''
+        start_time = time.time()
+        
+        while True:
+            if time.time() - start_time > timeout_sec:
+                raise TimeoutError("Timed out waiting for ETX")
 
+            b = self._port.read(1)
+
+            if not b:
+                continue
+
+            if(b == PodPacket.STX) : 
+                raise Exception("Unexpected STX encountered mid-packet: restarting read")
+
+            packet += b
+
+            if b == PodPacket.ETX:
+                break
+        return(packet)
 
     def _read_standard(self, pre_packet: bytes, validate_checksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
