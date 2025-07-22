@@ -102,7 +102,7 @@ class Pod8401HR(AquisitionDevice) :
         self._commands.add_command( 133,	'GET MUX MODE',	    (0,),	    (UINT8,),      False,  'Gets the state of mux mode. See SET MUX MODE.')
         self._commands.add_command( 134,	'GET TTL ANALOG',   (UINT8,),	    (UINT16,),     False,  'Reads a TTL input as an analog signal. Requires a channel to read, returns a 10-bit analog value. Same caveats and restrictions as GET EXTX VALUE commands. Normally you would just enable an extra channel in Sirenia for this.')
         self._commands.add_command( 181, 'BINARY5 DATA',     (0,),	    (BINARY_5,),      True,   'Binary5 data packets, enabled by using the STREAM command with a \'1\' argument.')
-
+       
 
         # so, currently we do this weird thing where we turn tuples into
         # dictionaries for preamp and ss gains. we shouldnt do this, but do it right now as an artifact of legacy code. please remove this
@@ -137,6 +137,543 @@ class Pod8401HR(AquisitionDevice) :
     def preamp(self) -> Preamp:
         """Preamp connected to device."""
         return self._preamp
+
+    """Preamp HIGHPASS""" 
+    @property
+    def preamp_highpass_0(self) -> int: 
+        """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
+        current_highpass_0 = self.write_read("GET HIGHPASS", (0, ))
+        return current_highpass_0.payload[0]
+    
+    @preamp_highpass_0.setter
+    def preamp_highpass_0(self, value: int) -> None:
+        """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
+        self.write_packet("SET HIGHPASS", (0, value))
+
+    @property
+    def preamp_highpass_1(self) -> int: 
+        """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
+        current_highpass_1 = self.write_read("GET HIGHPASS", (1, ))
+        return current_highpass_1.payload[0]
+    
+    @preamp_highpass_1.setter
+    def preamp_highpass_1(self, value: int) -> None:
+        """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
+        self.write_packet("SET HIGHPASS", (1, value))
+
+    @property
+    def preamp_highpass_2(self) -> int: 
+        """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
+        current_highpass_2 = self.write_read("GET HIGHPASS", (2, ))
+        return current_highpass_2.payload[0]
+    
+    @preamp_highpass_2.setter
+    def preamp_highpass_2(self, value: int) -> None:
+        """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
+        self.write_packet("SET HIGHPASS", (2, value))
+
+    @property
+    def preamp_highpass_3(self) -> int: 
+        """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
+        current_highpass_3 = self.write_read("GET HIGHPASS", (3, ))
+        return current_highpass_3.payload[0]
+    
+    @preamp_highpass_3.setter
+    def preamp_highpass_3(self, value: int) -> None:
+        """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
+        self.write_packet("SET HIGHPASS", (3, value))
+
+
+    """LOWPASS""" 
+    @property
+    def lowpass_ch0(self) -> int:
+        """Gets the lowpass filter for channel 0. Requires the channel to read. Returns the value in Hz."""
+        ch0_lowpass = self.write_read("GET LOWPASS", (0, ))
+        return ch0_lowpass.payload[0]
+
+    @lowpass_ch0.setter
+    def lowpass_ch0(self, value: int) -> None:
+        """Sets the lowpass filter for channel 0 to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz."""
+        self.write_packet("SET LOWPASS", (0, value))
+
+    @property
+    def lowpass_ch1(self) -> int:
+        """Gets the lowpass filter for channel 1. Requires the channel to read. Returns the value in Hz."""
+        ch1_lowpass = self.write_read("GET LOWPASS", (1, ))
+        return ch1_lowpass.payload[0]
+
+    @lowpass_ch1.setter
+    def lowpass_ch1(self, value: int) -> None:
+        """Sets the lowpass filter for channel 1 to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz."""
+        self.write_packet("SET LOWPASS", (1, value))
+
+    @property
+    def lowpass_ch2(self) -> int:
+        """Gets the lowpass filter for channel 2. Requires the channel to read. Returns the value in Hz."""
+        ch2_lowpass = self.write_read("GET LOWPASS", (2, ))
+        return ch2_lowpass.payload[0]
+
+    @lowpass_ch2.setter
+    def lowpass_ch2(self, value: int) -> None:
+        """Sets the lowpass filter for channel 2 to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz."""
+        self.write_packet("SET LOWPASS", (2, value))
+
+    @property
+    def lowpass_ch3(self) -> int:
+        """Gets the lowpass filter for channel 3. Requires the channel to read. Returns the value in Hz."""
+        ch3_lowpass = self.write_read("GET LOWPASS", (3, ))
+        return ch3_lowpass.payload[0]
+
+    @lowpass_ch3.setter
+    def lowpass_ch3(self, value: int) -> None:
+        """Sets the lowpass filter for channel 3 to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz."""
+        self.write_packet("SET LOWPASS", (3, value))
+    
+    """DC MODE"""
+    @property
+    def dc_mode_0(self) -> int:
+        """Gets the DC mode for the channel. Requires the channel to read. Returns 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG."""
+        ch0_dc_mode = self.write_read("GET DC MODE", (0, ))
+        return ch0_dc_mode.payload[0]
+
+    @dc_mode_0.setter
+    def dc_mode_0(self, mode:int) -> None: 
+        """Sets the DC mode for the selected channel. Requires the channel and value to set. Values are the same as in GET DC MODE."""
+        self.write_packet("SET DC MODE", (0, mode))
+
+    @property
+    def dc_mode_1(self) -> int:
+        """Gets the DC mode for the channel. Requires the channel to read. Returns 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG."""
+        ch1_dc_mode = self.write_read("GET DC MODE", (1, ))
+        return ch1_dc_mode.payload[0]
+
+    @dc_mode_1.setter
+    def dc_mode_1(self, mode:int) -> None: 
+        """Sets the DC mode for the selected channel. Requires the channel and value to set. Values are the same as in GET DC MODE."""
+        self.write_packet("SET DC MODE", (1, mode))
+
+    @property
+    def dc_mode_2(self) -> int:
+        """Gets the DC mode for the channel. Requires the channel to read. Returns 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG."""
+        ch2_dc_mode = self.write_read("GET DC MODE", (2, ))
+        return ch2_dc_mode.payload[0]
+
+    @dc_mode_2.setter
+    def dc_mode_2(self, mode:int) -> None: 
+        """Sets the DC mode for the selected channel. Requires the channel and value to set. Values are the same as in GET DC MODE."""
+        self.write_packet("SET DC MODE", (2, mode))
+
+    @property
+    def dc_mode_3(self) -> int:
+        """Gets the DC mode for the channel. Requires the channel to read. Returns 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG."""
+        ch3_dc_mode = self.write_read("GET DC MODE", (3, ))
+        return ch3_dc_mode.payload[0]
+
+    @dc_mode_3.setter
+    def dc_mode_3(self, mode:int) -> None: 
+        """Sets the DC mode for the selected channel. Requires the channel and value to set. Values are the same as in GET DC MODE."""
+        self.write_packet("SET DC MODE", (3, mode))
+
+    """BIAS"""
+    @property
+    def bias_0(self) -> float:
+        """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
+        raw_dac = self.write_read("GET BIAS", (0,)).payload_as_int()
+        return self.calculate_bias_dac_get_vout(raw_dac)
+
+    @bias_0.setter
+    def bias_0(self, vout: float):
+        """Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio channels."""
+        if not (-2.048 <= vout <= 2.048):
+            raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
+        dac_val = self.calculate_bias_dac_get_dac_value(vout)
+        self.write("SET BIAS", (0, dac_val))
+
+
+    @property
+    def bias_1(self) -> float:
+        """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
+        raw_dac = self.write_read("GET BIAS", (1,)).payload_as_int()
+        return self.calculate_bias_dac_get_vout(raw_dac)
+
+    @bias_1.setter
+    def bias_1(self, vout: float):
+        """Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio channels."""
+        if not (-2.048 <= vout <= 2.048):
+            raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
+        dac_val = self.calculate_bias_dac_get_dac_value(vout)
+        self.write("SET BIAS", (1, dac_val))
+
+    @property
+    def bias_2(self) -> float:
+        """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
+        raw_dac = self.write_read("GET BIAS", (2,)).payload_as_int()
+        return self.calculate_bias_dac_get_vout(raw_dac)
+
+    @bias_2.setter
+    def bias_2(self, vout: float):
+        """Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio channels."""
+        if not (-2.048 <= vout <= 2.048):
+            raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
+        dac_val = self.calculate_bias_dac_get_dac_value(vout)
+        self.write("SET BIAS", (2, dac_val))
+
+    @property
+    def bias_3(self) -> float:
+        """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
+        raw_dac = self.write_read("GET BIAS", (3,)).payload_as_int()
+        return self.calculate_bias_dac_get_vout(raw_dac)
+
+    @bias_0.setter
+    def bias_3(self, vout: float):
+        """Sets the bias on a given channel. Requires the channel and DAC value as specified in GET BIAS. Note that for most preamps, only channel 0/A DAC values are used. This can cause issues with bias subtraction on preamps with multiple bio channels."""
+        if not (-2.048 <= vout <= 2.048):
+            raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
+        dac_val = self.calculate_bias_dac_get_dac_value(vout)
+        self.write("SET BIAS", (3, dac_val))
+   
+    """ETX"""
+    @property
+    def ext0(self) -> int: 
+        """Reads the analog value on the EXT0 pin. Returns an unsigned 12-bit value, representing a 3.3V input. Normally used to identify preamps. Note that this function takes some time and blocks, so it should not be called during data acquisition if possible."""
+        ext0_value = self.write_read("GET EXT0 VALUE")
+        return ext0_value.payload[0]
+
+    @ext0.setter
+    def ext0(self, value:int) -> None:
+        """Sets the digital value of EXT0, 0 or 1."""
+        self.write_packet("SET EXT0", (value, ))
+
+    @property
+    def ext1(self) -> int: 
+        """Reads the analog value on the EXT1 pin. Returns an unsigned 12-bit value, representing a 3.3V input. Normally used to identify if an 8480 is present. Similar caveat regarding blocking as GET EXT0 VALUE."""
+        ext1_value = self.write_read("GET EXT1 VALUE")
+        return ext1_value.payload[0]
+
+    @ext1.setter
+    def ext1(self, value:int) -> None:
+        """Sets the digital value of EXT1, 0 or 1."""
+        self.write_packet("SET EXT1", (value, ))
+
+
+    """GROUND INPUT""" 
+    @property
+    def input_ground_A(self) -> int:
+        """Reads Channel 0/A value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
+        return self.input_ground['A']
+
+    @input_ground_A.setter
+    def input_ground_A(self, state: int):
+        """Sets Channel 0/A state."""
+        self._set_input_ground_channel('A', state)
+
+
+    @property
+    def input_ground_B(self) -> int:
+        """Reads Channel 1/B value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
+        return self.input_ground['B']
+
+    @input_ground_B.setter
+    def input_ground_B(self, state: int):
+        """Sets Channel 1/B state."""
+        self._set_input_ground_channel('B', state)
+
+
+    @property
+    def input_ground_C(self) -> int:
+        """Reads Channel 2/C value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
+        return self.input_ground['C']
+
+    @input_ground_C.setter
+    def input_ground_C(self, state: int):
+        """Sets Channel 2/C state."""
+        self._set_input_ground_channel('C', state)
+
+
+    @property
+    def input_ground_D(self) -> int:
+        """Reads Channel 3/D value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
+        return self.input_ground['D']
+
+    @input_ground_    D.setter
+    def input_ground_D(self, state: int):
+        """Sets Channel 3/D state."""
+        self._set_input_ground_channel('D', state)
+
+    @property
+    def input_ground_all(self) -> dict[str, int]:
+        """Returns a dictionary of all input ground states (channels A–D)."""
+        payload = self.write_read("GET INPUT GROUND").payload
+        return self.decode_channel_bitmask(payload)
+
+
+    @input_ground_all.setter
+    def input_ground_all(self, states: int) -> None:
+        """Sets input ground state for all channels using a 4-bit bitmask. 
+        Each bit represents a channel: bit 0=A, bit 1=B, etc.
+        High nibble must be zero (i.e., only bits 0-3 are used).
+        """
+        if not (0 <= states <= 0x0F):
+            raise ValueError("Input ground bitmask must be a 4-bit integer (0–15).")
+        self.write_packet("SET INPUT GROUND", (states,))
+    
+    """TTL CONFIG"""
+    @property
+    def ttl_config(self) -> dict[str, dict[str, int]]:
+        """
+        Returns the TTL config dictionary.
+
+        Output and Input are each dicts with keys: EXT0, EXT1, TTL4, TTL3, TTL2, TTL1.
+        """
+        response = self.write_read("GET TTL CONFIG")
+        out_cfg, in_cfg = response.payload[0], response.payload[1]
+        return {
+            "output": self.decode_ttl_byte(bytes([out_cfg])),
+            "input": self.decode_ttl_byte(bytes([in_cfg]))
+        }
+
+    @ttl_config.setter
+    def ttl_config(self, config: dict[str, dict[str, int]]):
+        """
+        Sets the TTL config byte using two dicts: output and input.
+        """
+        out_bits = self.get_ttl_bitmask(**config["output"])
+        in_bits  = self.get_ttl_bitmask(**config["input"])
+        self.write_packet("SET TTL CONFIG", (out_bits, in_bits))
+
+    @property
+    def ttl_output_config(self) -> dict[str, int]:
+        """Returns only the output TTL config bitmask as a dictionary."""
+        return self.ttl_config["output"]
+
+    @ttl_output_config.setter
+    def ttl_output_config(self, out_dict: dict[str, int]):
+        """Sets only the output TTL config."""
+        current = self.ttl_config
+        current["output"] = out_dict
+        self.ttl_config = current
+
+    @property
+    def ttl_input_config(self) -> dict[str, int]:
+        """Returns only the input TTL config bitmask as a dictionary."""
+        return self.ttl_config["input"]
+
+    @ttl_input_config.setter
+    def ttl_input_config(self, in_dict: dict[str, int]):
+        """Sets only the input TTL config."""
+        current = self.ttl_config
+        current["input"] = in_dict
+        self.ttl_config = current
+ 
+
+    @ttl_outputs.setter
+    def ttl_outputs(self, pins: dict[str, int]):
+        """Sets logic level (0 = low, 1 = high) for one or more TTL output pins."""
+        self.set_ttl_outputs(pins)
+
+    """SS CONFIG"""
+    @property
+    def ss_config_0(self) -> dict[str, Union[float,int]]:
+        """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
+        raw = self.write_read("GET SS CONFIG", (0,))
+        return self.decode_ss_config_bitmask(raw)
+
+    @ss_config_0.setter
+    def ss_config_0(self, config: dict[str, Union[float,int]]):
+        """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
+        gain = config["Gain"]
+        highpass = config["High-pass"]
+        byte = self.get_ss_config_bitmask(gain, highpass)
+        self.write("SET SS CONFIG", (0, byte))
+
+    @property
+    def ss_highpass_0(self) -> float:
+        """Reads the second stage highpass filter value for a channel."""
+        return self.ss_config_0["High-pass"]
+
+    @ss_highpass_0.setter
+    def ss_highpass_0(self, hp: float):
+        """Sets the second stage highpass filter for a channel. Values are either 0 for 0.5Hz or 1 for DC/No Highpass"""
+        config = self.ss_config_0
+        config["High-pass"] = hp
+        self.ss_config_0 = config
+
+    @property
+    def ss_gain_0(self) -> int:
+        """Gets the second stage gain config"""
+        return self.ss_config_0["Gain"]
+
+    @ss_gain_0.setter
+    def ss_gain_0(self, gain: int):
+        """Sets the seconds stage gain config. Values are either 0 for 5x gain or 1 for 1x gain"""
+        config = self.ss_config_0
+        config["Gain"] = gain
+        self.ss_config_0 = config
+
+    @property
+    def ss_config_1(self) -> dict[str, Union[float,int]]:
+        """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
+        raw = self.write_read("GET SS CONFIG", (1,))
+        return self.decode_ss_config_bitmask(raw)
+
+    @ss_config_1.setter
+    def ss_config_1(self, config: dict[str, Union[float,int]]):
+        """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
+        gain = config["Gain"]
+        highpass = config["High-pass"]
+        byte = self.get_ss_config_bitmask(gain, highpass)
+        self.write("SET SS CONFIG", (1, byte))
+
+    @property
+    def ss_highpass_1(self) -> float:
+        """Reads the second stage highpass filter value for a channel."""
+        return self.ss_config_1["High-pass"]
+
+    @ss_highpass_1.setter
+    def ss_highpass_1(self, hp: float):
+        """Sets the second stage highpass filter for a channel. Values are either 0 for 0.5Hz or 1 for DC/No Highpass"""
+        config = self.ss_config_1
+        config["High-pass"] = hp
+        self.ss_config_1 = config
+
+    @property
+    def ss_gain_1(self) -> int:
+        """Gets the second stage gain config"""
+        return self.ss_config_1["Gain"]
+
+    @ss_gain_1.setter
+    def ss_gain_1(self, gain: int):
+        """Sets the seconds stage gain config. Values are either 0 for 5x gain or 1 for 1x gain"""
+        config = self.ss_config_1
+        config["Gain"] = gain
+        self.ss_config_1 = config
+
+    @property
+    def ss_config_2(self) -> dict[str, Union[float,int]]:
+        """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
+        raw = self.write_read("GET SS CONFIG", (2,))
+        return self.decode_ss_config_bitmask(raw)
+
+    @ss_config_2.setter
+    def ss_config_2(self, config: dict[str, Union[float,int]]):
+        """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
+        gain = config["Gain"]
+        highpass = config["High-pass"]
+        byte = self.get_ss_config_bitmask(gain, highpass)
+        self.write("SET SS CONFIG", (2, byte))
+
+    @property
+    def ss_highpass_2(self) -> float:
+        """Reads the second stage highpass filter value for a channel."""
+        return self.ss_config_2["High-pass"]
+
+    @ss_highpass_2.setter
+    def ss_highpass_2(self, hp: float):
+        """Sets the second stage highpass filter for a channel. Values are either 0 for 0.5Hz or 1 for DC/No Highpass"""
+        config = self.ss_config_2
+        config["High-pass"] = hp
+        self.ss_config_2 = config
+
+    @property
+    def ss_gain_2(self) -> int:
+        """Gets the second stage gain config"""
+        return self.ss_config_2["Gain"]
+
+    @ss_gain_2.setter
+    def ss_gain_2(self, gain: int):
+        """Sets the seconds stage gain config. Values are either 0 for 5x gain or 1 for 1x gain"""
+        config = self.ss_config_2
+        config["Gain"] = gain
+        self.ss_config_2 = config
+    
+    @property
+    def ss_config_3(self) -> dict[str, Union[float,int]]:
+        """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
+        raw = self.write_read("GET SS CONFIG", (3,))
+        return self.decode_ss_config_bitmask(raw)
+
+    @ss_config_3.setter
+    def ss_config_3(self, config: dict[str, Union[float,int]]):
+        """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
+        gain = config["Gain"]
+        highpass = config["High-pass"]
+        byte = self.get_ss_config_bitmask(gain, highpass)
+        self.write("SET SS CONFIG", (3, byte))
+        
+    @property
+    def ss_highpass_3(self) -> float:
+        """Reads the second stage highpass filter value for a channel."""
+        return self.ss_config_3["High-pass"]
+
+    @ss_highpass_3.setter
+    def ss_highpass_3(self, hp: float):
+        """Sets the second stage highpass filter for a channel. Values are either 0 for 0.5Hz or 1 for DC/No Highpass"""
+        config = self.ss_config_3
+        config["High-pass"] = hp
+        self.ss_config_3 = config
+
+    @property
+    def ss_gain_3(self) -> int:
+        """Gets the second stage gain config"""
+        return self.ss_config_3["Gain"]
+
+    @ss_gain_3.setter
+    def ss_gain_3(self, gain: int):
+        """Sets the seconds stage gain config. Values are either 0 for 5x gain or 1 for 1x gain"""
+        config = self.ss_config_3
+        config["Gain"] = gain
+        self.ss_config_3 = config
+
+
+    """MUX MODE"""
+    @property
+    def mux_mode(self) -> int:
+        """Gets the state of mux mode. See SET MUX MODE."""
+        current_mux_mode = self.write_read("GET MUX MODE")
+        return current_mux_mode.payload[0]
+
+    @mux_mode.setter
+    def mux_mode(self, mode: int) -> None: 
+        """Sets mux mode on or off. This causes EXT1 to toggle periodically to control 2BIO/3EEG preamps. 0 = Off, 1 = On."""
+        self.write_packet("SET MUX MODE", (mode, ))
+
+    """TTL ANALOG"""
+    @property
+    def ttl_analog_ext0(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ext0 = self.write_read("GET TTL ANALOG", (0,))
+        return current_analog_ext0.payload[0]
+
+    @property
+    def ttl_analog_ext1(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ext1 = self.write_read("GET TTL ANALOG", (1,))
+        return current_analog_ext1.payload[0]
+
+    @property
+    def ttl_analog_ttl4(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ttl4 = self.write_read("GET TTL ANALOG", (2,))
+        return current_analog_ttl4.payload[0]
+
+    @property
+    def ttl_analog_ttl3(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ttl3 = self.write_read("GET TTL ANALOG", (3,))
+        return current_analog_ttl3.payload[0]
+
+    @property
+    def ttl_analog_ttl2(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ttl2 = self.write_read("GET TTL ANALOG", (4,))
+        return current_analog_ttl2.payload[0]
+
+    @property
+    def ttl_analog_ttl1(self) -> int:
+        """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
+        current_analog_ttl1 = self.write_read("GET TTL ANALOG", (5,))
+        return current_analog_ttl1.payload[0]
+    
 
     @staticmethod
     def _fix_abcd_type(info: tuple|list|dict, this_is: str = '') -> dict : 
@@ -224,7 +761,7 @@ class Pod8401HR(AquisitionDevice) :
 
     @staticmethod
     def decode_ttl_payload(payload: bytes) -> tuple[dict[str, int]] : 
-        """Decodes a paylaod with the two TTL bytes.
+        """Decodes a payload with the two TTL bytes.
 
         :param payload: Bytes string of the POD packet payload.
 
@@ -251,6 +788,19 @@ class Pod8401HR(AquisitionDevice) :
             'TTL1' : conv.ascii_bytes_to_int_split(ttl_byte, 1, 0)
         })
     
+
+    @staticmethod
+    def set_ttl_outputs(self, pins: dict[str, int]):
+        """Sets specific TTL output states using a dictionary.
+
+        :param pins: Keys must be one or more of EXT0, EXT1, TTL1–TTL4.
+                     Values: 0 (low) or 1 (high).
+        :returns: None
+        """
+        # Create the modify-mask and state bitmask
+        modify = self.get_ttl_bitmask(**{k: 1 for k in pins})
+        state  = self.get_ttl_bitmask(**pins)
+        self.write_packet("SET TTL OUTS", (modify, state))
 
     @staticmethod
     def get_ss_config_bitmask(gain: int, highpass: float) -> int :
@@ -322,6 +872,32 @@ class Pod8401HR(AquisitionDevice) :
             'D' : conv.ascii_bytes_to_int_split(channels, 1, 0)
         })
 
+
+    @staticmethod
+    def _set_input_ground_channel(self, channel: str, state: int):
+        """Sets the input ground state for a specific channel (A–D).
+
+        Reads the current input ground states of all channels,
+        updates the specified channel (`channel`) to the desired `state`,
+        regenerates the full 4-bit bitmask, and sends it to the device using
+        the `SET INPUT GROUND` command. 
+
+        :param channel: The channel to update, one of 'A', 'B', 'C', or 'D'.
+        :param state: The desired connection state: 0 = Grounded, 1 = Connected to preamp.
+
+        :return: None
+        """
+        if channel not in ('A', 'B', 'C', 'D'):
+            raise ValueError("Channel must be one of 'A', 'B', 'C', 'D'")
+        if state not in (0, 1):
+            raise ValueError("State must be 0 (grounded) or 1 (preamp)")
+
+        current = self.input_ground
+        current[channel] = state
+        bitmask = self.get_channel_bitmask(
+            current['A'], current['B'], current['C'], current['D']
+        )
+        self.write("SET INPUT GROUND", (bitmask,))
 
 
     @staticmethod
