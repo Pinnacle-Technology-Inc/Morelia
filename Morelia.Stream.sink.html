@@ -113,7 +113,7 @@
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>file_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to CSV file to write to.</p></li>
-<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
 </ul>
 </dd>
 </dl>
@@ -133,7 +133,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>sample_rate</strong> – Sample rate of device being streamed from. Used in setting up EDF file.</p></li>
 <li><p><strong>file_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to CSV file to write to.</p></li>
-<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></span>) – POD device data is being streamed from.</p></li>
 </ul>
 </dd>
 </dl>
@@ -145,7 +145,7 @@
 <p>Send data to InfluxDB.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.influx_sink.</span></span><span class="sig-name descname"><span class="pre">InfluxSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_token</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">org</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pod</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink" title="Link to this definition"></a></dt>
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Stream.sink.influx_sink.</span></span><span class="sig-name descname"><span class="pre">InfluxSink</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pod</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'http://localhost:8086'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">api_token</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'admin-token'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">org</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default-org'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'influx_dump'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">measurement</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'default-measurement'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Stream.sink.sink_interface.SinkInterface" title="Morelia.Stream.sink.sink_interface.SinkInterface"><code class="xref py py-class docutils literal notranslate"><span class="pre">SinkInterface</span></code></a></p>
 <p>Stream data to InfluxDB for real-time monitoring.</p>
 <dl class="field-list simple">
@@ -156,7 +156,7 @@
 <li><p><strong>org</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Organization within InfluxDB to write data to.</p></li>
 <li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Bucket within InfluxDB to write data to.</p></li>
 <li><p><strong>measurement</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Measurement within InfluxDB to write data to.</p></li>
-<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.aquisition_device.AquisitionDevice" title="Morelia.Devices.aquisition_device.AquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AquisitionDevice</span></code></a></span>) – 8206-HR/8401-HR/8274D POD device you are streaming data from.</p></li>
+<li><p><strong>pod</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Devices.html#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></span>) – 8206-HR/8401-HR/8274D POD device you are streaming data from.</p></li>
 </ul>
 </dd>
 </dl>
