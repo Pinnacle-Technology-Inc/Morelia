@@ -339,18 +339,15 @@ class Pod :
         """
         # read until STX is found
         b = None
-        while True:
+        while b != PodPacket.STX:
             b = self._port.read(1, timeout_sec)
-            if b != PodPacket.STX:
-                continue
             
-            try: 
-                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-                return packet
+        try: 
+            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+            return packet
 
-            except Exception as e:
-                print(f"Dropped packet due to: {e}")
-                continue
+        except Exception as e:
+            print(f"Dropped packet due to: {e}")
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
@@ -415,7 +412,7 @@ class Pod :
         # return complete 4 byte long command packet
         return(cmd)
 
-    def _read_to_etx(self, validate_checksum:bool=True, timeout_sec: float = 5.0) -> bytes : 
+    def _read_to_etx(self, validate_checksum:bool=True) -> bytes : 
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
         is found anywhere. 
 
@@ -424,26 +421,52 @@ class Pod :
         :returns: Bytes string ending with ETX.
         """
         # initialize 
-        packet = b''
-        start_time = time.time()
-        
-        while True:
-            if time.time() - start_time > timeout_sec:
-                raise TimeoutError("Timed out waiting for ETX")
-
+        packet = None
+        b = None
+        # stop reading after finding ETX
+        while(b != PodPacket.ETX) : 
+            # read next byte
             b = self._port.read(1)
-
-            if not b:
-                continue
-
+            # build packet 
+            if(packet == None) : 
+                packet = b
+            else : 
+                packet += b
+            # start over if STX
             if(b == PodPacket.STX) : 
-                raise Exception("Unexpected STX encountered mid-packet: restarting read")
-
-            packet += b
-
-            if b == PodPacket.ETX:
-                break
+                self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+        # return packet
         return(packet)
+
+#    def _read_to_etx(self, validate_checksum:bool=True, timeout_sec: float = 5.0) -> bytes : 
+#        """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
+#        is found anywhere. 
+#
+#        :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+#
+#        :returns: Bytes string ending with ETX.
+#        """
+#        # initialize 
+#        packet = b''
+#        start_time = time.time()
+#        
+#        while True:
+#            if time.time() - start_time > timeout_sec:
+#                raise TimeoutError("Timed out waiting for ETX")
+#
+#            b = self._port.read(1)
+#
+#            if not b:
+#                continue
+#
+#            if(b == PodPacket.STX) : 
+#                raise Exception("Unexpected STX encountered mid-packet: restarting read")
+#
+#            packet += b
+#
+#            if b == PodPacket.ETX:
+#                break
+#        return(packet)
 
     def _read_standard(self, pre_packet: bytes, validate_checksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
