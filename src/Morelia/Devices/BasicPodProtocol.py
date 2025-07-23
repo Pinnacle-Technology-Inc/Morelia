@@ -351,11 +351,6 @@ class Pod :
             except Exception as e:
                 print(f"Dropped packet due to: {e}")
                 continue
-        
-        # return final packet
-        raise TimeoutError("Timed out waiting for pod packet")
-        #return(packet)
-
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
