@@ -126,16 +126,10 @@ def int_to_ascii_bytes(value: int, num_chars: int) -> bytes :
 #def int_to_ascii_bytes(value: int, num_chars: int) -> bytes:
 #    """
 #    Converts an integer to ASCII-encoded hex bytes of a fixed length.
-#    
-#    Example:
-#    int_to_ascii_bytes(15, 2) => b'0F'
-#    int_to_ascii_bytes(255, 2) => b'FF'
-#    int_to_ascii_bytes(2, 4) => b'0002'
 #    """
 #    if value < 0:
 #        value = neg_int_to_twos_complement(value, num_chars * 4) 
 #
-#    # Clamp to fit num_chars (e.g., 2 chars = 8 bits)
 #    #max_val = (1 << (num_chars * 4)) - 1
 #    #value = value & max_val
 #

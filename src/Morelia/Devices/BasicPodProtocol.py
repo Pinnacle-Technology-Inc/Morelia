@@ -112,7 +112,6 @@ class Pod :
             return(True)
         else:
             # Debug statements for checksum: 
-
             #print(f"Checksum payload: {msg_packet.hex(' ')}")
             #print(f"Sum of payload bytes: {sum(msg_packet)}")
             #print(f"Inverted (1 byte): {~sum(msg_packet) & 0xFF}")
@@ -127,7 +126,7 @@ class Pod :
             #print(f"csm_valid: {csm_valid}")
 
             return(False)
-
+    
 
 
     @staticmethod
@@ -340,8 +339,7 @@ class Pod :
         """
         # read until STX is found
         b = None
-        start_time = time.time()
-        while time.time() - start_time < timeout_sec:
+        while True:
             b = self._port.read(1, timeout_sec)
             if b != PodPacket.STX:
                 continue
