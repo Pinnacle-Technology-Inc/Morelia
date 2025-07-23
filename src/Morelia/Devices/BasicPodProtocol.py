@@ -8,6 +8,7 @@ import Morelia.packet.conversion as conv
 import os
 import toml
 import time
+from collections.abc import Mapping
 
 from functools import partial
 
@@ -508,6 +509,31 @@ class Pod :
         return DataPacket(packet)
 
 
+    @property
+    def id(self) -> int:
+        """Returns a device's hardware ID."""
+        device_id = self.write_read("ID")
+        return device_id.payload[0]
+
+    @property
+    def type(self) -> int:
+        """Returns a device's TYPE number. Each TYPE number corresponds to a specific pod device (see docs). General getter for device TYPE."""
+        device_type = self.write_read("TYPE")
+        return device_type.payload[0]
+
+    @property
+    def pod_type(self) -> str:
+        """Gets a device's TYPE number. Maps the number to a pod device string. Returns the pod device string."""
+        type_code = str(self.type)
+        type_map = {
+            "48": "Pod8206HR",
+            "52": "Pod8229",
+            "46": "Pod8274D",
+            "49": "Pod8401HR",
+            "50": "Pod8480SC"
+        }
+        return type_map.get(type_code, "Unknown Pod Device")
+
     def set_config(self, folder_path: str):
         """Consumes an experiment configuration folder and identifies files based on the 'title' in the .toml files. Uses "Experiment Configuration" files to map devices to "Device Configuration" files based on device ID and device virtual name. 
         :param folder_path: The folder path of the experiment configuration folder.  
@@ -529,8 +555,7 @@ class Pod :
         matched_device = None
 
         try:
-            device_id_packet = self.write_read("ID")
-            device_id = str(device_id_packet.payload[0])
+            device_id = self.id
         except Exception as e:
             raise ValueError("Failed to get device ID: {e}")
 
@@ -592,4 +617,79 @@ class Pod :
                         print(f"[ERROR] Failed to set {prop} to {prop_value}: {e}")
                 else:
                     print(f"[SKIP] No setter found for {prop}")
+
+    def get_config(self, folder_path: str, filename: str | None = None):
+        """
+        Generates a .toml config file by reading all readable properties 
+        from the device and saves it inside the specified folder.
+
+        :param folder_path: Folder to save the generated .toml file.
+        """
+
+        os.makedirs(folder_path, exist_ok=True)  # ensure folder exists
+
+        device_id = self.id
+        device_type = self.pod_type
+        device_name = self._device_name
+
+        if filename is None:
+            filename = f"{device_name}_config.toml"
+        elif not filename.endswith(".toml"):
+            filename += ".toml"
+
+        full_path = os.path.join(folder_path, filename)
+
+        # generate config data
+        config_data = self._collect_config()
+        config_data["title"] = f"{device_type} Device Configuration File"
+        config_data["filename"] = filename
+
+        with open(full_path, "w") as f:
+            toml.dump(config_data, f)
+
+        print(f"Config saved to {full_path}")
+
+
+    def _collect_config(self) -> dict:
+        """Collects configuration values from the device by calling readable properties 
+         defined in the device's _property_map. This is used to generate a configuration 
+         dictionary that can be written to a .toml file.
+
+        :returns: A nested dictionary of property names and their values organized by section
+                 as defined in each Pod's _property_map.
+        """
+        result = {}
+        prop_map = getattr(self, "_property_map", {})
+
+        self._collect_from_map(result, prop_map)
+        return result
+
+
+    def _collect_from_map(self, output_dict: dict, mapping: dict):
+        """Recursively traverses the property map and populates result_dict with values 
+        fetched from corresponding property getters.
+
+        :param output_dict: The dictionary that gets populated with nested config data.
+        :param mapping: A nested dictionary or flat mapping of property names to config keys.
+        
+        :returns: None
+        """
+        for logical_key, value in mapping.items():
+            if isinstance(value, dict):
+                # Recurse into nested section
+                output_dict[logical_key] = {}
+                self._collect_from_map(output_dict[logical_key], value)
+            else:
+                # Single property
+                prop_name = value
+                class_attr = getattr(self.__class__, prop_name, None)
+                if not isinstance(class_attr, property) or class_attr.fget is None:
+                    print(f"[SKIP] {prop_name} is not a readable property.")
+                    continue
+
+                try:
+                    prop_value = getattr(self, prop_name)
+                    output_dict[logical_key] = prop_value
+                except Exception as e:
+                    print(f"[SKIP] Failed to read {prop_name}: {e}")
 

@@ -163,9 +163,9 @@ class Pod8229(Pod) :
             return current_params.payload
 
         @reverse_params.setter
-        def reverse_params(self, base_var list) -> None:
+        def reverse_params(self, base_var: list) -> None:
             """Sets (Base Time, Variable Time) for random reverse in seconds. The random reverse time will be base time + a random value in the Variable Time range."""
-            if isinstance (base_var list):
+            if isinstance (base_var, list):
                 base_time, var_time = base_var
             else: 
                 raise TypeError(f"Invalid input type: {type(base_var)}. Expected a list of integers.")

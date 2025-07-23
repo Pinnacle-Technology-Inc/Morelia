@@ -33,6 +33,7 @@ class AquisitionDevice(Pod):
         self._commands.add_command(get_sample_rate_cmd_no, 'GET SAMPLE RATE',      (0,),       (UINT16,),    False,   'Gets the current sample rate of the system, in Hz.')
         self._commands.add_command(set_sample_rate_cmd_no, 'SET SAMPLE RATE',      (UINT16,),     (0,),      False,   'Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently.')
         
+
         #initialize as none so that when we ask for the sample rate later, it uses the overidden WriteRead.
         self._sample_rate: int = None
 
@@ -59,7 +60,7 @@ class AquisitionDevice(Pod):
 
         self.write_read('SET SAMPLE RATE', (rate,))
         self._sample_rate: int = (rate,)
-    
+
     def __enter__(self) -> Self:
 
         #no WriteRead, because the confirmation packet may arrive

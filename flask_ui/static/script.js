@@ -118,8 +118,8 @@ const detectedDeviceKeys = new Set();
 function getDeviceTypeLabel(typeCode) {
   const typeMap = {
     "48": "Pod8206HR",
-    "46": "Pod8229",
-    "50": "Pod8274D",
+    "52": "Pod8229",
+    "46": "Pod8274D",
     "49": "Pod8401HR",
     "50": "Pod8480SC"
   };

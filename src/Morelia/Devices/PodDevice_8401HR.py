@@ -395,7 +395,7 @@ class Pod8401HR(AquisitionDevice) :
         """Reads Channel 3/D value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
         return self.input_ground['D']
 
-    @input_ground_    D.setter
+    @input_ground_D.setter
     def input_ground_D(self, state: int):
         """Sets Channel 3/D state."""
         self._set_input_ground_channel('D', state)
@@ -464,7 +464,12 @@ class Pod8401HR(AquisitionDevice) :
         current = self.ttl_config
         current["input"] = in_dict
         self.ttl_config = current
- 
+
+    @property
+    def ttl_outputs(self) -> tuple:
+        """GETS TTL outputs"""
+        current_ttl = self.write_read("GET TTL CONFIG")
+        return current_ttl.payload
 
     @ttl_outputs.setter
     def ttl_outputs(self, pins: dict[str, int]):

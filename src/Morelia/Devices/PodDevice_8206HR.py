@@ -106,7 +106,7 @@ class Pod8206HR(AquisitionDevice) :
     @ttl_pin0.setter
     def ttl_pin0(self, value: int) -> None:
         """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
-        self.write_read("SET TTL OUT", (0, value))
+        self.write_packet("SET TTL OUT", (0, value))
 
 
     @property
@@ -118,7 +118,7 @@ class Pod8206HR(AquisitionDevice) :
     @ttl_pin1.setter
     def ttl_pin1(self, value: int) -> None:
         """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
-        self.write_read("SET TTL OUT", (1, value))
+        self.write_packet("SET TTL OUT", (1, value))
 
     @property
     def ttl_pin2(self) -> int:  
@@ -129,7 +129,7 @@ class Pod8206HR(AquisitionDevice) :
     @ttl_pin2.setter
     def ttl_pin2(self, value: int) -> None:
         """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
-        self.write_read("SET TTL OUT", (2, value))
+        self.write_packet("SET TTL OUT", (2, value))
 
     @property
     def ttl_pin3(self) -> int:  
@@ -140,17 +140,17 @@ class Pod8206HR(AquisitionDevice) :
     @ttl_pin3.setter
     def ttl_pin3(self, value: int) -> None:
         """Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1)."""
-        self.write_read("SET TTL OUT", (3, value))
+        self.write_packet("SET TTL OUT", (3, value))
     
     @property
     def ttl_port(self) -> int:
         port = self.write_read("GET TTL PORT")
-        return port[0]
+        return port.payload[0]
 
     @property 
     def filter_config(self) -> int: 
         config = self.write_read("GET FILTER CONFIG")
-        return config[0]
+        return config.payload[0]
 
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
@@ -192,3 +192,27 @@ class Pod8206HR(AquisitionDevice) :
         # some overriding properties like:
         # if "lowpass" in config:
         #   self.lowpass = config["LOWPASS"]
+
+    """Maps the properties for generating a config file"""
+    _property_map = {
+        "information": {
+            "type": "type",
+            "sample_rate": "sample_rate",
+        },
+
+        "channel settings": {
+            "lowpass_ch0": "lowpass_ch0",
+            "lowpass_ch1": "lowpass_ch1",
+            "lowpass_ch2": "lowpass_ch2",
+        },
+
+        "ttl controls": {
+            "ttl_pin0": "ttl_pin0",
+            "ttl_pin1": "ttl_pin1",
+            "ttl_pin2": "ttl_pin2",
+            "ttl_pin3": "ttl_pin3",
+        },
+        "filter_controls": {
+            "filter_config": "filter_config",
+        },
+    }
