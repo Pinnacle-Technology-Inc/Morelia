@@ -358,45 +358,45 @@ class Pod8401HR(AquisitionDevice) :
 
     """GROUND INPUT""" 
     @property
-    def input_ground_A(self) -> int:
+    def input_ground0(self) -> int:
         """Reads Channel 0/A value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
         return self.input_ground['A']
 
-    @input_ground_A.setter
-    def input_ground_A(self, state: int):
+    @input_ground0.setter
+    def input_ground0(self, state: int):
         """Sets Channel 0/A state."""
         self._set_input_ground_channel('A', state)
 
 
     @property
-    def input_ground_B(self) -> int:
+    def input_ground1(self) -> int:
         """Reads Channel 1/B value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
         return self.input_ground['B']
 
-    @input_ground_B.setter
-    def input_ground_B(self, state: int):
+    @input_ground1.setter
+    def input_ground1(self, state: int):
         """Sets Channel 1/B state."""
         self._set_input_ground_channel('B', state)
 
 
     @property
-    def input_ground_C(self) -> int:
+    def input_ground2(self) -> int:
         """Reads Channel 2/C value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
         return self.input_ground['C']
 
-    @input_ground_C.setter
-    def input_ground_C(self, state: int):
+    @input_ground2.setter
+    def input_ground2(self, state: int):
         """Sets Channel 2/C state."""
         self._set_input_ground_channel('C', state)
 
 
     @property
-    def input_ground_D(self) -> int:
+    def input_ground3(self) -> int:
         """Reads Channel 3/D value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
         return self.input_ground['D']
 
-    @input_ground_D.setter
-    def input_ground_D(self, state: int):
+    @input_ground3.setter
+    def input_ground3(self, state: int):
         """Sets Channel 3/D state."""
         self._set_input_ground_channel('D', state)
 
@@ -949,4 +949,91 @@ class Pod8401HR(AquisitionDevice) :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return self._stream_packet_factory(packet)
- 
+
+
+    """Maps the properties for generating a config file"""
+    _property_map = {
+        "information": {
+            "type": "type",
+            "sample_rate": "sample_rate",
+            "preamp": "preamp",
+        },
+
+        "channel settings": {
+            "lowpass_ch0": "lowpass_ch0",
+            "lowpass_ch1": "lowpass_ch1",
+            "lowpass_ch2": "lowpass_ch2",
+            "lowpass_ch3": "lowpass_ch3",
+                
+            "preamp_highpass_0": "preamp_highpass_0",
+            "preamp_highpass_1": "preamp_highpass_1",
+            "preamp_highpass_2": "preamp_highpass_2",
+            "preamp_highpass_3": "preamp_highpass_3",
+        },
+
+        "dc mode": {
+            "dc_mode_0": "dc_mode_0",
+            "dc_mode_1": "dc_mode_1",
+            "dc_mode_2": "dc_mode_2",
+            "dc_mode_3": "dc_mode_3",
+        },
+
+        "bias": {
+            "bias_0": "bias_0",
+            "bias_1": "bias_1",
+            "bias_2": "bias_2",
+            "bias_3": "bias_3",
+        },
+
+        "ext": {
+            "ext0": "ext0",
+            "ext1": "ext1",
+        },
+        
+        "ground input": {
+            "input_ground0": "input_ground0",
+            "input_ground1": "input_ground1",
+            "input_ground2": "input_ground2",
+            "input_ground3": "input_ground3",
+
+            "input_ground_all": "input_ground_all",
+        },
+
+        "ttl controls": {
+            "ttl_config": "ttl_config"
+            "ttl_output_config": "ttl_output_config",
+            "ttl_input_config": "ttl_input_config",
+            "ttl_outputs": "ttl_outputs",
+        },
+
+        "ss config": {
+            "ss_config_0": "ss_config_0",
+            "ss_highpass_0": "ss_highpass_0",
+            "ss_gain_0": "ss_gain_0",
+            
+            "ss_config_1": "ss_config_1",
+            "ss_highpass_1": "ss_highpass_1",
+            "ss_gain_1": "ss_gain_1",
+
+            "ss_config_2": "ss_config_2",
+            "ss_highpass_2": "ss_highpass_2",
+            "ss_gain_2": "ss_gain_2",
+
+            "ss_config_3": "ss_config_3",
+            "ss_highpass_3": "ss_highpass_3",
+            "ss_gain_3": "ss_gain_3",
+        },
+
+        "mux mode": {
+            "mux_mode": "mux_mode",
+        },
+
+        "ttl_analog": {
+            "ttl_analog_ext0": "ttl_analog_ext0",
+            "ttl_analog_ext1": "ttl_analog_ext1",
+            "ttl_analog_ttl4": "ttl_analog_ttl4", 
+            "ttl_analog_ttl3": "ttl_analog_ttl3",
+            "ttl_analog_ttl2": "ttl_analog_ttl2",
+            "ttl_analog_ttl1": "ttl_analog_ttl1",
+        },
+    }
