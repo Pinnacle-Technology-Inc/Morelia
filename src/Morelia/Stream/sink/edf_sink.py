@@ -44,8 +44,6 @@ class EDFSink(SinkInterface):
 
         self._buffer = [ [] for _ in self._channels ]
 
-        print(self._pod.get_dict())
-
     @property 
     def pod(self):
         return self._pod

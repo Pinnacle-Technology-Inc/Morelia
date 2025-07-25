@@ -34,6 +34,8 @@ class Pod :
         self._baudrate = baudrate
 
         # initialize serial port 
+        self._port = None
+
         self._port_value = port
         #: PortIO = PortIO(port, baudrate)
 
@@ -94,6 +96,10 @@ class Pod :
     @property
     def port(self):
         return self._port_value
+
+    @property
+    def port_inst(self):
+        return self._port
 
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 

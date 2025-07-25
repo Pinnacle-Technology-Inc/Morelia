@@ -72,5 +72,5 @@ class UDPSink(SinkInterface):
 
     def get_dict(self):
         return {
-            'port' = self.port
+            'port': self.port
         }
