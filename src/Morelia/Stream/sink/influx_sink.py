@@ -38,6 +38,8 @@ class InfluxSink(SinkInterface):
         self._org: str = org
         self._bucket: str = bucket
         self._measurement: str = measurement
+
+        #self._pod.open_port()
          
         if isinstance(self._pod, Pod8401HR):
             def _line_protocol_factory(timestamp, packet) -> str:
@@ -62,12 +64,36 @@ class InfluxSink(SinkInterface):
                        {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
                        {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
         
-        self._subject = rx.Subject()
-        self._data = self._subject.pipe(
-            ops.starmap(_line_protocol_factory),
-            ops.buffer_with_count(self._pod.sample_rate//2),
-            ops.map(lambda x: b'\n'.join(x))
-        )
+        if self._pod.port_inst is None:
+            pass
+        else:
+            self._subject = rx.Subject()
+            self._data = self._subject.pipe(
+                ops.starmap(_line_protocol_factory),
+                ops.buffer_with_count(self._pod.sample_rate//2),
+                ops.map(lambda x: b'\n'.join(x))
+            )
+
+    @property
+    def url(self):
+        return self._url
+
+    @property 
+    def api_token(self):
+        return self.__api_token
+
+    @property
+    def org(self):
+        return self._org
+    
+    @property
+    def bucket(self):
+        return self._bucket
+    
+    @property
+    def measurement(self):
+        return self._measurement
+
     #the following two methods implement the context manager protocol to allow
     #this sink to work within a `with` block. To illuminate why these methods are the
     #they are, see the relevent section of the python manual:
@@ -118,3 +144,12 @@ class InfluxSink(SinkInterface):
         #self._writer.write(bucket='pinnacle', org='pinnacle', record=self._line_protocol_factory(timestamp, packet))
         self._subject.on_next((timestamp, packet))
             #Stats(prof).strip_dirs().sort_stats('tottime').print_stats()
+
+    def get_dict(self):
+        return {
+            'url': self.url,
+            'api_token': self.api_token,
+            'org': self.org,
+            'bucket': self.bucket,
+            'measurement': self.measurement
+        }

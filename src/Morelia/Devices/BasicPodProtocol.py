@@ -31,21 +31,34 @@ class Pod :
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
         the serial port communication (_port) and for the command handler (_commands).
         """
+        self._baudrate = baudrate
 
         # initialize serial port 
-        self._port : PortIO = PortIO(port, baudrate)
+        self._port = None
+
+        self._port_value = port
+        #: PortIO = PortIO(port, baudrate)
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
-       
+
         #set device name.
         self._device_name: str = device_name if device_name else str(port)
-    
+
         #function that will be used to create new control packets from this device.
         #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
+    def open_port(self):
+        # initialize serial port 
+        self._port : PortIO = PortIO(self._port_value, self._baudrate)
+    
+    def close_port(self):
+        if self._port is not None:
+            self._port.close_serial_port()
+        else:
+            return
 
     @staticmethod
     def get_u(u: int) -> int : 
@@ -65,6 +78,28 @@ class Pod :
     def device_name(self) -> str:
         """The virtual device name."""
         return self._device_name
+
+    @device_name.setter
+    def device_name(self, name: int) -> None:
+        self.device_name = name
+    
+    @property
+    def baudrate(self) -> int:
+        return self._baudrate
+    
+    @baudrate.setter
+    def baudrate(self, rate: int) -> None:
+        if rate < 0:
+            raise ValueError("Cannot set baudrate to a negative value")
+        self._baudrate = rate
+
+    @property
+    def port(self):
+        return self._port_value
+
+    @property
+    def port_inst(self):
+        return self._port
 
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 
@@ -473,3 +508,11 @@ class Pod :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket(packet)
+
+    def get_dict(self):
+        """Obtains pod __init__ argument values to use for process pickling"""
+        return {
+            'port_value': self.port,
+            'baudrate': self.baudrate,
+            'device_name': self.device_name
+        }
