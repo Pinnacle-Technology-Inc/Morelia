@@ -60,20 +60,20 @@ class Pod8206HR(AcquisitionDevice) :
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preamp_gain : int = preamp_gain 
-        
+         # define function used to decode packet from binary data.
+        def decode_packet(command_number: int, payload: bytes) -> tuple:
+            if command_number == 106:
+                return Pod8206HR._translate_ttlbyte_ascii(payload)
+
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
         # the constructor used to create control packets as they are recieved.
-        self._control_packet_factory = partial(ControlPacket, self.decode_packet)
+        self._control_packet_factory = partial(ControlPacket, decode_packet)
 
     @property
     def preamp_gain(self):
         return self._preamp_gain
     
-    # define function used to decode packet from binary data.
-    def decode_packet(self, command_number: int, payload: bytes) -> tuple:
-        if command_number == 106:
-            return Pod8206HR._translate_ttlbyte_ascii(payload)
-
-        return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+   
 
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
