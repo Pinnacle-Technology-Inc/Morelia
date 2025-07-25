@@ -510,6 +510,7 @@ class Pod :
         return DataPacket(packet)
 
     def get_dict(self):
+        """Obtains pod __init__ argument values to use for process pickling"""
         return {
             'port_value': self.port,
             'baudrate': self.baudrate,

@@ -85,7 +85,6 @@ class DataFlow:
 
             #event that signals the stream has been stopped by `stop_collecting`.
             manual_stop_event = self._manager.Event()
-            #manual_stop_event: mp.Event = mp.Event()
             
             self._manual_stop_events.append(manual_stop_event)
 

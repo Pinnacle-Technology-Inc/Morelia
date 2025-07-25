@@ -28,4 +28,5 @@ class SinkInterface(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_dict(self) -> dict[str, Any]:
+        """Obtains sink __init__ argument values to use for process pickling"""
         pass
