@@ -7,7 +7,7 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
-import time
+#from datetime import datetime
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -35,6 +35,8 @@ class Pod :
 
         # initialize serial port 
         self._port : PortIO = PortIO(port, baudrate)
+
+        self._port_num = port
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
@@ -80,8 +82,8 @@ class Pod :
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
-    @staticmethod
-    def _validate_checksum(msg: bytes) -> bool :
+    #@staticmethod
+    def _validate_checksum(self, msg: bytes) -> bool :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
@@ -112,6 +114,8 @@ class Pod :
             return(True)
         else:
             # Debug statements for checksum: 
+            #print(f"Device: {self._port_num}")
+            #print(f"Current time: {datetime.now().time()}")
             #print(f"Checksum payload: {msg_packet.hex(' ')}")
             #print(f"Sum of payload bytes: {sum(msg_packet)}")
             #print(f"Inverted (1 byte): {~sum(msg_packet) & 0xFF}")
@@ -340,15 +344,13 @@ class Pod :
         # read until STX is found
         b = None
         while b != PodPacket.STX:
-            b = self._port.read(1, timeout_sec)
-            
-        try: 
-            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-            return packet
-
-        except Exception as e:
-            print(f"Dropped packet due to: {e}")
-
+            b = self._port.read(1, timeout_sec) # read next byte
+        
+        # continue reading packet
+        packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+        # return final packet
+        return packet
+     
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
@@ -434,7 +436,7 @@ class Pod :
                 packet += b
             # start over if STX
             if(b == PodPacket.STX) : 
-                self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+                raise ValueError("Unexpected STX found while reading to ETX.")
         # return packet
         return(packet)
 

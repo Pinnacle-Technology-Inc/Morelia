@@ -49,7 +49,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 observer.last_timestamp = int(predicted + (drift * correction_factor))
                 
                 #if drift from real time is 30ms further than expected, reset time stamps
-                if abs(drift) > 30_000_000:
+                if abs(drift) > 100_000_000:
                     observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1
@@ -81,8 +81,12 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
             stream_start_time : float = time.perf_counter()
 
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
-            
-                observer.on_next(pod.read_pod_packet())
+                
+                try:
+                    observer.on_next(pod.read_pod_packet())
+                except Exception as e:
+                    print(f"Dropped packet due to: {e}")
+                    continue
 
         # tell the observer we are finished.
         observer.on_completed()
