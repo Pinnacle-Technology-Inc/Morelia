@@ -7,7 +7,6 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
-from threading import Lock
 import time
 from queue import Empty
 import subprocess
@@ -38,20 +37,20 @@ class Pod :
         
         name = PortIO.build_port_name(port)
         self._manager = PacketManager(name)
-        # initialize serial port 
-        #self._port : PortIO = PortIO(port, baudrate)
         
-        if not self.is_port_in_use(port):
-            #print("manager initialized")
+        # initialize serial port 
+        if not PortIO.is_port_in_use(port):
+            # if the port is not in use, then create a PortIO object
             self._port : PortIO = PortIO(port, baudrate)
+
+            # initialize the control queues for this pod device
             self._manager.initialize_control_queue()
         else:
+            # otherwise, do not create a PortIO object
             self._port = None
+
+            # register the control queues for the pod device
             self._manager.register_control_queue(name)
-
-        #self.flush_port()
-
-        self._lock = Lock()
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
@@ -67,10 +66,7 @@ class Pod :
         self._write_queue = self._manager.obtain_write_queue()
         self._read_queue = self._manager.obtain_read_queue()
 
-    def is_port_in_use(self, port: str) -> bool:
-        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.returncode == 0
-
+    # closes a port
     def close_port(self):
         if self._port is None:
             return
@@ -361,7 +357,6 @@ class Pod :
         #flushes leftover data in case of interrupt
         
         if self._port is not None:
-            print("reached flush")
             self.flush_port()
 
         #writes packet to the device
@@ -427,22 +422,7 @@ class Pod :
             finally:
                 self._write_queue.put_nowait(packet)
         return ControlPacket(self._commands, packet)
-        
-        #if port is none, then write to the queue using the queue_manager function
-        '''if self._port.queue_initialized() or self._port.queue_registered():
-            if self._queue is None:
-                self._queue = self._port.obtain_write_queue()
-            #with self._lock:
-            try:
-                pass
-            finally:
-                self._queue.put_nowait(packet)
-            
-        # write packet to serial port 
-        self._port.write(packet)
-        # returns packet that was written
-        return ControlPacket(self._commands, packet)'''
-    
+           
     def check_write_queue(self) -> None:
         if self._manager.queues_initialized():
             try:
@@ -463,7 +443,6 @@ class Pod :
         control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         # read until STX is found
-        #with self._lock:
 
         if self._port is None:
             raise TypeError("PortIO object does not exist!")

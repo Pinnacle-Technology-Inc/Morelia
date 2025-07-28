@@ -55,8 +55,12 @@ class PortIO :
         self.close_serial_port()
 
     # ====== PRIVATE METHODS ======
-
-    def is_port_in_use(self, port: str) -> bool:
+    
+    @staticmethod
+    def is_port_in_use(port: str) -> bool:
+        """
+        Opens a subprocess to check if the port is in use
+        """
         result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result.returncode == 0
 
