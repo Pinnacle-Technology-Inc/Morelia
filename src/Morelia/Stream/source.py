@@ -79,6 +79,7 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
         observer.on_completed()
     return _stream_from_pod_device_observable
 
+#function used by reactivex to place raw packets (binary) into the read queue
 def make_packet_putter(read_queue):
     def put_read_packet(item):
         if isinstance(item, ControlPacket):
@@ -98,7 +99,10 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     :param pod: The device to collect data from.
     """
     
+    #obtain read_queue from pod device
     read_queue = pod.obtain_read_queue()
+
+    #obtain put read packet from the closure function
     put_read_packet = make_packet_putter(read_queue)
 
     # create an observable to stream from POD device.
