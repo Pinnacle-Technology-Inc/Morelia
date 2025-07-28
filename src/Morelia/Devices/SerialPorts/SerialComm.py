@@ -42,8 +42,6 @@ class PortIO :
             if self.is_port_in_use(port):
                 self._serial_inst = None       
             else:
-
-                #print("initialize Serial object")
                 # initialize port 
                 self._serial_inst : Serial = Serial()
                 # open port  
