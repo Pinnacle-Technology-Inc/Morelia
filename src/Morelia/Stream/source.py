@@ -40,9 +40,19 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.packet_count = 0
             
             def on_next(value):
+                now_real_time_ns = time.time_ns()
+                predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                drift = now_real_time_ns - predicted
 
-                # add on a fraction of the sample rate to last timestamp.
-                observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
+                correction_factor = 0.001
+
+                # add on a fraction of the sample rate to last timestamp, plus drift correction
+                observer.last_timestamp = int(predicted + (drift * correction_factor))
+                
+                # if drift from real time is 100ms further than expected 
+                # or predicted time is greater than current time, reset time stamps
+                if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
+                    observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1
 
@@ -51,6 +61,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
+                
                     observer.time_at_last_update = time.perf_counter()
 
                 # send packet and timestamp on its way.
@@ -71,8 +82,12 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
         with pod:
             stream_start_time : float = time.perf_counter()
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
-            
-                observer.on_next(pod.read_pod_packet())
+
+                try:
+                    observer.on_next(pod.read_pod_packet())
+                except Exception as e:
+                    print(f"Dropped packet due to: {e}")
+                    continue
             pod.close_port()
 
         # tell the observer we are finished.
@@ -138,4 +153,19 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         
         # start streaming data from the observable!
         stream.connect()
+
+# wrapper function for get_data which reconstructs pod devices and sources after the process is created
+def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
+
+    # obtain the source class
+    source = source_class(**source_dict)
+
+    # open the port of the source class
+    source.open_port()
+
+    # create list of sinks to use based on sink class/sink dictionary pair in the list
+    sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
+
+    # run get_data with the pod device and list of sinks 
+    get_data(duration_sec, manual_stop_event, source, sinks)
 

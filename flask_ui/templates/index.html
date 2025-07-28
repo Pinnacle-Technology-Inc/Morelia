@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Homepage</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
+  <style>
+	@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+	 
+    .main {
+      flex: 1;
+      padding: 50px;
+      text-align: center;
+    }
+
+    .main h1 {
+      font-size: 36px;
+      margin-bottom: 10px;
+    }
+
+    .main img {
+      border-radius: 50%;
+      margin: 25px auto 0px;
+      padding: 10px;
+      width: 200px;
+      height: 200px;
+    }
+
+    .main button {
+      display: block;
+      margin: 10px auto;
+      padding: 12px 24px;
+      font-size: 16px;
+      border: none;
+      border-radius: 30px;
+      background-color: #4a704d;
+      color: white;
+      cursor: pointer;
+    }
+
+    #device-select {
+	  display: block;
+	  margin: 10px auto;
+	  padding: 12px 24px;
+	  font-size: 16px;
+	  border: none;
+	  border-radius: 30px;
+	  background-color: #4a704d;
+	  color: white;
+	  cursor: pointer;
+	  text-align: center;
+	  text-align-last: center;
+	  appearance: none;
+	  -webkit-appearance: none;
+	  -moz-appearance: none;   
+	  background-image: url("data:image/svg+xml;charset=UTF-8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='10'><polygon points='0,0 14,0 7,10' fill='white'/></svg>");
+	  background-repeat: no-repeat;
+	  background-position: right 1rem center;
+	  background-size: 12px;
+	  padding-right: 40px;
+    }
+
+  </style>
+
+	<script>
+	  function handleDeviceSelect(select) {
+	    const path = select.value;
+	    if (path) {
+	      window.location.href = path;
+	    }
+	  }
+	</script>
+</head>
+<body>
+  <div class="sidebar" id="device-bar">
+    <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
+    <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
+    <label for="device_type">Device Type</label>
+    <select id="device_type" size="6" onchange="goToPage()">
+      <option value="">-- Select a device --</option>
+      <option value="/Pod8206HR">Pod8206HR</option>
+      <option value="/Pod8229">Pod8229</option>
+      <option value="/Pod8274D">Pod8274D</option>
+      <option value="/Pod8401HR">Pod8401HR</option>
+      <option value="/Pod8480SC">Pod8480SC</option>
+    </select>
+    <button id="load_config" type="button" onclick="document.getElementById('config-file').click();">Load Device Configuration</button>
+
+    <form id="load-config-form" action="/load_config" method="post" enctype="multipart/form-data" style="display: none;">
+      <input type="file" id="config-file" name="config_file" accept=".toml" onchange="document.getElementById('load-config-form').submit();">
+    </form>
+  </div>
+
+  <div class="main">
+
+    <h1>Welcome to <br> Morelia!</h1>
+    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/ad/Python_Australia_Zoo.JPG/1200px-Python_Australia_Zoo.JPG" alt="Morelia Logo">
+
+    <h3 style="margin-bottom:0px;">Get Started</h3>
+    <h3 style="color:#A3B18A; margin-top: 0px; margin-bottom: 10px;">_____________</h3>
+    <div class="menu">
+	<button style="background-color: #A3B18A; color: black; margin-bottom: 45px;"><a href="https://pinnacle-technology-inc.github.io/Morelia/getting_started.html" target="_blank">Read Morelia Docs</a></button>
+	
+	<h4>Select a Pod Device to Configure</h4>
+	<select id="device-select" onchange="handleDeviceSelect(this)">
+	  <option value="">-- Select a Pod Device --</option>
+	  <option value="/Pod8206HR">Configure Pod8206HR Device</option>
+	  <option value="/Pod8229">Configure Pod8229 Device</option>
+	  <option value="/Pod8274D">Configure Pod8274D Device</option>
+	  <option value="/Pod8401HR">Configure Pod8401HR Device</option>
+	  <option value="/Pod8480SC">Configure Pod8480SC Device</option>
+	</select>
+
+	
+	<h4>Configure an Experiment</h4>
+    	<button><a href="/Experiment_Config">Experiment Configuration</a></button>
+    </div>
+  </div>
+    
+  <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
+

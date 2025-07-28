@@ -35,9 +35,36 @@ class Pod :
         the serial port communication (_port) and for the command handler (_commands).
         """
         
-        name = PortIO.build_port_name(port)
+        self._name = PortIO.build_port_name(port)
         self._manager = PacketManager(name)
         
+        self._baudrate = baudrate
+
+        # initialize serial port 
+        self._port = None
+
+        self._port_value = port
+
+
+        # create object to handle commands 
+        self._commands : CommandSet = CommandSet()
+
+        #set device name.
+        self._device_name: str = device_name if device_name else str(port)
+
+        #function that will be used to create new control packets from this device.
+        #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
+        #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
+        self._control_packet_factory = partial(ControlPacket, self._commands)
+        
+        # save queue to write to device
+        self._write_queue = self._manager.obtain_write_queue()
+
+        # save queue to read from device
+        self._read_queue = self._manager.obtain_read_queue()
+
+    def open_port(self):
+        # initialize serial port 
         # initialize serial port 
         if not PortIO.is_port_in_use(port):
             # if the port is not in use, then create a PortIO object
@@ -50,31 +77,13 @@ class Pod :
             self._port = None
 
             # register the control queues for the pod device
-            self._manager.register_control_queue(name)
-
-        # create object to handle commands 
-        self._commands : CommandSet = CommandSet()
-       
-        #set device name.
-        self._device_name: str = device_name if device_name else str(port)
+            self._manager.register_control_queue(self._name)
     
-        #function that will be used to create new control packets from this device.
-        #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
-        #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
-        self._control_packet_factory = partial(ControlPacket, self._commands)
-        
-        # save queue to write to device
-        self._write_queue = self._manager.obtain_write_queue()
-
-        # save queue to read from device
-        self._read_queue = self._manager.obtain_read_queue()
-
-    # closes a port
     def close_port(self):
-        if self._port is None:
-            return
-        else:
+        if self._port is not None:
             self._port.close_serial_port()
+        else:
+            return
 
     # functions to get queue values
     def obtain_write_queue(self):
@@ -101,6 +110,28 @@ class Pod :
     def device_name(self) -> str:
         """The virtual device name."""
         return self._device_name
+
+    @device_name.setter
+    def device_name(self, name: int) -> None:
+        self.device_name = name
+    
+    @property
+    def baudrate(self) -> int:
+        return self._baudrate
+    
+    @baudrate.setter
+    def baudrate(self, rate: int) -> None:
+        if rate < 0:
+            raise ValueError("Cannot set baudrate to a negative value")
+        self._baudrate = rate
+
+    @property
+    def port(self):
+        return self._port_value
+
+    @property
+    def port_inst(self):
+        return self._port
 
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 
@@ -138,8 +169,8 @@ class Pod :
         ) : 
             raise InvalidChecksumError('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
-        msg_packet = msg[1:packet_bytes-3]
-        msg_csm = msg[packet_bytes-3:packet_bytes-1]
+        msg_packet = msg[1:-3]
+        msg_csm = msg[-3:-1]
         # calculate checksum from content packet  
         csm_valid = Pod.checksum(msg_packet)
         # return True if checksums match 
@@ -147,7 +178,7 @@ class Pod :
             return(True)
         else:
             return(False)
-
+    
 
 
     @staticmethod
@@ -455,13 +486,15 @@ class Pod :
             raise TypeError("PortIO object does not exist!")
 
         b = None
-        while(b != PodPacket.STX) :
-            b = self._port.read(1,timeout_sec)     # read next byte  
-        # continue reading packet  
+        while b != PodPacket.STX:
+            b = self._port.read(1, timeout_sec) # read next byte
+        
+        # continue reading packet
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
-        return(packet)
+        return packet
 
+      
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
@@ -517,13 +550,13 @@ class Pod :
                 cmd += b
             # start over if STX is found 
             if(b == PodPacket.STX ) : 
+                #TODO: check what is happening here, since this is not a return statement
                 self._read_pod_packet_recursive(validate_checksum=validate_checksum)
             # return if ETX is found
             if(b == PodPacket.ETX ) : 
                 return(cmd)
         # return complete 4 byte long command packet
         return(cmd)
-
 
     def _read_to_etx(self, validate_checksum:bool=True) -> bytes : 
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
@@ -551,10 +584,10 @@ class Pod :
                 packet += b
             # start over if STX
             if(b == PodPacket.STX) : 
+                #TODO: check what is happening here, since this is not a return statement
                 self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return packet
         return(packet)
-
 
     def _read_standard(self, pre_packet: bytes, validate_checksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 
@@ -610,3 +643,11 @@ class Pod :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket(packet)
+
+    def get_dict(self):
+        """Obtains pod __init__ argument values to use for process pickling"""
+        return {
+            'port_value': self.port,
+            'baudrate': self.baudrate,
+            'device_name': self.device_name
+        }

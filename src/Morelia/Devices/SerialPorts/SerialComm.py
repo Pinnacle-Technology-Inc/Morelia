@@ -3,6 +3,7 @@ from    serial import Serial, serial_for_url
 from Morelia.Devices.SerialPorts.queue_manager import PacketManager
 from queue import Empty
 import  platform
+
 import  time
 import subprocess
 

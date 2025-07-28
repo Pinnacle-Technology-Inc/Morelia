@@ -140,15 +140,14 @@ class ExperimentDatabase:
                 if not result:
                     return None
 
-                def convert_subseconds(subsec_str: str) -> int:
-                    """Convert decimal subsecond string to integer subseconds."""
+                def convert_subseconds(subsec_str: str) -> float:
+                    """Convert decimal subsecond string to float subseconds."""
                     if not subsec_str:
-                        return 0
+                        return 0.0
                     try:
-                        # Convert decimal string to float and multiply by 1e6 to get microseconds
-                        return int(float(subsec_str) * 1e6)
+                        return float(subsec_str)
                     except (ValueError, TypeError):
-                        return 0
+                        return 0.0
 
                 # Convert database format to HighTime objects
                 start_time = HighTime(

@@ -53,13 +53,27 @@ class QuestSink(SinkInterface):
 {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
 {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
 {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
+        if self._pod.port_inst is None:
+            pass
+        else:
+            self._subject = rx.Subject()
+            self._data = self._subject.pipe(
+                ops.starmap(_line_protocol_factory),
+                ops.buffer_with_count(self._pod.sample_rate // 2),
+                ops.map(lambda x: b'\n'.join(x))
+            )
 
-        self._subject = rx.Subject()
-        self._data = self._subject.pipe(
-            ops.starmap(_line_protocol_factory),
-            ops.buffer_with_count(self._pod.sample_rate // 2),
-            ops.map(lambda x: b'\n'.join(x))
-        )
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def measurement(self):
+        return self._measurement
 
     def __enter__(self) -> Self:
         self._sock = socket.create_connection((self._host, self._port))
@@ -81,3 +95,11 @@ class QuestSink(SinkInterface):
         if not hasattr(self, '_sock'):
             raise RuntimeError("Sink must be opened before flushing.")
         self._subject.on_next((timestamp, packet))
+
+    def get_dict(self):
+        return {
+            'host': self.host, 
+            'port': self.port, 
+            'measurement': self.measurement
+        }
+      

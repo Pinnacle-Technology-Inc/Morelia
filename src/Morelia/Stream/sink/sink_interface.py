@@ -8,7 +8,7 @@ __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 import abc
-
+from typing import Any
 from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D
 
@@ -25,3 +25,8 @@ class SinkInterface(metaclass=abc.ABCMeta):
     def flush(self, timestamp: int, packet: DataPacket) -> None:
         """Send data to destination (e.g. and EDF file)."""
         raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_dict(self) -> dict[str, Any]:
+        """Obtains sink __init__ argument values to use for process pickling"""
+        pass
