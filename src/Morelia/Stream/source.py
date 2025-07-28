@@ -41,44 +41,20 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             
             def on_next(value):
 
-                now_real_time_ns = time.time_ns()
-
                 # add on a fraction of the sample rate to last timestamp.
-                predicted_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
-                drift_ns = now_real_time_ns - observer.last_timestamp
-                correction = drift_ns * 0.001
-
-                #observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
-                observer.last_timestamp = int(predicted_timestamp + correction)
-
-                #print(f"[Drift] {drift_ns / 1e6:.3f} ms")
-                #correction = drift_ns * 0.05
-                #observer.last_timestamp = int(predicted_timestamp + correction)
+                observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
 
                 observer.packet_count += 1
-                #print(f"Observer packet count: {observer.packet_count}")
 
                 # if it's been more than a second...
                 if time.perf_counter() - observer.time_at_last_update >= 1:
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
-                    count_total_sample(observer.sample_rate)
-                    #print(observer.sample_rate)
                     observer.time_at_last_update = time.perf_counter()
-                
-                # hard reset if the drift gets too large
-                #if abs(drift_ns) > 5_000_000: 5ms of time
-                    #observer.last_timestamp = now_real_time_ns
-               
-                #moving average for sample rate
-                #alpha = 0.05
-                #new_rate = observer.packet_count / (now - observer.starting_time)
-                #observer.sample_rate = (1 - alpha) * observer.sample_rate * new_rate
 
                 # send packet and timestamp on its way.
                 observer.on_next((observer.last_timestamp, value))
-                #observer.on_next((last_timestamp, value))
 
             return source.subscribe(on_next,
                 observer.on_error,
@@ -97,8 +73,6 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
             
                 observer.on_next(pod.read_pod_packet())
-            print(f"Total packets: {get_packets()}")
-            print(f"Total sample: {get_sample()}")
             pod.close_port()
 
         # tell the observer we are finished.
@@ -130,8 +104,6 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     # create an observable to stream from POD device.
     device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
 
-    #drift_logger = DriftLogger()
-    
     # pipe the packets from ``device`` into a filter that throws out control packets (eventually we don't want to do this, but have
     # a seperate place these get put so they can still be read during streaming to enable feedback.),
     # and them timestamp packets.
@@ -140,7 +112,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
            do_action(lambda item: put_read_packet(item) if isinstance(item, ControlPacket) else None),
            do_action(count_packet),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
-           _timestamp_via_adjusted_sample_rate(pod.sample_rate),
+           _timestamp_via_adjusted_sample_rate(pod.sample_rate)
        )
      
     # create a function that outputs a connectable observable.
@@ -162,22 +134,4 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         
         # start streaming data from the observable!
         stream.connect()
-
-num_packets = 0
-def count_packet(_):
-    global num_packets
-    num_packets += 1
-
-def get_packets():
-    global num_packets
-    return num_packets
-
-total_sample = 0
-def count_total_sample(sample):
-    global total_sample
-    total_sample += sample
-
-def get_sample():
-    global total_sample
-    return total_sample
 

@@ -52,7 +52,7 @@ class PortIO :
         # close port 
         self.close_serial_port()
 
-    # ====== PRIVATE METHODS ======
+    # ====== STATIC METHODS ======
     
     @staticmethod
     def is_port_in_use(port: str) -> bool:
@@ -277,8 +277,6 @@ class PortIO :
         Args:
             message (bytes): byte string containing the message to write.
         """
-        if not self.is_serial_open():
-            return
-            
-        self._serial_inst.write(message)
+        if(self.is_serial_open()) : 
+            self.__serial_inst.write(message)
 
