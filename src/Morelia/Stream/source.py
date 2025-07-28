@@ -39,16 +39,28 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.packet_count = 0
 
             def on_next(value):
+                now_real_time_ns = time.time_ns()
+                predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                drift = now_real_time_ns - predicted
 
-                # add on a fraction of the sample rate to last timestamp.
-                observer.last_timestamp = int(observer.last_timestamp+(10**9/observer.sample_rate))
-                observer.packet_count += 1
+                correction_factor = 0.001
+
+                # add on a fraction of the sample rate to last timestamp, plus drift correction
+                observer.last_timestamp = int(predicted + (drift * correction_factor))
                 
+                # if drift from real time is 100ms further than expected 
+                # or predicted time is greater than current time, reset time stamps
+                if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
+                    observer.last_timestamp = now_real_time_ns
+
+                observer.packet_count += 1
+
                 # if it's been more than a second...
-                if time.perf_counter() - observer.time_at_last_update > 1:
+                if time.perf_counter() - observer.time_at_last_update >= 1:
                     
                     # adjust sample rate to be closer to what we are actually getting
                     observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
+                
                     observer.time_at_last_update = time.perf_counter()
                 
                 # send packet and timestamp on its way.
@@ -70,8 +82,12 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
             stream_start_time : float = time.perf_counter()
 
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
-            
-                observer.on_next(pod.read_pod_packet())
+                
+                try:
+                    observer.on_next(pod.read_pod_packet())
+                except Exception as e:
+                    print(f"Dropped packet due to: {e}")
+                    continue
 
         # tell the observer we are finished.
         observer.on_completed()

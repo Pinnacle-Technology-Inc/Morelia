@@ -137,8 +137,8 @@ class Pod :
         ) : 
             raise InvalidChecksumError('Cannot calculate the checksum of an invalid POD packet. The packet must begin with STX and end with ETX.')
         # get message contents excluding STX/ETX
-        msg_packet = msg[1:packet_bytes-3]
-        msg_csm = msg[packet_bytes-3:packet_bytes-1]
+        msg_packet = msg[1:-3]
+        msg_csm = msg[-3:-1]
         # calculate checksum from content packet  
         csm_valid = Pod.checksum(msg_packet)
         # return True if checksums match 
@@ -146,7 +146,7 @@ class Pod :
             return(True)
         else:
             return(False)
-
+    
 
 
     @staticmethod
@@ -359,14 +359,14 @@ class Pod :
         """
         # read until STX is found
         b = None
-        while(b != PodPacket.STX) :
-            b = self._port.read(1,timeout_sec)     # read next byte  
-        # continue reading packet  
+        while b != PodPacket.STX:
+            b = self._port.read(1, timeout_sec) # read next byte
+        
+        # continue reading packet
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
-        return(packet)
-
-
+        return packet
+     
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
@@ -423,13 +423,13 @@ class Pod :
                 cmd += b
             # start over if STX is found 
             if(b == PodPacket.STX ) : 
+                #TODO: check what is happening here, since this is not a return statement
                 self._read_pod_packet_recursive(validate_checksum=validate_checksum)
             # return if ETX is found
             if(b == PodPacket.ETX ) : 
                 return(cmd)
         # return complete 4 byte long command packet
         return(cmd)
-
 
     def _read_to_etx(self, validate_checksum:bool=True) -> bytes : 
         """Reads one byte at a time until an ETX is found. It will restart the recursive read if an STX \
@@ -453,10 +453,10 @@ class Pod :
                 packet += b
             # start over if STX
             if(b == PodPacket.STX) : 
+                #TODO: check what is happening here, since this is not a return statement
                 self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return packet
         return(packet)
-
 
     def _read_standard(self, pre_packet: bytes, validate_checksum:bool=True) -> ControlPacket:
         """Reads the payload, checksum, and ETX. Then it builds the complete standard (control) POD packet in bytes. 

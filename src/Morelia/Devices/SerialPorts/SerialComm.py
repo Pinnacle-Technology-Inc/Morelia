@@ -1,7 +1,7 @@
 # enviornment imports 
 from    serial import Serial, serial_for_url
 import  platform
-import  time
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -212,8 +212,7 @@ class PortIO :
                 return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
-
-
+        
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
 
