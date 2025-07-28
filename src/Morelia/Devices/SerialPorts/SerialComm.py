@@ -279,5 +279,5 @@ class PortIO :
             message (bytes): byte string containing the message to write.
         """
         if(self.is_serial_open()) : 
-            self.__serial_inst.write(message)
+            self._serial_inst.write(message)
 

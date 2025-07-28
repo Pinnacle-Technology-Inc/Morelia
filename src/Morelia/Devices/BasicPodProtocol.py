@@ -36,15 +36,12 @@ class Pod :
         """
         
         self._name = PortIO.build_port_name(port)
-        self._manager = PacketManager(name)
-        
+        self._manager = PacketManager(self._name)
         self._baudrate = baudrate
 
         # initialize serial port 
         self._port = None
-
         self._port_value = port
-
 
         # create object to handle commands 
         self._commands : CommandSet = CommandSet()
@@ -56,19 +53,13 @@ class Pod :
         #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
-        
-        # save queue to write to device
-        self._write_queue = self._manager.obtain_write_queue()
-
-        # save queue to read from device
-        self._read_queue = self._manager.obtain_read_queue()
 
     def open_port(self):
         # initialize serial port 
         # initialize serial port 
-        if not PortIO.is_port_in_use(port):
+        if not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
-            self._port : PortIO = PortIO(port, baudrate)
+            self._port : PortIO = PortIO(self._port_value, self._baudrate)
 
             # initialize the control queues for this pod device
             self._manager.initialize_control_queue()
@@ -78,7 +69,13 @@ class Pod :
 
             # register the control queues for the pod device
             self._manager.register_control_queue(self._name)
-    
+         
+        # save queue to write to device
+        self._write_queue = self._manager.obtain_write_queue()
+
+        # save queue to read from device
+        self._read_queue = self._manager.obtain_read_queue()
+   
     def close_port(self):
         if self._port is not None:
             self._port.close_serial_port()
@@ -91,7 +88,7 @@ class Pod :
 
     def obtain_read_queue(self):
         return self._manager.obtain_read_queue()
-   
+
     @staticmethod
     def get_u(u: int) -> int : 
         """Number of hexadecimal characters for an unsigned u-bit value.
@@ -456,7 +453,7 @@ class Pod :
         return ControlPacket(self._commands, packet)
     
     def check_write_queue(self) -> None:
-        """Checks the queue for packets and writes them to the device if they exist
+        """Checks the queue for packets and writes them to the device if they exist.
         """
         try:
             # while not empty,

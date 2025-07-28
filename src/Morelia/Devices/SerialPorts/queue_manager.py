@@ -29,8 +29,6 @@ class PacketManager:
         self._queue = None
         self._write_queue = None
         self._read_queue = None
-        self._queues_initialized = False
-        self._queues_registered = False
 
     def port_in_use(self, host, port):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -55,7 +53,6 @@ class PacketManager:
 
         # register the queue in the parent process
         self.register_control_queue(self.port)
-        self._queues_initialized = True
 
     def create_control_queue_process(self, port):
         """

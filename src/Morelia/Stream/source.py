@@ -129,7 +129,6 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     data = device.pipe(
            do_action(lambda _: pod.check_write_queue()),
            do_action(lambda item: put_read_packet(item) if isinstance(item, ControlPacket) else None),
-           do_action(count_packet),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
            _timestamp_via_adjusted_sample_rate(pod.sample_rate)
        )
