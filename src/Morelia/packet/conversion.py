@@ -122,20 +122,6 @@ def int_to_ascii_bytes(value: int, num_chars: int) -> bytes :
     # return a byte message of a desired size 
     return(msg)
 
-# simplified int_to_ascii_bytes function
-#def int_to_ascii_bytes(value: int, num_chars: int) -> bytes:
-#    """
-#    Converts an integer to ASCII-encoded hex bytes of a fixed length.
-#    """
-#    if value < 0:
-#        value = neg_int_to_twos_complement(value, num_chars * 4) 
-#
-#    #max_val = (1 << (num_chars * 4)) - 1
-#    #value = value & max_val
-#
-#    hex_str = f"{value:0{num_chars}X}"[:num_chars]  # truncate from right if too long
-#    return hex_str.encode("ascii")
-
 def ascii_bytes_to_int(msg_b: bytes, signed: bool=False) -> int :
     """``msg_b`` contain a series of ascii-encoded hexadecimal digits that encode an integer. 
     If signed=True, then this integer is interpreted as a negative two's complement number,

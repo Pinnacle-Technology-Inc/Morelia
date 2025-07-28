@@ -80,7 +80,7 @@ class Pod :
 
 
     @staticmethod
-    def _validate_checksum(self, msg: bytes) -> bool :
+    def _validate_checksum(msg: bytes) -> bool :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
