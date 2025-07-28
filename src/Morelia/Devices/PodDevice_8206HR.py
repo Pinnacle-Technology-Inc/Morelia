@@ -6,10 +6,6 @@ from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
 from functools import partial
-from datetime import datetime
-import time
-import traceback
-import pdb
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -63,18 +59,18 @@ class Pod8206HR(AcquisitionDevice) :
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preamp_gain : int = preamp_gain 
-        
+            
+        # define function used to decode packet from binary data.
+        def decode_packet(command_number: int, payload: bytes) -> tuple:
+            if command_number == 106:
+                return Pod8206HR._translate_ttlbyte_ascii(payload)
+
+            return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+ 
         # the constructor used to create control packets as they are recieved.
-        self._control_packet_factory = partial(ControlPacket, self.decode_packet)
+        self._control_packet_factory = partial(ControlPacket, decode_packet)
 
-        
-    # define function used to decode packet from binary data.
-    def decode_packet(self, command_number: int, payload: bytes) -> tuple:
-        if command_number == 106:
-            return Pod8206HR._translate_ttlbyte_ascii(payload)
-
-        return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
-
+       
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
         """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
@@ -108,16 +104,7 @@ class Pod8206HR(AcquisitionDevice) :
         # check if checksum is correct 
         if(validate_checksum):
             if(not self._validate_checksum(packet) ) :
-                with open("external_error.log", "w") as f:
-                    f.write(f"\n--- Exception at {time.ctime()} ---\n")
-                    f.write("".join(traceback.format_stack()))
-                    f.write("\n")
-                #pdb.set_trace()
-                #raise Exception('Bad checksum for binary POD packet read.')
-                #try:
                 raise Exception('Bad checksum for binary POD packet read.')
-                #except Exception as e:
-                #    print(f"Caught an error: {e}")
         
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
