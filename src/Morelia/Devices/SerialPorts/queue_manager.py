@@ -136,10 +136,4 @@ class PacketManager:
  
     def obtain_read_queue(self):
         return self._read_queue
- 
-    def queues_initialized(self):
-        return self._queues_initialized
 
-    def queues_registered(self):
-        return self._queues_registered
-        

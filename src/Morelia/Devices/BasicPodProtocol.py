@@ -63,7 +63,10 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
         
+        # save queue to write to device
         self._write_queue = self._manager.obtain_write_queue()
+
+        # save queue to read from device
         self._read_queue = self._manager.obtain_read_queue()
 
     # closes a port
@@ -73,24 +76,13 @@ class Pod :
         else:
             self._port.close_serial_port()
 
+    # functions to get queue values
     def obtain_write_queue(self):
         return self._manager.obtain_write_queue()
 
     def obtain_read_queue(self):
         return self._manager.obtain_read_queue()
-    
-    def queues_initialized(self):
-        """
-        Verifies if the Queue has been initialized in the PacketManager
-        """
-        return self._manager.queues_initialized()
-
-    def queues_registered(self):
-        """
-        Verifies if the Queue has been registered in the PacketManager
-        """
-        return self._manager.queues_registered()
-
+   
     @staticmethod
     def get_u(u: int) -> int : 
         """Number of hexadecimal characters for an unsigned u-bit value.
@@ -154,7 +146,6 @@ class Pod :
         if(msg_csm == csm_valid) :
             return(True)
         else:
-            print(msg)
             return(False)
 
 
@@ -359,7 +350,7 @@ class Pod :
         if self._port is not None:
             self.flush_port()
 
-        #writes packet to the device
+        #writes packet to the device (or queue)
         self.write_packet(cmd, payload)
         
         if isinstance(cmd, str):
@@ -368,6 +359,8 @@ class Pod :
             expected_cmd_num = cmd
         
         start = time.time()
+
+        #if port exists,
         if self._port is not None:
 
             #loops until it finds a control packet, and returns the found control packet
@@ -379,26 +372,33 @@ class Pod :
 
                 continue
 
+        #if port does not exist,
         else:
-            #poll at the read queue for a small amount of time, and return the packet
+
+            #poll at the read queue until timeout
             while time.time() - start < timeout_sec:
+
                 try:
                     raw_packet = self._read_queue.get_nowait()
                 except Empty:
                     continue
                 
                 if isinstance(raw_packet, bytes):
+                    # reconstruct packet from bytes read from read queue
                     packet = ControlPacket(self._commands, raw_packet)
                 
+                    # if the command number is the expected command number, return packet
                     if isinstance(packet, ControlPacket):
                         if packet.command_number == expected_cmd_num:
-                            
                             return packet
                     else:
-                        print(f"Reconstructed packed is not a ControlPacket: {type(packet)}")
+                        #print if error occurs in reconstructing packet (number of bytes not expected for Control Packet)
+                        print(f"Reconstructed packet is not a ControlPacket: {type(packet)}")
                 else:
+                    #print if error occurs in data type of data within queue
                     print(f"[!] Got invalid packet of type {type(raw_packet)} and size {len(raw_packet) if isinstance(raw_packet, bytes) else 'N/A'}")
-
+        
+        #raise error on timeout
         raise TimeoutError(f"Did not receive expected control response to command {cmd}")
         
     def write_packet(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None) -> ControlPacket:
@@ -410,27 +410,34 @@ class Pod :
         :return: Packet that was written to the POD device.
         """
         # POD packet 
-
-        #if port exists, write to the port using PortIO
         packet = self.get_pod_packet(cmd, payload)
-
+        
+        #if port exists, write to the port using PortIO
         if self._port is not None:
             self._port.write(packet)
+        #otherwise, place into the queue to write to serial port in a non-blocking manner
+        #use 'finally' to ensure write occurs even on interrupt signal
         else:
             try:
                 pass
             finally:
                 self._write_queue.put_nowait(packet)
         return ControlPacket(self._commands, packet)
-           
+    
     def check_write_queue(self) -> None:
-        if self._manager.queues_initialized():
-            try:
-                while True:
-                    item = self._write_queue.get_nowait()
-                    self._port.write(item)
-            except Empty:
-                return
+        """Checks the queue for packets and writes them to the device if they exist
+        """
+        try:
+            # while not empty,
+            while True:
+                # obtain a packet from the queue (non-blocking)
+                item = self._write_queue.get_nowait()
+
+                # write the item to the serial port
+                self._port.write(item)
+        #if empty, return
+        except Empty:
+            return
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -448,29 +455,12 @@ class Pod :
             raise TypeError("PortIO object does not exist!")
 
         b = None
-        start_time = time.time()
-        # while loop that is active for the duration of timeout
-        while time.time() - start_time < timeout_sec:
+        while(b != PodPacket.STX) :
             b = self._port.read(1,timeout_sec)     # read next byte  
-            if b != PodPacket.STX:
-                continue
-
-            try:
-                packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-                return packet
-
-            except Exception as e:
-                print(f"[Resync] Dropped packet after STX due to error: {e}")
-                continue
-
-        raise TimeoutError("Timed out waiting for valid Pod Packet")
-
-        #while(b != PodPacket.STX) :
-        #    b = self._port.read(1,timeout_sec)     # read next byte  
-        ## continue reading packet  
-        #packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-        ## return final packet
-        #return(packet)
+        # continue reading packet  
+        packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+        # return final packet
+        return(packet)
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
