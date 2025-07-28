@@ -48,8 +48,9 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 # add on a fraction of the sample rate to last timestamp, plus drift correction
                 observer.last_timestamp = int(predicted + (drift * correction_factor))
                 
-                #if drift from real time is 100ms further than expected, reset time stamps
-                if abs(drift) > 100_000_000:
+                # if drift from real time is 100ms further than expected 
+                # or predicted time is greater than current time, reset time stamps
+                if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
                     observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1

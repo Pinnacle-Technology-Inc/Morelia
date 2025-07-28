@@ -388,7 +388,8 @@ class Pod :
                 cmd += b
             # start over if STX is found 
             if(b == PodPacket.STX ) : 
-                self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+                raise ValueError("Unexpected STX found while reading to ETX in cmd num.")
+                #self._read_pod_packet_recursive(validate_checksum=validate_checksum)
             # return if ETX is found
             if(b == PodPacket.ETX ) : 
                 return(cmd)
