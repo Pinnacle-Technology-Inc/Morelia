@@ -507,33 +507,7 @@ class Pod :
                 raise Exception('Bad checksum for binary POD packet read.')
         # return complete variable length binary packet
         return DataPacket(packet)
-
-
-    @property
-    def id(self) -> int:
-        """Returns a device's hardware ID."""
-        device_id = self.write_read("ID")
-        return device_id.payload[0]
-
-    @property
-    def type(self) -> int:
-        """Returns a device's TYPE number. Each TYPE number corresponds to a specific pod device (see docs). General getter for device TYPE."""
-        device_type = self.write_read("TYPE")
-        return device_type.payload[0]
-
-    @property
-    def pod_type(self) -> str:
-        """Gets a device's TYPE number. Maps the number to a pod device string. Returns the pod device string."""
-        type_code = str(self.type)
-        type_map = {
-            "48": "Pod8206HR",
-            "52": "Pod8229",
-            "46": "Pod8274D",
-            "49": "Pod8401HR",
-            "50": "Pod8480SC"
-        }
-        return type_map.get(type_code, "Unknown Pod Device")
-
+    
     def set_config(self, folder_path: str):
         """Consumes an experiment configuration folder and identifies files based on the 'title' in the .toml files. Uses "Experiment Configuration" files to map devices to "Device Configuration" files based on device ID and device virtual name. 
         :param folder_path: The folder path of the experiment configuration folder.  
@@ -692,4 +666,3 @@ class Pod :
                     output_dict[logical_key] = prop_value
                 except Exception as e:
                     print(f"[SKIP] Failed to read {prop_name}: {e}")
-

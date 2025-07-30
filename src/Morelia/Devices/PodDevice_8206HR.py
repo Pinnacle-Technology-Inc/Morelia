@@ -7,6 +7,7 @@ import Morelia.packet.conversion as conv
 import time
 
 from functools import partial
+from Morelia.Devices.BasicPodProtocol import BasicPodProtocol
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -49,6 +50,40 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
         self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (BINARY_4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
         
+        """Add new commands for additional properties -- need to check how they correspond with the POD commands
+
+        self._commands.add_command(110, 'GET NOTCH FILTER', (0,), (UINT8,), False, 'Get notch filter enabled state.')
+        self._commands.add_command(111, 'SET NOTCH FILTER', (UINT8,), (0,), False, 'Set notch filter enabled state.')
+        self._commands.add_command(112, 'GET NOTCH FREQUENCY', (0,), (UINT16,), False, 'Get notch filter frequency.')
+        self._commands.add_command(113, 'SET NOTCH FREQUENCY', (UINT16,), (0,), False, 'Set notch filter frequency.')
+        
+        # TTL event enable/disable commands
+        self._commands.add_command(114, 'GET ENABLE TTL IN RISE EVENT', (UINT8,), (UINT8,), False, 'Get TTL in rise event enabled.')
+        self._commands.add_command(115, 'SET ENABLE TTL IN RISE EVENT', (UINT8, UINT8), (0,), False, 'Set TTL in rise event enabled.')
+        self._commands.add_command(116, 'GET ENABLE TTL IN FALL EVENT', (UINT8,), (UINT8,), False, 'Get TTL in fall event enabled.')
+        self._commands.add_command(117, 'SET ENABLE TTL IN FALL EVENT', (UINT8, UINT8), (0,), False, 'Set TTL in fall event enabled.')
+        self._commands.add_command(118, 'GET ENABLE DEBOUNCE', (0,), (UINT8,), False, 'Get debounce enabled.')
+        self._commands.add_command(119, 'SET ENABLE DEBOUNCE', (UINT8,), (0,), False, 'Set debounce enabled.')
+        self._commands.add_command(120, 'GET ENABLE TTL OUT', (UINT8,), (UINT8,), False, 'Get TTL out enabled.')
+        self._commands.add_command(121, 'SET ENABLE TTL OUT', (UINT8, UINT8), (0,), False, 'Set TTL out enabled.')
+
+        # Add commands for channel names and TTL event strings
+        self._commands.add_command(130, 'GET CHANNEL1 NAME', (0,), (0,), False, 'Get channel 1 name.')
+        self._commands.add_command(131, 'SET CHANNEL1 NAME', (str,), (0,), False, 'Set channel 1 name.')
+        self._commands.add_command(132, 'GET CHANNEL2 NAME', (0,), (0,), False, 'Get channel 2 name.')
+        self._commands.add_command(133, 'SET CHANNEL2 NAME', (str,), (0,), False, 'Set channel 2 name.')
+        self._commands.add_command(134, 'GET CHANNEL3 NAME', (0,), (0,), False, 'Get channel 3 name.')
+        self._commands.add_command(135, 'SET CHANNEL3 NAME', (str,), (0,), False, 'Set channel 3 name.')
+
+        self._commands.add_command(140, 'GET TTL1 EVENT STRING', (0,), (0,), False, 'Get TTL1 event string.')
+        self._commands.add_command(141, 'SET TTL1 EVENT STRING', (str,), (0,), False, 'Set TTL1 event string.')
+        self._commands.add_command(142, 'GET TTL2 EVENT STRING', (0,), (0,), False, 'Get TTL2 event string.')
+        self._commands.add_command(143, 'SET TTL2 EVENT STRING', (str,), (0,), False, 'Set TTL2 event string.')
+        self._commands.add_command(144, 'GET TTL3 EVENT STRING', (0,), (0,), False, 'Get TTL3 event string.')
+        self._commands.add_command(145, 'SET TTL3 EVENT STRING', (str,), (0,), False, 'Set TTL3 event string.')
+        self._commands.add_command(146, 'GET TTL4 EVENT STRING', (0,), (0,), False, 'Get TTL4 event string.')
+        self._commands.add_command(147, 'SET TTL4 EVENT STRING', (str,), (0,), False, 'Set TTL4 event string.')
+        """
         # preamplifier gain (should be 10x or 100x)
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
@@ -144,13 +179,277 @@ class Pod8206HR(AquisitionDevice) :
     
     @property
     def ttl_port(self) -> int:
+        """Gets the value of the entire TTL port as a byte. Does not modify pin direction."""
         port = self.write_read("GET TTL PORT")
         return port.payload[0]
 
     @property 
     def filter_config(self) -> int: 
+        """Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpass)."""
         config = self.write_read("GET FILTER CONFIG")
         return config.payload[0]
+
+    # === Notch Filter ===
+    @property
+    def notch_filter(self) -> bool:
+        """Gets the notch filter enabled state."""
+        notch_status = self.write_read("GET NOTCH").payload[0]
+        is_notch_enabled = notch_status == "ENABLED"
+        return is_notch_enabled
+
+    @notch_filter.setter
+    def notch_filter(self, value: bool):
+        """Sets the notch filter enabled state."""
+        self.write_packet("SET NOTCH", "ENABLED" if value else "DISABLED")
+
+    @property
+    def notch_frequency(self) -> float:
+        """Gets the notch filter frequency."""
+        notch_freq_str = self.write_read("GET NOTCHFREQ").payload[0]
+        notch_freq = float(notch_freq_str)
+        return notch_freq
+
+    @notch_frequency.setter
+    def notch_frequency(self, value: float):
+        """Sets the notch filter frequency."""
+        self.write_packet("SET NOTCHFREQ", str(value))
+
+    # === TTL Control ===
+    @property
+    def enable_ttl_in_rise_event(self) -> bool:
+        """Gets the TTL in rise event enabled state."""
+        ttl_rise_state = self.write_read("GET TTLRISE").payload[0]
+        is_rise_enabled = ttl_rise_state == "ENABLED"
+        return is_rise_enabled
+
+    @enable_ttl_in_rise_event.setter
+    def enable_ttl_in_rise_event(self, value: bool):
+        """Sets the TTL in rise event enabled state."""
+        self.write_packet("SET TTLRISE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def enable_ttl_in_fall_event(self) -> bool:
+        """Gets the TTL in fall event enabled state."""
+        ttl_fall_state = self.write_read("GET TTLFALL").payload[0]
+        is_fall_enabled = ttl_fall_state == "ENABLED"
+        return is_fall_enabled
+
+    @enable_ttl_in_fall_event.setter
+    def enable_ttl_in_fall_event(self, value: bool):
+        """Sets the TTL in fall event enabled state."""
+        self.write_packet("SET TTLFALL", "ENABLED" if value else "DISABLED")
+
+    @property
+    def enable_debounce(self) -> bool:
+        """Gets the debounce enabled state."""
+        debounce_status = self.write_read("GET DEBOUNCE").payload[0]
+        is_debounce_enabled = debounce_status == "ENABLED"
+        return is_debounce_enabled
+
+    @enable_debounce.setter
+    def enable_debounce(self, value: bool):
+        """Sets the debounce enabled state."""
+        self.write_packet("SET DEBOUNCE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def enable_ttl_out(self) -> bool:
+        """Gets the TTL out enabled state."""
+        ttl_out_status = self.write_read("GET TTLOUT").payload[0]
+        is_ttl_out_enabled = ttl_out_status == "ENABLED"
+        return is_ttl_out_enabled
+
+    @enable_ttl_out.setter
+    def enable_ttl_out(self, value: bool):
+        """Sets the TTL out enabled state."""
+        self.write_packet("SET TTLOUT", "ENABLED" if value else "DISABLED")
+
+    # === Channel Names ===
+    @property
+    def channel1_name(self) -> str:
+        """Gets the name of channel 1."""
+        channel1_name_value = self.write_read("GET CH1NAME").payload[0]
+        return channel1_name_value
+
+    @channel1_name.setter
+    def channel1_name(self, value: str):
+        """Sets the name of channel 1."""
+        self.write_packet("SET CH1NAME", value)
+
+    @property
+    def channel2_name(self) -> str:
+        """Gets the name of channel 2."""
+        channel2_name_value = self.write_read("GET CH2NAME").payload[0]
+        return channel2_name_value
+
+    @channel2_name.setter
+    def channel2_name(self, value: str):
+        """Sets the name of channel 2."""
+        self.write_packet("SET CH2NAME", value)
+
+    @property
+    def channel3_name(self) -> str:
+        """Gets the name of channel 3."""
+        channel3_name_value = self.write_read("GET CH3NAME").payload[0]
+        return channel3_name_value
+
+    @channel3_name.setter
+    def channel3_name(self, value: str):
+        """Sets the name of channel 3."""
+        self.write_packet("SET CH3NAME", value)
+
+    # === TTL Event Strings ===
+    @property
+    def ttl1_event_string(self) -> str:
+        """Gets the TTL1 event string."""
+        ttl1_event_str = self.write_read("GET TTL1EVENT").payload[0]
+        return ttl1_event_str
+
+    @ttl1_event_string.setter
+    def ttl1_event_string(self, value: str):
+        """Sets the TTL1 event string."""
+        self.write_packet("SET TTL1EVENT", value)
+
+    @property
+    def ttl2_event_string(self) -> str:
+        """Gets the TTL2 event string."""
+        ttl2_event_str = self.write_read("GET TTL2EVENT").payload[0]
+        return ttl2_event_str
+
+    @ttl2_event_string.setter
+    def ttl2_event_string(self, value: str):
+        """Sets the TTL2 event string."""
+        self.write_packet("SET TTL2EVENT", value)
+
+    @property
+    def ttl3_event_string(self) -> str:
+        """Gets the TTL3 event string."""
+        ttl3_event_str = self.write_read("GET TTL3EVENT").payload[0]
+        return ttl3_event_str
+
+    @ttl3_event_string.setter
+    def ttl3_event_string(self, value: str):
+        """Sets the TTL3 event string."""
+        self.write_packet("SET TTL3EVENT", value)
+
+    @property
+    def ttl4_event_string(self) -> str:
+        """Gets the TTL4 event string."""
+        ttl4_event_str = self.write_read("GET TTL4EVENT").payload[0]
+        return ttl4_event_str
+
+    @ttl4_event_string.setter
+    def ttl4_event_string(self, value: str):
+        """Sets the TTL4 event string."""
+        self.write_packet("SET TTL4EVENT", value)
+
+    # === TTL Per-Channel States ===
+    @property
+    def ttl1_rising_state(self) -> bool:
+        """Gets the TTL1 rising edge detection state."""
+        ttl1_rise_status = self.write_read("GET TTL1RISE").payload[0]
+        return ttl1_rise_status == "ENABLED"
+
+    @ttl1_rising_state.setter
+    def ttl1_rising_state(self, value: bool):
+        """Sets the TTL1 rising edge detection state."""
+        self.write_packet("SET TTL1RISE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl2_rising_state(self) -> bool:
+        """Gets the TTL2 rising edge detection state."""
+        ttl2_rise_status = self.write_read("GET TTL2RISE").payload[0]
+        return ttl2_rise_status == "ENABLED"
+
+    @ttl2_rising_state.setter
+    def ttl2_rising_state(self, value: bool):
+        """Sets the TTL2 rising edge detection state."""
+        self.write_packet("SET TTL2RISE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl3_rising_state(self) -> bool:
+        """Gets the TTL3 rising edge detection state."""
+        ttl3_rise_status = self.write_read("GET TTL3RISE").payload[0]
+        return ttl3_rise_status == "ENABLED"
+
+    @ttl3_rising_state.setter
+    def ttl3_rising_state(self, value: bool):
+        """Sets the TTL3 rising edge detection state."""
+        self.write_packet("SET TTL3RISE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl4_rising_state(self) -> bool:
+        """Gets the TTL4 rising edge detection state."""
+        ttl4_rise_status = self.write_read("GET TTL4RISE").payload[0]
+        return ttl4_rise_status == "ENABLED"
+
+    @ttl4_rising_state.setter
+    def ttl4_rising_state(self, value: bool):
+        """Sets the TTL4 rising edge detection state."""
+        self.write_packet("SET TTL4RISE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl1_falling_state(self) -> bool:
+        """Gets the TTL1 falling edge detection state."""
+        ttl1_fall_status = self.write_read("GET TTL1FALL").payload[0]
+        return ttl1_fall_status == "ENABLED"
+
+    @ttl1_falling_state.setter
+    def ttl1_falling_state(self, value: bool):
+        """Sets the TTL1 falling edge detection state."""
+        self.write_packet("SET TTL1FALL", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl2_falling_state(self) -> bool:
+        """Gets the TTL2 falling edge detection state."""
+        ttl2_fall_status = self.write_read("GET TTL2FALL").payload[0]
+        return ttl2_fall_status == "ENABLED"
+
+    @ttl2_falling_state.setter
+    def ttl2_falling_state(self, value: bool):
+        """Sets the TTL2 falling edge detection state."""
+        self.write_packet("SET TTL2FALL", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl3_falling_state(self) -> bool:
+        """Gets the TTL3 falling edge detection state."""
+        ttl3_fall_status = self.write_read("GET TTL3FALL").payload[0]
+        return ttl3_fall_status == "ENABLED"
+
+    @ttl3_falling_state.setter
+    def ttl3_falling_state(self, value: bool):
+        """Sets the TTL3 falling edge detection state."""
+        self.write_packet("SET TTL3FALL", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl4_falling_state(self) -> bool:
+        """Gets the TTL4 falling edge detection state."""
+        ttl4_fall_status = self.write_read("GET TTL4FALL").payload[0]
+        return ttl4_fall_status == "ENABLED"
+
+    @ttl4_falling_state.setter
+    def ttl4_falling_state(self, value: bool):
+        """Sets the TTL4 falling edge detection state."""
+        self.write_packet("SET TTL4FALL", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl1_debounce(self) -> bool:
+        """Gets the TTL1 debounce status."""
+        ttl1_debounce_status = self.write_read("GET TTL1DEBOUNCE").payload[0]
+        return ttl1_debounce_status == "ENABLED"
+
+    @ttl1_debounce.setter
+    def ttl1_debounce(self, value: bool):
+        """Sets the TTL1 debounce status."""
+        self.write_packet("SET TTL1DEBOUNCE", "ENABLED" if value else "DISABLED")
+
+    @property
+    def ttl1_synchronous(self) -> bool:
+        ttl1_sync_status = self.write_read("GET TTL1SYNCH").payload[0]
+        return ttl1_sync_status == "ENABLED"
+
+    @ttl1_synchronous.setter
+    def ttl1_synchronous(self, value: bool):
+        self.write_packet("SET TTL1SYNCH", "ENABLED" if value else "DISABLED")
 
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
@@ -189,30 +488,66 @@ class Pod8206HR(AquisitionDevice) :
 
     def _apply_config_recursive(self, config: dict, skip_keys):
         super()._apply_config_recursive(config, skip_keys)
-        # some overriding properties like:
+        # TODO: add some overriding properties if necessary like:
         # if "lowpass" in config:
         #   self.lowpass = config["LOWPASS"]
 
     """Maps the properties for generating a config file"""
     _property_map = {
-        "information": {
-            "type": "type",
-            "sample_rate": "sample_rate",
-        },
-
-        "channel settings": {
+        "lowpass": {
             "lowpass_ch0": "lowpass_ch0",
             "lowpass_ch1": "lowpass_ch1",
             "lowpass_ch2": "lowpass_ch2",
         },
-
-        "ttl controls": {
+        "ttl pins": {
             "ttl_pin0": "ttl_pin0",
             "ttl_pin1": "ttl_pin1",
             "ttl_pin2": "ttl_pin2",
             "ttl_pin3": "ttl_pin3",
+            "ttl_port": "ttl_port",
         },
-        "filter_controls": {
+        "filter config": {
             "filter_config": "filter_config",
         },
+        "channel settings": {
+            "notch_filter": "notch_filter",
+            "notch_frequency": "notch_frequency",
+        },
+        "ttl events": {
+            "enable_ttl_in_rise_event": "enable_ttl_in_rise_event",
+            "enable_ttl_in_fall_event": "enable_ttl_in_fall_event",
+            "enable_debounce": "enable_debounce",
+            "enable_ttl_out": "enable_ttl_out",
+        },
+        "ttl labels": {
+            "ttl1_event_string": "ttl1_event_string",
+            "ttl2_event_string": "ttl2_event_string",
+            "ttl3_event_string": "ttl3_event_string",
+            "ttl4_event_string": "ttl4_event_string",
+        },
+        "channel names": {
+            "channel1_name": "channel1_name",
+            "channel2_name": "channel2_name",
+            "channel3_name": "channel3_name",
+        },
+        "ttl states": {
+            "ttl1_rising_state": "ttl1_rising_state",
+            "ttl2_rising_state": "ttl2_rising_state",
+            "ttl3_rising_state": "ttl3_rising_state",
+            "ttl4_rising_state": "ttl4_rising_state",
+            "ttl1_falling_state": "ttl1_falling_state",
+            "ttl2_falling_state": "ttl2_falling_state",
+            "ttl3_falling_state": "ttl3_falling_state",
+            "ttl4_falling_state": "ttl4_falling_state",
+            "ttl1_debounce": "ttl1_debounce",
+            "ttl1_synchronous": "ttl1_synchronous",
+        },
     }
+
+    def _init_property_map(self):
+        """Initializes the property map for this device. This is used to generate a config file."""
+        self._property_map = self.combine_property_maps(
+            self._property_map,
+            self._device_property_map
+        )
+

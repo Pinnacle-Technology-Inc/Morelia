@@ -38,43 +38,107 @@
     </div>
 
     <form id="device-form" action="/submit1" method="post">
-      <label for="config_name">Config. File Name</label>
-      <input type="text" name="filename" id="filename" placeholder="Untitled" value="{{ session.get('loaded_config', {}).get('filename', '') }}">
-      <fieldset id="information">
-        <legend>Information</legend>
-        <label>Firmware Version: X.X.X</label><br>
-        <label>Sample Rate (Hz)</label>
-        <select name="sample_rate" id="sample_rate">
-          <option value="400" {% if session.get('loaded_config', {}).get('information', {}).get('sample_rate', '') == '400' %}selected{% endif %}>400</option>
-        </select>
-        <label>Preamp Gain</label>
-        <select name="preamp_gain" id="preamp_gain">
-          <option value="100" {% if session.get('loaded_config', {}).get('information', {}).get('preamp_gain', '') == '100' %}selected{% endif %}>100</option>
-        </select>
-      </fieldset>
 
-      <fieldset id="channel_names">
-        <legend>Channel Names</legend>
-        <label>Channel 1</label>
-        <input type="text" name="channel_1" id="channel_1" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_1', 'EEG1') }}">
-        <label>Channel 2</label>
-        <input type="text" name="channel_2" id="channel_2" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_2', 'EEG2') }}">
-        <label>Channel 3</label>
-        <input type="text" name="channel_3" id="channel_3" value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_3', 'EEG3') }}">
-      </fieldset>
+  <label for="config_name">Config. File Name</label>
+  <input type="text" name="filename" id="filename"
+    value="{{ session.get('loaded_config', {}).get('filename', '') }}">
 
-      <fieldset id="channel_settings">
-        <legend>Channel Settings</legend>
-        <label>EEG1</label>
-        <input type="number" name="eeg1" id="eeg1" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('eeg1', '40') }}">
-        <label>EEG2</label>
-        <input type="number" name="eeg2" id="eeg2" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('eeg2', '40') }}">
-        <label>EMG</label>
-        <input type="number" name="emg" id="emg" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('emg', '100') }}">
-        <label>Notch</label>
-        <input type="checkbox" name="notch_enabled" id="notch_enabled" value="true" {% if session.get('loaded_config', {}).get('channel_settings', {}).get('notch_enabled', '') == 'true' %}checked{% endif %}>
-        <input type="number" name="notch_value" id="notch_value" value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('notch_value', '0') }}">
-      </fieldset>
+  <fieldset id="information">
+    <legend>Information</legend>
+    <label>Firmware Version: {{ session.get('loaded_config', {}).get('identification', {}).get('firmware_version', 'X.X.X') }}</label><br>
+
+    <label>Sample Rate (Hz)</label>
+    <select name="sample_rate" id="sample_rate">
+      {% for rate in [400, 457, 512, 1024] %}
+        <option value="{{ rate }}" {% if session.get('loaded_config', {}).get('information', {}).get('sample_rate', '')|string == rate|string %}selected{% endif %}>{{ rate }}</option>
+      {% endfor %}
+    </select>
+
+    <label>Preamp Gain</label>
+    <select name="preamp_gain" id="preamp_gain">
+      {% for gain in [10, 20, 40, 100] %}
+        <option value="{{ gain }}" {% if session.get('loaded_config', {}).get('information', {}).get('preamp_gain', '')|string == gain|string %}selected{% endif %}>{{ gain }}</option>
+      {% endfor %}
+    </select>
+  </fieldset>
+
+  <fieldset id="channel_names">
+    <legend>Channel Names</legend>
+    {% for ch_num in range(1, 4) %}
+      <label>Channel {{ ch_num }}</label>
+      <input type="text" name="channel_{{ ch_num }}" id="channel_{{ ch_num }}"
+        value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel{{ch_num}}_name', 'EEG' ~ ch_num) }}">
+    {% endfor %}
+  </fieldset>
+
+  <fieldset id="channel_settings">
+    <legend>Channel Settings</legend>
+    {% for ch_label in ['eeg1', 'eeg2', 'emg'] %}
+      <label>{{ ch_label | upper }}</label>
+      <input type="number" name="{{ ch_label }}" id="{{ ch_label }}"
+        value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get(ch_label, '') }}">
+    {% endfor %}
+
+    <label>Filter Config</label>
+    <input type="number" name="filter_config" id="filter_config"
+      value="{{ session.get('loaded_config', {}).get('filter_config', '') }}">
+
+    <label>Notch Enabled</label>
+    <input type="checkbox" name="notch_filter" id="notch_filter" value="true"
+      {% if session.get('loaded_config', {}).get('channel_settings', {}).get('notch_filter', False) %}checked{% endif %}>
+
+    <label>Notch Frequency</label>
+    <input type="number" name="notch_frequency" id="notch_frequency"
+      value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('notch_frequency', '') }}">
+  </fieldset>
+
+  <fieldset>
+    <legend>TTL Pins</legend>
+    {% for i in range(4) %}
+      <label>TTL Pin {{ i }}</label>
+      <input type="number" name="ttl_pin{{ i }}" id="ttl_pin{{ i }}"
+        value="{{ session.get('loaded_config', {}).get('ttl pins', {}).get('ttl_pin' ~ i, '') }}">
+    {% endfor %}
+    <label>TTL Port</label>
+    <input type="number" name="ttl_port" id="ttl_port"
+      value="{{ session.get('loaded_config', {}).get('ttl pins', {}).get('ttl_port', '') }}">
+  </fieldset>
+
+  <fieldset>
+    <legend>TTL Events</legend>
+    {% for event_name, label in {
+      'enable_ttl_in_rise_event': 'Enable TTL In Rise Event',
+      'enable_ttl_in_fall_event': 'Enable TTL In Fall Event',
+      'enable_debounce': 'Enable Debounce',
+      'enable_ttl_out': 'Enable TTL Out'
+    }.items() %}
+      <label>{{ label }}</label>
+      <input type="checkbox" name="{{ event_name }}" id="{{ event_name }}" value="true"
+        {% if session.get('loaded_config', {}).get('ttl events', {}).get(event_name, False) %}checked{% endif %}>
+    {% endfor %}
+  </fieldset>
+
+  <fieldset>
+    <legend>TTL Labels</legend>
+    {% for ttl_label in ['ttl1_event_string', 'ttl2_event_string', 'ttl3_event_string', 'ttl4_event_string'] %}
+      <label>{{ ttl_label|replace('_', ' ') | capitalize }}</label>
+      <input type="text" name="{{ ttl_label }}" id="{{ ttl_label }}"
+        value="{{ session.get('loaded_config', {}).get('ttl labels', {}).get(ttl_label, '') }}">
+    {% endfor %}
+  </fieldset>
+
+  <fieldset>
+    <legend>TTL States</legend>
+    {% for state_key in [
+      'ttl1_rising_state', 'ttl2_rising_state', 'ttl3_rising_state', 'ttl4_rising_state',
+      'ttl1_falling_state', 'ttl2_falling_state', 'ttl3_falling_state', 'ttl4_falling_state',
+      'ttl1_debounce', 'ttl1_synchronous'
+    ] %}
+      <label>{{ state_key|replace('_', ' ') | capitalize }}</label>
+      <input type="checkbox" name="{{ state_key }}" id="{{ state_key }}" value="true"
+        {% if session.get('loaded_config', {}).get('ttl states', {}).get(state_key, False) %}checked{% endif %}>
+    {% endfor %}
+  </fieldset>
 
       <fieldset>
         <legend>TTL Controls</legend>
