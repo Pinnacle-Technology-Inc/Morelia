@@ -138,12 +138,13 @@ class Pod8401HR(AquisitionDevice) :
         
         # function used for constructing packets from stream data.
         self._stream_packet_factory = partial(DataPacket8401HR, preamp_gain, ss_gain, self._primary_channel_modes, self._secondary_channel_modes)
-        
+
+        """
         self._preamp_gain       = [self.DEFAULT_PREAMP_GAIN] * 4
         self._high_pass         = [self.NO_HIGH_PASS]       * 4
         self._second_stage_gain = [self.SS_5X_HALF_HZ_HP]    * 4
         self._is_hr             = is_hr
-
+        """
 
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
@@ -1235,7 +1236,6 @@ class Pod8401HR(AquisitionDevice) :
             "ttl_analog_ttl2": "ttl_analog_ttl2",
             "ttl_analog_ttl1": "ttl_analog_ttl1",
         },
-    }
         "input ground": {
             "input_ground_A": "input_ground_A",
             "input_ground_B": "input_ground_B",

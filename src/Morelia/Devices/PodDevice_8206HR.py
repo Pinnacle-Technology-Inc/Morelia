@@ -7,7 +7,7 @@ import Morelia.packet.conversion as conv
 import time
 
 from functools import partial
-from Morelia.Devices.BasicPodProtocol import BasicPodProtocol
+from Morelia.Devices.BasicPodProtocol import Pod
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -50,7 +50,7 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
         self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (BINARY_4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
         
-        """Add new commands for additional properties -- need to check how they correspond with the POD commands
+        """Add new commands for additional properties -- need to check how they correspond with the POD commands"""
 
         self._commands.add_command(110, 'GET NOTCH FILTER', (0,), (UINT8,), False, 'Get notch filter enabled state.')
         self._commands.add_command(111, 'SET NOTCH FILTER', (UINT8,), (0,), False, 'Set notch filter enabled state.')
@@ -83,7 +83,7 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(145, 'SET TTL3 EVENT STRING', (str,), (0,), False, 'Set TTL3 event string.')
         self._commands.add_command(146, 'GET TTL4 EVENT STRING', (0,), (0,), False, 'Get TTL4 event string.')
         self._commands.add_command(147, 'SET TTL4 EVENT STRING', (str,), (0,), False, 'Set TTL4 event string.')
-        """
+        
         # preamplifier gain (should be 10x or 100x)
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
@@ -544,10 +544,12 @@ class Pod8206HR(AquisitionDevice) :
         },
     }
 
+    print(f"[DEBUG] before property map")
+
     def _init_property_map(self):
         """Initializes the property map for this device. This is used to generate a config file."""
         self._property_map = self.combine_property_maps(
             self._property_map,
             self._device_property_map
         )
-
+    

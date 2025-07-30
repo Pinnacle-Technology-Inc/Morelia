@@ -665,4 +665,7 @@ class Pod :
                     prop_value = getattr(self, prop_name)
                     output_dict[logical_key] = prop_value
                 except Exception as e:
-                    print(f"[SKIP] Failed to read {prop_name}: {e}")
+                  print(f"[SKIP] Failed to read {prop_name}: {e}")
+
+    
+    # add a combined map function
