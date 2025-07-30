@@ -97,25 +97,25 @@ class InfluxSink(SinkInterface):
     def measurement(self):
         return self._measurement
 
-    def _enqueue_batch(self, batch: bytes):
-        try:
-            self._write_queue.put_nowait(batch)
-        except queue.Full:
-            print("[InfluxSink] WARNING: Write queue full, dropping batch")
+    #def _enqueue_batch(self, batch: bytes):
+    #    try:
+    #        self._write_queue.put_nowait(batch)
+    #    except queue.Full:
+    #        print("[InfluxSink] WARNING: Write queue full, dropping batch")
 
-    def _writer_worker(self):
-        while not self._stop_event.is_set():
-            try:
-                batch = self._write_queue.get(timeout=1)  # wait max 1s for data
-            except queue.Empty:
-                continue  # loop again to check stop event
-            
-            try:
-                self._writer.write(bucket=self._bucket, org=self._org, record=batch)
-            except Exception as e:
-                print(f"[InfluxSink] Write error: {e}")
-            finally:
-                self._write_queue.task_done()
+    #def _writer_worker(self):
+    #    while not self._stop_event.is_set():
+    #        try:
+    #            batch = self._write_queue.get(timeout=1)  # wait max 1s for data
+    #        except queue.Empty:
+    #            continue  # loop again to check stop event
+    #        
+    #        try:
+    #            self._writer.write(bucket=self._bucket, org=self._org, record=batch)
+    #        except Exception as e:
+    #            print(f"[InfluxSink] Write error: {e}")
+    #        finally:
+    #            self._write_queue.task_done()
 
     #the following two methods implement the context manager protocol to allow
     #this sink to work within a `with` block. To illuminate why these methods are the
@@ -127,27 +127,26 @@ class InfluxSink(SinkInterface):
         self._writer: WriteApi = self._client.write_api(write_options=WriteOptions(batch_size=1)) 
         self._writer.write(bucket=self._bucket, org=self._org, record=self._data)
 
-        self._stop_event.clear()
-        self._writer_thread = threading.Thread(target=self._writer_worker, daemon=True)
-        self._writer_thread.start()
+        #self._stop_event.clear()
+        #self._writer_thread = threading.Thread(target=self._writer_worker, daemon=True)
+        #self._writer_thread.start()
 
-        self._subscription = self._data.subscribe(
-            on_next=self._enqueue_batch,
-            on_error=lambda e: print(f"[InfluxSink Rx Error] {e}")
-        )
-        self._writer.write(bucket=self._bucket, org=self._org, record=self._data)
+        #self._subscription = self._data.subscribe(
+        #    on_next=self._enqueue_batch,
+        #    on_error=lambda e: print(f"[InfluxSink Rx Error] {e}")
+        #)
 
         #bind the sink to the variable in the "as" part of the context manager.
         return self
 
     
     def __exit__(self, *args, **kwargs) -> bool:
-        if hasattr(self, '_subscription'):
-            self._subscription.dispose()
+        #if hasattr(self, '_subscription'):
+        #    self._subscription.dispose()
 
-        self._stop_event.set()
-        if self._writer_thread is not None:
-            self._writer_thread.join(timeout=5)
+        #self._stop_event.set()
+        #if self._writer_thread is not None:
+        #    self._writer_thread.join(timeout=5)
 
         self._writer.close()
         self._client.close()
@@ -156,8 +155,8 @@ class InfluxSink(SinkInterface):
         #any later calls to ``flush`` if it isn't reopened prior.
         del self._writer
         del self._client
-        del self._subscription
-        del self._writer_thread
+        #del self._subscription
+        #del self._writer_thread
        
         #signal to the context manager to propagate exceptions upwards.
         #we technically don't need to return this, as if we return None python

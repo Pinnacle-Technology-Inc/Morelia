@@ -5,7 +5,6 @@ import  platform
 import  time
 import subprocess
 
-
 # authorship
 __author__      = "Thresa Kelly"
 __maintainer__  = "Thresa Kelly"
@@ -55,7 +54,7 @@ class PortIO :
         """
         Opens a subprocess to check if the port is in use
         """
-        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
         return result.returncode == 0
     
     @staticmethod 
@@ -121,8 +120,9 @@ class PortIO :
         # close port if open 
         if self._serial_inst is None:
             return
-        elif(self.is_serial_open()) :
+        elif self.is_serial_open():
             self._serial_inst.close()
+            self._serial_inst = None
 
     def open_serial_port(self, port: str|int, baudrate:int=9600) -> None : 
         """First, it closes the serial port if it is open. Then, it opens a serial port with a set \

@@ -12,6 +12,8 @@ __email__       = 'sales@pinnaclet.com'
 from multiprocessing.managers import BaseManager
 from multiprocessing import Queue
 import multiprocessing as mp
+import subprocess
+import os
 import socket
 import time
 import re
@@ -36,17 +38,18 @@ class PacketManager:
 
     def initialize_control_queue(self):
         """
-        Initializes a new process to run the Queue server/socket.
+        Initializes a new subprocess to run the Queue server/socket.
         """
-        
-        # creates a new process
-        worker = mp.Process(target=self.create_control_queue_process, args=(self.port,))
 
-        # destroy the process when the parent process exits
-        worker.daemon = True
-
-        # begin the process
-        worker.start()
+        this_dir = os.path.dirname(os.path.abspath(__file__))
+        script_path = os.path.join(this_dir, "queue_server.py")
+        subprocess.Popen(
+            ['python3', script_path, self.port],
+            preexec_fn=os.setsid,  # Start a new process group
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            close_fds=True
+        )
 
         # wait for half a second for server to begin
         time.sleep(0.1)

@@ -55,6 +55,8 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 if abs(drift) > 100_000_000 : #or predicted > now_real_time_ns
                     observer.last_timestamp = now_real_time_ns
 
+                print(f"[{time.strftime('%H:%M:%S')}.{observer.last_timestamp % 1_000_000_000:09d}] → Packet: {value}")
+
                 observer.packet_count += 1
 
                 # if it's been more than a second...
@@ -167,13 +169,8 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
     # obtain the source class
     source = source_class(**source_dict)
 
-    # open the port of the source class
-    # TODO: potential error here, as the creation of the source device above shows that a PortIO object was already in use (in the __init__ function of Pod in BasicPodProtocl.py)
-    source.open_port()
-
     # create list of sinks to use based on sink class/sink dictionary pair in the list
     sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
 
     # run get_data with the pod device and list of sinks 
     get_data(duration_sec, manual_stop_event, source, sinks)
-
