@@ -83,6 +83,12 @@ class DataFlow:
             manual_stop_event = self._manager.Event()
             
             self._manual_stop_events.append(manual_stop_event)
+            
+            # close the port and delete the port instance
+            # may want to use property here instead for better practice
+            if hasattr(source, "_port"):
+                source.close_port()
+                del source._port
 
             # gets the type (class) of the pod device
             source_class = type(source)
