@@ -168,6 +168,7 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
     source = source_class(**source_dict)
 
     # open the port of the source class
+    # TODO: potential error here, as the creation of the source device above shows that a PortIO object was already in use (in the __init__ function of Pod in BasicPodProtocl.py)
     source.open_port()
 
     # create list of sinks to use based on sink class/sink dictionary pair in the list
