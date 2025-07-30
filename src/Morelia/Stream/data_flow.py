@@ -18,10 +18,6 @@ from Morelia.Devices import AcquisitionDevice
 from Morelia.Stream.source import get_data_wrapper
 import Morelia.Stream.sink as pod_sink
 
-import time
-import inspect
-import pickle
-
 class DataFlow:
     """Class that use multiprocessing to efficiently collect data from many devices at once.
 

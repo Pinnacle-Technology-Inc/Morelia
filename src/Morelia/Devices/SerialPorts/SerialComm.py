@@ -1,7 +1,5 @@
 # enviornment imports 
 from    serial import Serial, serial_for_url
-from Morelia.Devices.SerialPorts.queue_manager import PacketManager
-from queue import Empty
 import  platform
 
 import  time
@@ -40,13 +38,10 @@ class PortIO :
             self._serial_inst : Serial = serial_for_url('loop://')
 
         else:
-            if self.is_port_in_use(port):
-                self._serial_inst = None       
-            else:
-                # initialize port 
-                self._serial_inst : Serial = Serial()
-                # open port  
-                self.open_serial_port(port, baudrate=baudrate)
+            # initialize port 
+            self._serial_inst : Serial = Serial()
+            # open port  
+            self.open_serial_port(port, baudrate=baudrate)
 
     def __del__(self) -> None :
         """Runs when the object is destructed. It closes the serial port, if open."""
@@ -62,7 +57,7 @@ class PortIO :
         """
         result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         return result.returncode == 0
-
+    
     @staticmethod 
     def build_port_name(port: str|int) -> str :
         """Converts the port parameter into the "COM"+<number> format for Windows or \

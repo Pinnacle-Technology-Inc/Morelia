@@ -9,6 +9,7 @@ __email__       = 'sales@pinnaclet.com'
 
 #environment imports
 from multiprocessing import Event
+import threading
 import time
 from functools import partial
 from contextlib import ExitStack
@@ -51,7 +52,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 
                 # if drift from real time is 100ms further than expected 
                 # or predicted time is greater than current time, reset time stamps
-                if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
+                if abs(drift) > 100_000_000 : #or predicted > now_real_time_ns
                     observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1
@@ -123,11 +124,18 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     # create an observable to stream from POD device.
     device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
 
+    # create background queue 
+    def background_writer(pod: AcquisitionDevice):
+        while True:
+            pod.check_write_queue()
+            time.sleep(0.005) # sleep to avoid CPU performance issues
+
+    threading.Thread(target=background_writer, args=(pod,), daemon=True).start()
     # pipe the packets from ``device`` into a filter that throws out control packets (eventually we don't want to do this, but have
     # a seperate place these get put so they can still be read during streaming to enable feedback.),
     # and them timestamp packets.
+    
     data = device.pipe(
-           do_action(lambda _: pod.check_write_queue()),
            do_action(lambda item: put_read_packet(item) if isinstance(item, ControlPacket) else None),
            ops.filter(lambda i: not isinstance(i, ControlPacket)), #todo: more strict filtering
            _timestamp_via_adjusted_sample_rate(pod.sample_rate)

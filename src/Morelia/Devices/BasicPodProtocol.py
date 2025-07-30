@@ -9,7 +9,6 @@ import Morelia.packet.conversion as conv
 from functools import partial
 import time
 from queue import Empty
-import subprocess
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -41,21 +40,9 @@ class Pod :
 
         # initialize serial port 
         self._port = None
+
         self._port_value = port
 
-        # create object to handle commands 
-        self._commands : CommandSet = CommandSet()
-
-        #set device name.
-        self._device_name: str = device_name if device_name else str(port)
-
-        #function that will be used to create new control packets from this device.
-        #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
-        #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
-        self._control_packet_factory = partial(ControlPacket, self._commands)
-
-    def open_port(self):
-        # initialize serial port 
         # initialize serial port 
         if not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
@@ -75,10 +62,25 @@ class Pod :
 
         # save queue to read from device
         self._read_queue = self._manager.obtain_read_queue()
+
+        # create object to handle commands 
+        self._commands : CommandSet = CommandSet()
+
+        #set device name.
+        self._device_name: str = device_name if device_name else str(port)
+
+        #function that will be used to create new control packets from this device.
+        #essentially, this is a curried (partially applied) version of the constructor for ControlPacket.
+        #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
+        self._control_packet_factory = partial(ControlPacket, self._commands)
+
+    def open_port(self):
+        self._port : PortIO = PortIO(self._port_value, self._baudrate)
    
     def close_port(self):
         if self._port is not None:
             self._port.close_serial_port()
+            self._port = None
         else:
             return
 
@@ -129,6 +131,10 @@ class Pod :
     @property
     def port_inst(self):
         return self._port
+
+    @port_inst.setter
+    def port_inst(self, value: PortIO | None):
+        self._port = value
 
     @staticmethod
     def choose_port(forbidden:list[str]=[]) -> str : 
@@ -374,7 +380,6 @@ class Pod :
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
         #flushes leftover data in case of interrupt
-        
         if self._port is not None:
             self.flush_port()
 
@@ -455,6 +460,8 @@ class Pod :
     def check_write_queue(self) -> None:
         """Checks the queue for packets and writes them to the device if they exist.
         """
+        if self._port is None:
+            return
         try:
             # while not empty,
             while True:
