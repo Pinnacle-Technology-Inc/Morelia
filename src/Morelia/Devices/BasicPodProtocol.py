@@ -43,7 +43,9 @@ class Pod :
 
         self._port_value = port
 
-        # initialize serial port 
+        # initialize PortIO object based on if the port is in use or not
+        # be extremely careful here, because any process created will inherit file descriptors of Serial Ports
+        # and the check in 
         if not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
             self._port : PortIO = PortIO(self._port_value, self._baudrate)

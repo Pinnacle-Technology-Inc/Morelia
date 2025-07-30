@@ -1,7 +1,8 @@
 # enviornment imports 
-from    serial import Serial, serial_for_url
+from    serial import Serial, serial_for_url, SerialException
 import  platform
-
+import psutil
+import os
 import  time
 import subprocess
 
@@ -54,8 +55,37 @@ class PortIO :
         """
         Opens a subprocess to check if the port is in use
         """
-        result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-        return result.returncode == 0
+        system = platform.system()
+
+        # If system is Linux or MacOS, use subprocess with lsof
+        if system in ('Linux', 'Darwin'):
+            try:
+                result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            
+                return result.returncode == 0
+            except Exception:
+                pass
+
+        # If system Windows, use psutil and os
+        try:
+            for proc in psutil.process_iter(['pid', 'open_files']):
+                try:
+                    open_files = proc.info.get('open_files') or []
+                    for f in open_files:
+                        if os.path.samefile(f.path, port):
+                            return True
+                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
+                    continue
+        except Exception:
+            pass
+
+        # Fallback is to directly check if port is open or not
+        try:
+            s = Serial(port)
+            s.close()
+            return False
+        except SerialException:
+            return True
     
     @staticmethod 
     def build_port_name(port: str|int) -> str :
