@@ -86,179 +86,62 @@ class AquisitionDevice(Pod):
         }
         return type_map.get(type_code, "Unknown Pod Device")
 
-    @property
-    def serial_number(self) -> str:
-        """Returns a device's serial number."""
-        return self.write_read("GET SERIAL").payload[0]
+    def validate_config(self, expected_config: dict, skip_keys: set | None = None) -> dict:
+        """Validates the current device configuration against an expected configuration.
 
-    @property
-    def firmware_version(self) -> str:
-        """Returns a device's firmware version."""
-        return self.write_read("GET FIRMWARE").payload[0]
+        Compares the expected config dictionary to the device's actual config 
+        obtained via getters, recursively checking nested dictionaries.
 
-    @property
-    def device_name(self) -> str:
-        """Returns a device's virtual name."""
-        return self.write_read("GET NAME").payload[0]
+        Keys in the skip_keys set (default includes 'title' and 'filename') 
+        will be ignored during comparison.
 
-    @device_name.setter
-    def device_name(self, value: str):
-        """Sets a device's virtual name."""
-        self.write_packet("SET NAME", value)
+        :param expected_config: The expected configuration dictionary to validate against.
+        :param skip_keys: Optional set of keys to skip during comparison (e.g., metadata keys).
+        :return: A dictionary mapping config keys (dot notation) to tuples of (expected, actual) values
+                 for any differences found. Empty if no differences.
+        """        
 
-    @property
-    def description(self) -> str:
-        """Returns a device's description."""
-        return self.write_read("GET DESCRIPTION").payload[0]
+        if skip_keys is None:
+            skip_keys = {"title", "filename"}  # Add any other keys you want to skip here
+        else:
+            skip_keys = set(skip_keys)
+            skip_keys.update({"title", "filename"})
 
-    @description.setter
-    def description(self, value: str):
-        """Sets a device's description."""
-        self.write_packet("SET DESCRIPTION", value)
+        actual_config = self._collect_config()
+        diffs = {}
 
-    @property
-    def alias(self) -> str:
-        """Returns a device's alias."""
-        return self.write_read("GET ALIAS").payload[0]
+        def recursive_diff(expected, actual, path=""):
+            """Recursively compare expected and actual dictionaries, 
+            collecting differences in diffs dictionary.
 
-    @alias.setter
-    def alias(self, value: str):
-        """Sets a device's alias."""
-        self.write_packet("SET ALIAS", value)
-
-    @property
-    def alias_color(self) -> str:
-        """Returns a device's alias color."""
-        return self.write_read("GET ALIASCOLOR").payload[0]
-
-    @alias_color.setter
-    def alias_color(self, value: str):
-        """Sets a device's alias color."""
-        self.write_packet("SET ALIASCOLOR", value)
-
-    @property
-    def annotations_enabled(self) -> bool:
-        """Checks if annotations are enabled for the device."""
-        return self.write_read("GET ANNOTATIONS").payload[0] == "ENABLED"
-
-    @annotations_enabled.setter
-    def annotations_enabled(self, enabled: bool):
-        """Enables or disables annotations for the device."""
-        self.write_packet("SET ANNOTATIONS", "ENABLED" if enabled else "DISABLED")
-
-    @property
-    def udp_enabled(self) -> bool:
-        """Checks if UDP is enabled for the device."""
-        return self.write_read("GET UDP").payload[0] == "ENABLED"
-
-    @udp_enabled.setter
-    def udp_enabled(self, enabled: bool):
-        """Enables or disables UDP for the device."""
-        self.write_packet("SET UDP", "ENABLED" if enabled else "DISABLED")
-
-    @property
-    def udp_port(self) -> int:
-        """Returns the UDP port number for the device."""
-        return int(self.write_read("GET UDPPORT").payload[0])
-
-    @udp_port.setter
-    def udp_port(self, value: int):
-        """Sets the UDP port number for the device."""
-        self.write_packet("SET UDPPORT", str(value))
-
-
-    @staticmethod
-    def combine_property_maps(base_map: dict, override_map: dict) -> dict:
-        """
-        Combines two property maps (base map and acquisition device map). The override_map (acquisition device map) takes precedence.
-        Nested dictionaries are merged recursively.
-
-        :param base_map: The base property map (e.g., Pod._property_map)
-        :param override_map: The device-specific property map (e.g., Pod8206HR._property_map)
-        :return: A new merged property map
-        """
-        def merge_dicts(base, acq):
-            result = dict(base)
-            for key, val in acq.items():
-                if (
-                    key in result
-                    and isinstance(result[key], dict)
-                    and isinstance(val, dict)
-                ):
-                    result[key] = merge_dicts(result[key], val)
-                else:
-                    result[key] = val
-            return result
-
-        return merge_dicts(base_map, override_map)
-
-    def validate_configuration(self, sent_config: dict) -> bool:
-        """
-        Validates that the configuration sent to the device matches the configuration
-        currently on the device.
-
-        :param sent_config: The configuration dictionary that was sent/applied to the device.
-        :return: True if the device config matches the sent config, False otherwise.
-        """
-        # Keys to skip during validation (sections or properties)
-        skip_keys = {"title", "filename"}
-
-        def flatten(config, parent_key='', sep='.'):
-            items = []
-            for k, v in config.items():
-                if k in skip_keys:
+            :param expected: Expected config dictionary or value
+            :param actual: Actual config dictionary or value
+            :param path: String path of nested keys (dot separated)
+            """
+            for key in expected:
+                if key in skip_keys:
                     continue
+                expected_val = expected[key]
+                actual_val = actual.get(key) if isinstance(actual, dict) else None
+
+                current_path = f"{path}.{key}" if path else key
+
+                if isinstance(expected_val, dict) and isinstance(actual_val, dict):
+                    recursive_diff(expected_val, actual_val, current_path)
                 else:
-                    new_key = f"{parent_key}{sep}{k}" if parent_key else k
-                    if isinstance(v, dict):
-                        items.extend(flatten(v, new_key, sep=sep).items())
-                    else:
-                        items.append((new_key, v))
-            return dict(items)
+                    if expected_val != actual_val:
+                        diffs[current_path] = (expected_val, actual_val)
 
-        # Get current config from device
-        current_config = self._collect_config()
+        recursive_diff(expected_config, actual_config)
+        return diffs
 
-        # Flatten both configs for comparison
-        flat_sent = flatten(sent_config)
-        flat_current = flatten(current_config)
-
-        # Only compare keys present in sent_config (ignore extra keys from device)
-        mismatches = {}
-        for key, sent_value in flat_sent.items():
-            current_value = flat_current.get(key, None)
-            if str(sent_value) != str(current_value):
-                mismatches[key] = {"sent": sent_value, "device": current_value}
-
-        if mismatches:
-            print("[VALIDATION FAILED] The following configuration values do not match:")
-            for key, vals in mismatches.items():
-                print(f"  {key}: sent={vals['sent']} device={vals['device']}")
-            return False
-
-        print("[VALIDATION SUCCESS] Device configuration matches sent configuration.")
-        return True
-                    
     """Default Property Map for Pod Devices"""
-    _property_map = {
+    property_map = {
         "identification": {
             "id": "id",
             "type": "type",
             "pod_type": "pod_type",
-            "serial_number": "serial_number",
-            "firmware_version": "firmware_version",
-            "device_name": "device_name",
         },
-        "metadata": {
-            "description": "description",
-            "alias": "alias",
-            "alias_color": "alias_color",
-        },
-        "features": {
-            "annotations_enabled": "annotations_enabled",
-            "udp_enabled": "udp_enabled",
-            "udp_port": "udp_port",
-        }
     }
     
     def __enter__(self) -> Self:

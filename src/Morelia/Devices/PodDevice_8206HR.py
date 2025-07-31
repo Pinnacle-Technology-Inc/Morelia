@@ -7,7 +7,7 @@ import Morelia.packet.conversion as conv
 import time
 
 from functools import partial
-from Morelia.Devices.BasicPodProtocol import Pod
+
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -199,35 +199,34 @@ class Pod8206HR(AquisitionDevice) :
 
     def _apply_config_recursive(self, config: dict, skip_keys):
         super()._apply_config_recursive(config, skip_keys)
-        # TODO: add some overriding properties if necessary like:
-        # if "lowpass" in config:
-        #   self.lowpass = config["LOWPASS"]
+        if "filter_config" in config:
+            print("filter_config is a GET property only")
+
 
     """Maps the properties for generating a config file"""
     _property_map = {
+        "sample_rate" : "sample_rate",
         "lowpass": {
             "lowpass_ch0": "lowpass_ch0",
             "lowpass_ch1": "lowpass_ch1",
             "lowpass_ch2": "lowpass_ch2",
         },
-        "ttl pins": {
+        "ttl_pins": {
             "ttl_pin0": "ttl_pin0",
             "ttl_pin1": "ttl_pin1",
             "ttl_pin2": "ttl_pin2",
             "ttl_pin3": "ttl_pin3",
             "ttl_port": "ttl_port",
         },
-        "filter config": {
+        "filter_config": {
             "filter_config": "filter_config",
         },
     }
 
-    print(f"[DEBUG] before property map")
 
-    def _init_property_map(self):
-        """Initializes the property map for this device. This is used to generate a config file."""
-        self._property_map = self.combine_property_maps(
-            self._property_map,
-            self._device_property_map
-        )
-    
+    @classmethod
+    def get_combined_property_map(cls):
+        combined = {}
+        combined.update(AquisitionDevice.property_map)  #need to update to AcquisitionDevice
+        combined.update(cls._property_map)
+        return combined

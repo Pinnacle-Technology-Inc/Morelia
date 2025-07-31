@@ -1,7 +1,9 @@
-# local imports 
+
 from Morelia.Devices import AquisitionDevice, Pod, Preamp
 from Morelia.packet import ControlPacket, PrimaryChannelMode, SecondaryChannelMode
 from Morelia.packet.data import DataPacket8401HR
+import Morelia.packet.conversion as conv
+import Morelia.packet.legacy.Packet as Packet
 
 from functools import partial
 from typing import Union
@@ -68,6 +70,31 @@ class Pod8401HR(AquisitionDevice) :
         # set preamp.
         self._preamp: Preamp = preamp
 
+        # constants for updating gain value
+        # Number of channels
+        NumberOfChannels = 4
+
+        # highpass values {"0.5", "1.0", "10.0", "none"}
+        # The "none" corresponds to NO_HIGH_PASS
+        NO_HIGH_PASS = 3
+
+        # gain multipliers (converted from REAL to float)
+        DC_GAIN = 1.577287e-6    # 1.577287 * 1.0e-6
+        AC_GAIN = 10.090909e-6   # 10.090909 * 1.0e-6
+
+        # second stage gain flags (guessing based on earlier discussion)
+        SS_5X_HALF_HZ_HP = 1     # this needs confirmation; example placeholder
+        SS_5X_ONLY_HR = 2        # bitmask flag for HR devices
+
+        # board gain and default preamp gain (optional)
+        BOARD_GAIN = 1.0
+        DEFAULT_PREAMP_GAIN = 50.78
+
+        # sample rate constants (can be used for validation or selection)
+        SampleRates = [2000, 5000, 10000, 20000]
+
+        DesiredSampleRates = [1, 10, 25, 125, 250, 500, 1000, 2000, 5000, 10000, 20000]
+    
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
         UINT16 = Pod.get_u(16)
@@ -124,6 +151,12 @@ class Pod8401HR(AquisitionDevice) :
         # function used for constructing packets from stream data.
         self._stream_packet_factory = partial(DataPacket8401HR, preamp_gain, ss_gain, self._primary_channel_modes, self._secondary_channel_modes)
 
+        # initalize _high_pass dictionary
+        self._high_pass = {0: None, 1: None, 2: None, 3: None}
+
+        # initalize two integers to hold TTL output/input bitmasks
+        self._ttl_output_bits = 0
+        self._ttl_input_bits = 0
 
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
@@ -139,7 +172,28 @@ class Pod8401HR(AquisitionDevice) :
         """Preamp connected to device."""
         return self._preamp
 
-    """Preamp HIGHPASS""" 
+    def get_channel_preamp_gain(self, channel: int) -> float:
+        """Return the preamplifier gain for a specific channel.
+
+        :param channel: channel (int): Channel index (0 to 3).
+
+        :returns: The preamp gain for the given channel (float).
+
+        """
+        if not 0 <= channel < 4:
+            raise ValueError(f"Channel index {channel} is out of range [0-3].")
+        
+        return self._preamp_gain[channel]
+
+    """Preamp HIGHPASS"""
+    def get_preamp_highpass(self, channel: int) -> int:
+        """Helper method to get any channel's highpass"""
+        if channel == 0: return self.preamp_highpass_0
+        if channel == 1: return self.preamp_highpass_1
+        if channel == 2: return self.preamp_highpass_2
+        if channel == 3: return self.preamp_highpass_3
+        raise ValueError(f"Invalid channel {channel}")
+
     @property
     def preamp_highpass_0(self) -> int: 
         """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
@@ -297,7 +351,7 @@ class Pod8401HR(AquisitionDevice) :
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
         dac_val = self.calculate_bias_dac_get_dac_value(vout)
-        self.write("SET BIAS", (0, dac_val))
+        self.write_packet("SET BIAS", (0, dac_val))
 
 
     @property
@@ -312,7 +366,7 @@ class Pod8401HR(AquisitionDevice) :
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
         dac_val = self.calculate_bias_dac_get_dac_value(vout)
-        self.write("SET BIAS", (1, dac_val))
+        self.write_packet("SET BIAS", (1, dac_val))
 
     @property
     def bias_2(self) -> float:
@@ -326,7 +380,7 @@ class Pod8401HR(AquisitionDevice) :
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
         dac_val = self.calculate_bias_dac_get_dac_value(vout)
-        self.write("SET BIAS", (2, dac_val))
+        self.write_packet("SET BIAS", (2, dac_val))
 
     @property
     def bias_3(self) -> float:
@@ -340,7 +394,7 @@ class Pod8401HR(AquisitionDevice) :
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
         dac_val = self.calculate_bias_dac_get_dac_value(vout)
-        self.write("SET BIAS", (3, dac_val))
+        self.write_packet("SET BIAS", (3, dac_val))
    
     """ETX"""
     @property
@@ -415,7 +469,8 @@ class Pod8401HR(AquisitionDevice) :
         """Returns a dictionary of all input ground states (channels A–D)."""
         payload = self.write_read("GET INPUT GROUND").payload
         return self.decode_channel_bitmask(payload)
-    
+   
+    """TTL CONFIG"""
     @property
     def ttl_config(self) -> dict[str, dict[str, int]]:
         """
@@ -430,14 +485,17 @@ class Pod8401HR(AquisitionDevice) :
             "input": self.decode_ttl_byte(bytes([in_cfg]))
         }
 
+
     @ttl_config.setter
     def ttl_config(self, config: dict[str, dict[str, int]]):
         """
         Sets the TTL config byte using two dicts: output and input.
         """
-        out_bits = self.get_ttl_bitmask(**config["output"])
-        in_bits  = self.get_ttl_bitmask(**config["input"])
+        # convert keys from uppercase to lowercase
+        out_bits = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["output"].items()})
+        in_bits  = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["input"].items()})
         self.write_packet("SET TTL CONFIG", (out_bits, in_bits))
+
 
     @property
     def ttl_output_config(self) -> dict[str, int]:
@@ -445,7 +503,7 @@ class Pod8401HR(AquisitionDevice) :
         return self.ttl_config["output"]
 
     @ttl_output_config.setter
-    def ttl_output_config(self, out_dict: dict[str, int]):
+    def ttl_output_config(self, out_dict: list[str, int] | dict[str, int]):
         """Sets only the output TTL config."""
         current = self.ttl_config
         current["output"] = out_dict
@@ -457,7 +515,7 @@ class Pod8401HR(AquisitionDevice) :
         return self.ttl_config["input"]
 
     @ttl_input_config.setter
-    def ttl_input_config(self, in_dict: dict[str, int]):
+    def ttl_input_config(self, in_dict: list[str, int]| dict[str, int]):
         """Sets only the input TTL config."""
         current = self.ttl_config
         current["input"] = in_dict
@@ -470,11 +528,19 @@ class Pod8401HR(AquisitionDevice) :
         return current_ttl.payload
 
     @ttl_outputs.setter
-    def ttl_outputs(self, pins: dict[str, int]):
+    def ttl_outputs(self, pins: list[str, int] | dict[str, int]):
         """Sets logic level (0 = low, 1 = high) for one or more TTL output pins."""
         self.set_ttl_outputs(pins)
 
     """SS CONFIG"""
+    def get_second_stage_gain(self, channel: int) -> int:
+        """Helper method to get any channel's second stage gain"""
+        if channel == 0: return self.ss_gain_0
+        if channel == 1: return self.ss_gain_1
+        if channel == 2: return self.ss_gain_2
+        if channel == 3: return self.ss_gain_3
+        raise ValueError(f"Invalid channel {channel}")
+
     @property
     def ss_config_0(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
@@ -487,7 +553,7 @@ class Pod8401HR(AquisitionDevice) :
         gain = config["Gain"]
         highpass = config["High-pass"]
         byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write("SET SS CONFIG", (0, byte))
+        self.write_packet("SET SS CONFIG", (0, byte))
 
     @property
     def ss_highpass_0(self) -> float:
@@ -527,7 +593,7 @@ class Pod8401HR(AquisitionDevice) :
         gain = config["Gain"]
         highpass = config["High-pass"]
         byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write("SET SS CONFIG", (1, byte))
+        self.write_packet("SET SS CONFIG", (1, byte))
 
     @property
     def ss_highpass_1(self) -> float:
@@ -567,7 +633,7 @@ class Pod8401HR(AquisitionDevice) :
         gain = config["Gain"]
         highpass = config["High-pass"]
         byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write("SET SS CONFIG", (2, byte))
+        self.write_packet("SET SS CONFIG", (2, byte))
 
     @property
     def ss_highpass_2(self) -> float:
@@ -607,7 +673,7 @@ class Pod8401HR(AquisitionDevice) :
         gain = config["Gain"]
         highpass = config["High-pass"]
         byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write("SET SS CONFIG", (3, byte))
+        self.write_packet("SET SS CONFIG", (3, byte))
         
     @property
     def ss_highpass_3(self) -> float:
@@ -734,7 +800,34 @@ class Pod8401HR(AquisitionDevice) :
             if(value != 10 and value != 100 and value != None): 
                 raise Exception('[!] EEG/EMG preamp_gain must be 10 or 100. For biosensors, the preamp_gain is None.')
             
-            
+    def _update_gain_value(self, channel: int):
+        """Recalculate and update the effective gain value for a specific channel based on
+        preamp gain, highpass filter setting, and second stage gain configuration.
+
+        :param channel: Channel index (0 to 3) to update the gain for.
+        :return: None
+        """
+        if not (0 <= channel < 4):
+            return
+
+        gain = self.get_channel_preamp_gain(channel)
+        hi_pass = self.get_preamp_highpass(channel)
+        ss_gain = self.get_second_stage_gain(channel)
+
+        if hi_pass == self.NO_HIGH_PASS:
+            gain *= self.DC_GAIN
+        else:
+            gain *= self.AC_GAIN
+
+        if not self.is_8401HR:
+            if ss_gain == self.SS_5X_HALF_HZ_HP:
+                gain *= 4.984
+        else:
+            if (ss_gain & 2) == self.SS_5X_ONLY_HR:
+                gain *= 4.984
+
+        self._channel_gains[channel] = gain
+
     @staticmethod
     def get_channel_map_for_preamp_device(preamp_name: Preamp) -> dict[str,str]|None :
         """Get the channel mapping (channel labels for A,B,C,D) for a given device.
@@ -780,23 +873,38 @@ class Pod8401HR(AquisitionDevice) :
 
 
     @staticmethod
-    def decode_ttl_byte(ttl_byte: bytes) -> dict[str,int] : 
+    def decode_ttl_byte(ttl_byte: bytes) -> dict[str, int]:
         """Converts the TTL bytes argument into a dictionary of integer TTL values.
 
-        :param ttl_byte: UINT8 byte containing the TTL bitmask. 
+        Handles both:
+        - raw bytes (length=1), decoded by bit-shifting
+        - ASCII hex bytes, decoded by conv.ascii_bytes_to_int_split()
 
-        :return: Dictinoary with TTL name keys and integer TTL values. 
+        :param ttl_byte: UINT8 byte containing the TTL bitmask, either raw or ASCII hex.
+        :return: Dictionary with TTL name keys and integer TTL values (0 or 1).
         """
+        # If raw byte (length 1), do bit-shift decode
+        if len(ttl_byte) == 1:
+            byte = ttl_byte[0]
+            return {
+                'EXT0': (byte >> 7) & 0x01,
+                'EXT1': (byte >> 6) & 0x01,
+                'TTL4': (byte >> 3) & 0x01,
+                'TTL3': (byte >> 2) & 0x01,
+                'TTL2': (byte >> 1) & 0x01,
+                'TTL1': (byte >> 0) & 0x01,
+            }
+        else:
+            # Otherwise assume ASCII hex bytes, decode using conv.ascii_bytes_to_int_split
+            return {
+                'EXT0': conv.ascii_bytes_to_int_split(ttl_byte, 8, 7),
+                'EXT1': conv.ascii_bytes_to_int_split(ttl_byte, 7, 6),
+                'TTL4': conv.ascii_bytes_to_int_split(ttl_byte, 4, 3),
+                'TTL3': conv.ascii_bytes_to_int_split(ttl_byte, 3, 2),
+                'TTL2': conv.ascii_bytes_to_int_split(ttl_byte, 2, 1),
+                'TTL1': conv.ascii_bytes_to_int_split(ttl_byte, 1, 0),
+            }
 
-        return({
-            'EXT0' : conv.ascii_bytes_to_int_split(ttl_byte, 8, 7),
-            'EXT1' : conv.ascii_bytes_to_int_split(ttl_byte, 7, 6),
-            'TTL4' : conv.ascii_bytes_to_int_split(ttl_byte, 4, 3),
-            'TTL3' : conv.ascii_bytes_to_int_split(ttl_byte, 3, 2),
-            'TTL2' : conv.ascii_bytes_to_int_split(ttl_byte, 2, 1),
-            'TTL1' : conv.ascii_bytes_to_int_split(ttl_byte, 1, 0)
-        })
-    
 
     @staticmethod
     def set_ttl_outputs(self, pins: dict[str, int]):
@@ -810,6 +918,7 @@ class Pod8401HR(AquisitionDevice) :
         modify = self.get_ttl_bitmask(**{k: 1 for k in pins})
         state  = self.get_ttl_bitmask(**pins)
         self.write_packet("SET TTL OUTS", (modify, state))
+    
 
     @staticmethod
     def get_ss_config_bitmask(gain: int, highpass: float) -> int :
@@ -955,6 +1064,10 @@ class Pod8401HR(AquisitionDevice) :
         return self._stream_packet_factory(packet)
 
 
+    def _apply_config_recursive(self, config: dict, skip_keys: set):
+        super()._apply_config_recursive(config, skip_keys)
+
+        
     _property_map = {
         "highpass": {
             "preamp_highpass_0": "preamp_highpass_0",
@@ -962,35 +1075,39 @@ class Pod8401HR(AquisitionDevice) :
             "preamp_highpass_2": "preamp_highpass_2",
             "preamp_highpass_3": "preamp_highpass_3",
         },
+
         "lowpass": {
             "lowpass_ch0": "lowpass_ch0",
             "lowpass_ch1": "lowpass_ch1",
             "lowpass_ch2": "lowpass_ch2",
             "lowpass_ch3": "lowpass_ch3",
         },
-        "dc mode": {
+
+        "dc_mode": {
             "dc_mode_0": "dc_mode_0",
             "dc_mode_1": "dc_mode_1",
             "dc_mode_2": "dc_mode_2",
             "dc_mode_3": "dc_mode_3",
         },
+
         "bias": {
             "bias_0": "bias_0",
             "bias_1": "bias_1",
             "bias_2": "bias_2",
             "bias_3": "bias_3",
         },
+
+        "ttl_configs": {
+        "ttl_output_config": "ttl_output_config",
+        "ttl_input_config": "ttl_input_config",
+        },
+
         "ext": {
             "ext0": "ext0",
             "ext1": "ext1",
         },
-        "ttl config": {
-            "ttl_config": "ttl_config",
-            "ttl_output_config": "ttl_output_config",
-            "ttl_input_config": "ttl_input_config",
-            "ttl_outputs": "ttl_outputs",
-        },
-        "ss config": {
+
+        "ss_config": {
             "ss_config_0": "ss_config_0",
             "ss_highpass_0": "ss_highpass_0",
             "ss_gain_0": "ss_gain_0",
@@ -1008,7 +1125,7 @@ class Pod8401HR(AquisitionDevice) :
             "ss_gain_3": "ss_gain_3",
         },
 
-        "mux mode": {
+        "mux_mode": {
             "mux_mode": "mux_mode",
         },
 
@@ -1020,10 +1137,18 @@ class Pod8401HR(AquisitionDevice) :
             "ttl_analog_ttl2": "ttl_analog_ttl2",
             "ttl_analog_ttl1": "ttl_analog_ttl1",
         },
-        "input ground": {
+
+        "input_ground": {
             "input_ground0": "input_ground0",
             "input_ground1": "input_ground1",
             "input_ground2": "input_ground2",
             "input_ground3": "input_ground3",
         },
     }
+
+    @classmethod
+    def get_combined_property_map(cls):
+        combined = {}
+        combined.update(AquisitionDevice.property_map)  #need to update to AcquisitionDevice
+        combined.update(cls._property_map)
+        return combined

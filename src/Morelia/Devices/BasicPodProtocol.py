@@ -554,9 +554,19 @@ class Pod :
             raise FileNotFoundError(f"Config file '{config_filename}' not found.")
 
         config_data = toml.load(config_path)
-
+        
+        # apply configuration
         self.apply_config(config_data)
 
+        # validate configuration
+        diffs = self.validate_config(config_data)
+        
+        if diffs:
+            print("Config differences found:")
+            for k, (expected, actual) in diffs.items():
+                print(f"{k}: expected={expected}, actual={actual}")
+        else:
+            print("Config validation passed! No differences.")
 
     def apply_config(self, config: dict):
         """
@@ -633,7 +643,7 @@ class Pod :
                  as defined in each Pod's _property_map.
         """
         result = {}
-        prop_map = getattr(self, "_property_map", {})
+        prop_map = self.get_combined_property_map()  # call classmethod to get merged map
 
         self._collect_from_map(result, prop_map)
         return result
@@ -666,6 +676,3 @@ class Pod :
                     output_dict[logical_key] = prop_value
                 except Exception as e:
                   print(f"[SKIP] Failed to read {prop_name}: {e}")
-
-    
-    # add a combined map function
