@@ -564,10 +564,10 @@ class IndexedDataFile:
                         
                         # Get calculated CRC and compare
                         crc_calculated = crc_calculator.get_crc()
-                        print(f"Data segment CRC at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
                         
                         if crc_calculated != crc_stored:
-                            print(f"Data segment CRC mismatch at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
+                            None
+#                            print(f"Data segment CRC mismatch at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
                             # Continue processing but log the error
                         
                         # Reset CRC calculator for next segment
