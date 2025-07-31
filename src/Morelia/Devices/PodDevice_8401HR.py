@@ -28,20 +28,6 @@ class Pod8401HR(AquisitionDevice) :
     :param device_name: Virtual name used to indentify device.
     """
 
-    # Gain constants
-    DC_GAIN = 1.577287e-6
-    AC_GAIN = 10.090909e-6
-
-    SS_5X_HALF_HZ_HP = 0
-    SS_1X_DC_HP      = 1
-    SS_5X_ONLY_HR    = 0
-    SS_1X_ONLY_HR    = 2
-
-    HP_0_5_HZ    = 0
-    HP_1_HZ      = 1
-    HP_10_HZ     = 2
-    NO_HIGH_PASS = 3
-
     # Class-level dictionary containing the channel map for all preamplifier devices.
     __CHANNELMAPALL : dict[Preamp,dict[str,str]] = {
         Preamp.Preamp8407_SE      : {'A':'Bio' , 'B':'EEG1', 'C':'EMG' , 'D':'EEG2'},
@@ -70,7 +56,6 @@ class Pod8401HR(AquisitionDevice) :
                  preamp_gain: tuple[int|None]=(None, None, None, None), 
                  baudrate:int=9600,
                  device_name: str | None = None,
-                 is_hr: bool = True
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ss_gain \
@@ -139,12 +124,6 @@ class Pod8401HR(AquisitionDevice) :
         # function used for constructing packets from stream data.
         self._stream_packet_factory = partial(DataPacket8401HR, preamp_gain, ss_gain, self._primary_channel_modes, self._secondary_channel_modes)
 
-        """
-        self._preamp_gain       = [self.DEFAULT_PREAMP_GAIN] * 4
-        self._high_pass         = [self.NO_HIGH_PASS]       * 4
-        self._second_stage_gain = [self.SS_5X_HALF_HZ_HP]    * 4
-        self._is_hr             = is_hr
-        """
 
         # define function used for decoding the payloads of control packets and returning the proper responses.
         def decode_payload(command_number: int, payload: bytes) -> tuple:
@@ -159,17 +138,6 @@ class Pod8401HR(AquisitionDevice) :
     def preamp(self) -> Preamp:
         """Preamp connected to device."""
         return self._preamp
-
-    # currently methods, may change to properties later.
-    def set_preamp_gain(self, channel: int, gain: int) -> None:
-        """Sets software preamp gain for the specified channel and updates combined gain."""
-        self._preamp_gain[channel] = gain
-        self._update_gain_value(channel)
-
-    def get_preamp_gain(self, channel: int) -> int:
-        """Returns software preamp gain for the specified channel."""
-        return self._preamp_gain[channel]
-
 
     """Preamp HIGHPASS""" 
     @property
@@ -447,19 +415,7 @@ class Pod8401HR(AquisitionDevice) :
         """Returns a dictionary of all input ground states (channels A–D)."""
         payload = self.write_read("GET INPUT GROUND").payload
         return self.decode_channel_bitmask(payload)
-
-
-    @input_ground_all.setter
-    def input_ground_all(self, states: int) -> None:
-        """Sets input ground state for all channels using a 4-bit bitmask. 
-        Each bit represents a channel: bit 0=A, bit 1=B, etc.
-        High nibble must be zero (i.e., only bits 0-3 are used).
-        """
-        if not (0 <= states <= 0x0F):
-            raise ValueError("Input ground bitmask must be a 4-bit integer (0–15).")
-        self.write_packet("SET INPUT GROUND", (states,))
     
-    """TTL CONFIG"""
     @property
     def ttl_config(self) -> dict[str, dict[str, int]]:
         """
@@ -728,124 +684,7 @@ class Pod8401HR(AquisitionDevice) :
         """Reads a TTL input as an analog signal. Requires a channel to read. Returns a 10-bit analog value. Same caveats and restrictions as GET EXT* VALUE commands. Normally you would just enable an extra channel in Sirenia for this."""
         current_analog_ttl1 = self.write_read("GET TTL ANALOG", (5,))
         return current_analog_ttl1.payload[0]
-    
-    @property
-    def data_rate(self) -> int:
-        """Gets the current data/sample rate (Hz)."""
-        # Replace with actual command if available
-        return self.write_read("GET DATA RATE").payload[0]
 
-    @data_rate.setter
-    def data_rate(self, value: int):
-        """Sets the data/sample rate (Hz)."""
-        self.write_packet("SET DATA RATE", (value,))
-
-    @property
-    def base_configuration_name(self) -> str:
-        """Gets the base configuration name."""
-        # Replace with actual command if available
-        return self.write_read("GET BASE CONFIGURATION NAME").payload[0]
-
-    @base_configuration_name.setter
-    def base_configuration_name(self, value: str):
-        """Sets the base configuration name."""
-        self.write_packet("SET BASE CONFIGURATION NAME", (value,))
-
-    @property
-    def offsets(self) -> dict[str, int]:
-        """Gets the offsets for all channels as a dictionary."""
-        # Replace with actual command if available
-        payload = self.write_read("GET OFFSETS").payload
-        return {
-            'A': payload[0],
-            'B': payload[1],
-            'C': payload[2],
-            'D': payload[3]
-        }
-
-    @property
-    def preamp_adc(self) -> int:
-        """Gets the ADC value for the preamp."""
-        return self.write_read("GET PREAMP ADC").payload[0]
-
-    @property
-    def ogim_adc(self) -> int:
-        """Gets the ADC value for the OGIM."""
-        return self.write_read("GET OGIM").payload[0]
-
-    @property
-    def usb_delay(self) -> float:
-        """Gets the USB delay in ms."""
-        return self.write_read("GET USB DELAY").payload[0]
-
-    @property
-    def fastest_clock(self) -> bool:
-        """Gets whether the fastest clock mode is enabled."""
-        return bool(self.write_read("GET FASTEST CLOCK").payload[0])
-
-    @fastest_clock.setter
-    def fastest_clock(self, value: bool):
-        """Sets the fastest clock mode."""
-        self.write_packet("SET FASTEST CLOCK", (int(value),))
-
-    @property
-    def fastest_clock_init(self) -> bool:
-        """Gets whether the fastest clock has been initialized."""
-        return bool(self.write_read("GET FASTEST CLOCK INIT").payload[0])
-
-    @property
-    def invert_A(self) -> bool:
-        """Gets whether channel A is inverted."""
-        return bool(self.write_read("GET INVERT", (0,)).payload[0])
-
-    @invert_A.setter
-    def invert_A(self, value: bool):
-        """Sets whether channel A is inverted."""
-        self.write_packet("SET INVERT", (0, int(value)))
-
-    @property
-    def invert_B(self) -> bool:
-        """Gets whether channel B is inverted."""
-        return bool(self.write_read("GET INVERT", (1,)).payload[0])
-
-    @invert_B.setter
-    def invert_B(self, value: bool):
-        """Sets whether channel B is inverted."""
-        self.write_packet("SET INVERT", (1, int(value)))
-
-    @property
-    def invert_C(self) -> bool:
-        """Gets whether channel C is inverted."""
-        return bool(self.write_read("GET INVERT", (2,)).payload[0])
-
-    @invert_C.setter
-    def invert_C(self, value: bool):
-        """Sets whether channel C is inverted."""
-        self.write_packet("SET INVERT", (2, int(value)))
-
-    @property
-    def invert_D(self) -> bool:
-        """Gets whether channel D is inverted."""
-        return bool(self.write_read("GET INVERT", (3,)).payload[0])
-
-    @invert_D.setter
-    def invert_D(self, value: bool):
-        """Sets whether channel D is inverted."""
-        self.write_packet("SET INVERT", (3, int(value)))
-
-    @property
-    def average_count_A(self) -> int:
-        """Gets the average count for channel A."""
-        return self.write_read("GET AVERAGE COUNT", (0,)).payload[0]
-
-    @property
-    def average_A(self) -> float:
-        """Gets the average value for channel A."""
-        return self.write_read("GET AVERAGE", (0,)).payload[0]
-
-    # Repeat for B, C, D as needed...
-    
-    # ...existing code...
     @staticmethod
     def _fix_abcd_type(info: tuple|list|dict, this_is: str = '') -> dict : 
         """Converts the info argument into a dictionary with A, B, C, and D as keys.
@@ -873,29 +712,6 @@ class Pod8401HR(AquisitionDevice) :
             raise Exception('[!] The '+str(this_is)+'argument must have only four values.') 
         raise Exception('[!] The '+str(this_is)+'argument must be a tuple, list, or dict.')
     
-
-    def _update_gain_value(self, channel: int) -> None:
-        """Recalculates and applies the combined gain for a channel based on preamp, AC/DC, and SS gain."""
-        gain = self._preamp_gain[channel]
-
-        # AC vs DC path
-        if self._high_pass[channel] == self.NO_HIGH_PASS:
-            gain *= self.DC_GAIN
-        else:
-            gain *= self.AC_GAIN
-
-        # Second-stage correction
-        ss = self._second_stage_gain[channel]
-        if not self._is_hr:
-            if ss == self.SS_5X_HALF_HZ_HP:
-                gain *= 4.984
-        else:
-            if (ss & self.SS_1X_ONLY_HR) == self.SS_1X_ONLY_HR:
-                gain *= 4.984
-
-        # Apply to stream data channel wrapper
-        self._channels[channel].gain = gain
-
     @staticmethod
     def _validate_ss_gain(ssgain: dict) -> None: 
         """Checks that the second stage gain dictionary has proper values (1, 5, or None). Otherwise raises exception.
@@ -1140,12 +956,6 @@ class Pod8401HR(AquisitionDevice) :
 
 
     _property_map = {
-        "data rate": {
-            "data_rate": "data_rate",
-        },
-        "configuration": {
-            "base_configuration_name": "base_configuration_name",
-        },
         "highpass": {
             "preamp_highpass_0": "preamp_highpass_0",
             "preamp_highpass_1": "preamp_highpass_1",
@@ -1173,32 +983,6 @@ class Pod8401HR(AquisitionDevice) :
         "ext": {
             "ext0": "ext0",
             "ext1": "ext1",
-        },
-        
-        "offsets": {
-            "offsets": "offsets",
-        },
-        "preamp adc": {
-            "preamp_adc": "preamp_adc",
-        },
-        "ogim adc": {
-            "ogim_adc": "ogim_adc",
-        },
-        "invert": {
-            "invert_A": "invert_A",
-            "invert_B": "invert_B",
-            "invert_C": "invert_C",
-            "invert_D": "invert_D",
-        },
-        "average": {
-            "average_A": "average_A",
-            "average_B": "average_B",
-            "average_C": "average_C",
-            "average_D": "average_D",
-            "average_count_A": "average_count_A",
-            "average_count_B": "average_count_B",
-            "average_count_C": "average_count_C",
-            "average_count_D": "average_count_D",
         },
         "ttl config": {
             "ttl_config": "ttl_config",
@@ -1237,15 +1021,9 @@ class Pod8401HR(AquisitionDevice) :
             "ttl_analog_ttl1": "ttl_analog_ttl1",
         },
         "input ground": {
-            "input_ground_A": "input_ground_A",
-            "input_ground_B": "input_ground_B",
-            "input_ground_C": "input_ground_C",
-            "input_ground_D": "input_ground_D",
-            "input_ground_all": "input_ground_all",
-        },
-        "usb": {
-            "usb_delay": "usb_delay",
-            "fastest_clock": "fastest_clock",
-            "fastest_clock_init": "fastest_clock_init",
+            "input_ground0": "input_ground0",
+            "input_ground1": "input_ground1",
+            "input_ground2": "input_ground2",
+            "input_ground3": "input_ground3",
         },
     }
