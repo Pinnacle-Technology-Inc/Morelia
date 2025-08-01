@@ -387,7 +387,7 @@ class Pod :
 
         #writes packet to the device (or queue)
         self.write_packet(cmd, payload)
-        
+
         if isinstance(cmd, str):
             expected_cmd_num = self._commands.command_number_from_name(cmd)
         else:
@@ -465,13 +465,11 @@ class Pod :
         if self._port is None:
             return
         try:
-            # while not empty,
-            while True:
-                # obtain a packet from the queue (non-blocking)
-                item = self._write_queue.get_nowait()
+            # obtain a packet from the queue (non-blocking)
+            item = self._write_queue.get_nowait()
 
-                # write the item to the serial port
-                self._port.write(item)
+            # write the item to the serial port
+            self._port.write(item)
         #if empty, return
         except Empty:
             return

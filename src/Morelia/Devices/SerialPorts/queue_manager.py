@@ -98,14 +98,7 @@ class PacketManager:
         manager = ControlPacketManager(address=('localhost', local_port), authkey=b'secret')
         
         # tries to connect to the manager 10 times. 
-        for attempt in range(10):
-            try:
-                manager.connect()
-                break
-            except ConnectionRefusedError:
-                time.sleep(0.2)
-        else:
-            raise RuntimeError("Failed to connect ControlQueue Manager")
+        manager.connect()
 
         write_queue = getattr(manager, f'get_write_queue_{port}')()
         read_queue = getattr(manager, f'get_read_queue_{port}')()

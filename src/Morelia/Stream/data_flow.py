@@ -90,8 +90,8 @@ class DataFlow:
             if hasattr(source, "_port"):
                 source.close_port()
                 del source._port
+
             gc.collect()
-            time.sleep(0.2)
 
             # gets the type (class) of the pod device
             source_class = type(source)

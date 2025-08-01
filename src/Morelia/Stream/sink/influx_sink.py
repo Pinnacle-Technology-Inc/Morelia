@@ -99,7 +99,7 @@ class InfluxSink(SinkInterface):
 
     def __enter__(self) -> Self:
         self._client: InfluxDBClient = InfluxDBClient(url=self._url, token=self.__api_token, org=self._org)
-        self._writer: WriteApi = self._client.write_api(write_options=WriteOptions(batch_size=1)) 
+        self._writer: WriteApi = self._client.write_api(write_options=WriteOptions(batch_size=1))
         self._writer.write(bucket=self._bucket, org=self._org, record=self._data)
 
         #bind the sink to the variable in the "as" part of the context manager.

@@ -52,7 +52,7 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 
                 # if drift from real time is 100ms further than expected 
                 # or predicted time is greater than current time, reset time stamps
-                if abs(drift) > 100_000_000 : #or predicted > now_real_time_ns
+                if observer.last_timestamp > now_real_time_ns: #abs(drift) > 100_000_000 : #                #    print("hello")
                     observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1
@@ -131,6 +131,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
             time.sleep(0.005) # sleep to avoid CPU performance issues
 
     threading.Thread(target=background_writer, args=(pod,), daemon=True).start()
+
     # pipe the packets from ``device`` into a filter that throws out control packets (eventually we don't want to do this, but have
     # a seperate place these get put so they can still be read during streaming to enable feedback.),
     # and them timestamp packets.
