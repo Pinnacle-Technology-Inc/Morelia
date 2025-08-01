@@ -86,4 +86,8 @@ Editing Grafana Dashboards 🗻
 
 .. Add more on Grafana and creating your own dashboards
 
-The 
+During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for json files to use as dashboards. If you create a dashboard and want to save it, 
+
+.. Add image of saving json files
+
+.. Add docs on automated creation of dashboards
