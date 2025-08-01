@@ -37,174 +37,133 @@
       <h3 style="margin:10px;">Settings > 8206HR</h3>
     </div>
 
-    <form id="device-form" action="/submit1" method="post">
+	<form method="POST" action="/submit-config">
+	  <label for="config_name">Config. File Name</label>
+	  <input type="text" name="filename" id="filename"
+	    value="{{ session.get('loaded_config', {}).get('filename', '') }}">
 
-  <label for="config_name">Config. File Name</label>
-  <input type="text" name="filename" id="filename"
-    value="{{ session.get('loaded_config', {}).get('filename', '') }}">
+	<form method="POST" action="/submit-config">
+	  <fieldset>
+	    <legend>General Configuration</legend>
+	     
+	    <!--Sample Rate-->
+	    <label for="sample_rate">Sample Rate (Hz):</label>
+	    <p>Sets the sample rate of the system, in Hz. Valid values are 100 - 2000 currently (could be up to 4000 in the future).</p>
+	    <input
+	      type="number"
+	      id="sample_rate"
+	      name="sample_rate"
+	      min="100"
+	      max="2000"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('information', {}).get('sample_rate', '') }}"
+	    >
+	  </fieldset>
 
-  <fieldset id="information">
-    <legend>Information</legend>
-    <label>Firmware Version: {{ session.get('loaded_config', {}).get('identification', {}).get('firmware_version', 'X.X.X') }}</label><br>
+	  <!--Lowpass Filters-->
+	  <fieldset>
+	    <legend>Lowpass Filters (Hz)</legend>
+	    <p>Sets the lowpass filter for the desired channel (0 = EEG1, 1 = EEG2, 2 = EEG3/EMG) to the desired value (11 - 500) in Hz.</p>
+	    
+	    <label for="lowpass_ch0">Channel 0:</label>
+	    <input
+	      type="number"
+	      id="lowpass_ch0"
+	      name="lowpass_ch0"
+	      min="11"
+	      max="500"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch0', '') }}"
+	    >
 
-    <label>Sample Rate (Hz)</label>
-    <select name="sample_rate" id="sample_rate">
-      {% for rate in [400, 457, 512, 1024] %}
-        <option value="{{ rate }}" {% if session.get('loaded_config', {}).get('information', {}).get('sample_rate', '')|string == rate|string %}selected{% endif %}>{{ rate }}</option>
-      {% endfor %}
-    </select>
+	    <label for="lowpass_ch1">Channel 1:</label>
+	    <input
+	      type="number"
+	      id="lowpass_ch1"
+	      name="lowpass_ch1"
+	      min="11"
+	      max="500"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch1', '') }}"
+	    >
 
-    <label>Preamp Gain</label>
-    <select name="preamp_gain" id="preamp_gain">
-      {% for gain in [10, 20, 40, 100] %}
-        <option value="{{ gain }}" {% if session.get('loaded_config', {}).get('information', {}).get('preamp_gain', '')|string == gain|string %}selected{% endif %}>{{ gain }}</option>
-      {% endfor %}
-    </select>
-  </fieldset>
+	    <label for="lowpass_ch2">Channel 2:</label>
+	    <input
+	      type="number"
+	      id="lowpass_ch2"
+	      name="lowpass_ch2"
+	      min="11"
+	      max="500"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch2', '') }}"
+	    >
+	  </fieldset>
 
-  <fieldset id="channel_names">
-    <legend>Channel Names</legend>
-    {% for ch_num in range(1, 4) %}
-      <label>Channel {{ ch_num }}</label>
-      <input type="text" name="channel_{{ ch_num }}" id="channel_{{ ch_num }}"
-        value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel{{ch_num}}_name', 'EEG' ~ ch_num) }}">
-    {% endfor %}
-  </fieldset>
+	  <!--TTL Controls-->
+	  <fieldset>
+	    <legend>TTL Controls</legend>
+	    <p>Sets the selected TTL pin (0,1,2,3) to an output and sets the value (0-1).</p>
+	    <label for="ttl_pin0">TTL Pin 0 (0 or 1):</label>
+	    <input
+	      type="number"
+	      id="ttl_pin0"
+	      name="ttl_pin0"
+	      min="0"
+	      max="1"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin0', '') }}"
+	    >
 
-  <fieldset id="channel_settings">
-    <legend>Channel Settings</legend>
-    {% for ch_label in ['eeg1', 'eeg2', 'emg'] %}
-      <label>{{ ch_label | upper }}</label>
-      <input type="number" name="{{ ch_label }}" id="{{ ch_label }}"
-        value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get(ch_label, '') }}">
-    {% endfor %}
+	    <label for="ttl_pin1">TTL Pin 1 (0 or 1):</label>
+	    <input
+	      type="number"
+	      id="ttl_pin1"
+	      name="ttl_pin1"
+	      min="0"
+	      max="1"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin1', '') }}"
+	    >
 
-    <label>Filter Config</label>
-    <input type="number" name="filter_config" id="filter_config"
-      value="{{ session.get('loaded_config', {}).get('filter_config', '') }}">
+	    <label for="ttl_pin2">TTL Pin 2 (0 or 1):</label>
+	    <input
+	      type="number"
+	      id="ttl_pin2"
+	      name="ttl_pin2"
+	      min="0"
+	      max="1"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin2', '') }}"
+	    >
 
-    <label>Notch Enabled</label>
-    <input type="checkbox" name="notch_filter" id="notch_filter" value="true"
-      {% if session.get('loaded_config', {}).get('channel_settings', {}).get('notch_filter', False) %}checked{% endif %}>
+	    <label for="ttl_pin3">TTL Pin 3 (0 or 1):</label>
+	    <input
+	      type="number"
+	      id="ttl_pin3"
+	      name="ttl_pin3"
+	      min="0"
+	      max="1"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin3', '') }}"
+	    >
+	
+	    <!--TTL Port-->
+	    <input
+	      type="hidden"
+	      id="ttl_port"
+	      name="ttl_port"
+	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_port', '') }}"
+	    >
+	  </fieldset>
 
-    <label>Notch Frequency</label>
-    <input type="number" name="notch_frequency" id="notch_frequency"
-      value="{{ session.get('loaded_config', {}).get('channel_settings', {}).get('notch_frequency', '') }}">
-  </fieldset>
-
-  <fieldset>
-    <legend>TTL Pins</legend>
-    {% for i in range(4) %}
-      <label>TTL Pin {{ i }}</label>
-      <input type="number" name="ttl_pin{{ i }}" id="ttl_pin{{ i }}"
-        value="{{ session.get('loaded_config', {}).get('ttl pins', {}).get('ttl_pin' ~ i, '') }}">
-    {% endfor %}
-    <label>TTL Port</label>
-    <input type="number" name="ttl_port" id="ttl_port"
-      value="{{ session.get('loaded_config', {}).get('ttl pins', {}).get('ttl_port', '') }}">
-  </fieldset>
-
-  <fieldset>
-    <legend>TTL Events</legend>
-    {% for event_name, label in {
-      'enable_ttl_in_rise_event': 'Enable TTL In Rise Event',
-      'enable_ttl_in_fall_event': 'Enable TTL In Fall Event',
-      'enable_debounce': 'Enable Debounce',
-      'enable_ttl_out': 'Enable TTL Out'
-    }.items() %}
-      <label>{{ label }}</label>
-      <input type="checkbox" name="{{ event_name }}" id="{{ event_name }}" value="true"
-        {% if session.get('loaded_config', {}).get('ttl events', {}).get(event_name, False) %}checked{% endif %}>
-    {% endfor %}
-  </fieldset>
-
-  <fieldset>
-    <legend>TTL Labels</legend>
-    {% for ttl_label in ['ttl1_event_string', 'ttl2_event_string', 'ttl3_event_string', 'ttl4_event_string'] %}
-      <label>{{ ttl_label|replace('_', ' ') | capitalize }}</label>
-      <input type="text" name="{{ ttl_label }}" id="{{ ttl_label }}"
-        value="{{ session.get('loaded_config', {}).get('ttl labels', {}).get(ttl_label, '') }}">
-    {% endfor %}
-  </fieldset>
-
-  <fieldset>
-    <legend>TTL States</legend>
-    {% for state_key in [
-      'ttl1_rising_state', 'ttl2_rising_state', 'ttl3_rising_state', 'ttl4_rising_state',
-      'ttl1_falling_state', 'ttl2_falling_state', 'ttl3_falling_state', 'ttl4_falling_state',
-      'ttl1_debounce', 'ttl1_synchronous'
-    ] %}
-      <label>{{ state_key|replace('_', ' ') | capitalize }}</label>
-      <input type="checkbox" name="{{ state_key }}" id="{{ state_key }}" value="true"
-        {% if session.get('loaded_config', {}).get('ttl states', {}).get(state_key, False) %}checked{% endif %}>
-    {% endfor %}
-  </fieldset>
-
-      <fieldset>
-        <legend>TTL Controls</legend>
-        <div id="ttl-controls">
-          <div class="ttl-header">
-            <label>TTL Channel</label>
-	    <label>Output?</label>
-            <label>Set State</label>
-            <label>Current State</label>
-            <label>Rising Event</label>
-            <label>Falling Event</label>
-            <label>Event Comment</label>
-            <label>Debounce</label>
-            <label>Synchronous</label>
-          </div>
-
-          <div class="ttl-row">
-            <div class="ttl-label">TTL1</div>
-            <input type="checkbox" name="ttl1_output" id="ttl1_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('output', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl1_set_state" id="ttl1_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('set_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl1_set_current_state" id="ttl1_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('current_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl1_rising_event" id="ttl1_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl1_falling_event" id="ttl1_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
-            <input type="text" name="ttl1_event_comment" id="ttl1_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl1', {}).get('event_comment', 'TTL 1') }}">
-            <input type="checkbox" name="debounce" id="debounce" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('debounce', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="synchronous" id="synchronous" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('synchronous', '') == 'true' %}checked{% endif %}>
-          </div>
-
-          <div class="ttl-row">
-            <div class="ttl-label">TTL2</div>
-            <input type="checkbox" name="ttl2_output" id="ttl2_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('output', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl2_set_state" id="ttl2_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('set_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl2_set_current_state" id="ttl2_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('current_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl2_rising_event" id="ttl2_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl2_falling_event" id="ttl2_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
-            <input type="text" name="ttl2_event_comment" id="ttl2_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl2', {}).get('event_comment', 'TTL 2') }}">
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="ttl-row">
-            <div class="ttl-label">TTL3</div>
-            <input type="checkbox" name="ttl3_output" id="ttl3_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('output', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl3_set_state" id="ttl3_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('set_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl3_set_current_state" id="ttl3_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('current_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl3_rising_event" id="ttl3_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl3_falling_event" id="ttl3_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
-            <input type="text" name="ttl3_event_comment" id="ttl3_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl3', {}).get('event_comment', 'TTL 3') }}">
-            <span></span>
-            <span></span>
-          </div>
-
-          <div class="ttl-row">
-            <div class="ttl-label">TTL4</div>
-            <input type="checkbox" name="ttl4_output" id="ttl4_output" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('output', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl4_set_state" id="ttl4_set_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('set_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl4_set_current_state" id="ttl4_set_current_state" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('current_state', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl4_rising_event" id="ttl4_rising_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('rising_event', '') == 'true' %}checked{% endif %}>
-            <input type="checkbox" name="ttl4_falling_event" id="ttl4_falling_event" value="true" {% if session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('falling_event', '') == 'true' %}checked{% endif %}>
-            <input type="text" name="ttl4_event_comment" id="ttl4_event_comment" value="{{ session.get('loaded_config', {}).get('ttl_controls', {}).get('ttl4', {}).get('event_comment', 'TTL 4') }}">
-            <span></span>
-            <span></span>
-          </div>
-        </div>
-      </fieldset>
-
+	    <!--Filter Config-->
+	    <input
+              type="hidden"
+	      id="filter_config"
+	      name="filter_config"
+	      value="{{ session.get('loaded_config', {}).get('filter_config', {}).get('filter_config', '') }}"
+	    >
+    
     <div id="flash-messages">
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}

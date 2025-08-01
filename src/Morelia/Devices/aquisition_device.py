@@ -139,9 +139,9 @@ class AquisitionDevice(Pod):
     property_map = {
         "identification": {
             "id": "id",
-            "type": "type",
             "pod_type": "pod_type",
         },
+        "sample_rate": "sample_rate",
     }
     
     def __enter__(self) -> Self:

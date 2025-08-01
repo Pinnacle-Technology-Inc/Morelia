@@ -1,16 +1,28 @@
-body {
+   body {
       display: flex;
       font-family: Arial, sans-serif;
       margin: 0;
+      height: 100%;
     }
 
-.sidebar {
-      background-color: #2d5b3b;
-      color: white;
-      width: 250px;
-      padding: 20px;
-      margin: 10 px;
-    }
+    #device-bar {
+	  flex-shrink: 0;
+	  display: flex;
+	  flex-direction: column;
+	  background-color: #588157;
+	  margin: 0px;
+	  text-align: left;
+	  overflow-y: auto;
+	}
+    .sidebar {
+     flex: 1;
+     background-color: #588157;
+     color: white;
+     overflow-y: auto;
+     padding: 20px;
+     margin: 0px; 
+     width: 100px;
+     }
     .logo {
       background-color: white;
       color: #2d5b3b;
@@ -42,6 +54,7 @@ body {
 	text-decoration: underline;
     }
 
+
     .sidebar input[type="text"],
     .sidebar select, .sidebar button {
       width: 100%;
@@ -49,8 +62,9 @@ body {
     }
     .main-content {
       background-color: #f4f4f4;
-      flex-grow: 1;
+      flex-grow: 3;
       padding: 20px;
+      overflow-y: auto;
     }
     .settings-bar {
       background-color: #D9D9D9;
@@ -61,6 +75,22 @@ body {
       border-bottom: 1px solid #B7B6B6;
       color: #588157;
     }
+
+        .footer-bar {
+	  position: fixed;
+	  bottom: 0;
+	  left: 0;
+	  right: 0;
+	  height: 40px;  
+	  background-color: #222;
+	  color: #588157;
+	  display: flex;
+	  align-items: center;
+	  justify-content: center;
+	  font-size: 14px;
+	  z-index: 1000; 
+	}
+
 
     .device_type_
     fieldset {
@@ -73,51 +103,6 @@ body {
       font-weight: bold;
     }
 
-    #information {
-	margin: 20px 0px;
-    } 
-
-    #channel_names {
-	margin-bottom: 20px;
-    }
-
-    #channel_settings{
-	margin-bottom: 20px;
-    }
-    #ttl-controls {
-      background-color: #D9D9D9;
-      padding: 10px;
-      display: grid;
-      grid-template-columns: repeat(9, auto);
-      gap: 10px;
-      align-items: center;
-    }
-    #ttl-controls label {
-      font-weight: bold;
-      margin-bottom: 5px;
-      text-align: center;
-    }
-    .ttl-label {
-      background-color: #588157;
-      color: white;
-      padding: 5px 10px;
-      text-align: center;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-    .ttl-header {
-      grid-column: span 9;
-      display: grid;
-      grid-template-columns: repeat(9, auto);
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-    .ttl-row {
-      display: contents;
-    }
-    .ttl-row input[type="text"] {
-      width: 100px;
-    }
     .form-buttons {
       display: flex;
       justify-content: flex-end;
@@ -127,15 +112,6 @@ body {
       padding: 5px 15px;
     }
 
-#device-bar {
-  position: relative;
-  background-color: #588157;
-  height: 100vh;
-  width: 20%;
-  margin: 0;
-  padding: 20px;
-  text-align: left;
-}
 
 #device-type {
   position: absolute;

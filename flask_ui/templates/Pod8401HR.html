@@ -43,185 +43,190 @@
     <input type="text" name="filename" id="filename" placeholder="Untitled" 
           value="{{ session.get('loaded_config', {}).get('filename', '') }}">
 
-    <!-- Information Fieldset -->
-    <fieldset id="information">
-      <legend>Information</legend>
-      <label>Firmware Version: X.X.X</label><br>
-      <label>Sample Rate (Hz)</label>
-      <select name="sample_rate" id="sample_rate">
-        <option value="400" {% if session.get('loaded_config', {}).get('information', {}).get('sample_rate', '') == '400' %}selected{% endif %}>400</option>
-        <!-- Add more sample rates here if needed -->
-      </select>
-      <label>Preamp Gain</label>
-      <select name="preamp_gain" id="preamp_gain">
-        <option value="100" {% if session.get('loaded_config', {}).get('information', {}).get('preamp_gain', '') == '100' %}selected{% endif %}>100</option>
-        <!-- Add more preamp gain options if needed -->
-      </select>
-    </fieldset>
+	<form method="POST" action="/submit4">
+	  <!-- General Settings -->
+	  <fieldset>
+	    <legend>General Settings</legend>
+	    <label for="sample_rate">Sample Rate (Hz):</label>
+	    <p>Sets the sample rate of the system, in Hz. Valid values are 2000 - 20000 currently.</p>
+	    <input
+	      type="number"
+	      id="sample_rate"
+	      name="sample_rate"
+	      min="2000"
+	      max="20000"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('sample_rate', '') }}"
+	    >
+	  </fieldset>
 
-    <!-- Channel Names -->
-    <fieldset id="channel_names">
-      <legend>Channel Names</legend>
-      <label>Channel 1</label>
-      <input type="text" name="channel_1" id="channel_1" 
-            value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_1', 'EEG1') }}">
-      <label>Channel 2</label>
-      <input type="text" name="channel_2" id="channel_2" 
-            value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_2', 'EEG2') }}">
-      <label>Channel 3</label>
-      <input type="text" name="channel_3" id="channel_3" 
-            value="{{ session.get('loaded_config', {}).get('channel_names', {}).get('channel_3', 'EEG3') }}">
-    </fieldset>
+	  <!-- Highpass Filters -->
+	  <fieldset>
+	    <legend>High‑pass Filters</legend>
+	    <p>Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS.</p>
+	    {% for ch in range(4) %}
+	      <label for="preamp_highpass_{{ ch }}">Channel {{ ch }}:</label>
+	      <input
+		type="number"
+		id="preamp_highpass_{{ ch }}"
+		name="highpass[preamp_highpass_{{ ch }}]"
+		min="0"
+		max="3"
+		required
+		value="{{ session.get('loaded_config', {}).get('highpass', {}).get('preamp_highpass_' ~ ch, '') }}"
+	      ><br>
+	    {% endfor %}
+	  </fieldset>
 
-    <!-- Device-specific settings grouped by your device map keys -->
-    <fieldset id="data_rate">
-      <legend>Data Rate</legend>
-      <label>Data Rate</label>
-      <input type="number" name="data_rate" id="data_rate" 
-            value="{{ session.get('loaded_config', {}).get('data rate', {}).get('data_rate', '') }}">
-    </fieldset>
+	  <!-- Lowpass Filters -->
+	  <fieldset>
+	    <legend>Low‑pass Filters</legend>
+	    <p>Sets the lowpass filter for the desired channel to the desired value (21 - 15000) in Hz. Requires the channel and value in Hz.</p>
+	    {% for ch in range(4) %}
+	      <label for="lowpass_ch{{ ch }}">Channel {{ ch }} (Hz):</label>
+	      <input
+		type="number"
+		id="lowpass_ch{{ ch }}"
+		name="lowpass[lowpass_ch{{ ch }}]"
+		min="21"
+		max="15000"
+		required
+		value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch' ~ ch, '') }}"
+	      ><br>
+	    {% endfor %}
+	  </fieldset>
 
-    <fieldset id="configuration">
-      <legend>Configuration</legend>
-      <label>Base Configuration Name</label>
-      <input type="text" name="base_configuration_name" id="base_configuration_name" 
-            value="{{ session.get('loaded_config', {}).get('configuration', {}).get('base_configuration_name', '') }}">
-    </fieldset>
+	  <!-- DC Mode -->
+	  <fieldset>
+	    <legend>DC Mode</legend>
+	    <p>Sets the DC mode for the selected channel. Requires the channel and value to set. 0 = Subtract VBias, 1 = Subtract AGND. Typically 0 for biosensors and 1 for EEG/EMG.</p>
+	    {% for ch in range(4) %}
+	      <label for="dc_mode_{{ ch }}">Channel {{ ch }}:</label>
+	      <select name="dc_mode[dc_mode_{{ ch }}]" id="dc_mode_{{ ch }}" required>
+		{% set cur = session.get('loaded_config', {}).get('dc_mode', {}).get('dc_mode_' ~ ch, '') %}
+		{% for val, label in [(0,'BIAS'),(1,'AGND')] %}
+		  <option value="{{ val }}" {% if cur|string == val|string %}selected{% endif %}>{{ label }}</option>
+		{% endfor %}
+	      </select><br>
+	    {% endfor %}
+	  </fieldset>
 
-    <fieldset id="highpass">
-      <legend>Highpass Filter</legend>
-      {% for i in range(4) %}
-        <label>Preamp Highpass {{ i }}</label>
-        <input type="number" name="preamp_highpass_{{ i }}" id="preamp_highpass_{{ i }}" 
-              value="{{ session.get('loaded_config', {}).get('highpass', {}).get('preamp_highpass_' ~ i, '') }}">
-      {% endfor %}
-    </fieldset>
+	  <!-- Bias -->
+	  <fieldset>
+	    <legend>Bias Voltages (V)</legend>
+	    {% for ch in range(4) %}
+	      <label for="bias_{{ ch }}">Bias {{ ch }}:</label>
+	      <input
+		type="number"
+		step="0.001"
+		id="bias_{{ ch }}"
+		name="bias[bias_{{ ch }}]"
+		min="-2.048"
+		max="2.048"
+		required
+		value="{{ session.get('loaded_config', {}).get('bias', {}).get('bias_' ~ ch, '') }}"
+	      ><br>
+	    {% endfor %}
+	  </fieldset>
 
-    <fieldset id="lowpass">
-      <legend>Lowpass Filter</legend>
-      {% for i in range(4) %}
-        <label>Lowpass Ch {{ i }}</label>
-        <input type="number" name="lowpass_ch{{ i }}" id="lowpass_ch{{ i }}" 
-              value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch' ~ i, '') }}">
-      {% endfor %}
-    </fieldset>
+	  <!-- TTL config: hidden since GET‑only -->
+	  {% for key in ['ttl_output_config', 'ttl_input_config'] %}
+	    <input
+	      type="hidden"
+	      name="ttl_configs[{{ key }}]"
+	      value="{{ session.get('loaded_config', {}).get('ttl_configs', {}).get(key, '') }}"
+	    >
+	  {% endfor %}
 
-    <fieldset id="dc_mode">
-      <legend>DC Mode</legend>
-      {% for i in range(4) %}
-        <label>DC Mode {{ i }}</label>
-        <input type="number" name="dc_mode_{{ i }}" id="dc_mode_{{ i }}" 
-              value="{{ session.get('loaded_config', {}).get('dc mode', {}).get('dc_mode_' ~ i, '') }}">
-      {% endfor %}
-    </fieldset>
+	  <!-- EXT pins -->
+	  <fieldset>
+	    <legend>EXT Pins</legend>
+	    {% for pin in ['ext0','ext1'] %}
+	      <label for="{{ pin }}">{{ pin|upper }}:</label>
+	      <input
+		type="number"
+		id="{{ pin }}"
+		name="ext[{{ pin }}]"
+		min="0"
+		max="1"
+		required
+		value="{{ session.get('loaded_config', {}).get('ext', {}).get(pin, '') }}"
+	      ><br>
+	    {% endfor %}
+	  </fieldset>
 
-    <fieldset id="bias">
-      <legend>Bias</legend>
-      {% for i in range(4) %}
-        <label>Bias {{ i }}</label>
-        <input type="number" name="bias_{{ i }}" id="bias_{{ i }}" 
-              value="{{ session.get('loaded_config', {}).get('bias', {}).get('bias_' ~ i, '') }}">
-      {% endfor %}
-    </fieldset>
+	  <!-- Second Stage Config (SS) -->
+	<fieldset>
+	  <legend>Second‑Stage (SS) Configuration</legend>
+	  {% for ch in range(4) %}
+	    <div style="margin-bottom: 10px;">
+	      <label>Channel {{ ch }}:</label>
+	      
+	      <!-- Fixed Config Display -->
+	      <span>(Config {{ ch }})</span>
+	      <input type="hidden" name="ss_config[ss_config_{{ ch }}]" value="{{ ch }}">
 
-    <fieldset id="offsets">
-      <legend>Offsets</legend>
-      <label>Offsets</label>
-      <input type="text" name="offsets" id="offsets" 
-            value="{{ session.get('loaded_config', {}).get('offsets', {}).get('offsets', '') }}">
-    </fieldset>
+	      <!-- High‑pass Dropdown -->
+	      High‑pass:
+	      <select name="ss_config[ss_highpass_{{ ch }}]">
+		{% set hp = session.get('loaded_config', {}).get('ss_config', {}).get('ss_highpass_' ~ ch, '') %}
+		{% for val, label in [(0.5, '0.5Hz'), (0.0, 'DC/none')] %}
+		  <option value="{{ val }}" {% if hp|string == val|string %}selected{% endif %}>{{ label }}</option>
+		{% endfor %}
+	      </select>
 
-    <fieldset id="preamp_adc">
-      <legend>Preamp ADC</legend>
-      <label>Preamp ADC</label>
-      <input type="number" name="preamp_adc" id="preamp_adc" 
-            value="{{ session.get('loaded_config', {}).get('preamp adc', {}).get('preamp_adc', '') }}">
-    </fieldset>
+	      <!-- Gain Dropdown -->
+	      Gain:
+	      <select name="ss_config[ss_gain_{{ ch }}]">
+		{% set g = session.get('loaded_config', {}).get('ss_config', {}).get('ss_gain_' ~ ch, '') %}
+		{% for val in [5, 1] %}
+		  <option value="{{ val }}" {% if g|string == val|string %}selected{% endif %}>{{ val }}×</option>
+		{% endfor %}
+	      </select>
+	    </div>
+	  {% endfor %}
+	</fieldset>
 
-    <fieldset id="ogim_adc">
-      <legend>OGIM ADC</legend>
-      <label>OGIM ADC</label>
-      <input type="number" name="ogim_adc" id="ogim_adc" 
-            value="{{ session.get('loaded_config', {}).get('ogim adc', {}).get('ogim_adc', '') }}">
-    </fieldset>
+	  <!-- Mux mode -->
+	  <fieldset>
+	    <legend>Mux Mode</legend>
+	    <label for="mux_mode">Mux Mode:</label>
+	    <input
+	      type="number"
+	      id="mux_mode"
+	      name="mux_mode[mux_mode]"
+	      min="0"
+	      max="1"
+	      required
+	      value="{{ session.get('loaded_config', {}).get('mux_mode', {}).get('mux_mode', '') }}"
+	    >
+	  </fieldset>
 
-    <fieldset id="invert">
-      <legend>Invert</legend>
-      {% for ch in ['A', 'B', 'C', 'D'] %}
-        <label>Invert {{ ch }}</label>
-        <input type="checkbox" name="invert_{{ ch }}" id="invert_{{ ch }}" value="true" 
-              {% if session.get('loaded_config', {}).get('invert', {}).get('invert_' ~ ch, '') == 'true' %}checked{% endif %}>
-      {% endfor %}
-    </fieldset>
+	  <!-- TTL Analog (read‑only, hidden) -->
+	  {% for key in ['ttl_analog_ext0','ttl_analog_ext1','ttl_analog_ttl4','ttl_analog_ttl3','ttl_analog_ttl2','ttl_analog_ttl1'] %}
+	    <input
+	      type="hidden"
+	      name="ttl_analog[{{ key }}]"
+	      value="{{ session.get('loaded_config', {}).get('ttl_analog', {}).get(key, '') }}"
+	    >
+	  {% endfor %}
 
-    <fieldset id="average">
-      <legend>Average</legend>
-      {% for ch in ['A', 'B', 'C', 'D'] %}
-        <label>Average {{ ch }}</label>
-        <input type="checkbox" name="average_{{ ch }}" id="average_{{ ch }}" value="true" 
-              {% if session.get('loaded_config', {}).get('average', {}).get('average_' ~ ch, '') == 'true' %}checked{% endif %}>
-        <label>Average Count {{ ch }}</label>
-        <input type="number" name="average_count_{{ ch }}" id="average_count_{{ ch }}" 
-              value="{{ session.get('loaded_config', {}).get('average', {}).get('average_count_' ~ ch, '') }}">
-      {% endfor %}
-    </fieldset>
-
-    <fieldset id="ss_config">
-      <legend>Second Stage Config</legend>
-      {% for i in range(4) %}
-        <label>SS Config {{ i }}</label>
-        <input type="number" name="ss_config_{{ i }}" id="ss_config_{{ i }}" 
-              value="{{ session.get('loaded_config', {}).get('ss config', {}).get('ss_config_' ~ i, '') }}">
-      {% endfor %}
-    </fieldset>
-
-    <fieldset id="mux_mode">
-      <legend>Mux Mode</legend>
-      <label>Mux Mode</label>
-      <input type="number" name="mux_mode" id="mux_mode" 
-            value="{{ session.get('loaded_config', {}).get('mux mode', {}).get('mux_mode', '') }}">
-    </fieldset>
-
-    <fieldset id="ttl_config">
-      <legend>TTL Config</legend>
-      <label>TTL Config</label>
-      <input type="number" name="ttl_config" id="ttl_config" 
-            value="{{ session.get('loaded_config', {}).get('ttl config', {}).get('ttl_config', '') }}">
-      <label>TTL Output Config</label>
-      <input type="number" name="ttl_output_config" id="ttl_output_config" 
-            value="{{ session.get('loaded_config', {}).get('ttl config', {}).get('ttl_output_config', '') }}">
-      <label>TTL Input Config</label>
-      <input type="number" name="ttl_input_config" id="ttl_input_config" 
-            value="{{ session.get('loaded_config', {}).get('ttl config', {}).get('ttl_input_config', '') }}">
-      <label>TTL Outputs</label>
-      <input type="number" name="ttl_outputs" id="ttl_outputs" 
-            value="{{ session.get('loaded_config', {}).get('ttl config', {}).get('ttl_outputs', '') }}">
-    </fieldset>
-
-    <fieldset id="input_ground">
-      <legend>Input Ground</legend>
-      {% for ch in ['A', 'B', 'C', 'D'] %}
-        <label>Input Ground {{ ch }}</label>
-        <input type="checkbox" name="input_ground_{{ ch }}" id="input_ground_{{ ch }}" value="true" 
-              {% if session.get('loaded_config', {}).get('input ground', {}).get('input_ground_' ~ ch, '') == 'true' %}checked{% endif %}>
-      {% endfor %}
-      <label>Input Ground All</label>
-      <input type="checkbox" name="input_ground_all" id="input_ground_all" value="true" 
-            {% if session.get('loaded_config', {}).get('input ground', {}).get('input_ground_all', '') == 'true' %}checked{% endif %}>
-    </fieldset>
-
-    <fieldset id="usb">
-      <legend>USB</legend>
-      <label>USB Delay</label>
-      <input type="number" name="usb_delay" id="usb_delay" 
-            value="{{ session.get('loaded_config', {}).get('usb', {}).get('usb_delay', '') }}">
-      <label>Fastest Clock</label>
-      <input type="number" name="fastest_clock" id="fastest_clock" 
-            value="{{ session.get('loaded_config', {}).get('usb', {}).get('fastest_clock', '') }}">
-      <label>Fastest Clock Init</label>
-      <input type="number" name="fastest_clock_init" id="fastest_clock_init" 
-            value="{{ session.get('loaded_config', {}).get('usb', {}).get('fastest_clock_init', '') }}">
-    </fieldset>
+	  <!-- Input Ground -->
+	  <fieldset>
+	    <legend>Input Ground</legend>
+	    {% for ch in range(4) %}
+	      <label for="input_ground{{ ch }}">Channel {{ ch }}:</label>
+	      <input
+		type="number"
+		id="input_ground{{ ch }}"
+		name="input_ground[input_ground{{ ch }}]"
+		min="0"
+		max="1"
+		required
+		value="{{ session.get('loaded_config', {}).get('input_ground', {}).get('input_ground' ~ ch, '') }}"
+	      ><br>
+	    {% endfor %}
+	  </fieldset>
 
     <div id="flash-messages">
     {% with messages = get_flashed_messages(with_categories=true) %}
