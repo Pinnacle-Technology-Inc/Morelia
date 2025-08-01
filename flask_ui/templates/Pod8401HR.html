@@ -8,6 +8,7 @@
   </style>
 </head>
 <body>
+  <div class="layout">
   <div class="sidebar" id="device-bar">
     <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
     <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
@@ -114,6 +115,7 @@
 	  <!-- Bias -->
 	  <fieldset>
 	    <legend>Bias Voltages (V)</legend>
+	    <p>Sets the bias on a given channel. Requires the channel and DAC value between ±2.048V.</p>
 	    {% for ch in range(4) %}
 	      <label for="bias_{{ ch }}">Bias {{ ch }}:</label>
 	      <input
@@ -129,18 +131,37 @@
 	    {% endfor %}
 	  </fieldset>
 
-	  <!-- TTL config: hidden since GET‑only -->
-	  {% for key in ['ttl_output_config', 'ttl_input_config'] %}
-	    <input
-	      type="hidden"
-	      name="ttl_configs[{{ key }}]"
-	      value="{{ session.get('loaded_config', {}).get('ttl_configs', {}).get(key, '') }}"
-	    >
+	  <fieldset>
+	  <legend>TTL Configuration</legend>
+
+	  <h4>Output Config (0 = Open Collector, 1 = Push-Pull)</h4>
+	  <p>Configures the TTL pins. First argument is output setup: 0 is open collector, 1 is push-pull. Second argument is input setup: 0 is analog, 1 is digital. Bit 7 = EXT0, bit 6 = EXT1, bits 4–5 unused, bits 0–3 = TTL pins.</p>
+	  {% set output_vals = session.get('loaded_config', {}).get('ttl_output_config', {}) %}
+	  {% for pin in ['ext0', 'ext1', 'ttl4', 'ttl3', 'ttl2', 'ttl1'] %}
+	    <label>{{ pin|upper }}:</label>
+	    <select name="ttl_output_config[{{ pin }}]">
+	      {% for val in [0, 1] %}
+		<option value="{{ val }}" {% if output_vals.get(pin, '')|string == val|string %}selected{% endif %}>{{ val }}</option>
+	      {% endfor %}
+	    </select><br>
 	  {% endfor %}
+
+	  <h4>Input Config (0 = Analog, 1 = Digital)</h4>
+	  {% set input_vals = session.get('loaded_config', {}).get('ttl_input_config', {}) %}
+	  {% for pin in ['ext0', 'ext1', 'ttl4', 'ttl3', 'ttl2', 'ttl1'] %}
+	    <label>{{ pin|upper }}:</label>
+	    <select name="ttl_input_config[{{ pin }}]">
+	      {% for val in [0, 1] %}
+		<option value="{{ val }}" {% if input_vals.get(pin, '')|string == val|string %}selected{% endif %}>{{ val }}</option>
+	      {% endfor %}
+	    </select><br>
+	  {% endfor %}
+	</fieldset>
 
 	  <!-- EXT pins -->
 	  <fieldset>
 	    <legend>EXT Pins</legend>
+	    <p>Sets the digital value of EXT0 and EXT1, 0 or 1.</p>
 	    {% for pin in ['ext0','ext1'] %}
 	      <label for="{{ pin }}">{{ pin|upper }}:</label>
 	      <input
@@ -249,6 +270,8 @@
     </form>
   </div>
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </div>
+  </div>
 </body>
 </html>
 

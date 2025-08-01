@@ -1,27 +1,31 @@
-   body {
+   html, body {
       display: flex;
       font-family: Arial, sans-serif;
       margin: 0;
       height: 100%;
     }
 
+    .layout {
+	  display: flex;
+	  height: 100vh;
+	  flex-direction: row;
+	  width:100%;
+    }
+
     #device-bar {
 	  flex-shrink: 0;
 	  display: flex;
+	  width: 280px;
 	  flex-direction: column;
 	  background-color: #588157;
-	  margin: 0px;
 	  text-align: left;
 	  overflow-y: auto;
-	}
+     }
     .sidebar {
-     flex: 1;
      background-color: #588157;
      color: white;
-     overflow-y: auto;
      padding: 20px;
-     margin: 0px; 
-     width: 100px;
+     overflow-y: auto;
      }
     .logo {
       background-color: white;
@@ -59,12 +63,14 @@
     .sidebar select, .sidebar button {
       width: 100%;
       margin-bottom: 10px;
+      max-height: 150px;
     }
     .main-content {
       background-color: #f4f4f4;
-      flex-grow: 3;
+      flex-grow: 1;
       padding: 20px;
       overflow-y: auto;
+      min-width: 0;
     }
     .settings-bar {
       background-color: #D9D9D9;

@@ -5,11 +5,11 @@ import os
 import shutil
 from werkzeug.utils import secure_filename
 
-"""
+
 # Add src folder to PATH so Flask can find the Morelia package
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
 from Morelia.pod_scan import detect_pod_devices
-"""
+
 
 app = Flask(__name__)
 #flash in Flask needs a key to temporarily store data for this session
@@ -105,10 +105,6 @@ def clear_config():
     session.pop("loaded_filename", None)
     flash("Configuration cleared.")
     return redirect(request.referrer or url_for("homepage"))
-
-def parse_checkbox(field_name):
-    """Helper to parse checkbox inputs: returns True if 'true' string, else False."""
-    return request.form.get(field_name) == 'true'
 
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
@@ -740,6 +736,3 @@ def submit_exp():
                            form_data=dict(request.form),
                            toml_files=toml_files,
                            current_folder=folder_name)
-# Debugging Purposes
-if __name__ == "__main__":
-    app.run(debug=True)
