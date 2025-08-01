@@ -95,6 +95,7 @@ Destination Class
 CSV File    ``CSVSink`` 
 EDF File    ``EDFSink``
 InfluxDB    ``InfluxSink``
+QuestDB     ``QuestSink``
 =========== ======
 
 With plans for PVFS files in the near future. Depending on the sink, different parameters
@@ -123,8 +124,8 @@ Continuing along with our example, let us build our sinks.
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
    # Create InfluxDB Sinks.
-   influx_sink_1 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_2)
-   influx_sink_2 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_3)
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
 
 Finally, it's time to link them together with the mapping. We can do this using the 
 ``data_flow`` object from ``Morelia.Stream``. In its constructor, the ``data_flow``
@@ -152,10 +153,10 @@ sentence, let's see what it looks like in our example.
    edf_dump_1 = EDFSink('dump_1.edf', pod_1)
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
-   # Create InfluxDB sinks.
-   influx_sink_1 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_2)
-   influx_sink_2 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_3)
-    
+   # Create InfluxDB Sinks.
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
+
    # List that defines how sources map to sinks. 
    mapping = [ (pod_1, [edf_dump_1]),
                (pod_2, [edf_dump_2, influx_sink_1]),
