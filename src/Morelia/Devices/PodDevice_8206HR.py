@@ -68,10 +68,6 @@ class Pod8206HR(AcquisitionDevice) :
 
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
 
- 
-        # the constructor used to create control packets as they are recieved.
-        self._control_packet_factory = partial(ControlPacket, decode_packet)
-
         # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, decode_packet)
 
