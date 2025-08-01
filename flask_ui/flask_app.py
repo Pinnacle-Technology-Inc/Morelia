@@ -116,96 +116,19 @@ def submit1():
     data = {
         'title': 'Pod8206HR Device Configuration File',
         'filename': request.form.get('filename', '').strip(),
-        'identification': {
-            'firmware_version': request.form.get('firmware_version', '').strip(),  # if you add this input later
-            # add more identification fields if needed
+        "information": {
+            'sample_rate': request.form.get('sample_rate', '').strip()
         },
-        'information': {
-            'sample_rate': request.form.get('sample_rate', '').strip(),
-            'preamp_gain': request.form.get('preamp_gain', '').strip(),
-            'aux_input': request.form.get('aux_input', '').strip() if request.form.get('aux_input') else None,
-            'filter_config': request.form.get('filter_config', '').strip(),
+        "lowpass": {
+            "lowpass_ch0": request.form.get('lowpass_ch0','').strip(),
+            "lowpass_ch1": request.form.get('lowpass_ch1','').strip(),
+            "lowpass_ch2": request.form.get('lowpass_ch2','').strip(),
         },
-        'channel_names': {
-            'channel1_name': request.form.get('channel_1', '').strip(),
-            'channel2_name': request.form.get('channel_2', '').strip(),
-            'channel3_name': request.form.get('channel_3', '').strip(),
-        },
-        'channel_settings': {
-            'eeg1': request.form.get('eeg1', '').strip(),
-            'eeg2': request.form.get('eeg2', '').strip(),
-            'emg': request.form.get('emg', '').strip(),
-            'ecg': request.form.get('ecg', '').strip() if request.form.get('ecg') else None,
-            'accel': request.form.get('accel', '').strip() if request.form.get('accel') else None,
-            'notch_filter': parse_checkbox('notch_filter'),
-            'notch_frequency': request.form.get('notch_frequency', '').strip(),
-        },
-        'ttl pins': {
-            'ttl_pin0': request.form.get('ttl_pin0', '').strip(),
-            'ttl_pin1': request.form.get('ttl_pin1', '').strip(),
-            'ttl_pin2': request.form.get('ttl_pin2', '').strip(),
-            'ttl_pin3': request.form.get('ttl_pin3', '').strip(),
-            'ttl_port': request.form.get('ttl_port', '').strip(),
-        },
-        'ttl_events': {
-            'enable_ttl_in_rise_event': parse_checkbox('enable_ttl_in_rise_event'),
-            'enable_ttl_in_fall_event': parse_checkbox('enable_ttl_in_fall_event'),
-            'enable_debounce': parse_checkbox('enable_debounce'),
-            'enable_ttl_out': parse_checkbox('enable_ttl_out'),
-        },
-        'ttl_labels': {
-            'ttl1_event_string': request.form.get('ttl1_event_string', '').strip(),
-            'ttl2_event_string': request.form.get('ttl2_event_string', '').strip(),
-            'ttl3_event_string': request.form.get('ttl3_event_string', '').strip(),
-            'ttl4_event_string': request.form.get('ttl4_event_string', '').strip(),
-        },
-        'ttl_states': {
-            'ttl1_rising_state': parse_checkbox('ttl1_rising_state'),
-            'ttl2_rising_state': parse_checkbox('ttl2_rising_state'),
-            'ttl3_rising_state': parse_checkbox('ttl3_rising_state'),
-            'ttl4_rising_state': parse_checkbox('ttl4_rising_state'),
-            'ttl1_falling_state': parse_checkbox('ttl1_falling_state'),
-            'ttl2_falling_state': parse_checkbox('ttl2_falling_state'),
-            'ttl3_falling_state': parse_checkbox('ttl3_falling_state'),
-            'ttl4_falling_state': parse_checkbox('ttl4_falling_state'),
-            'ttl1_debounce': parse_checkbox('ttl1_debounce'),
-            'ttl1_synchronous': parse_checkbox('ttl1_synchronous'),
-        },
-        'ttl_controls': {
-            'ttl1': {
-                'output': parse_checkbox('ttl1_output'),
-                'set_state': parse_checkbox('ttl1_set_state'),
-                'current_state': parse_checkbox('ttl1_set_current_state'),
-                'rising_event': parse_checkbox('ttl1_rising_event'),
-                'falling_event': parse_checkbox('ttl1_falling_event'),
-                'event_comment': request.form.get('ttl1_event_comment', '').strip(),
-            },
-            'ttl2': {
-                'output': parse_checkbox('ttl2_output'),
-                'set_state': parse_checkbox('ttl2_set_state'),
-                'current_state': parse_checkbox('ttl2_set_current_state'),
-                'rising_event': parse_checkbox('ttl2_rising_event'),
-                'falling_event': parse_checkbox('ttl2_falling_event'),
-                'event_comment': request.form.get('ttl2_event_comment', '').strip(),
-            },
-            'ttl3': {
-                'output': parse_checkbox('ttl3_output'),
-                'set_state': parse_checkbox('ttl3_set_state'),
-                'current_state': parse_checkbox('ttl3_set_current_state'),
-                'rising_event': parse_checkbox('ttl3_rising_event'),
-                'falling_event': parse_checkbox('ttl3_falling_event'),
-                'event_comment': request.form.get('ttl3_event_comment', '').strip(),
-            },
-            'ttl4': {
-                'output': parse_checkbox('ttl4_output'),
-                'set_state': parse_checkbox('ttl4_set_state'),
-                'current_state': parse_checkbox('ttl4_set_current_state'),
-                'rising_event': parse_checkbox('ttl4_rising_event'),
-                'falling_event': parse_checkbox('ttl4_falling_event'),
-                'event_comment': request.form.get('ttl4_event_comment', '').strip(),
-            },
-            'debounce': parse_checkbox('debounce'),
-            'synchronous': parse_checkbox('synchronous'),
+        "ttl_pins": {
+            "ttl_pin0": request.form.get('ttl_pin0','').strip(),
+            "ttl_pin1": request.form.get('ttl_pin1','').strip(),
+            "ttl_pin2": request.form.get('ttl_pin2','').strip(),
+            "ttl_pin3": request.form.get('ttl_pin3','').strip(),
         },
     }
 
@@ -442,165 +365,89 @@ def submit4():
     #upon submission of the data, take the information and make a dictionary out of it
     data = {
         'title': 'Pod8401HR Device Configuration File',
-        'filename': request.form.get('filename'),
-
-        'channel_names': {
-            'channel_1': request.form.get('channel_1'),
-            'channel_2': request.form.get('channel_2'),
-            'channel_3': request.form.get('channel_3'),
-        },
-
+        'filename': request.form.get('filename').strip(),
         'information': {
-            'sample_rate': request.form.get('sample_rate'),
-            'preamp_gain': request.form.get('preamp_gain'),
+            'sample_rate': request.form.get('sample_rate', '').strip(),
         },
-
-        'channel_settings': {  # Assuming you have eeg1, eeg2, emg etc. inputs in your form
-            'eeg1': request.form.get('eeg1'),
-            'eeg2': request.form.get('eeg2'),
-            'emg': request.form.get('emg'),
-            'notch_enabled': parse_checkbox('notch_enabled'),
-            'notch_value': request.form.get('notch_value'),
-        },
-
-        'ttl_controls': {
-            'ttl1': {
-                'output': parse_checkbox('ttl1_output'),
-                'set_state': parse_checkbox('ttl1_set_state'),
-                'current_state': parse_checkbox('ttl1_set_current_state'),
-                'rising_event': parse_checkbox('ttl1_rising_event'),
-                'falling_event': parse_checkbox('ttl1_falling_event'),
-                'event_comment': request.form.get('ttl1_event_comment'),
-            },
-            'ttl2': {
-                'output': parse_checkbox('ttl2_output'),
-                'set_state': parse_checkbox('ttl2_set_state'),
-                'current_state': parse_checkbox('ttl2_set_current_state'),
-                'rising_event': parse_checkbox('ttl2_rising_event'),
-                'falling_event': parse_checkbox('ttl2_falling_event'),
-                'event_comment': request.form.get('ttl2_event_comment'),
-            },
-            'ttl3': {
-                'output': parse_checkbox('ttl3_output'),
-                'set_state': parse_checkbox('ttl3_set_state'),
-                'current_state': parse_checkbox('ttl3_set_current_state'),
-                'rising_event': parse_checkbox('ttl3_rising_event'),
-                'falling_event': parse_checkbox('ttl3_falling_event'),
-                'event_comment': request.form.get('ttl3_event_comment'),
-            },
-            'ttl4': {
-                'output': parse_checkbox('ttl4_output'),
-                'set_state': parse_checkbox('ttl4_set_state'),
-                'current_state': parse_checkbox('ttl4_set_current_state'),
-                'rising_event': parse_checkbox('ttl4_rising_event'),
-                'falling_event': parse_checkbox('ttl4_falling_event'),
-                'event_comment': request.form.get('ttl4_event_comment'),
-            },
-            'debounce': parse_checkbox('debounce'),
-            'synchronous': parse_checkbox('synchronous'),
-        },
-
-        # Now add the device-specific property map values:
-
-        'data rate': {
-            'data_rate': request.form.get('data_rate'),
-        },
-
-        'configuration': {
-            'base_configuration_name': request.form.get('base_configuration_name'),
-        },
-
         'highpass': {
-            'preamp_highpass_0': request.form.get('preamp_highpass_0'),
-            'preamp_highpass_1': request.form.get('preamp_highpass_1'),
-            'preamp_highpass_2': request.form.get('preamp_highpass_2'),
-            'preamp_highpass_3': request.form.get('preamp_highpass_3'),
+            'preamp_highpass_0': request.form.get('preamp_highpass_0', '').strip(),
+            'preamp_highpass_1': request.form.get('preamp_highpass_1', '').strip(),
+            'preamp_highpass_2': request.form.get('preamp_highpass_2', '').strip(),
+            'preamp_highpass_3': request.form.get('preamp_highpass_3', '').strip(),
         },
-
         'lowpass': {
-            'lowpass_ch0': request.form.get('lowpass_ch0'),
-            'lowpass_ch1': request.form.get('lowpass_ch1'),
-            'lowpass_ch2': request.form.get('lowpass_ch2'),
-            'lowpass_ch3': request.form.get('lowpass_ch3'),
+            'lowpass_ch0': request.form.get('lowpass_ch0', '').strip(),
+            'lowpass_ch1': request.form.get('lowpass_ch1', '').strip(),
+            'lowpass_ch2': request.form.get('lowpass_ch2', '').strip(),
+            'lowpass_ch3': request.form.get('lowpass_ch3', '').strip(),
         },
-
-        'dc mode': {
-            'dc_mode_0': request.form.get('dc_mode_0'),
-            'dc_mode_1': request.form.get('dc_mode_1'),
-            'dc_mode_2': request.form.get('dc_mode_2'),
-            'dc_mode_3': request.form.get('dc_mode_3'),
+        'dc_mode': {
+            'dc_mode_0': request.form.get('dc_mode_0', '').strip(),
+            'dc_mode_1': request.form.get('dc_mode_1', '').strip(),
+            'dc_mode_2': request.form.get('dc_mode_2', '').strip(),
+            'dc_mode_3': request.form.get('dc_mode_3', '').strip(),
         },
-
         'bias': {
-            'bias_0': request.form.get('bias_0'),
-            'bias_1': request.form.get('bias_1'),
-            'bias_2': request.form.get('bias_2'),
-            'bias_3': request.form.get('bias_3'),
+            'bias_0': request.form.get('bias_0', '').strip(),
+            'bias_1': request.form.get('bias_1', '').strip(),
+            'bias_2': request.form.get('bias_2', '').strip(),
+            'bias_3': request.form.get('bias_3', '').strip(),
         },
-
-        'offsets': {
-            'offsets': request.form.get('offsets'),
+        'ext': {
+            'ext0': request.form.get('ext0', '').strip(),
+            'ext1': request.form.get('ext1', '').strip(),
         },
-
-        'preamp adc': {
-            'preamp_adc': request.form.get('preamp_adc'),
+        'ttl_output_config': {
+            'ext0': request.form.get('ext0', '').strip(),
+            'ext1': request.form.get('ext1', '').strip(),
+            'ttl4': request.form.get('ttl4', '').strip(),
+            'ttl3': request.form.get('ttl3', '').strip(),
+            'ttl2': request.form.get('ttl2', '').strip(),
+            'ttl1': request.form.get('ttl1', '').strip(),
         },
-
-        'ogim adc': {
-            'ogim_adc': request.form.get('ogim_adc'),
+        'ttl_input_config': {
+            'ext0': request.form.get('ext0', '').strip(),
+            'ext1': request.form.get('ext1', '').strip(),
+            'ttl4': request.form.get('ttl4', '').strip(),
+            'ttl3': request.form.get('ttl3', '').strip(),
+            'ttl2': request.form.get('ttl2', '').strip(),
+            'ttl1': request.form.get('ttl1', '').strip(),
         },
+        'ss_config': {
+            'ss_config_0': request.form.get('ss_config_0', '').strip(),
+            'ss_highpass_0': request.form.get('ss_highpass_0', '').strip(),
+            'ss_gain_0': request.form.get('ss_gain_0', '').strip(),
 
-        'invert': {
-            'invert_A': parse_checkbox('invert_A'),
-            'invert_B': parse_checkbox('invert_B'),
-            'invert_C': parse_checkbox('invert_C'),
-            'invert_D': parse_checkbox('invert_D'),
+            'ss_config_1': request.form.get('ss_config_1', '').strip(),
+            'ss_highpass_1': request.form.get('ss_highpass_1', '').strip(),
+            'ss_gain_1': request.form.get('ss_gain_1', '').strip(),
+
+            'ss_config_2': request.form.get('ss_config_2', '').strip(),
+            'ss_highpass_2': request.form.get('ss_highpass_2', '').strip(),
+            'ss_gain_2': request.form.get('ss_gain_2', '').strip(),
+
+            'ss_config_3': request.form.get('ss_config_3', '').strip(),
+            'ss_highpass_3': request.form.get('ss_highpass_3', '').strip(),
+            'ss_gain_3': request.form.get('ss_gain_3', '').strip(),
         },
-
-        'average': {
-            'average_A': parse_checkbox('average_A'),
-            'average_B': parse_checkbox('average_B'),
-            'average_C': parse_checkbox('average_C'),
-            'average_D': parse_checkbox('average_D'),
-            'average_count_A': request.form.get('average_count_A'),
-            'average_count_B': request.form.get('average_count_B'),
-            'average_count_C': request.form.get('average_count_C'),
-            'average_count_D': request.form.get('average_count_D'),
+        'mux_mode': {
+            'mux_mode': request.form.get('mux_mode', '').strip(),
         },
-
-        'ss config': {
-            'ss_config_0': request.form.get('ss_config_0'),
-            'ss_config_1': request.form.get('ss_config_1'),
-            'ss_config_2': request.form.get('ss_config_2'),
-            'ss_config_3': request.form.get('ss_config_3'),
+        'ttl_analog': {
+            'ttl_analog_ext0': request.form.get('ttl_analog_ext0', '').strip(),
+            'ttl_analog_ext1': request.form.get('ttl_analog_ext1', '').strip(),
+            'ttl_analog_ttl4': request.form.get('ttl_analog_ttl4', '').strip(),
+            'ttl_analog_ttl3': request.form.get('ttl_analog_ttl3', '').strip(),
+            'ttl_analog_ttl2': request.form.get('ttl_analog_ttl2', '').strip(),
+            'ttl_analog_ttl1': request.form.get('ttl_analog_ttl1', '').strip(),
         },
-
-        'mux mode': {
-            'mux_mode': request.form.get('mux_mode'),
-        },
-
-        'ttl config': {
-            'ttl_config': request.form.get('ttl_config'),
-            'ttl_output_config': request.form.get('ttl_output_config'),
-            'ttl_input_config': request.form.get('ttl_input_config'),
-            'ttl_outputs': request.form.get('ttl_outputs'),
-        },
-
-        'input ground': {
-            'input_ground_A': parse_checkbox('input_ground_A'),
-            'input_ground_B': parse_checkbox('input_ground_B'),
-            'input_ground_C': parse_checkbox('input_ground_C'),
-            'input_ground_D': parse_checkbox('input_ground_D'),
-            'input_ground_all': parse_checkbox('input_ground_all'),
-        },
-
-        'usb': {
-            'usb_delay': request.form.get('usb_delay'),
-            'fastest_clock': request.form.get('fastest_clock'),
-            'fastest_clock_init': request.form.get('fastest_clock_init'),
+        'input_ground': {
+            'input_ground0': request.form.get('input_ground0', '').strip(),
+            'input_ground1': request.form.get('input_ground1', '').strip(),
+            'input_ground2': request.form.get('input_ground2', '').strip(),
+            'input_ground3': request.form.get('input_ground3', '').strip(),
         },
     }
-
 
     #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
