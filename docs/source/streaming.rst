@@ -41,6 +41,16 @@ Defining a Streaming Workflow 📐
 Now, with the concepts out of the way it's time to get our hands dirty in the code. Throughout this section, we will use the diagram at the
 end of the previous section as an example as we walk through how to setup a data-flow graph.
 
+Note: If you are on Windows, you will need to wrap all of your code within the code below:
+
+.. code-block:: python
+   if __name__ == "__main__":
+      '''
+      All code should be placed here, besides imports
+      '''
+
+This is due to the usage of multiprocessing within the library, which needs to be held within this ``if`` statement
+
 All streaming functionality is handled through the 
 ``Morelia.Stream`` subpackage. When streaming, the first step is to set up a data source. Great news, if you followed our :doc:`Hitchhiker's Guide to
 Morelia </getting_started>`, then you already know how to do this. Any acquisition device can function as data source, so go ahead and wire up
