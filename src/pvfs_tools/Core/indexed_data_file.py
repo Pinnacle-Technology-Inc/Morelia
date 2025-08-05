@@ -605,6 +605,10 @@ class IndexedDataFile:
                 raw_buffer = raw_buffer[ptr:]
         finally:
             self._pvfs_file.unlock()
+            # Clear large intermediate data structures to free memory
+            raw_buffer = None
+            if 'data' in locals():
+                data = None
 
         timestamps.clear()
         values_out.clear()
@@ -666,6 +670,15 @@ class IndexedDataFile:
                 values_out.append(val)
                 if 0 < max_points == len(timestamps):
                     break
+
+        # Clean up large intermediate arrays to free memory
+        try:
+            all_raw.clear()
+            markers.clear()
+            del all_raw
+            del markers
+        except:
+            pass
 
         return timestamps, values_out
 
