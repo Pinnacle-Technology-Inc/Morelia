@@ -529,6 +529,8 @@ class HighTime:
     def __del__(self):
         if hasattr(self, '_time') and self._time:
             try:
+                # Properly delete the underlying C++ HighTime object
+                _lib.delete_high_time(self._time)
                 self._time = None
             except:
                 pass
