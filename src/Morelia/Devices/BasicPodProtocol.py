@@ -577,9 +577,22 @@ class Pod :
         :type config: dict
         :returns: None
         """
-        # lines to skip in the .toml file
-        skip_keys = {"title", "filename"}
-        self._apply_config_recursive(config, skip_keys)
+        # skip_keys often used to skip apply_config between SET/GET for GET properties only 
+        if self.pod_type == "Pod8206HR":
+            skip_keys = {"title", "filename", "filter_config", "ttl_port"}
+        elif self.pod_type == "Pod8229":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8274D":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8401HR":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8480SC":
+            skip_keys = {"title", "filename"}
+        elif skip_keys is None:
+            skip_keys = {"title", "filename"}  # Add any other keys you want to skip here
+        else:
+            skip_keys = set(skip_keys)
+            skip_keys.update({"title", "filename"})
 
     def _apply_config_recursive(self, config: dict, skip_keys: set):
         if skip_keys is None:

@@ -342,7 +342,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def bias_0(self) -> float:
         """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
-        raw_dac = self.write_read("GET BIAS", (0,)).payload_as_int()
+        raw_dac = self.write_read("GET BIAS", (0,)).payload[0]
         return self.calculate_bias_dac_get_vout(raw_dac)
 
     @bias_0.setter
@@ -357,7 +357,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def bias_1(self) -> float:
         """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
-        raw_dac = self.write_read("GET BIAS", (1,)).payload_as_int()
+        raw_dac = self.write_read("GET BIAS", (1,)).payload[0]
         return self.calculate_bias_dac_get_vout(raw_dac)
 
     @bias_1.setter
@@ -371,7 +371,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def bias_2(self) -> float:
         """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
-        raw_dac = self.write_read("GET BIAS", (2,)).payload_as_int()
+        raw_dac = self.write_read("GET BIAS", (2,)).payload[0]
         return self.calculate_bias_dac_get_vout(raw_dac)
 
     @bias_2.setter
@@ -385,7 +385,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def bias_3(self) -> float:
         """Gets the bias on a given channel. Returns the DAC value as a 16-bit 2’s complement value, representing a value from ±2.048V."""
-        raw_dac = self.write_read("GET BIAS", (3,)).payload_as_int()
+        raw_dac = self.write_read("GET BIAS", (3,)).payload[0]
         return self.calculate_bias_dac_get_vout(raw_dac)
 
     @bias_0.setter
@@ -544,7 +544,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_0(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (0,))
+        raw = self.write_read("GET SS CONFIG", (0,)).payload
         return self.decode_ss_config_bitmask(raw)
 
     @ss_config_0.setter
@@ -584,7 +584,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_1(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (1,))
+        raw = self.write_read("GET SS CONFIG", (1,)).payload
         return self.decode_ss_config_bitmask(raw)
 
     @ss_config_1.setter
@@ -624,7 +624,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_2(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (2,))
+        raw = self.write_read("GET SS CONFIG", (2,)).payload
         return self.decode_ss_config_bitmask(raw)
 
     @ss_config_2.setter
@@ -664,7 +664,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_3(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (3,))
+        raw = self.write_read("GET SS CONFIG", (3,)).payload
         return self.decode_ss_config_bitmask(raw)
 
     @ss_config_3.setter
@@ -944,6 +944,7 @@ class Pod8401HR(AquisitionDevice) :
 
         :param config: UINT8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
         """
+        """older version of decode_ss
         # high-pass
         if(Packet.AsciiBytesToInt(config[0:1]) == 0) : 
             highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
@@ -959,6 +960,15 @@ class Pod8401HR(AquisitionDevice) :
             'High-pass' : highpass, 
             'Gain'      : gain
         })
+        """
+        value = Packet.AsciiBytesToInt(config)  # single UINT8
+        # Bit 0 = high-pass, Bit 1 = gain
+        highpass = 0.0 if (value & 0b01) else 0.5
+        gain = 1 if (value & 0b10) else 5
+        return {
+            "High-pass": highpass,
+            "Gain": gain
+        }
         
 
     @staticmethod

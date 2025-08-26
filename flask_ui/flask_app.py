@@ -112,7 +112,7 @@ def submit1():
     data = {
         'title': 'Pod8206HR Device Configuration File',
         'filename': request.form.get('filename', '').strip(),
-        "information": {
+        "sample_rate": {
             'sample_rate': request.form.get('sample_rate', '').strip()
         },
         "lowpass": {

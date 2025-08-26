@@ -86,6 +86,20 @@ class AquisitionDevice(Pod):
         }
         return type_map.get(type_code, "Unknown Pod Device")
 
+    @property 
+    def pod_info(self) -> dict: 
+        """Gets pod identification info for ease of use. Returns the information in the form of a dictionary"""
+        print("[DEBUG] inside pod_info")
+        info = {
+                "device_name" : self.device_name,
+                "device_id" : self.id,
+                "type_number" : self.type,
+                "device_type" : self.pod_type
+            }
+        print(info)
+        return info
+
+
     def validate_config(self, expected_config: dict, skip_keys: set | None = None) -> dict:
         """Validates the current device configuration against an expected configuration.
 
@@ -100,8 +114,19 @@ class AquisitionDevice(Pod):
         :return: A dictionary mapping config keys (dot notation) to tuples of (expected, actual) values
                  for any differences found. Empty if no differences.
         """        
-
-        if skip_keys is None:
+        
+        # skip_keys often used to skip comparisons between SET/GET for GET properties only 
+        if self.pod_type == "Pod8206HR":
+            skip_keys = {"title", "filename", "filter_config", "ttl_port"}
+        elif self.pod_type == "Pod8229":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8274D":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8401HR":
+            skip_keys = {"title", "filename"}
+        elif self.pod_type == "Pod8480SC":
+            skip_keys = {"title", "filename"}
+        elif skip_keys is None:
             skip_keys = {"title", "filename"}  # Add any other keys you want to skip here
         else:
             skip_keys = set(skip_keys)
@@ -137,11 +162,9 @@ class AquisitionDevice(Pod):
 
     """Default Property Map for Pod Devices"""
     property_map = {
-        "identification": {
-            "id": "id",
-            "pod_type": "pod_type",
-        },
-        "sample_rate": "sample_rate",
+        "sample_rate": {
+            "sample_rate": "sample_rate",
+        }
     }
     
     def __enter__(self) -> Self:

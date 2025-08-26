@@ -200,11 +200,7 @@ class Pod8206HR(AquisitionDevice) :
     def _apply_config_recursive(self, config: dict, skip_keys):
         super()._apply_config_recursive(config, skip_keys)
         # certain properties will only be used in generating (GET) a config, not applying (SET) config
-        if "filter_config" in config:
-            print("filter_config is a GET property only")
-        if "ttl_port" in config:
-            print("ttl_port is a GET property only")
-            
+                    
 
 
     """Maps the properties for generating a config file"""
