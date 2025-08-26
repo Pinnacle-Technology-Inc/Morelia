@@ -70,7 +70,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -118,7 +119,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -180,7 +181,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -228,7 +230,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "dataset": "iox",
@@ -311,7 +313,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -359,7 +362,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -421,7 +424,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -453,7 +457,7 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
@@ -515,7 +519,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -563,14 +568,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\"\r\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -625,7 +630,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -673,14 +679,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\"\r\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -735,7 +741,8 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "green"
+                "color": "green",
+                "value": 0
               },
               {
                 "color": "red",
@@ -783,14 +790,14 @@
           "sort": "none"
         }
       },
-      "pluginVersion": "12.0.2",
+      "pluginVersion": "12.1.1",
       "targets": [
         {
           "datasource": {
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\"\r\n  )   \r\n  |> aggregateWindow(every: 1ms, fn: mean)\r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\"\r\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
