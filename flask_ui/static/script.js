@@ -69,10 +69,6 @@ function addNewDevice() {
         <option value="Pod8480SC">Pod8480SC</option>
       </select>
     </td>
-    <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
-    <td><input type="checkbox" name="PH2_${rowCount}" value="true" /></td>
-    <td><input type="checkbox" name="PH3_${rowCount}" value="true" /></td>
-    <td><input type="number" name="placeholder4[]" value="1000" /></td>
     <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
   `;
 
@@ -191,10 +187,6 @@ function addDetectedDeviceRow(device) {
         ${defaultType === "Unknown Device" ? `<option value="Unknown Device" selected>Unknown Device</option>` : ""}
       </select>
     </td>
-    <td><input type="text" name="placeholder1[]" value="placeholder" /></td>
-    <td><input type="checkbox" name="PH2_${rowCount}" value="true" /></td>
-    <td><input type="checkbox" name="PH3_${rowCount}" value="true" /></td>
-    <td><input type="number" name="placeholder4[]" value="1000" /></td>
     <td><button type="button" onclick="deleteRow(this)">&#128465;</button></td>
   `;
 

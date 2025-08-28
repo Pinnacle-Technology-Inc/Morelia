@@ -605,8 +605,11 @@ class Pod :
             if isinstance(prop_value, dict):
                 self._apply_config_recursive(prop_value, skip_keys)
             else:
-                # check if the class has a setter for this property
-                class_attr = getattr(self.__class__, prop, None)
+                # check if the object and parent class have a setter for this property
+                for cls in type(self).__mro__:
+                    class_attr = getattr(cls, prop, None)
+                    if class_attr is not None:
+                        break
                 if isinstance(class_attr, property) and class_attr.fset is not None:
                     try:
                         setattr(self, prop, prop_value)

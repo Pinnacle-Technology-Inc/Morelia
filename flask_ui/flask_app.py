@@ -607,8 +607,6 @@ def submit_exp():
     new_config_files = request.files.getlist("config_file_new[]")
     existing_config_files = request.form.getlist("config_file_existing[]")
     device_types = request.form.getlist("device_type[]")
-    placeholder_1 = request.form.getlist("placeholder1[]")
-    placeholder_4 = request.form.getlist("placeholder4[]")
 
     # Validate device types
     invalid_types = [dt for dt in device_types if dt.strip() == "" or dt == "null"]
@@ -676,18 +674,11 @@ def submit_exp():
                                        form_data=dict(request.form),
                                        current_folder=folder_name)
 
-        placeholder_2_val = "true" if request.form.get(f"PH2_{i}") == "true" else "false"
-        placeholder_3_val = "true" if request.form.get(f"PH3_{i}") == "true" else "false"
-
         devices.append({
             "device_name": name,
             "device_id": device_id,
             "config_file": config_filename,
             "device_type": inferred_type,
-            "placeholder_1": placeholder_1[i] if i < len(placeholder_1) else "",
-            "placeholder_2": placeholder_2_val,
-            "placeholder_3": placeholder_3_val,
-            "placeholder_4": placeholder_4[i] if i < len(placeholder_4) else "",
         })
 
     # Save experiment config TOML file

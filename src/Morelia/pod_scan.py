@@ -4,7 +4,9 @@ from Morelia.Devices.BasicPodProtocol import Pod
 def detect_pod_devices():
     print("Scanning /dev...")
     devices = os.listdir('/dev')
-    print("Found devices:", devices)
+    
+    # List all /dev devices found if needed
+    # print("Found devices:", devices)
 
     usb_devices = [f'/dev/{x}' for x in devices if 'ttyUSB' in x]
     print(f"Filtered USB devices: {usb_devices}")

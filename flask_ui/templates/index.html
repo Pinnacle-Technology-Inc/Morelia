@@ -5,7 +5,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"/>
   <style>
 	@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
-	 
+
+    
     .main {
       flex: 1;
       padding: 50px;
@@ -36,6 +37,8 @@
       color: white;
       cursor: pointer;
     }
+
+    
 
     #device-select {
 	  display: block;
@@ -71,6 +74,7 @@
 	</script>
 </head>
 <body>
+  <div class="layout">
   <div class="sidebar" id="device-bar">
     <img class="logo" src="https://media.licdn.com/dms/image/v2/D560BAQG9I395oxYI5w/company-logo_200_200/company-logo_200_200/0/1712162628607/pinnacle_technology_inc_logo?e=2147483647&v=beta&t=Wl2Gb4isQgj6UHdQl3qJOOrUPaWysx0FxuWh9GyN_v8"></img>
     <h1 id="morelia"><a href="/" target="_self">Morelia</a></h1>
@@ -117,6 +121,7 @@
   </div>
     
   <script src="{{ url_for('static', filename='script.js') }}"></script>
+  </div> 
 </body>
 </html>
 
