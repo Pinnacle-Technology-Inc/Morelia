@@ -1,0 +1,16 @@
+title = "Pod8206HR Device Configuration File"
+filename = "pod_2_config"
+
+[sample_rate]
+sample_rate = "500"
+
+[lowpass]
+lowpass_ch0 = "300"
+lowpass_ch1 = "200"
+lowpass_ch2 = "80"
+
+[ttl_pins]
+ttl_pin0 = "1"
+ttl_pin1 = "1"
+ttl_pin2 = "1"
+ttl_pin3 = "1"

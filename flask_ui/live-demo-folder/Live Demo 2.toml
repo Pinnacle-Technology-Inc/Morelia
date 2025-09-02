@@ -1,0 +1,15 @@
+title = "Experiment Configuration File"
+folder_name = "live-demo-folder"
+experiment_name = "Live Demo 2"
+[[devices]]
+device_name = "Pod_1"
+device_id = "65535"
+config_file = "pod_1_config.toml"
+device_type = "Pod8206HR"
+
+[[devices]]
+device_name = "Pod_2"
+device_id = "65535"
+config_file = "pod_2_config.toml"
+device_type = "Pod8206HR"
+
