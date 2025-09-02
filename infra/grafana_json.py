@@ -11,17 +11,17 @@ def create_dashboard(filename: str, device_type: str, device_port: str, data_sou
     if device_type == "8206HR":
         with open(f"templates/8206_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, "device", f"{device_port}")
+            update_flux_query(data, "name", f"{device_port}")
  
     if device_type == "8401HR":
         with open(f"templates/8401_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, "device", f"{device_port}")
+            update_flux_query(data, "name", f"{device_port}")
     
     if device_type == "8274D":
         with open(f"templates/8274_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, "device", f"{device_port}")
+            update_flux_query(data, "name", f"{device_port}")
 
     data["title"] = input_title
     data["description"] = f"Influx Dashboard for {device_type}"
@@ -39,17 +39,17 @@ def create_dashboard_from_device(filename: str, device: AcquisitionDevice, devic
     if isinstance(device, PodDevice_8206HR):
         with open(f"templates/8206_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, f'r.device == "{device_port}"')
+            update_flux_query(data, f'r.name == "{device_port}"')
  
     if isinstance(device, PodDevice_8401HR):
         with open(f"templates/8401_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, f'r.device == "{device_port}"')
+            update_flux_query(data, f'r.name == "{device_port}"')
     
     if isinstance(device, PodDevice_8274D):
         with open(f"templates/8274_{data_source}.json", "r") as f:
             data = json.load(f)
-            update_flux_query(data, f'r.device == "{device_port}"')
+            update_flux_query(data, f'r.name == "{device_port}"')
 
     data["title"] = input_title
     data["description"] = f"Influx Dashboard for {type(device)}"
@@ -74,17 +74,17 @@ def create_dashboard_from_device(filename: str, device: AcquisitionDevice, devic
 #        with open(f"templates/8206_{data_source}.json", "r") as f:
 #            data = json.load(f)
 #            #should use the port number, not the port itself
-#            update_flux_query(data, f'r.device == "{self.port}"')
+#            update_flux_query(data, f'r.name == "{self.port}"')
 # 
 #    if isinstance(self, PodDevice_8401HR):
 #        with open(f"templates/8401_{data_source}.json", "r") as f:
 #            data = json.load(f)
-#            update_flux_query(data, f'r.device == "{self.port}"')
+#            update_flux_query(data, f'r.name == "{self.port}"')
 #    
 #    if isinstance(self, PodDevice_8274D):
 #        with open(f"templates/8274_{data_source}.json", "r") as f:
 #            data = json.load(f)
-#            update_flux_query(data, f'r.device == "{self.port}"')
+#            update_flux_query(data, f'r.name == "{self.port}"')
 #
 #    data["title"] = input_title
 #    data["description"] = f"Influx Dashboard for {self.name}"
@@ -98,46 +98,46 @@ def create_dashboard_from_device(filename: str, device: AcquisitionDevice, devic
 def create_dashboard_from_templates(device: AcquisitionDevice | str, dashboard_name: str = "default_dashboard.json"):
     #device_port = device.port #use port string/number value for this one
     if device == "8206HR" or isinstance(device, PodDevice_8206HR):
-        #panel_data = create_panel_data([("channel", "TTL1"), ("device", device_port)])
-        panel_data = create_panel_data([("channel", "TTL1")])
+        #panel_data = create_panel_data(title="TTL1", queries=[("channel", "TTL1"), ("device", device_port)])
+        panel_data = create_panel_data(title="TTL1", queries=[("channel", "TTL1")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL2")])
+        panel_data = create_panel_data(title="TTL2", queries=[("channel", "TTL2")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL3")])
+        panel_data = create_panel_data(title="TTL3", queries=[("channel", "TTL3")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL4")])
+        panel_data = create_panel_data(title="TTL4", queries=[("channel", "TTL4")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
 
-        panel_data = create_panel_data([("channel", "CH0")])
+        panel_data = create_panel_data(title="CH0", queries=[("channel", "CH0")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "CH1")])
+        panel_data = create_panel_data(title="CH1", queries=[("channel", "CH1")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "CH2")])
+        panel_data = create_panel_data(title="CH2", queries=[("channel", "CH2")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
 
     elif device == "8401HR" or isinstance(device, PodDevice_8401HR):
 
-        panel_data = create_panel_data([("channel", "TTL1")])
+        panel_data = create_panel_data(title="TTL1", queries=[("channel", "TTL1")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL2")])
+        panel_data = create_panel_data(title="TTL2", queries=[("channel", "TTL2")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL3")])
+        panel_data = create_panel_data(title="TTL3", queries=[("channel", "TTL3")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "TTL4")])
+        panel_data = create_panel_data(title="TTL4", queries=[("channel", "TTL4")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
 
-        panel_data = create_panel_data([("channel", "CH0")])
+        panel_data = create_panel_data(title="CH0", queries=[("channel", "CH0")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "CH1")])
+        panel_data = create_panel_data(title="CH1", queries=[("channel", "CH1")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "CH2")])
+        panel_data = create_panel_data(title="CH2", queries=[("channel", "CH2")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name) 
-        panel_data = create_panel_data([("channel", "CH3")])
+        panel_data = create_panel_data(title="CH3", queries=[("channel", "CH3")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
 
-        panel_data = create_panel_data([("channel", "EXT0")])
+        panel_data = create_panel_data(title="EXT0", queries=[("channel", "EXT0")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
-        panel_data = create_panel_data([("channel", "EXT1")])
+        panel_data = create_panel_data(title="EXT1", queries=[("channel", "EXT1")])
         add_panel_to_dashboard("templates/base_influx_template.json", panel_data, dashboard_name)
 
     elif device == "8274D" or isinstance(device, PodDevice_8274D):
@@ -218,7 +218,7 @@ def remove_flux_condition(query: str, field: str) -> str:
     return query
 
 # updates the flux queries with the specific field for the entire json file
-def update_flux_query(obj, field="device", value="ttyUSB0"):
+def update_flux_query(obj, field="name", value="ttyUSB0"):
     
     for key, val in (obj.items() if isinstance(obj, dict) else []):
         if key == "query" and isinstance(val, str):
@@ -242,9 +242,9 @@ def remove_flux_query_field(obj, field="device"):
             remove_flux_query_field(item, field)
 
 # test functions
-def main():
-    create_dashboard("test_dashboard.json", "8401HR", "ttyUSB1", "influx", "hello")
-    create_dashboard_from_templates("8206HR")
-
-main()
+#def main():
+#    create_dashboard("test_dashboard.json", "8401HR", "ttyUSB1", "influx", "hello")
+#    create_dashboard_from_templates("8206HR")
+#
+#main()
 

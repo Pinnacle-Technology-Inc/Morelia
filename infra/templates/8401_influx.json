@@ -19,7 +19,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 4,
   "links": [],
   "panels": [
     {
@@ -941,6 +940,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "8401_Template",
-  "uid": "d2daf8ca-8827-47bc-88ef-25d46dcd54ca",
   "version": 9
 }

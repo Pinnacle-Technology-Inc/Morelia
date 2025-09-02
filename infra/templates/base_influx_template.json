@@ -19,7 +19,6 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 3,
   "links": [],
   "panels": [
       ],
@@ -37,6 +36,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "InfluxDB2 Dashboard",
-  "uid": "6d15c4dd-3679-4733-9c13-dddff6eff235",
   "version": 1
 }

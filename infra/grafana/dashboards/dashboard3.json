@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Grafana dashboard for 8206HR devices that are streaming to a QuestDB data source",
+  "description": "Influx Dashboard for 8206HR",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -23,8 +23,8 @@
   "panels": [
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -82,7 +82,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"TTL1\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
@@ -102,7 +102,8 @@
         "x": 0,
         "y": 0
       },
-      "id": 4,
+      "id": 1,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -120,31 +121,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL1'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")\r\n",
+          "refId": "A"
         }
       ],
       "title": "Channel View TTL1",
@@ -152,8 +133,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -211,7 +192,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"TTL2\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
@@ -231,7 +212,8 @@
         "x": 12,
         "y": 0
       },
-      "id": 5,
+      "id": 2,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -248,14 +230,16 @@
       "pluginVersion": "12.0.2",
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
           "editorMode": "code",
           "format": "table",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
           "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL2'",
+          "rawSql": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -271,8 +255,7 @@
                 },
                 "type": "groupBy"
               }
-            ],
-            "limit": 50
+            ]
           }
         }
       ],
@@ -281,8 +264,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -340,7 +323,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"TTL3\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
@@ -360,7 +343,8 @@
         "x": 0,
         "y": 8
       },
-      "id": 6,
+      "id": 3,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -378,31 +362,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL3'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "refId": "A"
         }
       ],
       "title": "Channel View TTL3",
@@ -410,8 +374,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -473,7 +437,8 @@
         "x": 12,
         "y": 8
       },
-      "id": 7,
+      "id": 4,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -491,31 +456,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='TTL4'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "refId": "A"
         }
       ],
       "title": "Channel View TTL4",
@@ -523,8 +468,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -582,7 +527,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"CH0\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
@@ -602,7 +547,8 @@
         "x": 0,
         "y": 16
       },
-      "id": 1,
+      "id": 5,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -620,31 +566,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH0'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "refId": "A"
         }
       ],
       "title": "Channel View CH0",
@@ -652,8 +578,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -711,7 +637,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"CH1\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
@@ -731,7 +657,8 @@
         "x": 12,
         "y": 16
       },
-      "id": 2,
+      "id": 6,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -749,31 +676,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH1'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "refId": "A"
         }
       ],
       "title": "Channel View CH1",
@@ -781,8 +688,8 @@
     },
     {
       "datasource": {
-        "type": "grafana-postgresql-datasource",
-        "uid": "fepg8hwzyq8dsd"
+        "type": "influxdb",
+        "uid": "fepg8hwzyq9dsd"
       },
       "fieldConfig": {
         "defaults": {
@@ -840,13 +747,13 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value"
+              "options": "value {channel=\"CH2\", name=\"/dev/ttyUSB0\"}"
             },
             "properties": [
               {
                 "id": "color",
                 "value": {
-                  "fixedColor": "#e61ac0",
+                  "fixedColor": "#ff00c8",
                   "mode": "fixed"
                 }
               }
@@ -860,7 +767,8 @@
         "x": 0,
         "y": 24
       },
-      "id": 3,
+      "id": 7,
+      "maxDataPoints": 100000,
       "options": {
         "legend": {
           "calcs": [],
@@ -878,31 +786,11 @@
       "targets": [
         {
           "datasource": {
-            "type": "grafana-postgresql-datasource",
-            "uid": "fepg8hwzyq8dsd"
+            "type": "influxdb",
+            "uid": "bep9c12b1hnuoe"
           },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT value, timestamp FROM default_measurement WHERE channel='CH2'",
-          "refId": "A",
-          "sql": {
-            "columns": [
-              {
-                "parameters": [],
-                "type": "function"
-              }
-            ],
-            "groupBy": [
-              {
-                "property": {
-                  "type": "string"
-                },
-                "type": "groupBy"
-              }
-            ],
-            "limit": 50
-          }
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\n    r.name == \"/dev/ttyUSB2\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "refId": "A"
         }
       ],
       "title": "Channel View CH2",
@@ -922,6 +810,6 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "QuestDB Dashboard",
+  "title": "ttyUSB2 Dashboard",
   "version": 1
 }
