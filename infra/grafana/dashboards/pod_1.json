@@ -82,7 +82,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"TTL1\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"TTL1\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -124,7 +124,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")\r\n",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL1\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")\r\n",
           "refId": "A"
         }
       ],
@@ -192,7 +192,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"TTL2\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"TTL2\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -237,7 +237,7 @@
           },
           "editorMode": "code",
           "format": "table",
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "rawQuery": true,
           "rawSql": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"experiment1\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL2\" and\r\n      r._value < 2\r\n  )\r\n",
           "refId": "A",
@@ -323,7 +323,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"TTL3\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"TTL3\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -365,7 +365,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL3\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -459,7 +459,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"TTL4\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -527,7 +527,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"CH0\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"CH0\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -569,7 +569,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH0\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -637,7 +637,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"CH1\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"CH1\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -679,7 +679,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH1\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -747,7 +747,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "value {channel=\"CH2\", name=\"/dev/ttyUSB0\"}"
+              "options": "value {channel=\"CH2\", name=\"Pod_1\"}"
             },
             "properties": [
               {
@@ -789,7 +789,7 @@
             "type": "influxdb",
             "uid": "bep9c12b1hnuoe"
           },
-          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\n    r.name == \"/dev/ttyUSB0\"\n  )   \r\n  |> yield(name: \"mean\")",
+          "query": "from(bucket: \"influx_dump\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) =>\r\n      r._measurement == \"default-measurement\" and\r\n      r._field == \"value\" and\r\n      r.channel == \"CH2\" and\n    r.name == \"Pod_1\"\n  )   \r\n  |> yield(name: \"mean\")",
           "refId": "A"
         }
       ],
@@ -810,6 +810,6 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "ttyUSB0 Dashboard",
+  "title": "Pod_1 Dashboard",
   "version": 1
 }

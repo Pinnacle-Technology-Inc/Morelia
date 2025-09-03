@@ -50,13 +50,6 @@ class Pod8206HR(AquisitionDevice) :
         self._commands.add_command(107, 'GET FILTER CONFIG',    (0,),       (UINT8,),     False,   'Gets the hardware filter configuration. 0=SL, 1=SE (Both 40/40/100Hz lowpass), 2 = SE3 (40/40/40Hz lowpas).')
         self._commands.add_command(180, 'BINARY4 DATA ',        (0,),       (BINARY_4,),     True,    'Binary4 data packets, enabled by using the STREAM command with a \'1\' argument.') # see _read_binary()
         
-        """Add new commands for additional properties -- need to check how they correspond with the POD commands"""
-
-        self._commands.add_command(110, 'GET NOTCH FILTER', (0,), (UINT8,), False, 'Get notch filter enabled state.')
-        self._commands.add_command(111, 'SET NOTCH FILTER', (UINT8,), (0,), False, 'Set notch filter enabled state.')
-        self._commands.add_command(112, 'GET NOTCH FREQUENCY', (0,), (UINT16,), False, 'Get notch filter frequency.')
-        self._commands.add_command(113, 'SET NOTCH FREQUENCY', (UINT16,), (0,), False, 'Set notch filter frequency.')
-        
         # preamplifier gain (should be 10x or 100x)
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')

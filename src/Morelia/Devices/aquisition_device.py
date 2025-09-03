@@ -135,6 +135,33 @@ class AquisitionDevice(Pod):
         actual_config = self._collect_config()
         diffs = {}
 
+        def normalize(val):
+            """Convert config values to a consistent Python type for comparison."""
+            import numpy as np
+
+            # unwrap numpy scalars
+            if isinstance(val, np.generic):
+                return val.item()
+
+            # handle strings
+            if isinstance(val, str):
+                val = val.strip()
+                # try to cast to int
+                if val.isdigit():
+                    return int(val)
+                # try to cast to float
+                try:
+                    return float(val)
+                except ValueError:
+                    return val  # leave as string if not numeric
+
+            # normalize floats
+            if isinstance(val, float):
+                return round(val, 6)
+
+            return val
+
+
         def recursive_diff(expected, actual, path=""):
             """Recursively compare expected and actual dictionaries, 
             collecting differences in diffs dictionary.
@@ -154,8 +181,14 @@ class AquisitionDevice(Pod):
                 if isinstance(expected_val, dict) and isinstance(actual_val, dict):
                     recursive_diff(expected_val, actual_val, current_path)
                 else:
-                    if expected_val != actual_val:
-                        diffs[current_path] = (expected_val, actual_val)
+                    norm_expected = normalize(expected_val)
+                    norm_actual = normalize(actual_val)
+
+                    if norm_expected != norm_actual:
+                        diffs[current_path] = (
+                            (norm_expected, type(norm_expected)),
+                            (norm_actual, type(norm_actual)),
+                        )
 
         recursive_diff(expected_config, actual_config)
         return diffs
