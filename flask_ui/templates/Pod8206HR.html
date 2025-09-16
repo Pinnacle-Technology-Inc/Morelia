@@ -57,7 +57,7 @@
 	      min="100"
 	      max="2000"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('information', {}).get('sample_rate', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('sample_rate', {}).get('sample_rate', '') }}"
 	    >
 	  </fieldset>
 
@@ -74,7 +74,7 @@
 	      min="11"
 	      max="500"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch0', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch0', '') }}"
 	    >
 
 	    <label for="lowpass_ch1">Channel 1:</label>
@@ -85,7 +85,7 @@
 	      min="11"
 	      max="500"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch1', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch1', '') }}"
 	    >
 
 	    <label for="lowpass_ch2">Channel 2:</label>
@@ -96,7 +96,7 @@
 	      min="11"
 	      max="500"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('channel settings', {}).get('lowpass_ch2', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch2', '') }}"
 	    >
 	  </fieldset>
 
@@ -112,7 +112,7 @@
 	      min="0"
 	      max="1"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin0', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('ttl_pins', {}).get('ttl_pin0', '') }}"
 	    >
 
 	    <label for="ttl_pin1">TTL Pin 1 (0 or 1):</label>
@@ -123,7 +123,7 @@
 	      min="0"
 	      max="1"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin1', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('ttl_pins', {}).get('ttl_pin1', '') }}"
 	    >
 
 	    <label for="ttl_pin2">TTL Pin 2 (0 or 1):</label>
@@ -134,7 +134,7 @@
 	      min="0"
 	      max="1"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin2', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('ttl_pins', {}).get('ttl_pin2', '') }}"
 	    >
 
 	    <label for="ttl_pin3">TTL Pin 3 (0 or 1):</label>
@@ -145,7 +145,7 @@
 	      min="0"
 	      max="1"
 	      required
-	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_pin3', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('ttl_pins', {}).get('ttl_pin3', '') }}"
 	    >
 	
 	    <!--TTL Port-->
@@ -153,7 +153,7 @@
 	      type="hidden"
 	      id="ttl_port"
 	      name="ttl_port"
-	      value="{{ session.get('loaded_config', {}).get('ttl controls', {}).get('ttl_port', '') }}"
+	      value="{{ session.get('loaded_config', {}).get('ttl_pins', {}).get('ttl_port', '') }}"
 	    >
 	  </fieldset>
 

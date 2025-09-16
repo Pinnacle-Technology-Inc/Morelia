@@ -117,7 +117,8 @@ class AquisitionDevice(Pod):
         
         # skip_keys often used to skip comparisons between SET/GET for GET properties only 
         if self.pod_type == "Pod8206HR":
-            skip_keys = {"title", "filename", "filter_config", "ttl_port"}
+            # in the future, compare individual pins to the port
+            skip_keys = {"title", "filename", "filter_config", "ttl_pin0", "ttl_pin1", "ttl_pin2", "ttl_pin3", "ttl_port"}
         elif self.pod_type == "Pod8229":
             skip_keys = {"title", "filename"}
         elif self.pod_type == "Pod8274D":

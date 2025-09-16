@@ -544,8 +544,10 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_0(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (0,)).payload
-        return self.decode_ss_config_bitmask(raw)
+        # raw = self.write_read("GET SS CONFIG", (0,)).payload
+        raw = self.write_read("GET SS CONFIG", (0,))
+        print(f'[DEBUG] ss_config_0 raw value is {raw}')
+        return self.decode_ss_config_bitmask(raw.payload)
 
     @ss_config_0.setter
     def ss_config_0(self, config: dict[str, Union[float,int]]):

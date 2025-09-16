@@ -204,10 +204,6 @@ class Pod8206HR(AquisitionDevice) :
             "lowpass_ch2": "lowpass_ch2",
         },
         "ttl_pins": {
-            "ttl_pin0": "ttl_pin0",
-            "ttl_pin1": "ttl_pin1",
-            "ttl_pin2": "ttl_pin2",
-            "ttl_pin3": "ttl_pin3",
             "ttl_port": "ttl_port",
         },
         "filter_config": {

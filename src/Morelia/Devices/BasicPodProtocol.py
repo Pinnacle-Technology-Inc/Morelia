@@ -566,7 +566,7 @@ class Pod :
             for k, (expected, actual) in diffs.items():
                 print(f"{k}: expected={expected}, actual={actual}")
         else:
-            print("Config validation passed! No differences.")
+            print("Config validation passed. Success!")
 
     def apply_config(self, config: dict):
         """
@@ -577,7 +577,7 @@ class Pod :
         :type config: dict
         :returns: None
         """
-        # skip_keys often used to skip apply_config between SET/GET for GET properties only 
+        # Skip_keys often used to skip apply_config between SET/GET for GET properties only 
         if self.pod_type == "Pod8206HR":
             skip_keys = {"title", "filename", "filter_config", "ttl_port"}
         elif self.pod_type == "Pod8229":
@@ -594,22 +594,40 @@ class Pod :
             skip_keys = set(skip_keys)
             skip_keys.update({"title", "filename"})
 
+        # Call _apply_config_recursive in the POD class
+        self._apply_config_recursive(config, skip_keys)
+
     def _apply_config_recursive(self, config: dict, skip_keys: set):
         if skip_keys is None:
             skip_keys = set()
-
+           
         for prop, prop_value in config.items():
-            if prop in skip_keys:
-                continue
+                if prop in skip_keys:
+                    continue
 
-            if isinstance(prop_value, dict):
-                self._apply_config_recursive(prop_value, skip_keys)
-            else:
-                # check if the object and parent class have a setter for this property
+                # Recurse into nested dicts
+                if isinstance(prop_value, dict):
+                    self._apply_config_recursive(prop_value, skip_keys)
+                    continue
+
+                # Normalize values before applying
+                if isinstance(prop_value, str):
+                    if prop_value.isdigit():
+                        prop_value = int(prop_value)
+                    else:
+                        try:
+                            prop_value = float(prop_value) if "." in prop_value else prop_value
+                        except Exception:
+                            pass
+
+                # Look up attribute along MRO
+                class_attr = None
                 for cls in type(self).__mro__:
-                    class_attr = getattr(cls, prop, None)
-                    if class_attr is not None:
+                    candidate = getattr(cls, prop, None)
+                    if candidate is not None:
+                        class_attr = candidate
                         break
+
                 if isinstance(class_attr, property) and class_attr.fset is not None:
                     try:
                         setattr(self, prop, prop_value)
