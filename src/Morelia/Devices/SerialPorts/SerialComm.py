@@ -207,12 +207,46 @@ class PortIO :
         t = 0.0
         while (t < timeout_sec) :
             ti = (round(time.time(),9)) # initial time (sec)          
-            if self.__serial_inst.in_waiting : 
+            #if self.__serial_inst.in_waiting : 
                 # read packet
-                return(self.__serial_inst.read(numBytes) )
+            return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+
+    #def read(self, numBytes: int, timeout_sec: float = 5) -> bytes | None:
+    #    """Blocking read of a specified number of bytes."""
+    #    if self.is_serial_closed():
+    #        return None
+
+    #    # set timeout dynamically
+    #    self.__serial_inst.timeout = timeout_sec
+    #    
+    #    try:
+    #        data = self.__serial_inst.read(numBytes)
+    #    except OSError as e:
+    #        self.close()
+    #        raise ConnectionError(f"[!] Serial device disconnected: {e}")
+
+    #    if len(data) < numBytes:
+    #        raise TimeoutError(
+    #            f"[!] Timeout for serial read after {timeout_sec} seconds. "
+    #            f"Expected {numBytes}, got {len(data)}"
+    #        )
+
+    #    return data
         
+    def read_exact(self, size: int, timeout: float = 1.0) -> bytes:
+        """Read exactly `size` bytes or raise TimeoutError."""
+        buf = b""
+        start = time.perf_counter()
+        while len(buf) < size:
+            chunk = self.read(size - len(buf))
+            if chunk:
+                buf += chunk
+            if time.perf_counter() - start > timeout:
+                raise TimeoutError(f"Timeout: wanted {size}, got {len(buf)}")
+        return buf
+
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
 

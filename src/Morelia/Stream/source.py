@@ -39,19 +39,21 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.packet_count = 0
 
             def on_next(value):
-                now_real_time_ns = time.time_ns()
-                predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
-                drift = now_real_time_ns - predicted
+                #now_real_time_ns = time.time_ns()
+                #predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                #drift = now_real_time_ns - predicted
 
-                correction_factor = 0.001
+                #correction_factor = 0.005
 
                 # add on a fraction of the sample rate to last timestamp, plus drift correction
-                observer.last_timestamp = int(predicted + (drift * correction_factor))
-                
+                #observer.last_timestamp = int(predicted + (drift * correction_factor))
+
+                observer.last_timestamp = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+
                 # if drift from real time is 100ms further than expected 
                 # or predicted time is greater than current time, reset time stamps
-                if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
-                    observer.last_timestamp = now_real_time_ns
+                #if abs(drift) > 100_000_000 or predicted > now_real_time_ns:
+                #    observer.last_timestamp = now_real_time_ns
 
                 observer.packet_count += 1
 
@@ -83,6 +85,7 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
 
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
                 
+                #observer.on_next(pod.read_pod_packet())
                 try:
                     observer.on_next(pod.read_pod_packet())
                 except Exception as e:

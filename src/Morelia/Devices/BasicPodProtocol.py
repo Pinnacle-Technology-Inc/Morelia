@@ -7,6 +7,7 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
+import time
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -114,8 +115,8 @@ class Pod :
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
-    @staticmethod
-    def _validate_checksum(msg: bytes) -> bool :
+    #@staticmethod
+    def _validate_checksum(self, msg: bytes) -> bool :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
@@ -145,6 +146,24 @@ class Pod :
         if(msg_csm == csm_valid) :
             return(True)
         else:
+
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            debug_info = (
+                f"\n[ChecksumError] {ts}\n"
+                f"  Device: {getattr(self, '_port_value', 'unknown')}\n"
+                f"  Packet length: {packet_bytes}\n"
+                f"  Expected checksum: {msg_csm.hex()}\n"
+                f"  Calculated checksum: {csm_valid.hex()}\n"
+                f"  Msg_csm: {msg_csm}\n"
+                f"  Csm_valid: {csm_valid}\n"
+                f"  Raw (first 32B): {msg[:32].hex(' ')}...\n"
+            )
+            print(debug_info)
+
+            with open("checksum_errors.log", "a") as f:
+                f.write(debug_info)
+                f.write(f"  Full packet: {msg.hex(' ')}\n\n")
+
             return(False)
     
 
@@ -366,7 +385,35 @@ class Pod :
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
         return packet
-     
+
+    #def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
+    #    """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
+    #    ending with ETX. Reads first STX and then starts recursion. 
+
+    #    :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+    #    :param timeout_sec: Time in seconds to wait for serial data. Defaults to 5. 
+
+    #    :return: POD packet beginning with STX and ending with ETX. This may be a \
+    #    control packet, data packet, or an unformatted packet (STX+something+ETX). 
+    #    """
+    #    # read until STX is found
+    #    b = None
+    #    start_time = time.perf_counter()
+    #    while time.perf_counter() - start_time <= timeout_sec:
+    #        try:
+    #            # continue reading packet
+    #            while b != PodPacket.STX:
+    #                b = self._port.read(1, timeout_sec) # read next byte
+
+    #            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
+    #            return packet
+
+    #        except Exception as e:
+    #            raise TimeoutError(f"Dropped packet due to: {e}")
+
+    #    # return final packet
+    #    raise TimeoutError(f"No complete packet received within {timeout_sec} seconds")
+
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \
         Next, it checks if the command is allowed. Then, it checks if the command is standard or \
