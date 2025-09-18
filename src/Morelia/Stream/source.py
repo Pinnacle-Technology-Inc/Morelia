@@ -8,7 +8,7 @@ __copyright__   = 'Copyright (c) 2023, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 #environment imports
-import pdb
+import traceback
 from multiprocessing import Event
 import time
 from functools import partial
@@ -90,8 +90,8 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
                 try:
                     observer.on_next(pod.read_pod_packet())
                 except Exception as e:
-                    breakpoint()
-                    print(f"Dropped packet due to: {e}")
+                    print(f"Dropped packet due to {type(e).__name__}: {e}")
+                    traceback.print_exc()
                     break
 
         # tell the observer we are finished.

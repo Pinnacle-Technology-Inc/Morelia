@@ -69,6 +69,8 @@ class Pod8401HR(AcquisitionDevice) :
 
         # set preamp.
         self._preamp: Preamp = preamp
+        self._ss_gain = ss_gain
+        self._preamp_gain = preamp_gain 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -115,11 +117,13 @@ class Pod8401HR(AcquisitionDevice) :
         # set second stage gain.
         ss_gain_dict = self._fix_abcd_type(ss_gain, this_is='ss_gain')
         self._validate_ss_gain(ss_gain_dict)
-        self._ss_gain : dict[str,int|None] = ss_gain_dict         
+        # not sure why we have this, it is not used anywhere
+        #self._ss_gain : dict[str,int|None] = ss_gain_dict         
 
         preamp_gain_dict = self._fix_abcd_type(preamp_gain, this_is='preamp_gain')
         self._validate_preamp_gain(preamp_gain_dict)
-        self._preamp_gain : dict[str,int|None] = preamp_gain_dict
+        # same with this one
+        #self._preamp_gain : dict[str,int|None] = preamp_gain_dict
         
         # set channel modes.
         self._primary_channel_modes = primary_channel_modes
