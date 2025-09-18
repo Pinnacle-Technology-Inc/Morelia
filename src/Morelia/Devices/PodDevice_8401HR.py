@@ -94,7 +94,32 @@ class Pod8401HR(AquisitionDevice) :
         SampleRates = [2000, 5000, 10000, 20000]
 
         DesiredSampleRates = [1, 10, 25, 125, 250, 500, 1000, 2000, 5000, 10000, 20000]
-    
+   
+        # initialize per-channel SS config cache
+        # default values can be None or some known default
+        # update logic is currently commented out
+        self._ss_config = {
+            0: {"Gain": None, "High-pass": None},
+            1: {"Gain": None, "High-pass": None},
+            2: {"Gain": None, "High-pass": None},
+            3: {"Gain": None, "High-pass": None},
+        }
+
+        # initialize per-channel input ground
+        # default values can be None or some known default
+        self._input_ground = {
+            'A': 0,
+            'B': 0,
+            'C': 0,
+            'D': 0
+        }
+
+
+        # Initialize highpass cache for 4 channels
+        self._high_pass = {0: None, 1: None, 2: None, 3: None}
+        # Initialize channel gains cache
+        self._channel_gains = {0: None, 1: None, 2: None, 3: None}
+
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
         UINT16 = Pod.get_u(16)
@@ -197,13 +222,19 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def preamp_highpass_0(self) -> int: 
         """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
-        current_highpass_0 = self.write_read("GET HIGHPASS", (0, ))
-        return current_highpass_0.payload[0]
-    
+        raw = self.write_read("GET HIGHPASS", (0,))
+        response = raw.payload[0]
+        self._high_pass[0] = response  # update cache
+        # basically rn i don't think it's pinging my getter for the validate config
+        print(f"updated cache is {self._high_pass[0]}")
+        return self._high_pass[0]
+
     @preamp_highpass_0.setter
     def preamp_highpass_0(self, value: int) -> None:
         """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
+        print(f"[DEBUG] inside preamp_highpass 0, value={value}")
         self.write_packet("SET HIGHPASS", (0, value))
+        print(f"post 'self.write_packet(set highpass logic)' thing")
         self._high_pass[0] = value
         self._update_gain_value(0)
 
@@ -211,9 +242,10 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def preamp_highpass_1(self) -> int: 
         """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
-        current_highpass_1 = self.write_read("GET HIGHPASS", (1, ))
-        return current_highpass_1.payload[0]
-    
+        response = self.write_read("GET HIGHPASS", (1,))
+        self._high_pass[1] = response.payload[0]  # update cache
+        return self._high_pass[1]
+
     @preamp_highpass_1.setter
     def preamp_highpass_1(self, value: int) -> None:
         """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
@@ -224,9 +256,10 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def preamp_highpass_2(self) -> int: 
         """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
-        current_highpass_2 = self.write_read("GET HIGHPASS", (2, ))
-        return current_highpass_2.payload[0]
-    
+        response = self.write_read("GET HIGHPASS", (2,))
+        self._high_pass[2] = response.payload[0]  # update cache
+        return self._high_pass[2]   
+
     @preamp_highpass_2.setter
     def preamp_highpass_2(self, value: int) -> None:
         """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
@@ -237,9 +270,10 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def preamp_highpass_3(self) -> int: 
         """Reads the highpass filter value for a channel. Requires the channel to read. Returns 0-3, where 0 = 0.5Hz, 1 = 1Hz, 2 = 10Hz, 3 = DC / No Highpass. """
-        current_highpass_3 = self.write_read("GET HIGHPASS", (3, ))
-        return current_highpass_3.payload[0]
-    
+        response = self.write_read("GET HIGHPASS", (3,))
+        self._high_pass[3] = response.payload[0]  # update cache
+        return self._high_pass[3]
+
     @preamp_highpass_3.setter
     def preamp_highpass_3(self, value: int) -> None:
         """Sets the highpass filter for a channel. Requires channel to set and filter value. Values are the same as returned in GET HIGHPASS."""
@@ -424,7 +458,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def input_ground0(self) -> int:
         """Reads Channel 0/A value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
-        return self.input_ground['A']
+        return self._input_ground['A']
 
     @input_ground0.setter
     def input_ground0(self, state: int):
@@ -435,7 +469,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def input_ground1(self) -> int:
         """Reads Channel 1/B value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
-        return self.input_ground['B']
+        return self._input_ground['B']
 
     @input_ground1.setter
     def input_ground1(self, state: int):
@@ -446,7 +480,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def input_ground2(self) -> int:
         """Reads Channel 2/C value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
-        return self.input_ground['C']
+        return self._input_ground['C']
 
     @input_ground2.setter
     def input_ground2(self, state: int):
@@ -457,7 +491,7 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def input_ground3(self) -> int:
         """Reads Channel 3/D value. Returns 1 if Channel A is connected to preamp, 0 if grounded."""
-        return self.input_ground['D']
+        return self._input_ground['D']
 
     @input_ground3.setter
     def input_ground3(self, state: int):
@@ -468,8 +502,9 @@ class Pod8401HR(AquisitionDevice) :
     def input_ground_all(self) -> dict[str, int]:
         """Returns a dictionary of all input ground states (channels A–D)."""
         payload = self.write_read("GET INPUT GROUND").payload
-        return self.decode_channel_bitmask(payload)
-   
+        self._input_ground = self.decode_channel_bitmask(payload)
+        return self._input_ground
+
     """TTL CONFIG"""
     @property
     def ttl_config(self) -> dict[str, dict[str, int]]:
@@ -494,6 +529,7 @@ class Pod8401HR(AquisitionDevice) :
         # convert keys from uppercase to lowercase
         out_bits = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["output"].items()})
         in_bits  = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["input"].items()})
+        print(f"[DEBUG] inside ttl_config.setter, out bits are: {out_bits} in bits are: {in_bits}")
         self.write_packet("SET TTL CONFIG", (out_bits, in_bits))
 
 
@@ -505,6 +541,7 @@ class Pod8401HR(AquisitionDevice) :
     @ttl_output_config.setter
     def ttl_output_config(self, out_dict: list[str, int] | dict[str, int]):
         """Sets only the output TTL config."""
+        print(f"[DEBUG] inside ttl_output_config.setter")
         current = self.ttl_config
         current["output"] = out_dict
         self.ttl_config = current
@@ -533,6 +570,7 @@ class Pod8401HR(AquisitionDevice) :
         self.set_ttl_outputs(pins)
 
     """SS CONFIG"""
+
     def get_second_stage_gain(self, channel: int) -> int:
         """Helper method to get any channel's second stage gain"""
         if channel == 0: return self.ss_gain_0
@@ -544,18 +582,13 @@ class Pod8401HR(AquisitionDevice) :
     @property
     def ss_config_0(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        # raw = self.write_read("GET SS CONFIG", (0,)).payload
         raw = self.write_read("GET SS CONFIG", (0,))
-        print(f'[DEBUG] ss_config_0 raw value is {raw}')
-        return self.decode_ss_config_bitmask(raw.payload)
+        return self.decode_ss_config_bitmask(raw.payload[0])
 
     @ss_config_0.setter
     def ss_config_0(self, config: dict[str, Union[float,int]]):
         """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
-        gain = config["Gain"]
-        highpass = config["High-pass"]
-        byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write_packet("SET SS CONFIG", (0, byte))
+        self.set_ss_config(0, config)  # channel + config dict
 
     @property
     def ss_highpass_0(self) -> float:
@@ -580,22 +613,17 @@ class Pod8401HR(AquisitionDevice) :
         config = self.ss_config_0
         config["Gain"] = gain
         self.ss_config_0 = config
-        self._second_stage_gain[0] = gain
-        self._update_gain_value(0)
 
     @property
     def ss_config_1(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (1,)).payload
-        return self.decode_ss_config_bitmask(raw)
+        raw = self.write_read("GET SS CONFIG", (1,))
+        return self.decode_ss_config_bitmask(raw.payload[0])
 
     @ss_config_1.setter
     def ss_config_1(self, config: dict[str, Union[float,int]]):
         """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
-        gain = config["Gain"]
-        highpass = config["High-pass"]
-        byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write_packet("SET SS CONFIG", (1, byte))
+        self.set_ss_config(1, config)  # channel + config dict
 
     @property
     def ss_highpass_1(self) -> float:
@@ -620,22 +648,18 @@ class Pod8401HR(AquisitionDevice) :
         config = self.ss_config_1
         config["Gain"] = gain
         self.ss_config_1 = config
-        self._second_stage_gain[1] = gain
-        self._update_gain_value(1)
+
 
     @property
     def ss_config_2(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (2,)).payload
-        return self.decode_ss_config_bitmask(raw)
+        raw = self.write_read("GET SS CONFIG", (2,))
+        return self.decode_ss_config_bitmask(raw.payload[0])
 
     @ss_config_2.setter
     def ss_config_2(self, config: dict[str, Union[float,int]]):
         """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
-        gain = config["Gain"]
-        highpass = config["High-pass"]
-        byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write_packet("SET SS CONFIG", (2, byte))
+        self.set_ss_config(2, config)  # channel + config dict
 
     @property
     def ss_highpass_2(self) -> float:
@@ -660,23 +684,19 @@ class Pod8401HR(AquisitionDevice) :
         config = self.ss_config_2
         config["Gain"] = gain
         self.ss_config_2 = config
-        self._second_stage_gain[2] = gain
-        self._update_gain_value(2)
-    
+
+
     @property
     def ss_config_3(self) -> dict[str, Union[float,int]]:
         """Gets the second stage gain config. Requires the channel. Returns a bitfield: Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain."""
-        raw = self.write_read("GET SS CONFIG", (3,)).payload
-        return self.decode_ss_config_bitmask(raw)
+        raw = self.write_read("GET SS CONFIG", (3,))
+        return self.decode_ss_config_bitmask(raw.payload[0])
 
     @ss_config_3.setter
     def ss_config_3(self, config: dict[str, Union[float,int]]):
         """Sets the second stage gain config. Requires the channel and a config bitfield as per GET SS CONFIG."""
-        gain = config["Gain"]
-        highpass = config["High-pass"]
-        byte = self.get_ss_config_bitmask(gain, highpass)
-        self.write_packet("SET SS CONFIG", (3, byte))
-        
+        self.set_ss_config(3, config)  # channel + config dict
+
     @property
     def ss_highpass_3(self) -> float:
         """Reads the second stage highpass filter value for a channel."""
@@ -700,9 +720,6 @@ class Pod8401HR(AquisitionDevice) :
         config = self.ss_config_3
         config["Gain"] = gain
         self.ss_config_3 = config
-        self._second_stage_gain[3] = gain
-        self._update_gain_value(3)
-
 
     """MUX MODE"""
     @property
@@ -885,7 +902,7 @@ class Pod8401HR(AquisitionDevice) :
         :param ttl_byte: UINT8 byte containing the TTL bitmask, either raw or ASCII hex.
         :return: Dictionary with TTL name keys and integer TTL values (0 or 1).
         """
-        # If raw byte (length 1), do bit-shift decode
+        # if raw byte (length 1), do bit-shift decode
         if len(ttl_byte) == 1:
             byte = ttl_byte[0]
             return {
@@ -897,7 +914,7 @@ class Pod8401HR(AquisitionDevice) :
                 'TTL1': (byte >> 0) & 0x01,
             }
         else:
-            # Otherwise assume ASCII hex bytes, decode using conv.ascii_bytes_to_int_split
+            # otherwise assume ASCII hex bytes, decode using conv.ascii_bytes_to_int_split
             return {
                 'EXT0': conv.ascii_bytes_to_int_split(ttl_byte, 8, 7),
                 'EXT1': conv.ascii_bytes_to_int_split(ttl_byte, 7, 6),
@@ -916,7 +933,7 @@ class Pod8401HR(AquisitionDevice) :
                      Values: 0 (low) or 1 (high).
         :returns: None
         """
-        # Create the modify-mask and state bitmask
+        # create the modify-mask and state bitmask
         modify = self.get_ttl_bitmask(**{k: 1 for k in pins})
         state  = self.get_ttl_bitmask(**pins)
         self.write_packet("SET TTL OUTS", (modify, state))
@@ -940,38 +957,48 @@ class Pod8401HR(AquisitionDevice) :
         return( 0 | (bit1 << 1) | bit0 ) # use for 'SET SS CONFIG' command
 
     
-    @staticmethod
-    def decode_ss_config_bitmask(config: bytes) -> dict[str, Union[float,int]]: 
-        """Converts the SS configuration byte to a dictionary with the high-pass and gain. Use for ``GET SS CONFIG`` command payloads.
+    def set_ss_config(self, channel: int, config: dict[str, Union[int, float]]):
+        """
+        Sets the second stage config for a given channel.
+        
+        :param channel: Channel index (0–3).
+        :param config: Dict with keys "Gain" and "High-pass".
+        """
+        gain = config["Gain"]
+        highpass = config["High-pass"]
 
-        :param config: UINT8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.
+        # convert to bitmask
+        mask = self.get_ss_config_bitmask(gain, highpass)
+
+        # send command to hardware
+        self.write_packet("SET SS CONFIG", (channel, mask))
+        # cache
+        self._ss_config[channel] = config
+
+    @staticmethod
+    def decode_ss_config_bitmask(config: Union[bytes, bytearray, int]) -> dict[str, Union[float, int]]:
+        """Converts the SS configuration byte to a dictionary with the high-pass and gain.
+
+        :param config: UINT8 containing the SS configuration. Can be raw bytes or int.
+        Bit 0 = 0 → 0.5Hz Highpass, 1 → DC Highpass
+        Bit 1 = 0 → 5x gain,       1 → 1x gain
         """
-        """older version of decode_ss
-        # high-pass
-        if(Packet.AsciiBytesToInt(config[0:1]) == 0) : 
-            highpass = 0.5 # Bit 0 = 0 for 0.5Hz Highpass
-        else: 
-            highpass = 0.0 # Bit 0 = 1 for DC Highpass
-        # gain 
-        if(Packet.AsciiBytesToInt(config[1:2]) == 0) :
-            gain = 5 # Bit 1 = 0 for 5x gain
-        else : 
-            gain = 1 # Bit 1 = 1 for 1x gain
-        # pack values into dict 
-        return({
-            'High-pass' : highpass, 
-            'Gain'      : gain
-        })
-        """
-        value = Packet.AsciiBytesToInt(config)  # single UINT8
-        # Bit 0 = high-pass, Bit 1 = gain
+        if isinstance(config, (bytes, bytearray)):
+            value = Packet.AsciiBytesToInt(config)
+        elif isinstance(config, int):
+            value = config
+        else:
+            raise TypeError(f"Unexpected type for config: {type(config)}")
+
+        # decode bits
         highpass = 0.0 if (value & 0b01) else 0.5
         gain = 1 if (value & 0b10) else 5
+
         return {
             "High-pass": highpass,
             "Gain": gain
         }
-        
+
 
     @staticmethod
     def get_channel_bitmask(a: bool, b: bool, c: bool, d: bool) -> int :
@@ -1003,7 +1030,6 @@ class Pod8401HR(AquisitionDevice) :
         })
 
 
-    @staticmethod
     def _set_input_ground_channel(self, channel: str, state: int):
         """Sets the input ground state for a specific channel (A–D).
 
@@ -1022,13 +1048,12 @@ class Pod8401HR(AquisitionDevice) :
         if state not in (0, 1):
             raise ValueError("State must be 0 (grounded) or 1 (preamp)")
 
-        current = self.input_ground
+        current = self._input_ground
         current[channel] = state
         bitmask = self.get_channel_bitmask(
             current['A'], current['B'], current['C'], current['D']
         )
-        self.write("SET INPUT GROUND", (bitmask,))
-
+        self.write_packet("SET INPUT GROUND", (bitmask,))
 
     @staticmethod
     def calculate_bias_dac_get_vout(value: int) -> float :
@@ -1038,7 +1063,7 @@ class Pod8401HR(AquisitionDevice) :
 
         :return: Float of the output bias voltage [V].
         """
-        # Use this method for GET/SET BIAS commands 
+        # use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return( (value / 32768.) * 2.048 )
 
@@ -1051,7 +1076,7 @@ class Pod8401HR(AquisitionDevice) :
 
         :return: Integer of the DAC value (16 bit 2's complement).
         """
-        # Use this method for GET/SET BIAS commands 
+        # use this method for GET/SET BIAS commands 
         # DAC Value is 16 Bits 2's complement (aka signed) corresponding to the output bias voltage 
         return(int( (vout / 2.048) * 32768. ))
         
@@ -1077,7 +1102,19 @@ class Pod8401HR(AquisitionDevice) :
 
 
     def _apply_config_recursive(self, config: dict, skip_keys: set):
+        for prop, prop_value in config.items():
+            if prop.startswith("ss_config_") and isinstance(prop_value, dict):
+                try:
+                    ch = int(prop.split("_")[-1])  # extract channel index
+                    self.set_ss_config(ch, prop_value)
+                    continue
+                except Exception as e:
+                    print(f"[ERROR] Failed to set {prop} to {prop_value}: {e}")
+                    continue
+        
+        # fall back to BasicPodProtocol for all other props
         super()._apply_config_recursive(config, skip_keys)
+
 
         
     _property_map = {
@@ -1121,20 +1158,9 @@ class Pod8401HR(AquisitionDevice) :
 
         "ss_config": {
             "ss_config_0": "ss_config_0",
-            "ss_highpass_0": "ss_highpass_0",
-            "ss_gain_0": "ss_gain_0",
-            
             "ss_config_1": "ss_config_1",
-            "ss_highpass_1": "ss_highpass_1",
-            "ss_gain_1": "ss_gain_1",
-
             "ss_config_2": "ss_config_2",
-            "ss_highpass_2": "ss_highpass_2",
-            "ss_gain_2": "ss_gain_2",
-
-            "ss_config_3": "ss_config_3",
-            "ss_highpass_3": "ss_highpass_3",
-            "ss_gain_3": "ss_gain_3",
+            "ss_config_3": "ss_config_3"
         },
 
         "mux_mode": {

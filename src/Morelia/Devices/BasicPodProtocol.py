@@ -585,7 +585,7 @@ class Pod :
         elif self.pod_type == "Pod8274D":
             skip_keys = {"title", "filename"}
         elif self.pod_type == "Pod8401HR":
-            skip_keys = {"title", "filename"}
+            skip_keys = {"title", "filename", "Gain", "High-pass"}
         elif self.pod_type == "Pod8480SC":
             skip_keys = {"title", "filename"}
         elif skip_keys is None:
@@ -597,44 +597,56 @@ class Pod :
         # Call _apply_config_recursive in the POD class
         self._apply_config_recursive(config, skip_keys)
 
-    def _apply_config_recursive(self, config: dict, skip_keys: set):
+    def _apply_config_recursive(self, config: dict, skip_keys: set = None):
         if skip_keys is None:
             skip_keys = set()
-           
+
         for prop, prop_value in config.items():
-                if prop in skip_keys:
-                    continue
+            if prop in skip_keys:
+                continue
 
-                # Recurse into nested dicts
-                if isinstance(prop_value, dict):
-                    self._apply_config_recursive(prop_value, skip_keys)
-                    continue
-
-                # Normalize values before applying
-                if isinstance(prop_value, str):
-                    if prop_value.isdigit():
-                        prop_value = int(prop_value)
-                    else:
-                        try:
-                            prop_value = float(prop_value) if "." in prop_value else prop_value
-                        except Exception:
-                            pass
-
-                # Look up attribute along MRO
-                class_attr = None
-                for cls in type(self).__mro__:
-                    candidate = getattr(cls, prop, None)
-                    if candidate is not None:
-                        class_attr = candidate
-                        break
-
-                if isinstance(class_attr, property) and class_attr.fset is not None:
+            # If value is a dict, recurse into it
+            if isinstance(prop_value, dict):
+                # Some dicts are meant to be passed to a setter directly (like ss_config_X)
+                setter_exists = hasattr(self.__class__, prop) and isinstance(getattr(self.__class__, prop), property) and getattr(self.__class__, prop).fset
+                if setter_exists:
                     try:
+                        print(f"[DEBUG] Setting {prop} to {prop_value} (dict)")
                         setattr(self, prop, prop_value)
                     except Exception as e:
                         print(f"[ERROR] Failed to set {prop} to {prop_value}: {e}")
                 else:
-                    print(f"[SKIP] No setter found for {prop}")
+                    # Recurse if no direct setter
+                    self._apply_config_recursive(prop_value, skip_keys)
+                continue
+
+            # Normalize scalar values (int/float)
+            if isinstance(prop_value, str):
+                if prop_value.isdigit():
+                    prop_value = int(prop_value)
+                else:
+                    try:
+                        prop_value = float(prop_value) if "." in prop_value else prop_value
+                    except Exception:
+                        pass
+
+            # Look up property along MRO
+            class_attr = None
+            for cls in type(self).__mro__:
+                candidate = getattr(cls, prop, None)
+                if candidate is not None:
+                    class_attr = candidate
+                    break
+
+            if isinstance(class_attr, property) and class_attr.fset is not None:
+                try:
+                    print(f"[DEBUG] Setting {prop} to {prop_value} (type={type(prop_value)})")
+                    setattr(self, prop, prop_value)
+                except Exception as e:
+                    print(f"[ERROR] Failed to set {prop} to {prop_value}: {e}")
+            else:
+                # If scalar but no setter, skip
+                print(f"[SKIP] No setter found for {prop}")
 
     def get_config(self, folder_path: str, filename: str | None = None):
         """
