@@ -62,6 +62,7 @@ class AcquisitionDevice(Pod):
         #after streaming data due to a race condition in the device's
         #firmware. Therefore, we leave dealing with the response packet
         #to the user.
+        print("stream started")
         self.write_packet('STREAM', 1)
 
         return self
