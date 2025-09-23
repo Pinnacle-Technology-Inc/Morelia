@@ -58,6 +58,7 @@ class Pod :
     def close_port(self):
         if self._port is not None:
             self._port.close_serial_port()
+            self._port = None
         else:
             return
 
@@ -345,8 +346,16 @@ class Pod :
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
-        self.write_packet(cmd, payload)
-        r = self.read_pod_packet(validate_checksum, timeout_sec)
+        if self._port is None:
+            if PortIO.is_port_in_use(self._port_value):
+                self.open_port()
+                self.write_packet(cmd, payload)
+                r = self.read_pod_packet(validate_checksum, timeout_sec)
+                self.close_port()
+        else:
+            self.write_packet(cmd, payload)
+            r = self.read_pod_packet(validate_checksum, timeout_sec)
+
         return(r)
 
 
@@ -361,7 +370,13 @@ class Pod :
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
         # write packet to serial port 
-        self._port.write(packet)
+        if self._port is None:
+            if PortIO.is_port_in_use(self._port_value):
+                self.open_port()
+                self._port.write(packet)
+                self.close_port()
+        else:
+            self._port.write(packet)
         # returns packet that was written
         return ControlPacket(self._commands, packet)
 
@@ -385,34 +400,6 @@ class Pod :
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
         return packet
-
-    #def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
-    #    """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
-    #    ending with ETX. Reads first STX and then starts recursion. 
-
-    #    :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
-    #    :param timeout_sec: Time in seconds to wait for serial data. Defaults to 5. 
-
-    #    :return: POD packet beginning with STX and ending with ETX. This may be a \
-    #    control packet, data packet, or an unformatted packet (STX+something+ETX). 
-    #    """
-    #    # read until STX is found
-    #    b = None
-    #    start_time = time.perf_counter()
-    #    while time.perf_counter() - start_time <= timeout_sec:
-    #        try:
-    #            # continue reading packet
-    #            while b != PodPacket.STX:
-    #                b = self._port.read(1, timeout_sec) # read next byte
-
-    #            packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
-    #            return packet
-
-    #        except Exception as e:
-    #            raise TimeoutError(f"Dropped packet due to: {e}")
-
-    #    # return final packet
-    #    raise TimeoutError(f"No complete packet received within {timeout_sec} seconds")
 
     def _read_pod_packet_recursive(self, validate_checksum:bool=True) -> PodPacket : 
         """Reads the command number. If the command number ends in ETX, the packet is returned. \

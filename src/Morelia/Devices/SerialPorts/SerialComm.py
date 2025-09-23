@@ -2,6 +2,9 @@
 from    serial import Serial, serial_for_url
 import  platform
 import time
+import psutil
+import os
+import subprocess
 
 # authorship
 __author__      = "Thresa Kelly"
@@ -82,6 +85,42 @@ class PortIO :
         return(name)
 
     # ====== PUBLIC METHODS ======
+    @staticmethod
+    def is_port_in_use(port: str) -> bool:
+        """
+        Opens a subprocess to check if the port is in use
+        """
+        system = platform.system()
+
+        # If system is Linux or MacOS, use subprocess with lsof
+        if system in ('Linux', 'Darwin'):
+            try:
+                result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            
+                return result.returncode == 0
+            except Exception:
+                pass
+
+        # If system Windows, use psutil and os
+        try:
+            for proc in psutil.process_iter(['pid', 'open_files']):
+                try:
+                    open_files = proc.info.get('open_files') or []
+                    for f in open_files:
+                        if os.path.samefile(f.path, port):
+                            return True
+                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
+                    continue
+        except Exception:
+            pass
+
+        # Fallback is to directly check if port is open or not
+        try:
+            s = Serial(port)
+            s.close()
+            return False
+        except SerialException:
+            return True
 
     # ----- BOOL CHECKS -----
 
@@ -212,29 +251,7 @@ class PortIO :
             return(self.__serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
-
-    #def read(self, numBytes: int, timeout_sec: float = 5) -> bytes | None:
-    #    """Blocking read of a specified number of bytes."""
-    #    if self.is_serial_closed():
-    #        return None
-
-    #    # set timeout dynamically
-    #    self.__serial_inst.timeout = timeout_sec
-    #    
-    #    try:
-    #        data = self.__serial_inst.read(numBytes)
-    #    except OSError as e:
-    #        self.close()
-    #        raise ConnectionError(f"[!] Serial device disconnected: {e}")
-
-    #    if len(data) < numBytes:
-    #        raise TimeoutError(
-    #            f"[!] Timeout for serial read after {timeout_sec} seconds. "
-    #            f"Expected {numBytes}, got {len(data)}"
-    #        )
-
-    #    return data
-        
+            
     def read_exact(self, size: int, timeout: float = 1.0) -> bytes:
         """Read exactly `size` bytes or raise TimeoutError."""
         buf = b""
