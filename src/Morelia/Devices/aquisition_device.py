@@ -114,9 +114,6 @@ class AquisitionDevice(Pod):
                  for any differences found. Empty if no differences.
         """        
         
-        skip_keys = {"title", "filename", "Gain", "High-pass"}
-
-        """
         # skip_keys often used to skip comparisons between SET/GET for GET properties only 
         if self.pod_type == "Pod8206HR":
             # in the future, compare individual pins to the port
@@ -134,7 +131,6 @@ class AquisitionDevice(Pod):
         else:
             skip_keys = set(skip_keys)
             skip_keys.update({"title", "filename"})
-        """
 
         actual_config = self._collect_config()
         diffs = {}
