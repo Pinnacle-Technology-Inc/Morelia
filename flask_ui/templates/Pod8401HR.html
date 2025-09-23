@@ -56,7 +56,6 @@
 	      name="sample_rate"
 	      min="2000"
 	      max="20000"
-	      required
 	      value="{{ session.get('loaded_config', {}).get('sample_rate', '') }}"
 	    >
 	  </fieldset>
@@ -73,7 +72,6 @@
 		name="highpass[preamp_highpass_{{ ch }}]"
 		min="0"
 		max="3"
-		required
 		value="{{ session.get('loaded_config', {}).get('highpass', {}).get('preamp_highpass_' ~ ch, '') }}"
 	      ><br>
 	    {% endfor %}
@@ -91,7 +89,6 @@
 		name="lowpass[lowpass_ch{{ ch }}]"
 		min="21"
 		max="15000"
-		required
 		value="{{ session.get('loaded_config', {}).get('lowpass', {}).get('lowpass_ch' ~ ch, '') }}"
 	      ><br>
 	    {% endfor %}
@@ -125,7 +122,6 @@
 		name="bias[bias_{{ ch }}]"
 		min="-2.048"
 		max="2.048"
-		required
 		value="{{ session.get('loaded_config', {}).get('bias', {}).get('bias_' ~ ch, '') }}"
 	      ><br>
 	    {% endfor %}
@@ -170,7 +166,6 @@
 		name="ext[{{ pin }}]"
 		min="0"
 		max="1"
-		required
 		value="{{ session.get('loaded_config', {}).get('ext', {}).get(pin, '') }}"
 	      ><br>
 	    {% endfor %}
@@ -218,7 +213,6 @@
 	      name="mux_mode[mux_mode]"
 	      min="0"
 	      max="1"
-	      required
 	      value="{{ session.get('loaded_config', {}).get('mux_mode', {}).get('mux_mode', '') }}"
 	    >
 	  </fieldset>
@@ -243,7 +237,6 @@
 		name="input_ground[input_ground{{ ch }}]"
 		min="0"
 		max="1"
-		required
 		value="{{ session.get('loaded_config', {}).get('input_ground', {}).get('input_ground' ~ ch, '') }}"
 	      ><br>
 	    {% endfor %}
