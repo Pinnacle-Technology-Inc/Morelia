@@ -529,34 +529,7 @@ class Pod8401HR(AquisitionDevice) :
         # convert keys from uppercase to lowercase
         out_bits = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["output"].items()})
         in_bits  = self.get_ttl_bitmask(**{k.lower(): v for k, v in config["input"].items()})
-        print(f"[DEBUG] inside ttl_config.setter, out bits are: {out_bits} in bits are: {in_bits}")
         self.write_packet("SET TTL CONFIG", (out_bits, in_bits))
-
-
-    @property
-    def ttl_output_config(self) -> dict[str, int]:
-        """Returns only the output TTL config bitmask as a dictionary."""
-        return self.ttl_config["output"]
-
-    @ttl_output_config.setter
-    def ttl_output_config(self, out_dict: list[str, int] | dict[str, int]):
-        """Sets only the output TTL config."""
-        print(f"[DEBUG] inside ttl_output_config.setter")
-        current = self.ttl_config
-        current["output"] = out_dict
-        self.ttl_config = current
-
-    @property
-    def ttl_input_config(self) -> dict[str, int]:
-        """Returns only the input TTL config bitmask as a dictionary."""
-        return self.ttl_config["input"]
-
-    @ttl_input_config.setter
-    def ttl_input_config(self, in_dict: list[str, int]| dict[str, int]):
-        """Sets only the input TTL config."""
-        current = self.ttl_config
-        current["input"] = in_dict
-        self.ttl_config = current
 
     @property
     def ttl_outputs(self) -> tuple:
@@ -729,8 +702,11 @@ class Pod8401HR(AquisitionDevice) :
         return current_mux_mode.payload[0]
 
     @mux_mode.setter
-    def mux_mode(self, mode: int) -> None: 
+    def mux_mode(self, mode: int | dict) -> None: 
         """Sets mux mode on or off. This causes EXT1 to toggle periodically to control 2BIO/3EEG preamps. 0 = Off, 1 = On."""
+        if isinstance(mode, dict):
+            mode = mode.get("mux_mode")
+        print(f'[DEBUG] current mode is = {mode}')
         self.write_packet("SET MUX MODE", (mode, ))
 
     """TTL ANALOG"""
@@ -1147,8 +1123,7 @@ class Pod8401HR(AquisitionDevice) :
         },
 
         "ttl_configs": {
-        "ttl_output_config": "ttl_output_config",
-        "ttl_input_config": "ttl_input_config",
+        "ttl_config": "ttl_config",
         },
 
         "ext": {

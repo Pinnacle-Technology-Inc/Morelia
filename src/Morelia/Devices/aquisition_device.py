@@ -89,7 +89,6 @@ class AquisitionDevice(Pod):
     @property 
     def pod_info(self) -> dict: 
         """Gets pod identification info for ease of use. Returns the information in the form of a dictionary"""
-        print("[DEBUG] inside pod_info")
         info = {
                 "device_name" : self.device_name,
                 "device_id" : self.id,
@@ -115,6 +114,9 @@ class AquisitionDevice(Pod):
                  for any differences found. Empty if no differences.
         """        
         
+        skip_keys = {"title", "filename", "Gain", "High-pass"}
+
+        """
         # skip_keys often used to skip comparisons between SET/GET for GET properties only 
         if self.pod_type == "Pod8206HR":
             # in the future, compare individual pins to the port
@@ -124,7 +126,7 @@ class AquisitionDevice(Pod):
         elif self.pod_type == "Pod8274D":
             skip_keys = {"title", "filename"}
         elif self.pod_type == "Pod8401HR":
-            skip_keys = {"title", "filename"}
+            skip_keys = {"title", "filename", "Gain", "High-pass"}
         elif self.pod_type == "Pod8480SC":
             skip_keys = {"title", "filename"}
         elif skip_keys is None:
@@ -132,6 +134,7 @@ class AquisitionDevice(Pod):
         else:
             skip_keys = set(skip_keys)
             skip_keys.update({"title", "filename"})
+        """
 
         actual_config = self._collect_config()
         diffs = {}
@@ -163,7 +166,7 @@ class AquisitionDevice(Pod):
             return val
 
 
-        def recursive_diff(expected, actual, path=""):
+        def recursive_diff(expected, actual, skip_keys, path=""):
             """Recursively compare expected and actual dictionaries, 
             collecting differences in diffs dictionary.
 
@@ -191,7 +194,7 @@ class AquisitionDevice(Pod):
                             (norm_actual, type(norm_actual)),
                         )
 
-        recursive_diff(expected_config, actual_config)
+        recursive_diff(expected_config, actual_config, skip_keys)
         return diffs
 
     """Default Property Map for Pod Devices"""
