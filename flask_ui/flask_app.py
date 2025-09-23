@@ -106,6 +106,18 @@ def clear_config():
     flash("Configuration cleared.")
     return redirect(request.referrer or url_for("homepage"))
 
+def remove_empty(d):
+    """Recursively remove empty strings from a dictionary. Removes lines that the user did not fill."""
+    clean_dict = {}
+    for k, v in d.items():
+        if isinstance(v, dict):
+            nested = remove_empty(v)
+            if nested:  # only keep if nested dict is not empty
+                clean_dict[k] = nested
+        elif v != '':  # only keep non-empty strings
+            clean_dict[k] = v
+    return clean_dict
+
 #Pod8206HR Form
 @app.route("/submit1", methods=["POST"])
 def submit1():
@@ -127,6 +139,8 @@ def submit1():
             "ttl_pin3": request.form.get('ttl_pin3','').strip(),
         },
     }
+
+    data = remove_empty(data)  # filter out empty values
 
     filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
@@ -225,6 +239,8 @@ def submit2():
 
     }
 
+    data = remove_empty(data)  # filter out empty values
+
     #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
@@ -321,6 +337,8 @@ def submit3():
         },
 
     }
+
+    data = remove_empty(data)  # filter out empty values
 
     #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
@@ -445,6 +463,8 @@ def submit4():
         },
     }
 
+    data = remove_empty(data)  # filter out empty values
+
     #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
     if not filename.endswith(".toml"):
@@ -540,6 +560,8 @@ def submit5():
         },
 
     }
+
+    data = remove_empty(data)  # filter out empty values
 
     #use filename part of dictionary to create new file
     filename = request.form.get('filename') or "default_config"
