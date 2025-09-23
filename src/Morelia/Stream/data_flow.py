@@ -89,11 +89,14 @@ class DataFlow:
 
             # uses the pod devices' get_dict function to return parameter values in a dictionary 
             source_dict = source.get_dict()
-
+            
             # gets the class and dictionary of parameters of each sink in the sink list
             sinks_list = [
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
+
+            # close the port so that it can be pickled
+            source.close_port()
 
             #create worker process.
             worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))

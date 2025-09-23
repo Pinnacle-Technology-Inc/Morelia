@@ -91,8 +91,8 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
                     observer.on_next(pod.read_pod_packet())
                 except Exception as e:
                     print(f"Dropped packet due to {type(e).__name__}: {e}")
-                    traceback.print_exc()
-                    break
+                    #traceback.print_exc()
+                    continue
 
         # tell the observer we are finished.
         observer.on_completed()

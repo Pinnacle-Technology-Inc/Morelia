@@ -51,6 +51,8 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
+        self.open_port()
+
     def open_port(self):
         # initialize serial port 
         self._port : PortIO = PortIO(self._port_value, self._baudrate)
