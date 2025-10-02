@@ -1,5 +1,5 @@
 # enviornment imports 
-from    serial import Serial, serial_for_url
+from    serial import Serial, serial_for_url, SerialException
 import  platform
 import time
 import psutil
@@ -32,6 +32,8 @@ class PortIO :
             port (str | int): String of the serial port to be opened. 
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
+        self.port = port
+        self.baudrate = baudrate
 
         if (port == 'TEST') :
 
@@ -248,7 +250,21 @@ class PortIO :
             ti = (round(time.time(),9)) # initial time (sec)          
             #if self.__serial_inst.in_waiting : 
                 # read packet
-            return(self.__serial_inst.read(numBytes) )
+            try:
+                r = self.__serial_inst.read(numBytes)
+                return r
+            except SerialException:
+                print("Device disconnected!")
+                i = 0
+                while i < 60:
+                    try:
+                        self.__serial_inst = Serial()
+                        self.open_serial_port(self.port, baudrate=self.baudrate)
+                        print("Reconnected Device")
+                        break
+                    except SerialException:
+                        time.sleep(1)
+                    i += 1
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
             
