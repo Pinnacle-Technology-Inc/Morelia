@@ -52,7 +52,6 @@ class AcquisitionDevice(Pod):
     def sample_rate(self, rate: int) -> None:
         if rate > self.max_sample_rate:
             raise ValueError(f'The maximum allowable sample rate is {self.max_sample_rate} Hz.')
-
         self.write_read('SET SAMPLE RATE', (rate,))
         self._sample_rate: int = (rate,)
     
@@ -67,7 +66,6 @@ class AcquisitionDevice(Pod):
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
-
         self.write_packet('STREAM', 0)
 
         #get any packets that may have arrived between the user ending stream

@@ -60,12 +60,14 @@ class Pod8206HR(AcquisitionDevice) :
         if(preamp_gain != 10 and preamp_gain != 100):
             raise Exception('[!] Preamplifier gain must be 10 or 100.')
         self._preamp_gain : int = preamp_gain 
+
          # define function used to decode packet from binary data.
         def decode_packet(command_number: int, payload: bytes) -> tuple:
             if command_number == 106:
                 return Pod8206HR._translate_ttlbyte_ascii(payload)
 
             return ControlPacket.decode_payload_from_cmd_set(self._commands, command_number, payload)
+
         # the constructor used to create control packets as they are recieved.
         self._control_packet_factory = partial(ControlPacket, decode_packet)
 
@@ -73,8 +75,6 @@ class Pod8206HR(AcquisitionDevice) :
     def preamp_gain(self):
         return self._preamp_gain
     
-   
-
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
         """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
@@ -102,12 +102,14 @@ class Pod8206HR(AcquisitionDevice) :
         """
 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        #packet = pre_packet + self._port.read_exact(8) + self._read_to_etx(validate_checksum=validate_checksum)
+        #start_time = time.perf_counter()
         packet = pre_packet + self._port.read(8) + self._read_to_etx(validate_checksum=validate_checksum)
+        #print(f"Time took: {(time.perf_counter() - start_time)*1000:.2f} ms")
         # check if checksum is correct 
         if(validate_checksum):
             if(not self._validate_checksum(packet) ) :
                 raise Exception('Bad checksum for binary POD packet read.')
+        
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
 

@@ -11,10 +11,14 @@ __email__       = 'sales@pinnaclet.com'
 
 # environment imports
 import multiprocessing as mp
+from multiprocessing import Event
 from functools import partial
+import time
+import gc
 
 # local imports
 from Morelia.Devices import AcquisitionDevice
+from Morelia.Devices.SerialPorts import PortIO
 from Morelia.Stream.source import get_data_wrapper
 import Morelia.Stream.sink as pod_sink
 
@@ -73,16 +77,21 @@ class DataFlow:
 
         :raises ValueError: Raise an error for invalid combinations of sink and filter method.
         """
-        if not hasattr(self, "_manager"):
-            self._manager = mp.Manager()
-        
         #to begin, create all the process objects necessary for each source, sinks pair.
         for source, sinks in self._network:
 
             #event that signals the stream has been stopped by `stop_collecting`.
-            manual_stop_event = self._manager.Event()
+            manual_stop_event = Event()
             
             self._manual_stop_events.append(manual_stop_event)
+
+            # close the port and delete the port instance
+            # may want to use property here instead for better practice
+            if hasattr(source, "_port"):
+                source.close_port()
+                del source._port
+
+            gc.collect()
 
             # gets the type (class) of the pod device
             source_class = type(source)
@@ -113,4 +122,4 @@ class DataFlow:
     def __exit__(self, *args, **kwargs) -> None:
         self.stop_collection()
         return False
-
+   

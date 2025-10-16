@@ -1,9 +1,9 @@
 # enviornment imports 
 from    serial import Serial, serial_for_url, SerialException
 import  platform
-import time
 import psutil
 import os
+import  time
 import subprocess
 
 # authorship
@@ -19,13 +19,13 @@ class PortIO :
     COM_io handles serial communication (read/write) using COM ports. 
 
     Attributes:
-        __serial_inst (Serial): Instance-level serial COM port.
+        _serial_inst (Serial): Instance-level serial COM port.
     """
 
     # ====== DUNDER METHODS ======
 
     def __init__(self, port: str|int, baudrate:int=9600) -> None :
-        """Runs when the object is constructed. It initialized the __serial_inst to a given COM port with \
+        """Runs when the object is constructed. It initialized the _serial_inst to a given COM port with \
         a set baudrate.
 
         Args:
@@ -35,14 +35,14 @@ class PortIO :
         self.port = port
         self.baudrate = baudrate
 
+        
         if (port == 'TEST') :
 
-            self.__serial_inst : Serial = serial_for_url('loop://')
+            self._serial_inst : Serial = serial_for_url('loop://')
 
         else:
-
             # initialize port 
-            self.__serial_inst : Serial = Serial()
+            self._serial_inst : Serial = Serial()
             # open port  
             self.open_serial_port(port, baudrate=baudrate)
 
@@ -51,9 +51,47 @@ class PortIO :
         # close port 
         self.close_serial_port()
 
-    # ====== PRIVATE METHODS ======
-        
-    def __build_port_name(self, port: str|int) -> str :
+    # ====== STATIC METHODS ======
+    
+    @staticmethod
+    def is_port_in_use(port: str) -> bool:
+        """
+        Opens a subprocess to check if the port is in use
+        """
+        system = platform.system()
+
+        # If system is Linux or MacOS, use subprocess with lsof
+        if system in ('Linux', 'Darwin'):
+            try:
+                result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            
+                return result.returncode == 0
+            except Exception:
+                pass
+
+        # If system Windows, use psutil and os
+        try:
+            for proc in psutil.process_iter(['pid', 'open_files']):
+                try:
+                    open_files = proc.info.get('open_files') or []
+                    for f in open_files:
+                        if os.path.samefile(f.path, port):
+                            return True
+                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
+                    continue
+        except Exception:
+            pass
+
+        # Fallback is to directly check if port is open or not
+        try:
+            s = Serial(port)
+            s.close()
+            return False
+        except SerialException:
+            return True
+    
+    @staticmethod 
+    def build_port_name(port: str|int) -> str :
         """Converts the port parameter into the "COM"+<number> format for Windows or \
         "/dev/tty..."+<number> for Linux.
 
@@ -133,7 +171,7 @@ class PortIO :
             bool: True if the COM port is open, False otherwise. 
         """
         # true if serial port is open, false otherwise 
-        return(self.__serial_inst.isOpen())
+        return(self._serial_inst.is_open)
 
     def is_serial_closed(self) -> bool :
         """Returns False if the serial instance port is open, True otherwise.
@@ -143,14 +181,17 @@ class PortIO :
         """
         # true if serial port is closed, false otherwise 
         return(not self.is_serial_open())
-
+  
     # ----- SERIAL MANAGEMENT -----
 
     def close_serial_port(self) -> None :
         """Closes the instance serial port if it is open."""
         # close port if open 
-        if(self.is_serial_open()) :
-            self.__serial_inst.close()
+        if self._serial_inst is None:
+            return
+        elif self.is_serial_open():
+            self._serial_inst.close()
+            self._serial_inst = None
 
     def open_serial_port(self, port: str|int, baudrate:int=9600) -> None : 
         """First, it closes the serial port if it is open. Then, it opens a serial port with a set \
@@ -167,13 +208,16 @@ class PortIO :
         if(self.is_serial_open()) : 
             self.close_serial_port()
         # get name 
-        name = self.__build_port_name(port)
+        name = PortIO.build_port_name(port)
         # if the 'Name' is not None
         if(name) : 
             # initialize and open serial port 
-            self.__serial_inst.baudrate = baudrate
-            self.__serial_inst.port = name
-            self.__serial_inst.open()
+            self._serial_inst.baudrate = baudrate
+            self._serial_inst.port = name
+            self._serial_inst.open()
+            # if any leftover binary exists, read/clear it
+            if self._serial_inst and self._serial_inst.in_waiting > 0:
+                self._serial_inst.read(self._serial_inst.in_waiting)
         else : 
             # throw an error 
             raise Exception('Port does not exist.')
@@ -190,7 +234,7 @@ class PortIO :
         # port must be open 
         if(self.is_serial_open()) : 
             # set baudrate 
-            self.__serial_inst.baudrate = baudrate
+            self._serial_inst.baudrate = baudrate
             return(True) 
         else : 
             return(False)
@@ -201,9 +245,12 @@ class PortIO :
         Returns:
             bool: True of the buffers are flushed, False otherwise.
         """
+        if self._serial_inst is None:
+            return False
+
         if(self.is_serial_open()) : 
-            self.__serial_inst.reset_input_buffer()
-            self.__serial_inst.reset_output_buffer()
+            self._serial_inst.reset_input_buffer()
+            self._serial_inst.reset_output_buffer()
             return(True) 
         else : 
             return(False)
@@ -219,7 +266,7 @@ class PortIO :
         """
         # return the port name if a port is open
         if(self.is_serial_open()) : 
-            return(self.__serial_inst.name) 
+            return(self._serial_inst.name) 
         # otherwise return nothing
         else :
             return(None)
@@ -267,8 +314,9 @@ class PortIO :
                     i += 1
             t += (round(time.time(),9)) - ti
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
-            
-    def read_exact(self, size: int, timeout: float = 1.0) -> bytes:
+     
+    # check to see if this is used anywhere
+    '''def read_exact(self, size: int, timeout: float = 1.0) -> bytes:
         """Read exactly `size` bytes or raise TimeoutError."""
         buf = b""
         start = time.perf_counter()
@@ -278,7 +326,13 @@ class PortIO :
                 buf += chunk
             if time.perf_counter() - start > timeout:
                 raise TimeoutError(f"Timeout: wanted {size}, got {len(buf)}")
-        return buf
+        return buf'''
+       # old control queue read
+            '''if self._serial_inst.in_waiting: 
+                #read packet
+                return(self._serial_inst.read(numBytes) )
+            t += (round(time.time(),9)) - ti
+        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')'''
 
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
@@ -292,9 +346,9 @@ class PortIO :
             return(None)
         # wait until port is in waiting, then read line 
         while True :
-            if self.__serial_inst.in_waiting : 
+            if self._serial_inst.in_waiting : 
                 # read packet up to  and including newline ('\n')
-                return(self.__serial_inst.readline())
+                return(self._serial_inst.readline())
     
     def read_until(self, eol: bytes) -> bytes|None:
         """Reads until a set character from the open serial port.
@@ -311,9 +365,9 @@ class PortIO :
             return(None)
         # wait until port is in waiting, then read 
         while True :
-            if self.__serial_inst.in_waiting : 
+            if self._serial_inst.in_waiting : 
                 # read packet until end of line (eol) character 
-                return(self.__serial_inst.read_until(eol) )
+                return(self._serial_inst.read_until(eol) )
 
     def write(self, message: bytes) -> None : 
         """Write a set message to the open serial port. 
@@ -321,6 +375,6 @@ class PortIO :
         Args:
             message (bytes): byte string containing the message to write.
         """
-        # write message to open port 
         if(self.is_serial_open()) : 
-            self.__serial_inst.write(message)
+            self._serial_inst.write(message)
+
