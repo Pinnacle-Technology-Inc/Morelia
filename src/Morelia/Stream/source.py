@@ -8,6 +8,7 @@ __copyright__   = 'Copyright (c) 2023, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 #environment imports
+import traceback
 from multiprocessing import Event
 import threading
 import time
@@ -45,11 +46,13 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
                 drift = now_real_time_ns - predicted
 
-                correction_factor = 0.001
+                correction_factor = 0.005
 
-                # add on a fraction of the sample rate to last timestamp, plus drift correction
+                #add on a fraction of the sample rate to last timestamp, plus drift correction
                 observer.last_timestamp = int(predicted + (drift * correction_factor))
-                
+
+                #observer.last_timestamp = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+
                 # if drift from real time is 100ms further than expected 
                 # or predicted time is greater than current time, reset time stamps
                 if observer.last_timestamp > now_real_time_ns: #abs(drift) > 100_000_000 : #                #    print("hello")
@@ -87,7 +90,8 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
                 try:
                     observer.on_next(pod.read_pod_packet())
                 except Exception as e:
-                    print(f"Dropped packet due to: {e}")
+                    print(f"Dropped packet due to {type(e).__name__}: {e}")
+                    #traceback.print_exc()
                     continue
             pod.close_port()
 

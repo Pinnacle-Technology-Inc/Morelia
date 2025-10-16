@@ -32,6 +32,9 @@ class PortIO :
             port (str | int): String of the serial port to be opened. 
             baudrate (int, optional): Integer baud rate of the opened serial port. Defaults to 9600.
         """
+        self.port = port
+        self.baudrate = baudrate
+
         
         if (port == 'TEST') :
 
@@ -122,6 +125,42 @@ class PortIO :
         return(name)
 
     # ====== PUBLIC METHODS ======
+    @staticmethod
+    def is_port_in_use(port: str) -> bool:
+        """
+        Opens a subprocess to check if the port is in use
+        """
+        system = platform.system()
+
+        # If system is Linux or MacOS, use subprocess with lsof
+        if system in ('Linux', 'Darwin'):
+            try:
+                result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
+            
+                return result.returncode == 0
+            except Exception:
+                pass
+
+        # If system Windows, use psutil and os
+        try:
+            for proc in psutil.process_iter(['pid', 'open_files']):
+                try:
+                    open_files = proc.info.get('open_files') or []
+                    for f in open_files:
+                        if os.path.samefile(f.path, port):
+                            return True
+                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
+                    continue
+        except Exception:
+            pass
+
+        # Fallback is to directly check if port is open or not
+        try:
+            s = Serial(port)
+            s.close()
+            return False
+        except SerialException:
+            return True
 
     # ----- BOOL CHECKS -----
 
@@ -256,11 +295,44 @@ class PortIO :
         t = 0.0
         while (t < timeout_sec) :
             ti = (round(time.time(),9)) # initial time (sec)          
-            if self._serial_inst.in_waiting: 
+            #if self.__serial_inst.in_waiting : 
+                # read packet
+            try:
+                r = self.__serial_inst.read(numBytes)
+                return r
+            except SerialException:
+                print("Device disconnected!")
+                i = 0
+                while i < 60:
+                    try:
+                        self.__serial_inst = Serial()
+                        self.open_serial_port(self.port, baudrate=self.baudrate)
+                        print("Reconnected Device")
+                        break
+                    except SerialException:
+                        time.sleep(1)
+                    i += 1
+            t += (round(time.time(),9)) - ti
+        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+     
+    # check to see if this is used anywhere
+    '''def read_exact(self, size: int, timeout: float = 1.0) -> bytes:
+        """Read exactly `size` bytes or raise TimeoutError."""
+        buf = b""
+        start = time.perf_counter()
+        while len(buf) < size:
+            chunk = self.read(size - len(buf))
+            if chunk:
+                buf += chunk
+            if time.perf_counter() - start > timeout:
+                raise TimeoutError(f"Timeout: wanted {size}, got {len(buf)}")
+        return buf'''
+       # old control queue read
+            '''if self._serial_inst.in_waiting: 
                 #read packet
                 return(self._serial_inst.read(numBytes) )
             t += (round(time.time(),9)) - ti
-        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')'''
 
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.

@@ -76,6 +76,8 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
+        self.open_port()
+
     def open_port(self):
         self._port : PortIO = PortIO(self._port_value, self._baudrate)
    
@@ -151,8 +153,8 @@ class Pod :
     # ------------ CHECKSUM HANDLING ------------   ------------------------------------------------------------------------------------------------------------------------
 
 
-    @staticmethod
-    def _validate_checksum(msg: bytes) -> bool :
+    #@staticmethod
+    def _validate_checksum(self, msg: bytes) -> bool :
         """Validates the checksum of a given POD packet. The checksum is valid if the calculated checksum 
         from the data matches the checksum written in the packet. 
 
@@ -182,6 +184,24 @@ class Pod :
         if(msg_csm == csm_valid) :
             return(True)
         else:
+
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+            debug_info = (
+                f"\n[ChecksumError] {ts}\n"
+                f"  Device: {getattr(self, '_port_value', 'unknown')}\n"
+                f"  Packet length: {packet_bytes}\n"
+                f"  Expected checksum: {msg_csm.hex()}\n"
+                f"  Calculated checksum: {csm_valid.hex()}\n"
+                f"  Msg_csm: {msg_csm}\n"
+                f"  Csm_valid: {csm_valid}\n"
+                f"  Raw (first 32B): {msg[:32].hex(' ')}...\n"
+            )
+            print(debug_info)
+
+            with open("checksum_errors.log", "a") as f:
+                f.write(debug_info)
+                f.write(f"  Full packet: {msg.hex(' ')}\n\n")
+
             return(False)
     
 
@@ -381,6 +401,18 @@ class Pod :
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
+        # changes from develop debug to allow for sending packets without DataFlow
+        '''if self._port is None:
+            if PortIO.is_port_in_use(self._port_value):
+                self.open_port()
+                self.write_packet(cmd, payload)
+                r = self.read_pod_packet(validate_checksum, timeout_sec)
+                self.close_port()
+        else:
+            self.write_packet(cmd, payload)
+            r = self.read_pod_packet(validate_checksum, timeout_sec)
+
+        return(r)'''
         #flushes leftover data in case of interrupt
         if self._port is not None:
             self.flush_port()
@@ -446,6 +478,16 @@ class Pod :
         """
         # POD packet 
         packet = self.get_pod_packet(cmd, payload)
+        # write packet to serial port 
+        # changes from develop debug to allow for sending packets without DataFlow
+        '''if self._port is None:
+            if PortIO.is_port_in_use(self._port_value):
+                self.open_port()
+                self._port.write(packet)
+                self.close_port()
+        else:
+            self._port.write(packet)'''
+        # returns packet that was written
         
         #if port exists, write to the port using PortIO
         if self._port is not None:

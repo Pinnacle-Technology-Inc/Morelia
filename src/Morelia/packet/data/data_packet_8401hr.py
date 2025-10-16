@@ -165,7 +165,6 @@ class DataPacket8401HR(DataPacket):
 
         :meta private:
         """
-
         match channel_mode:
             case PrimaryChannelMode.EEG_EMG:
                 voltage_at_ADC = (raw_value / 262144.0) * 4.096
