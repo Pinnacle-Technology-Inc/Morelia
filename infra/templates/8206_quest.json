@@ -15,7 +15,7 @@
       }
     ]
   },
-  "description": "Grafana dashboard for 8206HR devices that are streaming to an QuestDB data source",
+  "description": "Grafana dashboard for 8206HR devices that are streaming to a QuestDB data source",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
@@ -923,6 +923,5 @@
   "timepicker": {},
   "timezone": "browser",
   "title": "QuestDB Dashboard",
-  "uid": "59adb134-f1f9-4780-9d14-5fc9046ac154",
   "version": 1
 }
