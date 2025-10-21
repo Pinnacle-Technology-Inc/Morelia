@@ -10,7 +10,7 @@ Welcome to Morelia's documentation!
 
    getting_started
    streaming
-   grafana
+   terraform
    sleep_dep
    stimulus
    low_level
