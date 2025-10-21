@@ -44,12 +44,13 @@ end of the previous section as an example as we walk through how to setup a data
 Note: If you are on Windows, you will need to wrap all of your code within the code below:
 
 .. code-block:: python
+
    if __name__ == "__main__":
       '''
       All code should be placed here, besides imports
       '''
 
-This is due to the usage of multiprocessing within the library, which needs to be held within this ``if`` statement
+This is due to the usage of multiprocessing within the library, which needs to be held within this ``if`` statement in Windows, by how the OS spawns its processes.
 
 All streaming functionality is handled through the 
 ``Morelia.Stream`` subpackage. When streaming, the first step is to set up a data source. Great news, if you followed our :doc:`Hitchhiker's Guide to
@@ -176,6 +177,8 @@ sentence, let's see what it looks like in our example.
 
 And presto, you are all ready to stream! In the next section, we will carry our example
 over and loop at how to start collecting data now that everything is in place.
+
+**Important Note**: Streaming to InfluxDB takes a lot of storage! By default we have set the time limit of data points to 3 days, so that collection does not crash your computer. These storage limits can be changed, which is further explained in the "Visualizing Data During Streams" section.
 
 =====================
 Let the Data Flow! 🌊
