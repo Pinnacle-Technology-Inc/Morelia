@@ -12,13 +12,13 @@ If you downloaded Morelia directly from the GitHub page, you'll have access to v
 
 In order to do so, you'll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the bash section to quickly download and setup the architecture.
 
-.. image here on the infra folder
-
 Once downloaded, inside of the 'infra' directory, you will see a file named ``default-values.txt``. You will need to copy this to a file named ``terraform.tfvars``. This step is not required if you are running this on bash.
 
-.. image on default values
+.. image:: images/infra.png
 
 You can use ``terraform init`` to initialize the Terraform configuration, and ``terraform apply`` to begin the infrastructure. By default, the Influx database is on ``localhost:8086`` and Grafana is on ``localhost:3000``.
+
+.. image on default values
 
 In the case that you come across an error in creating the infrastructure, you can use ``terraform destroy`` to remove the architecture, or ``terraform restore`` to update the configuration state.
 
