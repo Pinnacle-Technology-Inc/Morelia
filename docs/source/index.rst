@@ -11,6 +11,7 @@ Welcome to Morelia's documentation!
    getting_started
    streaming
    terraform
+   influx_grafana
    sleep_dep
    stimulus
    low_level
