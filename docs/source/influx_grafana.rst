@@ -50,8 +50,15 @@ Creating Grafana Dashboards
 During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for json files to use as dashboards. Any json file that fits the format of a grafana dashboard here will be generated and shown on the UI. 
 
 .. show image of the folder infra/grafana/dashboards
+.. image:: images/dashboard_folder.png
+   :scale: 45%
+
+.. vertical arrow image?
+.. image:: images/right_arrow.png
+   :scale: 30%
 
 .. reuse image of the grafana dashboards
+.. image:: images/dashboards.png
 
 If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafa/dashboards folder, and edit the specifics (title, description, etc.) for your needs. 
 
