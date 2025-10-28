@@ -8,6 +8,7 @@ __copyright__   = 'Copyright (c) 2023, James Hurd'
 __email__       = 'sales@pinnaclet.com'
 
 from typing import Self
+from datetime import datetime
 
 from Morelia.Devices import Pod
 
@@ -51,7 +52,6 @@ class AcquisitionDevice(Pod):
     def sample_rate(self, rate: int) -> None:
         if rate > self.max_sample_rate:
             raise ValueError(f'The maximum allowable sample rate is {self.max_sample_rate} Hz.')
-
         self.write_read('SET SAMPLE RATE', (rate,))
         self._sample_rate: int = (rate,)
     
@@ -66,17 +66,20 @@ class AcquisitionDevice(Pod):
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
-
         self.write_packet('STREAM', 0)
-        
+
         #get any packets that may have arrived between the user ending stream
         #and the command being received from the device + plus the response
         #packet from earlier.
+
         while True:
             try:
                 self.read_pod_packet(timeout_sec=1)
             except TimeoutError:
                 break
-        
+
+        with open("end_times.log", "a") as f:
+            f.write(f"Stream ended at {datetime.now().isoformat()}\n")
+
         #explicitly tell the context manager to propagate execptions.
         return False

@@ -69,6 +69,8 @@ class Pod8401HR(AcquisitionDevice) :
 
         # set preamp.
         self._preamp: Preamp = preamp
+        self._ss_gain = ss_gain
+        self._preamp_gain = preamp_gain 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -113,13 +115,15 @@ class Pod8401HR(AcquisitionDevice) :
         # at some point as this class containes to be rewritten.
 
         # set second stage gain.
-        ss_gain_dict = self._fix_abcd_type(ss_gain, this_is='ss_gain ')
+        ss_gain_dict = self._fix_abcd_type(ss_gain, this_is='ss_gain')
         self._validate_ss_gain(ss_gain_dict)
-        self._ss_gain : dict[str,int|None] = ss_gain_dict         
+        # not sure why we have this, it is not used anywhere
+        #self._ss_gain : dict[str,int|None] = ss_gain_dict         
 
         preamp_gain_dict = self._fix_abcd_type(preamp_gain, this_is='preamp_gain')
         self._validate_preamp_gain(preamp_gain_dict)
-        self._preamp_gain : dict[str,int|None] = preamp_gain_dict
+        # same with this one
+        #self._preamp_gain : dict[str,int|None] = preamp_gain_dict
         
         # set channel modes.
         self._primary_channel_modes = primary_channel_modes
@@ -148,14 +152,14 @@ class Pod8401HR(AcquisitionDevice) :
     
     @property
     def secondary_channel_modes(self):
-        return self._secondary_channel_modes,
+        return self._secondary_channel_modes
 
     @property
     def ss_gain(self):
-        return self._ss_gain,
+        return self._ss_gain
         
     @property
-    def preamp_gain(self) -> Preamp:
+    def preamp_gain(self):
         """Preamp connected to device."""
         return self._preamp_gain
 
@@ -380,7 +384,6 @@ class Pod8401HR(AcquisitionDevice) :
 
         :return: Packet recieved from device.
         """
-        
         # get prepacket (STX+command number) (5 bytes) + 23 binary bytes (do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
         packet = pre_packet + self._port.read(23) + self._read_to_etx(validate_checksum=validate_checksum)
         # check if checksum is correct 
