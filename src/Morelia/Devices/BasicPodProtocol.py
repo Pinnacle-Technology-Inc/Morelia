@@ -48,7 +48,8 @@ class Pod :
         # and the check in 
         if not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
-            self._port : PortIO = PortIO(self._port_value, self._baudrate)
+            #self._port : PortIO = PortIO(self._port_value, self._baudrate)
+            self.open_port()
 
             # initialize the control queues for this pod device
             self._manager.initialize_control_queue()
@@ -76,7 +77,7 @@ class Pod :
         #if unfamiliar with partially applied functions, see here: https://docs.python.org/3/library/functools.html#functools.partial
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
-        self.open_port()
+        #self.open_port()
 
     def open_port(self):
         self._port : PortIO = PortIO(self._port_value, self._baudrate)
@@ -408,7 +409,6 @@ class Pod :
             expected_cmd_num = cmd
         
         start = time.time()
-
         #if port exists,
         if self._port is not None:
 
