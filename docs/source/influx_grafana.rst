@@ -4,7 +4,6 @@ Specifics with Influx and Grafana📈
 
 .. contents:: 
 
-======================================
 Grafana/Influx Complications 😵‍💫
 ======================================
 
@@ -12,7 +11,6 @@ Grafana and Influx are both extensive services that have their own properties an
 
 In our API, Grafana and Influx are both created using Docker containers, but in the case that you want to run these services independently, you will want to cater your code around this difference.
 
-=================
 Influx Details 
 =================
 
@@ -23,6 +21,8 @@ Docker Volumes
 Because Docker is creating the container for Influx, the data is stored in a Docker Volume, rather than Influx's own storage space. Depending on the sample rate of the device you are using, this data can fill up very quickly. **Please** keep in mind that if the retention policy below is not set up for your system, the disk might get filled up with time series data. 
 
 .. image of disk 
+.. image:: images/disk.png
+   :scale: 50%
 
 ----------------
 Retention Policy
@@ -33,12 +33,17 @@ Influx has a "retention" policy that it uses in order to ensure that the compute
 Influx will remove data in batches. It does this by creating "shards", which group data together over a specific time period. For example, if the shard length is 1 hour long, then data will be grouped together in that hour and be deleted together after the time retention expiry. Shard length is determined by how long the retention policy is set to, which you can see below:
 
 .. add image of influx's shard length to retention policy 
+.. image:: images/shards.png
+   :scale: 50%
 
 From Terraform, this policy can be edited inside of the ``influxdb.tf`` file, under the environment variables. By default, we set the retention policy to 47 hours, which means that the shard length is 1 hour. 
 
 .. add image of DOCKER_INFLUXDB_INIT_RETENTION
+.. image:: images/retention.png
+   :scale: 50%
 
-=============================
+.. _grafana-label:
+
 Creating Grafana Dashboards 
 =============================
 

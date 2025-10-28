@@ -53,9 +53,7 @@ The Stream Appears 🤯
 
 By default, the classes ``QuestSink`` and ``InfluxSink`` are set to automatically stream to a database that is accessed by Grafana's queries in the dashboards provided. These can be changed, but will require you to create your own dashboard (or edit the one provided) to query from that database.
 
-If you want more details on editing Grafana dashboards, visit this section.
-
-.. Add quick link to editing grafana section
+If you want more details on editing Grafana dashboards, visit this section :ref:`grafana-label`
 
 The setup of streaming to the dashboard is similar to that of the previous page:
 
@@ -83,14 +81,3 @@ The setup of streaming to the dashboard is similar to that of the previous page:
 Upon running this python script, you should see data appear on your dashboard!
 
 .. Add image on Grafana streaming 8206
-
-=============================
-Editing Grafana Dashboards 🗻
-=============================
-
-.. Add more on Grafana and creating your own dashboards
-
-
-.. Add image of saving json files
-
-.. Add docs on automated creation of dashboards
