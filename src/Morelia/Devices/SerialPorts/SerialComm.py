@@ -294,24 +294,9 @@ class PortIO :
         # wait until port is in waiting, then read 
         t = 0.0
         while (t < timeout_sec) :
-            ti = (round(time.time(),9)) # initial time (sec)          
             # read packet
-            try:
-                r = self._serial_inst.read(numBytes)
-                return r
-            except SerialException:
-                print("Device disconnected!")
-                i = 0
-                while i < 60:
-                    try:
-                        self._serial_inst = Serial()
-                        self.open_serial_port(self.port, baudrate=self.baudrate)
-                        print("Reconnected Device")
-                        break
-                    except SerialException:
-                        time.sleep(1)
-                    i += 1
-            t += (round(time.time(),9)) - ti
+            r = self._serial_inst.read(numBytes)
+            return r
         raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
     
     def read_line(self) -> bytes|None :
