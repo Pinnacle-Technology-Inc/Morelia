@@ -184,24 +184,6 @@ class Pod :
         if(msg_csm == csm_valid) :
             return(True)
         else:
-
-            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-            debug_info = (
-                f"\n[ChecksumError] {ts}\n"
-                f"  Device: {getattr(self, '_port_value', 'unknown')}\n"
-                f"  Packet length: {packet_bytes}\n"
-                f"  Expected checksum: {msg_csm.hex()}\n"
-                f"  Calculated checksum: {csm_valid.hex()}\n"
-                f"  Msg_csm: {msg_csm}\n"
-                f"  Csm_valid: {csm_valid}\n"
-                f"  Raw (first 32B): {msg[:32].hex(' ')}...\n"
-            )
-            print(debug_info)
-
-            with open("checksum_errors.log", "a") as f:
-                f.write(debug_info)
-                f.write(f"  Full packet: {msg.hex(' ')}\n\n")
-
             return(False)
     
 
