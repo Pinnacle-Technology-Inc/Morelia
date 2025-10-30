@@ -1,6 +1,6 @@
-###################################
-Specifics with Influx and Grafana📈
-###################################
+#####################################
+Specifics with Influx and Grafana 📈
+#####################################
 
 .. contents:: 
 
@@ -14,9 +14,9 @@ In our API, Grafana and Influx are both created using Docker containers, but in 
 Influx Details 
 =================
 
---------------
-Docker Volumes
---------------
+------------------
+Docker Volumes 🐳
+------------------
 
 Because Docker is creating the container for Influx, the data is stored in a Docker Volume, rather than Influx's own storage space. Depending on the sample rate of the device you are using, this data can fill up very quickly. **Please** keep in mind that if the retention policy below is not set up for your system, the disk might get filled up with time series data. 
 
@@ -24,9 +24,9 @@ Because Docker is creating the container for Influx, the data is stored in a Doc
 .. image:: images/disk.png
    :scale: 50%
 
-----------------
-Retention Policy
-----------------
+-------------------
+Retention Policy ⌛
+-------------------
 
 Influx has a "retention" policy that it uses in order to ensure that the computer does not fill up its entire disk space. It removes data if the data has been stored for over the set time period (i.e if the policy is set to 2 days, influx will remove data after it has become 2 days old).
 
@@ -44,8 +44,8 @@ From Terraform, this policy can be edited inside of the ``influxdb.tf`` file, un
 
 .. _grafana-label:
 
-Creating Grafana Dashboards 
-=============================
+Creating Grafana Dashboards 📉
+===============================
 
 During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for json files to use as dashboards. Any json file that fits the format of a grafana dashboard here will be generated and shown on the UI. 
 
@@ -60,13 +60,13 @@ During the creation of the Grafana container, Grafana looks inside of the infra/
 .. reuse image of the grafana dashboards
 .. image:: images/dashboards.png
 
-If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafa/dashboards folder, and edit the specifics (title, description, etc.) for your needs. **Note**: These can be pretty finicky and need to be pretty precise.
+If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs. **Note**: These can be pretty finicky and need to be pretty precise.
 
 .. Add image of the templates folder here
 
--------------------------------------
-Customizing Dashboards for Your Needs
--------------------------------------
+----------------------------------------
+Customizing Dashboards for Your Needs 🎉
+----------------------------------------
 
 Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the "edit" mode. To enter edit mode, just press the button in the top right corner.
 
@@ -79,8 +79,10 @@ After entering this mode, you are free to move panels, create new panels, and ed
 .. image:: images/save_dashboard.png
    :scale: 50%
 
-Editing a Panel
----------------
+Placing this JSON file in the infra/grafana/dashboards folder will allow Grafana to provision it on startup, meaning that it will automatically load in the Grafana GUI (with all your changes!) when starting the container through Terraform.
+
+Editing a Panel ⬛
+-------------------
 
 In your dashboard, you can edit panels by clicking the top right menu button on a panel, and then clicking "Edit". 
 
@@ -108,8 +110,10 @@ On the right-hand side, there are settings to change how the data is displayed. 
 .. image:: images/vizualizations.png
    :align: center
 
-JSON Specifics 
---------------
+Remember, after you edit the panels, if you want to save the dashboard, that you must export it as a JSON file or copy it to your clipboard (and move it somewhere else).
+
+JSON Specifics 📁
+------------------
 
 The json files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard. 
 
@@ -123,8 +127,8 @@ At the top of the file, you will find a "description" line, which stores a strin
 
 .. incl title, description, uid, etc.
 
-----------------------------
-Automated Creation in Python
-----------------------------
+-------------------------------
+Automated Creation in Python 🤖
+-------------------------------
 
 .. Add docs on automated creation of dashboards
