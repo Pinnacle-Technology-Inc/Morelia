@@ -60,13 +60,56 @@ During the creation of the Grafana container, Grafana looks inside of the infra/
 .. reuse image of the grafana dashboards
 .. image:: images/dashboards.png
 
-If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafa/dashboards folder, and edit the specifics (title, description, etc.) for your needs. 
+If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafa/dashboards folder, and edit the specifics (title, description, etc.) for your needs. **Note**: These can be pretty finicky and need to be pretty precise.
 
 .. Add image of the templates folder here
 
 -------------------------------------
 Customizing Dashboards for Your Needs
 -------------------------------------
+
+Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the "edit" mode. To enter edit mode, just press the button in the top right corner.
+
+.. add image of the edit button in the top right 
+.. image:: images/edit_dashboard.png
+
+After entering this mode, you are free to move panels, create new panels, and edit dashboard settings. After you are finished, you can save the dashboard by clicking the "Saved dashboard" button, and then either copying the JSON to clipboard or saving the JSON to a file. 
+
+.. add image of saving a dashboard here 
+.. image:: images/save_dashboard.png
+   :scale: 50%
+
+Editing a Panel
+---------------
+
+In your dashboard, you can edit panels by clicking the top right menu button on a panel, and then clicking "Edit". 
+
+.. add image of editing a panel
+.. image:: images/edit_panel.png
+   :scale: 75%
+
+Each panel queries information out of a database and can present it in variousways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which databse you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports. 
+
+.. add image of query area in the panel
+.. image:: images/query.png
+   :scale: 75%
+
+On the right-hand side, there are settings to change how the data is displayed. By default, we set each panel to show a time series (data flowing in through time), but other options include vizualizations such as a bar chart or a table (which will show more precise timestamps). 
+
+.. images of vizualizations
+.. image:: images/vizualization_dropdown.png
+   :align: center
+   :scale: 97%
+
+.. raw:: html
+
+   <div style="height: 12px;"></div>
+
+.. image:: images/vizualizations.png
+   :align: center
+
+JSON Specifics 
+--------------
 
 The json files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard. 
 
