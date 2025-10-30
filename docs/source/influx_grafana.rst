@@ -11,6 +11,8 @@ Grafana and Influx are both extensive services that have their own properties an
 
 In our API, Grafana and Influx are both created using Docker containers, but in the case that you want to run these services independently, you will want to cater your code around this difference.
 
+.. _influx-label:
+
 Influx Details 
 =================
 
@@ -60,9 +62,13 @@ During the creation of the Grafana container, Grafana looks inside of the infra/
 .. reuse image of the grafana dashboards
 .. image:: images/dashboards.png
 
-If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs. **Note**: These can be pretty finicky and need to be pretty precise.
+If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs. 
+
+.. note:: These can be pretty finicky and need to be pretty precise.
 
 .. Add image of the templates folder here
+.. image:: images/templates.png
+   :scale: 75%
 
 ----------------------------------------
 Customizing Dashboards for Your Needs 🎉

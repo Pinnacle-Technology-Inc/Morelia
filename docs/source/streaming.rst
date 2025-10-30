@@ -41,7 +41,8 @@ Defining a Streaming Workflow 📐
 Now, with the concepts out of the way it's time to get our hands dirty in the code. Throughout this section, we will use the diagram at the
 end of the previous section as an example as we walk through how to setup a data-flow graph.
 
-Note: If you are on Windows, you will need to wrap all of your code within the code below:
+.. note:: 
+   If you are on Windows, you will need to wrap all of your code within the code below:
 
 .. code-block:: python
 
@@ -178,7 +179,7 @@ sentence, let's see what it looks like in our example.
 And presto, you are all ready to stream! In the next section, we will carry our example
 over and loop at how to start collecting data now that everything is in place.
 
-**Important Note**: Streaming to InfluxDB takes a lot of storage! By default we have set the time limit of data points to 3 days, so that collection does not crash your computer. These storage limits can be changed, which is further explained in the "Visualizing Data During Streams" section.
+.. important:: Streaming to InfluxDB takes a lot of storage! By default we have set the time limit of data points to 2 days, so that collection does not crash your computer. These storage limits can be changed, which is further explained in the :ref:`influx-label` section.
 
 =====================
 Let the Data Flow! 🌊
