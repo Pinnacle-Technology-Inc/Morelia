@@ -28,7 +28,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   from Morelia.Stream.sink import EDFSink
   from Morelia.Stream.data_flow import DataFlow
 
-  # create a new 8206 pod device from the Linux port ttyUSB0 
+  # create a new 8206HR pod device from the Linux port ttyUSB0 
   pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
 
   # create a new edf sink object, using the dump_1.edf file from the same directory
@@ -60,7 +60,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   from Morelia.Stream.sink import InfluxSink
   from Morelia.Stream.data_flow import DataFlow
 
-  # create a new 8206 pod device from the Linux port ttyUSB0 
+  # create a new 8206HR pod device from the Linux port ttyUSB0 
   pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
 
   # create a new influx sink object, using user-defined values 
@@ -86,7 +86,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   from Morelia.Stream.sink import InfluxSink, EDFSink
   from Morelia.Stream.data_flow import DataFlow
 
-  # create 3 new 8206 pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
+  # create 3 new 8206HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
   pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
   pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
   pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
@@ -124,6 +124,46 @@ Examples of what a script might look like for each pod device that Morelia curre
   # stop streaming
   flowgraph.stop_collection()
 
+**Sending Packets to a 8206HR Device**
+
+.. code-block:: python
+  
+  # import classes from submodules 
+  from Morelia.Devices import Pod8206HR
+
+  # create 4 new 8206HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
+  pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
+  pod_2 = Pod8206HR('/dev/ttyUSB1', 10)
+  pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
+  pod_4 = Pod8206HR('/dev/ttyUSB3', 10)
+
+  # add pods to a list 
+  pod_list = [pod_1, pod_2, pod_3, pod_4]
+
+  # update the sample rates of all of the pod devices to 500 
+  for pod in pod_list:
+    pod.sample_rate = 2000
+    sample_rate = pod_1.write_packet('GET SAMPLE RATE')
+    print(f"Sample rate value of {pod} after update to 500: {sample_rate}")
+
+  # update the sample rates of all of the pod devices to 2000 (maximum)
+  for pod in pod_list:
+    pod.sample_rate = 2000
+    sample_rate = pod_1.write_packet('GET SAMPLE RATE')
+    print(f"Sample rate value of {pod} after update to 2000: {sample_rate}")
+
+  # update the TTL of all of the pod devices to 0 
+  for pod in pod_list:
+    pod.write_packet('SET TTL OUT', 0)
+    ttl_val = pod_1.write_packet('GET TTL IN')
+    print(f"TTL value of {pod} after update to 0: {ttl_val}")
+
+  # update the TTL of all of the pod devices to 1
+  for pod in pod_list:
+    pod_1.write_packet('SET TTL OUT', 1)
+    ttl_val = pod_1.write_packet('GET TTL IN')
+    print(f"TTL value of {pod} after update to 1: {ttl_val}")
+
 =================
 8401HR Examples 
 =================
@@ -148,7 +188,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   # set the secondary channel modes to DIGITAL or ANALOG 
   secondary_channel_modes =  (SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL)
 
-  # create a new 8401 pod device from the Linux port ttyUSB0, and with the initialized values above
+  # create a new 8401HR pod device from the Linux port ttyUSB0, and with the initialized values above
   pod_1 = Pod8401HR('/dev/ttyUSB0', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
 
   # create a new edf sink object, using the dump_1.edf file from the same directory
@@ -191,7 +231,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   # set the secondary channel modes to DIGITAL or ANALOG 
   secondary_channel_modes =  (SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL)
 
-  # create a new 8401 pod device from the Linux port ttyUSB0, and with the initialized values above
+  # create a new 8401HR pod device from the Linux port ttyUSB0, and with the initialized values above
   pod_1 = Pod8401HR('/dev/ttyUSB0', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
 
   # create a new influx sink object, using user-defined values 
@@ -228,7 +268,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   # set the secondary channel modes to DIGITAL or ANALOG 
   secondary_channel_modes =  (SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL)
 
-  # create 3 new 8401 pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
+  # create 3 new 8401HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
   # with the initialized values above
   pod_1 = Pod8401HR('/dev/ttyUSB0', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
   pod_2 = Pod8401HR('/dev/ttyUSB1', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
