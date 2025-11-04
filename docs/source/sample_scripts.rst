@@ -210,3 +210,61 @@ Examples of what a script might look like for each pod device that Morelia curre
 
 **Streaming multiple 8401HR devices to an Influx database and EDF files infinitely:**
 
+.. code-block:: python
+
+  # import classes from submodules 
+  from Morelia.Devices import Pod8401HR, Preamp
+  from Morelia.Stream.sink import InfluxSink, EDFSink
+  from Morelia.Stream.data_flow import DataFlow
+  from Morelia.packet import PrimaryChannelMode, SecondaryChannelMode
+
+  # set preamp gain and ss gain for all channels 
+  preamp_gain = (10,10,10,10)
+  ss_gain = (5,5,5,5)
+
+  # set the primary channel modes to EEG/EMG or BIOSENSOR
+  primary_channel_modes = (PrimaryChannelMode.EEG_EMG, PrimaryChannelMode.EEG_EMG, PrimaryChannelMode.EEG_EMG, PrimaryChannelMode.EEG_EMG)
+
+  # set the secondary channel modes to DIGITAL or ANALOG 
+  secondary_channel_modes =  (SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL, SecondaryChannelMode.DIGITAL)
+
+  # create 3 new 8401 pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
+  # with the initialized values above
+  pod_1 = Pod8401HR('/dev/ttyUSB0', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
+  pod_2 = Pod8401HR('/dev/ttyUSB1', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
+  pod_3 = Pod8401HR('/dev/ttyUSB2', Preamp.Preamp8406_SE4, primary_channel_modes, secondary_channel_modes, ss_gain, preamp_gain) 
+
+  # create 3 new edf sink objects, using the 
+  # dump_1.edf, dump_2.edf, and dump_3.edf files from the same directory
+  edf_sink_1 = EDFSink('dump_1.edf', pod_1)
+  edf_sink_2 = EDFSink('dump_2.edf', pod_2)
+  edf_sink_3 = EDFSink('dump_3.edf', pod_3)
+
+  # create 3 new influx sink objects, using the default values in the influx sink class 
+  influx_sink_1 = InfluxSink(pod_1)
+  influx_sink_2 = InfluxSink(pod_2)
+  influx_sink_3 = InfluxSink(pod_3)
+
+  # create a list of tuples for the pod/sink mappings 
+  mapping = [(pod_1, [edf_sink_1, influx_sink_1]), 
+             (pod_2, [edf_sink_2, influx_sink_2]), 
+             (pod_3, [edf_sink_3, influx_sink_3])]
+
+  # create a new DataFlow object using the previous mapping 
+  flowgraph = DataFlow(mapping)
+
+  # set flag to false
+  flag = False
+
+  # begin collection from flowgraph
+  flowgraph.collect()
+
+  # stream infinitely
+  while True:
+    if flag:
+      break
+
+  # stop streaming
+  flowgraph.stop_collection()
+
+
