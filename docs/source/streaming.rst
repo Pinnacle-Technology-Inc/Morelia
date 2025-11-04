@@ -136,8 +136,8 @@ Continuing along with our example, let us build our sinks.
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
    # Create InfluxDB Sinks.
-   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
-   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
 
 Finally, it's time to link them together with the mapping. We can do this using the 
 ``data_flow`` object from ``Morelia.Stream``. In its constructor, the ``data_flow``
@@ -166,8 +166,8 @@ sentence, let's see what it looks like in our example.
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
    # Create InfluxDB Sinks.
-   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
-   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default=measurement')
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
 
    # List that defines how sources map to sinks. 
    mapping = [ (pod_1, [edf_dump_1]),
