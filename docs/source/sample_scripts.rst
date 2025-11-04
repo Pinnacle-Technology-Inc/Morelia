@@ -142,26 +142,26 @@ Examples of what a script might look like for each pod device that Morelia curre
 
   # update the sample rates of all of the pod devices to 500 
   for pod in pod_list:
-    pod.sample_rate = 2000
-    sample_rate = pod_1.write_packet('GET SAMPLE RATE')
+    pod.sample_rate = 500
+    sample_rate = pod.write_read('GET SAMPLE RATE').payload[0]
     print(f"Sample rate value of {pod} after update to 500: {sample_rate}")
 
   # update the sample rates of all of the pod devices to 2000 (maximum)
   for pod in pod_list:
     pod.sample_rate = 2000
-    sample_rate = pod_1.write_packet('GET SAMPLE RATE')
+    sample_rate = pod.write_read('GET SAMPLE RATE').payload[0]
     print(f"Sample rate value of {pod} after update to 2000: {sample_rate}")
 
   # update the TTL of all of the pod devices to 0 
   for pod in pod_list:
-    pod.write_packet('SET TTL OUT', 0)
-    ttl_val = pod_1.write_packet('GET TTL IN')
+    pod.write_packet('SET TTL OUT', (0,0))
+    ttl_val = pod.write_read('GET TTL IN', 0)
     print(f"TTL value of {pod} after update to 0: {ttl_val}")
 
   # update the TTL of all of the pod devices to 1
   for pod in pod_list:
-    pod_1.write_packet('SET TTL OUT', 1)
-    ttl_val = pod_1.write_packet('GET TTL IN')
+    pod_1.write_packet('SET TTL OUT', (0,1))
+    ttl_val = pod.write_read('GET TTL IN', 0)
     print(f"TTL value of {pod} after update to 1: {ttl_val}")
 
 =================
