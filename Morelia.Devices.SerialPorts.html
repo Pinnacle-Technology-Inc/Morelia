@@ -47,9 +47,12 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terraform.html">Visualizing Data During Streams 😎</a></li>
+<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
 <li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_scripts.html">Sample Scripts For Streaming 🧠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia</a><ul class="current">
@@ -168,9 +171,26 @@
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>COM_io handles serial communication (read/write) using COM ports.</p>
 <dl class="simple">
-<dt>Attributes:</dt><dd><p>__serial_inst (Serial): Instance-level serial COM port.</p>
+<dt>Attributes:</dt><dd><p>_serial_inst (Serial): Instance-level serial COM port.</p>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.build_port_name">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_port_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.build_port_name" title="Link to this definition"></a></dt>
+<dd><p>Converts the port parameter into the “COM”+&lt;number&gt; format for Windows or         “/dev/tty…”+&lt;number&gt; for Linux.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Args:</dt><dd><p>port (str | int): Name of a COM port. Can be an integer or string.</p>
+</dd>
+<dt>Returns:</dt><dd><p>str: Name of the COM port.</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.close_serial_port">
 <span class="sig-name descname"><span class="pre">close_serial_port</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.close_serial_port" title="Link to this definition"></a></dt>
@@ -208,6 +228,17 @@
 </dl>
 <dl class="simple">
 <dt>Returns:</dt><dd><p>str|None: If the serial port is open, it will return a string of the port’s name.                 If the port is closed, it will return None.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.is_port_in_use">
+<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_port_in_use</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.is_port_in_use" title="Link to this definition"></a></dt>
+<dd><p>Opens a subprocess to check if the port is in use</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
 </dd>
 </dl>
 </dd></dl>

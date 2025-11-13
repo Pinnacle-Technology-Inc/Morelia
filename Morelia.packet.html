@@ -47,9 +47,12 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terraform.html">Visualizing Data During Streams 😎</a></li>
+<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
 <li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_scripts.html">Sample Scripts For Streaming 🧠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia</a><ul class="current">
@@ -240,7 +243,7 @@ the raw bytes of the packet you want to parse. For a concrete example of this, s
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>decode_from</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommandSet</span></code></a>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>]]</span>) – Instructs the packet how to parse the payload from raw bytes to a Python object. If a <code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> object is passed,
+<li><p><strong>decode_from</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.Commands.html#Morelia.Commands.PodCommands.CommandSet" title="Morelia.Commands.PodCommands.CommandSet"><code class="xref py py-class docutils literal notranslate"><span class="pre">CommandSet</span></code></a> | <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>]</span>) – Instructs the packet how to parse the payload from raw bytes to a Python object. If a <code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> object is passed,
 the payload is decoded according to that. Otherwise, a function must be passed that takes a command number and <code class="docutils literal notranslate"><span class="pre">bytes</span></code> object to decode,
 and returns a <code class="docutils literal notranslate"><span class="pre">tuple</span></code>. For a simple example of how passing a <code class="docutils literal notranslate"><span class="pre">decode_from</span></code> function directly may be used,
 see the constructor of the <code class="docutils literal notranslate"><span class="pre">Pod8206HR</span></code> class.</p></li>

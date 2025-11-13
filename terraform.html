@@ -1,0 +1,194 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualizing Data During Streams 😎 &mdash; Morelia v1.6.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2d14e799"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Specifics with Influx and Grafana 📈" href="influx_grafana.html" />
+    <link rel="prev" title="Streaming From Data Acquisition Systems 🤠" href="streaming.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Morelia
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
+<li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Visualizing Data During Streams 😎</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#the-terraform-automation">The Terraform Automation 🗻</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#bash-shell-script">Bash Shell Script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#grafana-dashboards">Grafana Dashboards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#the-stream-appears">The Stream Appears 🤯</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
+<li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_scripts.html">Sample Scripts For Streaming 🧠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
+<li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Morelia</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Visualizing Data During Streams 😎</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/terraform.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="visualizing-data-during-streams">
+<h1><a class="toc-backref" href="#id1" role="doc-backlink">Visualizing Data During Streams 😎</a><a class="headerlink" href="#visualizing-data-during-streams" title="Link to this heading"></a></h1>
+<nav class="contents" id="contents">
+<p class="topic-title">Contents</p>
+<ul class="simple">
+<li><p><a class="reference internal" href="#visualizing-data-during-streams" id="id1">Visualizing Data During Streams 😎</a></p>
+<ul>
+<li><p><a class="reference internal" href="#the-terraform-automation" id="id2">The Terraform Automation 🗻</a></p>
+<ul>
+<li><p><a class="reference internal" href="#bash-shell-script" id="id3">Bash Shell Script</a></p></li>
+<li><p><a class="reference internal" href="#grafana-dashboards" id="id4">Grafana Dashboards</a></p></li>
+<li><p><a class="reference internal" href="#the-stream-appears" id="id5">The Stream Appears 🤯</a></p></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+<section id="the-terraform-automation">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">The Terraform Automation 🗻</a><a class="headerlink" href="#the-terraform-automation" title="Link to this heading"></a></h2>
+<p>If you downloaded Morelia directly from the GitHub page, you’ll have access to visualize the data streamed to the <code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code> and <code class="docutils literal notranslate"><span class="pre">QuestSink</span></code> through Grafana.</p>
+<p>In order to do so, you’ll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the bash section to quickly download and setup the architecture.</p>
+<p>Once downloaded, inside of the ‘infra’ directory, you will see a file named <code class="docutils literal notranslate"><span class="pre">default-values.txt</span></code>. You will need to copy this to a file named <code class="docutils literal notranslate"><span class="pre">terraform.tfvars</span></code>. This step is not required if you are running this on bash.</p>
+<img alt="_images/infra.png" src="_images/infra.png" />
+<p>You can use <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">init</span></code> to initialize the Terraform configuration, and <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">apply</span></code> to begin the infrastructure. By default, the Influx database is on <code class="docutils literal notranslate"><span class="pre">localhost:8086</span></code> and Grafana is on <code class="docutils literal notranslate"><span class="pre">localhost:3000</span></code>.</p>
+<img alt="_images/default_values.png" src="_images/default_values.png" />
+<p>In the case that you come across an error in creating the infrastructure, you can use <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">destroy</span></code> to remove the architecture, or <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">restore</span></code> to update the configuration state.</p>
+<section id="bash-shell-script">
+<h3><a class="toc-backref" href="#id3" role="doc-backlink">Bash Shell Script</a><a class="headerlink" href="#bash-shell-script" title="Link to this heading"></a></h3>
+<p>For ease of use, we have included a bash shell script that downloads Terraform and Docker, and then uses them to create containers for a datasource of your choice and Grafana. You can find the bash script inside of the ‘infra’ folder.</p>
+<img alt="_images/bash.png" src="_images/bash.png" />
+<p>This script can be reused to start Grafana whenever needed. It will not re-install Terraform or Docker.</p>
+</section>
+<section id="grafana-dashboards">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">Grafana Dashboards</a><a class="headerlink" href="#grafana-dashboards" title="Link to this heading"></a></h3>
+<p>To see the dashboard, go to a web browser and go to <code class="docutils literal notranslate"><span class="pre">localhost:3000</span></code>. On the lefthand side, there is a “dashboard” tab. Upon clicking this, you’ll see two sample 8206 dashboards, one for InfluxDB and one for QuestDB.</p>
+<img alt="_images/dashboards.png" src="_images/dashboards.png" />
+<p>Upon clicking either of them, you may see that there’s no data. By default, the dashboards are looking at the last 10 seconds of data and query every 5 seconds. If you aren’t currently streaming to the database that is being queried, then nothing will appear!</p>
+<img alt="_images/empty_dashboard.png" src="_images/empty_dashboard.png" />
+</section>
+<section id="the-stream-appears">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">The Stream Appears 🤯</a><a class="headerlink" href="#the-stream-appears" title="Link to this heading"></a></h3>
+<p>By default, the classes <code class="docutils literal notranslate"><span class="pre">QuestSink</span></code> and <code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code> are set to automatically stream to a database that is accessed by Grafana’s queries in the dashboards provided. These can be changed, but will require you to create your own dashboard (or edit the one provided) to query from that database.</p>
+<p>If you want more details on editing Grafana dashboards, visit this section <a class="reference internal" href="influx_grafana.html#grafana-label"><span class="std std-ref">Creating Grafana Dashboards 📉</span></a></p>
+<p>The setup of streaming to the dashboard is similar to that of the previous page:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pod8206HR</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.sink</span><span class="w"> </span><span class="kn">import</span> <span class="n">InfluxSink</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">data_flow</span>
+
+<span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Change the sample rate of pod_2 to be 1300 Hz.</span>
+<span class="n">pod_1</span><span class="o">.</span><span class="n">sample_rate</span> <span class="o">=</span> <span class="mi">1300</span>
+
+<span class="c1"># Create InfluxDB Sinks.</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod_1</span><span class="p">)</span>
+
+<span class="c1"># List that defines how sources map to sinks.</span>
+<span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_1</span><span class="p">])]</span>
+
+<span class="n">flowgraph</span> <span class="o">=</span> <span class="n">data_flow</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Upon running this python script, you should see data appear on your dashboard!</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="streaming.html" class="btn btn-neutral float-left" title="Streaming From Data Acquisition Systems 🤠" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="influx_grafana.html" class="btn btn-neutral float-right" title="Specifics with Influx and Grafana 📈" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Pinnacle Technology.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

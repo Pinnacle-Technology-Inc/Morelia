@@ -41,6 +41,18 @@ Defining a Streaming Workflow 📐
 Now, with the concepts out of the way it's time to get our hands dirty in the code. Throughout this section, we will use the diagram at the
 end of the previous section as an example as we walk through how to setup a data-flow graph.
 
+.. note:: 
+   If you are on Windows, you will need to wrap all of your code within the code below:
+
+.. code-block:: python
+
+   if __name__ == "__main__":
+      '''
+      All code should be placed here, besides imports
+      '''
+
+This is due to the usage of multiprocessing within the library, which needs to be held within this ``if`` statement in Windows, by how the OS spawns its processes.
+
 All streaming functionality is handled through the 
 ``Morelia.Stream`` subpackage. When streaming, the first step is to set up a data source. Great news, if you followed our :doc:`Hitchhiker's Guide to
 Morelia </getting_started>`, then you already know how to do this. Any acquisition device can function as data source, so go ahead and wire up
@@ -95,6 +107,7 @@ Destination Class
 CSV File    ``CSVSink`` 
 EDF File    ``EDFSink``
 InfluxDB    ``InfluxSink``
+QuestDB     ``QuestSink``
 =========== ======
 
 With plans for PVFS files in the near future. Depending on the sink, different parameters
@@ -123,8 +136,8 @@ Continuing along with our example, let us build our sinks.
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
    # Create InfluxDB Sinks.
-   influx_sink_1 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_2)
-   influx_sink_2 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_3)
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
 
 Finally, it's time to link them together with the mapping. We can do this using the 
 ``data_flow`` object from ``Morelia.Stream``. In its constructor, the ``data_flow``
@@ -152,10 +165,10 @@ sentence, let's see what it looks like in our example.
    edf_dump_1 = EDFSink('dump_1.edf', pod_1)
    edf_dump_2 = EDFSink('dump_2.edf', pod_2)
 
-   # Create InfluxDB sinks.
-   influx_sink_1 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_2)
-   influx_sink_2 = InfluxSink('influx.pinnaclet.com', 'supersecret', 'pinnacle', 'pinnacle', 'expirament1', pod_3)
-    
+   # Create InfluxDB Sinks.
+   influx_sink_1 = InfluxSink(pod=pod_2, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
+   influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
+
    # List that defines how sources map to sinks. 
    mapping = [ (pod_1, [edf_dump_1]),
                (pod_2, [edf_dump_2, influx_sink_1]),
@@ -165,6 +178,8 @@ sentence, let's see what it looks like in our example.
 
 And presto, you are all ready to stream! In the next section, we will carry our example
 over and loop at how to start collecting data now that everything is in place.
+
+.. important:: Streaming to InfluxDB takes a lot of storage! By default we have set the time limit of data points to 2 days, so that collection does not crash your computer. These storage limits can be changed, which is further explained in the :ref:`influx-label` section.
 
 =====================
 Let the Data Flow! 🌊

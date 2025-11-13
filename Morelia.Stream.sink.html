@@ -47,9 +47,12 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
+<li class="toctree-l1"><a class="reference internal" href="terraform.html">Visualizing Data During Streams 😎</a></li>
+<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
 <li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_scripts.html">Sample Scripts For Streaming 🧠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
 <li class="toctree-l1 current"><a class="reference internal" href="modules.html">Morelia</a><ul class="current">
@@ -117,6 +120,17 @@
 </ul>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.csv_sink.CSVSink.file_path">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_path</span></span><a class="headerlink" href="#Morelia.Stream.sink.csv_sink.CSVSink.file_path" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.csv_sink.CSVSink.get_dict">
+<span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.csv_sink.CSVSink.get_dict" title="Link to this definition"></a></dt>
+<dd><p>Obtains sink __init__ argument values to use for process pickling</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -137,6 +151,22 @@
 </ul>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.edf_sink.EDFSink.file_path">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">file_path</span></span><a class="headerlink" href="#Morelia.Stream.sink.edf_sink.EDFSink.file_path" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.edf_sink.EDFSink.get_dict">
+<span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.edf_sink.EDFSink.get_dict" title="Link to this definition"></a></dt>
+<dd><p>Obtains sink __init__ argument values to use for process pickling</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.edf_sink.EDFSink.pod">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">pod</span></span><a class="headerlink" href="#Morelia.Stream.sink.edf_sink.EDFSink.pod" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 </section>
@@ -160,6 +190,16 @@
 </ul>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.api_token">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">api_token</span></span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.api_token" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.bucket">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">bucket</span></span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.bucket" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.close">
 <span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.close" title="Link to this definition"></a></dt>
@@ -184,6 +224,17 @@
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.get_dict">
+<span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.get_dict" title="Link to this definition"></a></dt>
+<dd><p>Obtains sink __init__ argument values to use for process pickling</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.measurement">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">measurement</span></span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.measurement" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.open">
 <span class="sig-name descname"><span class="pre">open</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.open" title="Link to this definition"></a></dt>
 <dd><p>Wrapper around <code class="docutils literal notranslate"><span class="pre">self.__enter__</span></code> for use outside of a context manager.</p>
@@ -193,6 +244,16 @@
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.org">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">org</span></span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.org" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.influx_sink.InfluxSink.url">
+<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">url</span></span><a class="headerlink" href="#Morelia.Stream.sink.influx_sink.InfluxSink.url" title="Link to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -212,6 +273,17 @@
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Stream.sink.sink_interface.SinkInterface.get_dict">
+<em class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Stream.sink.sink_interface.SinkInterface.get_dict" title="Link to this definition"></a></dt>
+<dd><p>Obtains sink __init__ argument values to use for process pickling</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code>]</span></p>
 </dd>
 </dl>
 </dd></dl>

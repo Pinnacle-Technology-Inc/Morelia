@@ -20,7 +20,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Controlling Sleep Deprivation Systems 😴" href="sleep_dep.html" />
+    <link rel="next" title="Visualizing Data During Streams 😎" href="terraform.html" />
     <link rel="prev" title="The Hitchhiker’s Guide to Morelia 🐍" href="getting_started.html" /> 
 </head>
 
@@ -57,9 +57,12 @@
 <li class="toctree-l2"><a class="reference internal" href="#making-your-own-sinks">Making Your Own Sinks 📦</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="terraform.html">Visualizing Data During Streams 😎</a></li>
+<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
 <li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample_scripts.html">Sample Scripts For Streaming 🧠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="command_ref.html">POD Device Command Reference 📚</a></li>
 <li class="toctree-l1"><a class="reference internal" href="develop.html">Contributing to Morelia 👷‍♀️</a></li>
 <li class="toctree-l1"><a class="reference internal" href="modules.html">Morelia</a></li>
@@ -134,6 +137,17 @@ We will use this diagram as a running example as we move into the next section.<
 <h2><a class="toc-backref" href="#id3" role="doc-backlink">Defining a Streaming Workflow 📐</a><a class="headerlink" href="#defining-a-streaming-workflow" title="Link to this heading"></a></h2>
 <p>Now, with the concepts out of the way it’s time to get our hands dirty in the code. Throughout this section, we will use the diagram at the
 end of the previous section as an example as we walk through how to setup a data-flow graph.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you are on Windows, you will need to wrap all of your code within the code below:</p>
+</div>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+<span class="w">   </span><span class="sd">&#39;&#39;&#39;</span>
+<span class="sd">   All code should be placed here, besides imports</span>
+<span class="sd">   &#39;&#39;&#39;</span>
+</pre></div>
+</div>
+<p>This is due to the usage of multiprocessing within the library, which needs to be held within this <code class="docutils literal notranslate"><span class="pre">if</span></code> statement in Windows, by how the OS spawns its processes.</p>
 <p>All streaming functionality is handled through the
 <code class="docutils literal notranslate"><span class="pre">Morelia.Stream</span></code> subpackage. When streaming, the first step is to set up a data source. Great news, if you followed our <a class="reference internal" href="getting_started.html"><span class="doc">Hitchhiker’s Guide to
 Morelia</span></a>, then you already know how to do this. Any acquisition device can function as data source, so go ahead and wire up
@@ -190,6 +204,9 @@ destinations to send data to:</p>
 <tr class="row-even"><td><p>InfluxDB</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code></p></td>
 </tr>
+<tr class="row-odd"><td><p>QuestDB</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">QuestSink</span></code></p></td>
+</tr>
 </tbody>
 </table>
 <p>With plans for PVFS files in the near future. Depending on the sink, different parameters
@@ -214,8 +231,8 @@ on the specific parameters of each sink, please see the documentation of <a clas
 <span class="n">edf_dump_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
 
 <span class="c1"># Create InfluxDB Sinks.</span>
-<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
-<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_2</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;admin-token&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;default-org&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;default-measurement&#39;</span><span class="p">)</span>
+<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_3</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;admin-token&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;default-org&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;default-measurement&#39;</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>Finally, it’s time to link them together with the mapping. We can do this using the
@@ -241,9 +258,9 @@ sentence, let’s see what it looks like in our example.</p>
 <span class="n">edf_dump_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
 <span class="n">edf_dump_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
 
-<span class="c1"># Create InfluxDB sinks.</span>
-<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
-<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="s1">&#39;influx.pinnaclet.com&#39;</span><span class="p">,</span> <span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="s1">&#39;expirament1&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+<span class="c1"># Create InfluxDB Sinks.</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_2</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;admin-token&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;default-org&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;default-measurement&#39;</span><span class="p">)</span>
+<span class="n">influx_sink_2</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_3</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;admin-token&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;default-org&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;default-measurement&#39;</span><span class="p">)</span>
 
 <span class="c1"># List that defines how sources map to sinks.</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[</span> <span class="p">(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_dump_1</span><span class="p">]),</span>
@@ -255,6 +272,10 @@ sentence, let’s see what it looks like in our example.</p>
 </div>
 <p>And presto, you are all ready to stream! In the next section, we will carry our example
 over and loop at how to start collecting data now that everything is in place.</p>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Streaming to InfluxDB takes a lot of storage! By default we have set the time limit of data points to 2 days, so that collection does not crash your computer. These storage limits can be changed, which is further explained in the <a class="reference internal" href="influx_grafana.html#influx-label"><span class="std std-ref">Influx Details</span></a> section.</p>
+</div>
 </section>
 <section id="let-the-data-flow">
 <h2><a class="toc-backref" href="#id4" role="doc-backlink">Let the Data Flow! 🌊</a><a class="headerlink" href="#let-the-data-flow" title="Link to this heading"></a></h2>
@@ -302,7 +323,7 @@ to create a custom sink, your class must be a subclass of <code class="docutils 
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="getting_started.html" class="btn btn-neutral float-left" title="The Hitchhiker’s Guide to Morelia 🐍" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="sleep_dep.html" class="btn btn-neutral float-right" title="Controlling Sleep Deprivation Systems 😴" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="terraform.html" class="btn btn-neutral float-right" title="Visualizing Data During Streams 😎" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>
