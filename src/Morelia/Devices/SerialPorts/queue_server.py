@@ -19,7 +19,6 @@ def get_port_for_device(dev_path: str) -> int:
 
 if __name__ == '__main__':
     port = sys.argv[1]
-
     write_queue = Queue()
     read_queue = Queue()
 

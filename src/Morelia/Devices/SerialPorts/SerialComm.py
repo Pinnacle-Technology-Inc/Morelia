@@ -69,20 +69,7 @@ class PortIO :
             except Exception:
                 pass
 
-        # If system Windows, use psutil and os
-        try:
-            for proc in psutil.process_iter(['pid', 'open_files']):
-                try:
-                    open_files = proc.info.get('open_files') or []
-                    for f in open_files:
-                        if os.path.samefile(f.path, port):
-                            return True
-                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
-                    continue
-        except Exception:
-            pass
-
-        # Fallback is to directly check if port is open or not
+        # Windows Serial check
         try:
             s = Serial(port)
             s.close()
@@ -123,44 +110,6 @@ class PortIO :
                 name = 'COM' + port
         # end 
         return(name)
-
-    # ====== PUBLIC METHODS ======
-    @staticmethod
-    def is_port_in_use(port: str) -> bool:
-        """
-        Opens a subprocess to check if the port is in use
-        """
-        system = platform.system()
-
-        # If system is Linux or MacOS, use subprocess with lsof
-        if system in ('Linux', 'Darwin'):
-            try:
-                result = subprocess.run(['lsof', port], stdout=subprocess.PIPE, stderr=subprocess.PIPE, close_fds=True)
-            
-                return result.returncode == 0
-            except Exception:
-                pass
-
-        # If system Windows, use psutil and os
-        try:
-            for proc in psutil.process_iter(['pid', 'open_files']):
-                try:
-                    open_files = proc.info.get('open_files') or []
-                    for f in open_files:
-                        if os.path.samefile(f.path, port):
-                            return True
-                except (psutil.AccessDenied, psutil.NoSuchProcess, FileNotFoundError):
-                    continue
-        except Exception:
-            pass
-
-        # Fallback is to directly check if port is open or not
-        try:
-            s = Serial(port)
-            s.close()
-            return False
-        except SerialException:
-            return True
 
     # ----- BOOL CHECKS -----
 

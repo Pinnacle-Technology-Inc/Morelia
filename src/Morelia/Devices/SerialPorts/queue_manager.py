@@ -12,8 +12,7 @@ __email__       = 'sales@pinnaclet.com'
 from multiprocessing.managers import BaseManager
 from multiprocessing import Queue
 import multiprocessing as mp
-import subprocess
-import os
+import platform, subprocess, os
 import socket
 import time
 import re
@@ -40,16 +39,27 @@ class PacketManager:
         """
         Initializes a new subprocess to run the Queue server/socket.
         """
+        system = platform.system()
 
         this_dir = os.path.dirname(os.path.abspath(__file__))
         script_path = os.path.join(this_dir, "queue_server.py")
-        subprocess.Popen(
-            ['python3', script_path, self.port],
-            preexec_fn=os.setsid,  # Start a new process group
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            close_fds=True
-        )
+
+        if system != "Windows":
+            subprocess.Popen(
+                ['python3', script_path, self.port],
+                preexec_fn=os.setsid,  # Start a new process group
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True
+            )
+        else:
+            subprocess.Popen(
+                ['python', script_path, self.port],
+                creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                close_fds=True
+            )
 
         # wait for half a second for server to begin
         time.sleep(0.1)
@@ -86,7 +96,6 @@ class PacketManager:
         """
         Registers the initialized Queue for an acquisition device.
         """
-
         # registers both functions that return the shared queues
         ControlPacketManager.register(f'get_write_queue_{port}')
         ControlPacketManager.register(f'get_read_queue_{port}')
