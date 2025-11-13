@@ -130,6 +130,7 @@ Examples of what a script might look like for each pod device that Morelia curre
   
   # import classes from submodules 
   from Morelia.Devices import Pod8206HR
+  import time
 
   # create 4 new 8206HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2
   pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
@@ -137,32 +138,41 @@ Examples of what a script might look like for each pod device that Morelia curre
   pod_3 = Pod8206HR('/dev/ttyUSB2', 10)
   pod_4 = Pod8206HR('/dev/ttyUSB3', 10)
 
-  # add pods to a list 
-  pod_list = [pod_1, pod_2, pod_3, pod_4]
+  # add pods to a list, with the names of each pod
+  pod_list = [("pod_1", pod_1), 
+              ("pod_2", pod_2), 
+              ("pod_3", pod_3), 
+              ("pod_4", pod_4)]
 
   # update the sample rates of all of the pod devices to 500 
-  for pod in pod_list:
+  for name, pod in pod_list:
     pod.sample_rate = 500
     sample_rate = pod.write_read('GET SAMPLE RATE').payload[0]
-    print(f"Sample rate value of {pod} after update to 500: {sample_rate}")
+    print(f"Sample rate value of {name} after update to 500: {sample_rate}")
 
   # update the sample rates of all of the pod devices to 2000 (maximum)
-  for pod in pod_list:
+  for name, pod in pod_list:
     pod.sample_rate = 2000
     sample_rate = pod.write_read('GET SAMPLE RATE').payload[0]
-    print(f"Sample rate value of {pod} after update to 2000: {sample_rate}")
+    print(f"Sample rate value of {name} after update to 2000: {sample_rate}")
 
   # update the TTL of all of the pod devices to 0 
-  for pod in pod_list:
+  for name, pod in pod_list:
     pod.write_packet('SET TTL OUT', (0,0))
-    ttl_val = pod.write_read('GET TTL IN', 0)
-    print(f"TTL value of {pod} after update to 0: {ttl_val}")
+    # add a small sleep so that the response to the write packet 
+    # above does not interfere with the write_read
+    time.sleep(0.1)
+    ttl_val = pod.write_read('GET TTL IN', 0).payload
+    print(f"TTL value of {name} after update to 0: {ttl_val}")
 
   # update the TTL of all of the pod devices to 1
-  for pod in pod_list:
+  for name, pod in pod_list:
     pod_1.write_packet('SET TTL OUT', (0,1))
+    # add a small sleep so that the response to the write packet 
+    # above does not interfere with the write_read 
+    time.sleep(0.1)
     ttl_val = pod.write_read('GET TTL IN', 0)
-    print(f"TTL value of {pod} after update to 1: {ttl_val}")
+    print(f"TTL value of {name} after update to 1: {ttl_val}")
 
 =================
 8401HR Examples 
