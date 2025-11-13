@@ -102,9 +102,7 @@ class Pod8206HR(AcquisitionDevice) :
         """
 
         # get prepacket + packet number, TTL, and binary ch0-2 (these are all binary, do not search for STX/ETX) + read csm and ETX (3 bytes) (these are ASCII, so check for STX/ETX)
-        #start_time = time.perf_counter()
         packet = pre_packet + self._port.read(8) + self._read_to_etx(validate_checksum=validate_checksum)
-        #print(f"Time took: {(time.perf_counter() - start_time)*1000:.2f} ms")
         # check if checksum is correct 
         if(validate_checksum):
             if(not self._validate_checksum(packet) ) :

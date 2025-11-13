@@ -89,7 +89,6 @@ class DataFlow:
             # may want to use property here instead for better practice
             if hasattr(source, "_port"):
                 source.close_port()
-                #del source._port
 
             gc.collect()
 
@@ -103,9 +102,6 @@ class DataFlow:
             sinks_list = [
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
-
-            # close the port so that it can be pickled
-            #source.close_port()
 
             #create worker process.
             worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))

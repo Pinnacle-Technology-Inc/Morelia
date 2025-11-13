@@ -382,18 +382,6 @@ class Pod :
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
-        # changes from develop debug to allow for sending packets without DataFlow
-        '''if self._port is None:
-            if PortIO.is_port_in_use(self._port_value):
-                self.open_port()
-                self.write_packet(cmd, payload)
-                r = self.read_pod_packet(validate_checksum, timeout_sec)
-                self.close_port()
-        else:
-            self.write_packet(cmd, payload)
-            r = self.read_pod_packet(validate_checksum, timeout_sec)
-
-        return(r)'''
         #flushes leftover data in case of interrupt
         if self._port is not None:
             self.flush_port()

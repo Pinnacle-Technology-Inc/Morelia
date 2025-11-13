@@ -51,10 +51,10 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 #add on a fraction of the sample rate to last timestamp, plus drift correction
                 observer.last_timestamp = int(predicted + (drift * correction_factor))
 
-                #observer.last_timestamp = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                # timestamps used to be this, without correction factors:
+                # observer.last_timestamp = int(observer.last_timestamp + (10**9 / observer.sample_rate))
 
-                # if drift from real time is 100ms further than expected 
-                # or predicted time is greater than current time, reset time stamps
+                # if predicted time is greater than current time, reset time stamps
                 if observer.last_timestamp > now_real_time_ns: 
                     observer.last_timestamp = now_real_time_ns
 
