@@ -24,9 +24,10 @@ class EDFSink(SinkInterface):
     :param pod: POD device data is being streamed from.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice ) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
         """ Class constructor."""
         self._file_path = file_path
+
         self._pod = pod
 
         if isinstance(self._pod, Pod8206HR):
@@ -41,8 +42,19 @@ class EDFSink(SinkInterface):
         elif isinstance(self._pod, Pod8274D):
                 self._channels('length_in_bytes', 'data')
 
-
         self._buffer = [ [] for _ in self._channels ]
+
+    @property 
+    def pod(self):
+        return self._pod
+    
+    @pod.setter
+    def pod(self, device: AcquisitionDevice):
+        self._pod = value
+    
+    @property
+    def file_path(self):
+        return self._file_path
 
     def __enter__(self) -> Self:
 
@@ -112,3 +124,8 @@ class EDFSink(SinkInterface):
     def _write_buffer_to_edf(self) -> None:
         self._edf_writer.writeSamples(list(map(np.array, self._buffer)))
         self._buffer = [ [] for _ in self._channels ]
+
+    def get_dict(self):
+        return {
+            'file_path': self.file_path
+        }

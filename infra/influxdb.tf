@@ -35,6 +35,7 @@ resource "docker_container" "influxdb" {
     "DOCKER_INFLUXDB_INIT_PASSWORD=${var.influxdb_admin_password}",
     "DOCKER_INFLUXDB_INIT_ORG=${var.influxdb_org}",
     "DOCKER_INFLUXDB_INIT_BUCKET=${var.influxdb_bucket}",
+    "DOCKER_INFLUXDB_INIT_RETENTION=47h", 
     "DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${var.influxdb_token}"
   ]
 

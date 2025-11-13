@@ -61,7 +61,7 @@ Morelia.Devices.PodDevice\_8480SC module
    :show-inheritance:
 
 Morelia.Devices.acquisition\_device module
------------------------------------------
+------------------------------------------
 
 .. automodule:: Morelia.Devices.acquisition_device
    :members:
