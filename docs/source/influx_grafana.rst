@@ -26,6 +26,8 @@ Because Docker is creating the container for Influx, the data is stored in a Doc
 .. image:: images/disk.png
    :scale: 50%
 
+If you are on Windows, this data fills up in a virtual disk. The virtual disk should be located under **"C:\Users\<username>\AppData\Local\Docker\wsl\disk\docker_data.vhdx"**. Unfortunately, when space is allocated to this disk, even if you Docker Volume is deleted, the space in Windows will not be restored. This is because space allocated to the virtual disk will not shrink unless you manually shrink it (through the terminal).
+
 -------------------
 Retention Policy ⌛
 -------------------

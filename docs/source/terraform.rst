@@ -23,6 +23,8 @@ You can use ``terraform init`` to initialize the Terraform configuration, and ``
 
 In the case that you come across an error in creating the infrastructure, you can use ``terraform destroy`` to remove the architecture, or ``terraform restore`` to update the configuration state.
 
+.. important:: Below we have steps to help you install Terraform and Docker if you are on a Linux system. If you are on Windows, you'll need to install Docker Desktop in order to run Grafana and InfluxDB. You can follow the steps on `Docker's Website <https://www.docker.com/products/docker-desktop/>`_ to install the service!
+
 ---------------------
 Bash Shell Script
 ---------------------
