@@ -26,7 +26,7 @@ In the case that you come across an error in creating the infrastructure, you ca
 .. important:: Below we have steps to help you install Terraform and Docker if you are on a Linux system. If you are on Windows, you'll need to install Docker Desktop in order to run Grafana and InfluxDB. You can follow the steps on `Docker's Website <https://www.docker.com/products/docker-desktop/>`_ to install the service!
 
 ---------------------
-Bash Shell Script
+Bash Shell Script 📜
 ---------------------
 For ease of use, we have included a bash shell script that downloads Terraform and Docker, and then uses them to create containers for a datasource of your choice and Grafana. You can find the bash script inside of the 'infra' folder.
 
@@ -36,7 +36,7 @@ For ease of use, we have included a bash shell script that downloads Terraform a
 This script can be reused to start Grafana whenever needed. It will not re-install Terraform or Docker.
 
 ---------------------
-Grafana Dashboards
+Grafana Dashboards 💡
 ---------------------
 
 To see the dashboard, go to a web browser and go to ``localhost:3000``. On the lefthand side, there is a "dashboard" tab. Upon clicking this, you'll see two sample 8206 dashboards, one for InfluxDB and one for QuestDB.
