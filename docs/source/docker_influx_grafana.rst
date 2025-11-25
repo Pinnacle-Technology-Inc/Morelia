@@ -43,17 +43,43 @@ Other Docker Tools ⚒️
 
 Docker has different commands and tools to keep track of containers and volumes created. On Linux, you'll need to use the Docker commands in the terminal to access these, but on Windows, there are tabs to help keep track of this information.
 
-In order to see which containers are running:
+**In order to see which containers are running, you can do the following depending on your system**
+
+.. raw:: html
+
+   <div style="margin-top:4px;"></div>
+
+For Windows on Docker Desktop:
 
 .. image of containers running on Windows Docker Desktop
+.. image:: images/docker_desktop_container.png
 
-.. image of command in Linux and result 
+For Linux systems or on a bash shell terminal:
 
-In order to see which volumes exist and are storing data:
+.. code-block:: console
+
+   $ docker ps
+
+.. image:: images/linux_docker_container.png
+
+**In order to see which volumes exist and are storing data**
+
+.. raw:: html
+
+   <div style="margin-top:4px;"></div>
+
+For Windows on Docker Desktop:
 
 .. image of volumes running on Windows Docker Desktop
+.. image:: images/docker_desktop_volume.png
 
-.. image of command in Linux and result
+For Linux systems or on a bash shell terminal:
+
+.. code-block:: console
+
+   $ docker volume ls
+
+.. image:: images/linux_docker_volume.png
 
 .. _influx-label:
 
