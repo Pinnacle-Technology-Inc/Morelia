@@ -24,18 +24,18 @@ resource "docker_container" "grafana" {
   ] 
 
   //potentially add volumes here for logs or other persistent data
-  
+
   mounts {
     target = "/etc/grafana/provisioning/dashboards"
     source = abspath("${path.module}/grafana/provisioning/dashboards")
     type = "bind"
   }
 
-  mounts {
-    target = "/var/lib/grafana/dashboards"
-    source = abspath("${path.module}/grafana/dashboards")
-    type = "bind"
-  }
+  // mounts {
+  //   target = "/var/lib/grafana/dashboards"
+  //   source = abspath("${path.module}/grafana/dashboards")
+  //   type = "bind"
+  // }
 
 }
 
@@ -44,14 +44,15 @@ provider "grafana" {
   auth = "${var.grafana_admin_user}:${var.grafana_admin_password}"
 }
 
+
 resource "grafana_data_source" "influxdb" {
   count = var.use_influxdb ? 1 : 0
 
   name = "InfluxDB"
   uid = "fepg8hwzyq9dsd"
   type = "influxdb"
-
-  url = "http://influxdb:${var.influxdb_internal}"
+  
+  url = "http://host.docker.internal:${var.influxdb_internal}"
   access_mode = "proxy"
   is_default = var.use_questdb ? false : true
   
@@ -66,7 +67,9 @@ resource "grafana_data_source" "influxdb" {
   })
 
   depends_on = [docker_container.grafana]
+
 }
+
 
 resource "grafana_data_source" "questdb" {
 	count = var.use_questdb ? 1 : 0
