@@ -1,6 +1,6 @@
-#####################################
-Specifics with Influx and Grafana 📈
-#####################################
+##############################################
+Specifics with Docker, Influx, and Grafana 📈
+##############################################
 
 .. contents:: 
 
@@ -11,20 +11,80 @@ Grafana and Influx are both extensive services that have their own properties an
 
 In our API, Grafana and Influx are both created using Docker containers, but in the case that you want to run these services independently, you will want to cater your code around this difference.
 
-.. _influx-label:
+Docker Details 🐳
+==================
 
-Influx Details 
-=================
-
-------------------
-Docker Volumes 🐳
-------------------
+-------------------
+Data Storage 🛖 
+-------------------
 
 Because Docker is creating the container for Influx, the data is stored in a Docker Volume, rather than Influx's own storage space. Depending on the sample rate of the device you are using, this data can fill up very quickly. **Please** keep in mind that if the retention policy below is not set up for your system, the disk might get filled up with time series data. 
 
 .. image of disk 
 .. image:: images/disk.png
    :scale: 50%
+
+If you are on Windows, this data fills up in a virtual disk. The virtual disk should be located under ``C:\Users\<username>\AppData\Local\Docker\wsl\disk\docker_data.vhdx``. Unfortunately, when space is allocated to this disk, even if your Docker Volume is deleted, the space in Windows will not be restored. This is because space allocated to the virtual disk will not shrink unless you manually shrink it (through the terminal), or delete it (after closing WSL).
+
+.. image of docker virtual disk
+.. image :: images/docker_disk.png
+   :scale: 110%
+   :align: center
+
+.. raw:: html
+
+   <br/>
+
+The steps below outline how to delete or shrink the virtual disk
+
+-----------------------
+Other Docker Tools ⚒️
+-----------------------
+
+Docker has different commands and tools to keep track of containers and volumes created. On Linux, you'll need to use the Docker commands in the terminal to access these, but on Windows, there are tabs to help keep track of this information.
+
+**In order to see which containers are running, you can do the following depending on your system**
+
+.. raw:: html
+
+   <div style="margin-top:4px;"></div>
+
+For Windows on Docker Desktop:
+
+.. image of containers running on Windows Docker Desktop
+.. image:: images/docker_desktop_container.png
+
+For Linux systems or on a bash shell terminal:
+
+.. code-block:: console
+
+   $ docker ps
+
+.. image:: images/linux_docker_container.png
+
+**In order to see which volumes exist and are storing data**
+
+.. raw:: html
+
+   <div style="margin-top:4px;"></div>
+
+For Windows on Docker Desktop:
+
+.. image of volumes running on Windows Docker Desktop
+.. image:: images/docker_desktop_volume.png
+
+For Linux systems or on a bash shell terminal:
+
+.. code-block:: console
+
+   $ docker volume ls
+
+.. image:: images/linux_docker_volume.png
+
+.. _influx-label:
+
+Influx Details ℹ️
+==================
 
 -------------------
 Retention Policy ⌛
@@ -49,7 +109,7 @@ From Terraform, this policy can be edited inside of the ``influxdb.tf`` file, un
 Creating Grafana Dashboards 📉
 ===============================
 
-During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for json files to use as dashboards. Any json file that fits the format of a grafana dashboard here will be generated and shown on the UI. 
+During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for JSON files to use as dashboards. Any JSON file that fits the format of a grafana dashboard here will be generated and shown on the UI. 
 
 .. show image of the folder infra/grafana/dashboards
 .. image:: images/dashboard_folder.png
@@ -62,9 +122,9 @@ During the creation of the Grafana container, Grafana looks inside of the infra/
 .. reuse image of the grafana dashboards
 .. image:: images/dashboards.png
 
-If you want to create your own dashboard, there is a folder where template json files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs. 
+If you want to create your own dashboard, there is a folder where template JSON files are held for a basic ``8206HR`` and ``8401HR``. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs. 
 
-.. note:: These can be pretty finicky and need to be pretty precise.
+.. note:: These can be pretty finicky and need to be precise.
 
 .. Add image of the templates folder here
 .. image:: images/templates.png
@@ -121,20 +181,32 @@ Remember, after you edit the panels, if you want to save the dashboard, that you
 JSON Specifics 📁
 ------------------
 
-The json files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard. 
+In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard. 
 
-.. add image of a panel in the json
+.. add image of a panel in the JSON
+.. image:: images/panel_begin.png
+   :scale: 75%
 
-.. Specifically talk about parts of the json file which are editable
+.. image:: images/panel_end.png
+   :scale: 50%
+
+.. Specifically talk about parts of the JSON file which are editable
 
 At the bottom of the file, you will find a "title" line, which stores a string. Changing this string will update the title fo your dashboard.
 
+.. image:: images/json_title.png
+   :scale: 75%
+
 At the top of the file, you will find a "description" line, which stores a string. Changing this string will update the description of your dashboard. 
+
+.. image:: images/json_description.png
 
 .. incl title, description, uid, etc.
 
 -------------------------------
 Automated Creation in Python 🤖
 -------------------------------
+
+Currently, there is a little bit of support for automatically creating dashboards from pod devices in Python. The code for it currently does not exist in the Morelia API, but rather exists in the ``Morelia/infra/grafana_json.py`` file. 
 
 .. Add docs on automated creation of dashboards
