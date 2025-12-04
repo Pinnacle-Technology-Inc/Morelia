@@ -20,7 +20,7 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Specifics with Influx and Grafana 📈" href="influx_grafana.html" />
+    <link rel="next" title="Specifics with Docker, Influx, and Grafana 📈" href="docker_influx_grafana.html" />
     <link rel="prev" title="Streaming From Data Acquisition Systems 🤠" href="streaming.html" /> 
 </head>
 
@@ -49,14 +49,14 @@
 <li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Visualizing Data During Streams 😎</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#the-terraform-automation">The Terraform Automation 🗻</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#bash-shell-script">Bash Shell Script</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#grafana-dashboards">Grafana Dashboards</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bash-shell-script">Bash Shell Script 📜</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#grafana-dashboards">Grafana Dashboards 💡</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#the-stream-appears">The Stream Appears 🤯</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="influx_grafana.html">Specifics with Influx and Grafana 📈</a></li>
+<li class="toctree-l1"><a class="reference internal" href="docker_influx_grafana.html">Specifics with Docker, Influx, and Grafana 📈</a></li>
 <li class="toctree-l1"><a class="reference internal" href="sleep_dep.html">Controlling Sleep Deprivation Systems 😴</a></li>
 <li class="toctree-l1"><a class="reference internal" href="stimulus.html">Wielding Stimulus Controllers 🤺</a></li>
 <li class="toctree-l1"><a class="reference internal" href="low_level.html">Low-Level Interaction with POD Systems 📊</a></li>
@@ -99,8 +99,8 @@
 <ul>
 <li><p><a class="reference internal" href="#the-terraform-automation" id="id2">The Terraform Automation 🗻</a></p>
 <ul>
-<li><p><a class="reference internal" href="#bash-shell-script" id="id3">Bash Shell Script</a></p></li>
-<li><p><a class="reference internal" href="#grafana-dashboards" id="id4">Grafana Dashboards</a></p></li>
+<li><p><a class="reference internal" href="#bash-shell-script" id="id3">Bash Shell Script 📜</a></p></li>
+<li><p><a class="reference internal" href="#grafana-dashboards" id="id4">Grafana Dashboards 💡</a></p></li>
 <li><p><a class="reference internal" href="#the-stream-appears" id="id5">The Stream Appears 🤯</a></p></li>
 </ul>
 </li>
@@ -111,20 +111,27 @@
 <section id="the-terraform-automation">
 <h2><a class="toc-backref" href="#id2" role="doc-backlink">The Terraform Automation 🗻</a><a class="headerlink" href="#the-terraform-automation" title="Link to this heading"></a></h2>
 <p>If you downloaded Morelia directly from the GitHub page, you’ll have access to visualize the data streamed to the <code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code> and <code class="docutils literal notranslate"><span class="pre">QuestSink</span></code> through Grafana.</p>
-<p>In order to do so, you’ll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the bash section to quickly download and setup the architecture.</p>
-<p>Once downloaded, inside of the ‘infra’ directory, you will see a file named <code class="docutils literal notranslate"><span class="pre">default-values.txt</span></code>. You will need to copy this to a file named <code class="docutils literal notranslate"><span class="pre">terraform.tfvars</span></code>. This step is not required if you are running this on bash.</p>
+<dl class="simple">
+<dt>In order to do so, you’ll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the <a class="reference internal" href="#bash-script"><span class="std std-ref">Bash Shell Script 📜</span></a></dt><dd><p>section to quickly download and setup the architecture.</p>
+</dd>
+</dl>
+<p>Once downloaded, inside of the ‘infra’ directory, you will see a file named <code class="docutils literal notranslate"><span class="pre">default-values.txt</span></code>. You will need to copy this to a file named <code class="docutils literal notranslate"><span class="pre">terraform.tfvars</span></code>. This step is not required if you are following the bash shell script section.</p>
 <img alt="_images/infra.png" src="_images/infra.png" />
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Below we have steps to help you install Terraform and Docker if you are on a Linux system. If you are on Windows, you’ll need to install Docker Desktop in order to run Grafana and InfluxDB. You can follow the steps on <a class="reference external" href="https://www.docker.com/products/docker-desktop/">Docker’s Website</a> to install the service!</p>
+</div>
 <p>You can use <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">init</span></code> to initialize the Terraform configuration, and <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">apply</span></code> to begin the infrastructure. By default, the Influx database is on <code class="docutils literal notranslate"><span class="pre">localhost:8086</span></code> and Grafana is on <code class="docutils literal notranslate"><span class="pre">localhost:3000</span></code>.</p>
 <img alt="_images/default_values.png" src="_images/default_values.png" />
 <p>In the case that you come across an error in creating the infrastructure, you can use <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">destroy</span></code> to remove the architecture, or <code class="docutils literal notranslate"><span class="pre">terraform</span> <span class="pre">restore</span></code> to update the configuration state.</p>
 <section id="bash-shell-script">
-<h3><a class="toc-backref" href="#id3" role="doc-backlink">Bash Shell Script</a><a class="headerlink" href="#bash-shell-script" title="Link to this heading"></a></h3>
+<span id="bash-script"></span><h3><a class="toc-backref" href="#id3" role="doc-backlink">Bash Shell Script 📜</a><a class="headerlink" href="#bash-shell-script" title="Link to this heading"></a></h3>
 <p>For ease of use, we have included a bash shell script that downloads Terraform and Docker, and then uses them to create containers for a datasource of your choice and Grafana. You can find the bash script inside of the ‘infra’ folder.</p>
 <img alt="_images/bash.png" src="_images/bash.png" />
 <p>This script can be reused to start Grafana whenever needed. It will not re-install Terraform or Docker.</p>
 </section>
 <section id="grafana-dashboards">
-<h3><a class="toc-backref" href="#id4" role="doc-backlink">Grafana Dashboards</a><a class="headerlink" href="#grafana-dashboards" title="Link to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">Grafana Dashboards 💡</a><a class="headerlink" href="#grafana-dashboards" title="Link to this heading"></a></h3>
 <p>To see the dashboard, go to a web browser and go to <code class="docutils literal notranslate"><span class="pre">localhost:3000</span></code>. On the lefthand side, there is a “dashboard” tab. Upon clicking this, you’ll see two sample 8206 dashboards, one for InfluxDB and one for QuestDB.</p>
 <img alt="_images/dashboards.png" src="_images/dashboards.png" />
 <p>Upon clicking either of them, you may see that there’s no data. By default, the dashboards are looking at the last 10 seconds of data and query every 5 seconds. If you aren’t currently streaming to the database that is being queried, then nothing will appear!</p>
@@ -133,12 +140,12 @@
 <section id="the-stream-appears">
 <h3><a class="toc-backref" href="#id5" role="doc-backlink">The Stream Appears 🤯</a><a class="headerlink" href="#the-stream-appears" title="Link to this heading"></a></h3>
 <p>By default, the classes <code class="docutils literal notranslate"><span class="pre">QuestSink</span></code> and <code class="docutils literal notranslate"><span class="pre">InfluxSink</span></code> are set to automatically stream to a database that is accessed by Grafana’s queries in the dashboards provided. These can be changed, but will require you to create your own dashboard (or edit the one provided) to query from that database.</p>
-<p>If you want more details on editing Grafana dashboards, visit this section <a class="reference internal" href="influx_grafana.html#grafana-label"><span class="std std-ref">Creating Grafana Dashboards 📉</span></a></p>
+<p>If you want more details on editing Grafana dashboards, visit this section <a class="reference internal" href="docker_influx_grafana.html#grafana-label"><span class="std std-ref">Creating Grafana Dashboards 📉</span></a></p>
 <p>The setup of streaming to the dashboard is similar to that of the previous page:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Import the proper class.</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pod8206HR</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.sink</span><span class="w"> </span><span class="kn">import</span> <span class="n">InfluxSink</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream</span><span class="w"> </span><span class="kn">import</span> <span class="n">data_flow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.data_flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFlow</span>
 
 <span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
 <span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
@@ -152,10 +159,18 @@
 <span class="c1"># List that defines how sources map to sinks.</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_1</span><span class="p">])]</span>
 
-<span class="n">flowgraph</span> <span class="o">=</span> <span class="n">data_flow</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+<span class="n">flowgraph</span> <span class="o">=</span> <span class="n">DataFlow</span><span class="p">(</span><span class="n">mapping</span><span class="p">)</span>
+
+<span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span>
+
+<span class="k">with</span> <span class="n">flowgraph</span><span class="p">:</span>
+  <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+     <span class="k">if</span> <span class="n">flag</span><span class="p">:</span>
+       <span class="k">break</span>
 </pre></div>
 </div>
 <p>Upon running this python script, you should see data appear on your dashboard!</p>
+<img alt="_images/streaming_8206.png" src="_images/streaming_8206.png" />
 </section>
 </section>
 </section>
@@ -165,7 +180,7 @@
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="streaming.html" class="btn btn-neutral float-left" title="Streaming From Data Acquisition Systems 🤠" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="influx_grafana.html" class="btn btn-neutral float-right" title="Specifics with Influx and Grafana 📈" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="docker_influx_grafana.html" class="btn btn-neutral float-right" title="Specifics with Docker, Influx, and Grafana 📈" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

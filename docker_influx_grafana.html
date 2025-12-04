@@ -6,7 +6,7 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Specifics with Influx and Grafana 📈 &mdash; Morelia v1.6.1 documentation</title>
+  <title>Specifics with Docker, Influx, and Grafana 📈 &mdash; Morelia v1.6.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
       <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
@@ -48,10 +48,14 @@
 <li class="toctree-l1"><a class="reference internal" href="getting_started.html">The Hitchhiker’s Guide to Morelia 🐍</a></li>
 <li class="toctree-l1"><a class="reference internal" href="streaming.html">Streaming From Data Acquisition Systems 🤠</a></li>
 <li class="toctree-l1"><a class="reference internal" href="terraform.html">Visualizing Data During Streams 😎</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Specifics with Influx and Grafana 📈</a><ul>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Specifics with Docker, Influx, and Grafana 📈</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#grafana-influx-complications">Grafana/Influx Complications 😵‍💫</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#influx-details">Influx Details</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#docker-volumes">Docker Volumes 🐳</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#docker-details">Docker Details 🐳</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#data-storage">Data Storage 🛖</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#other-docker-tools">Other Docker Tools ⚒️</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#influx-details-i">Influx Details ℹ️</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#retention-policy">Retention Policy ⌛</a></li>
 </ul>
 </li>
@@ -89,9 +93,9 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Specifics with Influx and Grafana 📈</li>
+      <li class="breadcrumb-item active">Specifics with Docker, Influx, and Grafana 📈</li>
       <li class="wy-breadcrumbs-aside">
-            <a href="_sources/influx_grafana.rst.txt" rel="nofollow"> View page source</a>
+            <a href="_sources/docker_influx_grafana.rst.txt" rel="nofollow"> View page source</a>
       </li>
   </ul>
   <hr/>
@@ -99,29 +103,34 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="specifics-with-influx-and-grafana">
-<h1><a class="toc-backref" href="#id1" role="doc-backlink">Specifics with Influx and Grafana 📈</a><a class="headerlink" href="#specifics-with-influx-and-grafana" title="Link to this heading"></a></h1>
+  <section id="specifics-with-docker-influx-and-grafana">
+<h1><a class="toc-backref" href="#id1" role="doc-backlink">Specifics with Docker, Influx, and Grafana 📈</a><a class="headerlink" href="#specifics-with-docker-influx-and-grafana" title="Link to this heading"></a></h1>
 <nav class="contents" id="contents">
 <p class="topic-title">Contents</p>
 <ul class="simple">
-<li><p><a class="reference internal" href="#specifics-with-influx-and-grafana" id="id1">Specifics with Influx and Grafana 📈</a></p>
+<li><p><a class="reference internal" href="#specifics-with-docker-influx-and-grafana" id="id1">Specifics with Docker, Influx, and Grafana 📈</a></p>
 <ul>
 <li><p><a class="reference internal" href="#grafana-influx-complications" id="id2">Grafana/Influx Complications 😵‍💫</a></p></li>
-<li><p><a class="reference internal" href="#influx-details" id="id3">Influx Details</a></p>
+<li><p><a class="reference internal" href="#docker-details" id="id3">Docker Details 🐳</a></p>
 <ul>
-<li><p><a class="reference internal" href="#docker-volumes" id="id4">Docker Volumes 🐳</a></p></li>
-<li><p><a class="reference internal" href="#retention-policy" id="id5">Retention Policy ⌛</a></p></li>
+<li><p><a class="reference internal" href="#data-storage" id="id4">Data Storage 🛖</a></p></li>
+<li><p><a class="reference internal" href="#other-docker-tools" id="id5">Other Docker Tools ⚒️</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#creating-grafana-dashboards" id="id6">Creating Grafana Dashboards 📉</a></p>
+<li><p><a class="reference internal" href="#influx-details-i" id="id6">Influx Details ℹ️</a></p>
 <ul>
-<li><p><a class="reference internal" href="#customizing-dashboards-for-your-needs" id="id7">Customizing Dashboards for Your Needs 🎉</a></p>
-<ul>
-<li><p><a class="reference internal" href="#editing-a-panel" id="id8">Editing a Panel ⬛</a></p></li>
-<li><p><a class="reference internal" href="#json-specifics" id="id9">JSON Specifics 📁</a></p></li>
+<li><p><a class="reference internal" href="#retention-policy" id="id7">Retention Policy ⌛</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#automated-creation-in-python" id="id10">Automated Creation in Python 🤖</a></p></li>
+<li><p><a class="reference internal" href="#creating-grafana-dashboards" id="id8">Creating Grafana Dashboards 📉</a></p>
+<ul>
+<li><p><a class="reference internal" href="#customizing-dashboards-for-your-needs" id="id9">Customizing Dashboards for Your Needs 🎉</a></p>
+<ul>
+<li><p><a class="reference internal" href="#editing-a-panel" id="id10">Editing a Panel ⬛</a></p></li>
+<li><p><a class="reference internal" href="#json-specifics" id="id11">JSON Specifics 📁</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#automated-creation-in-python" id="id12">Automated Creation in Python 🤖</a></p></li>
 </ul>
 </li>
 </ul>
@@ -133,16 +142,43 @@
 <p>Grafana and Influx are both extensive services that have their own properties and customizations available to you. This page’s aim is to inform you of <strong>important</strong> details about each of these tools which may affect decisions in how you want to run experiments or write code.</p>
 <p>In our API, Grafana and Influx are both created using Docker containers, but in the case that you want to run these services independently, you will want to cater your code around this difference.</p>
 </section>
-<section id="influx-details">
-<span id="influx-label"></span><h2><a class="toc-backref" href="#id3" role="doc-backlink">Influx Details</a><a class="headerlink" href="#influx-details" title="Link to this heading"></a></h2>
-<section id="docker-volumes">
-<h3><a class="toc-backref" href="#id4" role="doc-backlink">Docker Volumes 🐳</a><a class="headerlink" href="#docker-volumes" title="Link to this heading"></a></h3>
+<section id="docker-details">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Docker Details 🐳</a><a class="headerlink" href="#docker-details" title="Link to this heading"></a></h2>
+<section id="data-storage">
+<h3><a class="toc-backref" href="#id4" role="doc-backlink">Data Storage 🛖</a><a class="headerlink" href="#data-storage" title="Link to this heading"></a></h3>
 <p>Because Docker is creating the container for Influx, the data is stored in a Docker Volume, rather than Influx’s own storage space. Depending on the sample rate of the device you are using, this data can fill up very quickly. <strong>Please</strong> keep in mind that if the retention policy below is not set up for your system, the disk might get filled up with time series data.</p>
 <a class="reference internal image-reference" href="_images/disk.png"><img alt="_images/disk.png" src="_images/disk.png" style="width: 279.0px; height: 95.0px;" />
 </a>
+<p>If you are on Windows, this data fills up in a virtual disk. The virtual disk should be located under <code class="docutils literal notranslate"><span class="pre">C:\Users\&lt;username&gt;\AppData\Local\Docker\wsl\disk\docker_data.vhdx</span></code>. Unfortunately, when space is allocated to this disk, even if your Docker Volume is deleted, the space in Windows will not be restored. This is because space allocated to the virtual disk will not shrink unless you manually shrink it (through the terminal), or delete it (after closing WSL).</p>
+<a class="reference internal image-reference" href="_images/docker_disk.png"><img alt="_images/docker_disk.png" class="align-center" src="_images/docker_disk.png" style="width: 676.5px; height: 41.800000000000004px;" />
+</a>
+<br/><p>The steps below outline how to delete or shrink the virtual disk</p>
 </section>
+<section id="other-docker-tools">
+<h3><a class="toc-backref" href="#id5" role="doc-backlink">Other Docker Tools ⚒️</a><a class="headerlink" href="#other-docker-tools" title="Link to this heading"></a></h3>
+<p>Docker has different commands and tools to keep track of containers and volumes created. On Linux, you’ll need to use the Docker commands in the terminal to access these, but on Windows, there are tabs to help keep track of this information.</p>
+<p><strong>In order to see which containers are running, you can do the following depending on your system</strong></p>
+<div style="margin-top:4px;"></div><p>For Windows on Docker Desktop:</p>
+<img alt="_images/docker_desktop_container.png" src="_images/docker_desktop_container.png" />
+<p>For Linux systems or on a bash shell terminal:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>ps
+</pre></div>
+</div>
+<img alt="_images/linux_docker_container.png" src="_images/linux_docker_container.png" />
+<p><strong>In order to see which volumes exist and are storing data</strong></p>
+<div style="margin-top:4px;"></div><p>For Windows on Docker Desktop:</p>
+<img alt="_images/docker_desktop_volume.png" src="_images/docker_desktop_volume.png" />
+<p>For Linux systems or on a bash shell terminal:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>docker<span class="w"> </span>volume<span class="w"> </span>ls
+</pre></div>
+</div>
+<img alt="_images/linux_docker_volume.png" src="_images/linux_docker_volume.png" />
+</section>
+</section>
+<section id="influx-details-i">
+<span id="influx-label"></span><h2><a class="toc-backref" href="#id6" role="doc-backlink">Influx Details ℹ️</a><a class="headerlink" href="#influx-details-i" title="Link to this heading"></a></h2>
 <section id="retention-policy">
-<h3><a class="toc-backref" href="#id5" role="doc-backlink">Retention Policy ⌛</a><a class="headerlink" href="#retention-policy" title="Link to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink">Retention Policy ⌛</a><a class="headerlink" href="#retention-policy" title="Link to this heading"></a></h3>
 <p>Influx has a “retention” policy that it uses in order to ensure that the computer does not fill up its entire disk space. It removes data if the data has been stored for over the set time period (i.e if the policy is set to 2 days, influx will remove data after it has become 2 days old).</p>
 <p>Influx will remove data in batches. It does this by creating “shards”, which group data together over a specific time period. For example, if the shard length is 1 hour long, then data will be grouped together in that hour and be deleted together after the time retention expiry. Shard length is determined by how long the retention policy is set to, which you can see below:</p>
 <a class="reference internal image-reference" href="_images/shards.png"><img alt="_images/shards.png" src="_images/shards.png" style="width: 534.0px; height: 204.0px;" />
@@ -153,22 +189,22 @@
 </section>
 </section>
 <section id="creating-grafana-dashboards">
-<span id="grafana-label"></span><h2><a class="toc-backref" href="#id6" role="doc-backlink">Creating Grafana Dashboards 📉</a><a class="headerlink" href="#creating-grafana-dashboards" title="Link to this heading"></a></h2>
-<p>During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for json files to use as dashboards. Any json file that fits the format of a grafana dashboard here will be generated and shown on the UI.</p>
+<span id="grafana-label"></span><h2><a class="toc-backref" href="#id8" role="doc-backlink">Creating Grafana Dashboards 📉</a><a class="headerlink" href="#creating-grafana-dashboards" title="Link to this heading"></a></h2>
+<p>During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for JSON files to use as dashboards. Any JSON file that fits the format of a grafana dashboard here will be generated and shown on the UI.</p>
 <a class="reference internal image-reference" href="_images/dashboard_folder.png"><img alt="_images/dashboard_folder.png" src="_images/dashboard_folder.png" style="width: 224.1px; height: 70.2px;" />
 </a>
 <a class="reference internal image-reference" href="_images/right_arrow.png"><img alt="_images/right_arrow.png" src="_images/right_arrow.png" style="width: 153.6px; height: 153.6px;" />
 </a>
 <img alt="_images/dashboards.png" src="_images/dashboards.png" />
-<p>If you want to create your own dashboard, there is a folder where template json files are held for a basic <code class="docutils literal notranslate"><span class="pre">8206HR</span></code> and <code class="docutils literal notranslate"><span class="pre">8401HR</span></code>. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs.</p>
+<p>If you want to create your own dashboard, there is a folder where template JSON files are held for a basic <code class="docutils literal notranslate"><span class="pre">8206HR</span></code> and <code class="docutils literal notranslate"><span class="pre">8401HR</span></code>. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>These can be pretty finicky and need to be pretty precise.</p>
+<p>These can be pretty finicky and need to be precise.</p>
 </div>
 <a class="reference internal image-reference" href="_images/templates.png"><img alt="_images/templates.png" src="_images/templates.png" style="width: 364.5px; height: 136.5px;" />
 </a>
 <section id="customizing-dashboards-for-your-needs">
-<h3><a class="toc-backref" href="#id7" role="doc-backlink">Customizing Dashboards for Your Needs 🎉</a><a class="headerlink" href="#customizing-dashboards-for-your-needs" title="Link to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id9" role="doc-backlink">Customizing Dashboards for Your Needs 🎉</a><a class="headerlink" href="#customizing-dashboards-for-your-needs" title="Link to this heading"></a></h3>
 <p>Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the “edit” mode. To enter edit mode, just press the button in the top right corner.</p>
 <img alt="_images/edit_dashboard.png" src="_images/edit_dashboard.png" />
 <p>After entering this mode, you are free to move panels, create new panels, and edit dashboard settings. After you are finished, you can save the dashboard by clicking the “Saved dashboard” button, and then either copying the JSON to clipboard or saving the JSON to a file.</p>
@@ -176,7 +212,7 @@
 </a>
 <p>Placing this JSON file in the infra/grafana/dashboards folder will allow Grafana to provision it on startup, meaning that it will automatically load in the Grafana GUI (with all your changes!) when starting the container through Terraform.</p>
 <section id="editing-a-panel">
-<h4><a class="toc-backref" href="#id8" role="doc-backlink">Editing a Panel ⬛</a><a class="headerlink" href="#editing-a-panel" title="Link to this heading"></a></h4>
+<h4><a class="toc-backref" href="#id10" role="doc-backlink">Editing a Panel ⬛</a><a class="headerlink" href="#editing-a-panel" title="Link to this heading"></a></h4>
 <p>In your dashboard, you can edit panels by clicking the top right menu button on a panel, and then clicking “Edit”.</p>
 <a class="reference internal image-reference" href="_images/edit_panel.png"><img alt="_images/edit_panel.png" src="_images/edit_panel.png" style="width: 585.0px; height: 218.25px;" />
 </a>
@@ -190,14 +226,22 @@
 <p>Remember, after you edit the panels, if you want to save the dashboard, that you must export it as a JSON file or copy it to your clipboard (and move it somewhere else).</p>
 </section>
 <section id="json-specifics">
-<h4><a class="toc-backref" href="#id9" role="doc-backlink">JSON Specifics 📁</a><a class="headerlink" href="#json-specifics" title="Link to this heading"></a></h4>
-<p>The json files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard.</p>
+<h4><a class="toc-backref" href="#id11" role="doc-backlink">JSON Specifics 📁</a><a class="headerlink" href="#json-specifics" title="Link to this heading"></a></h4>
+<p>In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard.</p>
+<a class="reference internal image-reference" href="_images/panel_begin.png"><img alt="_images/panel_begin.png" src="_images/panel_begin.png" style="width: 430.5px; height: 274.5px;" />
+</a>
+<a class="reference internal image-reference" href="_images/panel_end.png"><img alt="_images/panel_end.png" src="_images/panel_end.png" style="width: 445.0px; height: 241.0px;" />
+</a>
 <p>At the bottom of the file, you will find a “title” line, which stores a string. Changing this string will update the title fo your dashboard.</p>
+<a class="reference internal image-reference" href="_images/json_title.png"><img alt="_images/json_title.png" src="_images/json_title.png" style="width: 375.0px; height: 25.5px;" />
+</a>
 <p>At the top of the file, you will find a “description” line, which stores a string. Changing this string will update the description of your dashboard.</p>
+<img alt="_images/json_description.png" src="_images/json_description.png" />
 </section>
 </section>
 <section id="automated-creation-in-python">
-<h3><a class="toc-backref" href="#id10" role="doc-backlink">Automated Creation in Python 🤖</a><a class="headerlink" href="#automated-creation-in-python" title="Link to this heading"></a></h3>
+<h3><a class="toc-backref" href="#id12" role="doc-backlink">Automated Creation in Python 🤖</a><a class="headerlink" href="#automated-creation-in-python" title="Link to this heading"></a></h3>
+<p>Currently, there is a little bit of support for automatically creating dashboards from pod devices in Python. The code for it currently does not exist in the Morelia API, but rather exists in the <code class="docutils literal notranslate"><span class="pre">Morelia/infra/grafana_json.py</span></code> file.</p>
 </section>
 </section>
 </section>
