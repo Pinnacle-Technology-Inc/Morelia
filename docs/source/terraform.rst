@@ -10,11 +10,14 @@ The Terraform Automation 🗻
 
 If you downloaded Morelia directly from the GitHub page, you'll have access to visualize the data streamed to the ``InfluxSink`` and ``QuestSink`` through Grafana.
 
-In order to do so, you'll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the bash section to quickly download and setup the architecture.
+In order to do so, you'll need to download both Terraform and Docker to create containers for both the data source (Influx or Quest) and Grafana. The downloads can be found at the links below, or if you are on bash, you can follow the :ref:`bash-script`
+ section to quickly download and setup the architecture.
 
-Once downloaded, inside of the 'infra' directory, you will see a file named ``default-values.txt``. You will need to copy this to a file named ``terraform.tfvars``. This step is not required if you are running this on bash.
+Once downloaded, inside of the 'infra' directory, you will see a file named ``default-values.txt``. You will need to copy this to a file named ``terraform.tfvars``. This step is not required if you are following the bash shell script section.
 
-.. image:: images/infra.png
+.. image:: images/infra.png   
+
+.. important:: Below we have steps to help you install Terraform and Docker if you are on a Linux system. If you are on Windows, you'll need to install Docker Desktop in order to run Grafana and InfluxDB. You can follow the steps on `Docker's Website <https://www.docker.com/products/docker-desktop/>`_ to install the service!
 
 You can use ``terraform init`` to initialize the Terraform configuration, and ``terraform apply`` to begin the infrastructure. By default, the Influx database is on ``localhost:8086`` and Grafana is on ``localhost:3000``.
 
@@ -23,8 +26,10 @@ You can use ``terraform init`` to initialize the Terraform configuration, and ``
 
 In the case that you come across an error in creating the infrastructure, you can use ``terraform destroy`` to remove the architecture, or ``terraform restore`` to update the configuration state.
 
+.. _bash-script:
+
 ---------------------
-Bash Shell Script
+Bash Shell Script 📜
 ---------------------
 For ease of use, we have included a bash shell script that downloads Terraform and Docker, and then uses them to create containers for a datasource of your choice and Grafana. You can find the bash script inside of the 'infra' folder.
 
@@ -34,7 +39,7 @@ For ease of use, we have included a bash shell script that downloads Terraform a
 This script can be reused to start Grafana whenever needed. It will not re-install Terraform or Docker.
 
 ---------------------
-Grafana Dashboards
+Grafana Dashboards 💡
 ---------------------
 
 To see the dashboard, go to a web browser and go to ``localhost:3000``. On the lefthand side, there is a "dashboard" tab. Upon clicking this, you'll see two sample 8206 dashboards, one for InfluxDB and one for QuestDB.
@@ -62,7 +67,7 @@ The setup of streaming to the dashboard is similar to that of the previous page:
    # Import the proper class.
    from Morelia.Devices import Pod8206HR
    from Morelia.Stream.sink import InfluxSink
-   from Morelia.Stream import data_flow
+   from Morelia.Stream.data_flow import DataFlow
 
    # Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.
    pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
@@ -75,9 +80,20 @@ The setup of streaming to the dashboard is similar to that of the previous page:
 
    # List that defines how sources map to sinks. 
    mapping = [(pod_1, [influx_sink_1])]
+    
+   flowgraph = DataFlow(mapping)
 
-   flowgraph = data_flow(mapping)
+   flag = False
+
+   with flowgraph: 
+     while True:
+        if flag:
+          break
 
 Upon running this python script, you should see data appear on your dashboard!
 
 .. Add image on Grafana streaming 8206
+.. image:: images/streaming_8206.png
+
+
+
