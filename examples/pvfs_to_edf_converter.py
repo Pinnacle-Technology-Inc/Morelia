@@ -387,8 +387,8 @@ class PvfsToEdfConverter:
                         
                         # Define bounds and defaults
                         MAX_ALLOWED = 1e6  # Maximum allowed absolute value
-                        DEFAULT_MAX = 100.0
-                        DEFAULT_MIN = -100.0
+                        DEFAULT_MAX = 1000.0
+                        DEFAULT_MIN = -1000.0
                         
                         # Check if values are within reasonable bounds
                         if (not np.isfinite(data_max) or 

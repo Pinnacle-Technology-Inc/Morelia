@@ -98,15 +98,18 @@ struct PvfsHighTimeWrapper {
 };
 
 // Basic VFS operations
-WRAPPER_DLL_EXPORT PvfsFileWrapper* create_vfs(uint32_t block_size) {
+WRAPPER_DLL_EXPORT PvfsFileWrapper* create_vfs(const char* filename, uint32_t block_size) 
+{
+    std::string fname = (filename && std::strlen(filename) > 0) ? filename : "temp.pvfs";
+
     auto wrapper = new PvfsFileWrapper();
-    // Create a temporary file with the specified block size
-    std::string temp_filename = "temp.vfs";
-    wrapper->ptr = pvfs::PVFS_create_size(temp_filename.c_str(), block_size);
-    if (!wrapper->ptr) {
+    wrapper->ptr = pvfs::PVFS_create_size(fname.c_str(), block_size);
+    if (!wrapper->ptr) 
+    {
         delete wrapper;
         return nullptr;
     }
+
     return wrapper;
 }
 
@@ -238,7 +241,7 @@ WRAPPER_DLL_EXPORT int32_t get_channel_list(PvfsFileWrapper* vfs, StringVectorWr
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = channel_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                strncpy(names->strings[i], str.c_str(), str.length() + 1 );
+                strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
             }
         }
         return result;
@@ -267,7 +270,7 @@ WRAPPER_DLL_EXPORT int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapp
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = file_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                std::strncpy(names->strings[i],  str.c_str(), str.length() + 1);
+                strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
             }
         }
         return result;

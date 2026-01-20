@@ -229,7 +229,7 @@ class PvfsHighTimeWrapper(ctypes.Structure):
     ]
 
 # Set up function signatures
-_lib.create_vfs.argtypes = [ctypes.c_uint32]
+_lib.create_vfs.argtypes = [ctypes.c_char_p, ctypes.c_uint32]
 _lib.create_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
 
 _lib.open_vfs.argtypes = [ctypes.c_char_p]
@@ -638,11 +638,12 @@ class HighTime:
 
 
 class PvfsFile:
-    def __init__(self, block_size=0x4000):
-        """Initialize a new VFS instance."""
-        self._wrapper = _lib.create_vfs(block_size)
-        if not self._wrapper:
-            raise RuntimeError(f"Failed to create VFS with block size {block_size}")
+    def __init__(self):
+        self._wrapper = None
+
+    @property
+    def is_open(self):
+        return self._wrapper is not None
 
     @classmethod
     def open(cls, filename):
@@ -665,6 +666,16 @@ class PvfsFile:
         except Exception as e:
             print(f"Python: Error opening VFS: {str(e)}")
             raise
+
+    @classmethod
+    def create(cls, filename: str, block_size: int = 0x4000):
+        instance = cls()
+        raw_filename = filename.encode('utf-8') if filename else b""
+        instance._wrapper = _lib.create_vfs(raw_filename, block_size)
+        if not instance._wrapper:
+            raise RuntimeError(f"Failed to create VFS file: {filename}")
+        return instance
+
 
     def create_file(self, filename):
         handle = _lib.create_file(self._wrapper, filename.encode('utf-8'))

@@ -45,6 +45,8 @@ class PvfsDataFile:
         self._video_files: Dict[str, VideoDataFile] = {}
         self._search_paths: List[Path] = []
         self._unique_id = str(uuid.uuid4())
+        self._temp_db_path: Optional[str] = None
+        self._owns_temp_db: bool = False
         
         # Try to open the file if filename is provided
         if filename:
@@ -75,7 +77,7 @@ class PvfsDataFile:
             print(f"  - Creating PVFS file: {filename}")
             
             # Create the PVFS file
-            self._pvfs = PvfsFile.create(filename, block_size)
+            self._pvfs = PvfsFile.create(filename)
             if not self._pvfs:
                 print("  - Failed to create PVFS file object")
                 return False
@@ -84,7 +86,13 @@ class PvfsDataFile:
             
             # Create in-memory database (like the C++ implementation)
             print(f"  - Creating in-memory database")
-            self._database = ExperimentDatabase(in_memory=True)
+            pvfs_dir = Path(filename).parent
+            temp_db_path = str((pvfs_dir / f"temp_{self._unique_id}.db3").absolute())
+
+            self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
+            db_create_result = self._database.create(temp_db_path)
+            self._temp_db_path = temp_db_path
+            self._owns_temp_db = True
             print("  - ExperimentDatabase instance created")
             
             db_create_result = self._database.create()
@@ -159,20 +167,17 @@ class PvfsDataFile:
         try:
             print("  - Closing PVFS file and saving database...")
             
-            # Save the database with all data (experiment info, channel info, etc.)
             if self._database and self._pvfs:
-                print("  - Saving final database to PVFS...")
-                save_result = self._save_database()
-                print(f"  - Save database result: {save_result}")
-                
-                if save_result:
-                    print("  - Saving backup database...")
-                    backup_result = self._save_database_backup()
-                    print(f"  - Save backup result: {backup_result}")
-                else:
-                    print("  - Failed to save main database")
-                    return False
-            
+                self.flush()
+
+            if self._owns_temp_db and self._temp_db_path and os.path.exists(self._temp_db_path):
+                try:
+                    os.remove(self._temp_db_path)
+                except OSError:
+                    pass
+            self._temp_db_path = None
+            self._owns_temp_db = False
+
             # Close the PVFS file
             if self._pvfs:
                 self._pvfs.close()
@@ -203,16 +208,8 @@ class PvfsDataFile:
             if indexed_file:
                 indexed_file.flush(synchronous)
         
-        # Flush video files
-        for video_file in self._video_files.values():
-            if video_file:
-                # Video files don't have flush method, but we can ensure data is written
-                pass
-        
-        # Flush PVFS file
-        if self._pvfs:
-            # The PVFS file flush is handled by the close method
-            pass
+        self._save_database()
+
     
     def create_channel(self, channel_name: str, data_rate: float = 1.0, 
                       data_type: int = 1, unit: str = "uV") -> Optional[IndexedDataFile]:
@@ -417,14 +414,13 @@ class PvfsDataFile:
                     if result == 0 and os.path.exists(temp_db_path):
                         print(f"    - Successfully extracted {db_filename} to {temp_db_path}")
                         # Load the database
-                        if self._database.load_from_file(temp_db_path):
-                            print(f"    - Successfully loaded database from {temp_db_path}")
-                            # Clean up temp file (non-critical)
-                            try:
-                                os.remove(temp_db_path)
-                                print(f"    - Cleaned up temporary file")
-                            except OSError as e:
-                                print(f"    - Warning: Could not remove temporary file: {e}")
+                        if self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
+                            # ensure connection to that file
+                            if not self._database.open(temp_db_path):
+                                return False
+
+                            self._temp_db_path = temp_db_path
+                            self._owns_temp_db = True  # we'll clean it up on close
                             return True
                         else:
                             print(f"    - Failed to load database from {temp_db_path}")
@@ -436,124 +432,46 @@ class PvfsDataFile:
             
             print(f"    - No database found, creating in-memory database")
             # If no database found, create a new one
-            if not self._database.create(":memory:"):
+            temp_db_path = os.path.abspath(f"temp_{self._unique_id}.db3")
+            self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
+            if not self._database.create(temp_db_path):
                 return False
-            
+            self._temp_db_path = temp_db_path
+            self._owns_temp_db = True
             return True
             
         except Exception as e:
             print(f"Error loading database: {e}")
             return False
     
-    def _save_database(self) -> bool:
-        """Save the database to the PVFS file."""
-        if not self._pvfs or not self._database:
-            return False
-        
-        try:
-            print(f"        - Saving in-memory database to PVFS...")
-            
-            # For in-memory database, we need to serialize it to bytes
-            if self._database.in_memory:
-                print(f"        - Serializing in-memory database...")
-                db_data = self._database.serialize_to_bytes()
-                print(f"        - Serialized database size: {len(db_data)} bytes")
-            else:
-                # For file-based database, read from file
-                db_path = self._database.filename
-                print(f"        - Reading database file: {db_path}")
-                
-                if not os.path.exists(db_path):
-                    print(f"        - Database file does not exist!")
-                    return False
-                
-                with open(db_path, 'rb') as f:
-                    db_data = f.read()
-                print(f"        - Read {len(db_data)} bytes from database")
-            
-            print(f"        - Creating file in PVFS: {self.EXPERIMENT_DB_FILENAME}")
-            db_handle = self._pvfs.create_file(self.EXPERIMENT_DB_FILENAME)
-            if not db_handle:
-                print(f"        - Failed to create file handle in PVFS")
-                return False
-            
-            print(f"        - Writing {len(db_data)} bytes to PVFS file...")
-            write_result = db_handle.write(db_data, len(db_data))
-            print(f"        - Write result: {write_result}")
-            
-            # Flush the data to ensure it's committed to the PVFS
-            print(f"        - Flushing data to PVFS...")
-            flush_result = db_handle.flush(commit=True)  # Force commit to disk
-            print(f"        - Flush result: {flush_result}")
-            
-            db_handle.close()
-            print(f"        - Database saved to PVFS successfully")
-            
-            return True
-            
-        except Exception as e:
-            print(f"Error saving database: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
-    
-    def _save_database_backup(self) -> bool:
-        """Save a backup of the database to the PVFS file.
-        
-        Returns:
-            bool: True if successful, False otherwise
-        """
-        if not self._pvfs:
-            return False
-        
-        try:
-            print(f"        - Creating backup database...")
-            # Create a new temporary database for backup
-            temp_db_path = os.path.abspath(f"temp_backup_{self._unique_id}.db3")
-            
-            # Create a new database instance for the backup
-            backup_db = ExperimentDatabase(temp_db_path)
-            if not backup_db.create():
-                print(f"        - Failed to create backup database")
-                return False
-            
-            # Since the original database is closed, we'll create a minimal backup
-            # with just the basic structure
-            print(f"        - Backup database created successfully")
-            
-            # Read the backup database file
-            with open(temp_db_path, 'rb') as f:
-                db_data = f.read()
-            
-            # Create file in PVFS and write data
-            print(f"        - Creating backup file in PVFS: {self.EXPERIMENT_DB_BACKUP_FILENAME}")
-            db_handle = self._pvfs.create_file(self.EXPERIMENT_DB_BACKUP_FILENAME)
-            
-            if not db_handle:
-                print(f"        - Failed to create backup file handle in PVFS")
-                return False
-            
-            print(f"        - Writing {len(db_data)} bytes to backup PVFS file...")
-            db_handle.write(db_data, len(db_data))
-            db_handle.close()
-            
-            print(f"        - Backup database saved to PVFS successfully")
-            
-            # Clean up temp file
-            print(f"        - Cleaning up temporary backup file...")
-            try:
-                os.remove(temp_db_path)
-                print(f"        - Temporary backup file removed successfully")
-            except OSError as e:
-                print(f"        - Warning: Could not remove temporary backup file: {e}")
-            
-            return True
-            
-        except Exception as e:
-            print(f"Error saving database backup: {e}")
-            import traceback
-            traceback.print_exc()
-            return False
+    def _save_database(self, targets: Optional[list[str]] = None) -> bool:
+        targets = targets or [self.EXPERIMENT_DB_FILENAME, self.EXPERIMENT_DB_BACKUP_FILENAME]
+        # 1) make a clean snapshot file from the *current* DB
+        snapshot_path = os.path.abspath(f"temp_snapshot_{self._unique_id}.db3")
+        if not self._database.save_to_file(snapshot_path):
+            return False  # snapshot failed
+
+        # 2) read bytes once
+        with open(snapshot_path, "rb") as f:
+            db_data = f.read()
+
+        # 3) write the same bytes to each target inside PVFS
+        ok = True
+        for name in targets:
+            handle = self._pvfs.create_file(name)
+            if not handle:
+                ok = False
+                break
+            handle.write(db_data, len(db_data))
+            handle.flush(commit=True)
+            handle.close()
+
+        # 4) cleanup
+        try: os.remove(snapshot_path)
+        except OSError: pass
+
+        return ok
+
     
     def _open_channels(self, filename: str) -> bool:
         """Open all channels in the PVFS file.
