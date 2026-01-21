@@ -29,3 +29,5 @@ infra/.terraform.lock.hcl
 *generated.toml
 
 tests/pvfs/test_created.pvfs
+
+tests/pvfs/test_created_extracted.db3

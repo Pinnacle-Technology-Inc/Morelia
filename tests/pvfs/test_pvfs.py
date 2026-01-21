@@ -179,15 +179,14 @@ def created_pvfs(vfs):
             try:
                 dst_handle = dest.fcreate(name)
                 if len(data) > 0:
-                    # PVFS writes may be limited to an internal chunk size (e.g., 1024 bytes).
-                    chunk_size = 1024
+                    chunk_size = 1000000
                     offset = 0
                     data_view = memoryview(data)
                     while offset < len(data_view):
                         chunk = data_view[offset:offset + chunk_size]
                         buf = (ctypes.c_uint8 * len(chunk)).from_buffer_copy(chunk)
-                        n = dst_handle.write(buf, len(chunk))
-                        assert n > 0, f"write failed for {name}: {n}"
+                        n = dst_handle.write(buf, len(data))
+                        assert n == len(data), f"short write: {n} != {len(data)}"
                         offset += n
                     assert offset == len(data_view), f"short write for {name}: {offset} != {len(data_view)}"  
                 dst_handle.flush()

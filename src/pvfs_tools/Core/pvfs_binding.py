@@ -667,6 +667,9 @@ class PvfsFile:
             print(f"Python: Error opening VFS: {str(e)}")
             raise
 
+    '''Blocksize 524k matches the Sirenia default.  This is fine and efficient for large files, 
+   but if a limited amount of data is being saved, a smaller block size (0x4000)
+   will generate much smaller file sizes.'''
     @classmethod
     def create(cls, filename: str, block_size: int = 0x4000):
         instance = cls()
