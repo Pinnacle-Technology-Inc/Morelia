@@ -405,6 +405,9 @@ class IndexedDataFile:
     def _write_timestamp(self, time: HighTime) -> int:
         """Write a timestamp to the file.
         
+        Format must match _read_timestamp: 8 marker bytes, int64 seconds, double
+        subseconds, int64 reserved, int64 data_location, uint32 CRC.
+        
         Args:
             time: The timestamp to write
             
@@ -416,11 +419,17 @@ class IndexedDataFile:
             
         try:
             location = self._index_file.tell()
+            reserved = 0
+            data_location = self._data_file.tell()
             for i in range(8):
                 self._index_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
             self._index_file.fwrite_int64(time.seconds)
             self._index_file.fwrite_double(time.subseconds)
-            self._index_file.fwrite_int64(self._data_file.tell())
+            self._index_file.fwrite_int64(reserved)
+            self._index_file.fwrite_int64(data_location)
+            crc_input = struct.pack('<q', time.seconds) + struct.pack('<d', time.subseconds) + struct.pack('<q', reserved) + struct.pack('<q', data_location)
+            crc = CRC32.calculate_crc32(crc_input)
+            self._index_file.fwrite_uint32(crc)
             self._index_file.flush()
             return location
         except Exception as e:

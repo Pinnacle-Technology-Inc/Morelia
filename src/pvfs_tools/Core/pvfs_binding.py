@@ -311,7 +311,7 @@ _lib.unlock_vfs.restype = None
 _lib.pvfs_fclose.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
 _lib.pvfs_fclose.restype = ctypes.c_int32
 
-_lib.pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+_lib.pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
 _lib.pvfs_flush.restype = ctypes.c_int32
 
 _lib.pvfs_fcreate.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
@@ -797,16 +797,18 @@ class PvfsFileHandle:
             # First try to flush any pending changes
             if self._vfs:
                 try:
-                    _lib.pvfs_flush(self.handle)
+                    _lib.pvfs_flush(self.handle, 0)
                 except Exception as e:
                     print(f"Warning: Failed to flush file handle: {e}")
             
-            # Then close the handle
+            # Close the handle: pvfs_fclose first (commits/flushes in C), then
+            # pvfs_close_file_handle (releases handle->ptr). Reversing the order
+            # invalidates the ptr before fclose, causing -2 and data not persisted.
             try:
-                _lib.pvfs_close_file_handle(self.handle)
                 result = _lib.pvfs_fclose(self.handle)
                 if result < 0:
                     print(f"Warning: Failed to close file handle: {result}")
+                _lib.pvfs_close_file_handle(self.handle)
             except Exception as e:
                 print(f"Warning: Failed to close file handle: {e}")
         finally:
@@ -838,9 +840,23 @@ class PvfsFileHandle:
         return _lib.pvfs_seek(self.handle, offset)
 
     def write(self, buffer, size):
-        """Write data to the file using PVFS_write."""
+        """Write data to the file using PVFS_write.
+        
+        The buffer must be bytes, bytearray, or a ctypes array. For bytes/bytearray,
+        it is copied into a ctypes (c_uint8 * size) so the C layer receives a valid
+        pointer. Passing raw Python bytes to a ctypes POINTER(c_uint8) is not
+        supported and can cause silent failures or corruption.
+        """
         if not self.handle:
             return -2  # PVFS_ARG_NULL
+        # Ensure C receives a proper (uint8_t*) - ctypes does not auto-convert
+        # Python bytes to POINTER(c_uint8); we must use a ctypes buffer.
+        if isinstance(buffer, (bytes, bytearray)):
+            data = bytes(buffer)[:size]
+            actual = len(data)
+            buf = (ctypes.c_uint8 * actual).from_buffer_copy(data)
+            return _lib.pvfs_write(self.handle, ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)), actual)
+        # Assume it is already a ctypes array or compatible
         return _lib.pvfs_write(self.handle, buffer, size)
 
     def read_index_file_header(self):
@@ -856,11 +872,16 @@ class PvfsFileHandle:
             raise RuntimeError(f"Failed to write index file header: {result}")
         return result
 
-    def flush(self):
-        """Flush any pending changes to disk using PVFS_flush."""
+    def flush(self, commit: bool = False):
+        """Flush any pending changes to disk using PVFS_flush.
+        
+        Args:
+            commit: If True, call _commit (Windows) or fsync (POSIX) to force
+                    data to physical storage. Default False to match C++ behavior.
+        """
         if not self.handle:
             return -2  # PVFS_ARG_NULL
-        result = _lib.pvfs_flush(self.handle)
+        result = _lib.pvfs_flush(self.handle, 1 if commit else 0)
         if result < 0:
             raise RuntimeError(f"Failed to flush file: {result}")
         return result

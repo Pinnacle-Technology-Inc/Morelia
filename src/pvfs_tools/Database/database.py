@@ -57,169 +57,127 @@ class ExperimentDatabase:
             raise DatabaseConnectionError(f"Failed to connect to database: {e}")
 
     def _create_tables(self):
-        """Create database tables if they don't exist."""
+        """Create database tables if they don't exist. Schemas match the base (sine.pvfs) format."""
         with self._engine.connect() as conn:
-            # Create experiment information table
+            # experiment_information_table: base schema (sine.pvfs)
             conn.execute(text("""
                 CREATE TABLE IF NOT EXISTS experiment_information_table (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT NOT NULL,
-                    description TEXT,
+                    experiment_id INTEGER,
+                    animal_id TEXT,
+                    comments TEXT,
                     start_time_seconds INTEGER,
-                    start_time_subseconds INTEGER,
+                    start_time_sub_seconds INTEGER,
                     end_time_seconds INTEGER,
-                    end_time_subseconds INTEGER,
-                    created_at TIMESTAMP NOT NULL,
-                    updated_at TIMESTAMP NOT NULL
+                    end_time_sub_seconds INTEGER
                 )
             """))
-            
-            # Create channel information table
+            # experiment_channel_information_table: base schema; FK matches experiment_information_table
             conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS experiment_channel_information (
+                CREATE TABLE IF NOT EXISTS experiment_channel_information_table (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     experiment_id INTEGER NOT NULL,
                     name TEXT NOT NULL,
                     description TEXT,
-                    created_at TIMESTAMP NOT NULL,
-                    updated_at TIMESTAMP NOT NULL,
+                    created_at TIMESTAMP,
+                    updated_at TIMESTAMP,
                     FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(id)
                 )
             """))
             conn.commit()
 
     def set_information(self, information: ExperimentInformation) -> bool:
-        """Set experiment information.
-        
-        Args:
-            information: ExperimentInformation object containing the data.
-            
-        Returns:
-            bool: True if successful, False otherwise.
-        """
+        """Set experiment information. Uses base (sine.pvfs) column names."""
         try:
             with self.session() as session:
-                # Convert HighTime objects to database format
                 start_time_seconds = information.start_time.seconds if information.start_time else None
-                start_time_subseconds = information.start_time.subseconds if information.start_time else None
+                start_time_sub_seconds = information.start_time.subseconds if information.start_time else None
                 end_time_seconds = information.end_time.seconds if information.end_time else None
-                end_time_subseconds = information.end_time.subseconds if information.end_time else None
+                end_time_sub_seconds = information.end_time.subseconds if information.end_time else None
 
                 session.execute(text("""
                     INSERT INTO experiment_information_table 
-                    (name, description, start_time_seconds, start_time_subseconds,
-                     end_time_seconds, end_time_subseconds, created_at, updated_at)
-                    VALUES (:name, :description, :start_time_seconds, :start_time_subseconds,
-                            :end_time_seconds, :end_time_subseconds, :created_at, :updated_at)
+                    (animal_id, comments, start_time_seconds, start_time_sub_seconds,
+                     end_time_seconds, end_time_sub_seconds)
+                    VALUES (:animal_id, :comments, :start_time_seconds, :start_time_sub_seconds,
+                            :end_time_seconds, :end_time_sub_seconds)
                 """), {
-                    "name": information.name,
-                    "description": information.description,
+                    "animal_id": information.name,
+                    "comments": information.description,
                     "start_time_seconds": start_time_seconds,
-                    "start_time_subseconds": start_time_subseconds,
+                    "start_time_sub_seconds": start_time_sub_seconds,
                     "end_time_seconds": end_time_seconds,
-                    "end_time_subseconds": end_time_subseconds,
-                    "created_at": information.created_at,
-                    "updated_at": information.updated_at
+                    "end_time_sub_seconds": end_time_sub_seconds,
                 })
+                session.execute(text("""
+                    UPDATE experiment_information_table SET experiment_id = id
+                    WHERE id = last_insert_rowid()
+                """))
             return True
         except Exception as e:
             raise TableError(f"Failed to set experiment information: {e}")
 
     def get_information(self) -> Optional[ExperimentInformation]:
-        """Get experiment information.
-        
-        Returns:
-            Optional[ExperimentInformation]: The experiment information if found, None otherwise.
-        """
+        """Get experiment information. Uses base (sine.pvfs) schema column names."""
         try:
             with self.session() as session:
                 result = session.execute(text("""
-                    SELECT * FROM experiment_information_table ORDER BY experiment_id DESC LIMIT 1
+                    SELECT * FROM experiment_information_table ORDER BY experiment_id DESC, id DESC LIMIT 1
                 """)).fetchone()
-                
+
                 if not result:
                     return None
 
-                def convert_subseconds(subsec_str: str) -> float:
-                    """Convert decimal subsecond string to float subseconds."""
-                    if not subsec_str:
+                def _sub(val) -> float:
+                    if val is None:
                         return 0.0
                     try:
-                        return float(subsec_str)
+                        return float(val)
                     except (ValueError, TypeError):
                         return 0.0
 
-                # Convert database format to HighTime objects
+                eid = result.experiment_id if result.experiment_id is not None else result.id
                 start_time = HighTime(
-                    result.start_time_seconds,
-                    convert_subseconds(result.start_time_sub_seconds)
+                    result.start_time_seconds, _sub(result.start_time_sub_seconds)
                 ) if result.start_time_seconds is not None else None
-
                 end_time = HighTime(
-                    result.end_time_seconds,
-                    convert_subseconds(result.end_time_sub_seconds)
+                    result.end_time_seconds, _sub(result.end_time_sub_seconds)
                 ) if result.end_time_seconds is not None else None
 
                 return ExperimentInformation(
-                    id=result.experiment_id,  # This is a VARCHAR in the database
-                    name=result.animal_id,    # Using animal_id as the name
+                    id=str(eid) if eid is not None else "0",
+                    name=result.animal_id or "",
                     description=result.comments,
                     start_time=start_time,
                     end_time=end_time,
-                    created_at=datetime.now(),  # These fields don't exist in the old schema
+                    created_at=datetime.now(),
                     updated_at=datetime.now()
                 )
         except Exception as e:
             raise TableError(f"Failed to get experiment information: {e}")
 
     def update_experiment_start_time(self, start_time: HighTime) -> bool:
-        """Update the experiment start time.
-        
-        Args:
-            start_time: New start time.
-            
-        Returns:
-            bool: True if successful, False otherwise.
-        """
+        """Update the experiment start time. Uses base schema (start_time_sub_seconds)."""
         try:
             with self.session() as session:
                 session.execute(text("""
                     UPDATE experiment_information_table 
-                    SET start_time_seconds = :seconds,
-                        start_time_subseconds = :subseconds,
-                        updated_at = :updated_at
+                    SET start_time_seconds = :seconds, start_time_sub_seconds = :sub_seconds
                     WHERE id = (SELECT MAX(id) FROM experiment_information_table)
-                """), {
-                    "seconds": start_time.seconds,
-                    "subseconds": start_time.subseconds,
-                    "updated_at": datetime.now()
-                })
+                """), {"seconds": start_time.seconds, "sub_seconds": start_time.subseconds})
             return True
         except Exception as e:
             raise TableError(f"Failed to update experiment start time: {e}")
 
     def update_experiment_end_time(self, end_time: HighTime) -> bool:
-        """Update the experiment end time.
-        
-        Args:
-            end_time: New end time.
-            
-        Returns:
-            bool: True if successful, False otherwise.
-        """
+        """Update the experiment end time. Uses base schema (end_time_sub_seconds)."""
         try:
             with self.session() as session:
                 session.execute(text("""
                     UPDATE experiment_information_table 
-                    SET end_time_seconds = :seconds,
-                        end_time_subseconds = :subseconds,
-                        updated_at = :updated_at
+                    SET end_time_seconds = :seconds, end_time_sub_seconds = :sub_seconds
                     WHERE id = (SELECT MAX(id) FROM experiment_information_table)
-                """), {
-                    "seconds": end_time.seconds,
-                    "subseconds": end_time.subseconds,
-                    "updated_at": datetime.now()
-                })
+                """), {"seconds": end_time.seconds, "sub_seconds": end_time.subseconds})
             return True
         except Exception as e:
             raise TableError(f"Failed to update experiment end time: {e}")

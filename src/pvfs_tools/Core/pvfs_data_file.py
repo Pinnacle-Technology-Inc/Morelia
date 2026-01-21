@@ -414,7 +414,8 @@ class PvfsDataFile:
                     if result == 0 and os.path.exists(temp_db_path):
                         print(f"    - Successfully extracted {db_filename} to {temp_db_path}")
                         # Load the database
-                        if self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
+                        self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
+                        if self._database:
                             # ensure connection to that file
                             if not self._database.open(temp_db_path):
                                 return False
@@ -456,8 +457,13 @@ class PvfsDataFile:
             db_data = f.read()
 
         # 3) write the same bytes to each target inside PVFS
+        #    (create_file uses PVFS_fcreate; to overwrite, delete existing first)
         ok = True
         for name in targets:
+            try:
+                self._pvfs.delete_file(name)
+            except Exception:
+                pass  # ignore if file did not exist
             handle = self._pvfs.create_file(name)
             if not handle:
                 ok = False
