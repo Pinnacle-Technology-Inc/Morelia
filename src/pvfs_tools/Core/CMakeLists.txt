@@ -16,41 +16,43 @@ if(MSVC)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
     # Set optimization level
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2")
+    # Add BUILDING_PVFS_DLL define for pvfs.dll
+    add_compile_definitions(BUILDING_PVFS_DLL)
 endif()
 
-# Create the shared library
+# Build pvfs.dll first
+add_library(pvfs SHARED
+    pvfs.cpp
+)
+
+# Set the output name of the pvfs DLL
+set_target_properties(pvfs PROPERTIES
+    OUTPUT_NAME "pvfs"
+    BUILD_WITH_INSTALL_RPATH TRUE
+    INSTALL_RPATH "\$ORIGIN"
+)
+
+# Create the wrapper shared library
 add_library(pvfs_wrapper SHARED
     pvfs_wrapper.cpp
 #    mjpg_video_wrapper.cpp
 )
 
-
-# Set the output name of the DLL
+# Set the output name of the wrapper DLL
 set_target_properties(pvfs_wrapper PROPERTIES
     OUTPUT_NAME "pvfs_wrapper"
     BUILD_WITH_INSTALL_RPATH TRUE
     INSTALL_RPATH "\$ORIGIN"
 )
 
-# Find PVFS library
-find_library(PVFS_LIBRARY
-    NAMES pvfs
-    PATHS ${CMAKE_SOURCE_DIR}  # Look in the source directory
-    NO_DEFAULT_PATH
-)
-
-if(NOT PVFS_LIBRARY)
-    message(FATAL_ERROR "PVFS library not found. Please ensure pvfs.dll is in the source directory.")
-endif()
-
-# Link against the PVFS library and Qt
+# Link wrapper against the PVFS library
 target_link_libraries(pvfs_wrapper PRIVATE 
-    ${PVFS_LIBRARY}
+    pvfs
 )
 
 # Copy PVFS DLL to build directory
 add_custom_command(TARGET pvfs_wrapper POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${PVFS_LIBRARY}
+        $<TARGET_FILE:pvfs>
         $<TARGET_FILE_DIR:pvfs_wrapper>
 ) 

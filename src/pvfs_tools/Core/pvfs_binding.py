@@ -671,7 +671,7 @@ class PvfsFile:
    but if a limited amount of data is being saved, a smaller block size (0x4000)
    will generate much smaller file sizes.'''
     @classmethod
-    def create(cls, filename: str, block_size: int = 0x4000):
+    def create(cls, filename: str, block_size: int = 0x80000):
         instance = cls()
         raw_filename = filename.encode('utf-8') if filename else b""
         instance._wrapper = _lib.create_vfs(raw_filename, block_size)

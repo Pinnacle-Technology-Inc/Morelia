@@ -179,14 +179,14 @@ def created_pvfs(vfs):
             try:
                 dst_handle = dest.fcreate(name)
                 if len(data) > 0:
-                    chunk_size = 1000000
+                    chunk_size = 4000
                     offset = 0
                     data_view = memoryview(data)
                     while offset < len(data_view):
                         chunk = data_view[offset:offset + chunk_size]
                         buf = (ctypes.c_uint8 * len(chunk)).from_buffer_copy(chunk)
-                        n = dst_handle.write(buf, len(data))
-                        assert n == len(data), f"short write: {n} != {len(data)}"
+                        n = dst_handle.write(buf, len(chunk))
+                        assert n == len(chunk), f"short write: {n} != {len(chunk)}"
                         offset += n
                     assert offset == len(data_view), f"short write for {name}: {offset} != {len(data_view)}"  
                 dst_handle.flush()

@@ -81,7 +81,7 @@ class ExperimentDatabase:
                     description TEXT,
                     created_at TIMESTAMP,
                     updated_at TIMESTAMP,
-                    FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(id)
+                    FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(rowid)
                 )
             """))
             conn.commit()
@@ -110,8 +110,8 @@ class ExperimentDatabase:
                     "end_time_sub_seconds": end_time_sub_seconds,
                 })
                 session.execute(text("""
-                    UPDATE experiment_information_table SET experiment_id = id
-                    WHERE id = last_insert_rowid()
+                    UPDATE experiment_information_table SET experiment_id = rowid
+                    WHERE rowid = last_insert_rowid()
                 """))
             return True
         except Exception as e:
@@ -122,7 +122,7 @@ class ExperimentDatabase:
         try:
             with self.session() as session:
                 result = session.execute(text("""
-                    SELECT * FROM experiment_information_table ORDER BY experiment_id DESC, id DESC LIMIT 1
+                    SELECT *, rowid FROM experiment_information_table ORDER BY experiment_id DESC, rowid DESC LIMIT 1
                 """)).fetchone()
 
                 if not result:
@@ -136,7 +136,7 @@ class ExperimentDatabase:
                     except (ValueError, TypeError):
                         return 0.0
 
-                eid = result.experiment_id if result.experiment_id is not None else result.id
+                eid = result.experiment_id if result.experiment_id is not None else result.rowid
                 start_time = HighTime(
                     result.start_time_seconds, _sub(result.start_time_sub_seconds)
                 ) if result.start_time_seconds is not None else None
@@ -163,7 +163,7 @@ class ExperimentDatabase:
                 session.execute(text("""
                     UPDATE experiment_information_table 
                     SET start_time_seconds = :seconds, start_time_sub_seconds = :sub_seconds
-                    WHERE id = (SELECT MAX(id) FROM experiment_information_table)
+                    WHERE rowid = (SELECT MAX(rowid) FROM experiment_information_table)
                 """), {"seconds": start_time.seconds, "sub_seconds": start_time.subseconds})
             return True
         except Exception as e:
@@ -176,7 +176,7 @@ class ExperimentDatabase:
                 session.execute(text("""
                     UPDATE experiment_information_table 
                     SET end_time_seconds = :seconds, end_time_sub_seconds = :sub_seconds
-                    WHERE id = (SELECT MAX(id) FROM experiment_information_table)
+                    WHERE rowid = (SELECT MAX(rowid) FROM experiment_information_table)
                 """), {"seconds": end_time.seconds, "sub_seconds": end_time.subseconds})
             return True
         except Exception as e:
