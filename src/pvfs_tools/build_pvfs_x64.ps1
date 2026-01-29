@@ -97,7 +97,7 @@ if (-not $Generator) {
     Write-Error "Could not configure CMake with a 64-bit Visual Studio generator. Install Visual Studio 2019 or 2022 with the 'Desktop development with C++' workload."
 }
 
-n# Build from build dir so linker cwd is build_x64 and "Release\pvfs.lib" resolves (with target_link_directories).
+# Build from build dir so linker cwd is build_x64 and "Release\pvfs.lib" resolves (with target_link_directories).
 Write-Host "Building Release (64-bit)..."
 Push-Location $BuildPath
 try {
