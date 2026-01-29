@@ -9,6 +9,11 @@ testing.py
 temp.*
 auth.json
 /working/*
+/src/pvfs_tools/Core/build
+/src/pvfs_tools/Core/build_x64
+/src/pvfs_tools/Core/pvfs_wrapper.dir
+/src/pvfs_tools/Core/x64
+/src/pvfs_tools/Core/Release
 
 extracted_database.db
 
