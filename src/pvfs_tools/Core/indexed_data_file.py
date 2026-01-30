@@ -146,7 +146,11 @@ class IndexedDataFile:
         self._header.timestamp_interval_seconds = 10
         
         # Write header
-        return self.write_header(self._header)
+        if not self.write_header(self._header):
+            return False
+        # Reader expects timestamp entries to start at INDEX_HEADER_SIZE (1000)
+        self._index_file.seek(self.INDEX_HEADER_SIZE)
+        return True
 
     def open(self, pvfs_file: PvfsFile, filename: str, async_cache: bool = True,
              overwrite: bool = False) -> bool:
@@ -418,6 +422,10 @@ class IndexedDataFile:
             return -1
             
         try:
+            # Reader expects timestamps to start at INDEX_HEADER_SIZE
+            pos = self._index_file.tell()
+            if pos < self.INDEX_HEADER_SIZE:
+                self._index_file.seek(self.INDEX_HEADER_SIZE)
             location = self._index_file.tell()
             reserved = 0
             data_location = self._data_file.tell()
@@ -437,7 +445,7 @@ class IndexedDataFile:
             return -1
 
     def _write_data(self, data: bytes, do_crc: bool = False) -> int:
-        """Write data to the file.
+        """Write raw data to the file (legacy format).
         
         Args:
             data: The data to write
@@ -460,8 +468,53 @@ class IndexedDataFile:
             print(f"Error writing data: {e}")
             return -1
 
+    def _write_data_segment(self, time: HighTime, value: float) -> int:
+        """Write one data segment to the .idat file in the format expected by get_data.
+        
+        Format: [4 bytes float][4 bytes CRC][8 bytes 0xA5 marker][36 bytes timestamp struct].
+        get_data expects this layout to find segments and timestamps.
+        
+        Args:
+            time: Timestamp for this segment
+            value: Data value (one float)
+            
+        Returns:
+            int: 0 on success, -1 on failure
+        """
+        if not self._data_file:
+            return -1
+        try:
+            location = self._data_file.tell()
+            data_bytes = struct.pack('<f', value)
+            crc_data = CRC32.calculate_crc32(data_bytes)
+            self._data_file.write(data_bytes, 4)
+            self._data_file.fwrite_uint32(crc_data)
+            for _ in range(8):
+                self._data_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
+            reserved = 0
+            crc_input = (
+                struct.pack('<q', time.seconds)
+                + struct.pack('<d', time.subseconds)
+                + struct.pack('<q', reserved)
+                + struct.pack('<q', location)
+            )
+            crc_ts = CRC32.calculate_crc32(crc_input)
+            self._data_file.fwrite_int64(time.seconds)
+            self._data_file.fwrite_double(time.subseconds)
+            self._data_file.fwrite_int64(reserved)
+            self._data_file.fwrite_int64(location)
+            self._data_file.fwrite_uint32(crc_ts)
+            self._data_file.flush()
+            return 0
+        except Exception as e:
+            print(f"Error writing data segment: {e}")
+            return -1
+
     def _write_timestamp_and_data(self, time: HighTime, value: float) -> int:
         """Write a timestamp and data value.
+        
+        Writes timestamp to the index file and one segment (float + CRC + 8-byte marker
+        + timestamp struct) to the .idat file so get_data can read it back.
         
         Args:
             time: Timestamp
@@ -470,14 +523,12 @@ class IndexedDataFile:
         Returns:
             int: 0 on success, -1 on failure
         """
-        # Write timestamp to index file
+        # Write timestamp to index file (data_location will be current .idat position)
         index_pos = self._write_timestamp(time)
         if index_pos < 0:
             return -1
-            
-        # Write data to data file
-        data_bytes = struct.pack('f', value)
-        return self._write_data(data_bytes, True)
+        # Write segment to .idat in format expected by get_data
+        return self._write_data_segment(time, value)
 
 
     def get_data(self,
@@ -727,37 +778,40 @@ class IndexedDataFile:
         """
         if not self._index_file or not self._data_file or not data_values:
             return -1
-            
+
+        # Set header start time on first block (no data written yet) so DB gets real start timestamp
+        no_data_yet = (
+            self._header.end_time.seconds == 0 and self._header.end_time.subseconds == 0.0
+        )
+        if no_data_yet:
+            self._header.start_time = start_time
+            self.write_header()
+
         # Write first timestamp and value
         current_time = start_time
         result = self._write_timestamp_and_data(current_time, data_values[0])
         if result < 0:
             return -1
-            
-        # Write remaining values
+
+        # Write remaining values (each as index entry + .idat segment for get_data)
         for i in range(1, len(data_values)):
-            # Calculate next timestamp
-            current_time = HighTime(
-                current_time.seconds + int(self._delta_time.seconds),
-                current_time.subseconds + self._delta_time.subseconds
+            # Advance time by delta; use from_seconds so subseconds stay in [0, 1)
+            current_time = HighTime.from_seconds(
+                current_time.to_seconds() + self._delta_time.to_seconds()
             )
-            
-            # Write data
-            data_bytes = struct.pack('f', data_values[i])
-            result = self._write_data(data_bytes, True)
-            if result < 0:
-                return -1
-                
-            # Write timestamp
+            # Write timestamp to index, then segment to .idat
             result = self._write_timestamp(current_time)
             if result < 0:
                 return -1
-        
-        # Update header end time if needed
+            result = self._write_data_segment(current_time, data_values[i])
+            if result < 0:
+                return -1
+
+        # Update header end time if needed (current_time has normalized subseconds)
         if current_time > self._header.end_time:
             self._header.end_time = current_time
             self.write_header()
-            
+
         return 0
 
     def get_data_rate(self) -> float:

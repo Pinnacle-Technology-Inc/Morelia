@@ -212,7 +212,34 @@ class PvfsDataFile:
         for indexed_file in self._indexed_data_files.values():
             if indexed_file:
                 indexed_file.flush(synchronous)
-        
+        # Sync experiment and channel timestamps from index headers so saved DB has correct times
+        if self._database and self._indexed_data_files:
+            latest_end = None
+            earliest_start = None
+            for ch_name, idf in self._indexed_data_files.items():
+                if not idf:
+                    continue
+                start_ht = idf.get_start_time()
+                end_ht = idf.get_end_time()
+                try:
+                    self._database.update_channel_start_time(ch_name, start_ht)
+                    self._database.update_channel_end_time(ch_name, end_ht)
+                except Exception:
+                    pass
+                if latest_end is None or end_ht.seconds + end_ht.subseconds > latest_end.seconds + latest_end.subseconds:
+                    latest_end = end_ht
+                if earliest_start is None or start_ht.seconds + start_ht.subseconds < earliest_start.seconds + earliest_start.subseconds:
+                    earliest_start = start_ht
+            if latest_end is not None:
+                try:
+                    self._database.update_experiment_end_time(latest_end)
+                except Exception:
+                    pass
+            if earliest_start is not None:
+                try:
+                    self._database.update_experiment_start_time(earliest_start)
+                except Exception:
+                    pass
         self._save_database()
 
     
@@ -245,19 +272,25 @@ class PvfsDataFile:
             # Add to our list
             self._indexed_data_files[channel_name] = indexed_file
             
-            # Add channel information to database
+            # Add channel information to database (with explicit start/end time so DB has non-null timestamps)
+            # id starts at 0 and increments per channel; filename = name + str(id) (e.g. EEG0 -> EEG00)
             if self._database:
+                channel_id = len(self._indexed_data_files) - 1  # 0 for first channel, 1 for second, etc.
                 channel_info = ChannelInformation(
                     name=channel_name,
-                    id=len(self._indexed_data_files),
+                    id=channel_id,
                     type=data_type,
-                    filename=channel_name,
+                    filename=channel_name + str(channel_id),
                     comments=f"Channel {channel_name}",
                     unit=unit,
                     data_rate=int(data_rate),
                     data_rate_float=str(data_rate),
-                    device_name="PVFS Data File",
-                    pvfs_filename=channel_name
+                    device_name="test:000",  # simulated data channels
+                    pvfs_filename="",  # leave blank by convention
+                    start_time=HighTime(0, 0.0),
+                    end_time=HighTime(0, 0.0),
+                    low_range="-50.0",   # standard EEG simulated sine ±50 uV
+                    high_range="50.0",
                 )
                 self._database.add_channel_info(channel_info)
             

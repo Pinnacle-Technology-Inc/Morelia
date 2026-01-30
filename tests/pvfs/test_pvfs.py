@@ -943,8 +943,8 @@ def test_pvfs_create_database():
 def test_pvfs_create_file():
     """
     Create a PVFS with a single indexed data file EEG0, a proper
-    experiment_channel_information_table entry in experiment.db3, and 10 minutes
-    of 10 Hz sine data (amplitude +/- 1) starting at time of creation.
+    experiment_channel_information_table entry in experiment.db3, and 60 seconds
+    of 400 Hz sine data (amplitude ±50 uV, standard EEG-compatible) starting at time of creation.
     """
     test_dir = Path(__file__).parent
     pvfs_path = test_dir / "test_create_pvfs_file.pvfs"
@@ -957,21 +957,22 @@ def test_pvfs_create_file():
         assert ok, "PvfsDataFile.create should succeed"
 
         # Create channel EEG0 (creates EEG0.index, EEG0.idat and DB entry)
-        idf = pvfs_data.create_channel("EEG0", data_rate=10.0, unit="V")
+        # 400 Hz for standard EEG compatibility; units uV
+        idf = pvfs_data.create_channel("EEG0", data_rate=400.0, unit="uV")
         assert idf is not None, "create_channel(EEG0) should succeed"
 
-        # 10 Hz => 0.1 s between samples; IndexedDataFile uses _delta_time for append_block
-        idf._delta_time = HighTime(0.1)
+        # 400 Hz => 1/400 s between samples
+        idf._delta_time = HighTime(0, 1.0 / 400.0)
 
-        # Start at "time of creation" (use 0,0 for a deterministic start)
-        start_time = HighTime(0, 0.0)
-
-        # 10 minutes at 10 Hz = 6000 samples; 10 Hz sine, amplitude ±1
-        duration_sec = 10 * 60
-        sample_rate = 10.0
-        n_samples = int(duration_sec * sample_rate)
+        # Simulated data: start at current PC time, end = start + duration; 60 s at 400 Hz
+        start_time = HighTime.from_seconds(time.time())
+        duration_sec = 60
+        sample_rate = 400.0
+        n_samples = int(duration_sec * sample_rate)  # 60 s at 400 Hz = 24000 samples
+        assert duration_sec == 60 and n_samples == 24000, "simulated data must be 60 s at 400 Hz"
         t = [i / sample_rate for i in range(n_samples)]
-        sine_values = [math.sin(2 * math.pi * 10 * ti) for ti in t]
+        # 10 Hz sine, amplitude ±50 uV (standard EEG-compatible)
+        sine_values = [50.0 * math.sin(2 * math.pi * 10 * ti) for ti in t]
 
         result = idf.append_block(start_time, sine_values)
         assert result == 0, f"append_block should succeed, got {result}"
@@ -1001,23 +1002,35 @@ def test_pvfs_create_file():
                 info = db.get_channel_info("EEG0")
                 assert info is not None, "get_channel_info(EEG0) should return info"
                 assert info.name == "EEG0"
-                assert info.data_rate == 10
+                assert info.data_rate == 400, f"data_rate should be 400, got {info.data_rate}"
+                assert info.data_rate_float == "400.0", f"data_rate_float should be '400.0', got {info.data_rate_float!r}"
+                assert info.unit == "uV", f"unit should be uV, got {info.unit!r}"
+                # Convention: id starts at 0, filename = name + str(id) (e.g. EEG0 -> EEG00)
+                assert info.id == 0, f"first channel id should be 0, got {info.id}"
+                assert info.filename == "EEG00", f"filename should be EEG00, got {info.filename!r}"
+                assert info.low_range == "-50.0" and info.high_range == "50.0", (
+                    f"low_range/high_range for sine ±50 uV should be -50.0/50.0, got {info.low_range!r}/{info.high_range!r}"
+                )
             finally:
                 db.close()
 
-            # Verify indexed data: read a slice and check sine shape
+            # Verify indexed data: 60 s of data; read a slice and check sine shape (±50 uV)
             idf_verify = IndexedDataFile(verify, "EEG0")
             try:
                 start = idf_verify.get_start_time()
-                stop_ht = HighTime(60, 0.0)  # first 60 seconds
+                end_ht = idf_verify.get_end_time()
+                # Verify 60 s of data: end - start ~ 60 s
+                span_sec = end_ht.to_seconds() - start.to_seconds()
+                assert abs(span_sec - 60.0) < 1.0, f"expected ~60 s of data, got span {span_sec} s"
+                stop_ht = start + 10.0  # first 10 seconds of simulated data
                 ts, vals = idf_verify.get_data(start, stop_ht)
                 idf_verify.close()
                 assert len(vals) > 0, "get_data should return some values"
-                # First value ~ sin(0) = 0; sample at 1 s ~ sin(20*pi) = 0
-                assert abs(vals[0]) < 0.01, f"first sample should be ~0, got {vals[0]}"
-                # Spot-check: at t=0.25 s, sin(2*pi*10*0.25) = sin(5*pi) = 0
-                idx_25 = min(3, len(vals) - 1)  # ~0.3 s
-                assert abs(vals[idx_25]) < 0.2, f"early sample should be small, got {vals[idx_25]}"
+                # First value ~ 50*sin(0) = 0
+                assert abs(vals[0]) < 1.0, f"first sample should be ~0, got {vals[0]}"
+                # Spot-check: at t=0.25 s, 50*sin(2*pi*10*0.25) = 50*sin(5*pi) = 0
+                idx_25 = min(100, len(vals) - 1)  # ~0.25 s at 400 Hz
+                assert abs(vals[idx_25]) < 5.0, f"early sample should be small, got {vals[idx_25]}"
             finally:
                 try:
                     idf_verify.close()
@@ -1026,8 +1039,8 @@ def test_pvfs_create_file():
         finally:
             verify.close()
 
-        # Sanity: we wrote 10 min of data
-        assert n_samples == 6000, f"expected 6000 samples, got {n_samples}"
+        # Sanity: we wrote 60 s at 400 Hz
+        assert n_samples == 24000, f"expected 24000 samples, got {n_samples}"
     finally:
         gc.collect()
         time.sleep(0.5)

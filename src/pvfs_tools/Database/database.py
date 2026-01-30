@@ -57,45 +57,60 @@ class ExperimentDatabase:
             raise DatabaseConnectionError(f"Failed to connect to database: {e}")
 
     def _schema_ddl(self):
-        """Return the CREATE TABLE IF NOT EXISTS statements for the standard schema."""
+        """Return the CREATE TABLE IF NOT EXISTS statements for the standard schema.
+        Matches the 14-table layout of standard PVFS (e.g. sine.pvfs) so generated DBs
+        are structurally compatible.
+        """
+        # Column names and order match C++ base (working/experiment_source/*.cpp).
+        # No separate id column; first column is experiment_id (varChar in C++).
         return [
             """
             CREATE TABLE IF NOT EXISTS experiment_information_table (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                experiment_id INTEGER,
+                experiment_id TEXT,
                 animal_id TEXT,
-                comments TEXT,
+                researcher TEXT,
                 start_time_seconds INTEGER,
-                start_time_sub_seconds INTEGER,
+                start_time_sub_seconds REAL,
                 end_time_seconds INTEGER,
-                end_time_sub_seconds INTEGER
+                end_time_sub_seconds REAL,
+                timezone INTEGER,
+                is_dst INTEGER,
+                comments TEXT,
+                num_channels INTEGER
             )
             """,
             """
             CREATE TABLE IF NOT EXISTS experiment_channel_information_table (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                experiment_id INTEGER NOT NULL,
                 name TEXT NOT NULL,
-                description TEXT,
-                created_at TIMESTAMP,
-                updated_at TIMESTAMP,
+                id INTEGER,
                 type INTEGER,
                 filename TEXT,
                 comments TEXT,
                 unit TEXT,
                 data_rate INTEGER,
-                data_rate_float TEXT,
+                data_rate_float REAL,
                 start_time_seconds INTEGER,
                 start_time_sub_seconds REAL,
                 end_time_seconds INTEGER,
                 end_time_sub_seconds REAL,
                 device_name TEXT,
                 pvfs_filename TEXT,
-                low_range TEXT,
-                high_range TEXT,
-                FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(rowid)
+                low_range REAL,
+                high_range REAL
             )
             """,
+            "CREATE TABLE IF NOT EXISTS annotation_parameters_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS annotation_types (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS device_preferences_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS experiment_annotation_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS experiment_artifacts (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS experiment_channel_parameters_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS experiment_extra_parameters_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS experiment_file_time_segment_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS group_housing_zones_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS object_events_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS object_properties_table (id INTEGER PRIMARY KEY)",
+            "CREATE TABLE IF NOT EXISTS view_table (id INTEGER PRIMARY KEY)",
         ]
 
     def _create_tables(self):
@@ -123,22 +138,23 @@ class ExperimentDatabase:
 
                 session.execute(text("""
                     INSERT INTO experiment_information_table 
-                    (animal_id, comments, start_time_seconds, start_time_sub_seconds,
-                     end_time_seconds, end_time_sub_seconds)
-                    VALUES (:animal_id, :comments, :start_time_seconds, :start_time_sub_seconds,
-                            :end_time_seconds, :end_time_sub_seconds)
+                    (experiment_id, animal_id, researcher, start_time_seconds, start_time_sub_seconds,
+                     end_time_seconds, end_time_sub_seconds, timezone, is_dst, comments, num_channels)
+                    VALUES (:experiment_id, :animal_id, :researcher, :start_time_seconds, :start_time_sub_seconds,
+                            :end_time_seconds, :end_time_sub_seconds, :timezone, :is_dst, :comments, :num_channels)
                 """), {
-                    "animal_id": information.name,
-                    "comments": information.description,
+                    "experiment_id": "Experiment",
+                    "animal_id": information.name if information.name else "Animal",
+                    "researcher": "Test",
                     "start_time_seconds": start_time_seconds,
                     "start_time_sub_seconds": start_time_sub_seconds,
                     "end_time_seconds": end_time_seconds,
                     "end_time_sub_seconds": end_time_sub_seconds,
+                    "timezone": -6,
+                    "is_dst": 1,
+                    "comments": information.description,
+                    "num_channels": 0,
                 })
-                session.execute(text("""
-                    UPDATE experiment_information_table SET experiment_id = rowid
-                    WHERE rowid = last_insert_rowid()
-                """))
             return True
         except Exception as e:
             raise TableError(f"Failed to set experiment information: {e}")
@@ -208,9 +224,35 @@ class ExperimentDatabase:
         except Exception as e:
             raise TableError(f"Failed to update experiment end time: {e}")
 
+    def update_channel_start_time(self, channel_name: str, start_time: HighTime) -> bool:
+        """Update a channel's start time by name."""
+        try:
+            with self.session() as session:
+                session.execute(text("""
+                    UPDATE experiment_channel_information_table 
+                    SET start_time_seconds = :seconds, start_time_sub_seconds = :sub_seconds
+                    WHERE name = :name
+                """), {"name": channel_name, "seconds": start_time.seconds, "sub_seconds": start_time.subseconds})
+            return True
+        except Exception as e:
+            raise TableError(f"Failed to update channel start time: {e}")
+
+    def update_channel_end_time(self, channel_name: str, end_time: HighTime) -> bool:
+        """Update a channel's end time by name."""
+        try:
+            with self.session() as session:
+                session.execute(text("""
+                    UPDATE experiment_channel_information_table 
+                    SET end_time_seconds = :seconds, end_time_sub_seconds = :sub_seconds
+                    WHERE name = :name
+                """), {"name": channel_name, "seconds": end_time.seconds, "sub_seconds": end_time.subseconds})
+            return True
+        except Exception as e:
+            raise TableError(f"Failed to update channel end time: {e}")
+
     def add_channel_info(self, channel_info: ChannelInformation) -> bool:
         """Insert a channel row into experiment_channel_information_table.
-        Uses experiment_id from the latest experiment_information_table row; inserts one if empty.
+        Ensures an experiment row exists (inserts one if empty). Matches C++ schema (no experiment_id in channel table).
         """
         try:
             with self.session() as session:
@@ -219,62 +261,57 @@ class ExperimentDatabase:
                 """)).fetchone()
                 if row is None:
                     session.execute(text("""
-                        INSERT INTO experiment_information_table (animal_id, comments)
-                        VALUES ('', '')
+                        INSERT INTO experiment_information_table
+                        (experiment_id, animal_id, researcher, start_time_seconds, start_time_sub_seconds,
+                         end_time_seconds, end_time_sub_seconds, timezone, is_dst, comments, num_channels)
+                        VALUES ('Experiment', 'Animal', 'Test', 0, 0.0, 0, 0.0, -6, 1, '', 0)
                     """))
-                    session.execute(text("""
-                        UPDATE experiment_information_table SET experiment_id = rowid
-                        WHERE rowid = last_insert_rowid()
-                    """))
-                    row = session.execute(text("""
-                        SELECT experiment_id FROM experiment_information_table ORDER BY rowid DESC LIMIT 1
-                    """)).fetchone()
-                else:
-                    row = session.execute(text("""
-                        SELECT COALESCE(experiment_id, rowid) AS experiment_id
-                        FROM experiment_information_table ORDER BY rowid DESC LIMIT 1
-                    """)).fetchone()
-                experiment_id = row.experiment_id if hasattr(row, 'experiment_id') else row[0]
 
                 start_sec = channel_info.start_time.seconds if channel_info.start_time else None
                 start_sub = channel_info.start_time.subseconds if channel_info.start_time else None
                 end_sec = channel_info.end_time.seconds if channel_info.end_time else None
                 end_sub = channel_info.end_time.subseconds if channel_info.end_time else None
-                now = datetime.now().isoformat()
 
+                # Column order matches C++ FIELD_NAMES (16 columns): name, id, type, filename, comments, unit,
+                # data_rate, data_rate_float, start_time_*, end_time_*, device_name, pvfs_filename, low_range, high_range
+                channel_id = channel_info.id if channel_info.id is not None else 0
+                low_r = float(channel_info.low_range) if channel_info.low_range is not None else None
+                high_r = float(channel_info.high_range) if channel_info.high_range is not None else None
                 session.execute(text("""
                     INSERT INTO experiment_channel_information_table (
-                        experiment_id, name, description, created_at, updated_at,
-                        type, filename, comments, unit, data_rate, data_rate_float,
+                        name, id, type, filename, comments, unit, data_rate, data_rate_float,
                         start_time_seconds, start_time_sub_seconds, end_time_seconds, end_time_sub_seconds,
                         device_name, pvfs_filename, low_range, high_range
                     ) VALUES (
-                        :experiment_id, :name, :description, :created_at, :updated_at,
-                        :type, :filename, :comments, :unit, :data_rate, :data_rate_float,
+                        :name, :id, :type, :filename, :comments, :unit, :data_rate, :data_rate_float,
                         :start_time_seconds, :start_time_sub_seconds, :end_time_seconds, :end_time_sub_seconds,
                         :device_name, :pvfs_filename, :low_range, :high_range
                     )
                 """), {
-                    "experiment_id": experiment_id,
                     "name": channel_info.name,
-                    "description": channel_info.comments,
-                    "created_at": now,
-                    "updated_at": now,
+                    "id": channel_id,
                     "type": channel_info.type,
-                    "filename": channel_info.filename,
-                    "comments": channel_info.comments,
-                    "unit": channel_info.unit,
+                    "filename": channel_info.filename or "",
+                    "comments": channel_info.comments or "",
+                    "unit": channel_info.unit or "",
                     "data_rate": channel_info.data_rate,
-                    "data_rate_float": channel_info.data_rate_float,
+                    "data_rate_float": float(channel_info.data_rate_float) if channel_info.data_rate_float not in (None, "") else None,
                     "start_time_seconds": start_sec,
                     "start_time_sub_seconds": start_sub,
                     "end_time_seconds": end_sec,
                     "end_time_sub_seconds": end_sub,
-                    "device_name": channel_info.device_name,
-                    "pvfs_filename": channel_info.pvfs_filename,
-                    "low_range": channel_info.low_range,
-                    "high_range": channel_info.high_range,
+                    "device_name": channel_info.device_name or "",
+                    "pvfs_filename": channel_info.pvfs_filename or "",
+                    "low_range": low_r,
+                    "high_range": high_r,
                 })
+                # Keep experiment num_channels in sync (total channel count; one experiment per DB in C++ schema)
+                session.execute(text("""
+                    UPDATE experiment_information_table SET num_channels = (
+                        SELECT COUNT(*) FROM experiment_channel_information_table
+                    )
+                    WHERE rowid = (SELECT MAX(rowid) FROM experiment_information_table)
+                """))
             return True
         except Exception as e:
             raise TableError(f"Failed to add channel info: {e}")
@@ -477,6 +514,12 @@ class ExperimentDatabase:
                     float(result.end_time_sub_seconds)
                 ) if result.end_time_seconds is not None else None
 
+                # data_rate_float, low_range, high_range stored as REAL in DB; model uses str
+                def _num_to_str(v):
+                    if v is None:
+                        return None
+                    return str(v) if not isinstance(v, str) else v
+
                 return ChannelInformation(
                     name=result.name,
                     id=result.id,
@@ -485,13 +528,13 @@ class ExperimentDatabase:
                     comments=result.comments,
                     unit=result.unit,
                     data_rate=result.data_rate,
-                    data_rate_float=result.data_rate_float,
+                    data_rate_float=_num_to_str(result.data_rate_float),
                     start_time=start_time,
                     end_time=end_time,
                     device_name=result.device_name,
                     pvfs_filename=result.pvfs_filename,
-                    low_range=result.low_range,
-                    high_range=result.high_range
+                    low_range=_num_to_str(result.low_range),
+                    high_range=_num_to_str(result.high_range)
                 )
         except Exception as e:
             raise TableError(f"Failed to get channel information: {e}")
