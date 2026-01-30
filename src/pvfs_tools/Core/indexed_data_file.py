@@ -504,12 +504,25 @@ class IndexedDataFile:
                 end_time: HighTime,
                 max_points: int = -1
                 ) -> Tuple[List[HighTime], List[float]]:
-        """Read data using index: each index entry points to a block in .idat (C++ layout).
-        
-        Block in .idat: [optional 4-byte CRC] [32-byte header: 8 marker, 8 sec, 8 subsec, 8 reserved] [N floats].
+        """Read data using index; procedure matches C++ IndexedDataFileCache::GetData and Python write.
+
+        Write sequence (_write_block_to_idat): [optional 4-byte CRC] then index entry (data_location =
+        current .idat position) then [32-byte header][N floats]. So on disk: block 0 = [32][N0 floats],
+        block 1 = [4 CRC][32][N1 floats], ...; index entry k has data_location = start of that block's
+        32-byte header (0 for block 0, 36+N0*4 for block 1, etc.). Read uses the same layout:
+
+        1. Clamp [start_time, end_time] to file range (C++ m_actualStartTime/m_actualEndTime).
+        2. Iterate index entries that overlap [start_f, end_f] (C++ Start -> FindTimeStampIndex).
+        3. For each block: N = (next_data_loc - data_loc - 36) / 4 (36 = 32-byte header + 4-byte CRC
+           before next block; matches _write_block_to_idat). Last block: N = (idat_size - data_loc - 32) / 4.
+        4. Seek to data_loc, skip 32-byte header, read N floats (data starts at data_loc + 32).
+        5. Timestamp for sample j = block_start + j * (1/data_rate).
+        6. Emit only samples with t in [start_f, end_f]; stop at max_points if set.
         """
         BYTES_PER_FLOAT = 4
-        BLOCK_HEADER_SIZE = 32  # 8 marker + 8 sec + 8 subsec + 8 reserved
+        # C++ m_DataChunkHeaderSizeBeforeData = 32, m_DataChunkHeaderSize = 36 (32 + 4 for CRC before next block)
+        HEADER_BEFORE_DATA = 32
+        CHUNK_HEADER_SIZE = 36  # 32 + 4; used in N = (next_loc - data_loc - 36) / 4
 
         timestamps: List[HighTime] = []
         values_out: List[float] = []
@@ -529,6 +542,14 @@ class IndexedDataFile:
         if not self._indices:
             return timestamps, values_out
 
+        # Clamp to file range (C++: m_actualStartTime/m_actualEndTime)
+        file_start_f = self._header.start_time.to_seconds()
+        file_end_f = self._header.end_time.to_seconds()
+        start_f = max(start_f, file_start_f)
+        end_f = min(end_f, file_end_f)
+        if end_f <= start_f:
+            return timestamps, values_out
+
         idat_info = self._data_file.get_file_info()
         idat_size = idat_info.size
 
@@ -541,20 +562,18 @@ class IndexedDataFile:
                     continue
 
                 data_loc = entry.data_location
-                # Next block's data_location points to its 32-byte header; 4-byte CRC before it ends this block
+                # Same as C++ StartNextSequence: N = (next_data_loc - data_loc - CHUNK_HEADER_SIZE) / sizeof(float)
                 if i + 1 < len(self._indices):
                     next_loc = self._indices[i + 1].data_location
-                    block_bytes = next_loc - data_loc - 4  # -4: CRC before next block ends our block
+                    n_floats = (next_loc - data_loc - CHUNK_HEADER_SIZE) // BYTES_PER_FLOAT
                 else:
-                    block_bytes = idat_size - data_loc
-                if block_bytes <= BLOCK_HEADER_SIZE:
-                    continue
-                n_floats = (block_bytes - BLOCK_HEADER_SIZE) // BYTES_PER_FLOAT
+                    n_floats = (idat_size - data_loc - HEADER_BEFORE_DATA) // BYTES_PER_FLOAT
                 if n_floats <= 0:
                     continue
 
+                # Data starts at data_loc + 32 (C++ m_DataFileSequenceIndex = m_NextTimeStampIndex + m_DataChunkHeaderSizeBeforeData)
                 self._data_file.seek(data_loc)
-                self._data_file.read(BLOCK_HEADER_SIZE)  # skip 32-byte header (block time = entry.start_time)
+                self._data_file.read(HEADER_BEFORE_DATA)
                 raw = self._data_file.read(n_floats * BYTES_PER_FLOAT)
                 if len(raw) != n_floats * BYTES_PER_FLOAT:
                     continue
@@ -574,6 +593,12 @@ class IndexedDataFile:
                         return timestamps, values_out
         finally:
             self._pvfs_file.unlock()
+
+        # Debug: first 40 values = 1 period of 10 Hz sine at 400 Hz
+        n_print = min(40, len(values_out))
+        if n_print > 0:
+            first_40 = values_out[:n_print]
+            print(f"get_data: first {n_print} values = {first_40}")
 
         return timestamps, values_out
 

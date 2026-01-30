@@ -1038,6 +1038,19 @@ def test_pvfs_create_file():
                 assert info.low_range == "-50.0" and info.high_range == "50.0", (
                     f"low_range/high_range for sine ±50 uV should be -50.0/50.0, got {info.low_range!r}/{info.high_range!r}"
                 )
+                # Timestamps in DB must match simulated data range (pvfs_data.close() -> flush() syncs index header to DB)
+                assert info.start_time is not None, "channel start_time should be set from index header"
+                assert info.end_time is not None, "channel end_time should be set from index header"
+                db_start_sec = info.start_time.to_seconds()
+                db_end_sec = info.end_time.to_seconds()
+                expect_start_sec = start_time.to_seconds()
+                expect_end_sec = start_time.to_seconds() + (n_samples - 1) / sample_rate
+                assert abs(db_start_sec - expect_start_sec) < 0.001, (
+                    f"DB start_time should match simulated start: got {db_start_sec}, expected ~{expect_start_sec}"
+                )
+                assert abs(db_end_sec - expect_end_sec) < 0.001, (
+                    f"DB end_time should match simulated end: got {db_end_sec}, expected ~{expect_end_sec}"
+                )
             finally:
                 db.close()
 

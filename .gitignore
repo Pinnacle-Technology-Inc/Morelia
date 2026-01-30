@@ -38,3 +38,7 @@ tests/pvfs/test_created.pvfs
 tests/pvfs/test_created_extracted.db3
 
 tests/pvfs/dump_pvfs_index_idat.py
+
+tests/pvfs/test_create_pvfs_file_extracted.db3
+
+tests/pvfs/test_create_pvfs_file.pvfs
