@@ -56,34 +56,60 @@ class ExperimentDatabase:
         except SQLAlchemyError as e:
             raise DatabaseConnectionError(f"Failed to connect to database: {e}")
 
+    def _schema_ddl(self):
+        """Return the CREATE TABLE IF NOT EXISTS statements for the standard schema."""
+        return [
+            """
+            CREATE TABLE IF NOT EXISTS experiment_information_table (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                experiment_id INTEGER,
+                animal_id TEXT,
+                comments TEXT,
+                start_time_seconds INTEGER,
+                start_time_sub_seconds INTEGER,
+                end_time_seconds INTEGER,
+                end_time_sub_seconds INTEGER
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS experiment_channel_information_table (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                experiment_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                description TEXT,
+                created_at TIMESTAMP,
+                updated_at TIMESTAMP,
+                type INTEGER,
+                filename TEXT,
+                comments TEXT,
+                unit TEXT,
+                data_rate INTEGER,
+                data_rate_float TEXT,
+                start_time_seconds INTEGER,
+                start_time_sub_seconds REAL,
+                end_time_seconds INTEGER,
+                end_time_sub_seconds REAL,
+                device_name TEXT,
+                pvfs_filename TEXT,
+                low_range TEXT,
+                high_range TEXT,
+                FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(rowid)
+            )
+            """,
+        ]
+
     def _create_tables(self):
         """Create database tables if they don't exist. Schemas match the base (sine.pvfs) format."""
         with self._engine.connect() as conn:
-            # experiment_information_table: base schema (sine.pvfs)
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS experiment_information_table (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    experiment_id INTEGER,
-                    animal_id TEXT,
-                    comments TEXT,
-                    start_time_seconds INTEGER,
-                    start_time_sub_seconds INTEGER,
-                    end_time_seconds INTEGER,
-                    end_time_sub_seconds INTEGER
-                )
-            """))
-            # experiment_channel_information_table: base schema; FK matches experiment_information_table
-            conn.execute(text("""
-                CREATE TABLE IF NOT EXISTS experiment_channel_information_table (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    experiment_id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    description TEXT,
-                    created_at TIMESTAMP,
-                    updated_at TIMESTAMP,
-                    FOREIGN KEY (experiment_id) REFERENCES experiment_information_table(rowid)
-                )
-            """))
+            for ddl in self._schema_ddl():
+                conn.execute(text(ddl))
+            conn.commit()
+
+    def _create_tables_on_engine(self, engine):
+        """Create schema on an arbitrary engine (e.g. destination in save_to_file)."""
+        with engine.connect() as conn:
+            for ddl in self._schema_ddl():
+                conn.execute(text(ddl))
             conn.commit()
 
     def set_information(self, information: ExperimentInformation) -> bool:
@@ -182,6 +208,77 @@ class ExperimentDatabase:
         except Exception as e:
             raise TableError(f"Failed to update experiment end time: {e}")
 
+    def add_channel_info(self, channel_info: ChannelInformation) -> bool:
+        """Insert a channel row into experiment_channel_information_table.
+        Uses experiment_id from the latest experiment_information_table row; inserts one if empty.
+        """
+        try:
+            with self.session() as session:
+                row = session.execute(text("""
+                    SELECT rowid FROM experiment_information_table ORDER BY rowid DESC LIMIT 1
+                """)).fetchone()
+                if row is None:
+                    session.execute(text("""
+                        INSERT INTO experiment_information_table (animal_id, comments)
+                        VALUES ('', '')
+                    """))
+                    session.execute(text("""
+                        UPDATE experiment_information_table SET experiment_id = rowid
+                        WHERE rowid = last_insert_rowid()
+                    """))
+                    row = session.execute(text("""
+                        SELECT experiment_id FROM experiment_information_table ORDER BY rowid DESC LIMIT 1
+                    """)).fetchone()
+                else:
+                    row = session.execute(text("""
+                        SELECT COALESCE(experiment_id, rowid) AS experiment_id
+                        FROM experiment_information_table ORDER BY rowid DESC LIMIT 1
+                    """)).fetchone()
+                experiment_id = row.experiment_id if hasattr(row, 'experiment_id') else row[0]
+
+                start_sec = channel_info.start_time.seconds if channel_info.start_time else None
+                start_sub = channel_info.start_time.subseconds if channel_info.start_time else None
+                end_sec = channel_info.end_time.seconds if channel_info.end_time else None
+                end_sub = channel_info.end_time.subseconds if channel_info.end_time else None
+                now = datetime.now().isoformat()
+
+                session.execute(text("""
+                    INSERT INTO experiment_channel_information_table (
+                        experiment_id, name, description, created_at, updated_at,
+                        type, filename, comments, unit, data_rate, data_rate_float,
+                        start_time_seconds, start_time_sub_seconds, end_time_seconds, end_time_sub_seconds,
+                        device_name, pvfs_filename, low_range, high_range
+                    ) VALUES (
+                        :experiment_id, :name, :description, :created_at, :updated_at,
+                        :type, :filename, :comments, :unit, :data_rate, :data_rate_float,
+                        :start_time_seconds, :start_time_sub_seconds, :end_time_seconds, :end_time_sub_seconds,
+                        :device_name, :pvfs_filename, :low_range, :high_range
+                    )
+                """), {
+                    "experiment_id": experiment_id,
+                    "name": channel_info.name,
+                    "description": channel_info.comments,
+                    "created_at": now,
+                    "updated_at": now,
+                    "type": channel_info.type,
+                    "filename": channel_info.filename,
+                    "comments": channel_info.comments,
+                    "unit": channel_info.unit,
+                    "data_rate": channel_info.data_rate,
+                    "data_rate_float": channel_info.data_rate_float,
+                    "start_time_seconds": start_sec,
+                    "start_time_sub_seconds": start_sub,
+                    "end_time_seconds": end_sec,
+                    "end_time_sub_seconds": end_sub,
+                    "device_name": channel_info.device_name,
+                    "pvfs_filename": channel_info.pvfs_filename,
+                    "low_range": channel_info.low_range,
+                    "high_range": channel_info.high_range,
+                })
+            return True
+        except Exception as e:
+            raise TableError(f"Failed to add channel info: {e}")
+
     @contextmanager
     def session(self) -> Session:
         """Get a database session.
@@ -209,12 +306,16 @@ class ExperimentDatabase:
             bool: True if successful, False otherwise.
         """
         target_file = filename or self.filename
+        target_abs = os.path.abspath(target_file)
         if os.path.exists(target_file):
+            # If it's our current database (already open), we already have tables; don't remove
+            if self._engine and os.path.abspath(self.filename) == target_abs:
+                return True
             try:
                 os.remove(target_file)
             except OSError:
                 return False
-        
+
         self.filename = target_file
         self._setup_database()
         return True
@@ -273,8 +374,8 @@ class ExperimentDatabase:
                     # Get all data from the source table
                     data = source_conn.execute(text(f"SELECT * FROM {table_name}")).fetchall()
                     if data:
-                        # Get column names
-                        columns = [desc[0] for desc in source_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()]
+                        # Get column names (PRAGMA table_info returns cid, name, type, ...; name is index 1)
+                        columns = [desc[1] for desc in source_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()]
                         
                         # Insert data into the current database
                         with self._engine.connect() as dest_conn:
@@ -299,9 +400,10 @@ class ExperimentDatabase:
             bool: True if successful, False otherwise.
         """
         try:
-            # Create a temporary connection to the destination database
+            # Create destination engine and ensure it has the same schema (empty file has no tables)
             dest_engine = create_engine(f"sqlite:///{filename}")
-            
+            self._create_tables_on_engine(dest_engine)
+
             # Get all tables from the current database
             with self._engine.connect() as source_conn:
                 tables = source_conn.execute(text("""
@@ -314,8 +416,8 @@ class ExperimentDatabase:
                     # Get all data from the source table
                     data = source_conn.execute(text(f"SELECT * FROM {table_name}")).fetchall()
                     if data:
-                        # Get column names
-                        columns = [desc[0] for desc in source_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()]
+                        # Get column names (PRAGMA table_info returns cid, name, type, ...; name is index 1)
+                        columns = [desc[1] for desc in source_conn.execute(text(f"PRAGMA table_info({table_name})")).fetchall()]
                         
                         # Insert data into the destination database
                         with dest_engine.connect() as dest_conn:

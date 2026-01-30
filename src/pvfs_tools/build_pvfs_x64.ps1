@@ -8,15 +8,15 @@
     pvfs_binding.py can load them.
 
 .PARAMETER CopyToCore
-    If set (default), copies the built DLLs into Core/. If not set, DLLs remain
-    only in the build directory.
+    If set (default), copies the built DLLs and import libraries (.lib) into Core/.
+    If not set, DLLs and .lib remain only in the build directory.
 
 .PARAMETER BuildDir
     Subdirectory used for the 64-bit build (default: build_x64).
 
 .EXAMPLE
     .\build_pvfs_x64.ps1
-    Builds and copies pvfs.dll and pvfs_wrapper.dll into Core/.
+    Builds and copies pvfs.dll, pvfs_wrapper.dll, and their .lib import libraries into Core/.
 
 .EXAMPLE
     .\build_pvfs_x64.ps1 -CopyToCore:$false
@@ -114,6 +114,8 @@ if ($buildExit -ne 0) {
 $ReleaseDir = Join-Path $BuildPath "Release"
 $pvfsDll    = Join-Path $ReleaseDir "pvfs.dll"
 $wrapDll    = Join-Path $ReleaseDir "pvfs_wrapper.dll"
+$pvfsLib    = Join-Path $ReleaseDir "pvfs.lib"
+$wrapLib    = Join-Path $ReleaseDir "pvfs_wrapper.lib"
 
 foreach ($dll in @($pvfsDll, $wrapDll)) {
     if (-not (Test-Path $dll)) {
@@ -128,5 +130,11 @@ Write-Host "  $wrapDll"
 if ($CopyToCore) {
     Copy-Item -Path $pvfsDll -Destination (Join-Path $CoreDir "pvfs.dll") -Force
     Copy-Item -Path $wrapDll -Destination (Join-Path $CoreDir "pvfs_wrapper.dll") -Force
-    Write-Host "Copied both DLLs to: $CoreDir"
+    if (Test-Path $pvfsLib) {
+        Copy-Item -Path $pvfsLib -Destination (Join-Path $CoreDir "pvfs.lib") -Force
+    }
+    if (Test-Path $wrapLib) {
+        Copy-Item -Path $wrapLib -Destination (Join-Path $CoreDir "pvfs_wrapper.lib") -Force
+    }
+    Write-Host "Copied DLLs (and .lib if present) to: $CoreDir"
 }

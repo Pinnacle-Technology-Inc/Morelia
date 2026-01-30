@@ -10,6 +10,7 @@ except ImportError:
     pytest.skip("PyAV not installed, skipping pvfs tests.", allow_module_level =True)
     
 from pvfs_tools.Core.pvfs_binding import PvfsFile, HighTime, StringVector, _lib
+from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
 from pvfs_tools.Database.database import ExperimentDatabase
 from pvfs_tools.Database.exceptions import TableError
 from pvfs_tools.Database.models import ExperimentInformation, ChannelInformation, Annotation
@@ -120,6 +121,64 @@ def out_file():
     The file will be created in the directory from which the test is being run."""
     test_dir = Path.cwd()  # Get the current working directory
     return str(test_dir / "test.db3")
+
+
+@pytest.fixture
+def blank_pvfs_with_experiment_db():
+    """
+    Self-contained fixture: creates a blank PVFS with an empty experiment.db3
+    and yields its path. Teardown closes and deletes the file.
+    Use this for tests that need a blank VFS + DB (e.g. adding indexed files
+    and DB entries) so tests remain order-independent and can run in isolation.
+    """
+    test_dir = Path(__file__).parent
+    pvfs_path = test_dir / "test_blank_pvfs.pvfs"
+    temp_db_path = test_dir / "temp_blank_experiment.db3"
+
+    if temp_db_path.exists():
+        temp_db_path.unlink()
+    if pvfs_path.exists():
+        cleanup_file(pvfs_path)
+
+    dest = PvfsFile.create(str(pvfs_path))
+    assert dest.is_open, "Created PVFS should be open"
+
+    db = ExperimentDatabase(filename=str(temp_db_path), in_memory=False)
+    db.close()
+    gc.collect()
+    time.sleep(0.1)
+
+    assert temp_db_path.exists(), "Database file should exist"
+    db_data = temp_db_path.read_bytes()
+    assert len(db_data) > 0 and db_data[:16] == b"SQLite format 3\x00", "Valid SQLite DB"
+
+    CHUNK = 1024
+    dest.lock()
+    try:
+        dst = dest.fcreate("experiment.db3")
+        offset = 0
+        while offset < len(db_data):
+            chunk = db_data[offset : offset + CHUNK]
+            n = dst.write(chunk, len(chunk))
+            assert n == len(chunk), f"write at offset {offset} returned {n}, expected {len(chunk)}"
+            dst.flush()
+            offset += n
+        dst.close()
+    finally:
+        dest.unlock()
+    dest.close()
+    gc.collect()
+    time.sleep(0.2)
+
+    cleanup_file(temp_db_path)
+
+    try:
+        yield pvfs_path
+    finally:
+        gc.collect()
+        time.sleep(0.5)
+        cleanup_file(pvfs_path, max_retries=5, delay=0.5)
+
 
 def test_pvfs_get_channel_list(vfs, file_name):
     """Test getting channel list from a VFS file."""
@@ -794,100 +853,186 @@ def test_file_handle_get_info(vfs, file_name):
 def test_pvfs_create_database():
     """
     Create an empty pvfs file and populate it with an empty ExperimentDatabase
-    called experiment.db3. The created pvfs file is left on disk.
+    called experiment.db3. Verifies extract and schema, then cleans up (self-contained).
     """
     test_dir = Path(__file__).parent
     pvfs_path = test_dir / "test_created_database.pvfs"
     temp_db_path = test_dir / "temp_experiment.db3"
-    
-    # Create an empty pvfs file
-    dest = PvfsFile.create(str(pvfs_path))
-    assert dest.is_open, "Created PVFS should be open"
-    
-    # Create an empty ExperimentDatabase
-    # Ensure the temp file doesn't exist first
-    if temp_db_path.exists():
-        temp_db_path.unlink()
-    
-    # Create the database - _setup_database() will create the file and tables
-    db = ExperimentDatabase(filename=str(temp_db_path), in_memory=False)
-    
-    # Close the database to ensure it's written to disk
-    db.close()
-    gc.collect()
-    time.sleep(0.1)
-    
-    # Verify the database file exists and read its contents
-    assert temp_db_path.exists(), "Database file should exist"
-    db_data = temp_db_path.read_bytes()
-    assert len(db_data) > 0, "Database file should not be empty"
-    
-    # Verify it's a valid SQLite database
-    magic = db_data[:16]
-    assert magic == b"SQLite format 3\x00", (
-        f"Database should start with SQLite magic, got {magic!r}"
-    )
-    
-    # Write the database into the pvfs file in 1K chunks (matching PVFS_add behavior)
-    CHUNK = 1024
-    dest.lock()
-    try:
-        dst = dest.fcreate("experiment.db3")
-        offset = 0
-        while offset < len(db_data):
-            chunk = db_data[offset : offset + CHUNK]
-            n = dst.write(chunk, len(chunk))
-            assert n == len(chunk), (
-                f"write at offset {offset} returned {n}, expected {len(chunk)}"
-            )
-            dst.flush()
-            offset += n
-        dst.close()
-    finally:
-        dest.unlock()
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
-    
-    # Verify the database was written to the pvfs file by extracting it
-    verify = PvfsFile.open(str(pvfs_path))
     extracted_path = test_dir / "test_created_database_extracted.db3"
+
     try:
-        res = verify.extract("experiment.db3", str(extracted_path))
-        assert res == 0, f"extract failed: {res}"
-        assert extracted_path.exists(), "Extracted database file should exist"
-        assert extracted_path.stat().st_size == len(db_data), (
-            f"extracted size {extracted_path.stat().st_size} != expected {len(db_data)}"
+        # Create an empty pvfs file
+        dest = PvfsFile.create(str(pvfs_path))
+        assert dest.is_open, "Created PVFS should be open"
+
+        # Create an empty ExperimentDatabase
+        if temp_db_path.exists():
+            temp_db_path.unlink()
+        db = ExperimentDatabase(filename=str(temp_db_path), in_memory=False)
+        db.close()
+        gc.collect()
+        time.sleep(0.1)
+
+        assert temp_db_path.exists(), "Database file should exist"
+        db_data = temp_db_path.read_bytes()
+        assert len(db_data) > 0, "Database file should not be empty"
+        magic = db_data[:16]
+        assert magic == b"SQLite format 3\x00", (
+            f"Database should start with SQLite magic, got {magic!r}"
         )
-        
-        # Verify the extracted database is valid
-        extracted_magic = extracted_path.read_bytes()[:16]
-        assert extracted_magic == b"SQLite format 3\x00", (
-            f"extracted file should start with SQLite magic, got {extracted_magic!r}"
-        )
-        
-        # Verify the database has the expected tables (empty but with schema)
-        conn = sqlite3.connect(str(extracted_path))
+
+        # Write the database into the pvfs file in 1K chunks (matching PVFS_add behavior)
+        CHUNK = 1024
+        dest.lock()
         try:
-            tables = conn.execute(
-                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-            ).fetchall()
-            table_names = [r[0] for r in tables]
-            # Should have at least the base tables created by ExperimentDatabase
-            assert "experiment_information_table" in table_names, (
-                "Database should have experiment_information_table"
-            )
-            assert "experiment_channel_information_table" in table_names, (
-                "Database should have experiment_channel_information_table"
-            )
+            dst = dest.fcreate("experiment.db3")
+            offset = 0
+            while offset < len(db_data):
+                chunk = db_data[offset : offset + CHUNK]
+                n = dst.write(chunk, len(chunk))
+                assert n == len(chunk), (
+                    f"write at offset {offset} returned {n}, expected {len(chunk)}"
+                )
+                dst.flush()
+                offset += n
+            dst.close()
         finally:
-            conn.close()
+            dest.unlock()
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        # Verify the database was written to the pvfs file by extracting it
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            res = verify.extract("experiment.db3", str(extracted_path))
+            assert res == 0, f"extract failed: {res}"
+            assert extracted_path.exists(), "Extracted database file should exist"
+            assert extracted_path.stat().st_size == len(db_data), (
+                f"extracted size {extracted_path.stat().st_size} != expected {len(db_data)}"
+            )
+            extracted_magic = extracted_path.read_bytes()[:16]
+            assert extracted_magic == b"SQLite format 3\x00", (
+                f"extracted file should start with SQLite magic, got {extracted_magic!r}"
+            )
+            conn = sqlite3.connect(str(extracted_path))
+            try:
+                tables = conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+                ).fetchall()
+                table_names = [r[0] for r in tables]
+                assert "experiment_information_table" in table_names, (
+                    "Database should have experiment_information_table"
+                )
+                assert "experiment_channel_information_table" in table_names, (
+                    "Database should have experiment_channel_information_table"
+                )
+            finally:
+                conn.close()
+        finally:
+            verify.close()
     finally:
-        verify.close()
-    
-    # Cleanup temporary files but leave the pvfs file on disk as requested
-    cleanup_file(temp_db_path)
-    cleanup_file(extracted_path)
+        # Self-contained: clean up all artifacts
+        cleanup_file(temp_db_path)
+        cleanup_file(extracted_path)
+        gc.collect()
+        time.sleep(0.5)
+        cleanup_file(pvfs_path, max_retries=5, delay=0.5)
+
+
+def test_pvfs_create_file():
+    """
+    Create a PVFS with a single indexed data file EEG0, a proper
+    experiment_channel_information_table entry in experiment.db3, and 10 minutes
+    of 10 Hz sine data (amplitude +/- 1) starting at time of creation.
+    """
+    test_dir = Path(__file__).parent
+    pvfs_path = test_dir / "test_create_pvfs_file.pvfs"
+    extracted_db_path = test_dir / "test_create_pvfs_file_extracted.db3"
+
+    try:
+        # Create PVFS and experiment.db3 via PvfsDataFile
+        pvfs_data = PvfsDataFile()
+        ok = pvfs_data.create(str(pvfs_path))
+        assert ok, "PvfsDataFile.create should succeed"
+
+        # Create channel EEG0 (creates EEG0.index, EEG0.idat and DB entry)
+        idf = pvfs_data.create_channel("EEG0", data_rate=10.0, unit="V")
+        assert idf is not None, "create_channel(EEG0) should succeed"
+
+        # 10 Hz => 0.1 s between samples; IndexedDataFile uses _delta_time for append_block
+        idf._delta_time = HighTime(0.1)
+
+        # Start at "time of creation" (use 0,0 for a deterministic start)
+        start_time = HighTime(0, 0.0)
+
+        # 10 minutes at 10 Hz = 6000 samples; 10 Hz sine, amplitude ±1
+        duration_sec = 10 * 60
+        sample_rate = 10.0
+        n_samples = int(duration_sec * sample_rate)
+        t = [i / sample_rate for i in range(n_samples)]
+        sine_values = [math.sin(2 * math.pi * 10 * ti) for ti in t]
+
+        result = idf.append_block(start_time, sine_values)
+        assert result == 0, f"append_block should succeed, got {result}"
+
+        # Flush and close (writes experiment.db3 into PVFS)
+        pvfs_data.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        # Verify: PVFS contains EEG0.index, EEG0.idat and experiment.db3
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            channels = verify.get_channel_list()
+            assert "EEG0.index" in channels, f"EEG0.index should be in channel list: {channels}"
+            assert "EEG0.idat" in channels, f"EEG0.idat should be in channel list: {channels}"
+            assert "experiment.db3" in channels, "experiment.db3 should be in channel list"
+
+            # Extract DB and check experiment_channel_information_table has EEG0
+            res = verify.extract("experiment.db3", str(extracted_db_path))
+            assert res == 0, f"extract experiment.db3 failed: {res}"
+            assert extracted_db_path.exists(), "extracted DB should exist"
+
+            db = ExperimentDatabase(str(extracted_db_path))
+            try:
+                names = db.get_channel_names()
+                assert "EEG0" in names, f"EEG0 should be in channel names: {names}"
+                info = db.get_channel_info("EEG0")
+                assert info is not None, "get_channel_info(EEG0) should return info"
+                assert info.name == "EEG0"
+                assert info.data_rate == 10
+            finally:
+                db.close()
+
+            # Verify indexed data: read a slice and check sine shape
+            idf_verify = IndexedDataFile(verify, "EEG0")
+            try:
+                start = idf_verify.get_start_time()
+                stop_ht = HighTime(60, 0.0)  # first 60 seconds
+                ts, vals = idf_verify.get_data(start, stop_ht)
+                idf_verify.close()
+                assert len(vals) > 0, "get_data should return some values"
+                # First value ~ sin(0) = 0; sample at 1 s ~ sin(20*pi) = 0
+                assert abs(vals[0]) < 0.01, f"first sample should be ~0, got {vals[0]}"
+                # Spot-check: at t=0.25 s, sin(2*pi*10*0.25) = sin(5*pi) = 0
+                idx_25 = min(3, len(vals) - 1)  # ~0.3 s
+                assert abs(vals[idx_25]) < 0.2, f"early sample should be small, got {vals[idx_25]}"
+            finally:
+                try:
+                    idf_verify.close()
+                except Exception:
+                    pass
+        finally:
+            verify.close()
+
+        # Sanity: we wrote 10 min of data
+        assert n_samples == 6000, f"expected 6000 samples, got {n_samples}"
+    finally:
+        gc.collect()
+        time.sleep(0.5)
+#        cleanup_file(pvfs_path, max_retries=5, delay=0.5)
+#        cleanup_file(extracted_db_path)
 
 
 if __name__ == "__main__":

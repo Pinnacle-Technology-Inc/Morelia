@@ -90,19 +90,24 @@ class PvfsDataFile:
             temp_db_path = str((pvfs_dir / f"temp_{self._unique_id}.db3").absolute())
 
             self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
-            db_create_result = self._database.create(temp_db_path)
             self._temp_db_path = temp_db_path
             self._owns_temp_db = True
             print("  - ExperimentDatabase instance created")
-            
-            db_create_result = self._database.create()
+            # Create DB file and tables (only once; second create() would try to remove
+            # the file while it is open and fail)
+            db_create_result = self._database.create(temp_db_path)
             print(f"  - Database create result: {db_create_result}")
-            
             if not db_create_result:
                 print("  - Failed to create database")
                 return False
             
             print("  - Database created successfully")
+            
+            # Write experiment.db3 and experiment_backup.db3 into the PVFS first so they
+            # are the first two channels (required by standard PVFS layout)
+            if not self._save_database():
+                print("  - Failed to save initial database to PVFS")
+                return False
             
             # Set file information
             file_path = Path(filename)
@@ -446,35 +451,50 @@ class PvfsDataFile:
             return False
     
     def _save_database(self, targets: Optional[list[str]] = None) -> bool:
+        """Write the current database into the PVFS as experiment.db3 and experiment_backup.db3.
+        Uses fcreate (empty file in VFS) then writes snapshot bytes; create_file/PVFS_add would
+        require a disk file of that name.
+        """
         targets = targets or [self.EXPERIMENT_DB_FILENAME, self.EXPERIMENT_DB_BACKUP_FILENAME]
         # 1) make a clean snapshot file from the *current* DB
         snapshot_path = os.path.abspath(f"temp_snapshot_{self._unique_id}.db3")
-        if not self._database.save_to_file(snapshot_path):
-            return False  # snapshot failed
+        try:
+            if not self._database.save_to_file(snapshot_path):
+                return False
+            with open(snapshot_path, "rb") as f:
+                db_data = f.read()
+        finally:
+            try:
+                os.remove(snapshot_path)
+            except OSError:
+                pass
 
-        # 2) read bytes once
-        with open(snapshot_path, "rb") as f:
-            db_data = f.read()
-
-        # 3) write the same bytes to each target inside PVFS
-        #    (create_file uses PVFS_fcreate; to overwrite, delete existing first)
+        # 2) write the same bytes to each target inside PVFS (fcreate = new empty file in VFS)
+        CHUNK = 1024
         ok = True
         for name in targets:
             try:
                 self._pvfs.delete_file(name)
             except Exception:
                 pass  # ignore if file did not exist
-            handle = self._pvfs.create_file(name)
+            handle = self._pvfs.fcreate(name)
             if not handle:
                 ok = False
                 break
-            handle.write(db_data, len(db_data))
-            handle.flush(commit=True)
-            handle.close()
-
-        # 4) cleanup
-        try: os.remove(snapshot_path)
-        except OSError: pass
+            try:
+                offset = 0
+                while offset < len(db_data):
+                    chunk = db_data[offset : offset + CHUNK]
+                    n = handle.write(chunk, len(chunk))
+                    if n != len(chunk):
+                        ok = False
+                        break
+                    offset += n
+                    handle.flush(commit=True)
+                if not ok:
+                    break
+            finally:
+                handle.close()
 
         return ok
 

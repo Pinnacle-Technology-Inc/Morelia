@@ -952,31 +952,57 @@ std::shared_ptr<PvfsFileHandle> PVFS_fcreate ( std::shared_ptr<PvfsFile> &vfs, c
     if ( filename == nullptr ) return nullptr;
     if ( vfs->fd == PVFS_INVALID_FD ) return nullptr;
 
-    //// Find the last block.
-    // Get the first file block.
-    PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
-    file_block = vfs->fileBlock;
-
-    while ( file_block->next != PVFS_INVALID_LOCATION )
+    // First, look for a deleted (zeroed) file entry slot to reuse. This prevents the file block
+    // chain from growing unbounded when the same filename is repeatedly overwritten.
+    std::int32_t reuseIndex = -1;
+    std::int64_t address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
+    while ( address != PVFS_INVALID_LOCATION )
     {
-        PVFS_read_block_file ( vfs, file_block->next, vfs->fileBlock );
-        file_block = vfs->fileBlock;		// Not really neccessary...
+        for ( std::uint32_t i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
+        {
+            PvfsFileEntry* entry = &(vfs->fileBlock->files [ i ]);
+            if ( entry->filename [ 0 ] == 0 )
+            {
+                // Deleted slot (PVFS_delete_file zeros filename, startBlock, size)
+                file_block = vfs->fileBlock;
+                reuseIndex = static_cast<std::int32_t>(i);
+                address = PVFS_INVALID_LOCATION;  // break outer loop
+                break;
+            }
+        }
+        if ( address != PVFS_INVALID_LOCATION )
+        {
+            address = PVFS_read_block_file ( vfs, vfs->fileBlock->next, vfs->fileBlock );
+        }
     }
-    // Check the final block is full or not.
-    if ( file_block->files.size() == vfs->fileMaxCount )
-    {
-        // Allocate a new block for file storage.
-        PVFS_allocate_block ( vfs );
-        PVFS_cast_block_to_file ( vfs->block, vfs->fileBlockTemp );
-        file_block->next = vfs->fileBlockTemp->self;
-        vfs->fileBlockTemp->prev = file_block->self;
-        PVFS_write_block_file ( vfs, file_block->self, file_block );			// Save back the change
-        PVFS_write_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlockTemp );
 
-        // Reload the block, reset the pointer.
-        PVFS_read_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlock );
+    if ( reuseIndex < 0 )
+    {
+        // No deleted slot found: use last block and append (possibly allocate new file block).
+        PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
         file_block = vfs->fileBlock;
 
+        while ( file_block->next != PVFS_INVALID_LOCATION )
+        {
+            PVFS_read_block_file ( vfs, file_block->next, vfs->fileBlock );
+            file_block = vfs->fileBlock;		// Not really neccessary...
+        }
+        // Check the final block is full or not.
+        if ( file_block->files.size() == vfs->fileMaxCount )
+        {
+            // Allocate a new block for file storage.
+            PVFS_allocate_block ( vfs );
+            PVFS_cast_block_to_file ( vfs->block, vfs->fileBlockTemp );
+            file_block->next = vfs->fileBlockTemp->self;
+            vfs->fileBlockTemp->prev = file_block->self;
+            PVFS_write_block_file ( vfs, file_block->self, file_block );			// Save back the change
+            PVFS_write_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlockTemp );
+
+            // Reload the block, reset the pointer.
+            PVFS_read_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlock );
+            file_block = vfs->fileBlock;
+
+        }
     }
 
     file = create_PVFS_file_handle ( vfs );
@@ -1006,12 +1032,22 @@ std::shared_ptr<PvfsFileHandle> PVFS_fcreate ( std::shared_ptr<PvfsFile> &vfs, c
     strcpy ( (char*) file_entry.filename, filename );
     file_entry.size		= 0;
     file_entry.startBlock = file->tree->self;
-    file_block->files.push_back(file_entry);
+    if ( reuseIndex >= 0 )
+    {
+        // Reuse the deleted slot; do not grow the file block list.
+        file_block->files [ static_cast<std::size_t>(reuseIndex) ] = file_entry;
+        file->tableBlock = file_block->self;
+        file->tableIndex = reuseIndex;
+    }
+    else
+    {
+        file_block->files.push_back(file_entry);
+        file->tableBlock		= file_block->self;
+        file->tableIndex		= static_cast<std::int32_t>(file_block->files.size() - 1);  // Index of the entry we just added
+    }
 
     // Get the file information updated.
     PVFS_copy_fileEntry  ( &(file->info), &file_entry );
-    file->tableBlock		= file_block->self;
-    file->tableIndex		= static_cast<std::int32_t>(file_block->files.size() - 1);  // Index of the entry we just added
 
     // Save the block (count is now derived from files.size() when writing)
     PVFS_write_block_file ( vfs, file_block->self, file_block );

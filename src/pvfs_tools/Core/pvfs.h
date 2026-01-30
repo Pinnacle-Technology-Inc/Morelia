@@ -442,7 +442,8 @@ PVFS_EXPORT bool PVFS_has_file (std::shared_ptr<PvfsFile> vfs, const char * file
 
 // Deletes the file and frees all associated blocks (tree and data blocks)
 // Marks all blocks as FREE for potential reuse
-// Removes the file entry from the file table
+// Zeros the file entry slot in place (filename, startBlock, size); PVFS_fcreate reuses
+// such slots when creating a new file, so overwrites do not grow the file block chain
 PVFS_EXPORT std::int32_t PVFS_delete_file(std::shared_ptr<PvfsFile> &vfs, const char* filename);
 
 // Helper function to recursively collect all blocks (tree and data) for a file

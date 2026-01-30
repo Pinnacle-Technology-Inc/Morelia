@@ -128,9 +128,9 @@ class IndexedDataFile:
         except:
             pass
             
-        # Create the files
-        self._index_file = pvfs_file.create_file(index_name)
-        self._data_file = pvfs_file.create_file(data_name)
+        # Create empty files in the VFS (fcreate; create_file/PVFS_add expects a disk file to add)
+        self._index_file = pvfs_file.fcreate(index_name)
+        self._data_file = pvfs_file.fcreate(data_name)
         
         if not self._index_file or not self._data_file:
             return False
