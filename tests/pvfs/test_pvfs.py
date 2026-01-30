@@ -48,6 +48,29 @@ def cleanup_file(path, max_retries=3, delay=0.2):
                 # Final attempt failed
                 print(f"Warning: Failed to remove {path} after {max_retries} attempts: {e}")
 
+
+def cleanup_temp_db_files(*directories, keep_names=None):
+    """Remove temp_*.db3 and temp_snapshot_*.db3 in the given directories.
+    Does not remove files whose names are in keep_names (e.g. final outputs).
+    """
+    keep_names = set(keep_names or [])
+    for dir_path in directories:
+        if not dir_path or not dir_path.exists():
+            continue
+        for pattern in ("temp_*.db3", "temp_snapshot_*.db3"):
+            for f in dir_path.glob(pattern):
+                if f.name in keep_names:
+                    continue
+                cleanup_file(f, max_retries=5, delay=0.5)
+
+
+def _test_create_file_dirs():
+    """Return (test_dir, project_root) for test_pvfs_create_file cleanup."""
+    test_dir = Path(__file__).resolve().parent
+    project_root = test_dir.parent.parent  # tests/pvfs -> tests -> project root
+    return test_dir, project_root
+
+
 @pytest.fixture
 def file_name():
     """Fixture to provide the test file path."""
@@ -946,9 +969,13 @@ def test_pvfs_create_file():
     experiment_channel_information_table entry in experiment.db3, and 60 seconds
     of 400 Hz sine data (amplitude ±50 uV, standard EEG-compatible) starting at time of creation.
     """
-    test_dir = Path(__file__).parent
+    test_dir, project_root = _test_create_file_dirs()
     pvfs_path = test_dir / "test_create_pvfs_file.pvfs"
     extracted_db_path = test_dir / "test_create_pvfs_file_extracted.db3"
+    keep_names = {"test_create_pvfs_file.pvfs", "test_create_pvfs_file_extracted.db3"}
+
+    # Clean any leftover temp files from previous runs (in test dir and project root)
+    cleanup_temp_db_files(test_dir, project_root, keep_names=keep_names)
 
     try:
         # Create PVFS and experiment.db3 via PvfsDataFile
@@ -1044,8 +1071,8 @@ def test_pvfs_create_file():
     finally:
         gc.collect()
         time.sleep(0.5)
-#        cleanup_file(pvfs_path, max_retries=5, delay=0.5)
-#        cleanup_file(extracted_db_path)
+        # Keep final PVFS and extracted DB; remove all other temp DBs (temp_*.db3, temp_snapshot_*.db3)
+        cleanup_temp_db_files(test_dir, project_root, keep_names=keep_names)
 
 
 if __name__ == "__main__":

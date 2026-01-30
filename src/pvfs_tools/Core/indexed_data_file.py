@@ -83,6 +83,8 @@ class IndexedDataFile:
         
         # Data file position tracking
         self._data_file_index = 0
+        # CRC of previous block's float data (written at start of next block in .idat)
+        self._pending_block_crc: Optional[int] = None
         
         # Index entries
         self._indices = []
@@ -240,6 +242,11 @@ class IndexedDataFile:
             self._index_file.fwrite_int64(header.end_time.seconds)
             self._index_file.fwrite_double(header.end_time.subseconds)
             self._index_file.fwrite_uint32(header.timestamp_interval_seconds)
+            # Pad to INDEX_HEADER_SIZE (C++ writes full 1K header)
+            pos = self._index_file.tell()
+            if pos < self.INDEX_HEADER_SIZE:
+                pad = self.INDEX_HEADER_SIZE - pos
+                self._index_file.write(b"\x00" * pad, pad)
             self._index_file.flush()
             return True
         finally:
@@ -307,7 +314,9 @@ class IndexedDataFile:
             return False
 
     def _read_all_indices(self):
-        """Read all index entries from the index file."""
+        """Read all index entries from the index file.
+        Layout (matches sine.pvfs / C++): 1K header then 44-byte entries (8 marker, 8 sec, 8 subsec, 8 reserved, 8 data_location, 4 CRC). Each entry points to a block in .idat (32-byte header + N floats; optional 4-byte CRC before non-first blocks).
+        """
         self._indices.clear()
         self._current_index = 0
         
@@ -346,9 +355,9 @@ class IndexedDataFile:
                 last_data_location = data_location
             
             read_location += self.TIMESTAMP_SIZE
-        
-        # Add the last entry if we have at least one
-        if count > 1 and last_time is not None:
+
+        # Add the last (or only) block entry so single-block files get one entry (count >= 1)
+        if count >= 1 and last_time is not None:
             entry = IndexEntry(
                 start_time=last_time,
                 end_time=self._header.end_time,
@@ -444,91 +453,50 @@ class IndexedDataFile:
             print(f"Error writing timestamp: {e}")
             return -1
 
-    def _write_data(self, data: bytes, do_crc: bool = False) -> int:
-        """Write raw data to the file (legacy format).
+    def _write_block_to_idat(self, start_time: HighTime, float_list: List[float]) -> int:
+        """Write one block to the .idat file (C++ layout).
+        
+        Index file: one 44-byte timestamp entry with (start_time, data_location).
+        Data file: [optional 4-byte CRC of previous block] [32-byte header] [N floats].
+        data_location points to the start of the 32-byte header.
         
         Args:
-            data: The data to write
-            do_crc: Whether to calculate CRC (not implemented)
-            
-        Returns:
-            int: The location where the data was written, or -1 if error
-        """
-        if not self._data_file:
-            return -1
-            
-        try:
-            location = self._data_file.tell()
-            self._data_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
-            self._data_file.fwrite_uint32(len(data))
-            self._data_file.write(data, len(data))
-            self._data_file.flush()
-            return location
-        except Exception as e:
-            print(f"Error writing data: {e}")
-            return -1
-
-    def _write_data_segment(self, time: HighTime, value: float) -> int:
-        """Write one data segment to the .idat file in the format expected by get_data.
-        
-        Format: [4 bytes float][4 bytes CRC][8 bytes 0xA5 marker][36 bytes timestamp struct].
-        get_data expects this layout to find segments and timestamps.
-        
-        Args:
-            time: Timestamp for this segment
-            value: Data value (one float)
+            start_time: Block start timestamp
+            float_list: All float values in this block
             
         Returns:
             int: 0 on success, -1 on failure
         """
-        if not self._data_file:
+        if not self._data_file or not self._index_file:
             return -1
         try:
-            location = self._data_file.tell()
-            data_bytes = struct.pack('<f', value)
-            crc_data = CRC32.calculate_crc32(data_bytes)
-            self._data_file.write(data_bytes, 4)
-            self._data_file.fwrite_uint32(crc_data)
+            # 1) If not first block, write previous block's CRC to .idat (C++ order)
+            if self._data_file.tell() > 0 and self._pending_block_crc is not None:
+                self._data_file.fwrite_uint32(self._pending_block_crc)
+
+            # 2) Write index entry (data_location = current .idat position = start of 32-byte header)
+            if self._write_timestamp(start_time) < 0:
+                return -1
+
+            # 3) Write 32-byte block header: 8 marker, 8 sec, 8 subsec, 8 reserved
             for _ in range(8):
                 self._data_file.fwrite_uint8(self.UNIQUE_MARKER_BYTE)
-            reserved = 0
-            crc_input = (
-                struct.pack('<q', time.seconds)
-                + struct.pack('<d', time.subseconds)
-                + struct.pack('<q', reserved)
-                + struct.pack('<q', location)
-            )
-            crc_ts = CRC32.calculate_crc32(crc_input)
-            self._data_file.fwrite_int64(time.seconds)
-            self._data_file.fwrite_double(time.subseconds)
-            self._data_file.fwrite_int64(reserved)
-            self._data_file.fwrite_int64(location)
-            self._data_file.fwrite_uint32(crc_ts)
+            self._data_file.fwrite_int64(start_time.seconds)
+            self._data_file.fwrite_double(start_time.subseconds)
+            self._data_file.fwrite_int64(0)  # reserved
+
+            # 4) Write all floats and accumulate CRC for this block (written at start of next block)
+            crc_calc = CRC32()
+            for v in float_list:
+                data_bytes = struct.pack('<f', v)
+                crc_calc.append_bytes(data_bytes)
+                self._data_file.write(data_bytes, 4)
+            self._pending_block_crc = crc_calc.get_crc()
             self._data_file.flush()
             return 0
         except Exception as e:
-            print(f"Error writing data segment: {e}")
+            print(f"Error writing block to idat: {e}")
             return -1
-
-    def _write_timestamp_and_data(self, time: HighTime, value: float) -> int:
-        """Write a timestamp and data value.
-        
-        Writes timestamp to the index file and one segment (float + CRC + 8-byte marker
-        + timestamp struct) to the .idat file so get_data can read it back.
-        
-        Args:
-            time: Timestamp
-            value: Data value
-            
-        Returns:
-            int: 0 on success, -1 on failure
-        """
-        # Write timestamp to index file (data_location will be current .idat position)
-        index_pos = self._write_timestamp(time)
-        if index_pos < 0:
-            return -1
-        # Write segment to .idat in format expected by get_data
-        return self._write_data_segment(time, value)
 
 
     def get_data(self,
@@ -536,160 +504,64 @@ class IndexedDataFile:
                 end_time: HighTime,
                 max_points: int = -1
                 ) -> Tuple[List[HighTime], List[float]]:
-        import math, struct
-
+        """Read data using index: each index entry points to a block in .idat (C++ layout).
+        
+        Block in .idat: [optional 4-byte CRC] [32-byte header: 8 marker, 8 sec, 8 subsec, 8 reserved] [N floats].
+        """
         BYTES_PER_FLOAT = 4
-        CHUNK_SAMPS = 10000
-        TIMESTAMP_MARKER = b"\xA5" * 8
-        TIMESTAMP_STRUCT = struct.Struct('<q d q q I')  # secs:int64, sub:double, reserved:int64, idx:int64, CRC:uint32
-        MARKER_SIZE = len(TIMESTAMP_MARKER)             # 8
-        HEADER_SIZE = MARKER_SIZE + TIMESTAMP_STRUCT.size  # 8 + 36 = 44 bytes
+        BLOCK_HEADER_SIZE = 32  # 8 marker + 8 sec + 8 subsec + 8 reserved
 
         timestamps: List[HighTime] = []
         values_out: List[float] = []
         if not self._index_file or not self._data_file:
             return timestamps, values_out
 
-        # convert times to float seconds
-        start_f = start_time.seconds + start_time.subseconds
-        end_f   = end_time.seconds   + end_time.subseconds
+        start_f = start_time.to_seconds()
+        end_f = end_time.to_seconds()
         if end_f <= start_f:
             return timestamps, values_out
 
         sample_rate = self.get_data_rate()
         if sample_rate <= 0:
             return timestamps, values_out
+        delta = 1.0 / sample_rate
 
-        # find first block covering start_f
-        first_entry = next(
-            (e for e in self._indices
-            if (e.end_time.seconds + e.end_time.subseconds) >= start_f),
-            None
-        )
-        if first_entry is None:
+        if not self._indices:
             return timestamps, values_out
 
-        entry_start_f = first_entry.start_time.seconds + first_entry.start_time.subseconds
-        needed_samps = math.ceil((end_f - entry_start_f) * sample_rate)
+        idat_info = self._data_file.get_file_info()
+        idat_size = idat_info.size
 
-        all_raw: List[float] = []
-        markers:    List[Tuple[int, float]] = []
-        raw_buffer = b''
-        crc_calculator = CRC32()  # Create CRC32 instance for accumulating CRC
-
-        # preserve up to (HEADER_SIZE-1) bytes to catch split headers
-        preserve = HEADER_SIZE - 1
-
-        self._data_file.seek(first_entry.data_location)
         self._pvfs_file.lock()
         try:
-            while len(all_raw) < needed_samps:
-                data = self._data_file.read(CHUNK_SAMPS * BYTES_PER_FLOAT)
-                if not data:
-                    break
-                raw_buffer += data
-                ptr = 0
+            for i, entry in enumerate(self._indices):
+                block_start_f = entry.start_time.to_seconds()
+                block_end_f = entry.end_time.to_seconds()
+                if block_end_f <= start_f or block_start_f >= end_f:
+                    continue
 
-                # scan for full 8-byte markers at 4-byte alignment
-                while True:
-                    idx = raw_buffer.find(TIMESTAMP_MARKER, ptr)
-                    if idx < 0:
-                        # No marker found, accumulate CRC only for the new data
-                        # Only add data from current read that hasn't been processed
-                        new_data = raw_buffer[ptr:ptr + len(data)]
-                        crc_calculator.append_bytes(new_data)
-                        break
-                    # require marker to align on float boundary
-                    if idx % BYTES_PER_FLOAT != 0:
-                        # Accumulate CRC only up to the misaligned marker
-                        crc_calculator.append_bytes(raw_buffer[ptr:idx])
-                        ptr = idx + 1
-                        continue
-                    # need full header in buffer
-                    if len(raw_buffer) < idx + HEADER_SIZE:
-                        # Accumulate CRC only for the new data
-                        new_data = raw_buffer[ptr:ptr + len(data)]
-                        crc_calculator.append_bytes(new_data)
-                        break
+                data_loc = entry.data_location
+                # Next block's data_location points to its 32-byte header; 4-byte CRC before it ends this block
+                if i + 1 < len(self._indices):
+                    next_loc = self._indices[i + 1].data_location
+                    block_bytes = next_loc - data_loc - 4  # -4: CRC before next block ends our block
+                else:
+                    block_bytes = idat_size - data_loc
+                if block_bytes <= BLOCK_HEADER_SIZE:
+                    continue
+                n_floats = (block_bytes - BLOCK_HEADER_SIZE) // BYTES_PER_FLOAT
+                if n_floats <= 0:
+                    continue
 
-                    # Process data segment between markers
-                    n_pre = (idx - ptr - 4) // BYTES_PER_FLOAT  # 4 bytes before timestamp is the CRC
-                    if n_pre > 0:
-                        end_off = ptr + n_pre * BYTES_PER_FLOAT
-                        # Read stored CRC first
-                        crc_stored = struct.unpack('<I', raw_buffer[end_off:end_off + 4])[0]
-                        
-                        # Accumulate CRC for data up to CRC bytes (excluding the CRC bytes themselves)
-                        crc_calculator.append_bytes(raw_buffer[ptr:end_off])
-                        
-                        # Get calculated CRC and compare
-                        crc_calculated = crc_calculator.get_crc()
-                        
-                        if crc_calculated != crc_stored:
-                            None
-#                            print(f"Data segment CRC mismatch at location {ptr}: expected {hex(crc_stored)}, got {hex(crc_calculated)}")
-                            # Continue processing but log the error
-                        
-                        # Reset CRC calculator for next segment
-                        crc_calculator.reset()
-                        
-                        # Unpack and add the values
-                        vals = struct.unpack(f'<{n_pre}f', raw_buffer[ptr:end_off])
-                        all_raw.extend(vals)
+                self._data_file.seek(data_loc)
+                self._data_file.read(BLOCK_HEADER_SIZE)  # skip 32-byte header (block time = entry.start_time)
+                raw = self._data_file.read(n_floats * BYTES_PER_FLOAT)
+                if len(raw) != n_floats * BYTES_PER_FLOAT:
+                    continue
+                vals = struct.unpack(f'<{n_floats}f', raw)
 
-                    # read timestamp struct (ignoring CRC)
-                    hdr_off = idx + MARKER_SIZE
-                    sec, sub, _, _, _ = TIMESTAMP_STRUCT.unpack(
-                        raw_buffer[hdr_off:hdr_off + TIMESTAMP_STRUCT.size]
-                    )
-                    markers.append((len(all_raw), sec + sub))
-
-                    # advance past header
-                    ptr = idx + HEADER_SIZE
-
-                # unpack any floats after last header, but leave up to 'preserve' bytes
-                tail_bytes = len(raw_buffer) - ptr
-                to_consume = tail_bytes - preserve
-                if to_consume > 0:
-                    n_tail = to_consume // BYTES_PER_FLOAT
-                    if n_tail > 0:
-                        start_off = ptr
-                        end_off = ptr + n_tail * BYTES_PER_FLOAT
-                        # Add any remaining data to CRC before unpacking
-                        crc_calculator.append_bytes(raw_buffer[start_off:end_off])
-                        vals = struct.unpack(f'<{n_tail}f', raw_buffer[start_off:end_off])
-                        all_raw.extend(vals)
-                        ptr = end_off
-
-                # drop processed bytes, keep the last 'preserve' bytes
-                raw_buffer = raw_buffer[ptr:]
-        finally:
-            self._pvfs_file.unlock()
-            # Clear large intermediate data structures to free memory
-            raw_buffer = None
-            if 'data' in locals():
-                data = None
-
-        timestamps.clear()
-        values_out.clear()
-
-        # Segment-based interpolation
-        if len(markers) >= 2:
-            dt_tolerance = 0.01  # 1% deviation allowed
-
-            # Precompute and validate per-segment dt
-            for (i0, t0), (i1, t1) in zip(markers[:-1], markers[1:]):
-                if i1 <= i0:
-                    continue  # skip bad segment
-                segment_dt = (t1 - t0) / (i1 - i0)
-                expected_dt = 1.0 / sample_rate
-                if abs(segment_dt - expected_dt) / expected_dt > dt_tolerance:
-                    segment_dt = expected_dt
-
-                for i in range(i0, i1):
-                    if i >= len(all_raw):
-                        break  # sanity check
-                    t = t0 + (i - i0) * segment_dt
+                for j, v in enumerate(vals):
+                    t = block_start_f + j * delta
                     if t < start_f:
                         continue
                     if t > end_f:
@@ -697,77 +569,37 @@ class IndexedDataFile:
                     sec = int(t)
                     sub = t - sec
                     timestamps.append(HighTime(sec, sub))
-                    values_out.append(all_raw[i])
+                    values_out.append(v)
                     if 0 < max_points == len(timestamps):
                         return timestamps, values_out
-
-            # handle tail if needed
-            last_i, last_t = markers[-1]
-            expected_dt = 1.0 / sample_rate
-            for i in range(last_i, len(all_raw)):
-                t = last_t + (i - last_i) * expected_dt
-                if t > end_f:
-                    break
-                sec = int(t)
-                sub = t - sec
-                timestamps.append(HighTime(sec, sub))
-                values_out.append(all_raw[i])
-                if 0 < max_points == len(timestamps):
-                    return timestamps, values_out
-
-        else:
-            # Fallback: no reliable markers
-            dt = 1.0 / sample_rate
-            for i, val in enumerate(all_raw):
-                t = entry_start_f + i * dt
-                if t < start_f:
-                    continue
-                if t > end_f:
-                    break
-                sec = int(t)
-                sub = t - sec
-                timestamps.append(HighTime(sec, sub))
-                values_out.append(val)
-                if 0 < max_points == len(timestamps):
-                    break
-
-        # Clean up large intermediate arrays to free memory
-        try:
-            all_raw.clear()
-            markers.clear()
-            del all_raw
-            del markers
-        except:
-            pass
+        finally:
+            self._pvfs_file.unlock()
 
         return timestamps, values_out
 
     def append(self, time: HighTime, value: float, consolidate: bool = False) -> int:
-        """Append a single data point.
+        """Append a single data point (one block of one sample).
         
         Args:
             time: Timestamp for the data point
             value: Data value
-            consolidate: Whether to consolidate with existing data
+            consolidate: Whether to consolidate with existing data (not used)
             
         Returns:
             int: 0 on success, -1 on failure
         """
         if not self._index_file or not self._data_file:
             return -1
-            
-        # Write timestamp and data
-        result = self._write_timestamp_and_data(time, value)
-        
-        # Update header end time if needed
+        result = self._write_block_to_idat(time, [value])
         if result == 0 and time > self._header.end_time:
             self._header.end_time = time
             self.write_header()
-            
         return result
 
     def append_block(self, start_time: HighTime, data_values: List[float]) -> int:
-        """Append a block of data points.
+        """Append a block of data points (one index entry, one .idat block).
+        
+        C++ layout: index entry points to block start in .idat; block = 32-byte header + N floats.
         
         Args:
             start_time: Start time for the data block
@@ -779,7 +611,6 @@ class IndexedDataFile:
         if not self._index_file or not self._data_file or not data_values:
             return -1
 
-        # Set header start time on first block (no data written yet) so DB gets real start timestamp
         no_data_yet = (
             self._header.end_time.seconds == 0 and self._header.end_time.subseconds == 0.0
         )
@@ -787,31 +618,17 @@ class IndexedDataFile:
             self._header.start_time = start_time
             self.write_header()
 
-        # Write first timestamp and value
-        current_time = start_time
-        result = self._write_timestamp_and_data(current_time, data_values[0])
+        result = self._write_block_to_idat(start_time, data_values)
         if result < 0:
             return -1
 
-        # Write remaining values (each as index entry + .idat segment for get_data)
-        for i in range(1, len(data_values)):
-            # Advance time by delta; use from_seconds so subseconds stay in [0, 1)
-            current_time = HighTime.from_seconds(
-                current_time.to_seconds() + self._delta_time.to_seconds()
-            )
-            # Write timestamp to index, then segment to .idat
-            result = self._write_timestamp(current_time)
-            if result < 0:
-                return -1
-            result = self._write_data_segment(current_time, data_values[i])
-            if result < 0:
-                return -1
-
-        # Update header end time if needed (current_time has normalized subseconds)
-        if current_time > self._header.end_time:
-            self._header.end_time = current_time
+        # End time = start + (N-1) * delta
+        last_time = HighTime.from_seconds(
+            start_time.to_seconds() + (len(data_values) - 1) * self._delta_time.to_seconds()
+        )
+        if last_time > self._header.end_time:
+            self._header.end_time = last_time
             self.write_header()
-
         return 0
 
     def get_data_rate(self) -> float:

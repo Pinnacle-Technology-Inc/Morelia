@@ -36,3 +36,5 @@ infra/.terraform.lock.hcl
 tests/pvfs/test_created.pvfs
 
 tests/pvfs/test_created_extracted.db3
+
+tests/pvfs/dump_pvfs_index_idat.py
