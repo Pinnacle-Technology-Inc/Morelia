@@ -229,7 +229,7 @@ class PvfsHighTimeWrapper(ctypes.Structure):
     ]
 
 # Set up function signatures
-_lib.create_vfs.argtypes = [ctypes.c_uint32]
+_lib.create_vfs.argtypes = [ctypes.c_char_p, ctypes.c_uint32]
 _lib.create_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
 
 _lib.open_vfs.argtypes = [ctypes.c_char_p]
@@ -311,7 +311,7 @@ _lib.unlock_vfs.restype = None
 _lib.pvfs_fclose.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
 _lib.pvfs_fclose.restype = ctypes.c_int32
 
-_lib.pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+_lib.pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
 _lib.pvfs_flush.restype = ctypes.c_int32
 
 _lib.pvfs_fcreate.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
@@ -529,6 +529,8 @@ class HighTime:
     def __del__(self):
         if hasattr(self, '_time') and self._time:
             try:
+                # Properly delete the underlying C++ HighTime object
+                _lib.delete_high_time(self._time)
                 self._time = None
             except:
                 pass
@@ -636,11 +638,12 @@ class HighTime:
 
 
 class PvfsFile:
-    def __init__(self, block_size=0x4000):
-        """Initialize a new VFS instance."""
-        self._wrapper = _lib.create_vfs(block_size)
-        if not self._wrapper:
-            raise RuntimeError(f"Failed to create VFS with block size {block_size}")
+    def __init__(self):
+        self._wrapper = None
+
+    @property
+    def is_open(self):
+        return self._wrapper is not None
 
     @classmethod
     def open(cls, filename):
@@ -663,6 +666,19 @@ class PvfsFile:
         except Exception as e:
             print(f"Python: Error opening VFS: {str(e)}")
             raise
+
+    '''Blocksize 524k matches the Sirenia default.  This is fine and efficient for large files, 
+   but if a limited amount of data is being saved, a smaller block size (0x4000)
+   will generate much smaller file sizes.'''
+    @classmethod
+    def create(cls, filename: str, block_size: int = 0x80000):
+        instance = cls()
+        raw_filename = filename.encode('utf-8') if filename else b""
+        instance._wrapper = _lib.create_vfs(raw_filename, block_size)
+        if not instance._wrapper:
+            raise RuntimeError(f"Failed to create VFS file: {filename}")
+        return instance
+
 
     def create_file(self, filename):
         handle = _lib.create_file(self._wrapper, filename.encode('utf-8'))
@@ -784,16 +800,18 @@ class PvfsFileHandle:
             # First try to flush any pending changes
             if self._vfs:
                 try:
-                    _lib.pvfs_flush(self.handle)
+                    _lib.pvfs_flush(self.handle, 0)
                 except Exception as e:
                     print(f"Warning: Failed to flush file handle: {e}")
             
-            # Then close the handle
+            # Close the handle: pvfs_fclose first (commits/flushes in C), then
+            # pvfs_close_file_handle (releases handle->ptr). Reversing the order
+            # invalidates the ptr before fclose, causing -2 and data not persisted.
             try:
-                _lib.pvfs_close_file_handle(self.handle)
                 result = _lib.pvfs_fclose(self.handle)
                 if result < 0:
                     print(f"Warning: Failed to close file handle: {result}")
+                _lib.pvfs_close_file_handle(self.handle)
             except Exception as e:
                 print(f"Warning: Failed to close file handle: {e}")
         finally:
@@ -825,9 +843,23 @@ class PvfsFileHandle:
         return _lib.pvfs_seek(self.handle, offset)
 
     def write(self, buffer, size):
-        """Write data to the file using PVFS_write."""
+        """Write data to the file using PVFS_write.
+        
+        The buffer must be bytes, bytearray, or a ctypes array. For bytes/bytearray,
+        it is copied into a ctypes (c_uint8 * size) so the C layer receives a valid
+        pointer. Passing raw Python bytes to a ctypes POINTER(c_uint8) is not
+        supported and can cause silent failures or corruption.
+        """
         if not self.handle:
             return -2  # PVFS_ARG_NULL
+        # Ensure C receives a proper (uint8_t*) - ctypes does not auto-convert
+        # Python bytes to POINTER(c_uint8); we must use a ctypes buffer.
+        if isinstance(buffer, (bytes, bytearray)):
+            data = bytes(buffer)[:size]
+            actual = len(data)
+            buf = (ctypes.c_uint8 * actual).from_buffer_copy(data)
+            return _lib.pvfs_write(self.handle, ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)), actual)
+        # Assume it is already a ctypes array or compatible
         return _lib.pvfs_write(self.handle, buffer, size)
 
     def read_index_file_header(self):
@@ -843,11 +875,16 @@ class PvfsFileHandle:
             raise RuntimeError(f"Failed to write index file header: {result}")
         return result
 
-    def flush(self):
-        """Flush any pending changes to disk using PVFS_flush."""
+    def flush(self, commit: bool = False):
+        """Flush any pending changes to disk using PVFS_flush.
+        
+        Args:
+            commit: If True, call _commit (Windows) or fsync (POSIX) to force
+                    data to physical storage. Default False to match C++ behavior.
+        """
         if not self.handle:
             return -2  # PVFS_ARG_NULL
-        result = _lib.pvfs_flush(self.handle)
+        result = _lib.pvfs_flush(self.handle, 1 if commit else 0)
         if result < 0:
             raise RuntimeError(f"Failed to flush file: {result}")
         return result

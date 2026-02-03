@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <iostream>
+#include <set>
 namespace pvfs {
 
 std::shared_ptr<pvfs::PvfsFile> createVFS(std::uint32_t blockSize)
@@ -14,7 +15,7 @@ std::shared_ptr<pvfs::PvfsFile> createVFS(std::uint32_t blockSize)
         vfs->blockSize = blockSize;
         vfs->fileMaxCount = ( blockSize ) /
                           ( PVFS_MAX_FILENAME_LENGTH + sizeof ( int64_t ) + sizeof ( int64_t ));
-        vfs->treeMaxCount = ( blockSize - sizeof ( int64_t ) - sizeof ( int64_t )) /
+        vfs->treeMaxCount = ( blockSize - sizeof ( int64_t )) /
                                   ( sizeof ( int64_t ) + sizeof ( int64_t ));
         return vfs;
     } catch (const std::bad_alloc& e) {
@@ -27,10 +28,23 @@ std::shared_ptr<pvfs::PvfsFile> createVFS(std::uint32_t blockSize)
 int PVFS_close(int fd)
 {
 #ifdef _WIN32
-    return _close(fd);
+    int fdw = _open_osfhandle((intptr_t)fd, 0);
+    return _close(fdw);
 #else
     return close(fd);
 #endif
+}
+
+PvfsFile::~PvfsFile()
+{
+    if (fd != PVFS_INVALID_FD) {
+#ifdef _WIN32
+        _close(fd);
+#else
+        close(fd);
+#endif
+        fd = PVFS_INVALID_FD;
+    }
 }
 
 std::shared_ptr<PvfsFile> create_PVFS_file_structure ( std::uint32_t blockSize )
@@ -55,7 +69,7 @@ std::shared_ptr<PvfsFile> create_PVFS_file_structure ( std::uint32_t blockSize )
 
     vfs->fileMaxCount = ( blockSize ) /
                           ( PVFS_MAX_FILENAME_LENGTH + sizeof ( int64_t ) + sizeof ( int64_t ));
-    vfs->treeMaxCount = ( blockSize - sizeof ( int64_t ) - sizeof ( int64_t )) /
+    vfs->treeMaxCount = ( blockSize - sizeof ( int64_t )) /
                                   ( sizeof ( int64_t ) + sizeof ( int64_t ));
 
     vfs->block				= create_PVFS_block ( vfs );
@@ -75,7 +89,7 @@ void PVFS_file_set_blockSize ( std::shared_ptr<PvfsFile> &vfs, std::uint32_t blo
     vfs->blockSize		= blockSize;
     vfs->fileMaxCount = ( blockSize ) /
                           ( PVFS_MAX_FILENAME_LENGTH + sizeof ( std::int64_t ) + sizeof ( std::int64_t ));
-    vfs->treeMaxCount = ( blockSize - sizeof ( std::int64_t) - sizeof ( std::int64_t )) /
+    vfs->treeMaxCount = ( blockSize - sizeof ( std::int64_t )) /
                                   ( sizeof ( std::int64_t ) + sizeof ( std::int64_t ));
 
     vfs->block = create_PVFS_block ( vfs );
@@ -224,7 +238,6 @@ std::shared_ptr<PvfsBlockFile> create_PVFS_block_file ( std::shared_ptr<PvfsFile
         block->count		= 0;
         block->maxFiles	= vfs->fileMaxCount;
         block->files.clear();
-        if(vfs->fileMaxCount > 0)block->files.resize(vfs->fileMaxCount, PvfsFileEntry());
         return block;
     } catch (const std::bad_alloc& e) {
         std::cerr << "File Block Memory allocation failed: " << e.what() << '\n';
@@ -282,9 +295,8 @@ std::int32_t PVFS_cast_block_to_file ( std::shared_ptr<PvfsBlock> &block, std::s
     file->next	= block->next;
     file->prev	= block->prev;
     file->self	= block->self;
-    file->count	= block->count;
 
-    if ( file->count > file->maxFiles )
+    if ( block->count > file->maxFiles )
     {
         return PVFS_CORRUPTION_DETECTED;
     }
@@ -294,7 +306,7 @@ size_t count = 0;
 
 file->files.clear(); // Clear existing entries
 
-    for (std::int32_t i = 0; i < file->count; i++)
+    for (std::int32_t i = 0; i < block->count; i++)
     {
         // Check if there's enough data left in block->data for another _PvfsFileEntry
         if (count + sizeof(int64_t) * 2 + PVFS_MAX_FILENAME_LENGTH > block->data.size())
@@ -322,6 +334,7 @@ file->files.clear(); // Clear existing entries
         // Add the file entry to file->files
         file->files.push_back(fileEntry);
     }
+    // count is now derived from files.size() - no need to maintain separately
     return PVFS_OK;
 }
 
@@ -339,14 +352,14 @@ std::int32_t PVFS_cast_data_to_block ( std::shared_ptr<PvfsBlockData> &data, std
 
     // Prepare the block->data to hold tree plus maxCount elements from data->data
     block->data.clear();
-    block->data.resize(sizeof(int64_t) + std::min(data->maxCount, static_cast<int32_t>(data->data.size())));
+    block->data.resize(sizeof(std::int64_t) + std::min(data->maxCount, static_cast<std::int32_t>(data->data.size())));
 
-    uint64_t treeValue = data->tree;
-    std::copy(reinterpret_cast<uint8_t*>(&treeValue), reinterpret_cast<uint8_t*>(&treeValue) + sizeof (int64_t), block->data.begin());
+    std::uint64_t treeValue = static_cast<std::uint64_t>(data->tree);
+    std::copy(reinterpret_cast<std::uint8_t*>(&treeValue), reinterpret_cast<std::uint8_t*>(&treeValue) + sizeof (std::int64_t), block->data.begin());
 
     if (data->maxCount > 0 && !data->data.empty())
     {
-        std::copy(data->data.begin(), data->data.begin() + std::min(data->maxCount, static_cast<int32_t>(data->data.size())), block->data.begin() + sizeof(int64_t));
+        std::copy(data->data.begin(), data->data.begin() + std::min(data->maxCount, static_cast<std::int32_t>(data->data.size())), block->data.begin() + sizeof(std::int64_t));
     }
     return PVFS_OK;
 }
@@ -389,9 +402,9 @@ std::int32_t PVFS_cast_file_to_block(std::shared_ptr<PvfsBlockFile>& file, std::
     block->next = file->next;
     block->prev = file->prev;
     block->self = file->self;
-    block->count = file->count;
+    block->count = static_cast<std::int32_t>(file->files.size());
 
-    size_t requiredSize = (file->count + 1) * (sizeof(std::int64_t) * 2 + PVFS_MAX_FILENAME_LENGTH);
+    size_t requiredSize = file->files.size() * (sizeof(std::int64_t) * 2 + PVFS_MAX_FILENAME_LENGTH);
     block->data.resize(requiredSize);
 
     std::uint8_t* index = block->data.data();
@@ -574,8 +587,6 @@ std::shared_ptr<PvfsFile> PVFS_create ( const char * filename )
 //If the file exists when this function is called, it will be erased
 std::shared_ptr<PvfsFile> PVFS_create_size ( const char * filename, std::uint32_t block_size )
 {
-    std::int64_t	location	=	0;
-
     std::shared_ptr<PvfsFile> vfs = create_PVFS_file_structure ( );
     if ( !vfs ) return nullptr;
 
@@ -602,11 +613,16 @@ std::shared_ptr<PvfsFile> PVFS_create_size ( const char * filename, std::uint32_
     PVFS_write_sint32 ( vfs->fd, vfs->blockSize ); //8 - B  Byte order is reversed for all pvfs writes (little endian)
     PVFS_write_sint64 ( vfs->fd, vfs->tableLoc );  //C - 13
 
-    // Zero out the rest of the header.
+    // Initialize free block table (all entries empty)
+    std::vector<FreeBlockTableEntry> freeBlockTable;
+    freeBlockTable.resize(PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES, FreeBlockTableEntry());
+    PVFS_write_free_block_table ( vfs, freeBlockTable );
+
+    // Zero out the rest of the header (if any space remains after free block table)
 #ifdef _WIN32
-    location = _lseeki64 ( vfs->fd, vfs->tableLoc, SEEK_SET );
+    (void)_lseeki64 ( vfs->fd, vfs->tableLoc, SEEK_SET );
 #else
-    location = lseek(vfs->fd, vfs->tableLoc, SEEK_SET);
+    (void)lseek(vfs->fd, vfs->tableLoc, SEEK_SET);
 #endif
     PVFS_write_uint8 ( vfs->fd, 0 );
     vfs->nextBlock = vfs->tableLoc;
@@ -624,7 +640,6 @@ std::shared_ptr<PvfsFile> PVFS_create_size ( const char * filename, std::uint32_
 std::shared_ptr<PvfsFile> PVFS_open( const char * filename )
 {
     char	file_id [ 4 ]	;
-    int64_t	location	=	0;
 
     std::shared_ptr<PvfsFile> vfs;
     vfs = create_PVFS_file_structure();
@@ -667,12 +682,17 @@ std::shared_ptr<PvfsFile> PVFS_open( const char * filename )
 
     PVFS_file_set_blockSize ( vfs, vfs->blockSize );
 
+    // Read free block table (for version 3.1.0+, older versions will have zeros/random data)
+    // This is safe - if version is old, table will just be empty
+    std::vector<FreeBlockTableEntry> freeBlockTable;
+    PVFS_read_free_block_table ( vfs, freeBlockTable ); // Ignore errors for backward compatibility
+
     // Find the end of the file and use that as where the next block goes.
     #ifdef _WIN32
-    location = _lseeki64 ( vfs->fd, 0, SEEK_END );
+    (void)_lseeki64 ( vfs->fd, 0, SEEK_END );
     vfs->nextBlock = _telli64 ( vfs->fd ) - 1;	// minus 1 for the eof marker...
     #else
-    location = lseek(vfs->fd, 0, SEEK_END);
+    (void)lseek(vfs->fd, 0, SEEK_END);
     vfs->nextBlock = lseek(vfs->fd, 0, SEEK_CUR) - 1;
     #endif
 
@@ -682,7 +702,6 @@ std::shared_ptr<PvfsFile> PVFS_open( const char * filename )
 std::shared_ptr<PvfsFile> PVFS_open_readonly( const char * filename )
 {
     char	file_id [ 4 ]	;
-    int64_t	location	=	0;
 
     std::shared_ptr<PvfsFile> vfs;
     vfs = create_PVFS_file_structure();
@@ -725,40 +744,212 @@ std::shared_ptr<PvfsFile> PVFS_open_readonly( const char * filename )
 
     PVFS_file_set_blockSize ( vfs, vfs->blockSize );
 
+    // Read free block table (for version 3.1.0+, older versions will have zeros/random data)
+    // This is safe - if version is old, table will just be empty
+    std::vector<FreeBlockTableEntry> freeBlockTable;
+    PVFS_read_free_block_table ( vfs, freeBlockTable ); // Ignore errors for backward compatibility
+
     // Find the end of the file and use that as where the next block goes.
     #ifdef _WIN32
-    location = _lseeki64 ( vfs->fd, 0, SEEK_END );
+    (void)_lseeki64 ( vfs->fd, 0, SEEK_END );
     vfs->nextBlock = _telli64 ( vfs->fd ) - 1;	// minus 1 for the eof marker...
     #else
-    location = lseek(vfs->fd, 0, SEEK_END);
+    (void)lseek(vfs->fd, 0, SEEK_END);
     vfs->nextBlock = lseek(vfs->fd, 0, SEEK_CUR) - 1;
     #endif
 
     return vfs;
 }
 
+// Read the free block table from the header
+std::int32_t PVFS_read_free_block_table(std::shared_ptr<PvfsFile> &vfs, std::vector<FreeBlockTableEntry> &table)
+{
+    if (!vfs) return PVFS_ARG_NULL;
+    if (vfs->fd == PVFS_INVALID_FD) return PVFS_ERROR;
+
+    table.clear();
+    table.resize(PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES, FreeBlockTableEntry());
+
+    #ifdef _WIN32
+    _lseeki64(vfs->fd, PVFS_HEADER_FREE_BLOCK_TABLE_DATA_OFFSET, SEEK_SET);
+    #else
+    lseek(vfs->fd, PVFS_HEADER_FREE_BLOCK_TABLE_DATA_OFFSET, SEEK_SET);
+    #endif
+
+    for (std::uint32_t i = 0; i < PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES; i++)
+    {
+        PVFS_read_uint32(vfs->fd, table[i].blockSize);
+        PVFS_read_sint64(vfs->fd, table[i].nextFreeBlock);
+    }
+
+    return PVFS_OK;
+}
+
+// Write the free block table to the header
+std::int32_t PVFS_write_free_block_table(std::shared_ptr<PvfsFile> &vfs, const std::vector<FreeBlockTableEntry> &table)
+{
+    if (!vfs) return PVFS_ARG_NULL;
+    if (vfs->fd == PVFS_INVALID_FD) return PVFS_ERROR;
+    if (table.size() != PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES) return PVFS_ERROR;
+
+    #ifdef _WIN32
+    _lseeki64(vfs->fd, PVFS_HEADER_FREE_BLOCK_TABLE_DATA_OFFSET, SEEK_SET);
+    #else
+    lseek(vfs->fd, PVFS_HEADER_FREE_BLOCK_TABLE_DATA_OFFSET, SEEK_SET);
+    #endif
+
+    for (std::uint32_t i = 0; i < PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES; i++)
+    {
+        PVFS_write_uint32(vfs->fd, table[i].blockSize);
+        PVFS_write_sint64(vfs->fd, table[i].nextFreeBlock);
+    }
+
+    return PVFS_OK;
+}
+
+// Add a free block to the appropriate chain in the free block table
+std::int32_t PVFS_add_free_block(std::shared_ptr<PvfsFile> &vfs, std::int64_t blockAddress, std::uint32_t blockSize)
+{
+    if (!vfs) return PVFS_ARG_NULL;
+    if (vfs->fd == PVFS_INVALID_FD) return PVFS_ERROR;
+    if (blockAddress == PVFS_INVALID_LOCATION) return PVFS_ERROR;
+
+    std::vector<FreeBlockTableEntry> table;
+    if (PVFS_read_free_block_table(vfs, table) != PVFS_OK) return PVFS_ERROR;
+
+    // Find entry with matching blockSize, or find empty entry
+    std::int32_t entryIndex = -1;
+    for (std::uint32_t i = 0; i < PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES; i++)
+    {
+        if (table[i].blockSize == blockSize)
+        {
+            entryIndex = i;
+            break;
+        }
+        if (entryIndex == -1 && table[i].blockSize == 0)
+        {
+            entryIndex = i; // Remember first empty slot
+        }
+    }
+
+    if (entryIndex == -1) return PVFS_ERROR; // Table full
+
+    // Read the block to get its current next pointer
+    std::int64_t read_result = PVFS_read_block(vfs->fd, blockAddress, vfs->block);
+    if (read_result == 0) return PVFS_ERROR;
+
+    // Validate block state - if already FREE, this is a double delete or corruption
+    // Abandon block reuse to prevent corruption
+    if (vfs->block->type == PVFS_BLOCK_TYPE_FREE)
+    {
+        return PVFS_ERROR; // Block already marked as free - abandon reuse
+    }
+
+    // If this is a new entry, initialize it
+    if (table[entryIndex].blockSize == 0)
+    {
+        table[entryIndex].blockSize = blockSize;
+        table[entryIndex].nextFreeBlock = blockAddress;
+        // Set the block's next to invalid (it's now the head of the chain)
+        vfs->block->next = PVFS_INVALID_LOCATION;
+    }
+    else
+    {
+        // Add to front of chain
+        vfs->block->next = table[entryIndex].nextFreeBlock;
+        table[entryIndex].nextFreeBlock = blockAddress;
+    }
+
+    // Mark block as FREE and write it
+    vfs->block->type = PVFS_BLOCK_TYPE_FREE;
+    PVFS_write_block(vfs->fd, blockAddress, vfs->block);
+
+    // Write updated table
+    return PVFS_write_free_block_table(vfs, table);
+}
+
+// Get a free block from the appropriate chain in the free block table
+std::int64_t PVFS_get_free_block(std::shared_ptr<PvfsFile> &vfs, std::uint32_t blockSize)
+{
+    if (!vfs) return PVFS_INVALID_LOCATION;
+    if (vfs->fd == PVFS_INVALID_FD) return PVFS_INVALID_LOCATION;
+
+    std::vector<FreeBlockTableEntry> table;
+    if (PVFS_read_free_block_table(vfs, table) != PVFS_OK) return PVFS_INVALID_LOCATION;
+
+    // Find entry with matching blockSize
+    for (std::uint32_t i = 0; i < PVFS_FREE_BLOCK_TABLE_MAX_ENTRIES; i++)
+    {
+        if (table[i].blockSize == blockSize && table[i].nextFreeBlock != PVFS_INVALID_LOCATION)
+        {
+            std::int64_t freeBlock = table[i].nextFreeBlock;
+
+            // Read the block to get its next pointer
+            std::int64_t read_result = PVFS_read_block(vfs->fd, freeBlock, vfs->block);
+            if (read_result == 0) return PVFS_INVALID_LOCATION;
+
+            // Validate block state - if not FREE, free block table is corrupted
+            // Abandon block reuse to prevent corruption
+            if (vfs->block->type != PVFS_BLOCK_TYPE_FREE)
+            {
+                // Corrupt free block chain detected - clear this entry and abandon reuse
+                table[i].blockSize = 0;
+                table[i].nextFreeBlock = PVFS_INVALID_LOCATION;
+                PVFS_write_free_block_table(vfs, table);
+                return PVFS_INVALID_LOCATION;
+            }
+
+            // Update table entry to point to next block in chain
+            table[i].nextFreeBlock = vfs->block->next;
+
+            // If chain is now empty, clear the entry
+            if (table[i].nextFreeBlock == PVFS_INVALID_LOCATION)
+            {
+                table[i].blockSize = 0;
+            }
+
+            // Write updated table
+            PVFS_write_free_block_table(vfs, table);
+
+            return freeBlock;
+        }
+    }
+
+    return PVFS_INVALID_LOCATION; // No free block of this size
+}
+
 // Forces a disk allocation to accomodate the next data block
+// When PVFS_ENABLE_BLOCK_REUSE is 1 (default), checks free block table first; else always appends at end.
 std::int64_t PVFS_allocate_block(std::shared_ptr<PvfsFile> &pvfs)
 {
-    int64_t location = 0;
 
     // Error check
     if (!pvfs) return 0;
 
-    // Clean out the pvfs block and allocate space for data.
+    // Try to get a free block from the free block table
+    std::int64_t freeBlock = PVFS_get_free_block(pvfs, pvfs->blockSize);
+    if (freeBlock != PVFS_INVALID_LOCATION)
+    {
+        // Found a free block, use it
+        clearBlock<PvfsBlock>(pvfs->block, pvfs->blockSize);
+        pvfs->block->self = freeBlock;
+        return freeBlock;
+    }
+
+    // No free block available (or block reuse disabled), allocate new block at end of file
     clearBlock<PvfsBlock>(pvfs->block, pvfs->block->size);
 
     pvfs->block->self = pvfs->nextBlock;
     pvfs->nextBlock += pvfs->blockSize + PVFS_BLOCK_HEADER_SIZE;
 
     #ifdef _WIN32
-    location = _lseeki64(pvfs->fd, pvfs->nextBlock, SEEK_SET);
+    (void)_lseeki64(pvfs->fd, pvfs->nextBlock, SEEK_SET);
     #else
-    location = lseek(pvfs->fd, pvfs->nextBlock, SEEK_SET);
+    (void)lseek(pvfs->fd, pvfs->nextBlock, SEEK_SET);
     #endif
 
     PVFS_write_uint8(pvfs->fd, -1); // Mark the end of file (also forces the file to grow.)
-    return location;
+    return pvfs->block->self;
 }
 
 
@@ -768,37 +959,62 @@ std::shared_ptr<PvfsFileHandle> PVFS_fcreate ( std::shared_ptr<PvfsFile> &vfs, c
     std::shared_ptr<PvfsFileHandle>	file = std::make_shared<PvfsFileHandle>();			// File handle to create.
     std::shared_ptr<PvfsBlockFile>	file_block;		// File block we are editing.
     pvfs::PvfsFileEntry             file_entry;		// Pointer to a file blocks entry.
-
     // Error Check
     if ( !vfs ) return nullptr;
     if ( filename == nullptr ) return nullptr;
     if ( vfs->fd == PVFS_INVALID_FD ) return nullptr;
 
-    //// Find the last block.
-    // Get the first file block.
-    PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
-    file_block = vfs->fileBlock;
-
-    while ( file_block->next != PVFS_INVALID_LOCATION )
+    // First, look for a deleted (zeroed) file entry slot to reuse. This prevents the file block
+    // chain from growing unbounded when the same filename is repeatedly overwritten.
+    std::int32_t reuseIndex = -1;
+    std::int64_t address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
+    while ( address != PVFS_INVALID_LOCATION )
     {
-        PVFS_read_block_file ( vfs, file_block->next, vfs->fileBlock );
-        file_block = vfs->fileBlock;		// Not really neccessary...
+        for ( std::uint32_t i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
+        {
+            PvfsFileEntry* entry = &(vfs->fileBlock->files [ i ]);
+            if ( entry->filename [ 0 ] == 0 )
+            {
+                // Deleted slot (PVFS_delete_file zeros filename, startBlock, size)
+                file_block = vfs->fileBlock;
+                reuseIndex = static_cast<std::int32_t>(i);
+                address = PVFS_INVALID_LOCATION;  // break outer loop
+                break;
+            }
+        }
+        if ( address != PVFS_INVALID_LOCATION )
+        {
+            address = PVFS_read_block_file ( vfs, vfs->fileBlock->next, vfs->fileBlock );
+        }
     }
-    // Check the final block is full or not.
-    if ( file_block->count == vfs->fileMaxCount )
-    {
-        // Allocate a new block for file storage.
-        PVFS_allocate_block ( vfs );
-        PVFS_cast_block_to_file ( vfs->block, vfs->fileBlockTemp );
-        file_block->next = vfs->fileBlockTemp->self;
-        vfs->fileBlockTemp->prev = file_block->self;
-        PVFS_write_block_file ( vfs, file_block->self, file_block );			// Save back the change
-        PVFS_write_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlockTemp );
 
-        // Reload the block, reset the pointer.
-        PVFS_read_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlock );
+    if ( reuseIndex < 0 )
+    {
+        // No deleted slot found: use last block and append (possibly allocate new file block).
+        PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
         file_block = vfs->fileBlock;
 
+        while ( file_block->next != PVFS_INVALID_LOCATION )
+        {
+            PVFS_read_block_file ( vfs, file_block->next, vfs->fileBlock );
+            file_block = vfs->fileBlock;		// Not really neccessary...
+        }
+        // Check the final block is full or not.
+        if ( file_block->files.size() == vfs->fileMaxCount )
+        {
+            // Allocate a new block for file storage.
+            PVFS_allocate_block ( vfs );
+            PVFS_cast_block_to_file ( vfs->block, vfs->fileBlockTemp );
+            file_block->next = vfs->fileBlockTemp->self;
+            vfs->fileBlockTemp->prev = file_block->self;
+            PVFS_write_block_file ( vfs, file_block->self, file_block );			// Save back the change
+            PVFS_write_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlockTemp );
+
+            // Reload the block, reset the pointer.
+            PVFS_read_block_file ( vfs, vfs->fileBlockTemp->self, vfs->fileBlock );
+            file_block = vfs->fileBlock;
+
+        }
     }
 
     file = create_PVFS_file_handle ( vfs );
@@ -828,15 +1044,24 @@ std::shared_ptr<PvfsFileHandle> PVFS_fcreate ( std::shared_ptr<PvfsFile> &vfs, c
     strcpy ( (char*) file_entry.filename, filename );
     file_entry.size		= 0;
     file_entry.startBlock = file->tree->self;
-    file_block->files.push_back(file_entry);
+    if ( reuseIndex >= 0 )
+    {
+        // Reuse the deleted slot; do not grow the file block list.
+        file_block->files [ static_cast<std::size_t>(reuseIndex) ] = file_entry;
+        file->tableBlock = file_block->self;
+        file->tableIndex = reuseIndex;
+    }
+    else
+    {
+        file_block->files.push_back(file_entry);
+        file->tableBlock		= file_block->self;
+        file->tableIndex		= static_cast<std::int32_t>(file_block->files.size() - 1);  // Index of the entry we just added
+    }
 
     // Get the file information updated.
     PVFS_copy_fileEntry  ( &(file->info), &file_entry );
-    file->tableBlock		= file_block->self;
-    file->tableIndex		= file_block->count;
 
-    // Increment the file count and save the block.
-    file_block->count++;
+    // Save the block (count is now derived from files.size() when writing)
     PVFS_write_block_file ( vfs, file_block->self, file_block );
 
     // Seek to the start position
@@ -863,7 +1088,7 @@ std::int32_t PVFS_get_channel_list(std::shared_ptr<PvfsFile> &vfs, std::vector<s
     address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
     while ( address != PVFS_INVALID_LOCATION )
     {
-        for ( i = 0; i < vfs->fileMaxCount; i++ )
+        for ( i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
         {
             // Point to the entry.
             fileEntry = &(vfs->fileBlock->files [ i ]);
@@ -886,6 +1111,7 @@ std::shared_ptr<PvfsFileHandle> PVFS_fopen ( std::shared_ptr<PvfsFile> &vfs, con
     PvfsFileEntry *		            fileEntry	=	nullptr;
     std::int64_t					address		=	0;			// Current address of the block
 
+    // Error Check
     if ( !vfs ) return nullptr;
     if ( filename == nullptr ) return nullptr;
     if ( vfs->fd == PVFS_INVALID_FD ) return nullptr;
@@ -893,7 +1119,7 @@ std::shared_ptr<PvfsFileHandle> PVFS_fopen ( std::shared_ptr<PvfsFile> &vfs, con
     address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
     while ( address != PVFS_INVALID_LOCATION )
     {
-        for ( i = 0; i < vfs->fileMaxCount; i++ )
+        for ( i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
         {
             // Point to the entry.
             fileEntry = &(vfs->fileBlock->files [ i ]);
@@ -922,6 +1148,75 @@ std::shared_ptr<PvfsFileHandle> PVFS_fopen ( std::shared_ptr<PvfsFile> &vfs, con
 
 
 
+// Helper function with visited set to prevent infinite loops
+static std::int32_t PVFS_collect_file_blocks_impl(std::shared_ptr<PvfsFile> &vfs, std::int64_t startBlock,
+                                                    std::vector<std::int64_t> &treeBlocks,
+                                                    std::vector<std::int64_t> &dataBlocks,
+                                                    std::set<std::int64_t> &visited)
+{
+    if ( !vfs ) return PVFS_ARG_NULL;
+    if ( startBlock == PVFS_INVALID_LOCATION ) return PVFS_OK;
+
+    // Check if we've already visited this block (cycle detection)
+    if ( visited.find(startBlock) != visited.end() )
+    {
+        // Already visited - skip to prevent infinite loop
+        return PVFS_OK;
+    }
+    visited.insert(startBlock);
+
+    std::shared_ptr<PvfsBlock> block = vfs->block;
+    std::shared_ptr<PvfsBlockTree> tree = vfs->treeBlockTemp;
+    std::shared_ptr<PvfsBlockData> data = vfs->dataBlockTemp;
+
+    // Read the block at startBlock
+    std::int64_t read_result = PVFS_read_block ( vfs->fd, startBlock, block );
+    if ( read_result == 0 ) return PVFS_ERROR;
+
+    if ( block->type == PVFS_BLOCK_TYPE_TREE )
+    {
+        // Cast to tree block
+        if ( PVFS_cast_block_to_tree ( block, tree ) != PVFS_OK ) return PVFS_ERROR;
+
+        // Add this tree block to the list
+        treeBlocks.push_back ( startBlock );
+
+        // Recursively process all mappings in this tree block
+        for ( std::int32_t i = 0; i < tree->count; i++ )
+        {
+            std::int64_t mappedBlock = tree->mappings [ i ].blockLoc;
+            if ( mappedBlock != PVFS_INVALID_LOCATION )
+            {
+                // Recursively collect blocks from the mapped location
+                PVFS_collect_file_blocks_impl ( vfs, mappedBlock, treeBlocks, dataBlocks, visited );
+            }
+        }
+    }
+    else if ( block->type == PVFS_BLOCK_TYPE_DATA )
+    {
+        // Cast to data block
+        if ( PVFS_cast_block_to_data ( block, data ) != PVFS_OK ) return PVFS_ERROR;
+
+        // Add this data block to the list
+        dataBlocks.push_back ( startBlock );
+
+        // Follow the linked list of data blocks
+        if ( data->next != PVFS_INVALID_LOCATION )
+        {
+            PVFS_collect_file_blocks_impl ( vfs, data->next, treeBlocks, dataBlocks, visited );
+        }
+    }
+
+    return PVFS_OK;
+}
+
+// Helper function to recursively collect all blocks (tree and data) for a file
+std::int32_t PVFS_collect_file_blocks(std::shared_ptr<PvfsFile> &vfs, std::int64_t startBlock, std::vector<std::int64_t> &treeBlocks, std::vector<std::int64_t> &dataBlocks)
+{
+    std::set<std::int64_t> visited;
+    return PVFS_collect_file_blocks_impl(vfs, startBlock, treeBlocks, dataBlocks, visited);
+}
+
 std::int32_t PVFS_delete_file(std::shared_ptr<PvfsFile> &vfs, const char* filename)
 {
     // Error Check
@@ -929,31 +1224,80 @@ std::int32_t PVFS_delete_file(std::shared_ptr<PvfsFile> &vfs, const char* filena
     if ( filename == nullptr ) return pvfs::PVFS_ARG_NULL;
     if ( vfs->fd == PVFS_INVALID_FD ) return pvfs::PVFS_ERROR;
 
-    // Get the first file block.
+    // Find the file entry in all file blocks
     std::int64_t address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
-    std::uint32_t i=0;
-    pvfs::PvfsFileEntry *	fileEntry	=	nullptr;
+    std::uint32_t i = 0;
+    pvfs::PvfsFileEntry * fileEntry = nullptr;
+    std::int64_t tableBlock = PVFS_INVALID_LOCATION;
+    std::int32_t tableIndex = -1;
+    std::int64_t fileStartBlock = PVFS_INVALID_LOCATION;
 
-    bool success = false;
-    for ( i = 0; i < vfs->fileMaxCount; i++ )
+    bool found = false;
+
+    // Search through all file blocks
+    while ( address != PVFS_INVALID_LOCATION && !found )
     {
-        fileEntry = &(vfs->fileBlock->files [ i ]);
-        if ( strcmp ( (char*) fileEntry->filename, filename ) == 0 )
+        for ( i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
         {
-            if(fileEntry != nullptr){
-                PvfsFileEntry delete_entry;
-                PVFS_copy_fileEntry(&delete_entry,fileEntry);//copy file to delete
-                memset ( delete_entry.filename, 0, PVFS_MAX_FILENAME_LENGTH );
-                PVFS_copy_fileEntry(&(vfs->fileBlock->files [ i ]),&delete_entry);
-                PVFS_write_block_file ( vfs, vfs->fileBlock->self, vfs->fileBlock );			// Save back the change
-                success = true;
+            fileEntry = &(vfs->fileBlock->files [ i ]);
+            if ( fileEntry != nullptr && strcmp ( (char*) fileEntry->filename, filename ) == 0 )
+            {
+                // Found the file - save its information
+                tableBlock = vfs->fileBlock->self;
+                tableIndex = i;
+                fileStartBlock = fileEntry->startBlock;
+                found = true;
+                break;
             }
         }
-        address = PVFS_read_block_file ( vfs, vfs->fileBlock->next, vfs->fileBlock );
+
+        if ( !found )
+        {
+            // Get the next file block
+            address = PVFS_read_block_file ( vfs, vfs->fileBlock->next, vfs->fileBlock );
+        }
     }
 
-    if(success)return pvfs::PVFS_OK;
-    else return pvfs::PVFS_ERROR;
+    if ( !found ) return pvfs::PVFS_ERROR;
+
+    // Collect all blocks associated with this file
+    std::vector<std::int64_t> treeBlocks;
+    std::vector<std::int64_t> dataBlocks;
+
+    if ( PVFS_collect_file_blocks ( vfs, fileStartBlock, treeBlocks, dataBlocks ) != PVFS_OK )
+    {
+        return pvfs::PVFS_ERROR;
+    }
+
+    // Add all data blocks to free block table
+    for ( std::int64_t blockAddr : dataBlocks )
+    {
+        PVFS_add_free_block ( vfs, blockAddr, vfs->blockSize );
+    }
+
+    // Add all tree blocks to free block table
+    for ( std::int64_t blockAddr : treeBlocks )
+    {
+        PVFS_add_free_block ( vfs, blockAddr, vfs->blockSize );
+    }
+
+    // Remove the file entry from the file table
+    // Reload the file block where the entry is located
+    if ( PVFS_read_block_file ( vfs, tableBlock, vfs->fileBlock ) == PVFS_INVALID_LOCATION )
+    {
+        return pvfs::PVFS_ERROR;
+    }
+
+    // Zero out the filename to mark as deleted
+    if ( tableIndex >= 0 && tableIndex < static_cast<std::int32_t>(vfs->fileBlock->files.size()) )
+    {
+        memset ( vfs->fileBlock->files [ tableIndex ].filename, 0, PVFS_MAX_FILENAME_LENGTH );
+        vfs->fileBlock->files [ tableIndex ].startBlock = 0;
+        vfs->fileBlock->files [ tableIndex ].size = 0;
+        PVFS_write_block_file ( vfs, tableBlock, vfs->fileBlock );
+    }
+
+    return pvfs::PVFS_OK;
 }
 
 
@@ -973,7 +1317,7 @@ bool PVFS_has_file ( std::shared_ptr<PvfsFile> vfs, const char * filename )
 
     while ( address != PVFS_INVALID_LOCATION )
     {
-        for ( i = 0; i < vfs->fileMaxCount; i++ )
+        for ( i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
         {
             // Point to the entry.
             fileEntry = &(vfs->fileBlock->files [ i ]);
@@ -1028,7 +1372,7 @@ std::uint32_t 	PVFS_get_file_list ( std::shared_ptr<pvfs::PvfsFile> &vfs, std::v
     address = PVFS_read_block_file ( vfs, vfs->tableLoc, vfs->fileBlock );
     while ( address != PVFS_INVALID_LOCATION )
     {
-        for ( i = 0; i < vfs->fileMaxCount; i++ )
+        for ( i = 0; i < static_cast<std::uint32_t>(vfs->fileBlock->files.size()); i++ )
         {
             // Point to the entry.
             fileEntry = &(vfs->fileBlock->files [ i ]);
@@ -1769,6 +2113,7 @@ std::int32_t PVFS_overwrite ( std::shared_ptr<PvfsFile> &vfs, const char * vfs_f
     if ( vfs_filename == NULL ) return PVFS_ARG_NULL;
     if ( disk_filename == NULL ) return PVFS_ARG_NULL;
 
+    std::cout << "PVFS_Overwrite" << std::endl;
 #ifdef _WIN32
     fd = _open ( disk_filename, _O_BINARY | _O_RDWR, _S_IREAD );
     if ( fd == PVFS_INVALID_FD ) return PVFS_FILE_NOT_OPENED;
@@ -1779,20 +2124,31 @@ std::int32_t PVFS_overwrite ( std::shared_ptr<PvfsFile> &vfs, const char * vfs_f
     fstat64(fd, &stats);
 #endif
 
-    vf = PVFS_fopen ( vfs, vfs_filename );
-    if ( !vf )
+    // If the file already exists in the VFS, delete it first to free old blocks
+    if ( PVFS_has_file ( vfs, vfs_filename ) )
     {
-        vf = PVFS_fcreate ( vfs, vfs_filename );
-
-        if ( !vf )
+        std::int32_t delete_result = PVFS_delete_file ( vfs, vfs_filename );
+        if ( delete_result != PVFS_OK )
         {
 #ifdef _WIN32
             _close ( fd );
 #else
             close ( fd );
 #endif
-            return PVFS_FILE_NOT_OPENED;
+            return PVFS_ERROR;
         }
+    }
+
+    // Create the new file
+    vf = PVFS_fcreate ( vfs, vfs_filename );
+    if ( !vf )
+    {
+#ifdef _WIN32
+        _close ( fd );
+#else
+        close ( fd );
+#endif
+        return PVFS_FILE_NOT_OPENED;
     }
 
     memset ( buffer, 0, 1024 );
@@ -1941,11 +2297,6 @@ void PVFS_unlock_file(std::shared_ptr<pvfs::PvfsFileHandle> &vf)
 {
     if(!vf)return;
     vf->vfs->lock.unlock();
-}
-
-void test_modify_header(C &header) {
-    header.p1 = 4;
-    header.p2 = 5;
 }
 
 }

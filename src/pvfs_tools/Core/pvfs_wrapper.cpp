@@ -98,15 +98,18 @@ struct PvfsHighTimeWrapper {
 };
 
 // Basic VFS operations
-WRAPPER_DLL_EXPORT PvfsFileWrapper* create_vfs(uint32_t block_size) {
+WRAPPER_DLL_EXPORT PvfsFileWrapper* create_vfs(const char* filename, uint32_t block_size) 
+{
+    std::string fname = (filename && std::strlen(filename) > 0) ? filename : "temp.pvfs";
+
     auto wrapper = new PvfsFileWrapper();
-    // Create a temporary file with the specified block size
-    std::string temp_filename = "temp.vfs";
-    wrapper->ptr = pvfs::PVFS_create_size(temp_filename.c_str(), block_size);
-    if (!wrapper->ptr) {
+    wrapper->ptr = pvfs::PVFS_create_size(fname.c_str(), block_size);
+    if (!wrapper->ptr) 
+    {
         delete wrapper;
         return nullptr;
     }
+
     return wrapper;
 }
 
@@ -238,7 +241,7 @@ WRAPPER_DLL_EXPORT int32_t get_channel_list(PvfsFileWrapper* vfs, StringVectorWr
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = channel_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                strncpy(names->strings[i], str.c_str(), str.length() + 1 );
+                strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
             }
         }
         return result;
@@ -267,7 +270,7 @@ WRAPPER_DLL_EXPORT int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapp
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = file_names[i];
                 names->strings[i] = new char[str.length() + 1];
-                std::strncpy(names->strings[i],  str.c_str(), str.length() + 1);
+                strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
             }
         }
         return result;
@@ -276,11 +279,6 @@ WRAPPER_DLL_EXPORT int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapp
     } catch (...) {
         return pvfs::PVFS_ERROR;
     }
-}
-
-WRAPPER_DLL_EXPORT int32_t extract(PvfsFileWrapper* vfs, const char* in_file, const char* out_file) {
-    if (!vfs || !vfs->ptr) return pvfs::PVFS_ARG_NULL;
-    return pvfs::PVFS_extract(vfs->ptr, in_file, out_file);
 }
 
 // Index file operations
@@ -409,6 +407,32 @@ WRAPPER_DLL_EXPORT int32_t pvfs_write(PvfsFileHandleWrapper* handle, const uint8
 WRAPPER_DLL_EXPORT int32_t pvfs_read(PvfsFileHandleWrapper* handle, uint8_t* buffer, uint32_t size) {
     if (!handle || !handle->ptr) return pvfs::PVFS_ARG_NULL;
     return pvfs::PVFS_read(handle->ptr, buffer, size);
+}
+
+WRAPPER_DLL_EXPORT int32_t extract(PvfsFileWrapper* vfs, const char* in_file, const char* out_file) {
+    if (!vfs || !vfs->ptr) return pvfs::PVFS_ARG_NULL;
+    if (!in_file || !out_file) return pvfs::PVFS_ARG_NULL;
+
+    PvfsFileHandleWrapper* h = pvfs_fopen(vfs, in_file);
+    if (!h) return pvfs::PVFS_FILE_NOT_OPENED;
+
+    std::ofstream out(out_file, std::ios::binary);
+    if (!out.good()) {
+        pvfs_fclose(h);
+        delete h;
+        return pvfs::PVFS_FILE_NOT_OPENED;
+    }
+
+    std::uint8_t buffer[1024];
+    int32_t rv;
+    while ((rv = pvfs_read(h, buffer, 1024)) > 0) {
+        out.write(reinterpret_cast<const char*>(buffer), static_cast<std::streamsize>(rv));
+    }
+
+    pvfs_fclose(h);
+    delete h;
+    out.close();
+    return pvfs::PVFS_OK;
 }
 
 // Add type-specific write functions
