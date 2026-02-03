@@ -49,6 +49,20 @@ def cleanup_file(path, max_retries=3, delay=0.2):
                 print(f"Warning: Failed to remove {path} after {max_retries} attempts: {e}")
 
 
+def cleanup_pvfs_file(path):
+    """Delete a .pvfs file after ensuring PVFS handles are released.
+    
+    PvfsFile destructor (C++) closes the fd when the VFS is destroyed, so the
+    file should be released when the Python wrapper is deleted. Brief gc + sleep
+    then retry with short delays.
+    """
+    if not path or not path.exists():
+        return
+    gc.collect()
+    time.sleep(0.2)
+    cleanup_file(path, max_retries=5, delay=0.3)
+
+
 def cleanup_temp_db_files(*directories, keep_names=None):
     """Remove temp_*.db3 and temp_snapshot_*.db3 in the given directories.
     Does not remove files whose names are in keep_names (e.g. final outputs).
@@ -285,62 +299,59 @@ def created_pvfs(vfs):
     """
     test_dir = Path(__file__).parent
     dest_path = test_dir / "test_created.pvfs"
-    files = vfs.get_file_list()
-    assert files is not None and len(files) > 0, "Source should have files to copy"
-
-    dest = PvfsFile.create(str(dest_path))
-    assert dest.is_open, "Created PVFS should be open"
-
-    vfs.lock()
+    verify = None
     try:
-        for name in files:
-            src_handle = vfs.open_file(name)
-            info = src_handle.get_file_info()
-            size = int(info.size)
-            data = src_handle.read(size) if size > 0 else b""
-            src_handle.close()
+        files = vfs.get_file_list()
+        assert files is not None and len(files) > 0, "Source should have files to copy"
 
-            dest.lock()
-            try:
-                dst_handle = dest.fcreate(name)
-                if len(data) > 0:
-                    chunk_size = 4000
-                    offset = 0
-                    data_view = memoryview(data)
-                    while offset < len(data_view):
-                        chunk = data_view[offset:offset + chunk_size]
-                        buf = (ctypes.c_uint8 * len(chunk)).from_buffer_copy(chunk)
-                        n = dst_handle.write(buf, len(chunk))
-                        assert n == len(chunk), f"short write: {n} != {len(chunk)}"
-                        offset += n
-                    assert offset == len(data_view), f"short write for {name}: {offset} != {len(data_view)}"  
-                dst_handle.flush()
-                dst_handle.close()
-            finally:
-                dest.unlock()
-    finally:
-        vfs.unlock()
+        dest = PvfsFile.create(str(dest_path))
+        assert dest.is_open, "Created PVFS should be open"
 
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
+        vfs.lock()
+        try:
+            for name in files:
+                src_handle = vfs.open_file(name)
+                info = src_handle.get_file_info()
+                size = int(info.size)
+                data = src_handle.read(size) if size > 0 else b""
+                src_handle.close()
 
-    verify = PvfsFile.open(str(dest_path))
-    try:
+                dest.lock()
+                try:
+                    dst_handle = dest.fcreate(name)
+                    if len(data) > 0:
+                        chunk_size = 4000
+                        offset = 0
+                        data_view = memoryview(data)
+                        while offset < len(data_view):
+                            chunk = data_view[offset:offset + chunk_size]
+                            buf = (ctypes.c_uint8 * len(chunk)).from_buffer_copy(chunk)
+                            n = dst_handle.write(buf, len(chunk))
+                            assert n == len(chunk), f"short write: {n} != {len(chunk)}"
+                            offset += n
+                        assert offset == len(data_view), f"short write for {name}: {offset} != {len(data_view)}"
+                    dst_handle.flush()
+                    dst_handle.close()
+                finally:
+                    dest.unlock()
+        finally:
+            vfs.unlock()
+
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        verify = PvfsFile.open(str(dest_path))
         yield (verify, files)
     finally:
-        # Ensure verify is properly closed before attempting cleanup
-        try:
-            verify.close()
-        except Exception as e:
-            print(f"Warning: Error closing verify in created_pvfs fixture: {e}")
-        
-        # Force garbage collection and wait for file handles to be released
+        if verify is not None:
+            try:
+                verify.close()
+            except Exception as e:
+                print(f"Warning: Error closing verify in created_pvfs fixture: {e}")
         gc.collect()
-        time.sleep(0.5)  # Increased wait time for Windows file handle release
-        
-        # Cleanup with more retries and longer delays for Windows
-        cleanup_file(dest_path, max_retries=5, delay=0.5)
+        time.sleep(0.5)
+        cleanup_pvfs_file(dest_path)
 
 
 def test_pvfs_create_and_copy_structure(created_pvfs):
@@ -407,37 +418,37 @@ def test_pvfs_single_file_write_extract():
     pvfs_path = test_dir / "test_single_write.pvfs"
     out_path = test_dir / "test_single_extracted.bin"
     data = b"PVFS single-file write test content"
-
-    dest = PvfsFile.create(str(pvfs_path))
-    assert dest.is_open, "created PVFS should be open"
-    dest.lock()
     try:
-        h = dest.fcreate("test_single.bin")
-        n = h.write(data, len(data))
-        assert n == len(data), f"write should return bytes written, got {n}"
-        h.flush()
-        h.close()
-    finally:
-        dest.unlock()
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
+        dest = PvfsFile.create(str(pvfs_path))
+        assert dest.is_open, "created PVFS should be open"
+        dest.lock()
+        try:
+            h = dest.fcreate("test_single.bin")
+            n = h.write(data, len(data))
+            assert n == len(data), f"write should return bytes written, got {n}"
+            h.flush()
+            h.close()
+        finally:
+            dest.unlock()
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
 
-    verify = PvfsFile.open(str(pvfs_path))
-    try:
-        res = verify.extract("test_single.bin", str(out_path))
-        assert res == 0, f"extract failed: {res}"
-        assert out_path.exists(), "extracted file should exist"
-        assert out_path.stat().st_size == len(data), (
-            f"extracted size {out_path.stat().st_size} != expected {len(data)}"
-        )
-        assert out_path.read_bytes() == data, "extracted content should match"
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            res = verify.extract("test_single.bin", str(out_path))
+            assert res == 0, f"extract failed: {res}"
+            assert out_path.exists(), "extracted file should exist"
+            assert out_path.stat().st_size == len(data), (
+                f"extracted size {out_path.stat().st_size} != expected {len(data)}"
+            )
+            assert out_path.read_bytes() == data, "extracted content should match"
+        finally:
+            verify.close()
     finally:
-        verify.close()
-
-    # Cleanup
-    for p in (pvfs_path, out_path):
-        cleanup_file(p)
+        for p in (out_path,):
+            cleanup_file(p, max_retries=5, delay=0.5)
+        cleanup_pvfs_file(pvfs_path)
 
 
 def test_pvfs_two_file_write_extract():
@@ -452,41 +463,41 @@ def test_pvfs_two_file_write_extract():
     out_b = test_dir / "test_two_extracted_b.bin"
     data_a = b"first file a.bin"
     data_b = b"second file b.bin"
-
-    dest = PvfsFile.create(str(pvfs_path))
-    assert dest.is_open, "created PVFS should be open"
-
-    for name, data in [("a.bin", data_a), ("b.bin", data_b)]:
-        dest.lock()
-        try:
-            h = dest.fcreate(name)
-            n = h.write(data, len(data))
-            assert n == len(data), f"write should return bytes written for {name}, got {n}"
-            h.flush()
-            h.close()
-        finally:
-            dest.unlock()
-
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
-
-    verify = PvfsFile.open(str(pvfs_path))
     try:
-        for name, data, out in [("a.bin", data_a, out_a), ("b.bin", data_b, out_b)]:
-            res = verify.extract(name, str(out))
-            assert res == 0, f"extract {name} failed: {res}"
-            assert out.exists(), f"extracted {name} should exist"
-            assert out.stat().st_size == len(data), (
-                f"extracted {name} size {out.stat().st_size} != expected {len(data)}"
-            )
-            assert out.read_bytes() == data, f"extracted {name} content should match"
-    finally:
-        verify.close()
+        dest = PvfsFile.create(str(pvfs_path))
+        assert dest.is_open, "created PVFS should be open"
 
-    # Cleanup
-    for p in (pvfs_path, out_a, out_b):
-        cleanup_file(p)
+        for name, data in [("a.bin", data_a), ("b.bin", data_b)]:
+            dest.lock()
+            try:
+                h = dest.fcreate(name)
+                n = h.write(data, len(data))
+                assert n == len(data), f"write should return bytes written for {name}, got {n}"
+                h.flush()
+                h.close()
+            finally:
+                dest.unlock()
+
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            for name, data, out in [("a.bin", data_a, out_a), ("b.bin", data_b, out_b)]:
+                res = verify.extract(name, str(out))
+                assert res == 0, f"extract {name} failed: {res}"
+                assert out.exists(), f"extracted {name} should exist"
+                assert out.stat().st_size == len(data), (
+                    f"extracted {name} size {out.stat().st_size} != expected {len(data)}"
+                )
+                assert out.read_bytes() == data, f"extracted {name} content should match"
+        finally:
+            verify.close()
+    finally:
+        for p in (out_a, out_b):
+            cleanup_file(p, max_retries=5, delay=0.5)
+        cleanup_pvfs_file(pvfs_path)
 
 
 def test_pvfs_copy_structure_dummy_data(vfs):
@@ -499,63 +510,63 @@ def test_pvfs_copy_structure_dummy_data(vfs):
     """
     test_dir = Path(__file__).parent
     pvfs_path = test_dir / "test_copy_structure.pvfs"
-    files = vfs.get_file_list()
-    assert files is not None and len(files) > 0, "Source should have files"
-
-    dest = PvfsFile.create(str(pvfs_path))
-    assert dest.is_open, "created PVFS should be open"
-
-    non_empty = []
-    vfs.lock()
-    try:
-        for name in files:
-            src_handle = vfs.open_file(name)
-            info = src_handle.get_file_info()
-            size = int(info.size)
-            _ = src_handle.read(size) if size > 0 else b""
-            src_handle.close()
-
-            dest.lock()
-            try:
-                dst_handle = dest.fcreate(name)
-                if size > 0:
-                    n = dst_handle.write(b"X", 1)
-                    assert n == 1, f"write {name} should return 1, got {n}"
-                    non_empty.append(name)
-                dst_handle.flush()
-                dst_handle.close()
-            finally:
-                dest.unlock()
-    finally:
-        vfs.unlock()
-
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
-
-    if len(non_empty) == 0:
-        cleanup_file(pvfs_path)
-        pytest.skip("no non-empty files in source to verify")
-
-    verify = PvfsFile.open(str(pvfs_path))
     extracted_paths = []
     try:
-        for i, name in enumerate(non_empty[:5]):
-            out = test_dir / f"test_copy_verify_{i}.bin"
-            extracted_paths.append(out)
-            res = verify.extract(name, str(out))
-            assert res == 0, f"extract {name} failed: {res}"
-            assert out.exists(), f"extracted {name} should exist"
-            assert out.stat().st_size == 1, (
-                f"extracted {name} size should be 1, got {out.stat().st_size}"
-            )
-            assert out.read_bytes() == b"X", f"extracted {name} content should be b'X'"
-    finally:
-        verify.close()
+        files = vfs.get_file_list()
+        assert files is not None and len(files) > 0, "Source should have files"
 
-    # Cleanup
-    for p in [pvfs_path] + extracted_paths:
-        cleanup_file(p)
+        dest = PvfsFile.create(str(pvfs_path))
+        assert dest.is_open, "created PVFS should be open"
+
+        non_empty = []
+        vfs.lock()
+        try:
+            for name in files:
+                src_handle = vfs.open_file(name)
+                info = src_handle.get_file_info()
+                size = int(info.size)
+                _ = src_handle.read(size) if size > 0 else b""
+                src_handle.close()
+
+                dest.lock()
+                try:
+                    dst_handle = dest.fcreate(name)
+                    if size > 0:
+                        n = dst_handle.write(b"X", 1)
+                        assert n == 1, f"write {name} should return 1, got {n}"
+                        non_empty.append(name)
+                    dst_handle.flush()
+                    dst_handle.close()
+                finally:
+                    dest.unlock()
+        finally:
+            vfs.unlock()
+
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        if len(non_empty) == 0:
+            pytest.skip("no non-empty files in source to verify")
+
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            for i, name in enumerate(non_empty[:5]):
+                out = test_dir / f"test_copy_verify_{i}.bin"
+                extracted_paths.append(out)
+                res = verify.extract(name, str(out))
+                assert res == 0, f"extract {name} failed: {res}"
+                assert out.exists(), f"extracted {name} should exist"
+                assert out.stat().st_size == 1, (
+                    f"extracted {name} size should be 1, got {out.stat().st_size}"
+                )
+                assert out.read_bytes() == b"X", f"extracted {name} content should be b'X'"
+        finally:
+            verify.close()
+    finally:
+        for p in extracted_paths:
+            cleanup_file(p, max_retries=5, delay=0.5)
+        cleanup_pvfs_file(pvfs_path)
 
 
 def test_pvfs_database_extract_and_write(vfs):
@@ -567,83 +578,79 @@ def test_pvfs_database_extract_and_write(vfs):
     test_dir = Path(__file__).parent
     pvfs_path = test_dir / "test_db_copy.pvfs"
     extracted_path = test_dir / "test_db_copy_extracted.db"
-
-    fl = vfs.get_file_list()
-    if "experiment.db3" not in fl:
-        pytest.skip("experiment.db3 not in source")
-
-    # Read from source
-    vfs.lock()
     try:
-        src = vfs.open_file("experiment.db3")
-        info = src.get_file_info()
-        size = int(info.size)
-        data = src.read(size) if size > 0 else b""
-        src.close()
+        fl = vfs.get_file_list()
+        if "experiment.db3" not in fl:
+            pytest.skip("experiment.db3 not in source")
+
+        # Read from source
+        vfs.lock()
+        try:
+            src = vfs.open_file("experiment.db3")
+            info = src.get_file_info()
+            size = int(info.size)
+            data = src.read(size) if size > 0 else b""
+            src.close()
+        finally:
+            vfs.unlock()
+
+        if size == 0 or len(data) == 0:
+            pytest.skip("experiment.db3 in source is empty")
+
+        # Write into new PVFS in 1K chunks to match PVFS_add (pvfs.cpp uses 1024).
+        CHUNK = 1024
+        dest = PvfsFile.create(str(pvfs_path))
+        assert dest.is_open
+        dest.lock()
+        try:
+            dst = dest.fcreate("experiment.db3")
+            offset = 0
+            while offset < len(data):
+                chunk = data[offset : offset + CHUNK]
+                n = dst.write(chunk, len(chunk))
+                assert n == len(chunk), f"write at offset {offset} returned {n}, expected {len(chunk)}"
+                dst.flush()
+                offset += n
+            dst.close()
+        finally:
+            dest.unlock()
+        dest.close()
+        gc.collect()
+        time.sleep(0.2)
+
+        verify = PvfsFile.open(str(pvfs_path))
+        try:
+            res = verify.extract("experiment.db3", str(extracted_path))
+            assert res == 0, f"extract failed: {res}"
+            assert extracted_path.exists(), "extracted DB should exist"
+            assert extracted_path.stat().st_size == len(data), (
+                f"extracted size {extracted_path.stat().st_size} != source {len(data)}"
+            )
+            magic = extracted_path.read_bytes()[:16]
+            assert magic == b"SQLite format 3\x00", (
+                f"extracted file should start with SQLite magic, got {magic!r}"
+            )
+        finally:
+            verify.close()
+
+        conn = sqlite3.connect(str(extracted_path))
+        try:
+            tables = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+            ).fetchall()
+            table_names = [r[0] for r in tables]
+            assert len(table_names) == 14, (
+                f"expected 14 tables (like sine.pvfs experiment.db3), got {len(table_names)}: {table_names}"
+            )
+            (nrows,) = conn.execute(
+                "SELECT count(*) FROM experiment_information_table"
+            ).fetchone()
+            assert nrows > 0, "experiment_information_table should have rows"
+        finally:
+            conn.close()
     finally:
-        vfs.unlock()
-
-    if size == 0 or len(data) == 0:
-        pytest.skip("experiment.db3 in source is empty")
-
-    # Write into new PVFS in 1K chunks to match PVFS_add (pvfs.cpp uses 1024).
-    # Single large write is not persisted. Flush after each chunk.
-    CHUNK = 1024
-    dest = PvfsFile.create(str(pvfs_path))
-    assert dest.is_open
-    dest.lock()
-    try:
-        dst = dest.fcreate("experiment.db3")
-        offset = 0
-        while offset < len(data):
-            chunk = data[offset : offset + CHUNK]
-            n = dst.write(chunk, len(chunk))
-            assert n == len(chunk), f"write at offset {offset} returned {n}, expected {len(chunk)}"
-            dst.flush()
-            offset += n
-        dst.close()
-    finally:
-        dest.unlock()
-    dest.close()
-    gc.collect()
-    time.sleep(0.2)
-
-    # Extract from new PVFS and verify with sqlite3
-    verify = PvfsFile.open(str(pvfs_path))
-    try:
-        res = verify.extract("experiment.db3", str(extracted_path))
-        assert res == 0, f"extract failed: {res}"
-        assert extracted_path.exists(), "extracted DB should exist"
-        assert extracted_path.stat().st_size == len(data), (
-            f"extracted size {extracted_path.stat().st_size} != source {len(data)}"
-        )
-        magic = extracted_path.read_bytes()[:16]
-        assert magic == b"SQLite format 3\x00", (
-            f"extracted file should start with SQLite magic, got {magic!r}"
-        )
-    finally:
-        verify.close()
-
-    # Verify DB structure: 14 tables and data in experiment_information_table
-    conn = sqlite3.connect(str(extracted_path))
-    try:
-        tables = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-        ).fetchall()
-        table_names = [r[0] for r in tables]
-        assert len(table_names) == 14, (
-            f"expected 14 tables (like sine.pvfs experiment.db3), got {len(table_names)}: {table_names}"
-        )
-        (nrows,) = conn.execute(
-            "SELECT count(*) FROM experiment_information_table"
-        ).fetchone()
-        assert nrows > 0, "experiment_information_table should have rows"
-    finally:
-        conn.close()
-
-    # Cleanup
-    for p in (pvfs_path, extracted_path):
-        cleanup_file(p)
+        cleanup_file(extracted_path, max_retries=5, delay=0.5)
+        cleanup_pvfs_file(pvfs_path)
 
 
 # def test_pvfs_extract(vfs, file_name, in_file, out_file):
@@ -955,19 +962,23 @@ def test_pvfs_create_database():
         finally:
             verify.close()
     finally:
-        # Self-contained: clean up all artifacts
-        cleanup_file(temp_db_path)
-        cleanup_file(extracted_path)
-        gc.collect()
-        time.sleep(0.5)
-        cleanup_file(pvfs_path, max_retries=5, delay=0.5)
+        # Clean non-pvfs first so pvfs has maximum time since verify.close()
+        for p in (temp_db_path, extracted_path):
+            cleanup_file(p, max_retries=5, delay=0.5)
+        cleanup_pvfs_file(pvfs_path)
+
+
+def _triangle_wave(t, period, amplitude):
+    """Triangle wave: period in seconds, amplitude ±amplitude. Phase so value at t=0 is 0."""
+    x = (t / period + 0.25) % 1.0  # 0..1 over each period, shifted so t=0 -> x=0.25 -> value 0
+    return amplitude * (4 * min(x, 1 - x) - 1)  # -1..1 -> -amplitude..+amplitude
 
 
 def test_pvfs_create_file():
     """
-    Create a PVFS with a single indexed data file EEG0, a proper
-    experiment_channel_information_table entry in experiment.db3, and 60 seconds
-    of 400 Hz sine data (amplitude ±50 uV, standard EEG-compatible) starting at time of creation.
+    Create a PVFS with two indexed data files EEG0 and EEG1, proper
+    experiment_channel_information_table entries in experiment.db3, and 60 seconds
+    of 400 Hz data each: EEG0 sine wave, EEG1 triangle wave (amplitude ±50 uV).
     """
     test_dir, project_root = _test_create_file_dirs()
     pvfs_path = test_dir / "test_create_pvfs_file.pvfs"
@@ -983,103 +994,106 @@ def test_pvfs_create_file():
         ok = pvfs_data.create(str(pvfs_path))
         assert ok, "PvfsDataFile.create should succeed"
 
-        # Create channel EEG0 (creates EEG0.index, EEG0.idat and DB entry)
-        # 400 Hz for standard EEG compatibility; units uV
-        idf = pvfs_data.create_channel("EEG0", data_rate=400.0, unit="uV")
-        assert idf is not None, "create_channel(EEG0) should succeed"
-
-        # 400 Hz => 1/400 s between samples
-        idf._delta_time = HighTime(0, 1.0 / 400.0)
-
-        # Simulated data: start at current PC time, end = start + duration; 60 s at 400 Hz
+        # Shared: 60 s at 400 Hz
         start_time = HighTime.from_seconds(time.time())
         duration_sec = 60
         sample_rate = 400.0
         n_samples = int(duration_sec * sample_rate)  # 60 s at 400 Hz = 24000 samples
         assert duration_sec == 60 and n_samples == 24000, "simulated data must be 60 s at 400 Hz"
         t = [i / sample_rate for i in range(n_samples)]
-        # 10 Hz sine, amplitude ±50 uV (standard EEG-compatible)
-        sine_values = [50.0 * math.sin(2 * math.pi * 10 * ti) for ti in t]
 
-        result = idf.append_block(start_time, sine_values)
-        assert result == 0, f"append_block should succeed, got {result}"
+        # Channel EEG0: sine wave ±50 uV, 10 Hz
+        idf0 = pvfs_data.create_channel("EEG0", data_rate=sample_rate, unit="uV")
+        assert idf0 is not None, "create_channel(EEG0) should succeed"
+        idf0._delta_time = HighTime(0, 1.0 / sample_rate)
+        sine_values = [50.0 * math.sin(2 * math.pi * 10 * ti) for ti in t]
+        result = idf0.append_block(start_time, sine_values)
+        assert result == 0, f"append_block(EEG0) should succeed, got {result}"
+
+        # Channel EEG1: triangle wave ±50 uV, 10 Hz period -> filename EEG11 (name + str(id))
+        idf1 = pvfs_data.create_channel("EEG1", data_rate=sample_rate, unit="uV")
+        assert idf1 is not None, "create_channel(EEG1) should succeed"
+        idf1._delta_time = HighTime(0, 1.0 / sample_rate)
+        triangle_values = [_triangle_wave(ti, 0.1, 50.0) for ti in t]  # 10 Hz = 0.1 s period
+        result = idf1.append_block(start_time, triangle_values)
+        assert result == 0, f"append_block(EEG1) should succeed, got {result}"
 
         # Flush and close (writes experiment.db3 into PVFS)
         pvfs_data.close()
         gc.collect()
         time.sleep(0.2)
 
-        # Verify: PVFS contains EEG0.index, EEG0.idat and experiment.db3
+        # Verify: PVFS contains both channels (EEG00, EEG10) and experiment.db3
         verify = PvfsFile.open(str(pvfs_path))
         try:
             channels = verify.get_channel_list()
-            assert "EEG0.index" in channels, f"EEG0.index should be in channel list: {channels}"
-            assert "EEG0.idat" in channels, f"EEG0.idat should be in channel list: {channels}"
-            assert "experiment.db3" in channels, "experiment.db3 should be in channel list"
+            channel_list = list(channels)  # StringVector: convert to list for reliable 'in' checks
+            assert "EEG00.index" in channel_list, f"EEG00.index should be in channel list: {channel_list}"
+            assert "EEG00.idat" in channel_list, f"EEG00.idat should be in channel list: {channel_list}"
+            # Second channel: filename = name + str(id) -> EEG1 + "1" = EEG11
+            assert "EEG11.index" in channel_list, f"EEG11.index should be in channel list: {channel_list}"
+            assert "EEG11.idat" in channel_list, f"EEG11.idat should be in channel list: {channel_list}"
+            assert "experiment.db3" in channel_list, "experiment.db3 should be in channel list"
 
-            # Extract DB and check experiment_channel_information_table has EEG0
+            # Extract DB and check experiment_channel_information_table has both EEG0 and EEG1
             res = verify.extract("experiment.db3", str(extracted_db_path))
             assert res == 0, f"extract experiment.db3 failed: {res}"
             assert extracted_db_path.exists(), "extracted DB should exist"
 
+            expect_end_sec = start_time.to_seconds() + (n_samples - 1) / sample_rate
             db = ExperimentDatabase(str(extracted_db_path))
             try:
                 names = db.get_channel_names()
                 assert "EEG0" in names, f"EEG0 should be in channel names: {names}"
-                info = db.get_channel_info("EEG0")
-                assert info is not None, "get_channel_info(EEG0) should return info"
-                assert info.name == "EEG0"
-                assert info.data_rate == 400, f"data_rate should be 400, got {info.data_rate}"
-                assert info.data_rate_float == "400.0", f"data_rate_float should be '400.0', got {info.data_rate_float!r}"
-                assert info.unit == "uV", f"unit should be uV, got {info.unit!r}"
-                # Convention: id starts at 0, filename = name + str(id) (e.g. EEG0 -> EEG00)
-                assert info.id == 0, f"first channel id should be 0, got {info.id}"
-                assert info.filename == "EEG00", f"filename should be EEG00, got {info.filename!r}"
-                assert info.low_range == "-50.0" and info.high_range == "50.0", (
-                    f"low_range/high_range for sine ±50 uV should be -50.0/50.0, got {info.low_range!r}/{info.high_range!r}"
-                )
-                # Timestamps in DB must match simulated data range (pvfs_data.close() -> flush() syncs index header to DB)
-                assert info.start_time is not None, "channel start_time should be set from index header"
-                assert info.end_time is not None, "channel end_time should be set from index header"
-                db_start_sec = info.start_time.to_seconds()
-                db_end_sec = info.end_time.to_seconds()
-                expect_start_sec = start_time.to_seconds()
-                expect_end_sec = start_time.to_seconds() + (n_samples - 1) / sample_rate
-                assert abs(db_start_sec - expect_start_sec) < 0.001, (
-                    f"DB start_time should match simulated start: got {db_start_sec}, expected ~{expect_start_sec}"
-                )
-                assert abs(db_end_sec - expect_end_sec) < 0.001, (
-                    f"DB end_time should match simulated end: got {db_end_sec}, expected ~{expect_end_sec}"
-                )
+                assert "EEG1" in names, f"EEG1 should be in channel names: {names}"
+
+                for ch_name, file_base, ch_id in [("EEG0", "EEG00", 0), ("EEG1", "EEG11", 1)]:
+                    info = db.get_channel_info(ch_name)
+                    assert info is not None, f"get_channel_info({ch_name}) should return info"
+                    assert info.name == ch_name
+                    assert info.data_rate == 400, f"data_rate for {ch_name} should be 400, got {info.data_rate}"
+                    assert info.unit == "uV", f"unit for {ch_name} should be uV, got {info.unit!r}"
+                    assert info.id == ch_id, f"channel {ch_name} id should be {ch_id}, got {info.id}"
+                    assert info.filename == file_base, f"filename for {ch_name} should be {file_base}, got {info.filename!r}"
+                    assert info.start_time is not None and info.end_time is not None
+                    db_start_sec = info.start_time.to_seconds()
+                    db_end_sec = info.end_time.to_seconds()
+                    assert abs(db_start_sec - start_time.to_seconds()) < 0.001
+                    assert abs(db_end_sec - expect_end_sec) < 0.001
             finally:
                 db.close()
 
-            # Verify indexed data: 60 s of data; read a slice and check sine shape (±50 uV)
-            idf_verify = IndexedDataFile(verify, "EEG0")
-            try:
-                start = idf_verify.get_start_time()
-                end_ht = idf_verify.get_end_time()
-                # Verify 60 s of data: end - start ~ 60 s
-                span_sec = end_ht.to_seconds() - start.to_seconds()
-                assert abs(span_sec - 60.0) < 1.0, f"expected ~60 s of data, got span {span_sec} s"
-                stop_ht = start + 10.0  # first 10 seconds of simulated data
-                ts, vals = idf_verify.get_data(start, stop_ht)
-                idf_verify.close()
-                assert len(vals) > 0, "get_data should return some values"
-                # First value ~ 50*sin(0) = 0
-                assert abs(vals[0]) < 1.0, f"first sample should be ~0, got {vals[0]}"
-                # Spot-check: at t=0.25 s, 50*sin(2*pi*10*0.25) = 50*sin(5*pi) = 0
-                idx_25 = min(100, len(vals) - 1)  # ~0.25 s at 400 Hz
-                assert abs(vals[idx_25]) < 5.0, f"early sample should be small, got {vals[idx_25]}"
-            finally:
+            # Verify indexed data for both channels: 60 s span, at least 2 index entries, waveform spot-checks
+            for file_base, ch_name, is_triangle in [("EEG00", "EEG0", False), ("EEG11", "EEG1", True)]:
+                idf_verify = IndexedDataFile(verify, file_base, channel_name=ch_name)
                 try:
-                    idf_verify.close()
-                except Exception:
-                    pass
+                    start = idf_verify.get_start_time()
+                    end_ht = idf_verify.get_end_time()
+                    assert len(idf_verify._indices) >= 2, (
+                        f"{ch_name} should have at least 2 index entries, got {len(idf_verify._indices)}"
+                    )
+                    span_sec = end_ht.to_seconds() - start.to_seconds()
+                    assert abs(span_sec - 60.0) < 1.0, f"expected ~60 s of data for {ch_name}, got span {span_sec} s"
+                    stop_ht = start + 10.0
+                    ts, vals = idf_verify.get_data(start, stop_ht)
+                    assert len(vals) > 0, f"get_data({ch_name}) should return some values"
+                    if is_triangle:
+                        # Triangle: at t=0 value is 0; at t=0.025 (quarter period) value is +50
+                        assert abs(vals[0]) < 1.0, f"EEG1 first sample (triangle at 0) should be ~0, got {vals[0]}"
+                        idx_quarter = min(10, len(vals) - 1)  # ~0.025 s
+                        assert abs(vals[idx_quarter] - 50.0) < 10.0, f"EEG1 early ramp should be ~50, got {vals[idx_quarter]}"
+                    else:
+                        assert abs(vals[0]) < 1.0, f"EEG0 first sample (sine at 0) should be ~0, got {vals[0]}"
+                        idx_25 = min(100, len(vals) - 1)
+                        assert abs(vals[idx_25]) < 5.0, f"EEG0 early sample should be small, got {vals[idx_25]}"
+                finally:
+                    try:
+                        idf_verify.close()
+                    except Exception:
+                        pass
         finally:
             verify.close()
 
-        # Sanity: we wrote 60 s at 400 Hz
         assert n_samples == 24000, f"expected 24000 samples, got {n_samples}"
     finally:
         gc.collect()

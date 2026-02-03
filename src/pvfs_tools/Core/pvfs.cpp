@@ -35,6 +35,18 @@ int PVFS_close(int fd)
 #endif
 }
 
+PvfsFile::~PvfsFile()
+{
+    if (fd != PVFS_INVALID_FD) {
+#ifdef _WIN32
+        _close(fd);
+#else
+        close(fd);
+#endif
+        fd = PVFS_INVALID_FD;
+    }
+}
+
 std::shared_ptr<PvfsFile> create_PVFS_file_structure ( std::uint32_t blockSize )
 {
     std::shared_ptr<pvfs::PvfsFile> vfs = createVFS( blockSize );

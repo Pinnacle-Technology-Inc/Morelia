@@ -304,6 +304,7 @@ struct PvfsFile {
     std::mutex lock;
 
     PvfsFile() : fd(-1), blockSize(0), tableLoc(0), nextBlock(0), fileMaxCount(0), treeMaxCount(0) {}
+    ~PvfsFile();  // Close fd so the .pvfs file is released (e.g. for test cleanup on Windows)
 };
 
 

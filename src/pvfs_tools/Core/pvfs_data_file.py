@@ -260,27 +260,24 @@ class PvfsDataFile:
             return None
         
         try:
-            # Create indexed data file
-            indexed_file = IndexedDataFile(self._pvfs, channel_name, create=True)
-            # The constructor now handles creation, so no need to call create() again
+            # id starts at 0; filename = name + str(id) (e.g. EEG0 -> EEG00) for PVFS file blocks
+            channel_id = len(self._indexed_data_files)
+            file_base = channel_name + str(channel_id)
+            indexed_file = IndexedDataFile(
+                self._pvfs, file_base, create=True, channel_name=channel_name
+            )
             if not indexed_file._index_file or not indexed_file._data_file:
                 return None
             
-            # Set data rate
             indexed_file.set_data_rate(data_rate)
-            
-            # Add to our list
             self._indexed_data_files[channel_name] = indexed_file
             
-            # Add channel information to database (with explicit start/end time so DB has non-null timestamps)
-            # id starts at 0 and increments per channel; filename = name + str(id) (e.g. EEG0 -> EEG00)
             if self._database:
-                channel_id = len(self._indexed_data_files) - 1  # 0 for first channel, 1 for second, etc.
                 channel_info = ChannelInformation(
                     name=channel_name,
                     id=channel_id,
                     type=data_type,
-                    filename=channel_name + str(channel_id),
+                    filename=file_base,
                     comments=f"Channel {channel_name}",
                     unit=unit,
                     data_rate=int(data_rate),
@@ -312,17 +309,22 @@ class PvfsDataFile:
         if not self._pvfs:
             return None
         
-        # Check if already open
         if channel_name in self._indexed_data_files:
             return self._indexed_data_files[channel_name]
         
         try:
-            # Try to open the indexed data file
-            indexed_file = IndexedDataFile(self._pvfs, channel_name)
-            if indexed_file.open(self._pvfs, channel_name):
+            # PVFS file blocks use filename (e.g. EEG00), not channel name (EEG0)
+            file_base = channel_name
+            if self._database:
+                info = self._database.get_channel_info(channel_name)
+                if info and (info.filename or "").strip():
+                    file_base = info.filename.strip()
+            indexed_file = IndexedDataFile(
+                self._pvfs, file_base, channel_name=channel_name
+            )
+            if indexed_file.open(self._pvfs, file_base):
                 self._indexed_data_files[channel_name] = indexed_file
                 return indexed_file
-            
         except Exception as e:
             print(f"Error opening channel {channel_name}: {e}")
         

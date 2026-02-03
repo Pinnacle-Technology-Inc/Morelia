@@ -61,20 +61,21 @@ class IndexedDataFile:
 
     def __init__(self, pvfs_file: PvfsFile, filename: str, seconds: int = 10, 
                  create: bool = False, async_cache: bool = False,
-                 overwrite: bool = False):
+                 overwrite: bool = False, channel_name: Optional[str] = None):
         """Initialize the indexed data file.
         
         Args:
             pvfs_file: The PVFS file instance
-            filename: Name of the file to open/create
+            filename: Base name for .index/.idat files in PVFS (e.g. EEG00)
             seconds: Time interval between timestamps
             create: Whether to create a new file
             async_cache: Whether to use async caching (not used in Python implementation)
             overwrite: Whether to overwrite existing file
+            channel_name: Display name for the channel (e.g. EEG0); if None, uses filename
         """
         self._pvfs_file = pvfs_file
         self._filename = filename
-        self._channel_name = filename
+        self._channel_name = channel_name if channel_name is not None else filename
         self._header = IndexedHeader()
         self._header.timestamp_interval_seconds = seconds
         
@@ -85,6 +86,10 @@ class IndexedDataFile:
         self._data_file_index = 0
         # CRC of previous block's float data (written at start of next block in .idat)
         self._pending_block_crc: Optional[int] = None
+        # True after writing the final end-timestamp block (ensures at least 2 index entries per channel)
+        self._end_timestamp_block_written = False
+        # True if append_block was called this session (so we may need to write end-timestamp block on flush)
+        self._has_appended_this_session = False
         
         # Index entries
         self._indices = []
@@ -146,6 +151,8 @@ class IndexedDataFile:
         self._header.start_time = HighTime(0, 0.0)
         self._header.end_time = HighTime(0, 0.0)
         self._header.timestamp_interval_seconds = 10
+        self._end_timestamp_block_written = False
+        self._has_appended_this_session = False
         
         # Write header
         if not self.write_header(self._header):
@@ -459,10 +466,11 @@ class IndexedDataFile:
         Index file: one 44-byte timestamp entry with (start_time, data_location).
         Data file: [optional 4-byte CRC of previous block] [32-byte header] [N floats].
         data_location points to the start of the 32-byte header.
+        float_list may be empty for an end-timestamp-only block (still creates index entry + 32-byte header).
         
         Args:
             start_time: Block start timestamp
-            float_list: All float values in this block
+            float_list: All float values in this block (may be empty for end-timestamp block)
             
         Returns:
             int: 0 on success, -1 on failure
@@ -594,12 +602,6 @@ class IndexedDataFile:
         finally:
             self._pvfs_file.unlock()
 
-        # Debug: first 40 values = 1 period of 10 Hz sine at 400 Hz
-        n_print = min(40, len(values_out))
-        if n_print > 0:
-            first_40 = values_out[:n_print]
-            print(f"get_data: first {n_print} values = {first_40}")
-
         return timestamps, values_out
 
     def append(self, time: HighTime, value: float, consolidate: bool = False) -> int:
@@ -615,6 +617,7 @@ class IndexedDataFile:
         """
         if not self._index_file or not self._data_file:
             return -1
+        self._has_appended_this_session = True
         result = self._write_block_to_idat(time, [value])
         if result == 0 and time > self._header.end_time:
             self._header.end_time = time
@@ -639,21 +642,23 @@ class IndexedDataFile:
         no_data_yet = (
             self._header.end_time.seconds == 0 and self._header.end_time.subseconds == 0.0
         )
-        if no_data_yet:
-            self._header.start_time = start_time
-            self.write_header()
-
-        result = self._write_block_to_idat(start_time, data_values)
-        if result < 0:
-            return -1
-
         # End time = start + (N-1) * delta
         last_time = HighTime.from_seconds(
             start_time.to_seconds() + (len(data_values) - 1) * self._delta_time.to_seconds()
         )
+        if no_data_yet:
+            self._header.start_time = start_time
         if last_time > self._header.end_time:
             self._header.end_time = last_time
-            self.write_header()
+
+        # Write header FIRST (at position 0) so we don't rely on seek(0) after appending;
+        # some PVFS modes may not allow backward seek, so header would never get updated.
+        self.write_header()
+
+        self._has_appended_this_session = True
+        result = self._write_block_to_idat(start_time, data_values)
+        if result < 0:
+            return -1
         return 0
 
     def get_data_rate(self) -> float:
@@ -725,11 +730,20 @@ class IndexedDataFile:
     def flush(self, synchronous: bool = False):
         """Flush data to disk.
         
+        Ensures at least two index entries per channel by writing an end-timestamp block
+        (a datablock with no samples, containing only the end timestamp) when data has
+        been appended and that block has not yet been written.
+        
         Args:
             synchronous: Whether to wait for flush to complete
         """
+        if self._has_appended_this_session and not self._end_timestamp_block_written:
+            end_time = self._header.end_time
+            if end_time is not None and (end_time.seconds != 0 or end_time.subseconds != 0.0):
+                if self._write_block_to_idat(end_time, []) == 0:
+                    self._end_timestamp_block_written = True
+                    self.write_header()
         if self._index_file:
             self._index_file.flush()
-            
         if self._data_file:
             self._data_file.flush() 
