@@ -1,14 +1,16 @@
 """
 Stream 8206HR data to a PVFS file using the Morelia data collection pipeline.
 
-This example connects to a single 8206HR device and records to a .pvfs file
-compatible with the standard Sirenia data format (experiment.db3 + indexed channels).
+Uses D2XX direct USB; follows the same pattern as examples/d2xx_example.py
+(use device serial as port so the queue manager works). Assumes the 8206HR
+is the only connected device, or use --device to pick by index/serial.
+Output is compatible with the standard Sirenia data format (experiment.db3 + indexed channels).
 
 Usage:
-  python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS]
-  (default: output_8206.pvfs, stream until Ctrl+C or stop_collection())
+  python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--device INDEX]
+  (default: output_8206.pvfs, run until Ctrl+C; device 0 = first D2XX device)
 
-Requires: 8206HR device on the given port (e.g. /dev/ttyUSB0 on Linux, COM3 on Windows).
+Requires: 8206HR connected via USB; D2XX drivers and ftd2xx (Windows) or pylibftdi (Linux/Mac).
 """
 
 from pathlib import Path
@@ -28,18 +30,32 @@ from Morelia.Stream.sink import PvfsSink
 from Morelia.Stream.data_flow import DataFlow
 
 
+def list_d2xx_devices():
+    """List all available FTDI D2XX devices (same as d2xx_example.py)."""
+    try:
+        from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+        devices = list_d2xx_devices()
+        print("Available D2XX devices:")
+        for dev in devices:
+            print(f"  Index {dev['index']}: {dev['description']} (Serial: {dev['serial']})")
+        return devices
+    except ImportError:
+        print("D2XX support not available. Install ftd2xx (Windows) or pylibftdi (Linux/Mac).")
+        return []
+
+
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="Stream 8206HR data to a PVFS file")
+    parser = argparse.ArgumentParser(description="Stream 8206HR data to a PVFS file (D2XX)")
     parser.add_argument(
         "--output", "-o",
         default="output_8206.pvfs",
         help="Output PVFS file path (default: output_8206.pvfs)",
     )
     parser.add_argument(
-        "--port", "-p",
-        default="/dev/ttyUSB0",
-        help="Serial port (default: /dev/ttyUSB0; use COM3 etc. on Windows)",
+        "--device", "-p",
+        default=0,
+        help="D2XX device index 0,1,... (default: 0, first device). Uses device serial for queue manager.",
     )
     parser.add_argument(
         "--duration", "-d",
@@ -49,20 +65,52 @@ def main():
         help="Record for SECONDS then stop (default: run until stop_collection)",
     )
     parser.add_argument(
-        "--gain", "-g",
+        "--preamp-gain",
         type=int,
-        default=10,
+        default=100,
         choices=[10, 100],
-        help="Preamplifier gain (default: 10)",
+        help="Preamp gain for 8206HR (default: 100)",
+    )
+    parser.add_argument(
+        "--baudrate",
+        type=int,
+        default=115200,
+        help="Baud rate for D2XX (default: 115200)",
     )
     args = parser.parse_args()
 
-    pod = Pod8206HR(args.port, args.gain)
+    # Match d2xx_example.py: list devices and use serial as port so queue manager gets a string key
+    devices = list_d2xx_devices()
+    if not devices:
+        print("No D2XX devices found or D2XX not available.", file=sys.stderr)
+        print("Install ftd2xx (Windows) or pylibftdi (Linux/Mac) and ensure 8206HR is connected.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        idx = int(args.device) if str(args.device).strip().isdigit() else 0
+    except (TypeError, ValueError):
+        idx = 0
+    if idx < 0 or idx >= len(devices):
+        print(f"Device index {idx} out of range (0..{len(devices)-1}).", file=sys.stderr)
+        sys.exit(1)
+
+    device_serial = devices[idx]["serial"]
+    if isinstance(device_serial, bytes):
+        device_serial = device_serial.decode("utf-8")
+    port = device_serial  # Use serial so queue server registers get_write_queue_<serial>
+    print(f"Using D2XX device index {idx}: {device_serial}")
+
+    pod = Pod8206HR(
+        port=port,
+        preamp_gain=args.preamp_gain,
+        baudrate=args.baudrate,
+        use_d2xx=True,
+    )
     pvfs_sink = PvfsSink(args.output, pod)
     mapping = [(pod, [pvfs_sink])]
     flowgraph = DataFlow(mapping)
 
-    print(f"Streaming 8206HR to {args.output} (port={args.port}, gain={args.gain})")
+    print(f"Streaming 8206HR to {args.output} (preamp_gain={args.preamp_gain})")
     if args.duration is not None:
         print(f"Duration: {args.duration} s")
         flowgraph.collect_for_seconds(args.duration)
