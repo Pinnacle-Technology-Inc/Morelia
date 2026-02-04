@@ -36,6 +36,19 @@ video = [
   "av; python_version < '3.11'"
 ]
 
+d2xx-windows = [
+  "ftd2xx; sys_platform == 'win32'",
+]
+
+d2xx-linux = [
+  "pylibftdi; sys_platform != 'win32'",
+]
+
+d2xx = [
+  "ftd2xx; sys_platform == 'win32'",
+  "pylibftdi; sys_platform != 'win32'",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

@@ -19,6 +19,13 @@ You need **one** of the following options, depending on your platform:
 pip install ftd2xx
 ```
 
+Or install via optional dependencies:
+```bash
+pip install ptech-morelia[d2xx-windows]
+# or
+pip install ptech-morelia[d2xx]  # Installs platform-appropriate library
+```
+
 **System Drivers:**
 - Download and install **FTDI D2XX drivers** from: https://ftdichip.com/drivers/d2xx-drivers/
 - Choose the appropriate driver for your Windows version (32-bit or 64-bit)
@@ -35,6 +42,13 @@ pip install ftd2xx
 pip install pylibftdi
 ```
 
+Or install via optional dependencies:
+```bash
+pip install ptech-morelia[d2xx-linux]
+# or
+pip install ptech-morelia[d2xx]  # Installs platform-appropriate library
+```
+
 **System Library:**
 - Install `libftdi` library:
   - **Ubuntu/Debian:** `sudo apt-get install libftdi1-dev`
@@ -42,6 +56,26 @@ pip install pylibftdi
   - **macOS:** `brew install libftdi`
 
 **Note:** `pylibftdi` uses the open-source `libftdi` library, not the official FTDI drivers.
+
+### Option 3: WSL (Windows Subsystem for Linux)
+
+**Important:** WSL has limited USB device support. For reliable D2XX communication in WSL:
+
+1. **Use USB passthrough:** WSL2 supports USB passthrough via `usbipd-win` (Windows) and `usbip` (Linux). However, this adds complexity and may not work reliably for FTDI devices.
+
+2. **Recommended approach:** Use native Windows with `ftd2xx` instead of WSL for D2XX communication. The Windows D2XX implementation is more mature and reliable.
+
+3. **If you must use WSL:**
+   - Install `pylibftdi` in WSL: `pip install pylibftdi`
+   - Install `libftdi` in WSL: `sudo apt-get install libftdi1-dev`
+   - Set up USB passthrough (see WSL USB documentation)
+   - Configure udev rules: `sudo nano /etc/udev/rules.d/99-ftdi.rules` with:
+     ```
+     SUBSYSTEM=="usb", ATTRS{idVendor}=="0403", MODE="0666"
+     ```
+   - Reload udev: `sudo udevadm control --reload-rules && sudo udevadm trigger`
+
+**Note:** Native Linux installations work better than WSL for D2XX. Consider using a native Linux system or Windows for production use.
 
 ## Finding Your Device
 
