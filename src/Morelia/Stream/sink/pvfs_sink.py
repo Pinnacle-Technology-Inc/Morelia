@@ -179,13 +179,6 @@ class PvfsSink(SinkInterface):
             idf = self._pvfs_data._indexed_data_files.get(ch_name)
             if idf is None:
                 continue
-            # Debug: exact timestamp written for this .index entry
-            print(
-                f"[pvfs_sink] .index entry: channel={ch_name!r} "
-                f"timestamp seconds={block_start.seconds} subseconds={block_start.subseconds} "
-                f"to_seconds()={block_start.to_seconds()!r}",
-                file=sys.stderr,
-            )
             values = [float(x) for x in buf]
             result = idf.append_block(block_start, values)
             if result != 0:

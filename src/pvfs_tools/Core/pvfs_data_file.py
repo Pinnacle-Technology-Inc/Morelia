@@ -6,6 +6,7 @@ similar to the C++ PVFSDataFile class but adapted for Python use.
 """
 
 import os
+import time
 import uuid
 from pathlib import Path
 from typing import Optional, List, Dict, Any
@@ -103,18 +104,17 @@ class PvfsDataFile:
             
             print("  - Database created successfully")
             
+            # Set file information before _save_database so temp files go next to PVFS
+            file_path = Path(filename)
+            self._filename = file_path.name
+            self._filepath = str(file_path.absolute())
+            print(f"  - File info set: {self._filename} -> {self._filepath}")
+            
             # Write experiment.db3 and experiment_backup.db3 into the PVFS first so they
             # are the first two channels (required by standard PVFS layout)
             if not self._save_database():
                 print("  - Failed to save initial database to PVFS")
                 return False
-            
-            # Set file information
-            file_path = Path(filename)
-            self._filename = file_path.name
-            self._filepath = str(file_path.absolute())
-            
-            print(f"  - File info set: {self._filename} -> {self._filepath}")
             
             # Add the directory to search paths
             self.add_search_path(file_path.parent)
@@ -175,23 +175,38 @@ class PvfsDataFile:
             if self._database and self._pvfs:
                 self.flush()
 
-            if self._owns_temp_db and self._temp_db_path and os.path.exists(self._temp_db_path):
-                try:
-                    os.remove(self._temp_db_path)
-                except OSError:
-                    pass
+            # Close the database first so temp files are released (required before remove on Windows)
+            temp_db_path = self._temp_db_path
+            temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
+            snapshot_path = temp_dir / f"temp_snapshot_{self._unique_id}.db3"
+            if self._database:
+                self._database.close()
+                self._database = None
             self._temp_db_path = None
             self._owns_temp_db = False
+
+            # Remove temp DB and any leftover temp_snapshot (after DB closed so files are not locked)
+            def _try_remove(path, max_retries=5):
+                for _ in range(max_retries):
+                    try:
+                        if path is None:
+                            return
+                        p = Path(path) if isinstance(path, str) else path
+                        if p.exists():
+                            p.unlink()
+                        return
+                    except OSError:
+                        time.sleep(0.1)
+
+            _try_remove(temp_db_path)
+            _try_remove(snapshot_path)
+            # Snapshot may have been created in cwd if _filepath was not set when _save_database ran
+            _try_remove(Path.cwd() / f"temp_snapshot_{self._unique_id}.db3")
 
             # Close the PVFS file
             if self._pvfs:
                 self._pvfs.close()
                 self._pvfs = None
-            
-            # Close the database
-            if self._database:
-                self._database.close()
-                self._database = None
             
             print("  - PVFS file closed successfully")
             return True
@@ -433,8 +448,9 @@ class PvfsDataFile:
             # Create database
             self._database = ExperimentDatabase()
             
-            # Try to extract database from PVFS
-            temp_db_path = os.path.abspath(f"temp_{self._unique_id}.db3")
+            # Try to extract database from PVFS (same dir as PVFS to avoid polluting cwd)
+            temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
+            temp_db_path = str(temp_dir / f"temp_{self._unique_id}.db3")
             print(f"    - Temporary database path: {temp_db_path}")
             
             # Try different possible database filenames
@@ -472,8 +488,9 @@ class PvfsDataFile:
                     continue
             
             print(f"    - No database found, creating in-memory database")
-            # If no database found, create a new one
-            temp_db_path = os.path.abspath(f"temp_{self._unique_id}.db3")
+            # If no database found, create a new one (same dir as PVFS)
+            temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
+            temp_db_path = str(temp_dir / f"temp_{self._unique_id}.db3")
             self._database = ExperimentDatabase(filename=temp_db_path, in_memory=False)
             if not self._database.create(temp_db_path):
                 return False
@@ -491,8 +508,9 @@ class PvfsDataFile:
         require a disk file of that name.
         """
         targets = targets or [self.EXPERIMENT_DB_FILENAME, self.EXPERIMENT_DB_BACKUP_FILENAME]
-        # 1) make a clean snapshot file from the *current* DB
-        snapshot_path = os.path.abspath(f"temp_snapshot_{self._unique_id}.db3")
+        # 1) make a clean snapshot file from the *current* DB (same dir as PVFS to avoid polluting cwd)
+        temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
+        snapshot_path = str(temp_dir / f"temp_snapshot_{self._unique_id}.db3")
         try:
             if not self._database.save_to_file(snapshot_path):
                 return False
