@@ -163,7 +163,12 @@ class PortIO :
             # initialize and open serial port 
             self._serial_inst.baudrate = baudrate
             self._serial_inst.port = name
+            # Set write_timeout to prevent write timeouts (especially on Windows)
+            # Use a reasonable timeout: 5 seconds should be enough for most devices
+            self._serial_inst.write_timeout = 5
             self._serial_inst.open()
+            # Give the port a moment to stabilize after opening (especially important on Windows)
+            time.sleep(0.1)
             # if any leftover binary exists, read/clear it
             if self._serial_inst and self._serial_inst.in_waiting > 0:
                 self._serial_inst.read(self._serial_inst.in_waiting)
@@ -203,6 +208,21 @@ class PortIO :
             return(True) 
         else : 
             return(False)
+
+    def purge_rx(self) -> bool:
+        """Purge RX (receive) buffer only. Useful before starting to read a new packet.
+
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        if self._serial_inst is None:
+            return False
+
+        if self.is_serial_open():
+            self._serial_inst.reset_input_buffer()
+            return True
+        else:
+            return False
 
     # ----- GETTERS -----
 
@@ -288,7 +308,12 @@ class PortIO :
 
         Args:
             message (bytes): byte string containing the message to write.
+            
+        Raises:
+            SerialTimeoutException: If write times out (propagated from pyserial).
         """
         if(self.is_serial_open()) : 
+            # Write timeout exceptions are propagated to caller for handling
+            # The caller (check_write_queue) will catch and handle them gracefully
             self._serial_inst.write(message)
 

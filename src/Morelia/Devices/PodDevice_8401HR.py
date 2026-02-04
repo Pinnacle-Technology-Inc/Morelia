@@ -402,5 +402,6 @@ class Pod8401HR(AcquisitionDevice) :
             'ss_gain': self.ss_gain,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
-            'device_name': self.device_name
+            'device_name': self.device_name,
+            'use_d2xx': self._use_d2xx,
         }
