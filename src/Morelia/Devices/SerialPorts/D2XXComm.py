@@ -208,36 +208,44 @@ class D2XXPortIO:
             if self._use_ftd2xx:
                 # Use ftd2xx library (Windows with official FTDI drivers)
                 try:
-                    # Try by index first (port_id is a string of digits only)
-                    if isinstance(port_id, str) and port_id.isdigit():
-                        idx = int(port_id)
-                        self._ftd2xx_handle = ftd.open(idx)
-                    else:
-                        # port_id is a serial number or description - find matching device
-                        num_devices = ftd.createDeviceInfoList()
-                        port_id_str = str(port_id)
-                        opened = False
-                        for i in range(num_devices):
-                            info = ftd.getDeviceInfoDetail(i)
-                            # getDeviceInfoDetail may return dict or tuple; handle both
-                            if isinstance(info, dict):
-                                dev_serial = info.get('serial', '')
-                                dev_desc = info.get('description', '')
-                            elif isinstance(info, tuple):
-                                # Tuple format: (flags, type, id, loc_id, serial, description, ...)
-                                dev_serial = info[4] if len(info) > 4 else ''
-                                dev_desc = info[5] if len(info) > 5 else ''
-                            else:
-                                continue
-                            # Normalize to string for comparison (serial/desc may be bytes)
-                            if isinstance(dev_serial, bytes):
-                                dev_serial = dev_serial.decode('utf-8', errors='replace')
-                            if isinstance(dev_desc, bytes):
-                                dev_desc = dev_desc.decode('utf-8', errors='replace')
-                            if dev_serial == port_id_str or dev_desc == port_id_str:
-                                self._ftd2xx_handle = ftd.open(i)
+                    # Always enumerate and match by serial/description first so that a numeric
+                    # serial (e.g. "12345") is not mistaken for device index.
+                    num_devices = ftd.createDeviceInfoList()
+                    port_id_str = str(port_id)
+                    opened = False
+                    for i in range(num_devices):
+                        info = ftd.getDeviceInfoDetail(i)
+                        # getDeviceInfoDetail may return dict or tuple; handle both
+                        if isinstance(info, dict):
+                            dev_serial = info.get('serial', '')
+                            dev_desc = info.get('description', '')
+                        elif isinstance(info, tuple):
+                            # Tuple format: (flags, type, id, loc_id, serial, description, ...)
+                            dev_serial = info[4] if len(info) > 4 else ''
+                            dev_desc = info[5] if len(info) > 5 else ''
+                        else:
+                            continue
+                        # Normalize to string for comparison (serial/desc may be bytes)
+                        if isinstance(dev_serial, bytes):
+                            dev_serial = dev_serial.decode('utf-8', errors='replace')
+                        if isinstance(dev_desc, bytes):
+                            dev_desc = dev_desc.decode('utf-8', errors='replace')
+                        if dev_serial == port_id_str or dev_desc == port_id_str:
+                            self._ftd2xx_handle = ftd.open(i)
+                            opened = True
+                            break
+                    if not opened:
+                        # Fall back to index only when port is explicitly an int or a small index string (0–31)
+                        if isinstance(port, int):
+                            idx = port
+                            if 0 <= idx < num_devices:
+                                self._ftd2xx_handle = ftd.open(idx)
                                 opened = True
-                                break
+                        elif isinstance(port_id, str) and port_id.isdigit():
+                            idx = int(port_id)
+                            if 0 <= idx < num_devices and idx <= 31:
+                                self._ftd2xx_handle = ftd.open(idx)
+                                opened = True
                         if not opened:
                             raise Exception(
                                 f'No D2XX device found with serial or description "{port_id}". '

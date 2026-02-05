@@ -106,6 +106,14 @@ class Pod :
             self._port = None
         else:
             return
+    
+    def cleanup(self):
+        """
+        Clean up resources including closing the port and terminating queue server subprocess.
+        """
+        self.close_port()
+        if hasattr(self, '_manager') and self._manager is not None:
+            self._manager.cleanup()
 
     # functions to get queue values
     def obtain_write_queue(self):
@@ -420,12 +428,16 @@ class Pod :
         #if port exists,
         if self._port is not None:
 
-            #loops until it finds a control packet, and returns the found control packet
+            #loops until it finds a control packet, and returns the found control packet.
+            #discard bad-checksum/stray packets (e.g. data packet or sync) so we only return a valid control response.
             while time.time() - start < timeout_sec:
                 try:
                     packet = self.read_pod_packet(validate_checksum, timeout_sec)
                 except TimeoutError:
                     # read_pod_packet timed out waiting for data; retry until outer timeout
+                    continue
+                except Exception:
+                    # bad checksum, mis-sync, or other read error; discard and retry (e.g. worker first read after open)
                     continue
 
                 if isinstance(packet, ControlPacket):  # or however your control packets are defined

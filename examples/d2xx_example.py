@@ -49,9 +49,15 @@ if __name__ == "__main__":
         # Handle bytes to string conversion if needed
         if isinstance(device_serial, bytes):
             device_serial = device_serial.decode('utf-8')
-        print(f"\nUsing D2XX device: {device_serial}")
+        # Use serial if available, otherwise use index-based identifier for unique port
+        # Empty serials would all hash to the same port, causing conflicts
+        if device_serial and device_serial.strip():
+            port = device_serial  # Use serial number for D2XX
+        else:
+            # Fallback to index-based identifier when serial is empty
+            port = f"D2XX_0"  # Use index 0 for first device
+        print(f"\nUsing D2XX device: {device_serial if device_serial else '(no serial, using index)'}")
         use_d2xx = True
-        port = device_serial  # Use serial number for D2XX
     
     # Create POD device with D2XX enabled
     # Option 1: Use serial number
@@ -74,10 +80,13 @@ if __name__ == "__main__":
     
     # Collect data for 60 seconds
     print("Starting data collection with D2XX...", flush=True)
-    flowgraph.collect_for_seconds(60)
-
-    # Clean up
-    if hasattr(pod_1, "_port"):
-        pod_1._port = None
+    try:
+        flowgraph.collect_for_seconds(60)
+    finally:
+        # Ensure cleanup happens even if there's an error
+        try:
+            pod_1.cleanup()
+        except Exception:
+            pass  # Ignore cleanup errors
     
     print("Data collection complete!")
