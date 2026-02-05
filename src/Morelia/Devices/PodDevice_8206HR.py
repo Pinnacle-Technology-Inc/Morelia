@@ -19,17 +19,18 @@ class Pod8206HR(AcquisitionDevice) :
     """
     Pod8206HR is used to interact with a 8206HR data acquisition device.
 
-    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param port: Serial port to be opened. For COM ports: "COM9" or 9. For D2XX: serial number string or device index.
     :param preamp_gain: A unitless number used to add gain to vlues recived from the preamplifier. Used in converting streaming data from the device into something human-readable. Must be 10 or 100.
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual name used to indentify device.
+    :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
    """ 
-    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None) -> None :
+    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False) -> None :
         
         #self._port_value = port
 
         # initialize POD_Basics
-        super().__init__(port, 2000, baudrate, device_name) 
+        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx) 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -116,5 +117,6 @@ class Pod8206HR(AcquisitionDevice) :
             'port': self.port,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
-            'device_name': self.device_name
+            'device_name': self.device_name,
+            'use_d2xx': self._use_d2xx,
         }

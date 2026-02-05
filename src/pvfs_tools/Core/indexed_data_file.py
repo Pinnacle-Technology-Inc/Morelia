@@ -438,10 +438,13 @@ class IndexedDataFile:
             return -1
             
         try:
-            # Reader expects timestamps to start at INDEX_HEADER_SIZE
-            pos = self._index_file.tell()
-            if pos < self.INDEX_HEADER_SIZE:
-                self._index_file.seek(self.INDEX_HEADER_SIZE)
+            # Append after existing entries. After write_header() we are at INDEX_HEADER_SIZE,
+            # so we would overwrite the first entry. Seek to end of file to append instead.
+            info = self._index_file.get_file_info()
+            append_pos = info.size
+            if append_pos < self.INDEX_HEADER_SIZE:
+                append_pos = self.INDEX_HEADER_SIZE
+            self._index_file.seek(append_pos)
             location = self._index_file.tell()
             reserved = 0
             data_location = self._data_file.tell()

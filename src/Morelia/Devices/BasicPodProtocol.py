@@ -23,18 +23,23 @@ class Pod :
     Pod handles basic communication with a generic POD device, including reading and writing 
     packets and packet interpretation. This is the parent class for any device that communcates using the POD protocol.
     
-    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param port: Serial port to be opened. For COM ports: "COM9" or 9. For D2XX: serial number string or device index.
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual Name used to indentify device.
+    :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires pylibftdi. Defaults to False.
     """
     
 
-    def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None) -> None : 
+    def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None, use_d2xx: bool = False) -> None : 
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
         the serial port communication (_port) and for the command handler (_commands).
         """
         
-        self._name = PortIO.build_port_name(port)
+        # Build port name - for D2XX, use the port as-is; for COM ports, use build_port_name
+        if use_d2xx:
+            self._name = str(port)  # D2XX uses serial numbers/descriptions directly
+        else:
+            self._name = PortIO.build_port_name(port)
         self._manager = PacketManager(self._name)
         self._baudrate = baudrate
 
@@ -42,16 +47,26 @@ class Pod :
         self._port = None
 
         self._port_value = port
+        self._use_d2xx = use_d2xx
+
+        # Check if D2XX is requested and available
+        if use_d2xx:
+            try:
+                from Morelia.Devices.SerialPorts import D2XXPortIO, D2XX_AVAILABLE
+                if not D2XX_AVAILABLE:
+                    raise ImportError("D2XX support requested but pylibftdi is not installed")
+            except ImportError as e:
+                raise ImportError(f"D2XX support requested but not available: {e}")
 
         # initialize PortIO object based on if the port is in use or not
         # be extremely careful here, because any process created will inherit file descriptors of Serial Ports
-        # and the check in 
-        if not PortIO.is_port_in_use(self._port_value):
+        # For D2XX: defer opening so only the worker opens the device (avoids worker blocking on open).
+        if use_d2xx:
+            self._port = None
+            self._manager.initialize_control_queue()
+        elif not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
-            #self._port : PortIO = PortIO(self._port_value, self._baudrate)
             self.open_port()
-
-            # initialize the control queues for this pod device
             self._manager.initialize_control_queue()
         else:
             # otherwise, do not create a PortIO object
@@ -78,7 +93,12 @@ class Pod :
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
     def open_port(self):
-        self._port : PortIO = PortIO(self._port_value, self._baudrate)
+        """Open the port using either PortIO (COM port) or D2XXPortIO (direct USB)."""
+        if self._use_d2xx:
+            from Morelia.Devices.SerialPorts import D2XXPortIO
+            self._port : D2XXPortIO = D2XXPortIO(self._port_value, self._baudrate)
+        else:
+            self._port : PortIO = PortIO(self._port_value, self._baudrate)
    
     def close_port(self):
         if self._port is not None:
@@ -86,6 +106,14 @@ class Pod :
             self._port = None
         else:
             return
+    
+    def cleanup(self):
+        """
+        Clean up resources including closing the port and terminating queue server subprocess.
+        """
+        self.close_port()
+        if hasattr(self, '_manager') and self._manager is not None:
+            self._manager.cleanup()
 
     # functions to get queue values
     def obtain_write_queue(self):
@@ -284,7 +312,8 @@ class Pod :
         :return: True of the buffers are flushed, False otherwise.
         """
         if self._port is None:
-            print("PortIO object does not exist!")
+            # Port has been closed or was never opened - silently return False
+            # This is expected behavior when DataFlow closes the port for multiprocessing
             return False
 
         return(self._port.flush())
@@ -300,7 +329,8 @@ class Pod :
 
         #TODO write (or write/read) pod packet to set baudrate of device
         if self._port is None:
-            print("PortIO object does not exist!")
+            # Port has been closed or was never opened - silently return False
+            # This is expected behavior when DataFlow closes the port for multiprocessing
             return False
 
         # set baudrate of the open COM port. Returns true if successful.
@@ -398,9 +428,17 @@ class Pod :
         #if port exists,
         if self._port is not None:
 
-            #loops until it finds a control packet, and returns the found control packet
+            #loops until it finds a control packet, and returns the found control packet.
+            #discard bad-checksum/stray packets (e.g. data packet or sync) so we only return a valid control response.
             while time.time() - start < timeout_sec:
-                packet = self.read_pod_packet(validate_checksum, timeout_sec)
+                try:
+                    packet = self.read_pod_packet(validate_checksum, timeout_sec)
+                except TimeoutError:
+                    # read_pod_packet timed out waiting for data; retry until outer timeout
+                    continue
+                except Exception:
+                    # bad checksum, mis-sync, or other read error; discard and retry (e.g. worker first read after open)
+                    continue
 
                 if isinstance(packet, ControlPacket):  # or however your control packets are defined
                     return packet
@@ -483,6 +521,19 @@ class Pod :
         #if empty, return
         except Empty:
             return
+        except Exception as e:
+            # Handle write timeouts and other serial errors gracefully
+            # Log the error but don't crash - the queue will retry on next iteration
+            # This prevents the background thread from dying on intermittent timeouts
+            import sys
+            error_type = type(e).__name__
+            if 'Timeout' in error_type or 'timeout' in str(e).lower():
+                # Write timeout - device may be busy, skip this packet and continue
+                # The packet is lost but the thread continues running
+                pass
+            else:
+                # Other errors - log but continue
+                print(f"Warning: Error writing to serial port in check_write_queue: {error_type}: {e}", file=sys.stderr)
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -501,8 +552,10 @@ class Pod :
 
         b = None
         while b != PodPacket.STX:
-            b = self._port.read(1, timeout_sec) # read next byte
-        
+            b = self._port.read(1, timeout_sec)  # read next byte
+            if b is None or len(b) == 0:
+                raise TimeoutError("No data received from device within timeout (waiting for STX)")
+
         # continue reading packet
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet

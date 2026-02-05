@@ -35,7 +35,11 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
     def _timestamp_via_adjusted_sample_rate_operator(source):
         def subscribe(observer, scheduler=None):
 
-            observer.sample_rate = starting_sample_rate
+            # Ensure starting_sample_rate is valid (must be > 0)
+            # Store a safe fallback value that won't be modified
+            safe_sample_rate = starting_sample_rate if starting_sample_rate and starting_sample_rate > 0 else 1000
+            
+            observer.sample_rate = safe_sample_rate
             observer.time_at_last_update = time.perf_counter()
             observer.starting_time = time.perf_counter()
             observer.last_timestamp = time.time_ns()
@@ -43,7 +47,16 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             
             def on_next(value):
                 now_real_time_ns = time.time_ns()
-                predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                # Guard against division by zero if sample_rate is invalid
+                if observer.sample_rate <= 0:
+                    observer.sample_rate = safe_sample_rate  # Reset to safe fallback value
+                
+                # Ensure sample_rate is still valid before division
+                if observer.sample_rate > 0:
+                    predicted = int(observer.last_timestamp + (10**9 / observer.sample_rate))
+                else:
+                    predicted = now_real_time_ns  # Fallback if sample_rate is still invalid
+                    
                 drift = now_real_time_ns - predicted
 
                 correction_factor = 0.005
@@ -64,7 +77,16 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
                 if time.perf_counter() - observer.time_at_last_update >= 1:
                     
                     # adjust sample rate to be closer to what we are actually getting
-                    observer.sample_rate = observer.packet_count/(time.perf_counter()-observer.starting_time)
+                    # Guard against division by zero if time difference is too small
+                    time_diff = time.perf_counter() - observer.starting_time
+                    if time_diff > 0.001 and observer.packet_count > 0:  # At least 1ms elapsed and packets received
+                        new_rate = observer.packet_count / time_diff
+                        # Ensure calculated rate is valid (must be > 0)
+                        if new_rate > 0:
+                            observer.sample_rate = new_rate
+                        else:
+                            observer.sample_rate = safe_sample_rate  # Fallback if calculation gives invalid value
+                    # If time_diff is too small or no packets, keep current sample_rate
                 
                     observer.time_at_last_update = time.perf_counter()
 
@@ -82,7 +104,6 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
 #function used by reactivex to create an observable from a packet stream from an acquisition device.
 def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop_event: Event):
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
-        
         with pod:
             stream_start_time : float = time.perf_counter()
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
@@ -119,6 +140,10 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     :param pod: The device to collect data from.
     """
     
+    # Ensure port is open before we need it (e.g. sample_rate via write_read). D2XX defers open to first use.
+    if pod._port is None:
+        pod.open_port()
+
     #obtain read_queue from pod device
     read_queue = pod.obtain_read_queue()
 
@@ -131,7 +156,13 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     # create background queue 
     def background_writer(pod: AcquisitionDevice):
         while True:
-            pod.check_write_queue()
+            try:
+                pod.check_write_queue()
+            except Exception as e:
+                # Catch any unexpected errors to prevent thread from crashing
+                # This ensures the program remains interruptable
+                import sys
+                print(f"Warning: Error in background_writer thread: {type(e).__name__}: {e}", file=sys.stderr)
             time.sleep(0.005) # sleep to avoid CPU performance issues
 
     threading.Thread(target=background_writer, args=(pod,), daemon=True).start()

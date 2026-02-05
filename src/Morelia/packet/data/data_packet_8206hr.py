@@ -97,6 +97,9 @@ class DataPacket8206HR(DataPacket):
         value = conv.binary_bytes_to_int(raw_value, conv.Endianness.LITTLE)
         voltage_adc = ( value / 65535.0 ) * 4.096 # V
         total_gain = preamp_gain * 50.2918
+        # Guard against division by zero if preamp_gain is invalid
+        if total_gain == 0:
+            total_gain = 10 * 50.2918  # Default to preamp_gain=10 if invalid
         real_voltage = ( voltage_adc - 2.048 ) / total_gain
         return round(real_voltage * 1E6, 12)
 

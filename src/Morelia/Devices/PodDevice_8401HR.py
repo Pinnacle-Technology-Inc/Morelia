@@ -57,7 +57,8 @@ class Pod8401HR(AcquisitionDevice) :
                  ss_gain: tuple[int|None]=(None, None, None, None), 
                  preamp_gain: tuple[int|None]=(None, None, None, None), 
                  baudrate:int=9600,
-                 device_name: str | None = None
+                 device_name: str | None = None,
+                 use_d2xx: bool = False
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ss_gain \
@@ -65,7 +66,7 @@ class Pod8401HR(AcquisitionDevice) :
         """
 
              # initialize POD_Basics
-        super().__init__(port, 10000, baudrate=baudrate, device_name=device_name) 
+        super().__init__(port, 10000, baudrate=baudrate, device_name=device_name, use_d2xx=use_d2xx) 
 
         # set preamp.
         self._preamp: Preamp = preamp
@@ -402,5 +403,6 @@ class Pod8401HR(AcquisitionDevice) :
             'ss_gain': self.ss_gain,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
-            'device_name': self.device_name
+            'device_name': self.device_name,
+            'use_d2xx': self._use_d2xx,
         }

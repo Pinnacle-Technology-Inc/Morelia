@@ -16,18 +16,19 @@ class AcquisitionDevice(Pod):
     """
     This class is the parent of any device that can stream (i.e. data acquisiton devices).
 
-    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param port: Serial port to be opened. For COM ports: "COM9" or 9. For D2XX: serial number string or device index.
     :param max_sample_rate: Maximum sample rate supported by the device (in Hz).
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual Name used to indentify device.
     :param get_sample_rate_cmd_no: Command number for the ``GET SAMPLE RATE`` command on the device.
     :param set_sample_rate_cmd_no: Command number for the ``SET SAMPLE RATE`` command on the device.
+    :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
 
     """
     def __init__(self, port: str|int, max_sample_rate: int, baudrate:int=9600, device_name: str | None =  None, 
-                 get_sample_rate_cmd_no: int = 100, set_sample_rate_cmd_no: int = 101) -> None:
+                 get_sample_rate_cmd_no: int = 100, set_sample_rate_cmd_no: int = 101, use_d2xx: bool = False) -> None:
 
-        super().__init__(port, baudrate=baudrate, device_name=device_name) 
+        super().__init__(port, baudrate=baudrate, device_name=device_name, use_d2xx=use_d2xx) 
 
         UINT16: int = Pod.get_u(16)
                     
@@ -56,6 +57,10 @@ class AcquisitionDevice(Pod):
         self._sample_rate: int = (rate,)
     
     def __enter__(self) -> Self:
+        # Open port on first use when using D2XX (port is deferred in __init__ to avoid
+        # main process holding the device and causing the worker to block on open).
+        if self._port is None:
+            self.open_port()
 
         #no WriteRead, because the confirmation packet may arrive
         #after streaming data due to a race condition in the device's
