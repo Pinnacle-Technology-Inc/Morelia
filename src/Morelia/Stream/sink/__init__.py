@@ -6,3 +6,4 @@ from Morelia.Stream.sink.pvfs_sink import PvfsSink
 from Morelia.Stream.sink.quest_sink import QuestSink
 from Morelia.Stream.sink.buffer_sink import BufferSink
 from Morelia.Stream.sink.udp_sink import UDPSink
+from Morelia.Stream.sink.plot_sink import PlotSink, PlotDisplay

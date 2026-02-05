@@ -41,16 +41,28 @@ class DataFlow:
         self._network = network
         self._workers: list[mp.Process] = []
 
-    def stop_collection(self) -> None:
-        """Stop collecting data."""
+    def stop_collection(self, join_timeout_sec: float = 3.0) -> None:
+        """Stop collecting data.
+
+        Sets the stop events so workers exit their loop. Waits up to
+        ``join_timeout_sec`` for each worker to exit; if a worker is still
+        alive (e.g. blocked in a serial read), it is terminated so the
+        main process does not hang.
+        """
         for event in self._manual_stop_events:
             event.set()
 
         self._manual_stop_events = []
 
         for worker in self._workers:
-            worker.join()
-            worker.close()
+            worker.join(timeout=join_timeout_sec)
+            if worker.is_alive():
+                worker.terminate()
+                worker.join(timeout=1.0)
+            try:
+                worker.close()
+            except Exception:
+                pass
 
         self._workers = []
 
