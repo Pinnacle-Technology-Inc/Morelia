@@ -37,7 +37,7 @@ class BufferSink(SinkInterface):
 
         elif isinstance(self._pod, Pod8401HR):
 
-            preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
+            preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
             self._buffer.append(('time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
 
@@ -59,7 +59,7 @@ class BufferSink(SinkInterface):
             channel_data = (packet.ch0, packet.ch1, packet.ch2, packet.ch3)
             aext_data = (packet.ext0, packet.ext1)
             attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
-            self._buffer.append( timestamp,  (channel_data + aext_data + attl_data))
+            self._buffer.append((timestamp, (channel_data + aext_data + attl_data)))
 
         #TODO: 8274D
     

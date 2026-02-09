@@ -95,7 +95,7 @@ class DataPacket8401HR(DataPacket):
     def ch3(self) -> int:
         """:return: Value read from channel 3."""
         if self._ch3 is None:
-            return DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[3], self._preamp_gain[3], self._ss_gain[3], conv.binary_bytes_to_int_split(self._raw_packet[7:16][0:3], 24, 6))
+            self._ch3 = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[3], self._preamp_gain[3], self._ss_gain[3], conv.binary_bytes_to_int_split(self._raw_packet[7:16][0:3], 24, 6))
 
         return self._ch3
 
@@ -158,13 +158,19 @@ class DataPacket8401HR(DataPacket):
         return self._ttl4
 
     @staticmethod
-    def get_primary_channel_value(channel_mode: PrimaryChannelMode, preamp_gain: int, ss_gain: int, raw_value: int) -> int:
+    def get_primary_channel_value(channel_mode: PrimaryChannelMode, preamp_gain: int | None, ss_gain: int | None, raw_value: int) -> int:
         """Channel values from the data packet cannot be used directly, we must preform some math on them to get them to be real,
         usable values. This function is used **by the properties** to calcuate this when a channel value is asked for. 
         **This method is used by the properties internally, therefore it does not need to be called when acessing their value outside of this class.**
 
+        When ss_gain or preamp_gain is None (e.g. no-connect channel), a default is used so that the formula does not raise.
         :meta private:
         """
+        # Use defaults when gain is None (allowed for no-connect channels) to avoid TypeError in gain math
+        if preamp_gain is None:
+            preamp_gain = 10
+        if ss_gain is None:
+            ss_gain = 5
         match channel_mode:
             case PrimaryChannelMode.EEG_EMG:
                 voltage_at_ADC = (raw_value / 262144.0) * 4.096
