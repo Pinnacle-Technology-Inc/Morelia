@@ -397,12 +397,12 @@ class Pod8401HR(AcquisitionDevice) :
     # Fixed size of 8401HR binary data packet: STX(1) + cmd(4) + payload(23) + checksum(2) + ETX(1) = 31 bytes
     _STREAMING_PACKET_LEN = 31
 
-    def read_pod_packet_streaming(self, timeout_sec: float = 0.1, validate_checksum: bool = True) -> DataPacket8401HR:
-        """Read one binary data packet using a single read(31) when aligned. Use in streaming mode for higher throughput.
+    def read_pod_packet_streaming(self, timeout_sec: float = 0.1, validate_checksum: bool = True):
+        """Read one packet (data or control) using a single read(31) when aligned. Use in streaming mode for higher throughput.
 
-        Assumes only BINARY5 DATA (command 181) packets are being sent. If the read does not start with STX,
-        syncs by reading until STX then reads the remaining 30 bytes. If the block starts with STX but does not
-        end with ETX (e.g. start of a control packet after STREAM command), skips to ETX and retries.
+        When a fixed-size block is a complete data packet (31 bytes, ends with ETX), returns DataPacket8401HR.
+        When the block starts with STX but does not end with ETX (e.g. control packet), reads to ETX, parses as
+        ControlPacket, and returns it so the pipeline can deliver it to read_queue for mixed traffic.
         Raises TimeoutError if no data in timeout_sec.
         """
         if self._port is None:
@@ -424,14 +424,18 @@ class Pod8401HR(AcquisitionDevice) :
                     raise TimeoutError("No data received from device within timeout (streaming read after sync)")
                 data = b + rest
             if data[-1:] != PodPacket.ETX:
-                # Not a complete data packet (e.g. start of control packet) - skip rest of packet and retry
-                while True:
+                # Variable-length packet (e.g. control) - read to ETX and try to deliver as ControlPacket
+                while data[-1:] != PodPacket.ETX:
                     b = self._port.read(1, timeout_sec)
                     if b is None or len(b) == 0:
-                        raise TimeoutError("No data received from device within timeout (streaming skip to ETX)")
-                    if b == PodPacket.ETX:
-                        break
-                continue
+                        raise TimeoutError("No data received from device within timeout (streaming read to ETX)")
+                    data = data + b
+                if validate_checksum and not self._validate_checksum(data):
+                    continue  # discard bad packet and retry
+                try:
+                    return self._control_packet_factory(data)
+                except Exception:
+                    continue  # not a valid control packet, discard and retry
             if validate_checksum and not self._validate_checksum(data):
                 raise Exception("Bad checksum for binary POD packet read (streaming).")
             return self._stream_packet_factory(data)

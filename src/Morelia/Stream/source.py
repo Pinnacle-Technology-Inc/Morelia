@@ -106,7 +106,7 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
     # Use fixed-size streaming read when available (1-2 read() per packet instead of many) for higher throughput
     read_fn = getattr(pod, "read_pod_packet_streaming", None)
     use_streaming = callable(read_fn)
-    stream_timeout_sec = 0.1  # short timeout for streaming so we don't block long on stall
+    stream_timeout_sec = 0.2  # allow time for partial reads (e.g. 8206) and USB scheduling; still detects stall
 
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
         with pod:
