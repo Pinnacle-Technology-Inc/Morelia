@@ -109,6 +109,7 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
     stream_timeout_sec = 0.2  # allow time for partial reads (e.g. 8206) and USB scheduling; still detects stall
 
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
+        timeout_message_shown = False  # only print first timeout so we don't forget it's there
         with pod:
             stream_start_time : float = time.perf_counter()
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
@@ -119,7 +120,12 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
                     else:
                         observer.on_next(pod.read_pod_packet())
                 except Exception as e:
-                    print(f"Dropped packet due to {type(e).__name__}: {e}")
+                    if type(e).__name__ == "TimeoutError" and timeout_message_shown:
+                        pass  # suppress after first timeout message
+                    else:
+                        print(f"Dropped packet due to {type(e).__name__}: {e}")
+                        if type(e).__name__ == "TimeoutError":
+                            timeout_message_shown = True
                     #traceback.print_exc()
                     continue
             pod.close_port()

@@ -8,8 +8,9 @@ Plotting is rate-limited so that up to ~10,000 samples/sec per channel can be
 handled without overwhelming the UI.
 
 Usage:
-  python 8206_plot_stream.py [--span SECONDS] [--com-port [PORT]] [--device INDEX]
-  (default: D2XX first device, --span 60; use --com-port for serial)
+  python 8206_plot_stream.py [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
+  (default: D2XX first device, --span 60, --sample-rate 1000; use --com-port for serial)
+  Allowed sample rates: 100, 200, 400, 800, 1000, 2000
 
 Requires optional dependencies: pip install pyqtgraph PyQt5
 """
@@ -79,6 +80,14 @@ def main():
         metavar="SECONDS",
         help="Time span to show before scroll in seconds (default: 60)",
     )
+    parser.add_argument(
+        "--sample-rate",
+        type=int,
+        default=1000,
+        choices=[100, 200, 400, 800, 1000, 2000],
+        metavar="RATE",
+        help="Sample rate in Hz (default: 1000)",
+    )
     args = parser.parse_args()
 
     use_d2xx = False
@@ -112,6 +121,22 @@ def main():
     except Exception as e:
         print(f"Error initializing device: {e}", file=sys.stderr)
         sys.exit(1)
+
+    # Set sample rate on device so worker uses it (and include in get_dict for timestamping)
+    port_was_open_for_rate = pod._port is not None
+    try:
+        if not port_was_open_for_rate:
+            pod.open_port()
+        pod.write_read("SET SAMPLE RATE", args.sample_rate, timeout_sec=5)
+        pod._sample_rate = (args.sample_rate,)
+        if not port_was_open_for_rate and use_d2xx:
+            pod.close_port()
+    except Exception as e:
+        print(f"Warning: Could not set sample rate to {args.sample_rate} Hz: {e}")
+        if not port_was_open_for_rate and getattr(pod, "_port", None) is not None:
+            pod.close_port()
+    else:
+        print(f"Sample rate set to {args.sample_rate} Hz")
 
     # Optional: verify device type (8206HR = type 48)
     port_was_open = pod._port is not None

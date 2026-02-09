@@ -26,12 +26,14 @@ class Pod8206HR(AcquisitionDevice) :
     :param device_name: Virtual name used to indentify device.
     :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
    """ 
-    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False) -> None :
+    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False, sample_rate: int | None = None) -> None :
         
         #self._port_value = port
 
         # initialize POD_Basics
-        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx) 
+        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx)
+        if sample_rate is not None:
+            self._sample_rate = (sample_rate,) 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -176,10 +178,13 @@ class Pod8206HR(AcquisitionDevice) :
             return DataPacket8206HR(data, self._preamp_gain)
 
     def get_dict(self):
-        return {
+        d = {
             'port': self.port,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
             'device_name': self.device_name,
             'use_d2xx': self._use_d2xx,
         }
+        if self._sample_rate is not None:
+            d['sample_rate'] = self._sample_rate[0]
+        return d
