@@ -1,7 +1,7 @@
-# local imports 
+# local imports
 from Morelia.Devices import AcquisitionDevice, Pod
+from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket8206HR
-from Morelia.packet import ControlPacket
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
@@ -111,6 +111,48 @@ class Pod8206HR(AcquisitionDevice) :
         
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
+
+    # Fixed size of 8206HR binary data packet: STX(1) + cmd(4) + payload(8) + checksum(2) + ETX(1) = 16 bytes
+    _STREAMING_PACKET_LEN = 16
+
+    def read_pod_packet_streaming(self, timeout_sec: float = 0.1, validate_checksum: bool = True) -> DataPacket8206HR:
+        """Read one binary data packet using a single read(16) when aligned. Use in streaming mode for higher throughput.
+
+        Assumes only BINARY4 DATA (command 180) packets are being sent. If the read does not start with STX,
+        syncs by reading until STX then reads the remaining 15 bytes. If the block starts with STX but does not
+        end with ETX (e.g. start of a control packet after STREAM command), skips to ETX and retries.
+        Raises TimeoutError if no data in timeout_sec.
+        """
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+        n = Pod8206HR._STREAMING_PACKET_LEN
+        while True:
+            data = self._port.read(n, timeout_sec)
+            if data is None or len(data) < n:
+                raise TimeoutError("No data received from device within timeout (streaming read)")
+            if data[0:1] != PodPacket.STX:
+                while True:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming sync)")
+                    if b == PodPacket.STX:
+                        break
+                rest = self._port.read(n - 1, timeout_sec)
+                if rest is None or len(rest) < n - 1:
+                    raise TimeoutError("No data received from device within timeout (streaming read after sync)")
+                data = b + rest
+            if data[-1:] != PodPacket.ETX:
+                # Not a complete data packet (e.g. start of control packet) - skip rest of packet and retry
+                while True:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming skip to ETX)")
+                    if b == PodPacket.ETX:
+                        break
+                continue
+            if validate_checksum and not self._validate_checksum(data):
+                raise Exception("Bad checksum for binary POD packet read (streaming).")
+            return DataPacket8206HR(data, self._preamp_gain)
 
     def get_dict(self):
         return {
