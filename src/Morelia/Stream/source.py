@@ -24,6 +24,25 @@ import reactivex as rx
 from reactivex import operators as ops
 from reactivex.operators import do_action
 
+# Optional: schedulers for observe_on (decouple slow sinks from emission thread)
+def _scheduler_for(spec):  # noqa: C901
+    """Return a scheduler for the given spec, or None. Used by sinks that set observe_on_scheduler."""
+    if spec is None:
+        return None
+    if spec == "thread_pool":
+        try:
+            from reactivex.scheduler import ThreadPoolScheduler
+            return ThreadPoolScheduler()
+        except ImportError:
+            return None
+    if spec == "new_thread":
+        try:
+            from reactivex.scheduler import NewThreadScheduler
+            return NewThreadScheduler()
+        except ImportError:
+            return None
+    return None
+
 #TODO: __all__ to tell us what to export.
 
 #TODO: type hints
@@ -198,6 +217,7 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     stream = streamer(data)
    
     # now, subscribe each sink to the connectable observable. Since sinks implment the context manager protocol, we can use an ExitStack.
+    # Sinks that set observe_on_scheduler (e.g. "thread_pool") run their flush() on that scheduler, so the emission thread is not blocked by slow sinks.
     #TODO: handle errors (via on_error, right now we just print them).
     with ExitStack() as context_manager_stack:
 
@@ -205,8 +225,13 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         
         for sink in sinks:
             context_manager_stack.enter_context(sink)
-            
-            stream.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
+            s = stream
+            scheduler_spec = getattr(sink, "observe_on_scheduler", None)
+            if scheduler_spec is not None:
+                scheduler = _scheduler_for(scheduler_spec)
+                if scheduler is not None:
+                    s = s.pipe(ops.observe_on(scheduler))
+            s.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
         
         # start streaming data from the observable!
         stream.connect()
