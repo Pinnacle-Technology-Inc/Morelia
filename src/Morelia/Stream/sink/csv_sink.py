@@ -18,15 +18,15 @@ class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
     
     :param file_path: Path to CSV file to write to.
-
     :param pod: POD device data is being streamed from.
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by CSV I/O. Optional; queue is unbounded.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice, observe_on_scheduler: str | None = None) -> None:
         """Class constructor."""
         self._file_path = file_path
-        
         self._pod = pod
+        self.observe_on_scheduler = observe_on_scheduler
 
     @property
     def file_path(self):
@@ -76,5 +76,6 @@ class CSVSink(SinkInterface):
 
     def get_dict(self):
         return {
-            'file_path': self._file_path
+            'file_path': self._file_path,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }

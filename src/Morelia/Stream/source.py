@@ -8,6 +8,7 @@ __copyright__   = 'Copyright (c) 2023, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 #environment imports
+import sys
 import traceback
 from multiprocessing import Event
 import threading
@@ -245,5 +246,16 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
     # create list of sinks to use based on sink class/sink dictionary pair in the list
     sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
 
-    # run get_data with the pod device and list of sinks 
-    get_data(duration_sec, manual_stop_event, source, sinks)
+    # run get_data with the pod device and list of sinks
+    # on Ctrl+C or shutdown (e.g. stop_collection), worker may get KeyboardInterrupt or I/O errors;
+    # exit cleanly so we don't dump a traceback when the main process is stopping us
+    try:
+        get_data(duration_sec, manual_stop_event, source, sinks)
+    except (KeyboardInterrupt, OSError, BrokenPipeError):
+        if manual_stop_event.is_set():
+            sys.exit(0)
+        raise
+    except BaseException:
+        if manual_stop_event.is_set():
+            sys.exit(0)
+        raise
