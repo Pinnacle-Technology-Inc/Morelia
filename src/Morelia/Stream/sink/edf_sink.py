@@ -23,13 +23,14 @@ class EDFSink(SinkInterface):
     :param sample_rate: Sample rate of device being streamed from. Used in setting up EDF file.
     :param file_path: Path to CSV file to write to.
     :param pod: POD device data is being streamed from.
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by EDF I/O. Optional; queue is unbounded.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice, observe_on_scheduler: str | None = None) -> None:
         """ Class constructor."""
         self._file_path = file_path
-
         self._pod = pod
+        self.observe_on_scheduler = observe_on_scheduler
 
         if isinstance(self._pod, Pod8206HR):
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
@@ -215,5 +216,6 @@ class EDFSink(SinkInterface):
 
     def get_dict(self):
         return {
-            'file_path': self.file_path
+            'file_path': self.file_path,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }

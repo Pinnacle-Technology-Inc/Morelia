@@ -35,9 +35,15 @@ class PvfsSink(SinkInterface):
 
     :param file_path: Path to the .pvfs file to create.
     :param pod: POD device data is being streamed from.
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by PVFS I/O. Use with multi-sink flows to avoid slowing other sinks. Queue is unbounded; slow sinks can increase memory use.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
+    def __init__(
+        self,
+        file_path: str,
+        pod: AcquisitionDevice,
+        observe_on_scheduler: str | None = None,
+    ) -> None:
         if not _PVFS_AVAILABLE:
             raise RuntimeError(
                 "pvfs_tools is not available. Ensure pvfs_tools is installed and importable."
@@ -66,6 +72,7 @@ class PvfsSink(SinkInterface):
         self._pvfs_data: PvfsDataFile | None = None
         self._start_time: HighTime | None = None
         self._samples_written = 0
+        self.observe_on_scheduler = observe_on_scheduler
 
     @property
     def pod(self) -> AcquisitionDevice:
@@ -191,4 +198,7 @@ class PvfsSink(SinkInterface):
         self._buffer = [ [] for _ in self._channels ]
 
     def get_dict(self) -> dict:
-        return {"file_path": self.file_path}
+        return {
+            "file_path": self.file_path,
+            "observe_on_scheduler": self.observe_on_scheduler,
+        }

@@ -1,4 +1,4 @@
-"""Send data to CSV file."""
+"""Stream data over UDP to a configurable host/port."""
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
@@ -8,69 +8,100 @@ __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 import socket
+import struct
+import sys
 from typing import Self
 
-
 from Morelia.Stream.sink import SinkInterface
-from Morelia.Devices import AcquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
+from Morelia.Devices import AcquisitionDevice, Pod8206HR, Pod8401HR, Pod8274D
 from Morelia.packet.data import DataPacket
 
-class UDPSink(SinkInterface):
-    """Stream data to a buffer
 
+class UDPSink(SinkInterface):
+    """Stream data over UDP to a destination host/port.
+
+    Send-only UDP sink: one datagram per sample. Payload is a simple binary format
+    (little-endian): 8-byte timestamp (nanoseconds) followed by channel floats.
+    Works on Windows, WSL, and Linux.
+
+    :param port: Destination port (required).
     :param pod: POD device data is being streamed from.
-    :type pod: class:`Pod8206HR | Pod8401HR | Pod8274D`
+    :param host: Destination host (default 127.0.0.1 for local use).
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler. Optional; queue is unbounded.
     """
 
-    def __init__(self, port, pod: AcquisitionDevice) -> None:
-        """Class constructor."""
+    def __init__(
+        self,
+        port: int,
+        pod: AcquisitionDevice,
+        host: str = "127.0.0.1",
+        observe_on_scheduler: str | None = None,
+    ) -> None:
+        self._host = host
+        self._port = int(port)
         self._pod = pod
-        self._port = port
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._socket.bind(('', self._port)) # pass '' as hostname, so that we can accept any connection
-        self._socket.listen()
-        self._connection, self._address = self._socket.listen()
-        self._counter = 0
-   
+        self._socket: socket.socket | None = None
+        self.observe_on_scheduler = observe_on_scheduler
+
     @property
-    def port(self):
+    def host(self) -> str:
+        return self._host
+
+    @property
+    def port(self) -> int:
         return self._port
-    
-    #def __enter__(self) -> Self:
-        
-        # if isinstance(self._pod, Pod8206HR):
-        #     self._buffer.append(('time', 'EEG1', 'EEG2', 'EEG3/EMG'))
 
-        # elif isinstance(self._pod, Pod8401HR):
-
-        #     preamp_channel_names: list[str] = Pod8401HR.GetChannelMapForPreampDevice(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
-
-        #     self._buffer.append(('time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
-
-        # elif isinstance(self._pod, Pod8274D):
-        #     self._buffer.append(('time', 'length_in_bytes', 'data'))
-
-        # else:
-        #     raise ValueError(f'Device "{self._pod.device_name}" cannot be streamed from!')
+    def __enter__(self) -> Self:
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._socket.bind(('', 0))
+        return self
 
     def __exit__(self, *args, **kwargs) -> bool:
+        if self._socket is not None:
+            try:
+                self._socket.close()
+            except Exception:
+                pass
+            self._socket = None
         return False
-    
-    #TODO: check that sink is open
+
     def flush(self, timestamp: int, packet: DataPacket) -> None:
+        if self._socket is None:
+            return
+        try:
+            payload = self._pack_payload(timestamp, packet)
+            if payload is not None:
+                self._socket.sendto(payload, (self._host, self._port))
+        except OSError as e:
+            print(f"UDPSink sendto failed: {e}", file=sys.stderr)
+        except Exception as e:
+            print(f"UDPSink flush error: {e}", file=sys.stderr)
 
+    def _pack_payload(self, timestamp: int, packet: DataPacket) -> bytes | None:
+        """Pack (timestamp, packet) into little-endian bytes. One datagram per sample."""
         if isinstance(self._pod, Pod8206HR):
-            #self._buffer.append( (timestamp, (packet.ch0, packet.ch1, packet.ch2, packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)) )
-            self._socket.send(self._counter)
-        elif isinstance(self._pod, Pod8401HR):
-            channel_data = (packet.ch0, packet.ch1, packet.ch2, packet.ch3)
-            aext_data = (packet.ext0, packet.ext1)
-            attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
-            self._buffer.append( timestamp,  (channel_data + aext_data + attl_data))
+            return struct.pack(
+                '<Qfff',
+                timestamp,
+                float(packet.ch0),
+                float(packet.ch1),
+                float(packet.ch2),
+            )
+        if isinstance(self._pod, Pod8401HR):
+            return struct.pack(
+                '<Qffff',
+                timestamp,
+                float(packet.ch0),
+                float(packet.ch1),
+                float(packet.ch2),
+                float(packet.ch3),
+            )
+        # Pod8274D: TODO if needed
+        return None
 
-        #TODO: 8274D
-
-    def get_dict(self):
+    def get_dict(self) -> dict:
         return {
-            'port': self.port
+            'host': self._host,
+            'port': self._port,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }
