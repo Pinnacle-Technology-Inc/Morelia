@@ -49,6 +49,11 @@ d2xx = [
   "pylibftdi; sys_platform != 'win32'",
 ]
 
+plot = [
+  "pyqtgraph",
+  "PyQt5",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 

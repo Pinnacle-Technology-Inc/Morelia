@@ -1,0 +1,246 @@
+"""
+Stream 8401HR data to a live EEG-style plot using Morelia's PlotSink and PlotDisplay.
+
+Supports D2XX direct USB, COM port (Windows), and tty (Linux) connections.
+One 8401HR device can be streamed; the device's channels are added
+to the plot in traditional EEG-style layout (stacked traces, time on X).
+Plotting is rate-limited so that high sample rates (up to 20,000 sps)
+can be handled without overwhelming the UI.
+
+Usage:
+  python 8401_plot_stream.py [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
+  (default: D2XX first device, --span 60, --sample-rate 1000; use --com-port for serial)
+  Allowed sample rates: 1000, 2000, 5000, 10000, 20000
+
+Requires optional dependencies: pip install pyqtgraph PyQt5
+"""
+
+from pathlib import Path
+import sys
+import multiprocessing as mp
+import time
+
+_examples_dir = Path(__file__).resolve().parent
+_device_examples = _examples_dir.parent
+_examples_root = _device_examples.parent
+_project_root = _examples_root.parent
+_src = _project_root / "src"
+if str(_src) not in sys.path:
+    sys.path.insert(0, str(_src))
+
+from Morelia.Devices import Pod8401HR, Preamp
+from Morelia.packet import PrimaryChannelMode, SecondaryChannelMode
+from Morelia.Stream.sink import PlotSink, PlotDisplay
+from Morelia.Stream.data_flow import DataFlow
+
+
+def list_d2xx_devices():
+    """List available D2XX devices (if D2XX support is installed)."""
+    try:
+        from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+
+        devices = list_d2xx_devices()
+        print("Available D2XX devices:")
+        for dev in devices:
+            print(f"  Index {dev['index']}: {dev['description']} (Serial: {dev['serial']})")
+        return devices
+    except ImportError:
+        print("D2XX support not available. Install ftd2xx (Windows) or pylibftdi (Linux/Mac).")
+        return []
+
+
+def _build_default_8401_pod(port: str | int, use_d2xx: bool, baudrate: int) -> Pod8401HR:
+    """Construct a Pod8401HR with a sensible default configuration for plotting."""
+    # 4 primary EEG/EMG channels
+    primary_channel_modes = (
+        PrimaryChannelMode.EEG_EMG,
+        PrimaryChannelMode.EEG_EMG,
+        PrimaryChannelMode.EEG_EMG,
+        PrimaryChannelMode.EEG_EMG,
+    )
+
+    # 6 secondary TTL/AEXT channels (mirrors test_8401hr_sample_rates defaults)
+    secondary_channel_modes = (
+        SecondaryChannelMode.DIGITAL,
+        SecondaryChannelMode.ANALOG,
+        SecondaryChannelMode.DIGITAL,
+        SecondaryChannelMode.DIGITAL,
+        SecondaryChannelMode.ANALOG,
+        SecondaryChannelMode.DIGITAL,
+    )
+
+    # Use a common 4-channel preamp and gains that work well with PlotSink/DataPacket8401HR
+    preamp = Preamp.Preamp8406_SE
+    preamp_gain = (100, 100, 100, 100)
+    ss_gain = (5, 5, 5, 5)
+
+    return Pod8401HR(
+        port=port,
+        preamp=preamp,
+        primary_channel_modes=primary_channel_modes,
+        secondary_channel_modes=secondary_channel_modes,
+        preamp_gain=preamp_gain,
+        ss_gain=ss_gain,
+        baudrate=baudrate,
+        use_d2xx=use_d2xx,
+    )
+
+
+def _set_sample_rate(pod: Pod8401HR, sample_rate: int, use_d2xx: bool) -> None:
+    """Set and verify the 8401HR sample rate, following the high-throughput test pattern."""
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Ensure streaming is stopped before changing sample rate
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            # Flush any pending packets
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception as e:
+            print(f"Warning: Could not ensure streaming is stopped before setting sample rate: {e}")
+
+        # Set sample rate (write_read allows rates above default max_sample_rate if firmware supports them)
+        pod.write_read("SET SAMPLE RATE", sample_rate, timeout_sec=5)
+
+        # Verify sample rate
+        try:
+            rate_response = pod.write_read("GET SAMPLE RATE", timeout_sec=5)
+            actual_rate = rate_response.payload[0] if rate_response.payload else None
+            if actual_rate != sample_rate:
+                print(
+                    f"Warning: Requested sample rate {sample_rate} Hz but device reports {actual_rate}. "
+                    "Continuing anyway."
+                )
+        except Exception as e:
+            print(f"Warning: Could not verify sample rate after setting to {sample_rate} Hz: {e}")
+
+        # Cache the sample rate for downstream components (e.g., timestamping)
+        pod._sample_rate = (sample_rate,)
+    except Exception as e:
+        print(f"Warning: Could not set sample rate to {sample_rate} Hz: {e}")
+    finally:
+        # Mirror the behavior used elsewhere: close D2XX ports we opened, leave others alone
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Stream 8401HR to live EEG-style plot")
+    parser.add_argument(
+        "--com-port",
+        "-c",
+        nargs="?",
+        const="COM9",
+        default=None,
+        help="Serial port (e.g. COM9, /dev/ttyUSB0). If omitted, use D2XX when available.",
+    )
+    parser.add_argument(
+        "--device",
+        "-p",
+        default=0,
+        help="D2XX device index when using D2XX (default: 0)",
+    )
+    parser.add_argument(
+        "--baudrate",
+        type=int,
+        default=115200,
+        help="Baud rate (default: 115200)",
+    )
+    parser.add_argument(
+        "--span",
+        type=float,
+        default=60,
+        metavar="SECONDS",
+        help="Time span to show before scroll in seconds (default: 60)",
+    )
+    parser.add_argument(
+        "--sample-rate",
+        type=int,
+        default=1000,
+        choices=[1000, 2000, 5000, 10000, 20000],
+        metavar="RATE",
+        help="Sample rate in Hz (allowed: 1000, 2000, 5000, 10000, 20000; default: 1000)",
+    )
+    args = parser.parse_args()
+
+    # Determine connection type and port
+    use_d2xx = False
+    port = None
+    if args.com_port is not None:
+        port = (args.com_port or "COM9").strip() or "COM9"
+        print(f"Using serial port: {port}")
+    else:
+        # Match the D2XX discovery logic used in tests/test_8401hr_sample_rates.py
+        try:
+            from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+
+            devices = list_d2xx_devices()
+            if devices:
+                use_d2xx = True
+                idx = int(args.device) if str(args.device).strip().isdigit() else 0
+                if idx < 0 or idx >= len(devices):
+                    print(f"D2XX device index {idx} out of range.", file=sys.stderr)
+                    sys.exit(1)
+                device_serial = devices[idx].get("serial")
+                if isinstance(device_serial, bytes):
+                    device_serial = device_serial.decode("utf-8")
+                port = device_serial if (device_serial and device_serial.strip()) else f"D2XX_{idx}"
+                print(f"Using D2XX device: {port}")
+            else:
+                print("No D2XX devices found; cannot open 8401HR when VCP is disabled.", file=sys.stderr)
+                sys.exit(1)
+        except ImportError:
+            print("D2XX not available; cannot open 8401HR when VCP is disabled.", file=sys.stderr)
+            sys.exit(1)
+
+    # Initialize 8401HR device
+    try:
+        pod = _build_default_8401_pod(port=port, use_d2xx=use_d2xx, baudrate=args.baudrate)
+    except Exception as e:
+        print(f"Error initializing 8401HR device: {e}", file=sys.stderr)
+        sys.exit(1)
+
+    # Configure sample rate on the device for the streaming worker and timestamping
+    _set_sample_rate(pod, args.sample_rate, use_d2xx=use_d2xx)
+
+    queue = mp.Queue(maxsize=2048)
+    plot_sink = PlotSink(queue, pod)
+    network = [(pod, [plot_sink])]
+    flow = DataFlow(network)
+
+    print(f"Starting 8401HR stream at {args.sample_rate} Hz. Close the plot window to stop.")
+    flow.collect()
+
+    try:
+        display = PlotDisplay(queue, window_sec=args.span, refresh_ms=40)
+        display.run()
+    except RuntimeError as e:
+        if "pyqtgraph" in str(e).lower() or "pyqt" in str(e).lower():
+            print("Plot display requires: pip install pyqtgraph PyQt5", file=sys.stderr)
+            sys.exit(1)
+        raise
+    finally:
+        flow.stop_collection()
+        try:
+            pod.cleanup()
+        except Exception:
+            pass
+
+    print("Done.")
+
+
+if __name__ == "__main__":
+    main()
+

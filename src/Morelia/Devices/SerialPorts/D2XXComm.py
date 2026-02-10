@@ -81,6 +81,8 @@ class D2XXPortIO:
         self.baudrate = baudrate
         self._device = None  # Can be ftd2xx device or pylibftdi Device
         self._ftd2xx_handle = None  # For ftd2xx library
+        # Cache last setTimeouts so we don't call it on every read() during streaming
+        self._cached_timeouts: tuple[int, int] | None = None  # (read_ms, write_ms)
 
         if port == 'TEST':
             # For testing, we could use a mock or raise an error
@@ -178,6 +180,7 @@ class D2XXPortIO:
                     pass
                 finally:
                     self._ftd2xx_handle = None
+            self._cached_timeouts = None
         else:
             if self._device is not None:
                 try:
@@ -431,17 +434,20 @@ class D2XXPortIO:
 
         try:
             if self._use_ftd2xx:
-                # Set device read timeout so ftd2xx read() returns after timeout_sec
-                try:
-                    read_ms = int(timeout_sec * 1000)
-                    self._ftd2xx_handle.setTimeouts(read_ms, 5000)
-                except (AttributeError, TypeError):
-                    pass
-                
+                # Set device read timeout only when it changes (avoids thousands of setTimeouts/sec during streaming)
+                read_ms = int(timeout_sec * 1000)
+                write_ms = 5000
+                if self._cached_timeouts != (read_ms, write_ms):
+                    try:
+                        self._ftd2xx_handle.setTimeouts(read_ms, write_ms)
+                        self._cached_timeouts = (read_ms, write_ms)
+                    except (AttributeError, TypeError):
+                        pass
+
                 # Note: Do NOT purge RX buffer here - read_pod_packet() calls read(1) multiple times
                 # per packet, and purging between reads would clear the rest of the packet!
                 # Purge is done once when opening the device in open_serial_port()
-                
+
                 # Simple direct read like raw ftd2xx - let the driver handle timeout
                 # This matches the behavior in section [4] that works perfectly
                 # Note: read() blocks until numBytes are received OR timeout expires

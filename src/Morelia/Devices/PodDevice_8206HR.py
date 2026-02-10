@@ -1,7 +1,8 @@
-# local imports 
+# local imports
+import time
 from Morelia.Devices import AcquisitionDevice, Pod
+from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket8206HR
-from Morelia.packet import ControlPacket
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
@@ -25,12 +26,14 @@ class Pod8206HR(AcquisitionDevice) :
     :param device_name: Virtual name used to indentify device.
     :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
    """ 
-    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False) -> None :
+    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False, sample_rate: int | None = None) -> None :
         
         #self._port_value = port
 
         # initialize POD_Basics
-        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx) 
+        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx)
+        if sample_rate is not None:
+            self._sample_rate = (sample_rate,) 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -112,11 +115,76 @@ class Pod8206HR(AcquisitionDevice) :
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
 
+    # Fixed size of 8206HR binary data packet: STX(1) + cmd(4) + payload(8) + checksum(2) + ETX(1) = 16 bytes
+    _STREAMING_PACKET_LEN = 16
+
+    def _read_exactly_n_streaming(self, n: int, timeout_sec: float) -> bytes | None:
+        """Read exactly n bytes, accumulating partial reads until we have n or hit timeout."""
+        data = b''
+        deadline = time.perf_counter() + timeout_sec
+        while len(data) < n:
+            remaining = max(0.01, deadline - time.perf_counter())
+            if remaining <= 0:
+                return None
+            chunk = self._port.read(n - len(data), remaining)
+            if chunk:
+                data = data + chunk
+            elif len(data) == 0:
+                return None
+        return data if len(data) == n else None
+
+    def read_pod_packet_streaming(self, timeout_sec: float = 0.1, validate_checksum: bool = True):
+        """Read one packet (data or control) using a single read(16) when aligned. Use in streaming mode for higher throughput.
+
+        When a fixed-size block is a complete data packet (16 bytes, ends with ETX), returns DataPacket8206HR.
+        When the block starts with STX but does not end with ETX (e.g. control packet), reads to ETX, parses as
+        ControlPacket, and returns it so the pipeline can deliver it to read_queue for mixed traffic.
+        Accumulates partial reads so driver returning fewer than 16 bytes does not cause timeout.
+        Raises TimeoutError if no data in timeout_sec.
+        """
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+        n = Pod8206HR._STREAMING_PACKET_LEN
+        while True:
+            data = self._read_exactly_n_streaming(n, timeout_sec)
+            if data is None:
+                raise TimeoutError("No data received from device within timeout (streaming read)")
+            if data[0:1] != PodPacket.STX:
+                while True:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming sync)")
+                    if b == PodPacket.STX:
+                        break
+                rest = self._read_exactly_n_streaming(n - 1, timeout_sec)
+                if rest is None:
+                    raise TimeoutError("No data received from device within timeout (streaming read after sync)")
+                data = b + rest
+            if data[-1:] != PodPacket.ETX:
+                # Variable-length packet (e.g. control) - read to ETX and try to deliver as ControlPacket
+                while data[-1:] != PodPacket.ETX:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming read to ETX)")
+                    data = data + b
+                if validate_checksum and not self._validate_checksum(data):
+                    continue  # discard bad packet and retry
+                try:
+                    return self._control_packet_factory(data)
+                except Exception:
+                    continue  # not a valid control packet, discard and retry
+            if validate_checksum and not self._validate_checksum(data):
+                raise Exception("Bad checksum for binary POD packet read (streaming).")
+            return DataPacket8206HR(data, self._preamp_gain)
+
     def get_dict(self):
-        return {
+        d = {
             'port': self.port,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
             'device_name': self.device_name,
             'use_d2xx': self._use_d2xx,
         }
+        if self._sample_rate is not None:
+            d['sample_rate'] = self._sample_rate[0]
+        return d

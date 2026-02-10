@@ -103,15 +103,29 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
 #TODO: type hints
 #function used by reactivex to create an observable from a packet stream from an acquisition device.
 def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop_event: Event):
+    # Use fixed-size streaming read when available (1-2 read() per packet instead of many) for higher throughput
+    read_fn = getattr(pod, "read_pod_packet_streaming", None)
+    use_streaming = callable(read_fn)
+    stream_timeout_sec = 0.2  # allow time for partial reads (e.g. 8206) and USB scheduling; still detects stall
+
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
+        timeout_message_shown = False  # only print first timeout so we don't forget it's there
         with pod:
             stream_start_time : float = time.perf_counter()
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
 
                 try:
-                    observer.on_next(pod.read_pod_packet())
+                    if use_streaming:
+                        observer.on_next(read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False))
+                    else:
+                        observer.on_next(pod.read_pod_packet())
                 except Exception as e:
-                    print(f"Dropped packet due to {type(e).__name__}: {e}")
+                    if type(e).__name__ == "TimeoutError" and timeout_message_shown:
+                        pass  # suppress after first timeout message
+                    else:
+                        print(f"Dropped packet due to {type(e).__name__}: {e}")
+                        if type(e).__name__ == "TimeoutError":
+                            timeout_message_shown = True
                     #traceback.print_exc()
                     continue
             pod.close_port()
