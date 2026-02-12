@@ -10,6 +10,7 @@ can be handled without overwhelming the UI.
 Usage:
   python 8401_plot_stream.py [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
   (default: D2XX first device, --span 60, --sample-rate 1000; use --com-port for serial)
+  When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
 
 Requires optional dependencies: pip install pyqtgraph PyQt5
@@ -149,8 +150,9 @@ def main():
     parser.add_argument(
         "--device",
         "-p",
-        default=0,
-        help="D2XX device index when using D2XX (default: 0)",
+        default=None,
+        metavar="INDEX",
+        help="D2XX device index when using D2XX (default: 0). If omitted and multiple devices exist, you will be prompted to choose.",
     )
     parser.add_argument(
         "--baudrate",
@@ -184,14 +186,21 @@ def main():
     else:
         # Match the D2XX discovery logic used in tests/test_8401hr_sample_rates.py
         try:
-            from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
-
             devices = list_d2xx_devices()
             if devices:
                 use_d2xx = True
-                idx = int(args.device) if str(args.device).strip().isdigit() else 0
+                # When multiple devices and no --device given, prompt user to choose
+                if len(devices) > 1 and args.device is None:
+                    prompt = f"Select device index (0-{len(devices) - 1}) [0]: "
+                    try:
+                        choice = input(prompt).strip() or "0"
+                    except (EOFError, KeyboardInterrupt):
+                        print("Aborted.", file=sys.stderr)
+                        sys.exit(1)
+                    args.device = choice
+                idx = int(args.device) if args.device is not None and str(args.device).strip().isdigit() else 0
                 if idx < 0 or idx >= len(devices):
-                    print(f"D2XX device index {idx} out of range.", file=sys.stderr)
+                    print(f"D2XX device index {idx} out of range (0-{len(devices) - 1}).", file=sys.stderr)
                     sys.exit(1)
                 device_serial = devices[idx].get("serial")
                 if isinstance(device_serial, bytes):

@@ -44,3 +44,5 @@ tests/pvfs/test_create_pvfs_file_extracted.db3
 tests/pvfs/test_create_pvfs_file.pvfs
 
 examples/device_examples/8206HR_scripts/end_times.log
+
+end_times.log

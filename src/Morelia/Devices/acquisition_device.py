@@ -83,8 +83,8 @@ class AcquisitionDevice(Pod):
             except TimeoutError:
                 break
 
-        with open("end_times.log", "a") as f:
-            f.write(f"Stream ended at {datetime.now().isoformat()}\n")
+        # with open("end_times.log", "a") as f:
+        #     f.write(f"Stream ended at {datetime.now().isoformat()}\n")
 
         #explicitly tell the context manager to propagate execptions.
         return False

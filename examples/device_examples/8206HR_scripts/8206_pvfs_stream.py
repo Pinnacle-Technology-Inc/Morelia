@@ -8,6 +8,7 @@ Output is compatible with the standard Sirenia data format (experiment.db3 + ind
 Usage:
   python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--com-port [PORT]] [--device INDEX]
   (default: output_8206.pvfs, run until Ctrl+C; default: D2XX, default port: COM9 on Windows)
+  When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
 
 Examples:
   # Use D2XX device (default)
@@ -77,8 +78,9 @@ def main():
     )
     parser.add_argument(
         "--device", "-p",
-        default=0,
-        help="D2XX device index 0,1,... (only used with --com-port \"\"). Default: 0, first device.",
+        default=None,
+        metavar="INDEX",
+        help="D2XX device index 0,1,... (default: 0). If omitted and multiple devices exist, you will be prompted to choose.",
     )
     parser.add_argument(
         "--duration", "-d",
@@ -122,8 +124,16 @@ def main():
             print("Alternatively, specify a COM port with --com-port COM9", file=sys.stderr)
             sys.exit(1)
 
+        if len(devices) > 1 and args.device is None:
+            prompt = f"Select device index (0-{len(devices) - 1}) [0]: "
+            try:
+                choice = input(prompt).strip() or "0"
+            except (EOFError, KeyboardInterrupt):
+                print("Aborted.", file=sys.stderr)
+                sys.exit(1)
+            args.device = choice
         try:
-            idx = int(args.device) if str(args.device).strip().isdigit() else 0
+            idx = int(args.device) if args.device is not None and str(args.device).strip().isdigit() else 0
         except (TypeError, ValueError):
             idx = 0
         if idx < 0 or idx >= len(devices):

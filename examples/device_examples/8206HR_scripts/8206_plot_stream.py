@@ -10,6 +10,7 @@ handled without overwhelming the UI.
 Usage:
   python 8206_plot_stream.py [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
   (default: D2XX first device, --span 60, --sample-rate 1000; use --com-port for serial)
+  When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 100, 200, 400, 800, 1000, 2000
 
 Requires optional dependencies: pip install pyqtgraph PyQt5
@@ -57,8 +58,9 @@ def main():
     )
     parser.add_argument(
         "--device", "-p",
-        default=0,
-        help="D2XX device index when using D2XX (default: 0)",
+        default=None,
+        metavar="INDEX",
+        help="D2XX device index when using D2XX (default: 0). If omitted and multiple devices exist, you will be prompted to choose.",
     )
     parser.add_argument(
         "--preamp-gain",
@@ -101,9 +103,17 @@ def main():
         if not devices:
             print("No D2XX devices found. Use --com-port COM9 for serial.", file=sys.stderr)
             sys.exit(1)
-        idx = int(args.device) if str(args.device).strip().isdigit() else 0
+        if len(devices) > 1 and args.device is None:
+            prompt = f"Select device index (0-{len(devices) - 1}) [0]: "
+            try:
+                choice = input(prompt).strip() or "0"
+            except (EOFError, KeyboardInterrupt):
+                print("Aborted.", file=sys.stderr)
+                sys.exit(1)
+            args.device = choice
+        idx = int(args.device) if args.device is not None and str(args.device).strip().isdigit() else 0
         if idx < 0 or idx >= len(devices):
-            print(f"Device index {idx} out of range.", file=sys.stderr)
+            print(f"Device index {idx} out of range (0-{len(devices) - 1}).", file=sys.stderr)
             sys.exit(1)
         device_serial = devices[idx].get("serial")
         if isinstance(device_serial, bytes):

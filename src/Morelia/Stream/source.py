@@ -148,7 +148,9 @@ def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop
                             timeout_message_shown = True
                     #traceback.print_exc()
                     continue
-            pod.close_port()
+        # After exiting "with pod": __exit__ has run (STREAM 0 sent, read buffer drained).
+        # Now close the port so the USB/D2XX handle is released cleanly.
+        pod.close_port()
 
         # tell the observer we are finished.
         observer.on_completed()

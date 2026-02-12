@@ -169,16 +169,30 @@ class PvfsDataFile:
     
     def close(self):
         """Close the PVFS file and save all data."""
+        def _try_remove(path, max_retries=5):
+            for _ in range(max_retries):
+                try:
+                    if path is None:
+                        return
+                    p = Path(path) if isinstance(path, str) else path
+                    if p.exists():
+                        p.unlink()
+                    return
+                except OSError:
+                    time.sleep(0.1)
+
+        temp_db_path = self._temp_db_path
+        temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
+        snapshot_path = temp_dir / f"temp_snapshot_{self._unique_id}.db3"
+        unique_id = self._unique_id
+
         try:
             print("  - Closing PVFS file and saving database...")
-            
+
             if self._database and self._pvfs:
                 self.flush()
 
             # Close the database first so temp files are released (required before remove on Windows)
-            temp_db_path = self._temp_db_path
-            temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
-            snapshot_path = temp_dir / f"temp_snapshot_{self._unique_id}.db3"
             if self._database:
                 self._database.close()
                 self._database = None
@@ -186,36 +200,29 @@ class PvfsDataFile:
             self._owns_temp_db = False
 
             # Remove temp DB and any leftover temp_snapshot (after DB closed so files are not locked)
-            def _try_remove(path, max_retries=5):
-                for _ in range(max_retries):
-                    try:
-                        if path is None:
-                            return
-                        p = Path(path) if isinstance(path, str) else path
-                        if p.exists():
-                            p.unlink()
-                        return
-                    except OSError:
-                        time.sleep(0.1)
-
             _try_remove(temp_db_path)
             _try_remove(snapshot_path)
             # Snapshot may have been created in cwd if _filepath was not set when _save_database ran
-            _try_remove(Path.cwd() / f"temp_snapshot_{self._unique_id}.db3")
+            _try_remove(Path.cwd() / f"temp_snapshot_{unique_id}.db3")
 
             # Close the PVFS file
             if self._pvfs:
                 self._pvfs.close()
                 self._pvfs = None
-            
+
             print("  - PVFS file closed successfully")
             return True
-            
+
         except Exception as e:
             print(f"Error closing PVFS file: {e}")
             import traceback
             traceback.print_exc()
             return False
+        finally:
+            # Always attempt temp file cleanup so they are not left behind if close() failed
+            _try_remove(temp_db_path)
+            _try_remove(snapshot_path)
+            _try_remove(Path.cwd() / f"temp_snapshot_{unique_id}.db3")
     
     def flush(self, synchronous: bool = True) -> None:
         """Flush all data to disk.

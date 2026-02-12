@@ -436,9 +436,9 @@ class ExperimentDatabase:
         Returns:
             bool: True if successful, False otherwise.
         """
+        dest_engine = create_engine(f"sqlite:///{filename}")
         try:
             # Create destination engine and ensure it has the same schema (empty file has no tables)
-            dest_engine = create_engine(f"sqlite:///{filename}")
             self._create_tables_on_engine(dest_engine)
 
             # Get all tables from the current database
@@ -468,6 +468,9 @@ class ExperimentDatabase:
             return True
         except Exception as e:
             raise DatabaseError(f"Failed to save database to file: {e}")
+        finally:
+            # Release all connections to the destination file so it can be deleted on Windows
+            dest_engine.dispose()
 
     def get_channel_names(self) -> List[str]:
         """Get a list of all channel names from the experiment_channel_information_table.
