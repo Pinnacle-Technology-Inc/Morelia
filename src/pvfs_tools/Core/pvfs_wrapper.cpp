@@ -11,7 +11,7 @@ Build Instructions:
 5. Copy pvfs_wrapper.dll to your test directory
 */
 
-#include "Pvfs.h"
+#include "pvfs.h"
 #include <cstdint>
 #include <vector>
 #include <string>
