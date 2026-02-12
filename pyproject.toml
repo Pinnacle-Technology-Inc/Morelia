@@ -61,6 +61,9 @@ package-dir = {"" = "src"}
 where = ["src"]
 include = ["*", "pvfs_tools", "pvfs_tools.*"]
 
+[tool.setuptools.package-data]
+pvfs_tools.Core = ["*.so", "*.dll"]
+
 [build-system]
 requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"

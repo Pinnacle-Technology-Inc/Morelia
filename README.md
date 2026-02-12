@@ -23,3 +23,29 @@ Currently, the API supports 8206-HR, 8401-HR, 8229, 8480-SC, and 8274-D POD devi
 
 You can find extensive documentation for the package [here](https://pinnacle-technology-inc.github.io/Morelia).
 
+## Installation
+
+Create and activate a virtual environment, then install with pip:
+
+- **Windows:** `python -m venv venv` then `venv\Scripts\activate`
+- **Linux / WSL:** `python3 -m venv venv` then `source venv/bin/activate`
+
+Then run:
+
+```bash
+pip install ptech-morelia
+```
+
+To install from a local clone: `pip install .`
+
+PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.
+
+If you are developing or building from source on Linux/WSL and the `.so` files are missing, you can build them from `src/pvfs_tools/Core/`:
+
+```bash
+cd src/pvfs_tools/Core
+./build_linux.sh
+```
+
+Requires `cmake` and a C++17 compiler (e.g. `g++`).
+

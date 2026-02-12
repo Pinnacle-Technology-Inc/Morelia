@@ -12,11 +12,15 @@ on:
 
 jobs:
  
-  # Build packages 
+  # Build packages on Linux and Windows so PyPI has manylinux and win_amd64 wheels.
   build-dists:
 
-    name: Build distributable packages.
-    runs-on: ubuntu-latest
+    name: Build distributable packages (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v4
@@ -29,10 +33,10 @@ jobs:
       - name: Install build dependencies
         run: python -m pip install build
 
-      - name: Build package.
+      - name: Build package
         run: python -m build
 
-      # Upload built dists so next job can use them.
+      # Upload built dists so next job can use them (artifact merged from both matrix jobs).
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:

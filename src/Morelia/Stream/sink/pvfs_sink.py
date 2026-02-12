@@ -20,7 +20,7 @@ try:
     from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
     from pvfs_tools.Core.pvfs_binding import HighTime
     _PVFS_AVAILABLE = True
-except ImportError:
+except (ImportError, RuntimeError):
     _PVFS_AVAILABLE = False
     PvfsDataFile = None  # type: ignore
     HighTime = None  # type: ignore
@@ -46,7 +46,8 @@ class PvfsSink(SinkInterface):
     ) -> None:
         if not _PVFS_AVAILABLE:
             raise RuntimeError(
-                "pvfs_tools is not available. Ensure pvfs_tools is installed and importable."
+                "pvfs_tools is not available, or the PVFS native library failed to load for this platform. "
+                "Ensure pvfs_tools is installed and that you are on Windows or Linux with the correct binaries."
             )
         self._file_path = file_path
         self._pod = pod
