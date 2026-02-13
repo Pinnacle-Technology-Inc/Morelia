@@ -19,12 +19,14 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
+_PVFS_IMPORT_ERROR = None
 try:
     from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
     from pvfs_tools.Core.pvfs_binding import HighTime
     _PVFS_AVAILABLE = True
-except (ImportError, RuntimeError):
+except (ImportError, RuntimeError) as e:
     _PVFS_AVAILABLE = False
+    _PVFS_IMPORT_ERROR = e
     PvfsDataFile = None  # type: ignore
     HighTime = None  # type: ignore
 
@@ -48,10 +50,13 @@ class PvfsSink(SinkInterface):
         observe_on_scheduler: str | None = None,
     ) -> None:
         if not _PVFS_AVAILABLE:
-            raise RuntimeError(
+            msg = (
                 "pvfs_tools is not available, or the PVFS native library failed to load for this platform. "
                 "Ensure pvfs_tools is installed and that you are on Windows or Linux with the correct binaries."
             )
+            if _PVFS_IMPORT_ERROR is not None:
+                msg += f" Reason: {_PVFS_IMPORT_ERROR}"
+            raise RuntimeError(msg) from _PVFS_IMPORT_ERROR
         self._file_path = file_path
         self._pod = pod
 
