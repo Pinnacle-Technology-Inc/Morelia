@@ -17,7 +17,8 @@ dependencies = [
   "pydantic",     
   "SQLAlchemy",  
   "Pillow>=10.0.0",
-  "psutil"
+  "psutil",
+  "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]

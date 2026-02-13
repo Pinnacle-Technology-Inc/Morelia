@@ -10,7 +10,10 @@ __email__       = 'sales@pinnaclet.com'
 import socket
 import struct
 import sys
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import AcquisitionDevice, Pod8206HR, Pod8401HR, Pod8274D

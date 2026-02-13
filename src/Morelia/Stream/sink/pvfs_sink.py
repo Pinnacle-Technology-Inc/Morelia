@@ -10,7 +10,10 @@ __email__       = 'sales@pinnaclet.com'
 import math
 import sys
 import time
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket

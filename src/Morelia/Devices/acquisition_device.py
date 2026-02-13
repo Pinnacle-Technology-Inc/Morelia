@@ -7,7 +7,10 @@ __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2023, James Hurd'
 __email__       = 'sales@pinnaclet.com'
 
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 from datetime import datetime
 
 from Morelia.Devices import Pod
