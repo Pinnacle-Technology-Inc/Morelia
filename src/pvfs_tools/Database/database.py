@@ -386,6 +386,19 @@ class ExperimentDatabase:
         except Exception:
             return False
 
+    def sync_to_disk(self) -> None:
+        """Force all committed data to be written and checkpointed to the database file.
+        Call before copying or reading the file (e.g. on WSL/Linux where durability matters).
+        """
+        if not self._engine:
+            return
+        try:
+            with self._engine.connect() as conn:
+                conn.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                conn.commit()
+        except Exception:
+            pass
+
     def load_from_file(self, filename: str) -> bool:
         """Load database contents from a file into the current database.
         
