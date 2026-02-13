@@ -138,17 +138,22 @@ def load_library():
     return ctypes.CDLL(str(lib_path))
 
 _lib = None
+_load_error = None  # Store first load failure for clearer error messages
 try:
     _lib = load_library()
-except Exception:
-    _lib = None  # Don't raise at import; _get_lib() will raise when PVFS is actually used
+except Exception as e:
+    _lib = None
+    _load_error = e  # Don't raise at import; _get_lib() will raise when PVFS is actually used
 
 def _get_lib():
     if _lib is None:
-        raise RuntimeError(
+        msg = (
             "PVFS native library could not be loaded for this platform; "
             "ensure you are on Windows or Linux and have the correct binaries installed."
         )
+        if _load_error is not None:
+            msg += f" Load error: {_load_error}"
+        raise RuntimeError(msg) from _load_error
     return _lib
 
 # Define wrapper classes
