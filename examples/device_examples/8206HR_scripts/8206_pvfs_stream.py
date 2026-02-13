@@ -7,7 +7,7 @@ Output is compatible with the standard Sirenia data format (experiment.db3 + ind
 
 Usage:
   python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--com-port [PORT]] [--device INDEX]
-  (default: output_8206.pvfs, run until Ctrl+C; default: D2XX, default port: COM9 on Windows)
+  (default: output_8206.pvfs, run until Space/Enter; default: D2XX, default port: COM9 on Windows)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
 
 Examples:
@@ -44,6 +44,42 @@ if str(_src) not in sys.path:
 from Morelia.Devices import Pod8206HR
 from Morelia.Stream.sink import PvfsSink
 from Morelia.Stream.data_flow import DataFlow
+
+
+def wait_for_stop_key():
+    """Block until the user presses Space or Enter. Allows clean stop without SIGINT to worker."""
+    if sys.platform == "win32":
+        try:
+            import msvcrt
+            while True:
+                ch = msvcrt.getch()
+                if ch in (b' ', b'\r', b'\n'):
+                    return
+        except Exception:
+            input("Press Enter to stop.")
+    else:
+        try:
+            import termios
+            import tty
+            if not sys.stdin.isatty():
+                input("Press Enter to stop.")
+                return
+            fd = sys.stdin.fileno()
+            old = termios.tcgetattr(fd)
+            try:
+                tty.setraw(fd)
+                try:
+                    while True:
+                        ch = sys.stdin.read(1)
+                        if ch in (' ', '\r', '\n'):
+                            return
+                finally:
+                    termios.tcsetattr(fd, termios.TCSADRAIN, old)
+            except Exception:
+                termios.tcsetattr(fd, termios.TCSADRAIN, old)
+                input("Press Enter to stop.")
+        except ImportError:
+            input("Press Enter to stop.")
 
 
 def list_d2xx_devices():
@@ -229,14 +265,9 @@ def main():
             print(f"Duration: {args.duration} s")
             flowgraph.collect_for_seconds(args.duration)
         else:
-            print("Running until Ctrl+C.")
+            print("Press Space or Enter to stop.")
             with flowgraph:
-                try:
-                    while True:
-                        import time
-                        time.sleep(1)
-                except KeyboardInterrupt:
-                    pass  # __exit__ will call stop_collection()
+                wait_for_stop_key()
     finally:
         # Ensure cleanup happens even if there's an error
         try:

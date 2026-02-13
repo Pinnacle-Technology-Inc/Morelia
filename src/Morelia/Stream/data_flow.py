@@ -117,17 +117,27 @@ class DataFlow:
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
 
-            # Create worker process. On Unix, use a new session so only the main process
-            # receives SIGINT (Ctrl+C); the worker then stops only when manual_stop_event is set
-            # and can run sink __exit__ (flush/close PVFS, etc.).
-            process_kw: dict = {}
+            # Create worker process. On Unix (when supported), use a new session so only the main
+            # process receives SIGINT (Ctrl+C); the worker then stops only when manual_stop_event
+            # is set and can run sink __exit__ (flush/close PVFS, etc.).
+            worker: mp.Process
             if sys.platform != "win32":
-                process_kw["start_new_session"] = True
-            worker: mp.Process = mp.Process(
-                target=get_data_wrapper,
-                args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
-                **process_kw,
-            )
+                try:
+                    worker = mp.Process(
+                        target=get_data_wrapper,
+                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                        start_new_session=True,
+                    )
+                except TypeError:
+                    worker = mp.Process(
+                        target=get_data_wrapper,
+                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                    )
+            else:
+                worker = mp.Process(
+                    target=get_data_wrapper,
+                    args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                )
 
             self._workers.append(worker)
 
