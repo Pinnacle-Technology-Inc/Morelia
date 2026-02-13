@@ -521,6 +521,15 @@ class PvfsDataFile:
         try:
             if not self._database.save_to_file(snapshot_path):
                 return False
+            # Ensure snapshot is durable on disk before reading (important on WSL/Linux)
+            try:
+                fd = os.open(snapshot_path, os.O_RDONLY)
+                try:
+                    os.fsync(fd)
+                finally:
+                    os.close(fd)
+            except OSError:
+                pass
             with open(snapshot_path, "rb") as f:
                 db_data = f.read()
         finally:

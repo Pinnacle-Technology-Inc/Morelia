@@ -438,6 +438,10 @@ class ExperimentDatabase:
         """
         dest_engine = create_engine(f"sqlite:///{filename}")
         try:
+            # Ensure source has all data visible (e.g. WAL checkpointed) before copy
+            with self._engine.connect() as source_sync:
+                source_sync.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                source_sync.commit()
             # Create destination engine and ensure it has the same schema (empty file has no tables)
             self._create_tables_on_engine(dest_engine)
 
@@ -464,6 +468,13 @@ class ExperimentDatabase:
                                     dict(zip(columns, row))
                                 )
                             dest_conn.commit()
+            
+            # Force destination file to be fully synced to disk (important on WSL/Linux
+            # where otherwise the file may not be durable before we read it back).
+            with dest_engine.connect() as sync_conn:
+                sync_conn.execute(text("PRAGMA synchronous=FULL"))
+                sync_conn.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                sync_conn.commit()
             
             return True
         except Exception as e:
