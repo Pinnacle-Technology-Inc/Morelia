@@ -138,6 +138,7 @@ class PvfsSink(SinkInterface):
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
+        print(f"[PvfsSink] __exit__ entered pid={os.getpid()}", file=sys.stderr, flush=True)
         path_abs = os.path.abspath(self._file_path) if self._file_path else self._file_path
         _pvfs_debug(
             "__exit__ pid=%s saving and closing path=%s samples_written=%s",
