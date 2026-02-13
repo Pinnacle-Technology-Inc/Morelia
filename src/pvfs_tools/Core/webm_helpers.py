@@ -1,10 +1,9 @@
-#webm helpers
-import av
+# webm helpers: import av only when WebMWriter is used (av is an optional/video extra).
 from fractions import Fraction
+
 
 class WebMWriter:
     def __init__(self, output_path: str, frame_rate: float, width: int, height: int):
-        from fractions import Fraction
         import av
 
         self.container = av.open(output_path, mode='w', format='webm')
