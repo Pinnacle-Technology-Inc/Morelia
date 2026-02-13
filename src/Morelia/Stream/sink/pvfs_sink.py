@@ -7,9 +7,20 @@ __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
+import logging
 import math
+import os
 import sys
 import time
+
+_log = logging.getLogger(__name__)
+
+
+def _pvfs_debug(msg: str, *args) -> None:
+    """Debug logging for PVFS sink (visible without logging config)."""
+    text = msg % args if args else msg
+    print(f"[PvfsSink] {text}", flush=True)
+    _log.info("[PvfsSink] %s", text)
 try:
     from typing import Self
 except ImportError:
@@ -96,10 +107,16 @@ class PvfsSink(SinkInterface):
         return self._file_path
 
     def __enter__(self) -> Self:
+        path_abs = os.path.abspath(self._file_path) if self._file_path else self._file_path
+        _pvfs_debug(
+            "__enter__ pid=%s cwd=%s file_path=%s -> absolute=%s",
+            os.getpid(), os.getcwd(), self._file_path, path_abs,
+        )
         self._pvfs_data = PvfsDataFile()
         ok = self._pvfs_data.create(self._file_path)
         if not ok:
             raise RuntimeError(f"PvfsDataFile.create failed for {self._file_path}")
+        _pvfs_debug("PVFS created successfully: %s", path_abs)
 
         self._start_time = HighTime.from_seconds(time.time())
         self._pvfs_data.set_experiment_info(
@@ -121,6 +138,11 @@ class PvfsSink(SinkInterface):
         return self
 
     def __exit__(self, *args, **kwargs) -> bool:
+        path_abs = os.path.abspath(self._file_path) if self._file_path else self._file_path
+        _pvfs_debug(
+            "__exit__ pid=%s saving and closing path=%s samples_written=%s",
+            os.getpid(), path_abs, self._samples_written,
+        )
         # Flush any remaining buffered samples
         self._write_buffer_to_pvfs()
 
@@ -134,7 +156,9 @@ class PvfsSink(SinkInterface):
                 # Sync DB with channel times and save database into PVFS, then close
                 self._pvfs_data.flush(synchronous=True)
                 self._pvfs_data.close()
+                _pvfs_debug("PVFS closed successfully: %s", path_abs)
             except Exception as e:
+                _log.warning("Error closing PVFS file: %s: %s", path_abs, e, exc_info=True)
                 print(f"Warning: Error closing PVFS file: {type(e).__name__}: {e}", file=sys.stderr)
             finally:
                 self._pvfs_data = None
@@ -207,7 +231,12 @@ class PvfsSink(SinkInterface):
         self._buffer = [ [] for _ in self._channels ]
 
     def get_dict(self) -> dict:
+        # Use absolute path so the worker process (DataFlow runs sinks in a subprocess)
+        # writes to the same file regardless of its current working directory.
+        file_path = self._file_path
+        if file_path and not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
         return {
-            "file_path": self.file_path,
+            "file_path": file_path,
             "observe_on_scheduler": self.observe_on_scheduler,
         }

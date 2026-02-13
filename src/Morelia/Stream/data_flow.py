@@ -41,14 +41,14 @@ class DataFlow:
         self._network = network
         self._workers: list[mp.Process] = []
 
-    def stop_collection(self, join_timeout_sec: float = 5.0) -> None:
+    def stop_collection(self, join_timeout_sec: float = 15.0) -> None:
         """Stop collecting data.
 
         Sets the stop events so workers exit their loop. Waits up to
         ``join_timeout_sec`` for each worker to exit so they can send
-        STREAM 0 to the device and close the port cleanly; if a worker
-        is still alive (e.g. blocked in a serial read), it is terminated
-        so the main process does not hang.
+        STREAM 0 to the device, flush sinks (e.g. PVFS), and close cleanly;
+        if a worker is still alive (e.g. blocked in a serial read or disk I/O),
+        it is terminated so the main process does not hang.
         """
         for event in self._manual_stop_events:
             event.set()
