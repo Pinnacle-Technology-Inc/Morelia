@@ -13,6 +13,7 @@ __email__       = 'sales@pinnaclet.com'
 import multiprocessing as mp
 from multiprocessing import Event
 from functools import partial
+import sys
 import time
 import gc
 
@@ -116,8 +117,17 @@ class DataFlow:
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
 
-            #create worker process.
-            worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
+            # Create worker process. On Unix, use a new session so only the main process
+            # receives SIGINT (Ctrl+C); the worker then stops only when manual_stop_event is set
+            # and can run sink __exit__ (flush/close PVFS, etc.).
+            process_kw: dict = {}
+            if sys.platform != "win32":
+                process_kw["start_new_session"] = True
+            worker: mp.Process = mp.Process(
+                target=get_data_wrapper,
+                args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                **process_kw,
+            )
 
             self._workers.append(worker)
 
