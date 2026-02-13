@@ -1,0 +1,6 @@
+# Allow non-root access to USB serial devices (e.g. /dev/ttyUSB*) for Morelia POD.
+# Install: sudo cp 99-morelia-serial.rules /etc/udev/rules.d/
+#          sudo udevadm control --reload-rules
+# Then unplug and replug the USB serial device (or: sudo udevadm trigger).
+SUBSYSTEM=="tty", KERNEL=="ttyUSB[0-9]*", MODE="0660", GROUP="dialout"
+SUBSYSTEM=="tty", KERNEL=="ttyACM[0-9]*", MODE="0660", GROUP="dialout"
