@@ -53,6 +53,13 @@ class ExperimentDatabase:
                 # Only create tables if the database is new (empty)
                 if not os.path.exists(self.filename) or os.path.getsize(self.filename) == 0:
                     self._create_tables()
+                # Force DELETE journal mode so all committed data resides in the
+                # main database file.  Some Linux distributions default to WAL,
+                # which stores recent writes in a separate -wal file that
+                # shutil.copy2 (used by PvfsDataFile._save_database) would miss.
+                with self._engine.connect() as conn:
+                    conn.execute(text("PRAGMA journal_mode=DELETE"))
+                    conn.commit()
         except SQLAlchemyError as e:
             raise DatabaseConnectionError(f"Failed to connect to database: {e}")
 
@@ -394,6 +401,8 @@ class ExperimentDatabase:
             return
         try:
             with self._engine.connect() as conn:
+                # Ensure DELETE journal mode (no WAL to miss on copy)
+                conn.execute(text("PRAGMA journal_mode=DELETE"))
                 conn.execute(text("PRAGMA wal_checkpoint(FULL)"))
                 conn.commit()
         except Exception:
