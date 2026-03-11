@@ -40,7 +40,7 @@ To install from a local clone: `pip install .`
 
 PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.
 
-If you are developing or building from source on Linux/WSL and the `.so` files are missing, you can build them from `src/pvfs_tools/Core/`:
+If you are developing or building from source on Linux/WSL and the `.so` files are incompatible, you can build them from `src/pvfs_tools/Core/`:
 
 ```bash
 cd src/pvfs_tools/Core
@@ -49,7 +49,9 @@ cd src/pvfs_tools/Core
 
 Requires `cmake` and a C++17 compiler (e.g. `g++`).
 
-**Linux / WSL – plot window (PyQt5):** If you use the plotting examples (e.g. `8206_plot_stream.py`) and get a Qt/xcb plugin error, install the xcb system libraries. On Debian/Ubuntu/WSL:
+In general, for Ubuntu run install_ubuntu.sh to preinstall required libraries.
+
+If after running install_ubuntu.sh the plotting examples (e.g. `8206_plot_stream.py`) are still faulting, install the xcb system libraries. On Debian/Ubuntu/WSL:
 
 ```bash
 sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
