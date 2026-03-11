@@ -55,5 +55,5 @@ Requires `cmake` and a C++17 compiler (e.g. `g++`).
 sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
 ```
 
-With WSLg (WSL 2), the plot window will then appear on your Windows desktop.
+With WSLg (WSL 2), the plot window will then appear on your Windows desktop.  Older versions of wsl do not support graphics.  In that case, comment out the plot components.
 
