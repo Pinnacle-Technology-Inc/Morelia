@@ -127,24 +127,34 @@ lock_vfs(vfs: PvfsFileWrapper) -> None:                   PVFS_lock(vfs)
 unlock_vfs(vfs: PvfsFileWrapper) -> None:                 PVFS_unlock(vfs)
 """
 
-# Load the shared library
+# Load the shared library (lazy: only on first use, so import succeeds when lib is missing)
 def load_library():
     # Get the directory containing this script
     current_dir = Path(__file__).parent.absolute()
-    
-    # Try to load the library
-    try:
-        if os.name == 'nt':  # Windows
-            lib_path = current_dir / "pvfs_wrapper.dll"
-        else:  # Linux/Mac
-            lib_path = current_dir / "libpvfs_wrapper.so"
-        
-        return ctypes.CDLL(str(lib_path))
-    except Exception as e:
-        raise RuntimeError(f"Failed to load PVFS wrapper library: {e}")
+    if os.name == 'nt':  # Windows
+        lib_path = current_dir / "pvfs_wrapper.dll"
+    else:  # Linux/Mac
+        lib_path = current_dir / "libpvfs_wrapper.so"
+    return ctypes.CDLL(str(lib_path))
 
-# Load the library
-_lib = load_library()
+_lib = None
+_load_error = None  # Store first load failure for clearer error messages
+try:
+    _lib = load_library()
+except Exception as e:
+    _lib = None
+    _load_error = e  # Don't raise at import; _get_lib() will raise when PVFS is actually used
+
+def _get_lib():
+    if _lib is None:
+        msg = (
+            "PVFS native library could not be loaded for this platform; "
+            "ensure you are on Windows or Linux and have the correct binaries installed."
+        )
+        if _load_error is not None:
+            msg += f" Load error: {_load_error}"
+        raise RuntimeError(msg) from _load_error
+    return _lib
 
 # Define wrapper classes
 class PvfsFileWrapper(ctypes.Structure):
@@ -228,215 +238,206 @@ class PvfsHighTimeWrapper(ctypes.Structure):
         ("subseconds", ctypes.c_double)
     ]
 
-# Set up function signatures
-_lib.create_vfs.argtypes = [ctypes.c_char_p, ctypes.c_uint32]
-_lib.create_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
+# Set up function signatures (only when library loaded)
+if _lib is not None:
+    _get_lib().create_vfs.argtypes = [ctypes.c_char_p, ctypes.c_uint32]
+    _get_lib().create_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
 
-_lib.open_vfs.argtypes = [ctypes.c_char_p]
-_lib.open_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
+    _get_lib().open_vfs.argtypes = [ctypes.c_char_p]
+    _get_lib().open_vfs.restype = ctypes.POINTER(PvfsFileWrapper)
 
-_lib.create_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.create_file.restype = ctypes.POINTER(PvfsFileHandleWrapper)
+    _get_lib().create_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().create_file.restype = ctypes.POINTER(PvfsFileHandleWrapper)
 
-_lib.open_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.open_file.restype = ctypes.POINTER(PvfsFileHandleWrapper)
+    _get_lib().open_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().open_file.restype = ctypes.POINTER(PvfsFileHandleWrapper)
 
-_lib.write_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
-_lib.write_file.restype = ctypes.c_int32
+    _get_lib().write_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
+    _get_lib().write_file.restype = ctypes.c_int32
 
-_lib.read_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
-_lib.read_file.restype = ctypes.c_int32
+    _get_lib().read_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
+    _get_lib().read_file.restype = ctypes.c_int32
 
-_lib.close_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
-_lib.close_file.restype = None
+    _get_lib().close_file.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+    _get_lib().close_file.restype = None
 
-_lib.delete_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
-_lib.delete_vfs.restype = None
+    _get_lib().delete_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
+    _get_lib().delete_vfs.restype = None
 
-# Add PVFS_close function binding
-_lib.pvfs_close.argtypes = [ctypes.c_int32]
-_lib.pvfs_close.restype = ctypes.c_int32
+    _get_lib().pvfs_close.argtypes = [ctypes.c_int32]
+    _get_lib().pvfs_close.restype = ctypes.c_int32
 
-# String vector operations
-_lib.create_string_vector.restype = ctypes.POINTER(StringVectorWrapper)
-_lib.delete_string_vector.argtypes = [ctypes.POINTER(StringVectorWrapper)]
-_lib.delete_string_vector.restype = None
+    _get_lib().create_string_vector.restype = ctypes.POINTER(StringVectorWrapper)
+    _get_lib().delete_string_vector.argtypes = [ctypes.POINTER(StringVectorWrapper)]
+    _get_lib().delete_string_vector.restype = None
 
-_lib.get_channel_list.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.POINTER(StringVectorWrapper)]
-_lib.get_channel_list.restype = ctypes.c_int32
+    _get_lib().get_channel_list.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.POINTER(StringVectorWrapper)]
+    _get_lib().get_channel_list.restype = ctypes.c_int32
 
-_lib.get_file_list.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.POINTER(StringVectorWrapper)]
-_lib.get_file_list.restype = ctypes.c_int32
+    _get_lib().get_file_list.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.POINTER(StringVectorWrapper)]
+    _get_lib().get_file_list.restype = ctypes.c_int32
 
-_lib.extract.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p, ctypes.c_char_p]
-_lib.extract.restype = ctypes.c_int32
+    _get_lib().extract.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p, ctypes.c_char_p]
+    _get_lib().extract.restype = ctypes.c_int32
 
-_lib.get_string_at.argtypes = [ctypes.POINTER(StringVectorWrapper), ctypes.c_size_t]
-_lib.get_string_at.restype = ctypes.c_char_p
+    _get_lib().get_string_at.argtypes = [ctypes.POINTER(StringVectorWrapper), ctypes.c_size_t]
+    _get_lib().get_string_at.restype = ctypes.c_char_p
 
-_lib.get_string_vector_size.argtypes = [ctypes.POINTER(StringVectorWrapper)]
-_lib.get_string_vector_size.restype = ctypes.c_size_t
+    _get_lib().get_string_vector_size.argtypes = [ctypes.POINTER(StringVectorWrapper)]
+    _get_lib().get_string_vector_size.restype = ctypes.c_size_t
 
-# Index file operations
-_lib.read_index_file_header.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(PvfsIndexHeaderWrapper)]
-_lib.read_index_file_header.restype = ctypes.c_int32
+    _get_lib().read_index_file_header.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(PvfsIndexHeaderWrapper)]
+    _get_lib().read_index_file_header.restype = ctypes.c_int32
 
-_lib.write_index_file_header.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(PvfsIndexHeaderWrapper)]
-_lib.write_index_file_header.restype = ctypes.c_int32
+    _get_lib().write_index_file_header.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(PvfsIndexHeaderWrapper)]
+    _get_lib().write_index_file_header.restype = ctypes.c_int32
 
-_lib.open_data_channel.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.open_data_channel.restype = ctypes.POINTER(PvfsFileHandleWrapper)
+    _get_lib().open_data_channel.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().open_data_channel.restype = ctypes.POINTER(PvfsFileHandleWrapper)
 
-# HighTime operations
-_lib.create_high_time.argtypes = [ctypes.c_int64, ctypes.c_double]
-_lib.create_high_time.restype = ctypes.POINTER(PvfsHighTimeWrapper)
+    _get_lib().create_high_time.argtypes = [ctypes.c_int64, ctypes.c_double]
+    _get_lib().create_high_time.restype = ctypes.POINTER(PvfsHighTimeWrapper)
 
-_lib.delete_high_time.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
-_lib.delete_high_time.restype = None
+    _get_lib().delete_high_time.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
+    _get_lib().delete_high_time.restype = None
 
-_lib.get_high_time_seconds.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
-_lib.get_high_time_seconds.restype = ctypes.c_int64
+    _get_lib().get_high_time_seconds.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
+    _get_lib().get_high_time_seconds.restype = ctypes.c_int64
 
-_lib.get_high_time_subseconds.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
-_lib.get_high_time_subseconds.restype = ctypes.c_double
+    _get_lib().get_high_time_subseconds.argtypes = [ctypes.POINTER(PvfsHighTimeWrapper)]
+    _get_lib().get_high_time_subseconds.restype = ctypes.c_double
 
-# Lock operations
-_lib.lock_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
-_lib.lock_vfs.restype = None
+    _get_lib().lock_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
+    _get_lib().lock_vfs.restype = None
 
-_lib.unlock_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
-_lib.unlock_vfs.restype = None
+    _get_lib().unlock_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
+    _get_lib().unlock_vfs.restype = None
 
-# Add new file operation bindings
-_lib.pvfs_fclose.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
-_lib.pvfs_fclose.restype = ctypes.c_int32
+    _get_lib().pvfs_fclose.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+    _get_lib().pvfs_fclose.restype = ctypes.c_int32
 
-_lib.pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
-_lib.pvfs_flush.restype = ctypes.c_int32
+    _get_lib().pvfs_flush.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
+    _get_lib().pvfs_flush.restype = ctypes.c_int32
 
-_lib.pvfs_fcreate.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.pvfs_fcreate.restype = ctypes.POINTER(PvfsFileHandleWrapper)
+    _get_lib().pvfs_fcreate.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().pvfs_fcreate.restype = ctypes.POINTER(PvfsFileHandleWrapper)
 
-_lib.pvfs_fopen.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.pvfs_fopen.restype = ctypes.POINTER(PvfsFileHandleWrapper)
+    _get_lib().pvfs_fopen.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().pvfs_fopen.restype = ctypes.POINTER(PvfsFileHandleWrapper)
 
-_lib.pvfs_delete_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
-_lib.pvfs_delete_file.restype = ctypes.c_int32
+    _get_lib().pvfs_delete_file.argtypes = [ctypes.POINTER(PvfsFileWrapper), ctypes.c_char_p]
+    _get_lib().pvfs_delete_file.restype = ctypes.c_int32
 
-# Add low-level file operation bindings
-_lib.pvfs_tell.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
-_lib.pvfs_tell.restype = ctypes.c_int64
+    _get_lib().pvfs_tell.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+    _get_lib().pvfs_tell.restype = ctypes.c_int64
 
-_lib.pvfs_seek.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
-_lib.pvfs_seek.restype = ctypes.c_int64
+    _get_lib().pvfs_seek.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
+    _get_lib().pvfs_seek.restype = ctypes.c_int64
 
-_lib.pvfs_write.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
-_lib.pvfs_write.restype = ctypes.c_int32
+    _get_lib().pvfs_write.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
+    _get_lib().pvfs_write.restype = ctypes.c_int32
 
-_lib.pvfs_read.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
-_lib.pvfs_read.restype = ctypes.c_int32
+    _get_lib().pvfs_read.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8), ctypes.c_uint32]
+    _get_lib().pvfs_read.restype = ctypes.c_int32
 
-# Add type-specific write function bindings
-_lib.pvfs_write_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint8]
-_lib.pvfs_write_uint8.restype = ctypes.c_int64
+    _get_lib().pvfs_write_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint8]
+    _get_lib().pvfs_write_uint8.restype = ctypes.c_int64
 
-_lib.pvfs_write_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int16]
-_lib.pvfs_write_sint16.restype = ctypes.c_int64
+    _get_lib().pvfs_write_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int16]
+    _get_lib().pvfs_write_sint16.restype = ctypes.c_int64
 
-_lib.pvfs_write_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint16]
-_lib.pvfs_write_uint16.restype = ctypes.c_int64
+    _get_lib().pvfs_write_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint16]
+    _get_lib().pvfs_write_uint16.restype = ctypes.c_int64
 
-_lib.pvfs_write_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
-_lib.pvfs_write_sint32.restype = ctypes.c_int64
+    _get_lib().pvfs_write_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
+    _get_lib().pvfs_write_sint32.restype = ctypes.c_int64
 
-_lib.pvfs_write_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint32]
-_lib.pvfs_write_uint32.restype = ctypes.c_int64
+    _get_lib().pvfs_write_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint32]
+    _get_lib().pvfs_write_uint32.restype = ctypes.c_int64
 
-_lib.pvfs_write_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
-_lib.pvfs_write_sint64.restype = ctypes.c_int64
+    _get_lib().pvfs_write_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
+    _get_lib().pvfs_write_sint64.restype = ctypes.c_int64
 
-# Add type-specific read function bindings
-_lib.pvfs_read_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8)]
-_lib.pvfs_read_uint8.restype = ctypes.c_int64
+    _get_lib().pvfs_read_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8)]
+    _get_lib().pvfs_read_uint8.restype = ctypes.c_int64
 
-_lib.pvfs_read_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int16)]
-_lib.pvfs_read_sint16.restype = ctypes.c_int64
+    _get_lib().pvfs_read_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int16)]
+    _get_lib().pvfs_read_sint16.restype = ctypes.c_int64
 
-_lib.pvfs_read_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint16)]
-_lib.pvfs_read_uint16.restype = ctypes.c_int64
+    _get_lib().pvfs_read_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint16)]
+    _get_lib().pvfs_read_uint16.restype = ctypes.c_int64
 
-_lib.pvfs_read_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int32)]
-_lib.pvfs_read_sint32.restype = ctypes.c_int64
+    _get_lib().pvfs_read_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int32)]
+    _get_lib().pvfs_read_sint32.restype = ctypes.c_int64
 
-_lib.pvfs_read_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint32)]
-_lib.pvfs_read_uint32.restype = ctypes.c_int64
+    _get_lib().pvfs_read_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint32)]
+    _get_lib().pvfs_read_uint32.restype = ctypes.c_int64
 
-_lib.pvfs_read_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
-_lib.pvfs_read_sint64.restype = ctypes.c_int64
+    _get_lib().pvfs_read_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
+    _get_lib().pvfs_read_sint64.restype = ctypes.c_int64
 
-# Add read/write operation bindings
-_lib.pvfs_fread_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8)]
-_lib.pvfs_fread_uint8.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint8)]
+    _get_lib().pvfs_fread_uint8.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint8]
-_lib.pvfs_fwrite_uint8.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_uint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint8]
+    _get_lib().pvfs_fwrite_uint8.restype = ctypes.c_int64
 
-_lib.pvfs_fread_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int8)]
-_lib.pvfs_fread_sint8.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int8)]
+    _get_lib().pvfs_fread_sint8.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int8]
-_lib.pvfs_fwrite_sint8.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_sint8.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int8]
+    _get_lib().pvfs_fwrite_sint8.restype = ctypes.c_int64
 
-_lib.pvfs_fread_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint16)]
-_lib.pvfs_fread_uint16.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint16)]
+    _get_lib().pvfs_fread_uint16.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint16]
-_lib.pvfs_fwrite_uint16.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_uint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint16]
+    _get_lib().pvfs_fwrite_uint16.restype = ctypes.c_int64
 
-_lib.pvfs_fread_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int16)]
-_lib.pvfs_fread_sint16.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int16)]
+    _get_lib().pvfs_fread_sint16.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int16]
-_lib.pvfs_fwrite_sint16.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_sint16.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int16]
+    _get_lib().pvfs_fwrite_sint16.restype = ctypes.c_int64
 
-_lib.pvfs_fread_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint32)]
-_lib.pvfs_fread_uint32.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_uint32)]
+    _get_lib().pvfs_fread_uint32.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint32]
-_lib.pvfs_fwrite_uint32.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_uint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_uint32]
+    _get_lib().pvfs_fwrite_uint32.restype = ctypes.c_int64
 
-_lib.pvfs_fread_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int32)]
-_lib.pvfs_fread_sint32.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int32)]
+    _get_lib().pvfs_fread_sint32.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
-_lib.pvfs_fwrite_sint32.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_sint32.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int32]
+    _get_lib().pvfs_fwrite_sint32.restype = ctypes.c_int64
 
-_lib.pvfs_fread_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
-_lib.pvfs_fread_sint64.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_int64)]
+    _get_lib().pvfs_fread_sint64.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
-_lib.pvfs_fwrite_sint64.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_sint64.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_int64]
+    _get_lib().pvfs_fwrite_sint64.restype = ctypes.c_int64
 
-_lib.pvfs_fread_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_float)]
-_lib.pvfs_fread_float.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_float)]
+    _get_lib().pvfs_fread_float.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_float]
-_lib.pvfs_fwrite_float.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_float.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_float]
+    _get_lib().pvfs_fwrite_float.restype = ctypes.c_int64
 
-_lib.pvfs_fread_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_double)]
-_lib.pvfs_fread_double.restype = ctypes.c_int64
+    _get_lib().pvfs_fread_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.POINTER(ctypes.c_double)]
+    _get_lib().pvfs_fread_double.restype = ctypes.c_int64
 
-_lib.pvfs_fwrite_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_double]
-_lib.pvfs_fwrite_double.restype = ctypes.c_int64
+    _get_lib().pvfs_fwrite_double.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper), ctypes.c_double]
+    _get_lib().pvfs_fwrite_double.restype = ctypes.c_int64
 
-_lib.get_file_info.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
-_lib.get_file_info.restype  = PvfsFileEntryWrapper
+    _get_lib().get_file_info.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+    _get_lib().get_file_info.restype  = PvfsFileEntryWrapper
 
-_lib.pvfs_close_file_handle.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
-_lib.pvfs_close_file_handle.restype = None
+    _get_lib().pvfs_close_file_handle.argtypes = [ctypes.POINTER(PvfsFileHandleWrapper)]
+    _get_lib().pvfs_close_file_handle.restype = None
 
-_lib.pvfs_close_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
-_lib.pvfs_close_vfs.restype = None
+    _get_lib().pvfs_close_vfs.argtypes = [ctypes.POINTER(PvfsFileWrapper)]
+    _get_lib().pvfs_close_vfs.restype = None
 
 def pvfs_close(fd):
     """Close a file descriptor using PVFS_close.
@@ -447,12 +448,12 @@ def pvfs_close(fd):
     Returns:
         int: 0 on success, -1 on error
     """
-    return _lib.pvfs_close(fd)
+    return _get_lib().pvfs_close(fd)
 
 class StringVector:
     def __init__(self):
         """Create a new string vector."""
-        self._vec = _lib.create_string_vector()
+        self._vec = _get_lib().create_string_vector()
         if not self._vec:
             print("Python: Failed to create string vector")
             raise RuntimeError("Failed to create string vector")
@@ -462,7 +463,7 @@ class StringVector:
         if hasattr(self, '_vec') and self._vec:
             try:
                 # Don't print during cleanup as the Python runtime might be shutting down
-                _lib.delete_string_vector(self._vec)
+                _get_lib().delete_string_vector(self._vec)
             except:
                 pass  # Ignore all errors during cleanup
             finally:
@@ -473,7 +474,7 @@ class StringVector:
         if not self._vec:
             return 0
         try:
-            size = _lib.get_string_vector_size(self._vec)
+            size = _get_lib().get_string_vector_size(self._vec)
             return size
         except Exception as e:
             print(f"Python: Error getting StringVector size: {e}")
@@ -486,7 +487,7 @@ class StringVector:
         if not 0 <= index < len(self):
             raise IndexError("Index out of range")
         try:
-            result = _lib.get_string_at(self._vec, index)
+            result = _get_lib().get_string_at(self._vec, index)
             if not result:
                 raise RuntimeError(f"Failed to get string at index {index}")
             return result.decode('utf-8')
@@ -522,7 +523,7 @@ class HighTime:
             secs = seconds
             sub = subseconds
 
-        self._time = _lib.create_high_time(secs, sub)
+        self._time = _get_lib().create_high_time(secs, sub)
         if not self._time:
             raise RuntimeError("Failed to create HighTime")
 
@@ -530,7 +531,7 @@ class HighTime:
         if hasattr(self, '_time') and self._time:
             try:
                 # Properly delete the underlying C++ HighTime object
-                _lib.delete_high_time(self._time)
+                _get_lib().delete_high_time(self._time)
                 self._time = None
             except:
                 pass
@@ -539,13 +540,13 @@ class HighTime:
     def seconds(self):
         if not hasattr(self, '_time') or not self._time:
             return 0
-        return _lib.get_high_time_seconds(self._time)
+        return _get_lib().get_high_time_seconds(self._time)
 
     @property
     def subseconds(self):
         if not hasattr(self, '_time') or not self._time:
             return 0.0
-        return _lib.get_high_time_subseconds(self._time)
+        return _get_lib().get_high_time_subseconds(self._time)
 
     def to_seconds(self):
         return float(self.seconds) + self.subseconds
@@ -655,7 +656,7 @@ class PvfsFile:
                 raise FileNotFoundError(f"VFS file does not exist: {filename}")
             
             # Try to open the file
-            wrapper = _lib.open_vfs(filename.encode('utf-8'))
+            wrapper = _get_lib().open_vfs(filename.encode('utf-8'))
             if not wrapper:
                 raise RuntimeError(f"Failed to open VFS file: {filename}")
             
@@ -674,20 +675,20 @@ class PvfsFile:
     def create(cls, filename: str, block_size: int = 0x80000):
         instance = cls()
         raw_filename = filename.encode('utf-8') if filename else b""
-        instance._wrapper = _lib.create_vfs(raw_filename, block_size)
+        instance._wrapper = _get_lib().create_vfs(raw_filename, block_size)
         if not instance._wrapper:
             raise RuntimeError(f"Failed to create VFS file: {filename}")
         return instance
 
 
     def create_file(self, filename):
-        handle = _lib.create_file(self._wrapper, filename.encode('utf-8'))
+        handle = _get_lib().create_file(self._wrapper, filename.encode('utf-8'))
         if not handle:
             raise RuntimeError(f"Failed to create file: {filename}")
         return PvfsFileHandle(handle, self)
 
     def open_file(self, filename):
-        handle = _lib.open_file(self._wrapper, filename.encode('utf-8'))
+        handle = _get_lib().open_file(self._wrapper, filename.encode('utf-8'))
         if not handle:
             raise RuntimeError(f"Failed to open file: {filename}")
         return PvfsFileHandle(handle, self)
@@ -696,7 +697,7 @@ class PvfsFile:
         """Get list of channels in the VFS."""
         try:
             names = StringVector()
-            result = _lib.get_channel_list(self._wrapper, names._vec)
+            result = _get_lib().get_channel_list(self._wrapper, names._vec)
             if result < 0:
                 error_msg = f"Failed to get channel list: {result}"
                 print(f"Python: {error_msg}")
@@ -708,28 +709,28 @@ class PvfsFile:
 
     def get_file_list(self):
         names = StringVector()
-        result = _lib.get_file_list(self._wrapper, names._vec)
+        result = _get_lib().get_file_list(self._wrapper, names._vec)
         if result < 0:
             raise RuntimeError(f"Failed to get file list: {result}")
         return names
 
     def extract(self, in_file, out_file):
-        result = _lib.extract(self._wrapper, in_file.encode('utf-8'), out_file.encode('utf-8'))
+        result = _get_lib().extract(self._wrapper, in_file.encode('utf-8'), out_file.encode('utf-8'))
         if result < 0:
             raise RuntimeError(f"Failed to extract file: {result}")
         return result
 
     def open_data_channel(self, channel_name):
-        handle = _lib.open_data_channel(self._wrapper, channel_name.encode('utf-8'))
+        handle = _get_lib().open_data_channel(self._wrapper, channel_name.encode('utf-8'))
         if not handle:
             raise RuntimeError(f"Failed to open data channel: {channel_name}")
         return PvfsFileHandle(handle, self)
 
     def lock(self):
-        _lib.lock_vfs(self._wrapper)
+        _get_lib().lock_vfs(self._wrapper)
 
     def unlock(self):
-        _lib.unlock_vfs(self._wrapper)
+        _get_lib().unlock_vfs(self._wrapper)
 
     def close(self):
         """Close the VFS instance and release all resources."""
@@ -737,10 +738,10 @@ class PvfsFile:
             try:
                 # First close any open file handles
                 if hasattr(self, '_fd'):
-                    _lib.pvfs_close_vfs(self._wrapper)
-                    _lib.PVFS_close(self._fd)
+                    _get_lib().pvfs_close_vfs(self._wrapper)
+                    _get_lib().PVFS_close(self._fd)
                 # Then delete the VFS instance
-                _lib.delete_vfs(self._wrapper)
+                _get_lib().delete_vfs(self._wrapper)
                 self._wrapper = None
             except Exception as e:
                 print(f"Warning: Failed to close VFS: {e}")
@@ -751,21 +752,21 @@ class PvfsFile:
 
     def fcreate(self, filename):
         """Create a new file in the VFS using PVFS_fcreate."""
-        handle = _lib.pvfs_fcreate(self._wrapper, filename.encode('utf-8'))
+        handle = _get_lib().pvfs_fcreate(self._wrapper, filename.encode('utf-8'))
         if not handle:
             raise RuntimeError(f"Failed to create file: {filename}")
         return PvfsFileHandle(handle, self)
 
     def fopen(self, filename):
         """Open a file in the VFS using PVFS_fopen."""
-        handle = _lib.pvfs_fopen(self._wrapper, filename.encode('utf-8'))
+        handle = _get_lib().pvfs_fopen(self._wrapper, filename.encode('utf-8'))
         if not handle:
             raise RuntimeError(f"Failed to open file: {filename}")
         return PvfsFileHandle(handle, self)
 
     def delete_file(self, filename):
         """Delete a file from the VFS using PVFS_delete_file."""
-        result = _lib.pvfs_delete_file(self._wrapper, filename.encode('utf-8'))
+        result = _get_lib().pvfs_delete_file(self._wrapper, filename.encode('utf-8'))
         if result < 0:
             raise RuntimeError(f"Failed to delete file: {result}")
         return result
@@ -800,7 +801,7 @@ class PvfsFileHandle:
             # First try to flush any pending changes
             if self._vfs:
                 try:
-                    _lib.pvfs_flush(self.handle, 0)
+                    _get_lib().pvfs_flush(self.handle, 0)
                 except Exception as e:
                     print(f"Warning: Failed to flush file handle: {e}")
             
@@ -808,10 +809,10 @@ class PvfsFileHandle:
             # pvfs_close_file_handle (releases handle->ptr). Reversing the order
             # invalidates the ptr before fclose, causing -2 and data not persisted.
             try:
-                result = _lib.pvfs_fclose(self.handle)
+                result = _get_lib().pvfs_fclose(self.handle)
                 if result < 0:
                     print(f"Warning: Failed to close file handle: {result}")
-                _lib.pvfs_close_file_handle(self.handle)
+                _get_lib().pvfs_close_file_handle(self.handle)
             except Exception as e:
                 print(f"Warning: Failed to close file handle: {e}")
         finally:
@@ -825,7 +826,7 @@ class PvfsFileHandle:
         
         # Create a buffer to hold the data
         buffer = (ctypes.c_uint8 * size)()
-        result = _lib.pvfs_read(self.handle, buffer, size)
+        result = _get_lib().pvfs_read(self.handle, buffer, size)
         if result < 0:
             raise RuntimeError(f"Failed to read data: {result}")
         return bytes(buffer[:result])
@@ -834,13 +835,13 @@ class PvfsFileHandle:
         """Get the current file position using PVFS_tell."""
         if not self.handle:
             return -2  # PVFS_ARG_NULL
-        return _lib.pvfs_tell(self.handle)
+        return _get_lib().pvfs_tell(self.handle)
 
     def seek(self, offset):
         """Set the file position using PVFS_seek."""
         if not self.handle:
             return -2  # PVFS_ARG_NULL
-        return _lib.pvfs_seek(self.handle, offset)
+        return _get_lib().pvfs_seek(self.handle, offset)
 
     def write(self, buffer, size):
         """Write data to the file using PVFS_write.
@@ -858,19 +859,19 @@ class PvfsFileHandle:
             data = bytes(buffer)[:size]
             actual = len(data)
             buf = (ctypes.c_uint8 * actual).from_buffer_copy(data)
-            return _lib.pvfs_write(self.handle, ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)), actual)
+            return _get_lib().pvfs_write(self.handle, ctypes.cast(buf, ctypes.POINTER(ctypes.c_uint8)), actual)
         # Assume it is already a ctypes array or compatible
-        return _lib.pvfs_write(self.handle, buffer, size)
+        return _get_lib().pvfs_write(self.handle, buffer, size)
 
     def read_index_file_header(self):
         header = PvfsIndexHeaderWrapper()
-        result = _lib.read_index_file_header(self.handle, ctypes.byref(header))
+        result = _get_lib().read_index_file_header(self.handle, ctypes.byref(header))
         if result < 0:
             raise RuntimeError(f"Failed to read index file header: {result}")
         return header
 
     def write_index_file_header(self, header):
-        result = _lib.write_index_file_header(self.handle, ctypes.byref(header))
+        result = _get_lib().write_index_file_header(self.handle, ctypes.byref(header))
         if result < 0:
             raise RuntimeError(f"Failed to write index file header: {result}")
         return result
@@ -884,7 +885,7 @@ class PvfsFileHandle:
         """
         if not self.handle:
             return -2  # PVFS_ARG_NULL
-        result = _lib.pvfs_flush(self.handle, 1 if commit else 0)
+        result = _get_lib().pvfs_flush(self.handle, 1 if commit else 0)
         if result < 0:
             raise RuntimeError(f"Failed to flush file: {result}")
         return result
@@ -894,67 +895,67 @@ class PvfsFileHandle:
         """Write an unsigned 8-bit integer."""
         if not isinstance(value, int) or not 0 <= value <= 255:
             raise ValueError("Value must be an integer between 0 and 255")
-        return _lib.pvfs_write_uint8(self.handle, value)
+        return _get_lib().pvfs_write_uint8(self.handle, value)
     
     def write_int8(self, value: int) -> int:
         """Write a signed 8-bit integer."""
         if not isinstance(value, int) or not 0 <= value <= 255:
             raise ValueError("Value must be an integer between 0 and 255")
-        return _lib.pvfs_write_sint8(self.handle, value)
+        return _get_lib().pvfs_write_sint8(self.handle, value)
 
     def write_int16(self, value: int) -> int:
         """Write a signed 16-bit integer."""
         if not isinstance(value, int) or not -32768 <= value <= 32767:
             raise ValueError("Value must be an integer between -32768 and 32767")
-        return _lib.pvfs_write_sint16(self.handle, value)
+        return _get_lib().pvfs_write_sint16(self.handle, value)
 
     def write_uint16(self, value: int) -> int:
         """Write an unsigned 16-bit integer."""
         if not isinstance(value, int) or not 0 <= value <= 65535:
             raise ValueError("Value must be an integer between 0 and 65535")
-        return _lib.pvfs_write_uint16(self.handle, value)
+        return _get_lib().pvfs_write_uint16(self.handle, value)
 
     def write_int32(self, value: int) -> int:
         """Write a signed 32-bit integer."""
         if not isinstance(value, int) or not -2147483648 <= value <= 2147483647:
             raise ValueError("Value must be an integer between -2147483648 and 2147483647")
-        return _lib.pvfs_write_sint32(self.handle, value)
+        return _get_lib().pvfs_write_sint32(self.handle, value)
 
     def write_uint32(self, value: int) -> int:
         """Write an unsigned 32-bit integer."""
         if not isinstance(value, int) or not 0 <= value <= 4294967295:
             raise ValueError("Value must be an integer between 0 and 4294967295")
-        return _lib.pvfs_write_uint32(self.handle, value)
+        return _get_lib().pvfs_write_uint32(self.handle, value)
 
     def write_int64(self, value: int) -> int:
         """Write a signed 64-bit integer."""
         if not isinstance(value, int):
             raise ValueError("Value must be an integer")
-        return _lib.pvfs_write_sint64(self.handle, value)
+        return _get_lib().pvfs_write_sint64(self.handle, value)
 
     def write_uint64(self, value: int) -> int:
         """Write an unsigned 64-bit integer."""
         if not isinstance(value, int) or value < 0:
             raise ValueError("Value must be a non-negative integer")
-        return _lib.pvfs_write_uint64(self.handle, value)
+        return _get_lib().pvfs_write_uint64(self.handle, value)
 
     def write_float(self, value: float) -> int:
         """Write a 32-bit floating point number."""
         if not isinstance(value, (int, float)):
             raise ValueError("Value must be a number")
-        return _lib.pvfs_write_float(self.handle, float(value))
+        return _get_lib().pvfs_write_float(self.handle, float(value))
 
     def write_double(self, value: float) -> int:
         """Write a 64-bit floating point number."""
         if not isinstance(value, (int, float)):
             raise ValueError("Value must be a number")
-        return _lib.pvfs_write_double(self.handle, float(value))
+        return _get_lib().pvfs_write_double(self.handle, float(value))
 
     # Type-specific read methods
     def read_uint8(self) -> int:
         """Read an unsigned 8-bit integer."""
         value = ctypes.c_uint8()
-        result = _lib.pvfs_read_uint8(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_uint8(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint8: {result}")
         return value.value
@@ -962,7 +963,7 @@ class PvfsFileHandle:
     def read_int8(self) -> int:
         """Read a signed 8-bit integer."""
         value = ctypes.c_int8()
-        result = _lib.pvfs_read_sint8(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_sint8(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int8: {result}")
         return value.value
@@ -970,7 +971,7 @@ class PvfsFileHandle:
     def read_int16(self) -> int:
         """Read a signed 16-bit integer."""
         value = ctypes.c_int16()
-        result = _lib.pvfs_read_sint16(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_sint16(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int16: {result}")
         return value.value
@@ -978,7 +979,7 @@ class PvfsFileHandle:
     def read_uint16(self) -> int:
         """Read an unsigned 16-bit integer."""
         value = ctypes.c_uint16()
-        result = _lib.pvfs_read_uint16(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_uint16(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint16: {result}")
         return value.value
@@ -986,7 +987,7 @@ class PvfsFileHandle:
     def read_int32(self) -> int:
         """Read a signed 32-bit integer."""
         value = ctypes.c_int32()
-        result = _lib.pvfs_read_sint32(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_sint32(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int32: {result}")
         return value.value
@@ -994,7 +995,7 @@ class PvfsFileHandle:
     def read_uint32(self) -> int:
         """Read an unsigned 32-bit integer."""
         value = ctypes.c_uint32()
-        result = _lib.pvfs_read_uint32(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_uint32(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint32: {result}")
         return value.value
@@ -1002,7 +1003,7 @@ class PvfsFileHandle:
     def read_int64(self) -> int:
         """Read a signed 64-bit integer."""
         value = ctypes.c_int64()
-        result = _lib.pvfs_read_sint64(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_read_sint64(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int64: {result}")
         return value.value
@@ -1011,60 +1012,60 @@ class PvfsFileHandle:
         """Write an unsigned 8-bit integer to the file."""
         if not 0 <= value <= 255:
             raise ValueError("Value must be between 0 and 255")
-        return _lib.pvfs_fwrite_uint8(self.handle, value)
+        return _get_lib().pvfs_fwrite_uint8(self.handle, value)
 
     def fwrite_int8(self, value: int) -> int:
         """Write a signed 8-bit integer to the file."""
         if not -128 <= value <= 127:
             raise ValueError("Value must be between -128 and 127")
-        return _lib.pvfs_fwrite_sint8(self.handle, value)
+        return _get_lib().pvfs_fwrite_sint8(self.handle, value)
 
     def fwrite_uint16(self, value: int) -> int:
         """Write an unsigned 16-bit integer to the file."""
         if not 0 <= value <= 65535:
             raise ValueError("Value must be between 0 and 65535")
-        return _lib.pvfs_fwrite_uint16(self.handle, value)
+        return _get_lib().pvfs_fwrite_uint16(self.handle, value)
 
     def fwrite_int16(self, value: int) -> int:
         """Write a signed 16-bit integer to the file."""
         if not -32768 <= value <= 32767:
             raise ValueError("Value must be between -32768 and 32767")
-        return _lib.pvfs_fwrite_sint16(self.handle, value)
+        return _get_lib().pvfs_fwrite_sint16(self.handle, value)
 
     def fwrite_uint32(self, value: int) -> int:
         """Write an unsigned 32-bit integer to the file."""
         if not 0 <= value <= 4294967295:
             raise ValueError("Value must be between 0 and 4294967295")
-        return _lib.pvfs_fwrite_uint32(self.handle, value)
+        return _get_lib().pvfs_fwrite_uint32(self.handle, value)
 
     def fwrite_int32(self, value: int) -> int:
         """Write a signed 32-bit integer to the file."""
         if not -2147483648 <= value <= 2147483647:
             raise ValueError("Value must be between -2147483648 and 2147483647")
-        return _lib.pvfs_fwrite_sint32(self.handle, value)
+        return _get_lib().pvfs_fwrite_sint32(self.handle, value)
 
     def fwrite_int64(self, value: int) -> int:
         """Write a signed 64-bit integer to the file."""
-        return _lib.pvfs_fwrite_sint64(self.handle, value)
+        return _get_lib().pvfs_fwrite_sint64(self.handle, value)
 
     def fwrite_uint64(self, value: int) -> int:
         """Write an unsigned 64-bit integer to the file."""
         if value < 0:
             raise ValueError("Value must be non-negative")
-        return _lib.pvfs_fwrite_uint64(self.handle, value)
+        return _get_lib().pvfs_fwrite_uint64(self.handle, value)
 
     def fwrite_float(self, value: float) -> int:
         """Write a 32-bit float to the file."""
-        return _lib.pvfs_fwrite_float(self.handle, value)
+        return _get_lib().pvfs_fwrite_float(self.handle, value)
 
     def fwrite_double(self, value: float) -> int:
         """Write a 64-bit double to the file."""
-        return _lib.pvfs_fwrite_double(self.handle, value)
+        return _get_lib().pvfs_fwrite_double(self.handle, value)
 
     def fread_uint8(self) -> int:
         """Read an unsigned 8-bit integer from the file."""
         value = ctypes.c_uint8()
-        result = _lib.pvfs_fread_uint8(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_uint8(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint8: {result}")
         return value.value
@@ -1072,7 +1073,7 @@ class PvfsFileHandle:
     def fread_int8(self) -> int:
         """Read a signed 8-bit integer from the file."""
         value = ctypes.c_int8()
-        result = _lib.pvfs_fread_sint8(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_sint8(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int8: {result}")
         return value.value
@@ -1080,7 +1081,7 @@ class PvfsFileHandle:
     def fread_uint16(self) -> int:
         """Read an unsigned 16-bit integer from the file."""
         value = ctypes.c_uint16()
-        result = _lib.pvfs_fread_uint16(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_uint16(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint16: {result}")
         return value.value
@@ -1088,7 +1089,7 @@ class PvfsFileHandle:
     def fread_int16(self) -> int:
         """Read a signed 16-bit integer from the file."""
         value = ctypes.c_int16()
-        result = _lib.pvfs_fread_sint16(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_sint16(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int16: {result}")
         return value.value
@@ -1096,7 +1097,7 @@ class PvfsFileHandle:
     def fread_uint32(self) -> int:
         """Read an unsigned 32-bit integer from the file."""
         value = ctypes.c_uint32()
-        result = _lib.pvfs_fread_uint32(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_uint32(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read uint32: {result}")
         return value.value
@@ -1104,7 +1105,7 @@ class PvfsFileHandle:
     def fread_int32(self) -> int:
         """Read a signed 32-bit integer from the file."""
         value = ctypes.c_int32()
-        result = _lib.pvfs_fread_sint32(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_sint32(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int32: {result}")
         return value.value
@@ -1112,7 +1113,7 @@ class PvfsFileHandle:
     def fread_int64(self) -> int:
         """Read a signed 64-bit integer from the file."""
         value = ctypes.c_int64()
-        result = _lib.pvfs_fread_sint64(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_sint64(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read int64: {result}")
         return value.value
@@ -1120,7 +1121,7 @@ class PvfsFileHandle:
     def fread_float(self) -> float:
         """Read a 32-bit float from the file."""
         value = ctypes.c_float()
-        result = _lib.pvfs_fread_float(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_float(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read float: {result}")
         return value.value
@@ -1128,7 +1129,7 @@ class PvfsFileHandle:
     def fread_double(self) -> float:
         """Read a 64-bit double from the file."""
         value = ctypes.c_double()
-        result = _lib.pvfs_fread_double(self.handle, ctypes.byref(value))
+        result = _get_lib().pvfs_fread_double(self.handle, ctypes.byref(value))
         if result < 0:
             raise RuntimeError(f"Failed to read double: {result}")
         return value.value
@@ -1136,7 +1137,7 @@ class PvfsFileHandle:
     def get_file_info(self):
         """Retrieve the PvfsFileEntry (info) from the underlying C++ handle."""
         # Call the new function, which returns a PvfsFileEntryWrapper by value
-        info_struct = _lib.get_file_info(self.handle)
+        info_struct = _get_lib().get_file_info(self.handle)
         return info_struct
 
 def create_vfs(block_size):

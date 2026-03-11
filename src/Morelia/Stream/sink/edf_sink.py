@@ -8,7 +8,10 @@ __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 from pyedflib import EdfWriter
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 import numpy as np
 import functools as ft
 import os

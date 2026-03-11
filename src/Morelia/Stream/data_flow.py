@@ -13,6 +13,7 @@ __email__       = 'sales@pinnaclet.com'
 import multiprocessing as mp
 from multiprocessing import Event
 from functools import partial
+import sys
 import time
 import gc
 
@@ -41,14 +42,14 @@ class DataFlow:
         self._network = network
         self._workers: list[mp.Process] = []
 
-    def stop_collection(self, join_timeout_sec: float = 5.0) -> None:
+    def stop_collection(self, join_timeout_sec: float = 15.0) -> None:
         """Stop collecting data.
 
         Sets the stop events so workers exit their loop. Waits up to
         ``join_timeout_sec`` for each worker to exit so they can send
-        STREAM 0 to the device and close the port cleanly; if a worker
-        is still alive (e.g. blocked in a serial read), it is terminated
-        so the main process does not hang.
+        STREAM 0 to the device, flush sinks (e.g. PVFS), and close cleanly;
+        if a worker is still alive (e.g. blocked in a serial read or disk I/O),
+        it is terminated so the main process does not hang.
         """
         for event in self._manual_stop_events:
             event.set()
@@ -116,8 +117,27 @@ class DataFlow:
                 (type(sink), sink.get_dict()) for sink in sinks
             ]
 
-            #create worker process.
-            worker: mp.Process = mp.Process(target=get_data_wrapper, args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list))
+            # Create worker process. On Unix (when supported), use a new session so only the main
+            # process receives SIGINT (Ctrl+C); the worker then stops only when manual_stop_event
+            # is set and can run sink __exit__ (flush/close PVFS, etc.).
+            worker: mp.Process
+            if sys.platform != "win32":
+                try:
+                    worker = mp.Process(
+                        target=get_data_wrapper,
+                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                        start_new_session=True,
+                    )
+                except TypeError:
+                    worker = mp.Process(
+                        target=get_data_wrapper,
+                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                    )
+            else:
+                worker = mp.Process(
+                    target=get_data_wrapper,
+                    args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                )
 
             self._workers.append(worker)
 

@@ -17,7 +17,10 @@ dependencies = [
   "pydantic",     
   "SQLAlchemy",  
   "Pillow>=10.0.0",
-  "psutil"
+  "psutil",
+  "pyqtgraph",
+  "PyQt5",
+  "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -60,6 +63,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["*", "pvfs_tools", "pvfs_tools.*"]
+
+[tool.setuptools.package-data]
+"pvfs_tools.Core" = ["*.so", "*.dll"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]

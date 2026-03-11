@@ -6,6 +6,7 @@ similar to the C++ PVFSDataFile class but adapted for Python use.
 """
 
 import os
+import shutil
 import time
 import uuid
 from pathlib import Path
@@ -515,14 +516,25 @@ class PvfsDataFile:
         require a disk file of that name.
         """
         targets = targets or [self.EXPERIMENT_DB_FILENAME, self.EXPERIMENT_DB_BACKUP_FILENAME]
-        # 1) make a clean snapshot file from the *current* DB (same dir as PVFS to avoid polluting cwd)
+        # 1) Make the working DB durable, then produce a snapshot file (same dir as PVFS)
         temp_dir = Path(self._filepath).parent if self._filepath else Path.cwd()
         snapshot_path = str(temp_dir / f"temp_snapshot_{self._unique_id}.db3")
         try:
-            if not self._database.save_to_file(snapshot_path):
-                return False
+            self._database.sync_to_disk()
+            # Prefer direct file copy of working DB so we use the exact on-disk content (reliable on WSL/Linux).
+            # On Windows the file may be locked; then fall back to table-by-table save_to_file.
+            try:
+                if self._temp_db_path and os.path.isfile(self._temp_db_path):
+                    shutil.copy2(self._temp_db_path, snapshot_path)
+                else:
+                    raise OSError("no working db path")
+            except OSError:
+                if not self._database.save_to_file(snapshot_path):
+                    return False
             with open(snapshot_path, "rb") as f:
                 db_data = f.read()
+            if len(db_data) == 0:
+                return False
         finally:
             try:
                 os.remove(snapshot_path)

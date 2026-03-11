@@ -8,6 +8,7 @@ __copyright__   = 'Copyright (c) 2023, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 #environment imports
+import signal
 import sys
 import traceback
 from multiprocessing import Event
@@ -238,9 +239,16 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         
         # start streaming data from the observable!
         stream.connect()
+        print("[DataFlow worker] stream.connect() returned, exiting sinks...", flush=True)
 
 # wrapper function for get_data which reconstructs pod devices and sources after the process is created
 def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
+    # Ignore SIGINT (Ctrl+C) in the worker so only the main process handles it. The main process
+    # sets manual_stop_event and joins; the worker then exits the loop and runs sink __exit__.
+    try:
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+    except (AttributeError, ValueError):
+        pass  # Windows or unsupported
 
     # obtain the source class
     source = source_class(**source_dict)

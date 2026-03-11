@@ -23,3 +23,37 @@ Currently, the API supports 8206-HR, 8401-HR, 8229, 8480-SC, and 8274-D POD devi
 
 You can find extensive documentation for the package [here](https://pinnacle-technology-inc.github.io/Morelia).
 
+## Installation
+
+Create and activate a virtual environment, then install with pip:
+
+- **Windows:** `python -m venv venv` then `venv\Scripts\activate`
+- **Linux / WSL:** `python3 -m venv venv` then `source venv/bin/activate`
+
+Then run:
+
+```bash
+pip install ptech-morelia
+```
+
+To install from a local clone: `pip install .`
+
+PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.
+
+If you are developing or building from source on Linux/WSL and the `.so` files are missing, you can build them from `src/pvfs_tools/Core/`:
+
+```bash
+cd src/pvfs_tools/Core
+./build_linux.sh
+```
+
+Requires `cmake` and a C++17 compiler (e.g. `g++`).
+
+**Linux / WSL – plot window (PyQt5):** If you use the plotting examples (e.g. `8206_plot_stream.py`) and get a Qt/xcb plugin error, install the xcb system libraries. On Debian/Ubuntu/WSL:
+
+```bash
+sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
+```
+
+With WSLg (WSL 2), the plot window will then appear on your Windows desktop.  Older versions of wsl do not support graphics.  In that case, comment out the plot components.
+

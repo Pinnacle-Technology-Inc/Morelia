@@ -11,7 +11,7 @@ Build Instructions:
 5. Copy pvfs_wrapper.dll to your test directory
 */
 
-#include "Pvfs.h"
+#include "pvfs.h"
 #include <cstdint>
 #include <vector>
 #include <string>
@@ -241,7 +241,12 @@ WRAPPER_DLL_EXPORT int32_t get_channel_list(PvfsFileWrapper* vfs, StringVectorWr
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = channel_names[i];
                 names->strings[i] = new char[str.length() + 1];
+#ifdef _WIN32
                 strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
+#else
+                strncpy(names->strings[i], str.c_str(), str.length() + 1);
+                names->strings[i][str.length()] = '\0';
+#endif
             }
         }
         return result;
@@ -270,7 +275,12 @@ WRAPPER_DLL_EXPORT int32_t get_file_list(PvfsFileWrapper* vfs, StringVectorWrapp
             for (size_t i = 0; i < names->size; i++) {
                 const std::string& str = file_names[i];
                 names->strings[i] = new char[str.length() + 1];
+#ifdef _WIN32
                 strncpy_s(names->strings[i], str.length() + 1, str.c_str(), _TRUNCATE);
+#else
+                strncpy(names->strings[i], str.c_str(), str.length() + 1);
+                names->strings[i][str.length()] = '\0';
+#endif
             }
         }
         return result;

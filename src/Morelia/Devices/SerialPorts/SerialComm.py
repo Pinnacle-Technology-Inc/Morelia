@@ -251,22 +251,23 @@ class PortIO :
                 Defaults to 5. 
         
         Raises:
-            Exception: Timeout for serial read.
+            TimeoutError: Timeout for serial read.
 
         Returns:
             bytes|None: If the serial port is open, it will return a set number of read bytes. \
                 If it is closed, it will return None.
         """
-        # do not continue of serial is not open 
         if(self.is_serial_closed()) :
             return(None)
-        # wait until port is in waiting, then read 
-        t = 0.0
-        while (t < timeout_sec) :
-            # read packet
+        prev_timeout = self._serial_inst.timeout
+        try:
+            self._serial_inst.timeout = timeout_sec
             r = self._serial_inst.read(numBytes)
-            return r
-        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        finally:
+            self._serial_inst.timeout = prev_timeout
+        if len(r) < numBytes:
+            raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        return r
     
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.

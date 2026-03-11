@@ -53,6 +53,13 @@ class ExperimentDatabase:
                 # Only create tables if the database is new (empty)
                 if not os.path.exists(self.filename) or os.path.getsize(self.filename) == 0:
                     self._create_tables()
+                # Force DELETE journal mode so all committed data resides in the
+                # main database file.  Some Linux distributions default to WAL,
+                # which stores recent writes in a separate -wal file that
+                # shutil.copy2 (used by PvfsDataFile._save_database) would miss.
+                with self._engine.connect() as conn:
+                    conn.execute(text("PRAGMA journal_mode=DELETE"))
+                    conn.commit()
         except SQLAlchemyError as e:
             raise DatabaseConnectionError(f"Failed to connect to database: {e}")
 
@@ -386,6 +393,21 @@ class ExperimentDatabase:
         except Exception:
             return False
 
+    def sync_to_disk(self) -> None:
+        """Force all committed data to be written and checkpointed to the database file.
+        Call before copying or reading the file (e.g. on WSL/Linux where durability matters).
+        """
+        if not self._engine:
+            return
+        try:
+            with self._engine.connect() as conn:
+                # Ensure DELETE journal mode (no WAL to miss on copy)
+                conn.execute(text("PRAGMA journal_mode=DELETE"))
+                conn.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                conn.commit()
+        except Exception:
+            pass
+
     def load_from_file(self, filename: str) -> bool:
         """Load database contents from a file into the current database.
         
@@ -438,6 +460,10 @@ class ExperimentDatabase:
         """
         dest_engine = create_engine(f"sqlite:///{filename}")
         try:
+            # Ensure source has all data visible (e.g. WAL checkpointed) before copy
+            with self._engine.connect() as source_sync:
+                source_sync.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                source_sync.commit()
             # Create destination engine and ensure it has the same schema (empty file has no tables)
             self._create_tables_on_engine(dest_engine)
 
@@ -464,6 +490,13 @@ class ExperimentDatabase:
                                     dict(zip(columns, row))
                                 )
                             dest_conn.commit()
+            
+            # Force destination file to be fully synced to disk (important on WSL/Linux
+            # where otherwise the file may not be durable before we read it back).
+            with dest_engine.connect() as sync_conn:
+                sync_conn.execute(text("PRAGMA synchronous=FULL"))
+                sync_conn.execute(text("PRAGMA wal_checkpoint(FULL)"))
+                sync_conn.commit()
             
             return True
         except Exception as e:
