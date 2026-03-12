@@ -80,9 +80,10 @@ sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm
 
 With WSLg (WSL 2), the plot window will appear on your Windows desktop. Older versions of WSL do not support graphics — in that case, use the non-plot examples.
 
-**ARM Linux or other platforms where pip cannot build Qt:** Use conda to install the Qt stack, then pip for Morelia:
+**ARM Linux or other platforms where pip cannot build Qt:** Install [Miniforge](https://github.com/conda-forge/miniforge) (a lightweight conda distribution), then use conda for the Qt stack and pip for Morelia:
 
 ```bash
+conda init bash && source ~/.bashrc   # only needed once after installing conda
 conda create -n morelia python=3.11
 conda activate morelia
 conda install -c conda-forge pyqtgraph pyqt numpy

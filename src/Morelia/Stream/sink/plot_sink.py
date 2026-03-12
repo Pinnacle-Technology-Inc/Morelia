@@ -377,7 +377,11 @@ class PlotDisplay:
 
         self._win = QtWidgets.QMainWindow()
         self._win.setWindowTitle("Morelia Live EEG")
-        self._win.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+        _WA_DeleteOnClose = getattr(
+            QtCore.Qt.WidgetAttribute, "WA_DeleteOnClose",  # PyQt6
+            getattr(QtCore.Qt, "WA_DeleteOnClose", None),    # PyQt5
+        )
+        self._win.setAttribute(_WA_DeleteOnClose)
         self._win.destroyed.connect(on_window_closed)
         self._glw = pg.GraphicsLayoutWidget()
         self._glw.setBackground("k")
