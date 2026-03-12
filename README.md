@@ -36,7 +36,25 @@ Then run:
 pip install ptech-morelia
 ```
 
-To install from a local clone: `pip install .`
+To install from a local clone: `pip install .` (or `pip install .[plot]` to include plotting support)
+
+### Development install (editable mode)
+
+If you are modifying the source or building a derivative application, use an **editable install**:
+
+```bash
+pip install -e .
+pip install -e .[plot]        # with plotting support
+```
+
+A normal `pip install .` copies your source files into the virtual environment's `site-packages` directory. Python imports from that copy, so any edits you make to the source are not visible until you run `pip install .` again. The `-e` flag (short for `--editable`) skips the copy and links `site-packages` back to your working directory instead. Python then imports directly from your source tree, so edits take effect the next time you import the module with no additional steps.
+
+If you are using conda for the Qt stack on ARM or other platforms, install Morelia in editable mode after the conda dependencies:
+
+```bash
+conda install -c conda-forge pyqtgraph pyqt numpy
+pip install -e .
+```
 
 ### Live plotting (optional)
 
