@@ -242,7 +242,7 @@ def main():
     # Shared queue for plot sink; PlotDisplay (main process) consumes from it.
     queue = mp.Queue(maxsize=2048)
     plot_sink = PlotSink(queue, pod)
-    pvfs_sink = PvfsSink(args.output, pod, observe_on_scheduler="thread_pool")
+    pvfs_sink = PvfsSink(args.output, pod, use_writer_process=True)
 
     # Extensible sink list: DataFlow + RxPy publish() fan out the same stream to every
     # sink; each sink's flush(timestamp, packet) is called once per sample. Throughput
@@ -254,18 +254,16 @@ def main():
     network = [(pod, sinks)]
     flow = DataFlow(network)
 
-    # When duration is set, stop collection and close the plot after that many seconds.
+    # When duration is set, stop streaming (and flush/close PVFS) after that
+    # many seconds.  The plot window stays open with frozen data so the user
+    # can inspect the recording.  Close the window manually to exit.
     timer = None
     if args.duration is not None:
-        from pyqtgraph.Qt import QtWidgets
-
-        def stop_and_quit() -> None:
+        def stop_recording() -> None:
+            print(f"\n{args.duration} s elapsed — stopping recording.  Close the plot window to exit.")
             flow.stop_collection()
-            app = QtWidgets.QApplication.instance()
-            if app is not None:
-                app.quit()
 
-        timer = threading.Timer(args.duration, stop_and_quit)
+        timer = threading.Timer(args.duration, stop_recording)
         timer.daemon = True
         timer.start()
         print(f"Recording and plotting 8401HR at {args.sample_rate} Hz to {args.output} for {args.duration} s.")

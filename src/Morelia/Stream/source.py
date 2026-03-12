@@ -223,9 +223,12 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     # now, subscribe each sink to the connectable observable. Since sinks implment the context manager protocol, we can use an ExitStack.
     # Sinks that set observe_on_scheduler (e.g. "thread_pool") run their flush() on that scheduler, so the emission thread is not blocked by slow sinks.
     #TODO: handle errors (via on_error, right now we just print them).
+    _OBSERVE_ON_BATCH_SIZE = 100
+
     with ExitStack() as context_manager_stack:
 
         send_to_sink = lambda sink, args: sink.flush(*args)
+        send_batch_to_sink = lambda sink, batch: [sink.flush(*args) for args in batch]
         
         for sink in sinks:
             context_manager_stack.enter_context(sink)
@@ -234,7 +237,12 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
             if scheduler_spec is not None:
                 scheduler = _scheduler_for(scheduler_spec)
                 if scheduler is not None:
-                    s = s.pipe(ops.observe_on(scheduler))
+                    s = s.pipe(
+                        ops.buffer_with_count(_OBSERVE_ON_BATCH_SIZE),
+                        ops.observe_on(scheduler),
+                    )
+                    s.subscribe(on_next=partial(send_batch_to_sink, sink), on_error=lambda e: print(e))
+                    continue
             s.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
         
         # start streaming data from the observable!
