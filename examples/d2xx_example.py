@@ -30,7 +30,7 @@ def list_d2xx_devices():
             print(f"  Index {dev['index']}: {dev['description']} (Serial: {dev['serial']})")
         return devices
     except ImportError:
-        print("D2XX support not available. Install pylibftdi: pip install pylibftdi")
+        print("D2XX support not available. Install with: pip install ptech-morelia[d2xx]")
         return []
 
 if __name__ == "__main__":

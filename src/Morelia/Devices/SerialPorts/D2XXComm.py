@@ -67,9 +67,10 @@ class D2XXPortIO:
         """
         if not D2XX_AVAILABLE:
             error_msg = (
-                "No D2XX library available. Install one of the following:\n"
-                "  Windows: pip install ftd2xx (requires FTDI D2XX drivers from FTDI website)\n"
-                "  Linux/Mac: pip install pylibftdi (requires libftdi library)\n"
+                "No D2XX library available. Install with:\n"
+                "  pip install ptech-morelia[d2xx]\n"
+                "Windows also requires FTDI D2XX drivers from the FTDI website.\n"
+                "Linux/Mac also requires the libftdi system library.\n"
             )
             raise ImportError(error_msg)
         

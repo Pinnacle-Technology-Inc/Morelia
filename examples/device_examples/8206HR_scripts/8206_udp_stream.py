@@ -51,7 +51,7 @@ def list_d2xx_devices():
             print(f"  Index {dev['index']}: {dev['description']} (Serial: {dev['serial']})")
         return devices
     except ImportError:
-        print("D2XX support not available. Install ftd2xx (Windows) or pylibftdi (Linux/Mac).")
+        print("D2XX support not available. Install with: pip install ptech-morelia[d2xx]")
         return []
 
 
@@ -118,7 +118,7 @@ def main():
     else:
         devices = list_d2xx_devices()
         if not devices:
-            print("No D2XX devices found or D2XX not available.", file=sys.stderr)
+            print("No D2XX devices found or D2XX not available (pip install ptech-morelia[d2xx]).", file=sys.stderr)
             print("Use --com-port COM9 (or /dev/ttyUSB0) for serial.", file=sys.stderr)
             sys.exit(1)
         try:

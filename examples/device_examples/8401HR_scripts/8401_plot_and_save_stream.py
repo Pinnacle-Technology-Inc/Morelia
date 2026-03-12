@@ -47,7 +47,7 @@ def list_d2xx_devices():
             print(f"  Index {dev['index']}: {dev['description']} (Serial: {dev['serial']})")
         return devices
     except ImportError:
-        print("D2XX support not available. Install ftd2xx (Windows) or pylibftdi (Linux/Mac).")
+        print("D2XX support not available. Install with: pip install ptech-morelia[d2xx]")
         return []
 
 
@@ -226,7 +226,7 @@ def main():
                 print("No D2XX devices found; cannot open 8401HR when VCP is disabled.", file=sys.stderr)
                 sys.exit(1)
         except ImportError:
-            print("D2XX not available; cannot open 8401HR when VCP is disabled.", file=sys.stderr)
+            print("D2XX not available (pip install ptech-morelia[d2xx]); cannot open 8401HR when VCP is disabled.", file=sys.stderr)
             sys.exit(1)
 
     # Initialize 8401HR device

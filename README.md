@@ -64,7 +64,7 @@ Live EEG-style plotting requires Qt libraries that are not included in the base 
 pip install ptech-morelia[plot]
 ```
 
-This installs `pyqtgraph` and a Qt binding (PyQt5 on Windows/macOS/x86_64 Linux, PyQt6 on ARM Linux).
+This installs `pyqtgraph` and `PyQt6`.
 
 | Platform | Install command | Notes |
 |---|---|---|

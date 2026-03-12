@@ -52,8 +52,7 @@ d2xx = [
 
 plot = [
   "pyqtgraph",
-  "PyQt5; sys_platform != 'linux' or platform_machine == 'x86_64'",
-  "PyQt6; sys_platform == 'linux' and platform_machine != 'x86_64'",
+  "PyQt6",
 ]
 
 [tool.setuptools]

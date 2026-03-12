@@ -57,7 +57,7 @@ def main():
             print(f"    pylibftdi: NOT AVAILABLE ({e})", flush=True)
 
     if not ftd2xx_ok and not pylibftdi_ok:
-        print("\n    Install one of: pip install ftd2xx  OR  pip install pylibftdi", flush=True)
+        print("\n    Install with: pip install ptech-morelia[d2xx]", flush=True)
         return 1
 
     # 3. List devices (ftd2xx path)

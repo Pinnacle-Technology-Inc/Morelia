@@ -1,6 +1,7 @@
 **/__pycache__
 **/build/
-.venv
+.venv/
+venv/
 .vscode
 testing.py
 *.bkp

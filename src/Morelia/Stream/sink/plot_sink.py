@@ -42,6 +42,8 @@ _Y_PAD_FRAC = 0.1
 _Y_PAD_MIN = 1.0
 # Shrink when data span is less than this fraction of current display range
 _Y_SHRINK_RATIO = 0.5
+# Initial samples to discard per stream (avoids bad first readings skewing scale)
+_SKIP_INITIAL_SAMPLES = 10
 
 
 def _channel_values_8206(packet: DataPacket) -> tuple[float, ...]:
@@ -96,6 +98,7 @@ class PlotSink(SinkInterface):
             raise ValueError(f'Device "{getattr(self._pod, "device_name", self._pod)}" is not supported by PlotSink.')
 
         self._buffer: list[tuple[int, tuple[float, ...]]] = []
+        self._skip_remaining = _SKIP_INITIAL_SAMPLES
 
     @property
     def pod(self) -> AcquisitionDevice:
@@ -129,6 +132,9 @@ class PlotSink(SinkInterface):
             pass
 
     def flush(self, timestamp: int, packet: DataPacket) -> None:
+        if self._skip_remaining > 0:
+            self._skip_remaining -= 1
+            return
         values = self._get_values(packet)
         self._buffer.append((timestamp, values))
         if len(self._buffer) >= self._chunk_samples:
@@ -228,7 +234,7 @@ class PlotDisplay:
     ) -> None:
         if not _PLOT_AVAILABLE:
             raise RuntimeError(
-                "PlotDisplay requires pyqtgraph and a Qt binding (PyQt5 or PyQt6).\n"
+                "PlotDisplay requires pyqtgraph and PyQt6.\n"
                 "Install with:  pip install ptech-morelia[plot]\n"
                 "On Ubuntu/Debian you may also need system libraries — see install_ubuntu.sh.\n"
                 "On ARM Linux or where pip cannot build Qt, use conda:\n"
