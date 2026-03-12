@@ -18,8 +18,6 @@ dependencies = [
   "SQLAlchemy",  
   "Pillow>=10.0.0",
   "psutil",
-  "pyqtgraph",
-  "PyQt5",
   "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
@@ -54,7 +52,8 @@ d2xx = [
 
 plot = [
   "pyqtgraph",
-  "PyQt5",
+  "PyQt5; sys_platform != 'linux' or platform_machine == 'x86_64'",
+  "PyQt6; sys_platform == 'linux' and platform_machine != 'x86_64'",
 ]
 
 [tool.setuptools]

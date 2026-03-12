@@ -11,14 +11,15 @@ Usage:
   (default: D2XX first device, --span 60, --sample-rate 1000, --output 8401_output.pvfs; use --com-port for serial)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
-  If --duration is omitted, stream until the plot window is closed. If --duration is set, record for that many seconds (no plot window).
+  If --duration is omitted, stream until the plot window is closed. If --duration is set, record and plot for that many seconds then stop.
 
-Requires optional dependencies: pip install pyqtgraph PyQt5 (for plot). pvfs_tools for PVFS output.
+Requires optional dependencies: pip install ptech-morelia[plot] (for plot). pvfs_tools for PVFS output.
 """
 
 from pathlib import Path
 import sys
 import multiprocessing as mp
+import threading
 import time
 
 _examples_dir = Path(__file__).resolve().parent
@@ -189,7 +190,7 @@ def main():
         type=float,
         default=None,
         metavar="SECONDS",
-        help="Record for SECONDS then stop (no plot window). If omitted, stream until plot window is closed.",
+        help="Record and plot for SECONDS then stop. If omitted, stream until plot window is closed.",
     )
     args = parser.parse_args()
 
@@ -253,18 +254,24 @@ def main():
     network = [(pod, sinks)]
     flow = DataFlow(network)
 
+    # When duration is set, stop collection and close the plot after that many seconds.
+    timer = None
     if args.duration is not None:
-        print(f"Recording 8401HR at {args.sample_rate} Hz to {args.output} for {args.duration} s.")
-        flow.collect_for_seconds(args.duration)
-        try:
-            pod.cleanup()
-        except Exception:
-            pass
-        print("Done.")
-        return
+        from pyqtgraph.Qt import QtWidgets
 
-    # Indefinite run: stream to plot and PVFS until user closes the plot window.
-    print(f"Starting 8401HR stream at {args.sample_rate} Hz to plot and {args.output}. Close the plot window to stop.")
+        def stop_and_quit() -> None:
+            flow.stop_collection()
+            app = QtWidgets.QApplication.instance()
+            if app is not None:
+                app.quit()
+
+        timer = threading.Timer(args.duration, stop_and_quit)
+        timer.daemon = True
+        timer.start()
+        print(f"Recording and plotting 8401HR at {args.sample_rate} Hz to {args.output} for {args.duration} s.")
+    else:
+        print(f"Starting 8401HR stream at {args.sample_rate} Hz to plot and {args.output}. Close the plot window to stop.")
+
     flow.collect()
 
     try:
@@ -272,10 +279,15 @@ def main():
         display.run()
     except RuntimeError as e:
         if "pyqtgraph" in str(e).lower() or "pyqt" in str(e).lower():
-            print("Plot display requires: pip install pyqtgraph PyQt5", file=sys.stderr)
+            print("Plot display requires: pip install ptech-morelia[plot]", file=sys.stderr)
             sys.exit(1)
         raise
     finally:
+        if timer is not None:
+            try:
+                timer.cancel()
+            except Exception:
+                pass
         flow.stop_collection()
         try:
             pod.cleanup()

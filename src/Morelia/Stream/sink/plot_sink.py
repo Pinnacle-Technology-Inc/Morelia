@@ -228,8 +228,11 @@ class PlotDisplay:
     ) -> None:
         if not _PLOT_AVAILABLE:
             raise RuntimeError(
-                "PlotDisplay requires pyqtgraph and PyQt5/PyQt6. "
-                "Install with: pip install pyqtgraph PyQt5"
+                "PlotDisplay requires pyqtgraph and a Qt binding (PyQt5 or PyQt6).\n"
+                "Install with:  pip install ptech-morelia[plot]\n"
+                "On Ubuntu/Debian you may also need system libraries — see install_ubuntu.sh.\n"
+                "On ARM Linux or where pip cannot build Qt, use conda:\n"
+                "  conda install -c conda-forge pyqtgraph pyqt"
             )
         self._queue = queue
         self._window_sec = float(window_sec)

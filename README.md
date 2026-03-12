@@ -38,6 +38,43 @@ pip install ptech-morelia
 
 To install from a local clone: `pip install .`
 
+### Live plotting (optional)
+
+Live EEG-style plotting requires Qt libraries that are not included in the base install. To add plotting support:
+
+```bash
+pip install ptech-morelia[plot]
+```
+
+This installs `pyqtgraph` and a Qt binding (PyQt5 on Windows/macOS/x86_64 Linux, PyQt6 on ARM Linux).
+
+| Platform | Install command | Notes |
+|---|---|---|
+| Windows / macOS | `pip install ptech-morelia[plot]` | Works out of the box |
+| Ubuntu / Debian / WSL | `bash install_ubuntu.sh && pip install ptech-morelia[plot]` | System libraries needed first |
+| ARM Linux (RPi, etc.) | See conda instructions below | pip may fail to build Qt |
+
+**Ubuntu / Debian / WSL:** Run `install_ubuntu.sh` before installing the plot extra to get the required system libraries. If the plotting examples (e.g. `8206_plot_stream.py`) still fault after that, install the xcb libraries:
+
+```bash
+sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
+```
+
+With WSLg (WSL 2), the plot window will appear on your Windows desktop. Older versions of WSL do not support graphics — in that case, use the non-plot examples.
+
+**ARM Linux or other platforms where pip cannot build Qt:** Use conda to install the Qt stack, then pip for Morelia:
+
+```bash
+conda create -n morelia python=3.11
+conda activate morelia
+conda install -c conda-forge pyqtgraph pyqt numpy
+pip install ptech-morelia
+```
+
+All non-plotting features (streaming, file recording, data conversion, etc.) work without the plot extra installed.
+
+### PVFS native libraries
+
 PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.
 
 If you are developing or building from source on Linux/WSL and the `.so` files are incompatible, you can build them from `src/pvfs_tools/Core/`:
@@ -48,14 +85,4 @@ cd src/pvfs_tools/Core
 ```
 
 Requires `cmake` and a C++17 compiler (e.g. `g++`).
-
-In general, for Ubuntu run install_ubuntu.sh to preinstall required libraries.
-
-If after running install_ubuntu.sh the plotting examples (e.g. `8206_plot_stream.py`) are still faulting, install the xcb system libraries. On Debian/Ubuntu/WSL:
-
-```bash
-sudo apt install libxcb-xinerama0 libxcb-cursor0 libxkbcommon-x11-0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
-```
-
-With WSLg (WSL 2), the plot window will then appear on your Windows desktop.  Older versions of wsl do not support graphics.  In that case, comment out the plot components.
 

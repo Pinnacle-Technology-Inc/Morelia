@@ -13,7 +13,7 @@ Usage:
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
 
-Requires optional dependencies: pip install pyqtgraph PyQt5
+Requires optional dependencies: pip install ptech-morelia[plot]
 """
 
 from pathlib import Path
@@ -237,7 +237,7 @@ def main():
         display.run()
     except RuntimeError as e:
         if "pyqtgraph" in str(e).lower() or "pyqt" in str(e).lower():
-            print("Plot display requires: pip install pyqtgraph PyQt5", file=sys.stderr)
+            print("Plot display requires: pip install ptech-morelia[plot]", file=sys.stderr)
             sys.exit(1)
         raise
     finally:
