@@ -37,6 +37,15 @@ Morelia.Stream.sink.sink\_interface module
    :undoc-members:
    :show-inheritance:
 
+Sink performance and GIL overview
+---------------------------------
+
+For a high-level discussion of how sinks interact with the Python Global
+Interpreter Lock (GIL), and when to use options such as
+``observe_on_scheduler`` and ``use_writer_process`` on ``PvfsSink``,
+see the \"Sink performance and the GIL\" section in the top-level
+``README.md`` of this repository.
+
 Module contents
 ---------------
 

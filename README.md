@@ -92,6 +92,28 @@ pip install ptech-morelia
 
 All non-plotting features (streaming, file recording, data conversion, etc.) work without the plot extra installed.
 
+### Sink performance and the GIL
+
+Morelia’s streaming pipeline uses `DataFlow` workers implemented as separate Python processes. Each worker has its own Python Global Interpreter Lock (GIL), but *within a worker* all sinks and RxPy threads share a single GIL.
+
+- **Default sinks (in-process)**: Sinks like `PvfsSink(output_path, pod)` run entirely inside the worker process. This is simple and efficient when a sink runs alone (e.g. `8206_pvfs_stream.py`).
+- **Threaded sinks (`observe_on_scheduler`)**: Some sinks can request `observe_on_scheduler="thread_pool"` so their `flush()` runs on a thread-pool thread instead of the emission thread. This helps when a sink occasionally does extra Python work, but still shares the same GIL as other sinks in that worker.
+- **Writer-process sinks (`use_writer_process=True`)**: `PvfsSink` can offload all PVFS I/O into a dedicated child process:
+
+  ```python
+  from Morelia.Stream.sink import PvfsSink
+
+  # Record only (single sink)
+  pvfs_sink = PvfsSink(output_path, pod)
+
+  # Plot + record at high sample rates – keeps PlotSink responsive
+  pvfs_sink = PvfsSink(output_path, pod, use_writer_process=True)
+  ```
+
+  In this mode, `PvfsSink.flush()` in the worker is very lightweight (it just enqueues values to a multiprocessing queue), and a separate writer process handles all PVFS disk I/O under its own GIL. This is recommended for “plot + record” examples like `8401_plot_and_save_stream.py` at high sample rates.
+
+For “record only” tools (such as `8206_pvfs_stream.py`), the default in-process `PvfsSink` is usually preferred: there is no competing sink to starve, and the simpler single-process path is both easier to debug and slightly more efficient.
+
 ### PVFS native libraries
 
 PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.

@@ -9,6 +9,7 @@ __email__       = 'sales@pinnaclet.com'
 
 import logging
 import math
+import multiprocessing as mp
 import os
 import sys
 import time
@@ -42,6 +43,96 @@ except (ImportError, RuntimeError) as e:
     HighTime = None  # type: ignore
 
 
+def _pvfs_writer_target(
+    queue: mp.Queue,
+    stop_event: mp.Event,
+    file_path: str,
+    channels: tuple[str, ...],
+    units: tuple[str, ...],
+    sample_rate: float,
+) -> None:
+    """Target for the dedicated PVFS writer process.
+
+    Drains *queue* in batches, buffering channel values and writing to the
+    PVFS file once per second of data.  Exits when *stop_event* is set and the
+    queue is empty.
+    """
+    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
+    from pvfs_tools.Core.pvfs_binding import HighTime
+
+    pvfs_data = PvfsDataFile()
+    if not pvfs_data.create(file_path):
+        print(f"[PvfsWriter] ERROR: PvfsDataFile.create failed for {file_path}", file=sys.stderr, flush=True)
+        return
+
+    start_time = HighTime.from_seconds(time.time())
+    pvfs_data.set_experiment_info(
+        name="Morelia PVFS recording",
+        description="Streamed data from Morelia data collection",
+        start_time=start_time,
+    )
+    for ch_name, unit in zip(channels, units):
+        idf = pvfs_data.create_channel(ch_name, data_rate=sample_rate, unit=unit or "uV")
+        if idf is None:
+            print(f"[PvfsWriter] ERROR: Failed to create channel {ch_name}", file=sys.stderr, flush=True)
+            return
+        idf._delta_time = HighTime(0, 1.0 / sample_rate)
+
+    n_channels = len(channels)
+    buf: list[list[float]] = [[] for _ in channels]
+    samples_written = 0
+    flush_threshold = int(sample_rate)
+
+    def write_buf() -> None:
+        nonlocal samples_written
+        if not buf[0]:
+            return
+        n = len(buf[0])
+        block_start = HighTime.from_seconds(start_time.to_seconds() + samples_written / sample_rate)
+        for ch_name, ch_buf in zip(channels, buf):
+            idf = pvfs_data._indexed_data_files.get(ch_name)
+            if idf is not None:
+                idf.append_block(block_start, ch_buf)
+        samples_written += n
+        for b in buf:
+            b.clear()
+
+    def drain_queue() -> int:
+        """Get all available items without blocking. Returns count drained."""
+        count = 0
+        while True:
+            try:
+                item = queue.get_nowait()
+            except Exception:
+                break
+            for ch_idx in range(n_channels):
+                buf[ch_idx].append(item[ch_idx])
+            count += 1
+            if len(buf[0]) >= flush_threshold:
+                write_buf()
+        return count
+
+    while not stop_event.is_set():
+        try:
+            item = queue.get(timeout=0.1)
+        except Exception:
+            continue
+        for ch_idx in range(n_channels):
+            buf[ch_idx].append(item[ch_idx])
+        drain_queue()
+        if len(buf[0]) >= flush_threshold:
+            write_buf()
+
+    drain_queue()
+    write_buf()
+    for idf in pvfs_data._indexed_data_files.values():
+        if idf is not None:
+            idf.flush(synchronous=True)
+    pvfs_data.flush(synchronous=True)
+    pvfs_data.close()
+    _pvfs_debug("Writer process finished: %s (%d samples)", file_path, samples_written)
+
+
 class PvfsSink(SinkInterface):
     """Stream data to a PVFS file compatible with Sirenia data format.
 
@@ -52,6 +143,7 @@ class PvfsSink(SinkInterface):
     :param file_path: Path to the .pvfs file to create.
     :param pod: POD device data is being streamed from.
     :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by PVFS I/O. Use with multi-sink flows to avoid slowing other sinks. Queue is unbounded; slow sinks can increase memory use.
+    :param use_writer_process: If True, all PVFS I/O runs in a dedicated child process, fully eliminating GIL contention with the emission thread. Recommended at sample rates >= 5000 sps when used alongside PlotSink.
     """
 
     def __init__(
@@ -59,6 +151,7 @@ class PvfsSink(SinkInterface):
         file_path: str,
         pod: AcquisitionDevice,
         observe_on_scheduler: str | None = None,
+        use_writer_process: bool = False,
     ) -> None:
         if not _PVFS_AVAILABLE:
             msg = (
@@ -92,7 +185,14 @@ class PvfsSink(SinkInterface):
         self._pvfs_data: PvfsDataFile | None = None
         self._start_time: HighTime | None = None
         self._samples_written = 0
-        self.observe_on_scheduler = observe_on_scheduler
+        self._use_writer_process = use_writer_process
+        if use_writer_process:
+            self.observe_on_scheduler = None
+        else:
+            self.observe_on_scheduler = observe_on_scheduler
+        self._writer_queue: mp.Queue | None = None
+        self._writer_proc: mp.Process | None = None
+        self._writer_stop: mp.Event | None = None
 
     @property
     def pod(self) -> AcquisitionDevice:
@@ -108,6 +208,23 @@ class PvfsSink(SinkInterface):
 
     def __enter__(self) -> Self:
         path_abs = os.path.abspath(self._file_path) if self._file_path else self._file_path
+        sample_rate = float(self._pod.sample_rate) if self._pod.sample_rate else 400.0
+
+        if self._use_writer_process:
+            _pvfs_debug(
+                "__enter__ (writer process mode) pid=%s file_path=%s",
+                os.getpid(), path_abs,
+            )
+            self._writer_queue = mp.Queue(maxsize=0)
+            self._writer_stop = mp.Event()
+            self._writer_proc = mp.Process(
+                target=_pvfs_writer_target,
+                args=(self._writer_queue, self._writer_stop, self._file_path,
+                      self._channels, self._units, sample_rate),
+            )
+            self._writer_proc.start()
+            return self
+
         _pvfs_debug(
             "__enter__ pid=%s cwd=%s file_path=%s -> absolute=%s",
             os.getpid(), os.getcwd(), self._file_path, path_abs,
@@ -125,7 +242,6 @@ class PvfsSink(SinkInterface):
             start_time=self._start_time,
         )
 
-        sample_rate = float(self._pod.sample_rate) if self._pod.sample_rate else 400.0
         for ch_name, unit in zip(self._channels, self._units):
             idf = self._pvfs_data.create_channel(
                 ch_name, data_rate=sample_rate, unit=unit or "uV"
@@ -140,21 +256,33 @@ class PvfsSink(SinkInterface):
     def __exit__(self, *args, **kwargs) -> bool:
         print(f"[PvfsSink] __exit__ entered pid={os.getpid()}", file=sys.stderr, flush=True)
         path_abs = os.path.abspath(self._file_path) if self._file_path else self._file_path
+
+        if self._use_writer_process:
+            if self._writer_stop is not None:
+                self._writer_stop.set()
+            if self._writer_proc is not None:
+                self._writer_proc.join(timeout=15.0)
+                if self._writer_proc.is_alive():
+                    _pvfs_debug("Writer process did not exit in time, terminating: %s", path_abs)
+                    self._writer_proc.terminate()
+                    self._writer_proc.join(timeout=2.0)
+            self._writer_queue = None
+            self._writer_proc = None
+            self._writer_stop = None
+            _pvfs_debug("Writer process exited cleanly: %s", path_abs)
+            return False
+
         _pvfs_debug(
             "__exit__ pid=%s saving and closing path=%s samples_written=%s",
             os.getpid(), path_abs, self._samples_written,
         )
-        # Flush any remaining buffered samples
         self._write_buffer_to_pvfs()
 
         if self._pvfs_data is not None:
             try:
-                # Write closing timestamp (end-timestamp block) for each channel so
-                # each indexed file has at least two index entries and correct end time
                 for idf in self._pvfs_data._indexed_data_files.values():
                     if idf is not None:
                         idf.flush(synchronous=True)
-                # Sync DB with channel times and save database into PVFS, then close
                 self._pvfs_data.flush(synchronous=True)
                 self._pvfs_data.close()
                 _pvfs_debug("PVFS closed successfully: %s", path_abs)
@@ -167,6 +295,27 @@ class PvfsSink(SinkInterface):
 
     def flush(self, timestamp: int, packet: DataPacket) -> None:
         """Append one sample per channel to the buffer; write blocks when buffer reaches 1 second."""
+        if self._use_writer_process:
+            if self._writer_queue is None:
+                return
+            if isinstance(self._pod, Pod8206HR):
+                ch0 = float(packet.ch0)
+                ch1 = float(packet.ch1)
+                ch2 = float(packet.ch2)
+                if math.isnan(ch0) or math.isinf(ch0): ch0 = 0.0
+                if math.isnan(ch1) or math.isinf(ch1): ch1 = 0.0
+                if math.isnan(ch2) or math.isinf(ch2): ch2 = 0.0
+                vals = (ch0, ch1, ch2)
+            elif isinstance(self._pod, Pod8401HR):
+                vals = (float(packet.ch0), float(packet.ch1), float(packet.ch2), float(packet.ch3))
+            else:
+                return
+            try:
+                self._writer_queue.put_nowait(vals)
+            except Exception:
+                pass
+            return
+
         if self._pvfs_data is None:
             return
 
@@ -190,7 +339,6 @@ class PvfsSink(SinkInterface):
             self._buffer[1].append(float(packet.ch1))
             self._buffer[2].append(float(packet.ch2))
             self._buffer[3].append(float(packet.ch3))
-        # Pod8274D not implemented for PVFS streaming
 
         if len(self._buffer[0]) >= int(sample_rate):
             self._write_buffer_to_pvfs()
@@ -220,8 +368,7 @@ class PvfsSink(SinkInterface):
             idf = self._pvfs_data._indexed_data_files.get(ch_name)
             if idf is None:
                 continue
-            values = [float(x) for x in buf]
-            result = idf.append_block(block_start, values)
+            result = idf.append_block(block_start, buf)
             if result != 0:
                 print(
                     f"Warning: PvfsSink append_block({ch_name}) returned {result}",
@@ -240,4 +387,5 @@ class PvfsSink(SinkInterface):
         return {
             "file_path": file_path,
             "observe_on_scheduler": self.observe_on_scheduler,
+            "use_writer_process": self._use_writer_process,
         }

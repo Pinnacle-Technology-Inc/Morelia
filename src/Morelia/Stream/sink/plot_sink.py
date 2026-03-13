@@ -44,6 +44,8 @@ _Y_PAD_MIN = 1.0
 _Y_SHRINK_RATIO = 0.5
 # Initial samples to discard per stream (avoids bad first readings skewing scale)
 _SKIP_INITIAL_SAMPLES = 10
+# Max effective sample rate sent to the plot (decimate above this to avoid lag)
+_DEFAULT_MAX_DISPLAY_RATE = 2000
 
 
 def _channel_values_8206(packet: DataPacket) -> tuple[float, ...]:
@@ -75,11 +77,25 @@ class PlotSink(SinkInterface):
         pod: AcquisitionDevice,
         chunk_samples: int = _DEFAULT_CHUNK_SAMPLES,
         source_id: str | None = None,
+        max_display_rate: int = _DEFAULT_MAX_DISPLAY_RATE,
     ) -> None:
         self._queue = queue
         self._pod = pod
-        self._chunk_samples = max(1, chunk_samples)
         self._source_id = source_id if source_id is not None else getattr(pod, "device_name", str(id(pod)))
+
+        cached_rate = getattr(pod, "_sample_rate", None)
+        if cached_rate is not None:
+            effective_rate = int(cached_rate[0]) if isinstance(cached_rate, tuple) else int(cached_rate)
+        else:
+            effective_rate = 1000
+
+        if chunk_samples == _DEFAULT_CHUNK_SAMPLES:
+            self._chunk_samples = max(_DEFAULT_CHUNK_SAMPLES, effective_rate // 50)
+        else:
+            self._chunk_samples = max(1, chunk_samples)
+
+        self._decimate_step = max(1, effective_rate // max_display_rate)
+        self._decimate_counter = 0
 
         if isinstance(self._pod, Pod8206HR):
             self._channel_names = ("EEG1", "EEG2", "EEG3/EMG")
@@ -106,8 +122,9 @@ class PlotSink(SinkInterface):
 
     def __enter__(self) -> "PlotSink":
         sample_rate = float(self._pod.sample_rate) if self._pod.sample_rate else 1000.0
+        display_rate = sample_rate / self._decimate_step
         try:
-            self._queue.put_nowait((_PLOT_REGISTER, self._source_id, sample_rate, self._channel_names))
+            self._queue.put_nowait((_PLOT_REGISTER, self._source_id, display_rate, self._channel_names))
         except Exception:
             pass
         return self
@@ -124,7 +141,8 @@ class PlotSink(SinkInterface):
         if not self._buffer:
             return
         sample_rate = float(self._pod.sample_rate) if self._pod.sample_rate else 1000.0
-        msg = (_PLOT_DATA, self._source_id, sample_rate, self._channel_names, self._buffer[:])
+        display_rate = sample_rate / self._decimate_step
+        msg = (_PLOT_DATA, self._source_id, display_rate, self._channel_names, self._buffer[:])
         self._buffer.clear()
         try:
             self._queue.put_nowait(msg)
@@ -135,6 +153,10 @@ class PlotSink(SinkInterface):
         if self._skip_remaining > 0:
             self._skip_remaining -= 1
             return
+        self._decimate_counter += 1
+        if self._decimate_counter < self._decimate_step:
+            return
+        self._decimate_counter = 0
         values = self._get_values(packet)
         self._buffer.append((timestamp, values))
         if len(self._buffer) >= self._chunk_samples:
@@ -145,6 +167,7 @@ class PlotSink(SinkInterface):
             "queue": self._queue,
             "source_id": self._source_id,
             "chunk_samples": self._chunk_samples,
+            "max_display_rate": _DEFAULT_MAX_DISPLAY_RATE,
         }
 
 
