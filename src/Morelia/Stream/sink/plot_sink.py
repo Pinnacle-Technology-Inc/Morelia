@@ -78,6 +78,7 @@ class PlotSink(SinkInterface):
         chunk_samples: int = _DEFAULT_CHUNK_SAMPLES,
         source_id: str | None = None,
         max_display_rate: int = _DEFAULT_MAX_DISPLAY_RATE,
+        channel_names: tuple[str, ...] | None = None,
     ) -> None:
         self._queue = queue
         self._pod = pod
@@ -98,17 +99,24 @@ class PlotSink(SinkInterface):
         self._decimate_counter = 0
 
         if isinstance(self._pod, Pod8206HR):
-            self._channel_names = ("EEG1", "EEG2", "EEG3/EMG")
+            self._channel_names = channel_names if channel_names is not None else ("EEG1", "EEG2", "EEG3/EMG")
             self._get_values = _channel_values_8206
         elif isinstance(self._pod, Pod8401HR):
-            preamp_map = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp)
-            if preamp_map is not None:
-                self._channel_names = tuple(preamp_map.values())
+            if channel_names is not None:
+                self._channel_names = channel_names
             else:
-                self._channel_names = ("A", "B", "C", "D")
+                labels = getattr(self._pod, "channel_labels", None)
+                if labels is not None:
+                    self._channel_names = labels
+                else:
+                    preamp_map = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp)
+                    if preamp_map is not None:
+                        self._channel_names = tuple(preamp_map.values())
+                    else:
+                        self._channel_names = ("A", "B", "C", "D")
             self._get_values = _channel_values_8401
         elif isinstance(self._pod, Pod8274D):
-            self._channel_names = ("data",)
+            self._channel_names = channel_names if channel_names is not None else ("data",)
             self._get_values = lambda p: (float(getattr(p, "data", 0) or 0),)
         else:
             raise ValueError(f'Device "{getattr(self._pod, "device_name", self._pod)}" is not supported by PlotSink.')
@@ -163,12 +171,15 @@ class PlotSink(SinkInterface):
             self._flush_buffer()
 
     def get_dict(self) -> dict[str, Any]:
-        return {
+        d: dict[str, Any] = {
             "queue": self._queue,
             "source_id": self._source_id,
             "chunk_samples": self._chunk_samples,
             "max_display_rate": _DEFAULT_MAX_DISPLAY_RATE,
         }
+        if self._channel_names is not None:
+            d["channel_names"] = self._channel_names
+        return d
 
 
 # ---------------------------------------------------------------------------

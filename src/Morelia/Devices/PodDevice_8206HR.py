@@ -78,7 +78,101 @@ class Pod8206HR(AcquisitionDevice) :
     @property
     def preamp_gain(self):
         return self._preamp_gain
-    
+
+    # ------------ DEVICE PROPERTIES (config-capable) ------------ 
+
+    @property
+    def lowpass_ch0(self) -> int:
+        """Lowpass filter for channel 0 (EEG1) in Hz."""
+        return self.write_read("GET LOWPASS", (0,)).payload[0]
+
+    @lowpass_ch0.setter
+    def lowpass_ch0(self, value: int) -> None:
+        self.write_packet("SET LOWPASS", (0, value))
+
+    @property
+    def lowpass_ch1(self) -> int:
+        """Lowpass filter for channel 1 (EEG2) in Hz."""
+        return self.write_read("GET LOWPASS", (1,)).payload[0]
+
+    @lowpass_ch1.setter
+    def lowpass_ch1(self, value: int) -> None:
+        self.write_packet("SET LOWPASS", (1, value))
+
+    @property
+    def lowpass_ch2(self) -> int:
+        """Lowpass filter for channel 2 (EEG3/EMG) in Hz."""
+        return self.write_read("GET LOWPASS", (2,)).payload[0]
+
+    @lowpass_ch2.setter
+    def lowpass_ch2(self, value: int) -> None:
+        self.write_packet("SET LOWPASS", (2, value))
+
+    @property
+    def ttl_pin0(self) -> int:
+        """TTL pin 0 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (0,)).payload[0]
+
+    @ttl_pin0.setter
+    def ttl_pin0(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (0, value))
+
+    @property
+    def ttl_pin1(self) -> int:
+        """TTL pin 1 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (1,)).payload[0]
+
+    @ttl_pin1.setter
+    def ttl_pin1(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (1, value))
+
+    @property
+    def ttl_pin2(self) -> int:
+        """TTL pin 2 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (2,)).payload[0]
+
+    @ttl_pin2.setter
+    def ttl_pin2(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (2, value))
+
+    @property
+    def ttl_pin3(self) -> int:
+        """TTL pin 3 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (3,)).payload[0]
+
+    @ttl_pin3.setter
+    def ttl_pin3(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (3, value))
+
+    @property
+    def ttl_port(self) -> int:
+        """Entire TTL port value as a byte (read-only, does not modify pin direction)."""
+        return self.write_read("GET TTL PORT").payload[0]
+
+    @property
+    def filter_config(self) -> int:
+        """Hardware filter configuration.  0=SL, 1=SE (40/40/100Hz), 2=SE3 (40/40/40Hz)."""
+        return self.write_read("GET FILTER CONFIG").payload[0]
+
+    # ------------ CONFIGURATION MAP ------------ 
+
+    _property_map: dict = {
+        "lowpass": {
+            "lowpass_ch0": "lowpass_ch0",
+            "lowpass_ch1": "lowpass_ch1",
+            "lowpass_ch2": "lowpass_ch2",
+        },
+        "ttl_pins": {
+            "ttl_port": "ttl_port",
+        },
+        "filter_config": {
+            "filter_config": "filter_config",
+        },
+    }
+
+    def _apply_config_recursive(self, config: dict, skip_keys: set):
+        super()._apply_config_recursive(config, skip_keys)
+
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
         """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
