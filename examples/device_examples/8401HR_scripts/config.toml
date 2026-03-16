@@ -3,5 +3,5 @@ filename = "config.toml"
 
 preamp_model = "8406-SE4"
 
-lowpass_ch0 = 11
+lowpass_ch0 = 21
 

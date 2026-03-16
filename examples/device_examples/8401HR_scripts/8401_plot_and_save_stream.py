@@ -8,19 +8,29 @@ number of sinks to be added without extra bottlenecks beyond each sink's own cos
 
 Usage:
   python 8401_plot_and_save_stream.py [--output OUTPUT.pvfs] [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX] [--duration SECONDS]
+  python 8401_plot_and_save_stream.py --preamp 8406-SE3   # configure device for a specific preamp model
+  python 8401_plot_and_save_stream.py --set-config [FILE]   # save current device config to TOML, then stream and save
+  python 8401_plot_and_save_stream.py --get-config [FILE]    # load config from TOML, apply, then stream and save
+
   (default: D2XX first device, --span 60, --sample-rate 1000, --output 8401_output.pvfs; use --com-port for serial)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
+  --preamp applies a known preamp configuration (dc_mode, highpass, lowpass, bias, ss_config, inversion).
+  Config file defaults to config.toml when --set-config or --get-config is used without a filename.
+  CLI qualifiers (e.g. --sample-rate, --preamp) override values from the config file.
+  Specifying both --set-config and --get-config cancels out (neither is applied).
   If --duration is omitted, stream until the plot window is closed. If --duration is set, record and plot for that many seconds then stop.
 
 Requires optional dependencies: pip install ptech-morelia[plot] (for plot). pvfs_tools for PVFS output.
 """
 
 from pathlib import Path
+import os
 import sys
 import multiprocessing as mp
 import threading
 import time
+import toml
 
 _examples_dir = Path(__file__).resolve().parent
 _device_examples = _examples_dir.parent
@@ -136,6 +146,144 @@ def _set_sample_rate(pod: Pod8401HR, sample_rate: int, use_d2xx: bool) -> None:
                 pass
 
 
+def _save_device_config(pod: Pod8401HR, filepath: str, use_d2xx: bool) -> None:
+    """Read the device's current configuration and write it to a TOML file.
+
+    Opens the port temporarily if it is not already open (e.g. D2XX deferred
+    open pattern).
+    """
+    filepath = os.path.abspath(filepath)
+    folder = os.path.dirname(filepath)
+    basename = os.path.basename(filepath)
+
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Stop streaming in case device is in an active state
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        pod.get_config(folder, basename)
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+
+def _load_and_apply_config(
+    pod: Pod8401HR,
+    filepath: str,
+    use_d2xx: bool,
+    cli_overrides: dict | None = None,
+) -> int | None:
+    """Load a TOML config file and apply it to the device.
+
+    *cli_overrides* is a dict of property names whose values were explicitly
+    provided on the command line.  Those keys are removed from the config
+    before it is applied so that the CLI value takes precedence.
+
+    Returns the ``sample_rate`` found in the config (or ``None`` if absent),
+    so the caller can decide whether to use it or a CLI / default value.
+    """
+    filepath = os.path.abspath(filepath)
+    if not os.path.exists(filepath):
+        print(f"Config file not found: {filepath}", file=sys.stderr)
+        sys.exit(1)
+
+    config = toml.load(filepath)
+
+    # Extract sample_rate from config before applying (handled separately
+    # by _set_sample_rate which also stops streaming and verifies).
+    config_sample_rate = None
+    sr_section = config.get("sample_rate")
+    if isinstance(sr_section, dict):
+        config_sample_rate = sr_section.pop("sample_rate", None)
+        if not sr_section:
+            config.pop("sample_rate", None)
+    elif isinstance(sr_section, (int, float)):
+        config_sample_rate = int(sr_section)
+        config.pop("sample_rate", None)
+
+    # Strip any remaining keys that the CLI explicitly overrides
+    if cli_overrides:
+        for key in cli_overrides:
+            config.pop(key, None)
+            for section in list(config.values()):
+                if isinstance(section, dict):
+                    section.pop(key, None)
+
+    # Apply the remaining config to the device (needs an open port)
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Stop streaming in case device is in an active state
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        pod.apply_config(config)
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+    return config_sample_rate
+
+
+def _apply_preamp(pod: Pod8401HR, model: str, use_d2xx: bool) -> None:
+    """Apply a preamp configuration by model number.
+
+    Opens the port temporarily if needed and stops streaming before
+    sending hardware commands.
+    """
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        pod.apply_preamp_config(model)
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+
 def main():
     import argparse
 
@@ -173,10 +321,32 @@ def main():
     parser.add_argument(
         "--sample-rate",
         type=int,
-        default=1000,
+        default=None,
         choices=[1000, 2000, 5000, 10000, 20000],
         metavar="RATE",
-        help="Sample rate in Hz (allowed: 1000, 2000, 5000, 10000, 20000; default: 1000)",
+        help="Sample rate in Hz (allowed: 1000, 2000, 5000, 10000, 20000; default: 1000). Overrides config file value.",
+    )
+    parser.add_argument(
+        "--preamp",
+        default=None,
+        metavar="MODEL",
+        help="Preamp model number (e.g. 8406-SE3). Configures dc_mode, highpass, lowpass, bias, ss_config, and channel inversion. Overrides preamp_model from config file.",
+    )
+    parser.add_argument(
+        "--set-config",
+        nargs="?",
+        const="config.toml",
+        default=None,
+        metavar="FILE",
+        help="Save the connected device's current configuration to a TOML file, then continue streaming and saving (default: config.toml).",
+    )
+    parser.add_argument(
+        "--get-config",
+        nargs="?",
+        const="config.toml",
+        default=None,
+        metavar="FILE",
+        help="Load device configuration from a TOML file before streaming and saving (default: config.toml). CLI qualifiers override config values.",
     )
     parser.add_argument(
         "--output",
@@ -236,8 +406,39 @@ def main():
         print(f"Error initializing 8401HR device: {e}", file=sys.stderr)
         sys.exit(1)
 
+    # When both --set-config and --get-config are specified, saving the
+    # current config and immediately reloading it is a no-op, so skip both.
+    config_sample_rate = None
+    if args.set_config is not None and args.get_config is not None:
+        print("Both --set-config and --get-config specified; skipping both.")
+    else:
+        # --set-config: save current device config to TOML, then continue streaming
+        if args.set_config is not None:
+            _save_device_config(pod, args.set_config, use_d2xx)
+
+        # --get-config: load config from TOML and apply to device.
+        # Build a dict of properties explicitly provided on the CLI so they
+        # are not overwritten by the config file.
+        if args.get_config is not None:
+            cli_overrides = {}
+            if args.sample_rate is not None:
+                cli_overrides["sample_rate"] = args.sample_rate
+            if args.preamp is not None:
+                cli_overrides["preamp_model"] = args.preamp
+            config_sample_rate = _load_and_apply_config(
+                pod, args.get_config, use_d2xx, cli_overrides=cli_overrides
+            )
+
+    # Apply preamp configuration (CLI --preamp takes priority; if not
+    # provided, the TOML config may have already applied it above).
+    if args.preamp is not None:
+        _apply_preamp(pod, args.preamp, use_d2xx)
+
+    # Resolve final sample rate: CLI > config file > default (1000)
+    sample_rate = args.sample_rate or config_sample_rate or 1000
+
     # Configure sample rate on the device for the streaming worker and timestamping
-    _set_sample_rate(pod, args.sample_rate, use_d2xx=use_d2xx)
+    _set_sample_rate(pod, sample_rate, use_d2xx=use_d2xx)
 
     # Shared queue for plot sink; PlotDisplay (main process) consumes from it.
     queue = mp.Queue(maxsize=2048)
@@ -266,9 +467,9 @@ def main():
         timer = threading.Timer(args.duration, stop_recording)
         timer.daemon = True
         timer.start()
-        print(f"Recording and plotting 8401HR at {args.sample_rate} Hz to {args.output} for {args.duration} s.")
+        print(f"Recording and plotting 8401HR at {sample_rate} Hz to {args.output} for {args.duration} s.")
     else:
-        print(f"Starting 8401HR stream at {args.sample_rate} Hz to plot and {args.output}. Close the plot window to stop.")
+        print(f"Starting 8401HR stream at {sample_rate} Hz to plot and {args.output}. Close the plot window to stop.")
 
     flow.collect()
 
