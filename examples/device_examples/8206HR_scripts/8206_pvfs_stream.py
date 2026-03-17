@@ -7,15 +7,15 @@ Output is compatible with the standard Sirenia data format (experiment.db3 + ind
 
 Usage:
   python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
-  python 8206_pvfs_stream.py --set-config [FILE]   # save current device config to TOML, then stream and save
-  python 8206_pvfs_stream.py --get-config [FILE]   # load config from TOML, apply, then stream and save
+  python 8206_pvfs_stream.py --save-config [FILE]  # save current device config to TOML, then stream and save
+  python 8206_pvfs_stream.py --load-config [FILE]  # load config from TOML, apply, then stream and save
 
   (default: output_8206.pvfs, run until Space/Enter; default: D2XX, default port: COM9 on Windows; default sample rate: 1000 Hz)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 100, 200, 400, 800, 1000, 2000
-  Config file defaults to config.toml when --set-config or --get-config is used without a filename.
+  Config file defaults to config.toml when --save-config or --load-config is used without a filename.
   CLI qualifiers (e.g. --sample-rate, --preamp-gain) override values from the config file.
-  Specifying both --set-config and --get-config cancels out (neither is applied).
+  Specifying both --save-config and --load-config cancels out (neither is applied).
 
 Examples:
   # Use D2XX device (default)
@@ -300,7 +300,7 @@ def main():
         help="Sample rate in Hz (allowed: 100, 200, 400, 800, 1000, 2000; default: 1000). Overrides config file value.",
     )
     parser.add_argument(
-        "--set-config",
+        "--save-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -308,7 +308,7 @@ def main():
         help="Save the connected device's current configuration to a TOML file, then continue streaming (default: config.toml).",
     )
     parser.add_argument(
-        "--get-config",
+        "--load-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -432,27 +432,27 @@ def main():
             pass
         sys.exit(1)
 
-    # When both --set-config and --get-config are specified, saving the
+    # When both --save-config and --load-config are specified, saving the
     # current config and immediately reloading it is a no-op, so skip both.
     config_sample_rate = None
-    if args.set_config is not None and args.get_config is not None:
-        print("Both --set-config and --get-config specified; skipping both.")
+    if args.save_config is not None and args.load_config is not None:
+        print("Both --save-config and --load-config specified; skipping both.")
     else:
-        # --set-config: save current device config to TOML, then continue streaming
-        if args.set_config is not None:
-            _save_device_config(pod, args.set_config, use_d2xx)
+        # --save-config: save current device config to TOML, then continue streaming
+        if args.save_config is not None:
+            _save_device_config(pod, args.save_config, use_d2xx)
 
-        # --get-config: load config from TOML and apply to device.
+        # --load-config: load config from TOML and apply to device.
         # Build a dict of properties explicitly provided on the CLI so they
         # are not overwritten by the config file.
-        if args.get_config is not None:
+        if args.load_config is not None:
             cli_overrides = {}
             if args.sample_rate is not None:
                 cli_overrides["sample_rate"] = args.sample_rate
             if args.preamp_gain is not None:
                 cli_overrides["preamp_gain"] = args.preamp_gain
             config_sample_rate = _load_and_apply_config(
-                pod, args.get_config, use_d2xx, cli_overrides=cli_overrides
+                pod, args.load_config, use_d2xx, cli_overrides=cli_overrides
             )
 
     # Resolve final sample rate: CLI > config file > default (1000)

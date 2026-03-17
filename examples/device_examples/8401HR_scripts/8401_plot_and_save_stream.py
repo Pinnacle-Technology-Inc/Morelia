@@ -9,16 +9,16 @@ number of sinks to be added without extra bottlenecks beyond each sink's own cos
 Usage:
   python 8401_plot_and_save_stream.py [--output OUTPUT.pvfs] [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX] [--duration SECONDS]
   python 8401_plot_and_save_stream.py --preamp 8406-SE3   # configure device for a specific preamp model
-  python 8401_plot_and_save_stream.py --set-config [FILE]   # save current device config to TOML, then stream and save
-  python 8401_plot_and_save_stream.py --get-config [FILE]    # load config from TOML, apply, then stream and save
+  python 8401_plot_and_save_stream.py --save-config [FILE]  # save current device config to TOML, then stream and save
+  python 8401_plot_and_save_stream.py --load-config [FILE]  # load config from TOML, apply, then stream and save
 
   (default: D2XX first device, --span 60, --sample-rate 1000, --output 8401_output.pvfs; use --com-port for serial)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
   --preamp applies a known preamp configuration (dc_mode, highpass, lowpass, bias, ss_config, inversion).
-  Config file defaults to config.toml when --set-config or --get-config is used without a filename.
+  Config file defaults to config.toml when --save-config or --load-config is used without a filename.
   CLI qualifiers (e.g. --sample-rate, --preamp) override values from the config file.
-  Specifying both --set-config and --get-config cancels out (neither is applied).
+  Specifying both --save-config and --load-config cancels out (neither is applied).
   If --duration is omitted, stream until the plot window is closed. If --duration is set, record and plot for that many seconds then stop.
 
 Requires optional dependencies: pip install ptech-morelia[plot] (for plot). pvfs_tools for PVFS output.
@@ -497,7 +497,7 @@ def main():
         help="Preamp model number (e.g. 8406-SE3). Configures dc_mode, highpass, lowpass, bias, ss_config, and channel inversion. Overrides preamp_model from config file.",
     )
     parser.add_argument(
-        "--set-config",
+        "--save-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -505,7 +505,7 @@ def main():
         help="Save the connected device's current configuration to a TOML file, then continue streaming and saving (default: config.toml).",
     )
     parser.add_argument(
-        "--get-config",
+        "--load-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -570,27 +570,27 @@ def main():
         print(f"Error initializing 8401HR device: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # When both --set-config and --get-config are specified, saving the
+    # When both --save-config and --load-config are specified, saving the
     # current config and immediately reloading it is a no-op, so skip both.
     config_sample_rate = None
-    if args.set_config is not None and args.get_config is not None:
-        print("Both --set-config and --get-config specified; skipping both.")
+    if args.save_config is not None and args.load_config is not None:
+        print("Both --save-config and --load-config specified; skipping both.")
     else:
-        # --set-config: save current device config to TOML, then continue streaming
-        if args.set_config is not None:
-            _save_device_config(pod, args.set_config, use_d2xx)
+        # --save-config: save current device config to TOML, then continue streaming
+        if args.save_config is not None:
+            _save_device_config(pod, args.save_config, use_d2xx)
 
-        # --get-config: load config from TOML and apply to device.
+        # --load-config: load config from TOML and apply to device.
         # Build a dict of properties explicitly provided on the CLI so they
         # are not overwritten by the config file.
-        if args.get_config is not None:
+        if args.load_config is not None:
             cli_overrides = {}
             if args.sample_rate is not None:
                 cli_overrides["sample_rate"] = args.sample_rate
             if args.preamp is not None:
                 cli_overrides["preamp_model"] = args.preamp
             config_sample_rate = _load_and_apply_config(
-                pod, args.get_config, use_d2xx, cli_overrides=cli_overrides
+                pod, args.load_config, use_d2xx, cli_overrides=cli_overrides
             )
 
     # Apply preamp configuration (CLI --preamp takes priority; if not
@@ -598,8 +598,14 @@ def main():
     if args.preamp is not None:
         _apply_preamp(pod, args.preamp, use_d2xx)
 
-    # Resolve final sample rate: CLI > config file > default (1000)
-    sample_rate = args.sample_rate or config_sample_rate or 1000
+    # Resolve final sample rate: CLI > config file > preamp default > 1000
+    preamp_sample_rate = None
+    effective_model = pod.preamp_model
+    if effective_model:
+        preamp_cfg_sr = lookup_preamp_config(effective_model)
+        if preamp_cfg_sr:
+            preamp_sample_rate = preamp_cfg_sr.sample_rate
+    sample_rate = args.sample_rate or config_sample_rate or preamp_sample_rate or 1000
 
     # Configure sample rate on the device for the streaming worker and timestamping
     _set_sample_rate(pod, sample_rate, use_d2xx=use_d2xx)
@@ -608,12 +614,12 @@ def main():
     # Load config_overrides from whichever TOML file was involved so the
     # preferences table reflects actual channel settings (including any
     # overrides on top of the preamp defaults).
-    both_config = args.set_config is not None and args.get_config is not None
+    both_config = args.save_config is not None and args.load_config is not None
     config_overrides = None
     if not both_config:
-        # --set-config saves actual device state; --get-config is the input.
+        # --save-config saves actual device state; --load-config is the input.
         # Either is a good source of truth for channel parameters.
-        config_path = args.set_config or args.get_config
+        config_path = args.save_config or args.load_config
         if config_path is not None:
             try:
                 config_overrides = toml.load(os.path.abspath(config_path))

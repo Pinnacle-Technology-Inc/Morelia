@@ -10,16 +10,16 @@ can be handled without overwhelming the UI.
 Usage:
   python 8401_plot_stream.py [--span SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
   python 8401_plot_stream.py --preamp 8406-SE3   # configure device for a specific preamp model
-  python 8401_plot_stream.py --set-config [FILE]   # save current device config to TOML, then stream
-  python 8401_plot_stream.py --get-config [FILE]    # load config from TOML, apply, then stream
+  python 8401_plot_stream.py --save-config [FILE]  # save current device config to TOML, then stream
+  python 8401_plot_stream.py --load-config [FILE]  # load config from TOML, apply, then stream
 
   (default: D2XX first device, --span 60, --sample-rate 1000; use --com-port for serial)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
   Allowed sample rates: 1000, 2000, 5000, 10000, 20000
   --preamp applies a known preamp configuration (dc_mode, highpass, lowpass, bias, ss_config, inversion).
-  Config file defaults to config.toml when --set-config or --get-config is used without a filename.
+  Config file defaults to config.toml when --save-config or --load-config is used without a filename.
   CLI qualifiers (e.g. --sample-rate, --preamp) override values from the config file.
-  Specifying both --set-config and --get-config cancels out (neither is applied).
+  Specifying both --save-config and --load-config cancels out (neither is applied).
 
 Requires optional dependencies: pip install ptech-morelia[plot]
 """
@@ -330,7 +330,7 @@ def main():
         help="Preamp model number (e.g. 8406-SE3). Configures dc_mode, highpass, lowpass, bias, ss_config, and channel inversion. Overrides preamp_model from config file.",
     )
     parser.add_argument(
-        "--set-config",
+        "--save-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -338,7 +338,7 @@ def main():
         help="Save the connected device's current configuration to a TOML file, then continue streaming (default: config.toml).",
     )
     parser.add_argument(
-        "--get-config",
+        "--load-config",
         nargs="?",
         const="config.toml",
         default=None,
@@ -391,27 +391,27 @@ def main():
         print(f"Error initializing 8401HR device: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # When both --set-config and --get-config are specified, saving the
+    # When both --save-config and --load-config are specified, saving the
     # current config and immediately reloading it is a no-op, so skip both.
     config_sample_rate = None
-    if args.set_config is not None and args.get_config is not None:
-        print("Both --set-config and --get-config specified; skipping both.")
+    if args.save_config is not None and args.load_config is not None:
+        print("Both --save-config and --load-config specified; skipping both.")
     else:
-        # --set-config: save current device config to TOML, then continue streaming
-        if args.set_config is not None:
-            _save_device_config(pod, args.set_config, use_d2xx)
+        # --save-config: save current device config to TOML, then continue streaming
+        if args.save_config is not None:
+            _save_device_config(pod, args.save_config, use_d2xx)
 
-        # --get-config: load config from TOML and apply to device.
+        # --load-config: load config from TOML and apply to device.
         # Build a dict of properties explicitly provided on the CLI so they
         # are not overwritten by the config file.
-        if args.get_config is not None:
+        if args.load_config is not None:
             cli_overrides = {}
             if args.sample_rate is not None:
                 cli_overrides["sample_rate"] = args.sample_rate
             if args.preamp is not None:
                 cli_overrides["preamp_model"] = args.preamp
             config_sample_rate = _load_and_apply_config(
-                pod, args.get_config, use_d2xx, cli_overrides=cli_overrides
+                pod, args.load_config, use_d2xx, cli_overrides=cli_overrides
             )
 
     # Apply preamp configuration (CLI --preamp takes priority; if not
