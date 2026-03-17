@@ -1,3 +1,6 @@
+# This is an example 8401HR configuration file that loads the standard configuration
+# for the 8406-SE4 preamp and then overrides the channel 0 lowpass
+
 title = "Pod8401HR Device Configuration File"
 filename = "config.toml"
 

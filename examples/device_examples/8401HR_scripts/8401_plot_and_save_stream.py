@@ -41,6 +41,7 @@ if str(_src) not in sys.path:
     sys.path.insert(0, str(_src))
 
 from Morelia.Devices import Pod8401HR, Preamp
+from Morelia.Devices.preamp_config import lookup_preamp_config
 from Morelia.packet import PrimaryChannelMode, SecondaryChannelMode
 from Morelia.Stream.sink import PlotSink, PlotDisplay, PvfsSink
 from Morelia.Stream.data_flow import DataFlow
@@ -204,6 +205,18 @@ def _load_and_apply_config(
 
     config = toml.load(filepath)
 
+    # Verify the config file was generated for this device type.
+    config_title = config.get("title", "")
+    device_type = type(pod).__name__  # e.g. "Pod8401HR"
+    if config_title and device_type not in config_title:
+        print(
+            f"Error: Config file '{filepath}' is for a different device type.\n"
+            f"  Config title : {config_title}\n"
+            f"  Connected device: {device_type}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     # Extract sample_rate from config before applying (handled separately
     # by _set_sample_rate which also stops streaming and verifies).
     config_sample_rate = None
@@ -282,6 +295,154 @@ def _apply_preamp(pod: Pod8401HR, model: str, use_d2xx: bool) -> None:
                 pod.close_port()
             except Exception:
                 pass
+
+
+def _resolve_override(config: dict, section: str, key: str, default):
+    """Look up *key* in *config*, checking both flat top-level keys and
+    nested ``config[section][key]``.  Returns *default* when not found."""
+    if key in config:
+        return config[key]
+    sec = config.get(section)
+    if isinstance(sec, dict) and key in sec:
+        return sec[key]
+    return default
+
+
+def _collect_device_preferences(
+    pod: Pod8401HR,
+    sample_rate: int,
+    use_d2xx: bool,
+    config_overrides: dict | None = None,
+) -> list[dict]:
+    """Build ``device_preferences_table`` rows from the effective config.
+
+    Uses the preamp config as a base, then overlays any per-channel
+    overrides from the TOML/CLI *config_overrides* dict so the table
+    reflects the intended configuration (including values like
+    ``lowpass_ch0 = 21`` that override the preamp default).
+
+    Opens the port briefly only to query device type and ID.
+    """
+    HP_MAP = {0: "0.5", 1: "1.0", 2: "10.0", 3: "none"}
+    DC_MAP = {0: "BIAS", 1: "AGND"}
+
+    product_number = 49  # Pod8401HR type code
+    serial_number = 0
+
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        try:
+            product_number = pod.type
+        except Exception:
+            pass
+        try:
+            serial_number = pod.id
+        except Exception:
+            pass
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+    prefs: list[dict] = []
+    ovr = config_overrides or {}
+
+    def _add(name: str, type_str: str, value) -> None:
+        prefs.append({
+            "name": name,
+            "type": type_str,
+            "value": str(value),
+            "ProductNumber": product_number,
+            "SerialNumber": serial_number,
+        })
+
+    preamp_cfg = None
+    if pod.preamp_model:
+        preamp_cfg = lookup_preamp_config(pod.preamp_model)
+
+    config_name = preamp_cfg.name if preamp_cfg else ""
+    _add("ConfigName", "string", config_name)
+    _add("SampleRate", "uint16", sample_rate)
+    _add("Notch Filter", "bool", 0)
+    _add("Notch Frequency", "double", 60)
+
+    for i in range(4):
+        # Start with preamp config defaults, then apply TOML overrides.
+        if preamp_cfg:
+            ch = preamp_cfg.channels[i]
+            dc_val = ch.dc_mode
+            hp_val = ch.highpass
+            lp_val = ch.lowpass
+            bias_val = ch.bias
+            preamp_gain = ch.preamp_gain if ch.preamp_gain is not None else 0
+        else:
+            dc_val = 1
+            hp_val = 0
+            lp_val = 100
+            bias_val = 0.0
+            gain_val = pod.preamp_gain[i] if pod.preamp_gain else None
+            preamp_gain = gain_val if gain_val is not None else 0
+
+        dc_val = _resolve_override(ovr, "dc_mode", f"dc_mode_{i}", dc_val)
+        hp_val = _resolve_override(ovr, "highpass", f"preamp_highpass_{i}", hp_val)
+        lp_val = _resolve_override(ovr, "lowpass", f"lowpass_ch{i}", lp_val)
+        bias_val = _resolve_override(ovr, "bias", f"bias_{i}", bias_val)
+
+        dc_type = DC_MAP.get(int(dc_val), "AGND")
+        hp_str = HP_MAP.get(int(hp_val), "none")
+
+        _add(f"Channel_{i}_DCType", "string", dc_type)
+        _add(f"Channel_{i}_Highpass", "string", hp_str)
+        _add(f"Channel_{i}_LowPass", "double", lp_val)
+        _add(f"Channel_{i}_PreampGain", "double", preamp_gain)
+
+        if sample_rate >= 1000:
+            rate_str = f"{sample_rate // 1000} kHz"
+        else:
+            rate_str = f"{sample_rate} Hz"
+        _add(f"Channel_{i}_DesiredSampleRate", "string", rate_str)
+        _add(f"Channel_{i}_Bias", "double", bias_val)
+
+    # NameChange entries: default channel map -> hardware letters -> config labels
+    ch_map = Pod8401HR.get_channel_map_for_preamp_device(pod.preamp) or {}
+    hw_letters = ["A", "B", "C", "D"]
+    default_labels = [ch_map.get(letter, f"CH {letter}") for letter in hw_letters]
+    config_labels = (
+        list(pod.channel_labels)
+        if pod.channel_labels
+        else default_labels
+    )
+
+    for idx, (letter, label) in enumerate(zip(hw_letters, default_labels)):
+        _add(f"NameChange_{idx + 1}", "string", f"{label}_to_CH {letter}")
+    for idx, (letter, label) in enumerate(zip(hw_letters, config_labels)):
+        _add(f"NameChange_{idx + 5}", "string", f"CH {letter}_to_{label}")
+
+    _add("FIRMWARE_VERSION", "string", "")
+    try:
+        from importlib.metadata import version as _pkg_version
+        sw_version = _pkg_version("ptech-morelia")
+    except Exception:
+        sw_version = ""
+    _add("SOFTWARE_VERSION", "string", sw_version)
+
+    return prefs
 
 
 def main():
@@ -440,10 +601,24 @@ def main():
     # Configure sample rate on the device for the streaming worker and timestamping
     _set_sample_rate(pod, sample_rate, use_d2xx=use_d2xx)
 
+    # Collect device configuration for the PVFS device_preferences_table.
+    # Re-load the TOML config (if one was used) so per-channel overrides
+    # that sit on top of the preamp defaults are captured in the table.
+    config_overrides = None
+    if args.get_config is not None and not (args.set_config is not None and args.get_config is not None):
+        try:
+            config_overrides = toml.load(os.path.abspath(args.get_config))
+        except Exception:
+            pass
+    device_prefs = _collect_device_preferences(
+        pod, sample_rate, use_d2xx, config_overrides=config_overrides,
+    )
+
     # Shared queue for plot sink; PlotDisplay (main process) consumes from it.
     queue = mp.Queue(maxsize=2048)
     plot_sink = PlotSink(queue, pod)
-    pvfs_sink = PvfsSink(args.output, pod, use_writer_process=True)
+    pvfs_sink = PvfsSink(args.output, pod, use_writer_process=True,
+                         device_preferences=device_prefs)
 
     # Extensible sink list: DataFlow + RxPy publish() fan out the same stream to every
     # sink; each sink's flush(timestamp, packet) is called once per sample. Throughput

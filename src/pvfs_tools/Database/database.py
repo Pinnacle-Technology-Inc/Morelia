@@ -108,7 +108,13 @@ class ExperimentDatabase:
             """,
             "CREATE TABLE IF NOT EXISTS annotation_parameters_table (id INTEGER PRIMARY KEY)",
             "CREATE TABLE IF NOT EXISTS annotation_types (id INTEGER PRIMARY KEY)",
-            "CREATE TABLE IF NOT EXISTS device_preferences_table (id INTEGER PRIMARY KEY)",
+            """CREATE TABLE IF NOT EXISTS device_preferences_table (
+                name TEXT,
+                type TEXT,
+                value TEXT,
+                ProductNumber INTEGER,
+                SerialNumber INTEGER
+            )""",
             "CREATE TABLE IF NOT EXISTS experiment_annotation_table (id INTEGER PRIMARY KEY)",
             "CREATE TABLE IF NOT EXISTS experiment_artifacts (id INTEGER PRIMARY KEY)",
             "CREATE TABLE IF NOT EXISTS experiment_channel_parameters_table (id INTEGER PRIMARY KEY)",
@@ -165,6 +171,30 @@ class ExperimentDatabase:
             return True
         except Exception as e:
             raise TableError(f"Failed to set experiment information: {e}")
+
+    def set_device_preferences(self, preferences: List[Dict[str, Any]]) -> bool:
+        """Insert device preference rows into ``device_preferences_table``.
+
+        Each element of *preferences* must be a dict with keys
+        ``name``, ``type``, ``value``, ``ProductNumber``, ``SerialNumber``.
+        """
+        try:
+            with self.session() as session:
+                for pref in preferences:
+                    session.execute(text("""
+                        INSERT INTO device_preferences_table
+                        (name, type, value, ProductNumber, SerialNumber)
+                        VALUES (:name, :type, :value, :ProductNumber, :SerialNumber)
+                    """), {
+                        "name": pref["name"],
+                        "type": pref["type"],
+                        "value": str(pref["value"]),
+                        "ProductNumber": pref["ProductNumber"],
+                        "SerialNumber": pref["SerialNumber"],
+                    })
+            return True
+        except Exception as e:
+            raise TableError(f"Failed to set device preferences: {e}")
 
     def get_information(self) -> Optional[ExperimentInformation]:
         """Get experiment information. Uses base (sine.pvfs) schema column names."""

@@ -50,6 +50,7 @@ def _pvfs_writer_target(
     channels: tuple[str, ...],
     units: tuple[str, ...],
     sample_rate: float,
+    device_preferences: list[dict] | None = None,
 ) -> None:
     """Target for the dedicated PVFS writer process.
 
@@ -77,6 +78,9 @@ def _pvfs_writer_target(
             print(f"[PvfsWriter] ERROR: Failed to create channel {ch_name}", file=sys.stderr, flush=True)
             return
         idf._delta_time = HighTime(0, 1.0 / sample_rate)
+
+    if device_preferences:
+        pvfs_data.set_device_preferences(device_preferences)
 
     n_channels = len(channels)
     buf: list[list[float]] = [[] for _ in channels]
@@ -152,6 +156,7 @@ class PvfsSink(SinkInterface):
         pod: AcquisitionDevice,
         observe_on_scheduler: str | None = None,
         use_writer_process: bool = False,
+        device_preferences: list[dict] | None = None,
     ) -> None:
         if not _PVFS_AVAILABLE:
             msg = (
@@ -190,6 +195,7 @@ class PvfsSink(SinkInterface):
             self.observe_on_scheduler = None
         else:
             self.observe_on_scheduler = observe_on_scheduler
+        self._device_preferences = device_preferences
         self._writer_queue: mp.Queue | None = None
         self._writer_proc: mp.Process | None = None
         self._writer_stop: mp.Event | None = None
@@ -220,7 +226,8 @@ class PvfsSink(SinkInterface):
             self._writer_proc = mp.Process(
                 target=_pvfs_writer_target,
                 args=(self._writer_queue, self._writer_stop, self._file_path,
-                      self._channels, self._units, sample_rate),
+                      self._channels, self._units, sample_rate,
+                      self._device_preferences),
             )
             self._writer_proc.start()
             return self
@@ -249,6 +256,9 @@ class PvfsSink(SinkInterface):
             if idf is None:
                 raise RuntimeError(f"Failed to create PVFS channel {ch_name}")
             idf._delta_time = HighTime(0, 1.0 / sample_rate)
+
+        if self._device_preferences:
+            self._pvfs_data.set_device_preferences(self._device_preferences)
 
         self._samples_written = 0
         return self
@@ -388,4 +398,5 @@ class PvfsSink(SinkInterface):
             "file_path": file_path,
             "observe_on_scheduler": self.observe_on_scheduler,
             "use_writer_process": self._use_writer_process,
+            "device_preferences": self._device_preferences,
         }
