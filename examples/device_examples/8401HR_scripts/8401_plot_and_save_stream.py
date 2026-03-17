@@ -373,8 +373,11 @@ def _collect_device_preferences(
         })
 
     preamp_cfg = None
-    if pod.preamp_model:
-        preamp_cfg = lookup_preamp_config(pod.preamp_model)
+    model = pod.preamp_model
+    if not model and ovr:
+        model = _resolve_override(ovr, "preamp", "preamp_model", None)
+    if model:
+        preamp_cfg = lookup_preamp_config(model)
 
     config_name = preamp_cfg.name if preamp_cfg else ""
     _add("ConfigName", "string", config_name)
@@ -602,14 +605,20 @@ def main():
     _set_sample_rate(pod, sample_rate, use_d2xx=use_d2xx)
 
     # Collect device configuration for the PVFS device_preferences_table.
-    # Re-load the TOML config (if one was used) so per-channel overrides
-    # that sit on top of the preamp defaults are captured in the table.
+    # Load config_overrides from whichever TOML file was involved so the
+    # preferences table reflects actual channel settings (including any
+    # overrides on top of the preamp defaults).
+    both_config = args.set_config is not None and args.get_config is not None
     config_overrides = None
-    if args.get_config is not None and not (args.set_config is not None and args.get_config is not None):
-        try:
-            config_overrides = toml.load(os.path.abspath(args.get_config))
-        except Exception:
-            pass
+    if not both_config:
+        # --set-config saves actual device state; --get-config is the input.
+        # Either is a good source of truth for channel parameters.
+        config_path = args.set_config or args.get_config
+        if config_path is not None:
+            try:
+                config_overrides = toml.load(os.path.abspath(config_path))
+            except Exception:
+                pass
     device_prefs = _collect_device_preferences(
         pod, sample_rate, use_d2xx, config_overrides=config_overrides,
     )

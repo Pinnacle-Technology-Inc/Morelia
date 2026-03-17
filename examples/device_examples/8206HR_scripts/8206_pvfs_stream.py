@@ -6,9 +6,16 @@ For D2XX, assumes the 8206HR is the only connected device, or use --device to pi
 Output is compatible with the standard Sirenia data format (experiment.db3 + indexed channels).
 
 Usage:
-  python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--com-port [PORT]] [--device INDEX]
-  (default: output_8206.pvfs, run until Space/Enter; default: D2XX, default port: COM9 on Windows)
+  python 8206_pvfs_stream.py [--output OUTPUT.pvfs] [--duration SECONDS] [--sample-rate RATE] [--com-port [PORT]] [--device INDEX]
+  python 8206_pvfs_stream.py --set-config [FILE]   # save current device config to TOML, then stream and save
+  python 8206_pvfs_stream.py --get-config [FILE]   # load config from TOML, apply, then stream and save
+
+  (default: output_8206.pvfs, run until Space/Enter; default: D2XX, default port: COM9 on Windows; default sample rate: 1000 Hz)
   When multiple D2XX devices are present and --device is omitted, you will be prompted to choose.
+  Allowed sample rates: 100, 200, 400, 800, 1000, 2000
+  Config file defaults to config.toml when --set-config or --get-config is used without a filename.
+  CLI qualifiers (e.g. --sample-rate, --preamp-gain) override values from the config file.
+  Specifying both --set-config and --get-config cancels out (neither is applied).
 
 Examples:
   # Use D2XX device (default)
@@ -30,7 +37,10 @@ Requires: 8206HR connected via USB. For D2XX: drivers and ftd2xx (Windows) or py
 """
 
 from pathlib import Path
+import os
 import sys
+import time
+import toml
 
 # Add project src so Morelia and pvfs_tools are importable
 _examples_dir = Path(__file__).resolve().parent
@@ -96,6 +106,149 @@ def list_d2xx_devices():
         return []
 
 
+def _set_sample_rate(pod: Pod8206HR, sample_rate: int, use_d2xx: bool) -> None:
+    """Set and verify the 8206HR sample rate."""
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Ensure streaming is stopped before changing sample rate
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception as e:
+            print(f"Warning: Could not ensure streaming is stopped before setting sample rate: {e}")
+
+        pod.write_read("SET SAMPLE RATE", sample_rate, timeout_sec=5)
+
+        # Verify sample rate
+        try:
+            rate_response = pod.write_read("GET SAMPLE RATE", timeout_sec=5)
+            actual_rate = rate_response.payload[0] if rate_response.payload else None
+            if actual_rate != sample_rate:
+                print(
+                    f"Warning: Requested sample rate {sample_rate} Hz but device reports {actual_rate}. "
+                    "Continuing anyway."
+                )
+        except Exception as e:
+            print(f"Warning: Could not verify sample rate after setting to {sample_rate} Hz: {e}")
+
+        pod._sample_rate = (sample_rate,)
+    except Exception as e:
+        print(f"Warning: Could not set sample rate to {sample_rate} Hz: {e}")
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+
+def _save_device_config(pod: Pod8206HR, filepath: str, use_d2xx: bool) -> None:
+    """Read the device's current configuration and write it to a TOML file."""
+    filepath = os.path.abspath(filepath)
+    folder = os.path.dirname(filepath)
+    basename = os.path.basename(filepath)
+
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Stop streaming in case device is in an active state
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        pod.get_config(folder, basename)
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+
+def _load_and_apply_config(
+    pod: Pod8206HR,
+    filepath: str,
+    use_d2xx: bool,
+    cli_overrides: dict | None = None,
+) -> int | None:
+    """Load a TOML config file and apply it to the device.
+
+    Returns the ``sample_rate`` found in the config (or ``None`` if absent),
+    so the caller can decide whether to use it or a CLI / default value.
+    """
+    filepath = os.path.abspath(filepath)
+    if not os.path.exists(filepath):
+        print(f"Config file not found: {filepath}", file=sys.stderr)
+        sys.exit(1)
+
+    config = toml.load(filepath)
+
+    # Extract sample_rate from config before applying (handled separately
+    # by _set_sample_rate which also stops streaming and verifies).
+    config_sample_rate = None
+    sr_section = config.get("sample_rate")
+    if isinstance(sr_section, dict):
+        config_sample_rate = sr_section.pop("sample_rate", None)
+        if not sr_section:
+            config.pop("sample_rate", None)
+    elif isinstance(sr_section, (int, float)):
+        config_sample_rate = int(sr_section)
+        config.pop("sample_rate", None)
+
+    # Strip any remaining keys that the CLI explicitly overrides
+    if cli_overrides:
+        for key in cli_overrides:
+            config.pop(key, None)
+            for section in list(config.values()):
+                if isinstance(section, dict):
+                    section.pop(key, None)
+
+    # Apply the remaining config to the device (needs an open port)
+    port_was_open = pod._port is not None
+    try:
+        if not port_was_open:
+            pod.open_port()
+
+        # Stop streaming in case device is in an active state
+        try:
+            pod.write_packet("STREAM", 0)
+            time.sleep(0.1)
+            while True:
+                try:
+                    pod.read_pod_packet(timeout_sec=0.1)
+                except TimeoutError:
+                    break
+        except Exception:
+            pass
+
+        pod.apply_config(config)
+    finally:
+        if not port_was_open and use_d2xx and getattr(pod, "_port", None) is not None:
+            try:
+                pod.close_port()
+            except Exception:
+                pass
+
+    return config_sample_rate
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Stream 8206HR data to a PVFS file (COM port or D2XX)")
@@ -130,13 +283,37 @@ def main():
         type=int,
         default=100,
         choices=[10, 100],
-        help="Preamp gain for 8206HR (default: 100)",
+        help="Preamp gain for 8206HR (default: 100). Overrides preamp_gain from config file.",
     )
     parser.add_argument(
         "--baudrate",
         type=int,
         default=115200,
         help="Baud rate for communication (default: 115200)",
+    )
+    parser.add_argument(
+        "--sample-rate",
+        type=int,
+        default=None,
+        choices=[100, 200, 400, 800, 1000, 2000],
+        metavar="RATE",
+        help="Sample rate in Hz (allowed: 100, 200, 400, 800, 1000, 2000; default: 1000). Overrides config file value.",
+    )
+    parser.add_argument(
+        "--set-config",
+        nargs="?",
+        const="config.toml",
+        default=None,
+        metavar="FILE",
+        help="Save the connected device's current configuration to a TOML file, then continue streaming (default: config.toml).",
+    )
+    parser.add_argument(
+        "--get-config",
+        nargs="?",
+        const="config.toml",
+        default=None,
+        metavar="FILE",
+        help="Load device configuration from a TOML file before streaming (default: config.toml). CLI qualifiers override config values.",
     )
     args = parser.parse_args()
 
@@ -255,11 +432,40 @@ def main():
             pass
         sys.exit(1)
 
+    # When both --set-config and --get-config are specified, saving the
+    # current config and immediately reloading it is a no-op, so skip both.
+    config_sample_rate = None
+    if args.set_config is not None and args.get_config is not None:
+        print("Both --set-config and --get-config specified; skipping both.")
+    else:
+        # --set-config: save current device config to TOML, then continue streaming
+        if args.set_config is not None:
+            _save_device_config(pod, args.set_config, use_d2xx)
+
+        # --get-config: load config from TOML and apply to device.
+        # Build a dict of properties explicitly provided on the CLI so they
+        # are not overwritten by the config file.
+        if args.get_config is not None:
+            cli_overrides = {}
+            if args.sample_rate is not None:
+                cli_overrides["sample_rate"] = args.sample_rate
+            if args.preamp_gain is not None:
+                cli_overrides["preamp_gain"] = args.preamp_gain
+            config_sample_rate = _load_and_apply_config(
+                pod, args.get_config, use_d2xx, cli_overrides=cli_overrides
+            )
+
+    # Resolve final sample rate: CLI > config file > default (1000)
+    sample_rate = args.sample_rate or config_sample_rate or 1000
+
+    # Configure sample rate on the device for the streaming worker and timestamping
+    _set_sample_rate(pod, sample_rate, use_d2xx=use_d2xx)
+
     pvfs_sink = PvfsSink(args.output, pod)
     mapping = [(pod, [pvfs_sink])]
     flowgraph = DataFlow(mapping)
 
-    print(f"Streaming 8206HR to {args.output} (preamp_gain={args.preamp_gain})")
+    print(f"Streaming 8206HR to {args.output} (preamp_gain={args.preamp_gain}, sample_rate={sample_rate} Hz)")
     try:
         if args.duration is not None:
             print(f"Duration: {args.duration} s")
