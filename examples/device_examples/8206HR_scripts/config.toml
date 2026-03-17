@@ -1,0 +1,19 @@
+title = "Pod8206HR Device Configuration File"
+filename = "out.toml"
+
+[sample_rate]
+sample_rate = 2000
+
+[lowpass]
+lowpass_ch0 = 100
+lowpass_ch1 = 40
+lowpass_ch2 = 40
+
+[filter_config]
+filter_config = 2
+
+[ttl_pins.ttl_port]
+TTL1 = 1
+TTL2 = 1
+TTL3 = 1
+TTL4 = 1
