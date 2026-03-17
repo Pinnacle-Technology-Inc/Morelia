@@ -207,8 +207,11 @@ class Pod8401HR(AcquisitionDevice) :
 
     @preamp_highpass_0.setter
     def preamp_highpass_0(self, value: int) -> None:
-        self.write_packet("SET HIGHPASS", (0, value))
-        self._high_pass[0] = value
+        try:
+            self.write_read("SET HIGHPASS", (0, value), timeout_sec=2.0)
+            self._high_pass[0] = value
+        except Exception as e:
+            print(f"[HIGHPASS] Failed to set preamp_highpass_0 to {value}: {e}")
 
     @property
     def preamp_highpass_1(self) -> int:
@@ -219,8 +222,11 @@ class Pod8401HR(AcquisitionDevice) :
 
     @preamp_highpass_1.setter
     def preamp_highpass_1(self, value: int) -> None:
-        self.write_packet("SET HIGHPASS", (1, value))
-        self._high_pass[1] = value
+        try:
+            self.write_read("SET HIGHPASS", (1, value), timeout_sec=2.0)
+            self._high_pass[1] = value
+        except Exception as e:
+            print(f"[HIGHPASS] Failed to set preamp_highpass_1 to {value}: {e}")
 
     @property
     def preamp_highpass_2(self) -> int:
@@ -231,8 +237,11 @@ class Pod8401HR(AcquisitionDevice) :
 
     @preamp_highpass_2.setter
     def preamp_highpass_2(self, value: int) -> None:
-        self.write_packet("SET HIGHPASS", (2, value))
-        self._high_pass[2] = value
+        try:
+            self.write_read("SET HIGHPASS", (2, value), timeout_sec=2.0)
+            self._high_pass[2] = value
+        except Exception as e:
+            print(f"[HIGHPASS] Failed to set preamp_highpass_2 to {value}: {e}")
 
     @property
     def preamp_highpass_3(self) -> int:
@@ -243,8 +252,11 @@ class Pod8401HR(AcquisitionDevice) :
 
     @preamp_highpass_3.setter
     def preamp_highpass_3(self, value: int) -> None:
-        self.write_packet("SET HIGHPASS", (3, value))
-        self._high_pass[3] = value
+        try:
+            self.write_read("SET HIGHPASS", (3, value), timeout_sec=2.0)
+            self._high_pass[3] = value
+        except Exception as e:
+            print(f"[HIGHPASS] Failed to set preamp_highpass_3 to {value}: {e}")
 
     # ------------ LOWPASS PROPERTIES ------------ 
 
@@ -307,7 +319,10 @@ class Pod8401HR(AcquisitionDevice) :
 
     @dc_mode_0.setter
     def dc_mode_0(self, mode: int) -> None:
-        self.write_packet("SET DC MODE", (0, mode))
+        try:
+            self.write_read("SET DC MODE", (0, mode), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[DCMODE] Failed to set dc_mode_0 to {mode}: {e}")
 
     @property
     def dc_mode_1(self) -> int:
@@ -316,7 +331,10 @@ class Pod8401HR(AcquisitionDevice) :
 
     @dc_mode_1.setter
     def dc_mode_1(self, mode: int) -> None:
-        self.write_packet("SET DC MODE", (1, mode))
+        try:
+            self.write_read("SET DC MODE", (1, mode), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[DCMODE] Failed to set dc_mode_1 to {mode}: {e}")
 
     @property
     def dc_mode_2(self) -> int:
@@ -325,7 +343,10 @@ class Pod8401HR(AcquisitionDevice) :
 
     @dc_mode_2.setter
     def dc_mode_2(self, mode: int) -> None:
-        self.write_packet("SET DC MODE", (2, mode))
+        try:
+            self.write_read("SET DC MODE", (2, mode), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[DCMODE] Failed to set dc_mode_2 to {mode}: {e}")
 
     @property
     def dc_mode_3(self) -> int:
@@ -334,7 +355,10 @@ class Pod8401HR(AcquisitionDevice) :
 
     @dc_mode_3.setter
     def dc_mode_3(self, mode: int) -> None:
-        self.write_packet("SET DC MODE", (3, mode))
+        try:
+            self.write_read("SET DC MODE", (3, mode), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[DCMODE] Failed to set dc_mode_3 to {mode}: {e}")
 
     # ------------ BIAS PROPERTIES ------------ 
 
@@ -348,7 +372,10 @@ class Pod8401HR(AcquisitionDevice) :
     def bias_0(self, vout: float):
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
-        self.write_packet("SET BIAS", (0, self.calculate_bias_dac_get_dac_value(vout)))
+        try:
+            self.write_read("SET BIAS", (0, self.calculate_bias_dac_get_dac_value(vout)), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[BIAS] Failed to set bias_0 to {vout}: {e}")
 
     @property
     def bias_1(self) -> float:
@@ -360,7 +387,10 @@ class Pod8401HR(AcquisitionDevice) :
     def bias_1(self, vout: float):
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
-        self.write_packet("SET BIAS", (1, self.calculate_bias_dac_get_dac_value(vout)))
+        try:
+            self.write_read("SET BIAS", (1, self.calculate_bias_dac_get_dac_value(vout)), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[BIAS] Failed to set bias_1 to {vout}: {e}")
 
     @property
     def bias_2(self) -> float:
@@ -372,7 +402,10 @@ class Pod8401HR(AcquisitionDevice) :
     def bias_2(self, vout: float):
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
-        self.write_packet("SET BIAS", (2, self.calculate_bias_dac_get_dac_value(vout)))
+        try:
+            self.write_read("SET BIAS", (2, self.calculate_bias_dac_get_dac_value(vout)), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[BIAS] Failed to set bias_2 to {vout}: {e}")
 
     @property
     def bias_3(self) -> float:
@@ -384,7 +417,10 @@ class Pod8401HR(AcquisitionDevice) :
     def bias_3(self, vout: float):
         if not (-2.048 <= vout <= 2.048):
             raise ValueError("Bias voltage must be between -2.048V and 2.048V.")
-        self.write_packet("SET BIAS", (3, self.calculate_bias_dac_get_dac_value(vout)))
+        try:
+            self.write_read("SET BIAS", (3, self.calculate_bias_dac_get_dac_value(vout)), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[BIAS] Failed to set bias_3 to {vout}: {e}")
 
     # ------------ EXT PROPERTIES ------------ 
 
@@ -1013,17 +1049,29 @@ class Pod8401HR(AcquisitionDevice) :
     # -- helpers used by apply_preamp_config --------------------------------
 
     def _set_dc_mode(self, ch: int, value: int) -> None:
-        self.write_packet("SET DC MODE", (ch, value))
+        try:
+            self.write_read("SET DC MODE", (ch, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[DCMODE] Failed to set channel {ch} dc_mode to {value}: {e}")
 
     def _set_highpass(self, ch: int, value: int) -> None:
-        self.write_packet("SET HIGHPASS", (ch, value))
+        try:
+            self.write_read("SET HIGHPASS", (ch, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[HIGHPASS] Failed to set channel {ch} highpass to {value}: {e}")
 
     def _set_lowpass(self, ch: int, value: float) -> None:
-        self.write_packet("SET LOWPASS", (ch, int(value)))
+        try:
+            self.write_read("SET LOWPASS", (ch, int(value)), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set channel {ch} lowpass to {value}: {e}")
 
     def _set_bias(self, ch: int, value: float) -> None:
         dac = self.calculate_bias_dac_get_dac_value(value)
-        self.write_packet("SET BIAS", (ch, dac))
+        try:
+            self.write_read("SET BIAS", (ch, dac), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[BIAS] Failed to set channel {ch} bias to {value}: {e}")
 
     def _set_ss(self, ch: int, ch_cfg: ChannelConfig) -> None:
         config = {"Gain": ch_cfg.ss_gain, "High-pass": ch_cfg.ss_highpass}

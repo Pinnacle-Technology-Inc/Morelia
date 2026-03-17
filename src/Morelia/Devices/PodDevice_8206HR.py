@@ -88,7 +88,10 @@ class Pod8206HR(AcquisitionDevice) :
 
     @lowpass_ch0.setter
     def lowpass_ch0(self, value: int) -> None:
-        self.write_packet("SET LOWPASS", (0, value))
+        try:
+            self.write_read("SET LOWPASS", (0, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch0 to {value}: {e}")
 
     @property
     def lowpass_ch1(self) -> int:
@@ -97,7 +100,10 @@ class Pod8206HR(AcquisitionDevice) :
 
     @lowpass_ch1.setter
     def lowpass_ch1(self, value: int) -> None:
-        self.write_packet("SET LOWPASS", (1, value))
+        try:
+            self.write_read("SET LOWPASS", (1, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch1 to {value}: {e}")
 
     @property
     def lowpass_ch2(self) -> int:
@@ -106,7 +112,10 @@ class Pod8206HR(AcquisitionDevice) :
 
     @lowpass_ch2.setter
     def lowpass_ch2(self, value: int) -> None:
-        self.write_packet("SET LOWPASS", (2, value))
+        try:
+            self.write_read("SET LOWPASS", (2, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch2 to {value}: {e}")
 
     @property
     def ttl_pin0(self) -> int:
