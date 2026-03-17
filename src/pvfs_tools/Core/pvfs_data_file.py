@@ -418,6 +418,20 @@ class PvfsDataFile:
             print(f"Error setting experiment info: {e}")
             return False
     
+    def set_device_preferences(self, preferences: list[dict]) -> bool:
+        """Populate the ``device_preferences_table`` with configuration rows.
+
+        *preferences* is a list of dicts, each with keys
+        ``name``, ``type``, ``value``, ``ProductNumber``, ``SerialNumber``.
+        """
+        if not self._database:
+            return False
+        try:
+            return self._database.set_device_preferences(preferences)
+        except Exception as e:
+            print(f"Error setting device preferences: {e}")
+            return False
+
     def get_experiment_info(self) -> Optional[ExperimentInformation]:
         """Get experiment information.
         

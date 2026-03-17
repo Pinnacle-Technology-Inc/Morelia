@@ -38,10 +38,11 @@ class DataPacket8401HR(DataPacket):
     """
 
     
-    __slots__  = ('_ss_gain', '_preamp_gain', '_primary_channel_modes', '_secondary_channel_modes', '_ch0', '_ch1', '_ch2', '_ch3', '_ext0', '_ext1', '_ttl1', '_ttl2', '_ttl3', '_ttl4')
+    __slots__  = ('_ss_gain', '_preamp_gain', '_primary_channel_modes', '_secondary_channel_modes', '_channel_invert', '_ch0', '_ch1', '_ch2', '_ch3', '_ext0', '_ext1', '_ttl1', '_ttl2', '_ttl3', '_ttl4')
     def __init__(self, preamp_gain: tuple[int], ss_gain: tuple[int], 
                  primary_channel_modes: tuple[PrimaryChannelMode], secondary_channel_modes: tuple[SecondaryChannelMode],
-                 raw_packet: bytes) -> None:
+                 raw_packet: bytes,
+                 channel_invert: tuple[bool, ...] = (False, False, False, False)) -> None:
 
         super().__init__(raw_packet, 31)
             
@@ -49,6 +50,7 @@ class DataPacket8401HR(DataPacket):
         self._ss_gain = ss_gain
         self._primary_channel_modes = primary_channel_modes
         self._secondary_channel_modes = secondary_channel_modes
+        self._channel_invert = channel_invert
 
         self._raw_packet = raw_packet
 
@@ -70,7 +72,8 @@ class DataPacket8401HR(DataPacket):
     def ch0(self) -> int:
         """:return: Value read from channel 0."""
         if self._ch0 is None:
-            self._ch0 = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[0], self._preamp_gain[0], self._ss_gain[0], conv.binary_bytes_to_int_split(self._raw_packet[7:16][6:9], 18, 0))
+            val = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[0], self._preamp_gain[0], self._ss_gain[0], conv.binary_bytes_to_int_split(self._raw_packet[7:16][6:9], 18, 0))
+            self._ch0 = -val if self._channel_invert[0] else val
 
         return self._ch0
 
@@ -78,16 +81,17 @@ class DataPacket8401HR(DataPacket):
     def ch1(self) -> int:
         """:return: Value read from channel 1."""
         if self._ch1 is None:
-            self._ch1 = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[1], self._preamp_gain[1], self._ss_gain[1], conv.binary_bytes_to_int_split(self._raw_packet[7:16][4:7], 20, 2))
+            val = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[1], self._preamp_gain[1], self._ss_gain[1], conv.binary_bytes_to_int_split(self._raw_packet[7:16][4:7], 20, 2))
+            self._ch1 = -val if self._channel_invert[1] else val
 
         return self._ch1
 
     @property
     def ch2(self) -> int:
         """:return: Value read from channel 2."""
-
         if self._ch2 is None:
-            self._ch2 = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[2], self._preamp_gain[2], self._ss_gain[2], conv.binary_bytes_to_int_split(self._raw_packet[7:16][2:5], 22, 4))
+            val = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[2], self._preamp_gain[2], self._ss_gain[2], conv.binary_bytes_to_int_split(self._raw_packet[7:16][2:5], 22, 4))
+            self._ch2 = -val if self._channel_invert[2] else val
 
         return self._ch2
 
@@ -95,7 +99,8 @@ class DataPacket8401HR(DataPacket):
     def ch3(self) -> int:
         """:return: Value read from channel 3."""
         if self._ch3 is None:
-            self._ch3 = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[3], self._preamp_gain[3], self._ss_gain[3], conv.binary_bytes_to_int_split(self._raw_packet[7:16][0:3], 24, 6))
+            val = DataPacket8401HR.get_primary_channel_value(self._primary_channel_modes[3], self._preamp_gain[3], self._ss_gain[3], conv.binary_bytes_to_int_split(self._raw_packet[7:16][0:3], 24, 6))
+            self._ch3 = -val if self._channel_invert[3] else val
 
         return self._ch3
 

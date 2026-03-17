@@ -18,6 +18,7 @@ dependencies = [
   "SQLAlchemy",  
   "Pillow>=10.0.0",
   "psutil",
+  "toml",
   "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
