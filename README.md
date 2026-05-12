@@ -36,6 +36,13 @@ Then run:
 pip install ptech-morelia
 ```
 
+`ptech-morelia` depends on **`pypvfs`** (Pinnacle PVFS bindings). Until **`pypvfs` 0.1.0** (or newer) is published on PyPI with the full `pvfs_tools` implementation, install it from a local checkout first:
+
+```bash
+pip install -e /path/to/pypvfs
+pip install ptech-morelia
+```
+
 To install from a local clone: `pip install .` (or `pip install .[plot]` to include plotting support)
 
 ### Development install (editable mode)
@@ -116,14 +123,20 @@ For “record only” tools (such as `8206_pvfs_stream.py`), the default in-proc
 
 ### PVFS native libraries
 
-PVFS support uses bundled native libraries for Windows and Linux (including WSL); no separate compilation step is needed for standard installs.
+PVFS recording uses the **`pypvfs`** package (Pinnacle PVFS file support). It is installed automatically with `pip install ptech-morelia` and provides native libraries for Windows and Linux (including WSL) when using published wheels.
 
-If you are developing or building from source on Linux/WSL and the `.so` files are incompatible, you can build them from `src/pvfs_tools/Core/`:
+If you are developing or building from source on Linux/WSL and the bundled `.so` files are incompatible, rebuild them from the **[pypvfs](https://pypi.org/project/pypvfs/)** repository:
 
 ```bash
-cd src/pvfs_tools/Core
+git clone https://github.com/Pinnacle-Technology-Inc/pypvfs.git
+cd pypvfs/src/pvfs_tools/Core
 ./build_linux.sh
+pip install -e ../../..
 ```
 
-Requires `cmake` and a C++17 compiler (e.g. `g++`).
+Requires `cmake` and a C++17 compiler (e.g. `g++`). Use `pip install -e path/to/pypvfs` in the same environment as Morelia until a matching **pypvfs** release is on PyPI.
+
+### Standalone PVFS tools (EDF / WebM / CLI)
+
+PVFS-only utilities (EDF converter, WebM exporter, synthetic file CLI) live in the **pypvfs** repo under `examples/`. See the [pypvfs README](https://pypi.org/project/pypvfs/).
 

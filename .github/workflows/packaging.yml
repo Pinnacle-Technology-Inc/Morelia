@@ -40,7 +40,7 @@ jobs:
       - name: Upload distributions
         uses: actions/upload-artifact@v4
         with:
-          name: release-dists
+          name: release-dists-${{ matrix.os }}
           path: dist/
 
   # Upload packages to PyPI.
@@ -62,7 +62,8 @@ jobs:
       - name: Retrieve release distributions
         uses: actions/download-artifact@v4
         with:
-          name: release-dists
+          pattern: release-dists-*
+          merge-multiple: true
           path: dist/
 
       - name: Publish package distributions to PyPI

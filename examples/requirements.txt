@@ -1,3 +1,9 @@
+# Examples in this folder that only need Morelia + plotting use:
+#   pip install ptech-morelia[plot]
+#
+# Stand-alone PVFS utilities (EDF/WebM/CLI) live in the **pypvfs** package.
+# See https://pypi.org/project/pypvfs/ and that repo's examples/.
+
 numpy>=1.21.0
-pyedflib>=0.1.28 
+pyedflib>=0.1.28
 PyAV
