@@ -10,15 +10,14 @@ Usage:
   python pvfs_sink_demo.py [--output OUTPUT.pvfs] [--duration SECONDS] [--rate HZ]
   (default: demo_pvfs_sink.pvfs, 5 s, 400 Hz)
 
-After running, open the output .pvfs in Sirenia or use tests/pvfs/test_pvfs.py
-patterns to verify (e.g. extract experiment.db3, check channel list).
+After running, open the output .pvfs in Sirenia or run the **pypvfs** test suite against the file (see the [pypvfs](https://pypi.org/project/pypvfs/) repository).
 """
 
 import math
 import sys
 from pathlib import Path
 
-# Add project src so Morelia and pvfs_tools are importable
+# Allow running this script from a git clone without an editable install (optional).
 _examples_dir = Path(__file__).resolve().parent
 _project_root = _examples_dir.parent
 _src = _project_root / "src"

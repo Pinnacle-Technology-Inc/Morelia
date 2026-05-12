@@ -1,9 +1,0 @@
-If PowerShell blocks running the build script (e.g. "cannot be loaded because running scripts is disabled"), run this once:
-
-  Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-
-This allows locally created scripts (such as build_pvfs_x64.ps1) to run while still restricting downloaded scripts.
-
-Clean build (if you get linker errors or changed CMakeLists.txt):
-  The script removes the build directory (Core/build_x64) at the start of each run so CMake reconfigures from scratch.
-  If the folder is in use (e.g. Visual Studio has it open), close it first or manually delete Core/build_x64 before running the script.

@@ -19,6 +19,7 @@ dependencies = [
   "Pillow>=10.0.0",
   "psutil",
   "toml",
+  "pypvfs>=0.1.0,<1",
   "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
@@ -61,10 +62,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["*", "pvfs_tools", "pvfs_tools.*"]
-
-[tool.setuptools.package-data]
-"pvfs_tools.Core" = ["*.so", "*.dll"]
+include = ["Morelia", "Morelia.*"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]

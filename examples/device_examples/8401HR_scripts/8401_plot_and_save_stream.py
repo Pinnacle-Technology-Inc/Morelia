@@ -21,7 +21,7 @@ Usage:
   Specifying both --save-config and --load-config cancels out (neither is applied).
   If --duration is omitted, stream until the plot window is closed. If --duration is set, record and plot for that many seconds then stop.
 
-Requires optional dependencies: pip install ptech-morelia[plot] (for plot). pvfs_tools for PVFS output.
+Requires optional dependencies: `pip install ptech-morelia[plot]` (for plot). PVFS output requires **`pypvfs`** (pulled in automatically with `pip install ptech-morelia`).
 """
 
 from pathlib import Path

@@ -160,8 +160,8 @@ class PvfsSink(SinkInterface):
     ) -> None:
         if not _PVFS_AVAILABLE:
             msg = (
-                "pvfs_tools is not available, or the PVFS native library failed to load for this platform. "
-                "Ensure pvfs_tools is installed and that you are on Windows or Linux with the correct binaries."
+                "PVFS support is not available, or the PVFS native library failed to load for this platform. "
+                "Install the `pypvfs` package (`pip install pypvfs`) and ensure you are on Windows or Linux with the correct binaries."
             )
             if _PVFS_IMPORT_ERROR is not None:
                 msg += f" Reason: {_PVFS_IMPORT_ERROR}"

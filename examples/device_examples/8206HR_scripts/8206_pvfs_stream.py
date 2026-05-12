@@ -42,7 +42,7 @@ import sys
 import time
 import toml
 
-# Add project src so Morelia and pvfs_tools are importable
+# Allow running this script from a git clone without an editable install (optional).
 _examples_dir = Path(__file__).resolve().parent
 _device_examples = _examples_dir.parent
 _examples_root = _device_examples.parent
