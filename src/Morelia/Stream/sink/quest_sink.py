@@ -10,7 +10,10 @@ __email__       = 'sales@pinnaclet.com'
 import socket
 import reactivex as rx
 import reactivex.operators as ops
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, AcquisitionDevice
@@ -24,13 +27,15 @@ class QuestSink(SinkInterface):
         :param port: Default QuestDB port is 9009 for ILP TCP service (InfluxDB Line Protocol).
         :param measurement: Measurement within QuestDB to write data to.
         :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
+        :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by QuestDB I/O. Optional; queue is unbounded.
     """
-    def __init__(self, pod: AcquisitionDevice, host: str = "localhost", port: int = "9009", measurement: str = "default_measurement") -> None:
+    def __init__(self, pod: AcquisitionDevice, host: str = "localhost", port: int = 9009, measurement: str = "default_measurement", observe_on_scheduler: str | None = None) -> None:
         """Set instance variables"""
         self._host = host
         self._port = port
         self._measurement = measurement
         self._pod = pod
+        self.observe_on_scheduler = observe_on_scheduler
 
         if isinstance(self._pod, Pod8401HR):
             def _line_protocol_factory(timestamp, packet) -> str:
@@ -98,8 +103,9 @@ class QuestSink(SinkInterface):
 
     def get_dict(self):
         return {
-            'host': self.host, 
-            'port': self.port, 
-            'measurement': self.measurement
+            'host': self.host,
+            'port': self.port,
+            'measurement': self.measurement,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }
       

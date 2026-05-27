@@ -8,9 +8,13 @@ __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
 from pyedflib import EdfWriter
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 import numpy as np
 import functools as ft
+import os
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
@@ -22,13 +26,14 @@ class EDFSink(SinkInterface):
     :param sample_rate: Sample rate of device being streamed from. Used in setting up EDF file.
     :param file_path: Path to CSV file to write to.
     :param pod: POD device data is being streamed from.
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by EDF I/O. Optional; queue is unbounded.
     """
 
-    def __init__(self, file_path: str, pod: AcquisitionDevice) -> None:
+    def __init__(self, file_path: str, pod: AcquisitionDevice, observe_on_scheduler: str | None = None) -> None:
         """ Class constructor."""
         self._file_path = file_path
-
         self._pod = pod
+        self.observe_on_scheduler = observe_on_scheduler
 
         if isinstance(self._pod, Pod8206HR):
                 self._channels = ('EEG1', 'EEG2', 'EEG3/EMG', 'TTL1', 'TTl2', 'TTL3', 'TTl4')
@@ -62,6 +67,37 @@ class EDFSink(SinkInterface):
         EDF_DIGITAL_MAX = 32767
         EDF_DIGITAL_MIN = -32768
 
+        # Delete existing file if it exists to allow overwrite
+        # EdfWriter may not handle existing files correctly, so we must delete first
+        # Retry deletion in case file is locked (e.g., from previous run that didn't close properly)
+        if os.path.exists(self._file_path):
+            import time
+            import sys
+            max_retries = 10
+            retry_delay = 0.1  # 100ms
+            deleted = False
+            for attempt in range(max_retries):
+                try:
+                    os.remove(self._file_path)
+                    # Small delay to ensure filesystem has processed the deletion
+                    time.sleep(0.05)
+                    if not os.path.exists(self._file_path):
+                        deleted = True
+                        break
+                except OSError as e:
+                    if attempt < max_retries - 1:
+                        time.sleep(retry_delay)
+                    else:
+                        # Last attempt failed - log warning
+                        print(f"Warning: Could not delete existing EDF file '{self._file_path}': {e}. "
+                              f"File may be locked. Attempting to create writer anyway.", file=sys.stderr)
+            
+            # Final check - if file still exists, warn but continue
+            if os.path.exists(self._file_path):
+                import sys
+                print(f"Warning: EDF file '{self._file_path}' still exists after deletion attempts. "
+                      f"This may cause write errors. Please close any programs using this file.", file=sys.stderr)
+
         self._edf_writer = EdfWriter(self._file_path, len(self._channels))
 
         for idx, channel in enumerate(self._channels):
@@ -83,8 +119,15 @@ class EDFSink(SinkInterface):
 
         self._write_buffer_to_edf()
 
-        self._edf_writer.close()
-        del self._edf_writer
+        # Ensure file is properly closed
+        if hasattr(self, '_edf_writer') and self._edf_writer is not None:
+            try:
+                self._edf_writer.close()
+            except Exception as e:
+                import sys
+                print(f"Warning: Error closing EDF file: {type(e).__name__}: {e}", file=sys.stderr)
+            finally:
+                self._edf_writer = None
 
         return False
 
@@ -98,13 +141,24 @@ class EDFSink(SinkInterface):
         """
         
         if isinstance(self._pod, Pod8206HR):
-            self._buffer[0].append(packet.ch0)
-            self._buffer[1].append(packet.ch1)
-            self._buffer[2].append(packet.ch2)
-            self._buffer[3].append(float(packet.ttl1))
-            self._buffer[4].append(float(packet.ttl2))
-            self._buffer[5].append(float(packet.ttl3))
-            self._buffer[6].append(float(packet.ttl4))
+            try:
+                # Validate channel values before appending
+                ch0_val = float(packet.ch0) if not (np.isnan(packet.ch0) or np.isinf(packet.ch0)) else 0.0
+                ch1_val = float(packet.ch1) if not (np.isnan(packet.ch1) or np.isinf(packet.ch1)) else 0.0
+                ch2_val = float(packet.ch2) if not (np.isnan(packet.ch2) or np.isinf(packet.ch2)) else 0.0
+                
+                self._buffer[0].append(ch0_val)
+                self._buffer[1].append(ch1_val)
+                self._buffer[2].append(ch2_val)
+                self._buffer[3].append(float(packet.ttl1))
+                self._buffer[4].append(float(packet.ttl2))
+                self._buffer[5].append(float(packet.ttl3))
+                self._buffer[6].append(float(packet.ttl4))
+            except (AttributeError, ValueError, TypeError) as e:
+                # Skip this packet if it has invalid attributes or values
+                import sys
+                print(f"Warning: Skipping packet due to invalid data: {type(e).__name__}: {e}", file=sys.stderr)
+                return
 
         elif isinstance(self._pod, Pod8401HR):
             self._buffer[0].append(packet.ch0)
@@ -122,10 +176,49 @@ class EDFSink(SinkInterface):
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:
-        self._edf_writer.writeSamples(list(map(np.array, self._buffer)))
+        # Validate buffer before writing
+        if not self._buffer or len(self._buffer) == 0:
+            return  # Nothing to write
+        
+        # Check that all buffers have the same length
+        buffer_lengths = [len(b) for b in self._buffer]
+        if not buffer_lengths or len(set(buffer_lengths)) != 1:
+            # Mismatched buffer lengths - skip this write to avoid EDF error
+            # This can happen if packets were dropped/corrupted
+            import sys
+            print(f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}", file=sys.stderr)
+            self._buffer = [ [] for _ in self._channels ]
+            return
+        
+        # Convert to numpy arrays and validate data
+        try:
+            arrays = []
+            for buf in self._buffer:
+                arr = np.array(buf, dtype=np.float64)
+                # Check for invalid values (NaN, inf)
+                if np.any(np.isnan(arr)) or np.any(np.isinf(arr)):
+                    import sys
+                    print(f"Warning: Skipping EDF write due to NaN/inf values in buffer", file=sys.stderr)
+                    self._buffer = [ [] for _ in self._channels ]
+                    return
+                arrays.append(arr)
+            
+            # All arrays should have the same length at this point
+            if len(arrays) > 0 and len(arrays[0]) > 0:
+                self._edf_writer.writeSamples(arrays)
+        except OSError as e:
+            # Handle EDF write errors gracefully
+            import sys
+            print(f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
+        except Exception as e:
+            # Catch any other unexpected errors
+            import sys
+            print(f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
+        
         self._buffer = [ [] for _ in self._channels ]
 
     def get_dict(self):
         return {
-            'file_path': self.file_path
+            'file_path': self.file_path,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }

@@ -7,7 +7,9 @@ from Morelia.exceptions import InvalidChecksumError
 import Morelia.packet.conversion as conv
 
 from functools import partial
+import os
 import time
+import toml
 from queue import Empty
 
 # authorship
@@ -23,18 +25,23 @@ class Pod :
     Pod handles basic communication with a generic POD device, including reading and writing 
     packets and packet interpretation. This is the parent class for any device that communcates using the POD protocol.
     
-    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param port: Serial port to be opened. For COM ports: "COM9" or 9. For D2XX: serial number string or device index.
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual Name used to indentify device.
+    :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires pylibftdi. Defaults to False.
     """
     
 
-    def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None) -> None : 
+    def __init__(self, port: str|int,  baudrate:int=9600, device_name: str | None = None, use_d2xx: bool = False) -> None : 
         """Runs when an instance of Pod is constructed. It initializes the instance variable for 
         the serial port communication (_port) and for the command handler (_commands).
         """
         
-        self._name = PortIO.build_port_name(port)
+        # Build port name - for D2XX, use the port as-is; for COM ports, use build_port_name
+        if use_d2xx:
+            self._name = str(port)  # D2XX uses serial numbers/descriptions directly
+        else:
+            self._name = PortIO.build_port_name(port)
         self._manager = PacketManager(self._name)
         self._baudrate = baudrate
 
@@ -42,16 +49,26 @@ class Pod :
         self._port = None
 
         self._port_value = port
+        self._use_d2xx = use_d2xx
+
+        # Check if D2XX is requested and available
+        if use_d2xx:
+            try:
+                from Morelia.Devices.SerialPorts import D2XXPortIO, D2XX_AVAILABLE
+                if not D2XX_AVAILABLE:
+                    raise ImportError("D2XX support requested but pylibftdi is not installed")
+            except ImportError as e:
+                raise ImportError(f"D2XX support requested but not available: {e}")
 
         # initialize PortIO object based on if the port is in use or not
         # be extremely careful here, because any process created will inherit file descriptors of Serial Ports
-        # and the check in 
-        if not PortIO.is_port_in_use(self._port_value):
+        # For D2XX: defer opening so only the worker opens the device (avoids worker blocking on open).
+        if use_d2xx:
+            self._port = None
+            self._manager.initialize_control_queue()
+        elif not PortIO.is_port_in_use(self._port_value):
             # if the port is not in use, then create a PortIO object
-            #self._port : PortIO = PortIO(self._port_value, self._baudrate)
             self.open_port()
-
-            # initialize the control queues for this pod device
             self._manager.initialize_control_queue()
         else:
             # otherwise, do not create a PortIO object
@@ -78,7 +95,12 @@ class Pod :
         self._control_packet_factory = partial(ControlPacket, self._commands)
 
     def open_port(self):
-        self._port : PortIO = PortIO(self._port_value, self._baudrate)
+        """Open the port using either PortIO (COM port) or D2XXPortIO (direct USB)."""
+        if self._use_d2xx:
+            from Morelia.Devices.SerialPorts import D2XXPortIO
+            self._port : D2XXPortIO = D2XXPortIO(self._port_value, self._baudrate)
+        else:
+            self._port : PortIO = PortIO(self._port_value, self._baudrate)
    
     def close_port(self):
         if self._port is not None:
@@ -86,6 +108,14 @@ class Pod :
             self._port = None
         else:
             return
+    
+    def cleanup(self):
+        """
+        Clean up resources including closing the port and terminating queue server subprocess.
+        """
+        self.close_port()
+        if hasattr(self, '_manager') and self._manager is not None:
+            self._manager.cleanup()
 
     # functions to get queue values
     def obtain_write_queue(self):
@@ -284,7 +314,8 @@ class Pod :
         :return: True of the buffers are flushed, False otherwise.
         """
         if self._port is None:
-            print("PortIO object does not exist!")
+            # Port has been closed or was never opened - silently return False
+            # This is expected behavior when DataFlow closes the port for multiprocessing
             return False
 
         return(self._port.flush())
@@ -300,7 +331,8 @@ class Pod :
 
         #TODO write (or write/read) pod packet to set baudrate of device
         if self._port is None:
-            print("PortIO object does not exist!")
+            # Port has been closed or was never opened - silently return False
+            # This is expected behavior when DataFlow closes the port for multiprocessing
             return False
 
         # set baudrate of the open COM port. Returns true if successful.
@@ -398,9 +430,17 @@ class Pod :
         #if port exists,
         if self._port is not None:
 
-            #loops until it finds a control packet, and returns the found control packet
+            #loops until it finds a control packet, and returns the found control packet.
+            #discard bad-checksum/stray packets (e.g. data packet or sync) so we only return a valid control response.
             while time.time() - start < timeout_sec:
-                packet = self.read_pod_packet(validate_checksum, timeout_sec)
+                try:
+                    packet = self.read_pod_packet(validate_checksum, timeout_sec)
+                except TimeoutError:
+                    # read_pod_packet timed out waiting for data; retry until outer timeout
+                    continue
+                except Exception:
+                    # bad checksum, mis-sync, or other read error; discard and retry (e.g. worker first read after open)
+                    continue
 
                 if isinstance(packet, ControlPacket):  # or however your control packets are defined
                     return packet
@@ -483,6 +523,19 @@ class Pod :
         #if empty, return
         except Empty:
             return
+        except Exception as e:
+            # Handle write timeouts and other serial errors gracefully
+            # Log the error but don't crash - the queue will retry on next iteration
+            # This prevents the background thread from dying on intermittent timeouts
+            import sys
+            error_type = type(e).__name__
+            if 'Timeout' in error_type or 'timeout' in str(e).lower():
+                # Write timeout - device may be busy, skip this packet and continue
+                # The packet is lost but the thread continues running
+                pass
+            else:
+                # Other errors - log but continue
+                print(f"Warning: Error writing to serial port in check_write_queue: {error_type}: {e}", file=sys.stderr)
 
     def read_pod_packet(self, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """Reads a complete POD packet, either in standard or binary format, beginning with STX and \
@@ -501,8 +554,10 @@ class Pod :
 
         b = None
         while b != PodPacket.STX:
-            b = self._port.read(1, timeout_sec) # read next byte
-        
+            b = self._port.read(1, timeout_sec)  # read next byte
+            if b is None or len(b) == 0:
+                raise TimeoutError("No data received from device within timeout (waiting for STX)")
+
         # continue reading packet
         packet = self._read_pod_packet_recursive(validate_checksum=validate_checksum)
         # return final packet
@@ -665,3 +720,190 @@ class Pod :
             'baudrate': self.baudrate,
             'device_name': self.device_name
         }
+
+    # ------------ TOML CONFIGURATION ------------ ------------------------------------------------------------------------------------------------------------------------
+
+    def set_config(self, folder_path: str):
+        """Load an experiment configuration folder, match this device by ID and name,
+        apply the referenced device config TOML, and validate the result.
+
+        Requires that the subclass provides ``id``, ``pod_type``, and
+        ``validate_config`` (available on :class:`AcquisitionDevice` and its
+        subclasses).
+
+        :param folder_path: Path to the experiment configuration folder.
+        """
+        experiment_config = None
+        for fname in os.listdir(folder_path):
+            if fname.endswith(".toml"):
+                full_path = os.path.join(folder_path, fname)
+                data = toml.load(full_path)
+                if "experiment" in data.get("title", "").lower():
+                    experiment_config = data
+                    break
+        if experiment_config is None:
+            raise FileNotFoundError("No experiment config found.")
+
+        try:
+            device_id = self.id
+        except Exception as e:
+            raise ValueError(f"Failed to get device ID: {e}")
+
+        matched_device = None
+        for device in experiment_config.get("devices", []):
+            config_device_id = device.get("device_id")
+            config_device_name = device.get("device_name")
+            if str(config_device_id) == str(device_id) and config_device_name == self._device_name:
+                matched_device = device
+                break
+
+        if not matched_device:
+            raise ValueError("No matching device found in experiment config.")
+
+        config_filename = matched_device.get("config_file")
+        if not config_filename:
+            raise ValueError("Device config file name not specified.")
+
+        config_path = os.path.join(folder_path, config_filename)
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file '{config_filename}' not found.")
+
+        config_data = toml.load(config_path)
+
+        self.apply_config(config_data)
+
+        diffs = self.validate_config(config_data)
+        if diffs:
+            print("Config differences found:")
+            for k, (expected, actual) in diffs.items():
+                print(f"  {k}: expected={expected}, actual={actual}")
+        else:
+            print("Config validation passed.")
+
+    def apply_config(self, config: dict):
+        """Recursively apply a device configuration dictionary by invoking
+        property setters discovered via the MRO.
+
+        Keys listed in *skip_keys* (determined per device type) are ignored.
+
+        :param config: Device configuration dictionary (e.g. loaded from TOML).
+        """
+        device_type = type(self).__name__
+        skip_keys_map = {
+            "Pod8206HR": {"title", "filename", "filter_config", "ttl_port"},
+            "Pod8401HR": {"title", "filename", "Gain", "High-pass"},
+        }
+        skip_keys = skip_keys_map.get(device_type, {"title", "filename"})
+        self._apply_config_recursive(config, skip_keys)
+
+    def _apply_config_recursive(self, config: dict, skip_keys: set | None = None):
+        """Walk *config* and set matching properties on this device.
+
+        :param config: (Possibly nested) configuration dictionary.
+        :param skip_keys: Property names to skip.
+        """
+        if skip_keys is None:
+            skip_keys = set()
+
+        for prop, prop_value in config.items():
+            if prop in skip_keys:
+                continue
+
+            if isinstance(prop_value, dict):
+                setter_exists = (
+                    hasattr(self.__class__, prop)
+                    and isinstance(getattr(self.__class__, prop), property)
+                    and getattr(self.__class__, prop).fset is not None
+                )
+                if setter_exists:
+                    try:
+                        setattr(self, prop, prop_value)
+                    except Exception as e:
+                        print(f"[CONFIG] Failed to set {prop}: {e}")
+                else:
+                    self._apply_config_recursive(prop_value, skip_keys)
+                continue
+
+            if isinstance(prop_value, str):
+                if prop_value.isdigit():
+                    prop_value = int(prop_value)
+                else:
+                    try:
+                        prop_value = float(prop_value) if "." in prop_value else prop_value
+                    except Exception:
+                        pass
+
+            class_attr = None
+            for cls in type(self).__mro__:
+                candidate = getattr(cls, prop, None)
+                if candidate is not None:
+                    class_attr = candidate
+                    break
+
+            if isinstance(class_attr, property) and class_attr.fset is not None:
+                try:
+                    setattr(self, prop, prop_value)
+                except Exception as e:
+                    print(f"[CONFIG] Failed to set {prop} to {prop_value}: {e}")
+
+    def get_config(self, folder_path: str, filename: str | None = None):
+        """Read all configured properties from the device and write them to a
+        TOML file.
+
+        Requires that the subclass provides ``id``, ``pod_type``, and
+        ``get_combined_property_map`` (available on :class:`AcquisitionDevice`
+        and its subclasses).
+
+        :param folder_path: Folder in which to save the generated TOML file.
+        :param filename: Optional filename; defaults to ``<device_name>_config.toml``.
+        """
+        os.makedirs(folder_path, exist_ok=True)
+
+        device_type = type(self).__name__
+        device_name = self._device_name
+
+        if filename is None:
+            filename = f"{device_name}_config.toml"
+        elif not filename.endswith(".toml"):
+            filename += ".toml"
+
+        full_path = os.path.join(folder_path, filename)
+
+        config_data = self._collect_config()
+        config_data["title"] = f"{device_type} Device Configuration File"
+        config_data["filename"] = filename
+
+        with open(full_path, "w") as f:
+            toml.dump(config_data, f)
+
+        print(f"Config saved to {full_path}")
+
+    def _collect_config(self) -> dict:
+        """Collect current property values according to this device's property
+        map and return them as a nested dictionary suitable for TOML output."""
+        result = {}
+        prop_map = self.get_combined_property_map()
+        self._collect_from_map(result, prop_map)
+        return result
+
+    def _collect_from_map(self, output_dict: dict, mapping: dict):
+        """Recursively traverse *mapping* and populate *output_dict* with
+        values fetched from the corresponding property getters.
+
+        :param output_dict: Dictionary to populate.
+        :param mapping: Nested property name mapping.
+        """
+        for logical_key, value in mapping.items():
+            if isinstance(value, dict):
+                output_dict[logical_key] = {}
+                self._collect_from_map(output_dict[logical_key], value)
+            else:
+                prop_name = value
+                class_attr = getattr(self.__class__, prop_name, None)
+                if not isinstance(class_attr, property) or class_attr.fget is None:
+                    continue
+                try:
+                    prop_value = getattr(self, prop_name)
+                    output_dict[logical_key] = prop_value
+                except Exception as e:
+                    print(f"[CONFIG] Failed to read {prop_name}: {e}")

@@ -1,6 +1,7 @@
 **/__pycache__
 **/build/
-.venv
+.venv/
+venv/
 .vscode
 testing.py
 *.bkp
@@ -8,6 +9,13 @@ testing.py
 *.egg-info
 temp.*
 auth.json
+/working/*
+/src/pvfs_tools/Core/build
+/src/pvfs_tools/Core/build_linux
+/src/pvfs_tools/Core/build_x64
+/src/pvfs_tools/Core/pvfs_wrapper.dir
+/src/pvfs_tools/Core/x64
+/src/pvfs_tools/Core/Release
 
 extracted_database.db
 
@@ -26,3 +34,17 @@ infra/.terraform
 infra/.terraform.lock.hcl
 
 *generated.toml
+
+tests/pvfs/test_created.pvfs
+
+tests/pvfs/test_created_extracted.db3
+
+tests/pvfs/dump_pvfs_index_idat.py
+
+tests/pvfs/test_create_pvfs_file_extracted.db3
+
+tests/pvfs/test_create_pvfs_file.pvfs
+
+examples/device_examples/8206HR_scripts/end_times.log
+
+end_times.log

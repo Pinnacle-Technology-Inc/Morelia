@@ -10,7 +10,10 @@ __email__       = 'sales@pinnaclet.com'
 from influxdb_client import InfluxDBClient, WriteApi, WriteOptions
 import reactivex as rx
 import reactivex.operators as ops
-from typing import Self
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
@@ -26,18 +29,18 @@ class InfluxSink(SinkInterface):
             :param bucket: Bucket within InfluxDB to write data to.
             :param measurement: Measurement within InfluxDB to write data to.
             :param pod: 8206-HR/8401-HR/8274D POD device you are streaming data from.
+            :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by InfluxDB I/O. Optional; queue is unbounded.
     """
 
-    def __init__(self, pod: AcquisitionDevice, url: str = "http://localhost:8086", api_token: str = 'admin-token', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement')  -> None:
+    def __init__(self, pod: AcquisitionDevice, url: str = "http://localhost:8086", api_token: str = 'admin-token', org: str = 'default-org', bucket: str = 'influx_dump', measurement: str = 'default-measurement', observe_on_scheduler: str | None = None)  -> None:
         """Set instance variables."""
-
         self.__api_token: str = api_token
-        self._url: str = url 
+        self._url: str = url
         self._pod: AcquisitionDevice = pod
-
         self._org: str = org
         self._bucket: str = bucket
         self._measurement: str = measurement
+        self.observe_on_scheduler = observe_on_scheduler
          
         if isinstance(self._pod, Pod8401HR):
             def _line_protocol_factory(timestamp, packet) -> str:
@@ -151,5 +154,6 @@ class InfluxSink(SinkInterface):
             'api_token': self.api_token,
             'org': self.org,
             'bucket': self.bucket,
-            'measurement': self.measurement
+            'measurement': self.measurement,
+            'observe_on_scheduler': self.observe_on_scheduler,
         }

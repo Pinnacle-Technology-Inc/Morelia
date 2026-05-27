@@ -17,7 +17,10 @@ dependencies = [
   "pydantic",     
   "SQLAlchemy",  
   "Pillow>=10.0.0",
-  "psutil"
+  "psutil",
+  "toml",
+  "pypvfs>=0.1.0,<1",
+  "typing_extensions>=4.0; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -36,12 +39,30 @@ video = [
   "av; python_version < '3.11'"
 ]
 
+d2xx-windows = [
+  "ftd2xx; sys_platform == 'win32'",
+]
+
+d2xx-linux = [
+  "pylibftdi; sys_platform != 'win32'",
+]
+
+d2xx = [
+  "ftd2xx; sys_platform == 'win32'",
+  "pylibftdi; sys_platform != 'win32'",
+]
+
+plot = [
+  "pyqtgraph",
+  "PyQt6",
+]
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["*", "pvfs_tools", "pvfs_tools.*"]
+include = ["Morelia", "Morelia.*"]
 
 [build-system]
 requires = ["setuptools", "setuptools-scm"]

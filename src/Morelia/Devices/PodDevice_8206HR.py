@@ -1,7 +1,8 @@
-# local imports 
+# local imports
+import time
 from Morelia.Devices import AcquisitionDevice, Pod
+from Morelia.packet import ControlPacket, PodPacket
 from Morelia.packet.data import DataPacket8206HR
-from Morelia.packet import ControlPacket
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
@@ -19,17 +20,20 @@ class Pod8206HR(AcquisitionDevice) :
     """
     Pod8206HR is used to interact with a 8206HR data acquisition device.
 
-    :param port: Serial port to be opened. Used when initializing the COM_io instance.
+    :param port: Serial port to be opened. For COM ports: "COM9" or 9. For D2XX: serial number string or device index.
     :param preamp_gain: A unitless number used to add gain to vlues recived from the preamplifier. Used in converting streaming data from the device into something human-readable. Must be 10 or 100.
     :param baudrate: Baud rate of the opened serial port. Default value is 9600.
     :param device_name: Virtual name used to indentify device.
+    :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
    """ 
-    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None) -> None :
+    def __init__(self, port: str|int, preamp_gain: int, baudrate:int=9600, device_name: str | None =  None, use_d2xx: bool = False, sample_rate: int | None = None) -> None :
         
         #self._port_value = port
 
         # initialize POD_Basics
-        super().__init__(port, 2000, baudrate, device_name) 
+        super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx)
+        if sample_rate is not None:
+            self._sample_rate = (sample_rate,) 
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -74,7 +78,110 @@ class Pod8206HR(AcquisitionDevice) :
     @property
     def preamp_gain(self):
         return self._preamp_gain
-    
+
+    # ------------ DEVICE PROPERTIES (config-capable) ------------ 
+
+    @property
+    def lowpass_ch0(self) -> int:
+        """Lowpass filter for channel 0 (EEG1) in Hz."""
+        return self.write_read("GET LOWPASS", (0,)).payload[0]
+
+    @lowpass_ch0.setter
+    def lowpass_ch0(self, value: int) -> None:
+        try:
+            self.write_read("SET LOWPASS", (0, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch0 to {value}: {e}")
+
+    @property
+    def lowpass_ch1(self) -> int:
+        """Lowpass filter for channel 1 (EEG2) in Hz."""
+        return self.write_read("GET LOWPASS", (1,)).payload[0]
+
+    @lowpass_ch1.setter
+    def lowpass_ch1(self, value: int) -> None:
+        try:
+            self.write_read("SET LOWPASS", (1, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch1 to {value}: {e}")
+
+    @property
+    def lowpass_ch2(self) -> int:
+        """Lowpass filter for channel 2 (EEG3/EMG) in Hz."""
+        return self.write_read("GET LOWPASS", (2,)).payload[0]
+
+    @lowpass_ch2.setter
+    def lowpass_ch2(self, value: int) -> None:
+        try:
+            self.write_read("SET LOWPASS", (2, value), timeout_sec=2.0)
+        except Exception as e:
+            print(f"[LOWPASS] Failed to set lowpass_ch2 to {value}: {e}")
+
+    @property
+    def ttl_pin0(self) -> int:
+        """TTL pin 0 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (0,)).payload[0]
+
+    @ttl_pin0.setter
+    def ttl_pin0(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (0, value))
+
+    @property
+    def ttl_pin1(self) -> int:
+        """TTL pin 1 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (1,)).payload[0]
+
+    @ttl_pin1.setter
+    def ttl_pin1(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (1, value))
+
+    @property
+    def ttl_pin2(self) -> int:
+        """TTL pin 2 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (2,)).payload[0]
+
+    @ttl_pin2.setter
+    def ttl_pin2(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (2, value))
+
+    @property
+    def ttl_pin3(self) -> int:
+        """TTL pin 3 input value (0 or 1)."""
+        return self.write_read("GET TTL IN", (3,)).payload[0]
+
+    @ttl_pin3.setter
+    def ttl_pin3(self, value: int) -> None:
+        self.write_packet("SET TTL OUT", (3, value))
+
+    @property
+    def ttl_port(self) -> int:
+        """Entire TTL port value as a byte (read-only, does not modify pin direction)."""
+        return self.write_read("GET TTL PORT").payload[0]
+
+    @property
+    def filter_config(self) -> int:
+        """Hardware filter configuration.  0=SL, 1=SE (40/40/100Hz), 2=SE3 (40/40/40Hz)."""
+        return self.write_read("GET FILTER CONFIG").payload[0]
+
+    # ------------ CONFIGURATION MAP ------------ 
+
+    _property_map: dict = {
+        "lowpass": {
+            "lowpass_ch0": "lowpass_ch0",
+            "lowpass_ch1": "lowpass_ch1",
+            "lowpass_ch2": "lowpass_ch2",
+        },
+        "ttl_pins": {
+            "ttl_port": "ttl_port",
+        },
+        "filter_config": {
+            "filter_config": "filter_config",
+        },
+    }
+
+    def _apply_config_recursive(self, config: dict, skip_keys: set):
+        super()._apply_config_recursive(config, skip_keys)
+
     @staticmethod
     def _translate_ttlbyte_ascii(ttl_byte: bytes) -> dict[str,int] : 
         """Separates the bits of each TTL (0-3) from a ASCII encoded byte.
@@ -111,10 +218,76 @@ class Pod8206HR(AcquisitionDevice) :
         # return complete variable length binary packet
         return DataPacket8206HR(packet, self._preamp_gain)
 
+    # Fixed size of 8206HR binary data packet: STX(1) + cmd(4) + payload(8) + checksum(2) + ETX(1) = 16 bytes
+    _STREAMING_PACKET_LEN = 16
+
+    def _read_exactly_n_streaming(self, n: int, timeout_sec: float) -> bytes | None:
+        """Read exactly n bytes, accumulating partial reads until we have n or hit timeout."""
+        data = b''
+        deadline = time.perf_counter() + timeout_sec
+        while len(data) < n:
+            remaining = max(0.01, deadline - time.perf_counter())
+            if remaining <= 0:
+                return None
+            chunk = self._port.read(n - len(data), remaining)
+            if chunk:
+                data = data + chunk
+            elif len(data) == 0:
+                return None
+        return data if len(data) == n else None
+
+    def read_pod_packet_streaming(self, timeout_sec: float = 0.1, validate_checksum: bool = True):
+        """Read one packet (data or control) using a single read(16) when aligned. Use in streaming mode for higher throughput.
+
+        When a fixed-size block is a complete data packet (16 bytes, ends with ETX), returns DataPacket8206HR.
+        When the block starts with STX but does not end with ETX (e.g. control packet), reads to ETX, parses as
+        ControlPacket, and returns it so the pipeline can deliver it to read_queue for mixed traffic.
+        Accumulates partial reads so driver returning fewer than 16 bytes does not cause timeout.
+        Raises TimeoutError if no data in timeout_sec.
+        """
+        if self._port is None:
+            raise TypeError("PortIO object does not exist!")
+        n = Pod8206HR._STREAMING_PACKET_LEN
+        while True:
+            data = self._read_exactly_n_streaming(n, timeout_sec)
+            if data is None:
+                raise TimeoutError("No data received from device within timeout (streaming read)")
+            if data[0:1] != PodPacket.STX:
+                while True:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming sync)")
+                    if b == PodPacket.STX:
+                        break
+                rest = self._read_exactly_n_streaming(n - 1, timeout_sec)
+                if rest is None:
+                    raise TimeoutError("No data received from device within timeout (streaming read after sync)")
+                data = b + rest
+            if data[-1:] != PodPacket.ETX:
+                # Variable-length packet (e.g. control) - read to ETX and try to deliver as ControlPacket
+                while data[-1:] != PodPacket.ETX:
+                    b = self._port.read(1, timeout_sec)
+                    if b is None or len(b) == 0:
+                        raise TimeoutError("No data received from device within timeout (streaming read to ETX)")
+                    data = data + b
+                if validate_checksum and not self._validate_checksum(data):
+                    continue  # discard bad packet and retry
+                try:
+                    return self._control_packet_factory(data)
+                except Exception:
+                    continue  # not a valid control packet, discard and retry
+            if validate_checksum and not self._validate_checksum(data):
+                raise Exception("Bad checksum for binary POD packet read (streaming).")
+            return DataPacket8206HR(data, self._preamp_gain)
+
     def get_dict(self):
-        return {
+        d = {
             'port': self.port,
             'preamp_gain': self.preamp_gain,
             'baudrate': self.baudrate,
-            'device_name': self.device_name
+            'device_name': self.device_name,
+            'use_d2xx': self._use_d2xx,
         }
+        if self._sample_rate is not None:
+            d['sample_rate'] = self._sample_rate[0]
+        return d

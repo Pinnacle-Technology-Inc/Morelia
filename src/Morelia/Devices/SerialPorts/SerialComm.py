@@ -163,7 +163,12 @@ class PortIO :
             # initialize and open serial port 
             self._serial_inst.baudrate = baudrate
             self._serial_inst.port = name
+            # Set write_timeout to prevent write timeouts (especially on Windows)
+            # Use a reasonable timeout: 5 seconds should be enough for most devices
+            self._serial_inst.write_timeout = 5
             self._serial_inst.open()
+            # Give the port a moment to stabilize after opening (especially important on Windows)
+            time.sleep(0.1)
             # if any leftover binary exists, read/clear it
             if self._serial_inst and self._serial_inst.in_waiting > 0:
                 self._serial_inst.read(self._serial_inst.in_waiting)
@@ -204,6 +209,21 @@ class PortIO :
         else : 
             return(False)
 
+    def purge_rx(self) -> bool:
+        """Purge RX (receive) buffer only. Useful before starting to read a new packet.
+
+        Returns:
+            bool: True if successful, False otherwise.
+        """
+        if self._serial_inst is None:
+            return False
+
+        if self.is_serial_open():
+            self._serial_inst.reset_input_buffer()
+            return True
+        else:
+            return False
+
     # ----- GETTERS -----
 
     def get_port_name(self) -> str|None : 
@@ -231,22 +251,23 @@ class PortIO :
                 Defaults to 5. 
         
         Raises:
-            Exception: Timeout for serial read.
+            TimeoutError: Timeout for serial read.
 
         Returns:
             bytes|None: If the serial port is open, it will return a set number of read bytes. \
                 If it is closed, it will return None.
         """
-        # do not continue of serial is not open 
         if(self.is_serial_closed()) :
             return(None)
-        # wait until port is in waiting, then read 
-        t = 0.0
-        while (t < timeout_sec) :
-            # read packet
+        prev_timeout = self._serial_inst.timeout
+        try:
+            self._serial_inst.timeout = timeout_sec
             r = self._serial_inst.read(numBytes)
-            return r
-        raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        finally:
+            self._serial_inst.timeout = prev_timeout
+        if len(r) < numBytes:
+            raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
+        return r
     
     def read_line(self) -> bytes|None :
         """Reads until a new line is read from the open serial port.
@@ -288,7 +309,12 @@ class PortIO :
 
         Args:
             message (bytes): byte string containing the message to write.
+            
+        Raises:
+            SerialTimeoutException: If write times out (propagated from pyserial).
         """
         if(self.is_serial_open()) : 
+            # Write timeout exceptions are propagated to caller for handling
+            # The caller (check_write_queue) will catch and handle them gracefully
             self._serial_inst.write(message)
 
