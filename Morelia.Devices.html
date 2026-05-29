@@ -8,15 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Morelia.Devices package &mdash; Morelia v1.6.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=2d14e799"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -125,6 +125,7 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.is_serial_closed"><code class="docutils literal notranslate"><span class="pre">PortIO.is_serial_closed()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.is_serial_open"><code class="docutils literal notranslate"><span class="pre">PortIO.is_serial_open()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.open_serial_port"><code class="docutils literal notranslate"><span class="pre">PortIO.open_serial_port()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.purge_rx"><code class="docutils literal notranslate"><span class="pre">PortIO.purge_rx()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.read"><code class="docutils literal notranslate"><span class="pre">PortIO.read()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.read_line"><code class="docutils literal notranslate"><span class="pre">PortIO.read_line()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.Devices.SerialPorts.html#Morelia.Devices.SerialPorts.SerialComm.PortIO.read_until"><code class="docutils literal notranslate"><span class="pre">PortIO.read_until()</span></code></a></li>
@@ -147,27 +148,41 @@
 <span id="morelia-devices-basicpodprotocol-module"></span><h2>Morelia.Devices.BasicPodProtocol module<a class="headerlink" href="#module-Morelia.Devices.BasicPodProtocol" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">Pod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.BasicPodProtocol.</span></span><span class="sig-name descname"><span class="pre">Pod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_d2xx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Pod handles basic communication with a generic POD device, including reading and writing 
 packets and packet interpretation. This is the parent class for any device that communcates using the POD protocol.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. Used when initializing the COM_io instance.</p></li>
+<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. For COM ports: “COM9” or 9. For D2XX: serial number string or device index.</p></li>
 <li><p><strong>baudrate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Baud rate of the opened serial port. Default value is 9600.</p></li>
 <li><p><strong>device_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Virtual Name used to indentify device.</p></li>
+<li><p><strong>use_d2xx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, use FTDI D2XX direct USB communication instead of COM port. Requires pylibftdi. Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.apply_config">
+<span class="sig-name descname"><span class="pre">apply_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.apply_config" title="Link to this definition"></a></dt>
+<dd><p>Recursively apply a device configuration dictionary by invoking
+property setters discovered via the MRO.</p>
+<p>Keys listed in <em>skip_keys</em> (determined per device type) are ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – Device configuration dictionary (e.g. loaded from TOML).</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.baudrate">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">baudrate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.baudrate" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">baudrate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.baudrate" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.build_pod_packet_standard">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_pod_packet_standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.build_pod_packet_standard" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_pod_packet_standard</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.build_pod_packet_standard" title="Link to this definition"></a></dt>
 <dd><p>Builds a standard POD packet (control packet) as bytes: STX (1 byte) + command number (4 bytes)         + optional packet (? bytes) + checksum (2 bytes)+ ETX (1 bytes).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -198,7 +213,7 @@ packets and packet interpretation. This is the parent class for any device that 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.checksum">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">checksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytes_in</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.checksum" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">checksum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bytes_in</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.checksum" title="Link to this definition"></a></dt>
 <dd><p>Calculates the checksum of a given bytes message. This is achieved by summing each byte in the 
 message, inverting, and taking the last byte.</p>
 <dl class="field-list simple">
@@ -216,7 +231,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.choose_port">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">choose_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.choose_port" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">choose_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.choose_port" title="Link to this definition"></a></dt>
 <dd><p>Checks user’s Operating System, and chooses ports accordingly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -232,13 +247,19 @@ message, inverting, and taking the last byte.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.cleanup">
+<span class="sig-name descname"><span class="pre">cleanup</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.cleanup" title="Link to this definition"></a></dt>
+<dd><p>Clean up resources including closing the port and terminating queue server subprocess.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.close_port">
 <span class="sig-name descname"><span class="pre">close_port</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.close_port" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.device_name">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">device_name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.device_name" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">device_name</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.device_name" title="Link to this definition"></a></dt>
 <dd><p>The virtual device name.</p>
 </dd></dl>
 
@@ -252,6 +273,24 @@ message, inverting, and taking the last byte.</p>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
 <dd class="field-even"><p>True of the buffers are flushed, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.get_config">
+<span class="sig-name descname"><span class="pre">get_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.get_config" title="Link to this definition"></a></dt>
+<dd><p>Read all configured properties from the device and write them to a
+TOML file.</p>
+<p>Requires that the subclass provides <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">pod_type</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">get_combined_property_map</span></code> (available on <code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code>
+and its subclasses).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>folder_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Folder in which to save the generated TOML file.</p></li>
+<li><p><strong>filename</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Optional filename; defaults to <code class="docutils literal notranslate"><span class="pre">&lt;device_name&gt;_config.toml</span></code>.</p></li>
+</ul>
 </dd>
 </dl>
 </dd></dl>
@@ -298,7 +337,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.get_u">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.get_u" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_u</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">u</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.get_u" title="Link to this definition"></a></dt>
 <dd><p>Number of hexadecimal characters for an unsigned u-bit value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -331,11 +370,12 @@ message, inverting, and taking the last byte.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.open_port">
 <span class="sig-name descname"><span class="pre">open_port</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.open_port" title="Link to this definition"></a></dt>
-<dd></dd></dl>
+<dd><p>Open the port using either PortIO (COM port) or D2XXPortIO (direct USB).</p>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.payload_to_bytes">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">payload_to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg_sizes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.payload_to_bytes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">payload_to_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arg_sizes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.payload_to_bytes" title="Link to this definition"></a></dt>
 <dd><p>Converts a payload into a bytes string (assuming that the payload is for a valid command).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -355,12 +395,12 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.port">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.port" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">port</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.port" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.port_inst">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">port_inst</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.port_inst" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">port_inst</span></span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.port_inst" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -401,6 +441,21 @@ message, inverting, and taking the last byte.</p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>True if successful at setting the baud rate, false otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.BasicPodProtocol.Pod.set_config">
+<span class="sig-name descname"><span class="pre">set_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.BasicPodProtocol.Pod.set_config" title="Link to this definition"></a></dt>
+<dd><p>Load an experiment configuration folder, match this device by ID and name,
+apply the referenced device config TOML, and validate the result.</p>
+<p>Requires that the subclass provides <code class="docutils literal notranslate"><span class="pre">id</span></code>, <code class="docutils literal notranslate"><span class="pre">pod_type</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">validate_config</span></code> (available on <code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code> and its
+subclasses).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>folder_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Path to the experiment configuration folder.</p>
 </dd>
 </dl>
 </dd></dl>
@@ -470,19 +525,26 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-poddevice-8206hr-module"></span><h2>Morelia.Devices.PodDevice_8206HR module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8206HR" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8206HR.</span></span><span class="sig-name descname"><span class="pre">Pod8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8206HR.</span></span><span class="sig-name descname"><span class="pre">Pod8206HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_d2xx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></p>
 <p>Pod8206HR is used to interact with a 8206HR data acquisition device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. Used when initializing the COM_io instance.</p></li>
+<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. For COM ports: “COM9” or 9. For D2XX: serial number string or device index.</p></li>
 <li><p><strong>preamp_gain</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – A unitless number used to add gain to vlues recived from the preamplifier. Used in converting streaming data from the device into something human-readable. Must be 10 or 100.</p></li>
 <li><p><strong>baudrate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Baud rate of the opened serial port. Default value is 9600.</p></li>
 <li><p><strong>device_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Virtual name used to indentify device.</p></li>
+<li><p><strong>use_d2xx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.filter_config">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">filter_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.filter_config" title="Link to this definition"></a></dt>
+<dd><p>Hardware filter configuration.  0=SL, 1=SE (40/40/100Hz), 2=SE3 (40/40/40Hz).</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.get_dict">
 <span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.get_dict" title="Link to this definition"></a></dt>
@@ -490,9 +552,68 @@ message, inverting, and taking the last byte.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch0" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 0 (EEG1) in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch1" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 1 (EEG2) in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.lowpass_ch2" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 2 (EEG3/EMG) in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.preamp_gain">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preamp_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.preamp_gain" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.preamp_gain" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.read_pod_packet_streaming">
+<span class="sig-name descname"><span class="pre">read_pod_packet_streaming</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate_checksum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.read_pod_packet_streaming" title="Link to this definition"></a></dt>
+<dd><p>Read one packet (data or control) using a single read(16) when aligned. Use in streaming mode for higher throughput.</p>
+<p>When a fixed-size block is a complete data packet (16 bytes, ends with ETX), returns DataPacket8206HR.
+When the block starts with STX but does not end with ETX (e.g. control packet), reads to ETX, parses as
+ControlPacket, and returns it so the pipeline can deliver it to read_queue for mixed traffic.
+Accumulates partial reads so driver returning fewer than 16 bytes does not cause timeout.
+Raises TimeoutError if no data in timeout_sec.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_pin0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin0" title="Link to this definition"></a></dt>
+<dd><p>TTL pin 0 input value (0 or 1).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_pin1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin1" title="Link to this definition"></a></dt>
+<dd><p>TTL pin 1 input value (0 or 1).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_pin2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin2" title="Link to this definition"></a></dt>
+<dd><p>TTL pin 2 input value (0 or 1).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_pin3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_pin3" title="Link to this definition"></a></dt>
+<dd><p>TTL pin 3 input value (0 or 1).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_port">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_port</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8206HR.Pod8206HR.ttl_port" title="Link to this definition"></a></dt>
+<dd><p>Entire TTL port value as a byte (read-only, does not modify pin direction).</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -501,7 +622,7 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-poddevice-8229-module"></span><h2>Morelia.Devices.PodDevice_8229 module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8229" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8229.</span></span><span class="sig-name descname"><span class="pre">Pod8229</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">19200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8229.</span></span><span class="sig-name descname"><span class="pre">Pod8229</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">19200</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
 <p>POD8229 handles communication with a 8229 POD device.</p>
 <dl class="field-list simple">
@@ -515,7 +636,7 @@ message, inverting, and taking the last byte.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.build_set_day_schedule_argument">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_set_day_schedule_argument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.build_set_day_schedule_argument" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_set_day_schedule_argument</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.build_set_day_schedule_argument" title="Link to this definition"></a></dt>
 <dd><p>Appends the day of the week code to the front of the encoded hourly schedule. this tuple is         formatted to be used as the #141 <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">DAY</span> <span class="pre">SCHEDULE</span></code> argument.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -536,7 +657,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.code_day_of_week">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">code_day_of_week</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.code_day_of_week" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">code_day_of_week</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.code_day_of_week" title="Link to this definition"></a></dt>
 <dd><p>Converts the day of the week to an integer code understandable by the POD device. The day         is determined by the first 1-2 characters of the string, which supports multiple abbreviations         for days of the week.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -553,7 +674,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.code_day_schedule">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">code_day_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.code_day_schedule" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">code_day_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hours</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.code_day_schedule" title="Link to this definition"></a></dt>
 <dd><p>Bitmasks the day schedule to encode the motor on/off status and the motor speed. Use this         for getting the command #141 <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">DAY</span> <span class="pre">SCHEDULE</span></code> UINT8x24 argument component.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -573,7 +694,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.decode_day_and_schedule">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_day_and_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dayschedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_and_schedule" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_day_and_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dayschedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_and_schedule" title="Link to this definition"></a></dt>
 <dd><p>Decode the packet payload returned by the <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">DAY</span> <span class="pre">SCHEDULE</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -590,7 +711,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.decode_day_of_week">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_day_of_week</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_of_week" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_day_of_week</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">day</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_of_week" title="Link to this definition"></a></dt>
 <dd><p>Converts the integer code for a day of the week to a human-readable string.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -607,7 +728,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.decode_day_schedule">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_day_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_schedule" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_day_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_day_schedule" title="Link to this definition"></a></dt>
 <dd><p>Interprets the return bytes from the command #142 ‘GET DAY SCHEDULE’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -624,7 +745,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.decode_lcd_schedule">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_lcd_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_lcd_schedule" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_lcd_schedule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schedule</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.decode_lcd_schedule" title="Link to this definition"></a></dt>
 <dd><p>Interprets the return bytes from the command #202 ‘LCD SET DAY SCHEDULE’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -641,7 +762,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8229.Pod8229.get_current_time">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_current_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.get_current_time" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_current_time</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8229.Pod8229.get_current_time" title="Link to this definition"></a></dt>
 <dd><p>Gets a tuple to use as the argument for command #140 SET TIME containing values for the current time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -660,7 +781,7 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-poddevice-8274d-module"></span><h2>Morelia.Devices.PodDevice_8274D module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8274D" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">921600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">921600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></p>
 <p>POD_8274D handles communication using an 8274D POD device. Currently under construction and is unreliable.</p>
 <dl class="field-list simple">
@@ -679,7 +800,7 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-poddevice-8401hr-module"></span><h2>Morelia.Devices.PodDevice_8401HR module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8401HR" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8401HR.</span></span><span class="sig-name descname"><span class="pre">Pod8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ss_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8401HR.</span></span><span class="sig-name descname"><span class="pre">Pod8401HR</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secondary_channel_modes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ss_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preamp_gain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(None,</span> <span class="pre">None,</span> <span class="pre">None,</span> <span class="pre">None)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_d2xx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></p>
 <p>Pod8401HR handles communication using an 8401HR POD device.</p>
 <dl class="field-list simple">
@@ -697,8 +818,53 @@ message, inverting, and taking the last byte.</p>
 </dd>
 </dl>
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.apply_preamp_config">
+<span class="sig-name descname"><span class="pre">apply_preamp_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.apply_preamp_config" title="Link to this definition"></a></dt>
+<dd><p>Look up <em>model</em> in the preamp registry and apply its settings.</p>
+<p>Sets per-channel hardware properties (dc_mode, highpass, lowpass,
+bias, ss_config), updates <code class="docutils literal notranslate"><span class="pre">_channel_invert</span></code>, <code class="docutils literal notranslate"><span class="pre">_preamp_gain</span></code>,
+<code class="docutils literal notranslate"><span class="pre">_ss_gain</span></code>, and rebuilds the stream packet factory so that all
+downstream consumers see correct values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>model</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Preamp model number (e.g. <code class="docutils literal notranslate"><span class="pre">&quot;8406-SE3&quot;</span></code>).</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <em>model</em> is not found in the registry.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias_0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_0" title="Link to this definition"></a></dt>
+<dd><p>Bias voltage on channel 0 (derived from 16-bit DAC).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias_1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_1" title="Link to this definition"></a></dt>
+<dd><p>Bias voltage on channel 1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias_2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_2" title="Link to this definition"></a></dt>
+<dd><p>Bias voltage on channel 2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">bias_3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">float</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.bias_3" title="Link to this definition"></a></dt>
+<dd><p>Bias voltage on channel 3.</p>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_dac_value">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_bias_dac_get_dac_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_dac_value" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">calculate_bias_dac_get_dac_value</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vout</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_dac_value" title="Link to this definition"></a></dt>
 <dd><p>Calculates the DAC value given the output voltage. Used for <code class="docutils literal notranslate"><span class="pre">GET/SET</span> <span class="pre">BIAS</span></code> commands.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -715,7 +881,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_vout">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">calculate_bias_dac_get_vout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_vout" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">calculate_bias_dac_get_vout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.calculate_bias_dac_get_vout" title="Link to this definition"></a></dt>
 <dd><p>Calculates the output voltage given the DAC value. Used for <code class="docutils literal notranslate"><span class="pre">GET/SET</span> <span class="pre">BIAS</span></code> commands.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -730,9 +896,46 @@ message, inverting, and taking the last byte.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.channel_invert">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel_invert</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.channel_invert" title="Link to this definition"></a></dt>
+<dd><p>Per-channel inversion flags (True = negate stream value).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.channel_labels">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel_labels</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.channel_labels" title="Link to this definition"></a></dt>
+<dd><p>Per-channel display labels from the applied preamp config,
+or <code class="docutils literal notranslate"><span class="pre">None</span></code> if no preamp config has been applied.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dc_mode_0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_0" title="Link to this definition"></a></dt>
+<dd><p>DC mode for channel 0. 0=Subtract VBias, 1=Subtract AGND.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dc_mode_1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_1" title="Link to this definition"></a></dt>
+<dd><p>DC mode for channel 1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dc_mode_2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_2" title="Link to this definition"></a></dt>
+<dd><p>DC mode for channel 2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dc_mode_3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.dc_mode_3" title="Link to this definition"></a></dt>
+<dd><p>DC mode for channel 3.</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_channel_bitmask">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_channel_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_channel_bitmask" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_channel_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_channel_bitmask" title="Link to this definition"></a></dt>
 <dd><p>Converts the channel bitmask byte to a dictionary with each channel value. Use for <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">INPUT</span> <span class="pre">GROUND</span></code> command payloads.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -749,11 +952,13 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ss_config_bitmask">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_ss_config_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ss_config_bitmask" title="Link to this definition"></a></dt>
-<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain. Use for <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">SS</span> <span class="pre">CONFIG</span></code> command payloads.</p>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_ss_config_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ss_config_bitmask" title="Link to this definition"></a></dt>
+<dd><p>Converts the SS configuration byte to a dictionary with the high-pass and gain.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
-<dd class="field-odd"><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – UINT8 byte containing the SS configurtation. Bit 0 = 0 for 0.5Hz Highpass, 1 for DC Highpass. Bit 1 = 0 for 5x gain, 1 for 1x gain.</p>
+<dd class="field-odd"><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">bytearray</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – UINT8 containing the SS configuration (raw bytes, bytearray, or int).
+Bit 0: 0 = 0.5 Hz Highpass, 1 = DC Highpass.
+Bit 1: 0 = 5x gain, 1 = 1x gain.</p>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span></p>
@@ -763,8 +968,10 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_byte">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_ttl_byte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttl_byte</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_byte" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_ttl_byte</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ttl_byte</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_byte" title="Link to this definition"></a></dt>
 <dd><p>Converts the TTL bytes argument into a dictionary of integer TTL values.</p>
+<p>Handles both raw bytes (length 1, decoded by bit-shift) and ASCII hex
+bytes (decoded via <code class="docutils literal notranslate"><span class="pre">conv.ascii_bytes_to_int_split</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><p><strong>ttl_byte</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span>) – UINT8 byte containing the TTL bitmask.</p>
@@ -773,14 +980,14 @@ message, inverting, and taking the last byte.</p>
 <dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span></p>
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>Dictinoary with TTL name keys and integer TTL values.</p>
+<dd class="field-odd"><p>Dictionary with TTL name keys and integer TTL values.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_payload">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_ttl_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_payload" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_ttl_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.decode_ttl_payload" title="Link to this definition"></a></dt>
 <dd><p>Decodes a paylaod with the two TTL bytes.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -795,9 +1002,21 @@ message, inverting, and taking the last byte.</p>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ext0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ext0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ext0" title="Link to this definition"></a></dt>
+<dd><p>Analog value on EXT0 pin (unsigned 12-bit, 3.3V range).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ext1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ext1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ext1" title="Link to this definition"></a></dt>
+<dd><p>Analog value on EXT1 pin (unsigned 12-bit, 3.3V range).</p>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_bitmask">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_channel_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_bitmask" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_channel_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_bitmask" title="Link to this definition"></a></dt>
 <dd><p>Gets a bitmask, represented by an unsigned integer, used for <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">INPUT</span> <span class="pre">GROUND</span></code> command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -819,7 +1038,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_map_for_preamp_device">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_channel_map_for_preamp_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preamp_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_map_for_preamp_device" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_channel_map_for_preamp_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">preamp_name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_map_for_preamp_device" title="Link to this definition"></a></dt>
 <dd><p>Get the channel mapping (channel labels for A,B,C,D) for a given device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -835,14 +1054,47 @@ message, inverting, and taking the last byte.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_preamp_gain">
+<span class="sig-name descname"><span class="pre">get_channel_preamp_gain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_channel_preamp_gain" title="Link to this definition"></a></dt>
+<dd><p>Return the preamplifier gain for <em>channel</em> (0-3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_dict">
 <span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_dict" title="Link to this definition"></a></dt>
 <dd><p>Obtains pod __init__ argument values to use for process pickling</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_preamp_highpass">
+<span class="sig-name descname"><span class="pre">get_preamp_highpass</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_preamp_highpass" title="Link to this definition"></a></dt>
+<dd><p>Get the highpass filter value for <em>channel</em> (0-3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_second_stage_gain">
+<span class="sig-name descname"><span class="pre">get_second_stage_gain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_second_stage_gain" title="Link to this definition"></a></dt>
+<dd><p>Get second-stage gain for <em>channel</em> (0-3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ss_config_bitmask">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_ss_config_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ss_config_bitmask" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_ss_config_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gain</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">highpass</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ss_config_bitmask" title="Link to this definition"></a></dt>
 <dd><p>Gets a bitmask, represented by an unsigned integer, used for <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">SS</span> <span class="pre">CONFIG</span></code> command.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -859,7 +1111,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ttl_bitmask">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_ttl_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl4</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ttl_bitmask" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_ttl_bitmask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ext0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl4</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl3</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ttl1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.get_ttl_bitmask" title="Link to this definition"></a></dt>
 <dd><p>Builds an integer, which represents a binary mask, that can be used for TTL command arguments.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -882,31 +1134,247 @@ message, inverting, and taking the last byte.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">input_ground0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground0" title="Link to this definition"></a></dt>
+<dd><p>Channel A ground state: 1=preamp, 0=grounded.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">input_ground1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground1" title="Link to this definition"></a></dt>
+<dd><p>Channel B ground state: 1=preamp, 0=grounded.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">input_ground2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground2" title="Link to this definition"></a></dt>
+<dd><p>Channel C ground state: 1=preamp, 0=grounded.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">input_ground3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground3" title="Link to this definition"></a></dt>
+<dd><p>Channel D ground state: 1=preamp, 0=grounded.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground_all">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">input_ground_all</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.input_ground_all" title="Link to this definition"></a></dt>
+<dd><p>All input ground states (channels A-D) read from device.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch0" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 0 in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch1" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 1 in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch2" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 2 in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">lowpass_ch3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.lowpass_ch3" title="Link to this definition"></a></dt>
+<dd><p>Lowpass filter for channel 3 in Hz.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.mux_mode">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">mux_mode</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.mux_mode" title="Link to this definition"></a></dt>
+<dd><p>Mux mode state. 0=off, 1=on (toggles EXT1 for 2BIO/3EEG preamps).</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preamp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#Morelia.Devices.preamp.Preamp" title="Morelia.Devices.preamp.Preamp"><span class="pre">Preamp</span></a></em><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#Morelia.Devices.preamp.Preamp" title="Morelia.Devices.preamp.Preamp"><span class="pre">Preamp</span></a></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp" title="Link to this definition"></a></dt>
 <dd><p>Preamp connected to device.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_gain">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">preamp_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_gain" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_gain" title="Link to this definition"></a></dt>
 <dd><p>Preamp connected to device.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_highpass_0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_0" title="Link to this definition"></a></dt>
+<dd><p>Highpass filter for channel 0. 0=0.5Hz, 1=1Hz, 2=10Hz, 3=DC.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_highpass_1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_1" title="Link to this definition"></a></dt>
+<dd><p>Highpass filter for channel 1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_highpass_2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_2" title="Link to this definition"></a></dt>
+<dd><p>Highpass filter for channel 2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_highpass_3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_highpass_3" title="Link to this definition"></a></dt>
+<dd><p>Highpass filter for channel 3.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_model">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">preamp_model</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.preamp_model" title="Link to this definition"></a></dt>
+<dd><p>Currently configured preamp model, or <code class="docutils literal notranslate"><span class="pre">None</span></code> if not set via
+<a class="reference internal" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.apply_preamp_config" title="Morelia.Devices.PodDevice_8401HR.Pod8401HR.apply_preamp_config"><code class="xref py py-meth docutils literal notranslate"><span class="pre">apply_preamp_config()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.primary_channel_modes">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">primary_channel_modes</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.primary_channel_modes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">primary_channel_modes</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.primary_channel_modes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.read_pod_packet_streaming">
+<span class="sig-name descname"><span class="pre">read_pod_packet_streaming</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate_checksum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.read_pod_packet_streaming" title="Link to this definition"></a></dt>
+<dd><p>Read one packet (data or control) using a single read(31) when aligned. Use in streaming mode for higher throughput.</p>
+<p>When a fixed-size block is a complete data packet (31 bytes, ends with ETX), returns DataPacket8401HR.
+When the block starts with STX but does not end with ETX (e.g. control packet), reads to ETX, parses as
+ControlPacket, and returns it so the pipeline can deliver it to read_queue for mixed traffic.
+Raises TimeoutError if no data in timeout_sec.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.secondary_channel_modes">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">secondary_channel_modes</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.secondary_channel_modes" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">secondary_channel_modes</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.secondary_channel_modes" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.set_ss_config">
+<span class="sig-name descname"><span class="pre">set_ss_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.set_ss_config" title="Link to this definition"></a></dt>
+<dd><p>Set the second-stage config for <em>channel</em> (0-3).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>channel</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Channel index.</p></li>
+<li><p><strong>config</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]</span>) – Dict with keys <code class="docutils literal notranslate"><span class="pre">&quot;Gain&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;High-pass&quot;</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.set_ttl_outputs">
+<span class="sig-name descname"><span class="pre">set_ttl_outputs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pins</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.set_ttl_outputs" title="Link to this definition"></a></dt>
+<dd><p>Set specific TTL output states.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>pins</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Keys from EXT0, EXT1, TTL1-TTL4; values 0 (low) or 1 (high).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_config_0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_0" title="Link to this definition"></a></dt>
+<dd><p>Second-stage config for channel 0 (Gain + High-pass).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_config_1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_1" title="Link to this definition"></a></dt>
+<dd><p>Second-stage config for channel 1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_config_2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_2" title="Link to this definition"></a></dt>
+<dd><p>Second-stage config for channel 2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_config_3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_config_3" title="Link to this definition"></a></dt>
+<dd><p>Second-stage config for channel 3.</p>
+</dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ss_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_gain</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain" title="Link to this definition"></a></dt>
 <dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_gain_0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_0" title="Link to this definition"></a></dt>
+<dd><p>Second-stage gain for channel 0.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_gain_1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_1" title="Link to this definition"></a></dt>
+<dd><p>Second-stage gain for channel 1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_gain_2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_2" title="Link to this definition"></a></dt>
+<dd><p>Second-stage gain for channel 2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ss_gain_3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ss_gain_3" title="Link to this definition"></a></dt>
+<dd><p>Second-stage gain for channel 3.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ext0">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ext0</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ext0" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL EXT0 (10-bit).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ext1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ext1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ext1" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL EXT1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl1">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ttl1</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl1" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL1.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl2">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ttl2</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl2" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL2.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ttl3</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl3" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL3.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl4">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_analog_ttl4</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_analog_ttl4" title="Link to this definition"></a></dt>
+<dd><p>Analog reading on TTL4.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_config">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_config</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8401HR.Pod8401HR.ttl_config" title="Link to this definition"></a></dt>
+<dd><p>TTL configuration with ‘output’ and ‘input’ sub-dicts.</p>
+</dd></dl>
 
 </dd></dl>
 
@@ -915,7 +1383,7 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-poddevice-8480sc-module"></span><h2>Morelia.Devices.PodDevice_8480SC module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8480SC" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8480SC.</span></span><span class="sig-name descname"><span class="pre">Pod8480SC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8480SC.</span></span><span class="sig-name descname"><span class="pre">Pod8480SC</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
 <p>POD_8480SC handles communication using an 8480-SC POD device.</p>
 <dl class="field-list simple">
@@ -929,7 +1397,7 @@ message, inverting, and taking the last byte.</p>
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_stimulus_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_stimulus_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_stimulus_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_stimulus_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_stimulus_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Converts an integer into 3 values, representing 3 individual bits of the Stimulus Config Bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -946,7 +1414,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_sync_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_sync_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_sync_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_sync_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_sync_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Converts an integer into 3 values, representing 3 individual bits of the Sync Config Bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -963,7 +1431,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_ttl_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_ttl_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_ttl_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_ttl_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.decode_ttl_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Converts an interger into 3 values, representing 3 individual bits of the TTL Config Bits.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -980,7 +1448,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.stimulus_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">stimulus_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optoElec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monoBiphasic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Simul</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.stimulus_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">stimulus_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">optoElec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">monoBiphasic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Simul</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.stimulus_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Incoming inputs are bitmasked into an integer value. This value is later given as part of a payload         to command #102 ‘SET STIMULUS’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1001,7 +1469,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.sync_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sync_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sync_level</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sync_idle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_trigger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.sync_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sync_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sync_level</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sync_idle</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signal_trigger</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.sync_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Incoming inputs are bitmasked into an integer value. This value is later given         as the payload to command #127 ‘SET SYNC CONFIG’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1022,7 +1490,7 @@ message, inverting, and taking the last byte.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8480SC.Pod8480SC.ttl_config_bits">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ttl_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trigger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stimtrig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_sync</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.ttl_config_bits" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">ttl_config_bits</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trigger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stimtrig</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_sync</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8480SC.Pod8480SC.ttl_config_bits" title="Link to this definition"></a></dt>
 <dd><p>Incoming inputs are bitmasked into an integer value. This value is later given as part of the payload to         command #109 ‘SET TTL SETUP’. This commands accepts 3 items in the payload, and the return value of this function         is given as the second item.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
@@ -1049,31 +1517,94 @@ message, inverting, and taking the last byte.</p>
 <p>POD device that streams data.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.acquisition_device.</span></span><span class="sig-name descname"><span class="pre">AcquisitionDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_sample_rate_cmd_no</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_sample_rate_cmd_no</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.acquisition_device.</span></span><span class="sig-name descname"><span class="pre">AcquisitionDevice</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_sample_rate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">get_sample_rate_cmd_no</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">set_sample_rate_cmd_no</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_d2xx</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.BasicPodProtocol.Pod" title="Morelia.Devices.BasicPodProtocol.Pod"><code class="xref py py-class docutils literal notranslate"><span class="pre">Pod</span></code></a></p>
 <p>This class is the parent of any device that can stream (i.e. data acquisiton devices).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. Used when initializing the COM_io instance.</p></li>
+<li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. For COM ports: “COM9” or 9. For D2XX: serial number string or device index.</p></li>
 <li><p><strong>max_sample_rate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Maximum sample rate supported by the device (in Hz).</p></li>
 <li><p><strong>baudrate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Baud rate of the opened serial port. Default value is 9600.</p></li>
 <li><p><strong>device_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Virtual Name used to indentify device.</p></li>
 <li><p><strong>get_sample_rate_cmd_no</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Command number for the <code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">SAMPLE</span> <span class="pre">RATE</span></code> command on the device.</p></li>
 <li><p><strong>set_sample_rate_cmd_no</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Command number for the <code class="docutils literal notranslate"><span class="pre">SET</span> <span class="pre">SAMPLE</span> <span class="pre">RATE</span></code> command on the device.</p></li>
+<li><p><strong>use_d2xx</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.get_combined_property_map">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_combined_property_map</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.get_combined_property_map" title="Link to this definition"></a></dt>
+<dd><p>Merge the base <a class="reference internal" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.property_map" title="Morelia.Devices.acquisition_device.AcquisitionDevice.property_map"><code class="xref py py-attr docutils literal notranslate"><span class="pre">property_map</span></code></a> with any device-specific
+<code class="docutils literal notranslate"><span class="pre">_property_map</span></code> defined on a subclass.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.id">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.id" title="Link to this definition"></a></dt>
+<dd><p>Returns a device’s hardware ID.</p>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.max_sample_rate">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">max_sample_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.max_sample_rate" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">max_sample_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.max_sample_rate" title="Link to this definition"></a></dt>
 <dd><p>Maximum allowable sample rate.</p>
 </dd></dl>
 
 <dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.pod_info">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pod_info</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.pod_info" title="Link to this definition"></a></dt>
+<dd><p>Returns pod identification info as a dictionary.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.pod_type">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">pod_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.pod_type" title="Link to this definition"></a></dt>
+<dd><p>Maps the device TYPE number to a pod device class name string.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.property_map">
+<span class="sig-name descname"><span class="pre">property_map</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'sample_rate':</span> <span class="pre">{'sample_rate':</span> <span class="pre">'sample_rate'}}</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.property_map" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
 <dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.sample_rate">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample_rate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.sample_rate" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sample_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.sample_rate" title="Link to this definition"></a></dt>
 <dd><p>Currently set sample rate.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.type">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.type" title="Link to this definition"></a></dt>
+<dd><p>Returns a device’s TYPE number.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.acquisition_device.AcquisitionDevice.validate_config">
+<span class="sig-name descname"><span class="pre">validate_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">expected_config</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skip_keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.acquisition_device.AcquisitionDevice.validate_config" title="Link to this definition"></a></dt>
+<dd><p>Compare <em>expected_config</em> against the device’s current settings.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>expected_config</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span>) – Expected configuration dictionary.</p></li>
+<li><p><strong>skip_keys</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Keys to ignore during comparison.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Dict mapping config keys (dot-notation) to <code class="docutils literal notranslate"><span class="pre">(expected,</span> <span class="pre">actual)</span></code>
+tuples for any differences.  Empty when everything matches.</p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
@@ -1083,81 +1614,81 @@ message, inverting, and taking the last byte.</p>
 <span id="morelia-devices-preamp-module"></span><h2>Morelia.Devices.preamp module<a class="headerlink" href="#module-Morelia.Devices.preamp" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.preamp.</span></span><span class="sig-name descname"><span class="pre">Preamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.preamp.</span></span><span class="sig-name descname"><span class="pre">Preamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_2BIO">
-<span class="sig-name descname"><span class="pre">Preamp8406_2BIO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_2BIO" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_2BIO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">10</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_2BIO" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_BIO">
-<span class="sig-name descname"><span class="pre">Preamp8406_BIO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_BIO" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_BIO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">9</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_BIO" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_EEG2BIO">
-<span class="sig-name descname"><span class="pre">Preamp8406_EEG2BIO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_EEG2BIO" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_EEG2BIO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">11</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_EEG2BIO" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_SE">
-<span class="sig-name descname"><span class="pre">Preamp8406_SE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_SE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">12</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_SE3">
-<span class="sig-name descname"><span class="pre">Preamp8406_SE3</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">14</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE3" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_SE3</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">14</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE3" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_SE31M">
-<span class="sig-name descname"><span class="pre">Preamp8406_SE31M</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE31M" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_SE31M</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">8</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE31M" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_SE4">
-<span class="sig-name descname"><span class="pre">Preamp8406_SE4</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE4" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_SE4</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">15</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SE4" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8406_SL">
-<span class="sig-name descname"><span class="pre">Preamp8406_SL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">13</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8406_SL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">13</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8406_SL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SE">
-<span class="sig-name descname"><span class="pre">Preamp8407_SE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SE3">
-<span class="sig-name descname"><span class="pre">Preamp8407_SE3</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE3" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SE3</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">3</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE3" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SE31M">
-<span class="sig-name descname"><span class="pre">Preamp8407_SE31M</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE31M" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SE31M</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">5</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE31M" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SE4">
-<span class="sig-name descname"><span class="pre">Preamp8407_SE4</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE4" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SE4</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE4" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SE_2BIO">
-<span class="sig-name descname"><span class="pre">Preamp8407_SE_2BIO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE_2BIO" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SE_2BIO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">6</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SE_2BIO" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SL">
-<span class="sig-name descname"><span class="pre">Preamp8407_SL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.Devices.preamp.Preamp.Preamp8407_SL_2BIO">
-<span class="sig-name descname"><span class="pre">Preamp8407_SL_2BIO</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></em><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SL_2BIO" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">Preamp8407_SL_2BIO</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">7</span></span><a class="headerlink" href="#Morelia.Devices.preamp.Preamp.Preamp8407_SL_2BIO" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>

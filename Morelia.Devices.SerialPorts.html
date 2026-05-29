@@ -8,15 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Morelia.Devices.SerialPorts package &mdash; Morelia v1.6.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=2d14e799"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -108,12 +108,12 @@
 <span id="morelia-devices-serialports-portaccess-module"></span><h2>Morelia.Devices.SerialPorts.PortAccess module<a class="headerlink" href="#module-Morelia.Devices.SerialPorts.PortAccess" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.PortAccess.FindPorts">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.SerialPorts.PortAccess.</span></span><span class="sig-name descname"><span class="pre">FindPorts</span></span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.SerialPorts.PortAccess.</span></span><span class="sig-name descname"><span class="pre">FindPorts</span></span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>Contains methods for the user to view and select a serial port.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.PortAccess.FindPorts.choose_port">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">choose_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.choose_port" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">choose_port</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.choose_port" title="Link to this definition"></a></dt>
 <dd><p>Systems checks user’s Operating System, and chooses ports accordingly.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -130,7 +130,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_all_port_names">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_all_port_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_all_port_names" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_all_port_names</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_all_port_names" title="Link to this definition"></a></dt>
 <dd><p>Finds all the available COM ports on the user’s computer and appends them to an         accessible list.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -145,7 +145,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_select_port_names">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_select_port_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_select_port_names" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">get_select_port_names</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">forbidden</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">[]</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.PortAccess.FindPorts.get_select_port_names" title="Link to this definition"></a></dt>
 <dd><p>Gets the names of all available ports.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -167,7 +167,7 @@
 <span id="morelia-devices-serialports-serialcomm-module"></span><h2>Morelia.Devices.SerialPorts.SerialComm module<a class="headerlink" href="#module-Morelia.Devices.SerialPorts.SerialComm" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.SerialPorts.SerialComm.</span></span><span class="sig-name descname"><span class="pre">PortIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.SerialPorts.SerialComm.</span></span><span class="sig-name descname"><span class="pre">PortIO</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">9600</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>COM_io handles serial communication (read/write) using COM ports.</p>
 <dl class="simple">
@@ -176,7 +176,7 @@
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.build_port_name">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">build_port_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.build_port_name" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">build_port_name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.build_port_name" title="Link to this definition"></a></dt>
 <dd><p>Converts the port parameter into the “COM”+&lt;number&gt; format for Windows or         “/dev/tty…”+&lt;number&gt; for Linux.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -234,7 +234,7 @@
 
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.is_port_in_use">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">is_port_in_use</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.is_port_in_use" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_port_in_use</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.is_port_in_use" title="Link to this definition"></a></dt>
 <dd><p>Opens a subprocess to check if the port is in use</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
@@ -292,6 +292,21 @@ baudrate (int, optional): Integer baud rate of the opened serial port. Defaults 
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.purge_rx">
+<span class="sig-name descname"><span class="pre">purge_rx</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.purge_rx" title="Link to this definition"></a></dt>
+<dd><p>Purge RX (receive) buffer only. Useful before starting to read a new packet.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>Returns:</dt><dd><p>bool: True if successful, False otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="Morelia.Devices.SerialPorts.SerialComm.PortIO.read">
 <span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">numBytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.SerialPorts.SerialComm.PortIO.read" title="Link to this definition"></a></dt>
 <dd><p>Reads a specified number of bytes from the open serial port.</p>
@@ -304,7 +319,7 @@ baudrate (int, optional): Integer baud rate of the opened serial port. Defaults 
 <dt>Args:</dt><dd><p>numBytes (int): Integer number of bytes to read.
 timeout_sec (int|float, optional): Time in seconds to wait for serial data.                 Defaults to 5.</p>
 </dd>
-<dt>Raises:</dt><dd><p>Exception: Timeout for serial read.</p>
+<dt>Raises:</dt><dd><p>TimeoutError: Timeout for serial read.</p>
 </dd>
 <dt>Returns:</dt><dd><p>bytes|None: If the serial port is open, it will return a set number of read bytes.                 If it is closed, it will return None.</p>
 </dd>
@@ -371,6 +386,8 @@ timeout_sec (int|float, optional): Time in seconds to wait for serial data.     
 </dl>
 <dl class="simple">
 <dt>Args:</dt><dd><p>message (bytes): byte string containing the message to write.</p>
+</dd>
+<dt>Raises:</dt><dd><p>SerialTimeoutException: If write times out (propagated from pyserial).</p>
 </dd>
 </dl>
 </dd></dl>

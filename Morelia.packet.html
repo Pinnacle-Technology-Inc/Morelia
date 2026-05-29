@@ -8,15 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Morelia.packet package &mdash; Morelia v1.6.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=2d14e799"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -131,6 +131,7 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ch3"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ch3</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext0"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ext0</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ext1"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ext1</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.get_primary_channel_value"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.get_primary_channel_value()</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl1"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl1</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl2"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl2</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="Morelia.packet.data.html#Morelia.packet.data.data_packet_8401hr.DataPacket8401HR.ttl3"><code class="docutils literal notranslate"><span class="pre">DataPacket8401HR.ttl3</span></code></a></li>
@@ -194,34 +195,34 @@
 Currently, the only device Morelia supports that takes advantage of modal channels is the 8401HR.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.PrimaryChannelMode">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.channel_mode.</span></span><span class="sig-name descname"><span class="pre">PrimaryChannelMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.packet.channel_mode.</span></span><span class="sig-name descname"><span class="pre">PrimaryChannelMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>Mode for a “primary” channel (i.e. not TTL/AEXT)</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.PrimaryChannelMode.BIOSENSOR">
-<span class="sig-name descname"><span class="pre">BIOSENSOR</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode.BIOSENSOR" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">BIOSENSOR</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode.BIOSENSOR" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.PrimaryChannelMode.EEG_EMG">
-<span class="sig-name descname"><span class="pre">EEG_EMG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode.EEG_EMG" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">EEG_EMG</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#Morelia.packet.channel_mode.PrimaryChannelMode.EEG_EMG" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.SecondaryChannelMode">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.channel_mode.</span></span><span class="sig-name descname"><span class="pre">SecondaryChannelMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.packet.channel_mode.</span></span><span class="sig-name descname"><span class="pre">SecondaryChannelMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>Mode for AEXT/TTL channels. Analog channels report a numeric value, as digital values can be high or low (i.e. bypasses the onboard ADC).</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.SecondaryChannelMode.ANALOG">
-<span class="sig-name descname"><span class="pre">ANALOG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode.ANALOG" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">ANALOG</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode.ANALOG" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.channel_mode.SecondaryChannelMode.DIGITAL">
-<span class="sig-name descname"><span class="pre">DIGITAL</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode.DIGITAL" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">DIGITAL</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#Morelia.packet.channel_mode.SecondaryChannelMode.DIGITAL" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -231,7 +232,7 @@ Currently, the only device Morelia supports that takes advantage of modal channe
 <span id="morelia-packet-control-packet-module"></span><h2>Morelia.packet.control_packet module<a class="headerlink" href="#module-Morelia.packet.control_packet" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.packet.control_packet.ControlPacket">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.control_packet.</span></span><span class="sig-name descname"><span class="pre">ControlPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decode_from</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.packet.control_packet.</span></span><span class="sig-name descname"><span class="pre">ControlPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decode_from</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.packet.pod_packet.PodPacket" title="Morelia.packet.pod_packet.PodPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">PodPacket</span></code></a></p>
 <p>Class for parsing “Standard” POD packets from raw bytes. These are associated with controlling or configuring a device, hence the name
 These packets take the following form</p>
@@ -253,7 +254,7 @@ see the constructor of the <code class="docutils literal notranslate"><span clas
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="Morelia.packet.control_packet.ControlPacket.decode_payload_from_cmd_set">
-<em class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">decode_payload_from_cmd_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket.decode_payload_from_cmd_set" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">decode_payload_from_cmd_set</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cmds</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cmd_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">payload</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket.decode_payload_from_cmd_set" title="Link to this definition"></a></dt>
 <dd><p>Used for parsing packet payloads according to a <code class="docutils literal notranslate"><span class="pre">CommandSet</span></code> object. Do not use this function for payload access (it lacks the memoization that makes the payload
 property speedy), but for building bespoke decoding functions to pass to this class as <code class="docutils literal notranslate"><span class="pre">decode_from</span></code>. 
 Generally, this function is used to create decoding functions that default to using a command set,
@@ -277,7 +278,7 @@ but have the capability to handle edge-cases on a per-command basis. For an exam
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.control_packet.ControlPacket.payload">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">payload</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span></em><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket.payload" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">payload</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">tuple</span></span><a class="headerlink" href="#Morelia.packet.control_packet.ControlPacket.payload" title="Link to this definition"></a></dt>
 <dd><p>Parses the packet payload in a lazy, memoized fashion.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
@@ -298,18 +299,18 @@ but have the capability to handle edge-cases on a per-command basis. For an exam
 <p>In layperson’s terms, it is full of utility functions for converting between binary-coded decimal, ASCII, and decimal integers.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.packet.conversion.Endianness">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">Endianness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.Endianness" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">Endianness</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.Endianness" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></p>
 <p>This enumeration is used to specify the <a class="reference external" href="https://en.wikipedia.org/wiki/Endianness">endianness</a>
 of a series of bytes passed into a function.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.conversion.Endianness.BIG">
-<span class="sig-name descname"><span class="pre">BIG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></em><a class="headerlink" href="#Morelia.packet.conversion.Endianness.BIG" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">BIG</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">1</span></span><a class="headerlink" href="#Morelia.packet.conversion.Endianness.BIG" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.conversion.Endianness.LITTLE">
-<span class="sig-name descname"><span class="pre">LITTLE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></em><a class="headerlink" href="#Morelia.packet.conversion.Endianness.LITTLE" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">LITTLE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">2</span></span><a class="headerlink" href="#Morelia.packet.conversion.Endianness.LITTLE" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -537,22 +538,22 @@ Python integer.</p>
 <span id="morelia-packet-pod-packet-module"></span><h2>Morelia.packet.pod_packet module<a class="headerlink" href="#module-Morelia.packet.pod_packet" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket">
-<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Morelia.packet.pod_packet.</span></span><span class="sig-name descname"><span class="pre">PodPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.packet.pod_packet.</span></span><span class="sig-name descname"><span class="pre">PodPacket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw_packet</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">6</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p>The parent class of all POD protocol packets. Contains basic attributes common to all.</p>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.ETX">
-<span class="sig-name descname"><span class="pre">ETX</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">b'\x03'</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.ETX" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">ETX</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">b'\x03'</span></span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.ETX" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.STX">
-<span class="sig-name descname"><span class="pre">STX</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">b'\x02'</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.STX" title="Link to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">STX</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">b'\x02'</span></span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.STX" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.command_number">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">command_number</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.command_number" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">command_number</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.command_number" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Packet command number. Decoded lazily and memoized for speed.</p>
@@ -562,7 +563,7 @@ Python integer.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="Morelia.packet.pod_packet.PodPacket.raw_packet">
-<em class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">raw_packet</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></em><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.raw_packet" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">raw_packet</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bytes</span></span><a class="headerlink" href="#Morelia.packet.pod_packet.PodPacket.raw_packet" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Raw bytes of packet.</p>

@@ -8,15 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Specifics with Docker, Influx, and Grafana 📈 &mdash; Morelia v1.6.1 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
       <link rel="stylesheet" type="text/css" href="_static/style.css?v=908fd7fe" />
 
   
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=2d14e799"></script>
-      <script src="_static/doctools.js?v=9bcbadda"></script>
-      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -147,10 +147,10 @@
 <section id="data-storage">
 <h3><a class="toc-backref" href="#id4" role="doc-backlink">Data Storage 🛖</a><a class="headerlink" href="#data-storage" title="Link to this heading"></a></h3>
 <p>Because Docker is creating the container for Influx, the data is stored in a Docker Volume, rather than Influx’s own storage space. Depending on the sample rate of the device you are using, this data can fill up very quickly. <strong>Please</strong> keep in mind that if the retention policy below is not set up for your system, the disk might get filled up with time series data.</p>
-<a class="reference internal image-reference" href="_images/disk.png"><img alt="_images/disk.png" src="_images/disk.png" style="width: 279.0px; height: 95.0px;" />
+<a class="reference internal image-reference" href="_images/disk.png"><img alt="_images/disk.png" height="95" src="_images/disk.png" width="279" />
 </a>
 <p>If you are on Windows, this data fills up in a virtual disk. The virtual disk should be located under <code class="docutils literal notranslate"><span class="pre">C:\Users\&lt;username&gt;\AppData\Local\Docker\wsl\disk\docker_data.vhdx</span></code>. Unfortunately, when space is allocated to this disk, even if your Docker Volume is deleted, the space in Windows will not be restored. This is because space allocated to the virtual disk will not shrink unless you manually shrink it (through the terminal), or delete it (after closing WSL).</p>
-<a class="reference internal image-reference" href="_images/docker_disk.png"><img alt="_images/docker_disk.png" class="align-center" src="_images/docker_disk.png" style="width: 676.5px; height: 41.800000000000004px;" />
+<a class="reference internal image-reference" href="_images/docker_disk.png"><img alt="_images/docker_disk.png" class="align-center" height="42" src="_images/docker_disk.png" width="676" />
 </a>
 <br/><p>The steps below outline how to delete or shrink the virtual disk</p>
 </section>
@@ -181,19 +181,19 @@
 <h3><a class="toc-backref" href="#id7" role="doc-backlink">Retention Policy ⌛</a><a class="headerlink" href="#retention-policy" title="Link to this heading"></a></h3>
 <p>Influx has a “retention” policy that it uses in order to ensure that the computer does not fill up its entire disk space. It removes data if the data has been stored for over the set time period (i.e if the policy is set to 2 days, influx will remove data after it has become 2 days old).</p>
 <p>Influx will remove data in batches. It does this by creating “shards”, which group data together over a specific time period. For example, if the shard length is 1 hour long, then data will be grouped together in that hour and be deleted together after the time retention expiry. Shard length is determined by how long the retention policy is set to, which you can see below:</p>
-<a class="reference internal image-reference" href="_images/shards.png"><img alt="_images/shards.png" src="_images/shards.png" style="width: 534.0px; height: 204.0px;" />
+<a class="reference internal image-reference" href="_images/shards.png"><img alt="_images/shards.png" height="204" src="_images/shards.png" width="534" />
 </a>
 <p>From Terraform, this policy can be edited inside of the <code class="docutils literal notranslate"><span class="pre">influxdb.tf</span></code> file, under the environment variables. By default, we set the retention policy to 47 hours, which means that the shard length is 1 hour.</p>
-<a class="reference internal image-reference" href="_images/retention.png"><img alt="_images/retention.png" src="_images/retention.png" style="width: 529.0px; height: 144.0px;" />
+<a class="reference internal image-reference" href="_images/retention.png"><img alt="_images/retention.png" height="144" src="_images/retention.png" width="529" />
 </a>
 </section>
 </section>
 <section id="creating-grafana-dashboards">
 <span id="grafana-label"></span><h2><a class="toc-backref" href="#id8" role="doc-backlink">Creating Grafana Dashboards 📉</a><a class="headerlink" href="#creating-grafana-dashboards" title="Link to this heading"></a></h2>
 <p>During the creation of the Grafana container, Grafana looks inside of the infra/grafana/dashboards folder for JSON files to use as dashboards. Any JSON file that fits the format of a grafana dashboard here will be generated and shown on the UI.</p>
-<a class="reference internal image-reference" href="_images/dashboard_folder.png"><img alt="_images/dashboard_folder.png" src="_images/dashboard_folder.png" style="width: 224.1px; height: 70.2px;" />
+<a class="reference internal image-reference" href="_images/dashboard_folder.png"><img alt="_images/dashboard_folder.png" height="70" src="_images/dashboard_folder.png" width="224" />
 </a>
-<a class="reference internal image-reference" href="_images/right_arrow.png"><img alt="_images/right_arrow.png" src="_images/right_arrow.png" style="width: 153.6px; height: 153.6px;" />
+<a class="reference internal image-reference" href="_images/right_arrow.png"><img alt="_images/right_arrow.png" height="154" src="_images/right_arrow.png" width="154" />
 </a>
 <img alt="_images/dashboards.png" src="_images/dashboards.png" />
 <p>If you want to create your own dashboard, there is a folder where template JSON files are held for a basic <code class="docutils literal notranslate"><span class="pre">8206HR</span></code> and <code class="docutils literal notranslate"><span class="pre">8401HR</span></code>. You can copy any of these files to the infra/grafana/dashboards folder, and edit the specifics (title, description, etc.) for your needs.</p>
@@ -201,26 +201,26 @@
 <p class="admonition-title">Note</p>
 <p>These can be pretty finicky and need to be precise.</p>
 </div>
-<a class="reference internal image-reference" href="_images/templates.png"><img alt="_images/templates.png" src="_images/templates.png" style="width: 364.5px; height: 136.5px;" />
+<a class="reference internal image-reference" href="_images/templates.png"><img alt="_images/templates.png" height="136" src="_images/templates.png" width="364" />
 </a>
 <section id="customizing-dashboards-for-your-needs">
 <h3><a class="toc-backref" href="#id9" role="doc-backlink">Customizing Dashboards for Your Needs 🎉</a><a class="headerlink" href="#customizing-dashboards-for-your-needs" title="Link to this heading"></a></h3>
 <p>Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the “edit” mode. To enter edit mode, just press the button in the top right corner.</p>
 <img alt="_images/edit_dashboard.png" src="_images/edit_dashboard.png" />
 <p>After entering this mode, you are free to move panels, create new panels, and edit dashboard settings. After you are finished, you can save the dashboard by clicking the “Saved dashboard” button, and then either copying the JSON to clipboard or saving the JSON to a file.</p>
-<a class="reference internal image-reference" href="_images/save_dashboard.png"><img alt="_images/save_dashboard.png" src="_images/save_dashboard.png" style="width: 471.5px; height: 466.0px;" />
+<a class="reference internal image-reference" href="_images/save_dashboard.png"><img alt="_images/save_dashboard.png" height="466" src="_images/save_dashboard.png" width="472" />
 </a>
 <p>Placing this JSON file in the infra/grafana/dashboards folder will allow Grafana to provision it on startup, meaning that it will automatically load in the Grafana GUI (with all your changes!) when starting the container through Terraform.</p>
 <section id="editing-a-panel">
 <h4><a class="toc-backref" href="#id10" role="doc-backlink">Editing a Panel ⬛</a><a class="headerlink" href="#editing-a-panel" title="Link to this heading"></a></h4>
 <p>In your dashboard, you can edit panels by clicking the top right menu button on a panel, and then clicking “Edit”.</p>
-<a class="reference internal image-reference" href="_images/edit_panel.png"><img alt="_images/edit_panel.png" src="_images/edit_panel.png" style="width: 585.0px; height: 218.25px;" />
+<a class="reference internal image-reference" href="_images/edit_panel.png"><img alt="_images/edit_panel.png" height="218" src="_images/edit_panel.png" width="585" />
 </a>
 <p>Each panel queries information out of a database and can present it in variousways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which databse you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports.</p>
-<a class="reference internal image-reference" href="_images/query.png"><img alt="_images/query.png" src="_images/query.png" style="width: 924.0px; height: 206.25px;" />
+<a class="reference internal image-reference" href="_images/query.png"><img alt="_images/query.png" height="206" src="_images/query.png" width="924" />
 </a>
 <p>On the right-hand side, there are settings to change how the data is displayed. By default, we set each panel to show a time series (data flowing in through time), but other options include vizualizations such as a bar chart or a table (which will show more precise timestamps).</p>
-<a class="reference internal image-reference" href="_images/vizualization_dropdown.png"><img alt="_images/vizualization_dropdown.png" class="align-center" src="_images/vizualization_dropdown.png" style="width: 302.64px; height: 64.02px;" />
+<a class="reference internal image-reference" href="_images/vizualization_dropdown.png"><img alt="_images/vizualization_dropdown.png" class="align-center" height="64" src="_images/vizualization_dropdown.png" width="303" />
 </a>
 <div style="height: 12px;"></div><img alt="_images/vizualizations.png" class="align-center" src="_images/vizualizations.png" />
 <p>Remember, after you edit the panels, if you want to save the dashboard, that you must export it as a JSON file or copy it to your clipboard (and move it somewhere else).</p>
@@ -228,12 +228,12 @@
 <section id="json-specifics">
 <h4><a class="toc-backref" href="#id11" role="doc-backlink">JSON Specifics 📁</a><a class="headerlink" href="#json-specifics" title="Link to this heading"></a></h4>
 <p>In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard.</p>
-<a class="reference internal image-reference" href="_images/panel_begin.png"><img alt="_images/panel_begin.png" src="_images/panel_begin.png" style="width: 430.5px; height: 274.5px;" />
+<a class="reference internal image-reference" href="_images/panel_begin.png"><img alt="_images/panel_begin.png" height="274" src="_images/panel_begin.png" width="430" />
 </a>
-<a class="reference internal image-reference" href="_images/panel_end.png"><img alt="_images/panel_end.png" src="_images/panel_end.png" style="width: 445.0px; height: 241.0px;" />
+<a class="reference internal image-reference" href="_images/panel_end.png"><img alt="_images/panel_end.png" height="241" src="_images/panel_end.png" width="445" />
 </a>
 <p>At the bottom of the file, you will find a “title” line, which stores a string. Changing this string will update the title fo your dashboard.</p>
-<a class="reference internal image-reference" href="_images/json_title.png"><img alt="_images/json_title.png" src="_images/json_title.png" style="width: 375.0px; height: 25.5px;" />
+<a class="reference internal image-reference" href="_images/json_title.png"><img alt="_images/json_title.png" height="26" src="_images/json_title.png" width="375" />
 </a>
 <p>At the top of the file, you will find a “description” line, which stores a string. Changing this string will update the description of your dashboard.</p>
 <img alt="_images/json_description.png" src="_images/json_description.png" />
