@@ -8,8 +8,8 @@ import serial.tools.list_ports
 
 from Morelia.Stream.data_flow import DataFlow
 from Morelia.Stream.source import get_data_wrapper
-from healthSink import HealthSink
-from hardwareMonitor import HardwareMonitor
+from Morelia.Watchdog.healthSink import HealthSink
+from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
 
 class DataFlowMonitor: 
     """

@@ -31,11 +31,11 @@ resource "docker_container" "grafana" {
     type = "bind"
   }
 
-  // mounts {
-  //   target = "/var/lib/grafana/dashboards"
-  //   source = abspath("${path.module}/grafana/dashboards")
-  //   type = "bind"
-  // }
+  mounts {
+     target = "/var/lib/templates/"
+     source = abspath("${path.module}/templates/")
+     type = "bind"
+   }
 
 }
 

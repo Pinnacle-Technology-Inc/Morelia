@@ -4,7 +4,7 @@ from pprint import pprint
 from Morelia.Devices import Pod8206HR
 from Morelia.Stream.data_flow import DataFlow
 from Morelia.Stream.sink.csv_sink import CSVSink
-from watchdog import Watchdog
+from Morelia.Watchdog import Watchdog
 
 
 if __name__ == "__main__":

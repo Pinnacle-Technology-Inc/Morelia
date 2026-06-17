@@ -1,5 +1,5 @@
-from hardwareMonitor import HardwareMonitor
-from dataflowMonitor import DataFlowMonitor
+from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
+from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
 from Morelia.Stream.data_flow import DataFlow
 import time
 import multiprocessing as mp
