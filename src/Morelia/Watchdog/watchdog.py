@@ -4,28 +4,33 @@ from Morelia.Stream.data_flow import DataFlow
 import time
 import multiprocessing as mp
 import threading
-# Wall-clock epoch captured when this module is first imported (≈ program
-# start). Every timestamp emitted in a watchdog report is expressed as
-# seconds relative to this, so reports read as "time since startup" rather
-# than raw epoch seconds. Epoch (not monotonic) is used on purpose: it keeps
-# these on the same scale as last_data_at, which is stamped with time.time()
-# in the worker process.
+
+# Wall-clock epoch captured when this module is first imported (≈ program start)
 _PROGRAM_START = time.time()
 
-
 def _now_rel():
-    """Current time as seconds since program start."""
+    """
+    Return the current time relative to when this module was imported.
+
+    Output: float. Seconds elapsed since program start.
+    """
     return time.time() - _PROGRAM_START
 
-
 def _to_rel(epoch_sec):
-    """Convert an absolute epoch timestamp to seconds since program start.
-    Passes None through unchanged."""
+    """
+    Convert an epoch timestamp to seconds relative to program start.
+
+    Output: float or None. Relative seconds, or None when epoch_sec is None.
+    """
     return None if epoch_sec is None else epoch_sec - _PROGRAM_START
 
 def _resolve_interval(spec, key, default):
-    """spec may be a float (shared by all) or a dict {key: float} (per item).
-    Falls back to `default` for keys absent from a dict, or when spec is None."""
+    """
+    Resolve a shared or per-item polling interval.
+
+    Output: float or int. The value for key, the shared scalar value, or
+    default when spec is None or the key is absent.
+    """
     if spec is None:
         return default
     if isinstance(spec, dict):
@@ -74,6 +79,11 @@ class Watchdog:
     - Return compact or verbose watchdog dictionaries.
     """
     def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0 ):
+        """
+        Initialize stream and standalone-device monitoring state.
+
+        Output: None.
+        """
         #Input validation
         if flowgraph is None and not devices: 
             raise ValueError("Watchdog needs a flowgraph, devices, or both.")
@@ -98,6 +108,32 @@ class Watchdog:
         self._on_device_result = None
 
     def preflight(self, *, attempts=3, timeout_sec=5.0, require_ready=True):
+        """
+        Reset and verify every configured source and standalone device.
+
+        Output: dict.
+        - ok: bool (True | False).
+          - True: every device passed verification.
+          - False: one or more devices failed verification.
+        - devices: dict[str, dict]. Maps each device port or object ID to:
+          - ok: bool (True | False).
+            - True: this device passed verification.
+            - False: this device could not be opened or verified.
+          - attempts_used: int. Number of verification attempts used.
+          - reset: dict, present on verification success.
+            - ok: bool (True | False).
+              - True: the reset command completed.
+              - False: the reset operation failed.
+            - drained_packets: int, present on reset success.
+            - device_quiet: bool (True | False), present on reset success.
+              - True: the device stopped producing packets during reset.
+              - False: the reset deadline ended before the device became quiet.
+            - error: str, present on reset failure.
+          - error: str, present when opening or verification fails.
+
+        Raises RuntimeError when DataFlow workers already own the ports, or
+        when require_ready is True and one or more devices are not ready.
+        """
         if self.dataflow_monitor is not None and getattr(self.dataflow_monitor.flowgraph, "_workers", []):
             raise RuntimeError(
                 "preflight() must run before flowgraph.collect() — workers already own the ports.")
@@ -117,9 +153,9 @@ class Watchdog:
 
     def spawn_threads(self, *, stream_interval, device_interval, timeout_sec, on_stream_result, on_device_result):
         """
-        Spawn one thread per stream and one per standalone device. Non-blocking.
+        Spawn one non-blocking watcher thread per stream and standalone device.
 
-        stream_interval / device_interval: float (shared) or {key: float} (per item).
+        Output: None.
         """
         self._stop_event.clear()
         self._on_stream_result = on_stream_result
@@ -157,10 +193,12 @@ class Watchdog:
 
     def stop(self):
         """
-        Signal a running run() to exit.
-        
-        Does not stop the workers or release resources — call close()
-        for that.
+        Signal all watcher loops to stop and wait briefly for their threads.
+
+        Output: None.
+
+        This does not stop DataFlow workers or release monitor resources; use
+        close() for full cleanup.
         """
         self._stop_event.set()
         watchers = (*self._stream_watchers.values(), *self._device_watchers.values())
@@ -170,6 +208,163 @@ class Watchdog:
             w.join(timeout=10.0)
 
     def get_report(self, verbose=False):
+        """
+        Return the latest combined stream and standalone-device snapshot.
+
+        Output: dict.
+        - watchdog_status: str (unknown | ok | failed | degraded).
+          - unknown: no stream or device health values are available.
+          - ok: every monitored item is healthy.
+          - failed: every monitored item is unhealthy.
+          - degraded: health is mixed, suspect, unknown, or unrecognized.
+        - checked_at: float. Seconds since program start.
+        - streams: list[dict]. Compact reports when verbose is False; verbose
+          reports when verbose is True.
+          Compact stream keys:
+          - stream_index: int or None.
+          - port: str or None.
+          - port_owner: str or None (main | worker | none | None).
+            - main: the main-process source object has the port open.
+            - worker: the live stream worker owns the port.
+            - none: neither the main process nor a worker owns the port.
+            - None: ownership could not be determined.
+          - stream_health: str or None
+            (healthy | suspect | unhealthy | unknown | None).
+            - healthy: worker and heartbeat signals are normal.
+            - suspect: a transient failure or reconnect retry is in progress.
+            - unhealthy: a definite failure or failure threshold was reached.
+            - unknown: the watcher has started but has not completed a check.
+            - None: the field is absent from the input report.
+          - worker_status: str or None
+            (alive | dead | missing | unknown | None).
+            - alive: the worker process exists and is running.
+            - dead: the worker process exists but has exited.
+            - missing: no worker process object exists for the stream.
+            - unknown: reading worker status failed.
+            - None: no worker signal is available yet.
+          - heartbeat: str or None (fresh | stale | missing | None).
+            - fresh: data arrived within the allowed heartbeat age.
+            - stale: data exists but is older than the allowed age.
+            - missing: no heartbeat data is available or the read failed.
+            - None: no heartbeat signal is available yet.
+          - failure_count: int or None.
+          - action: str or None
+            (none | check_failed | stopped_stream_waiting_for_reconnect |
+            port_check_failed | waiting_for_port | waiting_for_port_release |
+            restart_failed | reconnected |
+            reconnect_failed_stop_stream_failed |
+            reconnect_failed_stop_stream_completed | None).
+            - none: the check required no recovery action.
+            - check_failed: the watcher caught an unexpected check error.
+            - stopped_stream_waiting_for_reconnect: the failure escalated and
+              the worker was stopped before reconnecting.
+            - port_check_failed: checking whether the port exists raised.
+            - waiting_for_port: the expected port is absent from the OS list.
+            - waiting_for_port_release: the port exists but cannot be opened.
+            - restart_failed: rebuilding or starting the stream failed.
+            - reconnected: restart succeeded and the worker answered PING.
+            - reconnect_failed_stop_stream_failed: PING failed after restart,
+              and stopping that failed restart also raised.
+            - reconnect_failed_stop_stream_completed: PING failed after
+              restart, and the restarted worker was stopped successfully.
+            - None: no action field is available.
+          - reason: str or None. Compact rule text or the verbose summary.
+          Verbose stream keys:
+          - stream_index: int.
+          - source_class: str or None.
+          - sink_classes: list[str].
+          - stream_health: str
+            (healthy | suspect | unhealthy | unknown).
+            - healthy: worker and heartbeat signals are normal.
+            - suspect: a transient failure or reconnect retry is in progress.
+            - unhealthy: a definite failure or failure threshold was reached.
+            - unknown: the watcher has started but has not completed a check.
+          - summary: str.
+          - port: str or None.
+          - port_owner: str or None (main | worker | none | None).
+            - main: the main-process source object has the port open.
+            - worker: the live stream worker owns the port.
+            - none: neither the main process nor a worker owns the port.
+            - None: ownership could not be determined.
+          - checked_at: float.
+          - rule: str
+            (worker_alive_heartbeat_fresh | stream_reconnecting |
+            worker_not_alive |
+            worker_alive_heartbeat_stale_below_threshold |
+            worker_alive_heartbeat_stale_threshold_reached |
+            no_data_below_threshold | no_data_threshold_reached |
+            heartbeat_missing | action_failure | starting).
+            - worker_alive_heartbeat_fresh: worker and heartbeat are healthy.
+            - stream_reconnecting: a reconnect retry is in progress.
+            - worker_not_alive: the worker is dead, missing, or unknown outside
+              an expected reconnect state.
+            - worker_alive_heartbeat_stale_below_threshold: heartbeat is stale,
+              but the consecutive-failure threshold has not been reached.
+            - worker_alive_heartbeat_stale_threshold_reached: heartbeat is
+              stale and the failure threshold has been reached.
+            - no_data_below_threshold: no packet has ever arrived, but the
+              failure threshold has not been reached.
+            - no_data_threshold_reached: no packet has ever arrived and the
+              failure threshold has been reached.
+            - heartbeat_missing: heartbeat data is unavailable for a reason
+              other than data never starting.
+            - action_failure: fallback for a failure not matched above.
+            - starting: the watcher has not completed its first check.
+          - action: dict.
+            - taken: str
+              (none | check_failed | stopped_stream_waiting_for_reconnect |
+              port_check_failed | waiting_for_port |
+              waiting_for_port_release | restart_failed | reconnected |
+              reconnect_failed_stop_stream_failed |
+              reconnect_failed_stop_stream_completed).
+              Uses the same meanings as the compact action field above.
+            - detail: dict or None. Additional action-result fields, or None
+              when taken is none.
+          - signals: dict.
+            - worker: dict.
+              - status: str or None
+                (alive | dead | missing | unknown | None).
+                Uses the same meanings as compact worker_status above.
+              - pid: int or None.
+              - exitcode: int or None.
+            - heartbeat: dict.
+              - status: str (fresh | stale | missing).
+                Uses the same meanings as compact heartbeat above.
+              - last_data_at: float or None.
+              - reason: str or None
+                (None | data_older_than_max_age | no_health_sink_attached |
+                no_data_seen_yet | heartbeat_check_failed: <error>).
+                - None: heartbeat data is fresh.
+                - data_older_than_max_age: heartbeat data exists but is stale.
+                - no_health_sink_attached: no heartbeat-producing sink exists.
+                - no_data_seen_yet: the health sink has received no packet.
+                - heartbeat_check_failed: <error>: reading the heartbeat raised.
+              - age_sec: float or None.
+              - max_age_sec: float.
+              - packet_count: int or None.
+            - failure: dict.
+              - count: int.
+              - threshold: int.
+              - last_error: str or None.
+              - last_error_at: float or None.
+        - devices: dict[str, dict]. Maps device keys to reports containing:
+          - status: str
+            (starting | connected | reconnected | ping failed | disconnected |
+            suspect | unknown).
+            - starting: the watcher has started but has not completed a poll.
+            - connected: the existing device handle answered PING.
+            - reconnected: the existing handle failed, but a rebuilt device
+              answered PING in the same poll.
+            - ping failed: PING and reconnect failed, but the failure count is
+              still below the disconnection threshold.
+            - disconnected: the consecutive-failure threshold was reached.
+            - suspect: the device watcher itself caught an exception.
+            - unknown: a completed poll returned no device state.
+          - consecutive_failures: int, present after a normal hardware poll.
+          - last_error: str or None, present after a normal hardware poll.
+          - error: str, present when the watcher catches an exception.
+          - checked_at: float, present after the first completed poll.
+        """
         with self._results_lock:
             streams = [self._stream_results[i] for i in sorted(self._stream_results)]
             devices = dict(self._device_results)
@@ -182,9 +377,14 @@ class Watchdog:
                 "checked_at": _now_rel(), "streams": streams, "devices": devices} 
 
     def run(self, *, report_interval_sec=30.0, stream_interval=30.0, device_interval=30.0, timeout_sec=10.0, on_result=None, on_stream_result=None, on_device_result=None, verbose=False):
-        """Blocking convenience entry. Start every watcher, then emit a combined
-        snapshot every report_interval_sec until stop(). Per-item callbacks fire
-        independently from inside each watcher thread."""
+        """
+        Run all watchers and periodically emit combined reports until stopped.
+
+        Per-stream and per-device callbacks run independently in watcher
+        threads, while on_result receives combined snapshots in this thread.
+
+        Output: None.
+        """
         self.spawn_threads(stream_interval=stream_interval, device_interval=device_interval,
                    timeout_sec=timeout_sec, on_stream_result=on_stream_result,
                    on_device_result=on_device_result)
@@ -194,10 +394,11 @@ class Watchdog:
             self._stop_event.wait(report_interval_sec)
 
     def close(self):
-        """Stop every watched stream worker and release monitor resources.
+        """
+        Stop watchers, stream workers, monitor managers, and source resources.
 
         Safe to call repeatedly and never raises. Each step is isolated so a
-        failure in one does not skip the others — otherwise a half-torn-down
+        failure in one does not skip the others; otherwise a half-torn-down
         multiprocessing state can hang the interpreter at exit.
 
         Workers are stopped via the monitor's None-safe stop_stream rather
@@ -205,6 +406,8 @@ class Watchdog:
         stream, flowgraph._workers holds None in that slot, and
         stop_collection() calls worker.join() unconditionally (crashing on
         the None).
+
+        Output: None.
         """
         self.stop()
         if self.dataflow_monitor is not None:
@@ -223,8 +426,9 @@ class Watchdog:
 
     def _filter_standalone_devices(self, devices: list):
         """
-        Helper function: Go through all devices list and filter out any devices that has already been used by dataflow
-        Output: list[Device object]
+        Exclude devices whose ports are already used by DataFlow streams.
+
+        Output: list[object]. Device objects not represented in the DataFlow.
         """
         if self.dataflow_monitor is None: 
             return list(devices)
@@ -248,8 +452,13 @@ class Watchdog:
     
     def _summarize_watchdog_health(self, health_values: list):
         """
-        Determine the current status of watchdog based on all accumulated status between dataflow and devices
-        Output: str (unknown | ok | failed | degraded)
+        Reduce stream and device health values to one watchdog status.
+
+        Output: str (unknown | ok | failed | degraded).
+        - unknown: no health values were supplied.
+        - ok: every value is healthy.
+        - failed: every value is unhealthy.
+        - degraded: values are mixed, suspect, unknown, or unrecognized.
         """
         if not health_values:
             return "unknown"
@@ -261,7 +470,59 @@ class Watchdog:
 
     @staticmethod
     def build_compact_stream_report(verbose_stream):
-        """Reduce one verbose stream report to the compact stream shape."""
+        """
+        Reduce one verbose stream report to its compact public shape.
+
+        Output: dict.
+        - stream_index: int or None.
+        - port: str or None.
+        - port_owner: str or None (main | worker | none | None).
+          - main: the main-process source object has the port open.
+          - worker: the live stream worker owns the port.
+          - none: neither the main process nor a worker owns the port.
+          - None: ownership could not be determined.
+        - stream_health: str or None
+          (healthy | suspect | unhealthy | unknown | None).
+          - healthy: worker and heartbeat signals are normal.
+          - suspect: a transient failure or reconnect retry is in progress.
+          - unhealthy: a definite failure or threshold was reached.
+          - unknown: the first stream check has not completed.
+          - None: the field is absent from the input report.
+        - worker_status: str or None
+          (alive | dead | missing | unknown | None).
+          - alive: the worker process exists and is running.
+          - dead: the worker process exists but has exited.
+          - missing: no worker process object exists.
+          - unknown: reading worker status failed.
+          - None: no worker signal is available yet.
+        - heartbeat: str or None (fresh | stale | missing | None).
+          - fresh: data arrived within the allowed heartbeat age.
+          - stale: data exists but is older than the allowed age.
+          - missing: no heartbeat data is available or the read failed.
+          - None: no heartbeat signal is available yet.
+        - failure_count: int or None.
+        - action: str or None
+          (none | check_failed | stopped_stream_waiting_for_reconnect |
+          port_check_failed | waiting_for_port | waiting_for_port_release |
+          restart_failed | reconnected |
+          reconnect_failed_stop_stream_failed |
+          reconnect_failed_stop_stream_completed | None).
+          - none: the check required no recovery action.
+          - check_failed: the watcher caught an unexpected check error.
+          - stopped_stream_waiting_for_reconnect: the worker was stopped after
+            a failure escalated.
+          - port_check_failed: checking whether the port exists raised.
+          - waiting_for_port: the expected port is absent from the OS list.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - reconnected: restart succeeded and the worker answered PING.
+          - reconnect_failed_stop_stream_failed: post-restart PING failed and
+            stopping the failed restart also raised.
+          - reconnect_failed_stop_stream_completed: post-restart PING failed
+            and the restarted worker was stopped successfully.
+          - None: no action field is available.
+        - reason: str or None. Compact rule text or the verbose summary.
+        """
         signals = verbose_stream["signals"]
         return {
             "stream_index": verbose_stream.get("stream_index"),
@@ -276,6 +537,11 @@ class Watchdog:
         }
         
     def _publish_stream(self, stream_index, report):
+        """
+        Store a stream report and invoke the optional stream callback.
+
+        Output: None.
+        """
         with self._results_lock:
             self._stream_results[stream_index] = report
         if self._on_stream_result is not None:
@@ -285,6 +551,11 @@ class Watchdog:
                 pass   # a bad user callback must not kill the watcher thread
 
     def _publish_device(self, key, report):
+        """
+        Store a device report and invoke the optional device callback.
+
+        Output: None.
+        """
         with self._results_lock:
             self._device_results[key] = report
         if self._on_device_result is not None:
@@ -294,15 +565,17 @@ class Watchdog:
                 pass
 
     def _cleanup_sources(self):
-        """Run each source device's own cleanup() so Morelia's serial
-        queue_server subprocess is torn down deterministically.
+        """
+        Run each DataFlow source's cleanup hook to release serial subprocesses.
 
         pod._manager (a PacketManager) launches queue_server.py and is the only
         thing that can stop it, but Morelia only calls its cleanup() from
-        __del__ — which doesn't run on an abrupt/Ctrl-C exit, so the server
+        __del__, which may not run on an abrupt or Ctrl-C exit, so the server
         orphans and keeps holding the port. _manager survives collect()
         (close_port() nulls _port, not _manager) and the main process is the one
         that started the server, so calling cleanup() here actually terminates it.
+
+        Output: None.
         """
         if self.dataflow_monitor is None or self.dataflow_monitor.flowgraph is None:
             return
@@ -322,6 +595,11 @@ class StreamWatcher (threading.Thread):
     so a slow reconnect or a crash here cannot touch any other stream.
     """   
     def __init__(self, stream_index: int, monitor: DataFlowMonitor, *, failure_threshold: int, max_heartbeat_age_sec: float, interval_sec: float, timeout_sec: float, publish):
+        """
+        Initialize a daemon watcher for one DataFlow stream.
+
+        Output: None.
+        """
         super().__init__(name=f"stream-watcher-{stream_index}", daemon=True)
         self.stream_index = stream_index
         self._monitor = monitor #shared dataflow monitor handed to each thread
@@ -339,7 +617,11 @@ class StreamWatcher (threading.Thread):
     # Thread lifecycle                                                   #
     # ------------------------------------------------------------------ #
     def run(self):
-        "A thread monitoring one worker (pair of source - sinks). Running forever until the self._stop_event is set"
+        """
+        Monitor, assess, and publish one stream until stop() is called.
+
+        Output: None.
+        """
         while not self._stop_event.is_set():
             checked_at = _now_rel()
             try:
@@ -358,7 +640,11 @@ class StreamWatcher (threading.Thread):
             self._stop_event.wait(self._interval_sec)
 
     def stop(self):
-        """Signal the loop to exit. Safe from any thread, more than once."""
+        """
+        Signal the stream watcher loop to exit.
+
+        Output: None.
+        """
         self._stop_event.set()
 
     # ------------------------------------------------------------------ #
@@ -368,7 +654,86 @@ class StreamWatcher (threading.Thread):
     #Helper for per-stream logic
     def _watch_stream(self):
         """
-        If stream disconnected, try to reconnect, else return information
+        Inspect a connected stream or advance its reconnection state.
+
+        Output: dict.
+        - ok: bool (True | False).
+          - True: the stream is healthy or reconnect verification succeeded.
+          - False: a failure was detected or recovery is still in progress.
+        - stream_index: int.
+        - action: str
+          (none | stopped_stream_waiting_for_reconnect | port_check_failed |
+          waiting_for_port | waiting_for_port_release | restart_failed |
+          reconnected | reconnect_failed_stop_stream_failed |
+          reconnect_failed_stop_stream_completed | check_failed).
+          - none: no recovery action was required this pass.
+          - stopped_stream_waiting_for_reconnect: a failure escalated and the
+            stream worker was stopped before reconnecting.
+          - port_check_failed: checking port presence raised.
+          - waiting_for_port: the expected port is absent from the OS list.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - reconnected: restart succeeded and the worker answered PING.
+          - reconnect_failed_stop_stream_failed: post-restart PING failed and
+            stopping that failed restart also raised.
+          - reconnect_failed_stop_stream_completed: post-restart PING failed
+            and the restarted worker was stopped successfully.
+          - check_failed: the watcher caught an unexpected check error.
+        - failure_reason: str or None
+          (worker_dead | worker_missing | worker_unknown | heartbeat_stale |
+          data_never_started | heartbeat_missing | port_check_failed |
+          waiting_for_port | waiting_for_port_release | restart_failed |
+          restart_completed_worker_not_response | check_failed | None).
+          - worker_dead: the worker process exists but has exited.
+          - worker_missing: no worker process object exists.
+          - worker_unknown: the worker status could not be classified.
+          - heartbeat_stale: data is older than the maximum heartbeat age.
+          - data_never_started: no packet has ever reached the health sink.
+          - heartbeat_missing: heartbeat data is unavailable for another
+            reason.
+          - port_check_failed: checking port presence raised.
+          - waiting_for_port: the expected port is absent.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - restart_completed_worker_not_response: restart completed, but the
+            worker did not answer the verification PING.
+          - check_failed: the connected-stream check raised unexpectedly.
+          - None: no failure was detected.
+        - failure_count: int, present on normal checks and reconnect attempts.
+        - stream_status: dict, present when status data is available.
+          - stream_index: int.
+          - source_class: str or None.
+          - sink_classes: list[str].
+          - worker_status: str (alive | dead | missing | unknown).
+            - alive: the worker process exists and is running.
+            - dead: the worker process exists but has exited.
+            - missing: no worker process object exists.
+            - unknown: reading stream status raised.
+          - worker_pid: int or None.
+          - worker_exitcode: int or None.
+          - error: str, present when reading stream status raises.
+        - heartbeat: dict, present during connected-stream checks.
+          - status: str (fresh | stale | missing).
+            - fresh: data arrived within max_age_sec.
+            - stale: data exists but is older than max_age_sec.
+            - missing: no heartbeat data is available or the read failed.
+          - last_data_at: float or None.
+          - reason: str or None
+            (None | data_older_than_max_age | no_health_sink_attached |
+            no_data_seen_yet | heartbeat_check_failed: <error>).
+            - None: heartbeat data is fresh.
+            - data_older_than_max_age: heartbeat data exists but is stale.
+            - no_health_sink_attached: no heartbeat-producing sink exists.
+            - no_data_seen_yet: the health sink has received no packet.
+            - heartbeat_check_failed: <error>: reading the heartbeat raised.
+          - age_sec: float or None.
+          - max_age_sec: float.
+          - packet_count: int or None.
+        - restart_result: dict, present after a restart attempt. Uses the
+          restart_result schema documented by _try_reconnect().
+        - verify_result: dict, present after restart verification. Uses the
+          verify_result schema documented by _try_reconnect().
+        - error: str, present when an operation raises.
         """
         try:
             if self._disconnected:
@@ -382,6 +747,57 @@ class StreamWatcher (threading.Thread):
             }
             
     def _get_live_stream_info(self):
+        """
+        Read a connected stream and escalate failures when required.
+
+        Output: dict.
+        - stream_index: int.
+        - stream_status: dict.
+          - stream_index: int.
+          - source_class: str.
+          - sink_classes: list[str].
+          - worker_status: str (alive | dead | missing).
+            - alive: the worker process exists and is running.
+            - dead: the worker process exists but has exited.
+            - missing: no worker process object exists.
+          - worker_pid: int or None.
+          - worker_exitcode: int or None.
+        - heartbeat: dict.
+          - status: str (fresh | stale | missing).
+            - fresh: data arrived within max_age_sec.
+            - stale: data exists but is older than max_age_sec.
+            - missing: no heartbeat data is available or the read failed.
+          - last_data_at: float or None.
+          - reason: str or None
+            (None | data_older_than_max_age | no_health_sink_attached |
+            no_data_seen_yet | heartbeat_check_failed: <error>).
+            - None: heartbeat data is fresh.
+            - data_older_than_max_age: heartbeat data exists but is stale.
+            - no_health_sink_attached: no heartbeat-producing sink exists.
+            - no_data_seen_yet: the health sink has received no packet.
+            - heartbeat_check_failed: <error>: reading the heartbeat raised.
+          - age_sec: float or None.
+          - max_age_sec: float.
+          - packet_count: int or None.
+        - ok: bool (True | False).
+          - True: no worker or heartbeat failure was classified.
+          - False: the stream has a classified failure.
+        - action: str (none | stopped_stream_waiting_for_reconnect).
+          - none: the failure is absent or has not reached escalation.
+          - stopped_stream_waiting_for_reconnect: the failure escalated and
+            the worker was stopped before reconnecting.
+        - failure_reason: str or None
+          (worker_dead | worker_missing | heartbeat_stale |
+          data_never_started | heartbeat_missing | None).
+          - worker_dead: the worker process exists but has exited.
+          - worker_missing: no worker process object exists.
+          - heartbeat_stale: data is older than the maximum heartbeat age.
+          - data_never_started: no packet has ever reached the health sink.
+          - heartbeat_missing: heartbeat data is unavailable for another
+            reason.
+          - None: the worker is alive and its heartbeat is fresh.
+        - failure_count: int. Consecutive failures, reset to 0 on success.
+        """
         m = self._monitor
         stream_status = m.get_stream_status(self.stream_index)
         heartbeat= self._get_heartbeat()
@@ -425,8 +841,108 @@ class StreamWatcher (threading.Thread):
     
     def _try_reconnect(self):
         """
-        If stream disconnected, check port availability and access, reconnect if possible and verify with 1 PING
-        Retry forever
+        Attempt one reconnect step for a disconnected stream.
+
+        Output: dict.
+        - stream_index: int.
+        - failure_count: int.
+        - stream_status: dict.
+          - stream_index: int.
+          - source_class: str or None.
+          - sink_classes: list[str].
+          - worker_status: str (alive | dead | missing | unknown).
+            - alive: the worker process exists and is running.
+            - dead: the worker process exists but has exited.
+            - missing: no worker process object exists.
+            - unknown: reading stream status raised.
+          - worker_pid: int or None.
+          - worker_exitcode: int or None.
+          - error: str, present when reading stream status raises.
+        - ok: bool (True | False).
+          - True: restart completed and the worker answered PING.
+          - False: reconnect failed or is waiting for the port.
+        - action: str
+          (port_check_failed | waiting_for_port | waiting_for_port_release |
+          restart_failed | reconnected | reconnect_failed_stop_stream_failed |
+          reconnect_failed_stop_stream_completed).
+          - port_check_failed: checking port presence raised.
+          - waiting_for_port: the expected port is absent from the OS list.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - reconnected: restart succeeded and the worker answered PING.
+          - reconnect_failed_stop_stream_failed: post-restart PING failed and
+            stopping that failed restart also raised.
+          - reconnect_failed_stop_stream_completed: post-restart PING failed
+            and the restarted worker was stopped successfully.
+        - failure_reason: str or None
+          (port_check_failed | waiting_for_port | waiting_for_port_release |
+          restart_failed | restart_completed_worker_not_response | None).
+          - port_check_failed: checking port presence raised.
+          - waiting_for_port: the expected port is absent.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - restart_completed_worker_not_response: restart completed, but the
+            worker did not answer the verification PING.
+          - None: reconnect and verification succeeded.
+        - restart_result: dict, present after a restart attempt.
+          - ok: bool (True | False).
+            - True: the stream was rebuilt and its worker was started.
+            - False: restart raised before completion.
+          - stream_index: int.
+          - worker_status: str (alive), present on success.
+          - worker_pid: int, present on success.
+          - source_class: str, present on success.
+          - sink_classes: list[str], present on success.
+          - reset_result: dict, present on success.
+            - ok: bool (True | False).
+              - True: reset completed.
+              - False: opening or resetting the device failed.
+            - drained_packets: int, present on reset success.
+            - device_quiet: bool (True | False), present on reset success.
+              - True: the device stopped producing packets during reset.
+              - False: the reset deadline ended before the device became quiet.
+            - error: str, present on reset failure.
+          - error: str, present on failure.
+          - dataflow_status: str (restart_failed), present on failure.
+        - verify_result: dict, present after restart verification.
+          - ok: bool (True | False).
+            - True: the control command completed and returned a response.
+            - False: validation, worker state, timeout, or I/O failed.
+          - poll_status: str
+            (queue_roundtrip_ok | direct_roundtrip_ok |
+            queue_roundtrip_timeout | direct_roundtrip_timeout |
+            roundtrip_error | worker_dead | worker_missing | detached |
+            invalid_stream_index).
+            - queue_roundtrip_ok: the worker-owned queue path succeeded.
+            - direct_roundtrip_ok: the main-process direct path succeeded.
+            - queue_roundtrip_timeout: the worker-owned queue path timed out.
+            - direct_roundtrip_timeout: the direct path timed out.
+            - roundtrip_error: the attempted command raised a non-timeout
+              exception.
+            - worker_dead: the worker process exists but has exited.
+            - worker_missing: no worker process object exists.
+            - detached: no DataFlow is attached.
+            - invalid_stream_index: stream_index is outside the snapshot.
+          - stream_index: int.
+          - source_class: str, when stream status is available.
+          - sink_classes: list[str], when stream status is available.
+          - worker_status: str (alive | dead | missing), when available.
+            - alive: the worker process exists and is running.
+            - dead: the worker process exists but has exited.
+            - missing: no worker process object exists.
+          - worker_pid: int or None, when stream status is available.
+          - worker_exitcode: int or None, when stream status is available.
+          - routed_through_queue: bool (True | False), when attempted.
+            - True: the worker owns the port, so the command uses its queue.
+            - False: the main process owns the port, so the command is direct.
+          - port_open_in_main: bool (True | False), when attempted.
+            - True: the main-process source object has an open port.
+            - False: the main-process source object does not have an open port.
+          - elapsed_sec: float, present on success.
+          - response_type: str, present on success.
+          - response_command_number: int or None, present on success.
+          - error: str, present on failure.
+        - error: str, present when port checking or stream stopping raises.
         """
         m = self._monitor
         base = {
@@ -521,6 +1037,28 @@ class StreamWatcher (threading.Thread):
     # ------------------------------------------------------------------ #
 
     def _get_heartbeat(self):
+        """
+        Read and normalize the stream heartbeat without raising.
+
+        Output: dict.
+        - status: str (fresh | stale | missing).
+          - fresh: data arrived within max_age_sec.
+          - stale: data exists but is older than max_age_sec.
+          - missing: no heartbeat data is available or the read failed.
+        - last_data_at: float or None. Seconds since program start.
+        - reason: str or None
+          (None | data_older_than_max_age | no_health_sink_attached |
+          no_data_seen_yet | heartbeat_check_failed: <error>).
+          - None: heartbeat data is fresh.
+          - data_older_than_max_age: heartbeat data exists but is stale.
+          - no_health_sink_attached: the stream has no heartbeat-producing
+            health sink.
+          - no_data_seen_yet: a health sink exists but has received no packet.
+          - heartbeat_check_failed: <error>: reading the heartbeat raised.
+        - age_sec: float or None.
+        - max_age_sec: float.
+        - packet_count: int or None.
+        """
         try:
             hb = self._monitor.get_stream_heartbeat(self.stream_index, self._max_heartbeat_age_sec)
             return {
@@ -540,6 +1078,22 @@ class StreamWatcher (threading.Thread):
             }
     
     def _safe_get_stream_status(self):
+        """
+        Read stream process metadata and return a fallback on failure.
+
+        Output: dict.
+        - stream_index: int.
+        - source_class: str or None.
+        - sink_classes: list[str].
+        - worker_status: str (alive | dead | missing | unknown).
+          - alive: the worker process exists and is running.
+          - dead: the worker process exists but has exited.
+          - missing: no worker process object exists.
+          - unknown: reading stream status raised.
+        - worker_pid: int or None.
+        - worker_exitcode: int or None.
+        - error: str, present only when the status read raises.
+        """
         try:
             return self._monitor.get_stream_status(self.stream_index)
         except Exception as error:
@@ -552,9 +1106,9 @@ class StreamWatcher (threading.Thread):
 
     def _safe_get_stream_port(self):
         """
-        Return the stream port, or None if it cannot be resolved.
+        Resolve the stream's serial port without raising.
 
-        Output: str or None
+        Output: str or None. Port identifier, or None when unavailable.
         """
         try:
             return self._monitor.get_stream_port(self.stream_index)
@@ -563,9 +1117,13 @@ class StreamWatcher (threading.Thread):
 
     def _safe_get_port_owner(self):
         """
-        Return who owns the stream port.
+        Resolve which process owns the stream port without raising.
 
-        Output: "main" | "worker" | "none" | None
+        Output: str or None (main | worker | none | None).
+        - main: the main-process source object has the port open.
+        - worker: the live stream worker owns the port.
+        - none: neither the main process nor a worker owns the port.
+        - None: ownership lookup raised.
         """
         try:
             return self._monitor.get_port_owner(self.stream_index)
@@ -574,7 +1132,20 @@ class StreamWatcher (threading.Thread):
  
     def _extract_stream_status_for_report(self, action_result):
         """
-        Extract the information already fetched from get_stream_status() function above
+        Reuse status from an action result or perform a safe status read.
+
+        Output: dict.
+        - stream_index: int.
+        - source_class: str or None.
+        - sink_classes: list[str].
+        - worker_status: str (alive | dead | missing | unknown).
+          - alive: the worker process exists and is running.
+          - dead: the worker process exists but has exited.
+          - missing: no worker process object exists.
+          - unknown: the fallback status read raised.
+        - worker_pid: int or None.
+        - worker_exitcode: int or None.
+        - error: str, present only when the fallback status read raises.
         """
         stream_status = action_result.get("stream_status")
         if isinstance(stream_status, dict) and "worker_status" in stream_status:
@@ -587,9 +1158,18 @@ class StreamWatcher (threading.Thread):
 
     def _classify_stream_failure(self,stream_status, heartbeat):
         """
-        Reduce this pass's signals to a single failure reason.
+        Reduce worker and heartbeat signals to one failure reason.
 
-        Output: reason str, or None when the stream is healthy this pass.
+        Output: str or None
+        (worker_dead | worker_missing | worker_unknown | heartbeat_stale |
+        data_never_started | heartbeat_missing | None).
+        - worker_dead: the worker process exists but has exited.
+        - worker_missing: no worker process object exists.
+        - worker_unknown: the worker status could not be classified.
+        - heartbeat_stale: data is older than the maximum heartbeat age.
+        - data_never_started: no packet has ever reached the health sink.
+        - heartbeat_missing: heartbeat data is unavailable for another reason.
+        - None: the worker is alive and its heartbeat is fresh.
         """
         if stream_status.get("worker_status") != "alive":
             return f"worker_{stream_status.get('worker_status')}"      
@@ -604,11 +1184,99 @@ class StreamWatcher (threading.Thread):
     
     def _build_verbose_stream_report(self, checked_at, action_result):
         """
-        Build the verbose per-stream watchdog dictionary.
+        Build the complete public report for one stream check.
 
-        Output: dict with identity fields, a flattened verdict
-        (stream_health / rule / summary), the action taken, and the raw
-        signals (worker / heartbeat / failure).
+        Output: dict.
+        - stream_index: int.
+        - source_class: str or None.
+        - sink_classes: list[str].
+        - stream_health: str (healthy | suspect | unhealthy).
+          - healthy: worker and heartbeat signals are normal.
+          - suspect: a transient failure or reconnect retry is in progress.
+          - unhealthy: a definite failure or failure threshold was reached.
+        - summary: str.
+        - port: str or None.
+        - port_owner: str or None (main | worker | none | None).
+          - main: the main-process source object has the port open.
+          - worker: the live stream worker owns the port.
+          - none: neither the main process nor a worker owns the port.
+          - None: ownership could not be determined.
+        - checked_at: float. Seconds since program start.
+        - rule: str
+          (worker_alive_heartbeat_fresh | stream_reconnecting |
+          worker_not_alive |
+          worker_alive_heartbeat_stale_below_threshold |
+          worker_alive_heartbeat_stale_threshold_reached |
+          no_data_below_threshold | no_data_threshold_reached |
+          heartbeat_missing | action_failure).
+          - worker_alive_heartbeat_fresh: worker and heartbeat are healthy.
+          - stream_reconnecting: a reconnect retry is in progress.
+          - worker_not_alive: the worker is dead, missing, or unknown outside
+            an expected reconnect state.
+          - worker_alive_heartbeat_stale_below_threshold: heartbeat is stale,
+            but the consecutive-failure threshold has not been reached.
+          - worker_alive_heartbeat_stale_threshold_reached: heartbeat is stale
+            and the failure threshold has been reached.
+          - no_data_below_threshold: no packet has ever arrived, but the
+            failure threshold has not been reached.
+          - no_data_threshold_reached: no packet has ever arrived and the
+            failure threshold has been reached.
+          - heartbeat_missing: heartbeat data is unavailable for a reason
+            other than data never starting.
+          - action_failure: fallback for a failure not matched above.
+        - action: dict.
+          - taken: str
+            (none | check_failed | stopped_stream_waiting_for_reconnect |
+            port_check_failed | waiting_for_port | waiting_for_port_release |
+            restart_failed | reconnected |
+            reconnect_failed_stop_stream_failed |
+            reconnect_failed_stop_stream_completed).
+            - none: the check required no recovery action.
+            - check_failed: the watcher caught an unexpected check error.
+            - stopped_stream_waiting_for_reconnect: a failure escalated and
+              the worker was stopped before reconnecting.
+            - port_check_failed: checking port presence raised.
+            - waiting_for_port: the expected port is absent from the OS list.
+            - waiting_for_port_release: the port exists but cannot be opened.
+            - restart_failed: rebuilding or starting the stream failed.
+            - reconnected: restart succeeded and the worker answered PING.
+            - reconnect_failed_stop_stream_failed: post-restart PING failed
+              and stopping that failed restart also raised.
+            - reconnect_failed_stop_stream_completed: post-restart PING failed
+              and the restarted worker was stopped successfully.
+          - detail: dict or None. Non-duplicated action-result fields.
+        - signals: dict.
+          - worker: dict.
+            - status: str or None (alive | dead | missing | unknown | None).
+              - alive: the worker process exists and is running.
+              - dead: the worker process exists but has exited.
+              - missing: no worker process object exists.
+              - unknown: reading stream status raised.
+              - None: no worker status is available.
+            - pid: int or None.
+            - exitcode: int or None.
+          - heartbeat: dict.
+            - status: str (fresh | stale | missing).
+              - fresh: data arrived within max_age_sec.
+              - stale: data exists but is older than max_age_sec.
+              - missing: no heartbeat data is available or the read failed.
+            - last_data_at: float or None.
+            - reason: str or None
+              (None | data_older_than_max_age | no_health_sink_attached |
+              no_data_seen_yet | heartbeat_check_failed: <error>).
+              - None: heartbeat data is fresh.
+              - data_older_than_max_age: heartbeat data exists but is stale.
+              - no_health_sink_attached: no heartbeat-producing sink exists.
+              - no_data_seen_yet: the health sink has received no packet.
+              - heartbeat_check_failed: <error>: reading the heartbeat raised.
+            - age_sec: float or None.
+            - max_age_sec: float.
+            - packet_count: int or None.
+          - failure: dict.
+            - count: int.
+            - threshold: int.
+            - last_error: str or None.
+            - last_error_at: float or None.
         """
         #Setup information
         stream_status = self._extract_stream_status_for_report(action_result)
@@ -659,13 +1327,34 @@ class StreamWatcher (threading.Thread):
         """
         Convert this pass's signals and failure count into a health verdict.
 
-        Output: dict
-        - stream_health:
-             healthy: Nothing is wrong
-           | suspect: System is in retry attempts from failures
-           | unhealthy: System found error
-        - rule: stable machine key for the verdict
-        - summary: human-readable explanation
+        Output: dict.
+        - stream_health: str (healthy | suspect | unhealthy).
+          - healthy: worker and heartbeat signals are normal.
+          - suspect: a transient failure or reconnect retry is in progress.
+          - unhealthy: a definite failure or failure threshold was reached.
+        - rule: str
+          (worker_alive_heartbeat_fresh | stream_reconnecting |
+          worker_not_alive |
+          worker_alive_heartbeat_stale_below_threshold |
+          worker_alive_heartbeat_stale_threshold_reached |
+          no_data_below_threshold | no_data_threshold_reached |
+          heartbeat_missing | action_failure).
+          - worker_alive_heartbeat_fresh: worker and heartbeat are healthy.
+          - stream_reconnecting: a reconnect retry is in progress.
+          - worker_not_alive: the worker is dead, missing, or unknown outside
+            an expected reconnect state.
+          - worker_alive_heartbeat_stale_below_threshold: heartbeat is stale,
+            but the consecutive-failure threshold has not been reached.
+          - worker_alive_heartbeat_stale_threshold_reached: heartbeat is stale
+            and the failure threshold has been reached.
+          - no_data_below_threshold: no packet has ever arrived, but the
+            failure threshold has not been reached.
+          - no_data_threshold_reached: no packet has ever arrived and the
+            failure threshold has been reached.
+          - heartbeat_missing: heartbeat data is unavailable for a reason
+            other than data never starting.
+          - action_failure: fallback for a failure not matched above.
+        - summary: str. Human-readable explanation of the selected rule.
         """
         worker_status = worker["status"]
         hb_status = heartbeat.get("status")
@@ -742,6 +1431,11 @@ class StreamWatcher (threading.Thread):
     
     @staticmethod
     def _extract_action_error(action_result):
+        """
+        Extract the most relevant direct, verify, or restart error.
+
+        Output: str or None. Error text, or None when no error is present.
+        """
         if action_result.get("error"):
             return action_result["error"]
         for key in ("verify_result", "restart_result"):
@@ -752,6 +1446,32 @@ class StreamWatcher (threading.Thread):
     
     @staticmethod
     def _build_action_signal(action_result):
+        """
+        Convert an internal action result to the public action shape.
+
+        Output: dict.
+        - taken: str
+          (none | check_failed | stopped_stream_waiting_for_reconnect |
+          port_check_failed | waiting_for_port | waiting_for_port_release |
+          restart_failed | reconnected |
+          reconnect_failed_stop_stream_failed |
+          reconnect_failed_stop_stream_completed).
+          - none: the check required no recovery action.
+          - check_failed: the watcher caught an unexpected check error.
+          - stopped_stream_waiting_for_reconnect: a failure escalated and the
+            worker was stopped before reconnecting.
+          - port_check_failed: checking port presence raised.
+          - waiting_for_port: the expected port is absent from the OS list.
+          - waiting_for_port_release: the port exists but cannot be opened.
+          - restart_failed: rebuilding or starting the stream failed.
+          - reconnected: restart succeeded and the worker answered PING.
+          - reconnect_failed_stop_stream_failed: post-restart PING failed and
+            stopping that failed restart also raised.
+          - reconnect_failed_stop_stream_completed: post-restart PING failed
+            and the restarted worker was stopped successfully.
+        - detail: dict or None. All action-result fields except action,
+          stream_index, stream_status, and heartbeat; None for no action.
+        """
         action_taken = action_result.get("action", "none")
         if action_taken == "none":
             return {"taken": "none", "detail": None}
@@ -765,6 +1485,12 @@ class DeviceWatcher(threading.Thread):
     """Independent watchdog thread for one standalone (non-DataFlow) device."""
     @staticmethod
     def _device_key(device):
+        """
+        Build a stable display key from the device's available identity fields.
+
+        Output: str. The first non-empty port, device_name, or _name value;
+        otherwise a process-local "device-<object ID>" fallback.
+        """
         for attr in ("port", "device_name", "_name"):
             v = getattr(device, attr, None)
             if v:
@@ -773,6 +1499,11 @@ class DeviceWatcher(threading.Thread):
     
     def __init__(self, device, *, failure_threshold, interval_sec, timeout_sec,
                  publish):
+        """
+        Initialize a daemon watcher for one standalone hardware device.
+
+        Output: None.
+        """
         self._key = self._device_key(device)
         super().__init__(name=f"device-watcher-{self._key}", daemon=True)
         self._hw = HardwareMonitor(failure_threshold=failure_threshold)
@@ -784,12 +1515,44 @@ class DeviceWatcher(threading.Thread):
 
     @property
     def key(self):
+        """
+        Return the stable key used to publish this device's reports.
+
+        Output: str. Device key selected by _device_key().
+        """
         return self._key
 
     def stop(self):
+        """
+        Signal the device watcher loop to exit.
+
+        Output: None.
+        """
         self._stop_event.set()
 
     def run(self):
+        """
+        Poll and publish standalone-device health until stop() is called.
+
+        Output: None.
+
+        Published reports are dicts with:
+        - status: str
+          (connected | reconnected | ping failed | disconnected | suspect |
+          unknown).
+          - connected: the existing device handle answered PING.
+          - reconnected: the existing handle failed, but a rebuilt device
+            answered PING in the same poll.
+          - ping failed: PING and reconnect failed, but the failure count is
+            still below the disconnection threshold.
+          - disconnected: the consecutive-failure threshold was reached.
+          - suspect: the device watcher itself caught an exception.
+          - unknown: a completed poll returned no device state.
+        - consecutive_failures: int, present after a normal hardware poll.
+        - last_error: str or None, present after a normal hardware poll.
+        - error: str, present when polling raises.
+        - checked_at: float. Seconds since program start.
+        """
         while not self._stop_event.is_set():
             try:
                 states = self._hw.poll_device_health_once(self._timeout_sec)
@@ -800,4 +1563,3 @@ class DeviceWatcher(threading.Thread):
             report = {**report, "checked_at": _now_rel()}
             self._publish(self._key, report)
             self._stop_event.wait(self._interval_sec)
-    
