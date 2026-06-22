@@ -380,14 +380,11 @@ class Pod8274D(AcquisitionDevice) :
             packet = self.read_pod_packet(validate_checksum=validate_checksum, timeout_sec=timeout_sec)         
             packet: Packet = self.read_pod_packet(validate_checksum=validate_checksum)
             if isinstance(packet, ControlPacket):
-                print("Returning control packet...") #NOTE for testing only, remove later
                 return packet
             raw_packet = packet.raw_packet if hasattr(packet, "raw_packet") else packet
             try:
-                print("Returning good packing...") #NOTE for testing only, remove later
                 return DataPacket8274D(raw_packet=raw_packet, primary_gain=self._primary_gain, secondary_gain=self._secondary_gain)
             except TypeError:
-                print("Invalid packet...") #NOTE for testing only, remove later
                 # Not a valid 8274D data packet; ignore and keep reading.
                 continue
 
