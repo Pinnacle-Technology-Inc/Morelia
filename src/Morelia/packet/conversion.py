@@ -148,6 +148,23 @@ def ascii_bytes_to_int(msg_b: bytes, signed: bool=False) -> int :
     # return int
     return msg_int
 
+def ascii_bytes_to_string(msg_b: bytes | tuple[int, ...] | list[int], strip_null: bool = True, encoding: str = 'ascii') -> str:
+    """Convert raw bytes or byte values to a string using ASCII decoding.
+
+    :param msg_b: Raw bytes or a tuple/list of byte values to decode.
+    :param strip_null: If True, truncate at the first null byte. Defaults to True.
+    :param encoding: Text encoding to use. Defaults to 'ascii'.
+
+    :return: Decoded string.
+    """
+    if isinstance(msg_b, (tuple, list)):
+        msg_b = bytes(msg_b)
+    if not isinstance(msg_b, (bytes, bytearray)):
+        raise TypeError('msg_b must be bytes or a sequence of byte values')
+    if strip_null:
+        msg_b = msg_b.split(b'\x00', 1)[0]
+    return msg_b.decode(encoding)
+
 #note: does not support signed ints.
 def ascii_bytes_to_int_split(msg: bytes, msb_index: int, lsb_index: int) -> int : 
     """Converts a specific bit range in an ASCII-encoded bytes object to an integer.

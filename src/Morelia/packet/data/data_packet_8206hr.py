@@ -7,7 +7,7 @@ class DataPacket8206HR(DataPacket):
     """
     This class handles decoding 8206HR data packets (previously known as Binary4 packets). It is optimized to be as effectient as possible
     for quick streaming by implementing lazy decoding via properties,
-    slots, and memoization. On a binary level, data packets for the 8206HR look as
+    slots, and memorization. On a binary level, data packets for the 8206HR look as
     follows:
 
     .. image:: _static/data_packet_8206hr.png
