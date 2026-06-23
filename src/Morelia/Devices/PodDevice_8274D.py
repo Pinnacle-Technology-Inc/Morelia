@@ -386,8 +386,7 @@ class Pod8274D(AcquisitionDevice) :
         if self._port is None:
             raise TypeError("PortIO object does not exist!")
         while True:
-            packet = self.read_pod_packet(validate_checksum=validate_checksum, timeout_sec=timeout_sec)         
-            packet: Packet = self.read_pod_packet(validate_checksum=validate_checksum)
+            packet = self.read_pod_packet(validate_checksum=validate_checksum, timeout_sec=timeout_sec)
             if isinstance(packet, ControlPacket):
                 return packet
             raw_packet = packet.raw_packet if hasattr(packet, "raw_packet") else packet
