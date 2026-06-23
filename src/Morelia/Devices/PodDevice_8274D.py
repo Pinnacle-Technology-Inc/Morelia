@@ -55,8 +55,9 @@ class Pod8274D(AcquisitionDevice) :
         """
         # initialize POD_Basics
         super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210)
-        if sample_rate is not None:
-            self._sample_rate = sample_rate
+        
+        # init _sample_rate
+        self._sample_rate: int | None = sample_rate
 
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
@@ -221,7 +222,11 @@ class Pod8274D(AcquisitionDevice) :
                 read: Packet = self.read_pod_packet()
                 return conv.ascii_bytes_to_string(bytes(read.payload))
             if cmd == 'GET SAMPLE RATE':
-                return self.get_dict['sample_rate'][0]
+                # return self.get_dict()['sample_rate']
+                sample_rate_index = read.payload[0]
+                return self._sample_rate_index[sample_rate_index]
+            if cmd == 'SET SAMPLE RATE':
+                return read
             if cmd == 'CONNECT':
                 return read
             if cmd == 'GET MODEL NUMBER':
@@ -300,6 +305,10 @@ class Pod8274D(AcquisitionDevice) :
                             # Successful connection
                             # Stop scanning for devices
                             self.write_read(cmd="LOCAL SCAN", payload=0)
+
+                            # Set device sample rate to local _sample_rate
+                            if self._sample_rate is not None:
+                                self.sample_rate = self._sample_rate
 
                             # Get device type         
                             self._device_type = self.write_read(cmd='GET MODEL NUMBER')
@@ -391,20 +400,24 @@ class Pod8274D(AcquisitionDevice) :
     @property
     def sample_rate(self) -> int:
         """Currently set sample rate."""
-        if self._sample_rate is None:
-            self.write_packet("GET SAMPLE RATE")
-            r1 = self.read_pod_packet() # Returns the packet for the command
-            r2 = self.read_pod_packet() # Returns the packet contianing the sample rate index value
-            sample_rate_index = r2.payload[0]
-            self._sample_rate = self._sample_rate_index[sample_rate_index]
-        return self._sample_rate
+        # if self._sample_rate is None:
+        r = self.write_read("GET SAMPLE RATE")
+        self._sample_rate = r
+            # r1 = self.read_pod_packet() # Returns the packet for the command
+            # r2 = self.read_pod_packet() # Returns the packet contianing the sample rate index value
+            # sample_rate_index = r2.payload[0]
+            # self._sample_rate = self._sample_rate_index[sample_rate_index]
+        # return self._sample_rate
+        return r
     
     @sample_rate.setter
     def sample_rate(self, rate: int) -> None:
         key = next((k for k, v in self._sample_rate_index.items() if v == rate), None)
         if key is None:
             raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(self._sample_rate_index.values())}')
-        self.write_read('SET SAMPLE RATE', key)
+        r = self.write_read('SET SAMPLE RATE', key)
+        if r.command_number != 211: # Successfully set sample rate
+            raise RuntimeWarning(f"WARNING: Sample rate may not have been set. Current sample rate: {self.sample_rate}")
         self._sample_rate: int = rate
 
     def get_dict(self):
