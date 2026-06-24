@@ -184,115 +184,66 @@ class EDFSink(SinkInterface):
     def _write_buffer_to_edf(self) -> None:
         # Validate buffer before writing
         if not self._buffer or len(self._buffer) == 0:
-            return  # Nothing to write
-        
+            print("returned, nothing to write")
+            return
+
         # Check that all buffers have the same length
         buffer_lengths = [len(b) for b in self._buffer]
         if not buffer_lengths or len(set(buffer_lengths)) != 1:
-            # Mismatched buffer lengths - skip this write to avoid EDF error
-            # This can happen if packets were dropped/corrupted
             import sys
-            print(f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}", file=sys.stderr)
-            self._buffer = [ [] for _ in self._channels ]
+            print(
+                f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}",
+                file=sys.stderr
+            )
+            self._buffer = [[] for _ in self._channels]
             return
-        
-        # Convert to numpy arrays and validate data
+
+        # Validate data
         try:
-            arrays = []
             for buf in self._buffer:
                 arr = np.array(buf, dtype=np.float64)
-                # Check for invalid values (NaN, inf)
+
                 if np.any(np.isnan(arr)) or np.any(np.isinf(arr)):
                     import sys
-                    print(f"Warning: Skipping EDF write due to NaN/inf values in buffer", file=sys.stderr)
-                    self._buffer = [ [] for _ in self._channels ]
+                    print(
+                        "Warning: Skipping EDF write due to NaN/inf values in buffer",
+                        file=sys.stderr
+                    )
+                    self._buffer = [[] for _ in self._channels]
                     return
-                arrays.append(arr)
-            
-            # All arrays should have the same length at this point
-            if len(arrays) > 0 and len(arrays[0]) > 0:
+
+            samples_per_record = self._pod.sample_rate
+
+            # Write complete EDF records only
+            while len(self._buffer[0]) >= samples_per_record:
+
+                arrays = [
+                    np.array(
+                        buf[:samples_per_record],
+                        dtype=np.float64
+                    )
+                    for buf in self._buffer
+                ]
+
                 self._edf_writer.writeSamples(arrays)
+
+                # Remove written samples and keep overflow
+                for i in range(len(self._buffer)):
+                    self._buffer[i] = self._buffer[i][samples_per_record:]
+
         except OSError as e:
-            # Handle EDF write errors gracefully
             import sys
-            print(f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
+            print(
+                f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}",
+                file=sys.stderr
+            )
+
         except Exception as e:
-            # Catch any other unexpected errors
             import sys
-            print(f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
-        
-        self._buffer = [ [] for _ in self._channels ]
-
-    # def _write_buffer_to_edf(self) -> None:
-    #     # Validate buffer before writing
-    #     if not self._buffer or len(self._buffer) == 0:
-    #         print("returned, nothing to write")
-    #         return
-
-    #     # Check that all buffers have the same length
-    #     buffer_lengths = [len(b) for b in self._buffer]
-    #     if not buffer_lengths or len(set(buffer_lengths)) != 1:
-    #         import sys
-    #         print(
-    #             f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}",
-    #             file=sys.stderr
-    #         )
-    #         self._buffer = [[] for _ in self._channels]
-    #         return
-
-    #     # Validate data
-    #     try:
-    #         for buf in self._buffer:
-    #             arr = np.array(buf, dtype=np.float64)
-
-    #             if np.any(np.isnan(arr)) or np.any(np.isinf(arr)):
-    #                 import sys
-    #                 print(
-    #                     "Warning: Skipping EDF write due to NaN/inf values in buffer",
-    #                     file=sys.stderr
-    #                 )
-    #                 self._buffer = [[] for _ in self._channels]
-    #                 return
-
-    #         samples_per_record = self._pod.sample_rate
-
-    #         # Write complete EDF records only
-    #         while len(self._buffer[0]) >= samples_per_record:
-
-    #             arrays = [
-    #                 np.array(
-    #                     buf[:samples_per_record],
-    #                     dtype=np.float64
-    #                 )
-    #                 for buf in self._buffer
-    #             ]
-
-    #             print(
-    #                 "writing",
-    #                 len(arrays[0]),
-    #                 len(arrays[1]),
-    #                 len(arrays[2])
-    #             )
-
-    #             self._edf_writer.writeSamples(arrays)
-
-    #             # Remove written samples and keep overflow
-    #             for i in range(len(self._buffer)):
-    #                 self._buffer[i] = self._buffer[i][samples_per_record:]
-
-    #     except OSError as e:
-    #         import sys
-    #         print(
-    #             f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}",
-    #             file=sys.stderr
-    #         )
-
-    #     except Exception as e:
-    #         import sys
-    #         print(
-    #             f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}",
-    #             file=sys.stderr
-    #         )
+            print(
+                f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}",
+                file=sys.stderr
+            )
 
     def get_dict(self):
         return {
