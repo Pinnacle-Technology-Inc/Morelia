@@ -59,11 +59,11 @@ class DataPacket8274D(DataPacket):
 
             # Add the sample voltage reading to the respective list
             if channel_number == 5:
-                self.ch5.append(sample_volts)
+                self._ch5.append(sample_volts)
             elif channel_number == 6:
-                self.ch6.append(sample_volts)
+                self._ch6.append(sample_volts)
             elif channel_number == 7:
-                self.ch7.append(sample_volts)
+                self._ch7.append(sample_volts)
 
     @property
     def ch5(self) -> List[int]:
