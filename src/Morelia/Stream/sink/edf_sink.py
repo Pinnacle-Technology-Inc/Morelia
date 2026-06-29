@@ -134,7 +134,6 @@ class EDFSink(SinkInterface):
 
     #we have a "useless" timestamp paramater here so we implement the same function "interface".
     #TODO: check if sink is open
-    #TODO: 8274
     def flush(self, timestamp: int, packet: DataPacket) -> None:
         """
         :meta private:
@@ -173,10 +172,10 @@ class EDFSink(SinkInterface):
             self._buffer[9].append(float(packet.ttl4))
 
         elif isinstance(self._pod, Pod8274D):
-            for i in range(40):
-                self._buffer[0].append(packet.ch5[i])
-                self._buffer[1].append(packet.ch6[i])
-                self._buffer[2].append(packet.ch7[i])
+            for (ch5, ch6, ch7) in zip(packet.ch5, packet.ch6, packet.ch7):
+                self._buffer[0].append(ch5)
+                self._buffer[1].append(ch6)
+                self._buffer[2].append(ch7)
 
         if len(self._buffer[0]) >= self._pod.sample_rate:
             self._write_buffer_to_edf()
