@@ -2,7 +2,7 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -181,8 +181,8 @@ class PvfsSink(SinkInterface):
             self._channels = tuple(preamp_channel_names)
             self._units = ('uV',) * len(preamp_channel_names)
         elif isinstance(self._pod, Pod8274D):
-            self._channels = ('length_in_bytes', 'data')
-            self._units = ('', '')
+            self._channels = ('Ch5', 'Ch6', 'Ch7')
+            self._units = ('uV', 'uV', 'uV')
         else:
             raise ValueError(f'Device "{self._pod.device_name}" is not supported by PvfsSink.')
 
@@ -318,6 +318,11 @@ class PvfsSink(SinkInterface):
                 vals = (ch0, ch1, ch2)
             elif isinstance(self._pod, Pod8401HR):
                 vals = (float(packet.ch0), float(packet.ch1), float(packet.ch2), float(packet.ch3))
+            elif isinstance(self._pod, Pod8274D):
+                ch5 = float(packet.ch5)
+                ch6 = float(packet.ch6)
+                ch7 = float(packet.ch7)
+                vals = (ch5, ch6, ch7)
             else:
                 return
             try:
@@ -349,6 +354,11 @@ class PvfsSink(SinkInterface):
             self._buffer[1].append(float(packet.ch1))
             self._buffer[2].append(float(packet.ch2))
             self._buffer[3].append(float(packet.ch3))
+        elif isinstance(self._pod, Pod8274D):
+            for (ch5, ch6, ch7) in zip(packet.ch5, packet.ch6, packet.ch7):
+                self._buffer[0].append(ch5)
+                self._buffer[1].append(ch6)
+                self._buffer[2].append(ch7)
 
         if len(self._buffer[0]) >= int(sample_rate):
             self._write_buffer_to_pvfs()
