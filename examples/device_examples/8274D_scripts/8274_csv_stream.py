@@ -4,7 +4,7 @@ from Morelia.Stream.data_flow import DataFlow
 
 # Required for multiprocessing
 if __name__ == "__main__":
-    # Connect to an 8274D.
+    # Connect to an 8274.
     pod = Pod8274D(
         port="COM4",
         # TODO: Replace this with your device's serial number. It is printed on the top of the device.
@@ -21,5 +21,5 @@ if __name__ == "__main__":
     # Create the flowgraph.
     flowgraph = DataFlow(mapping)
 
-    # Stream data for a time period.
-    flowgraph.collect_for_seconds(duration_sec=30)
+    # Stream data for a 5 minute time period.
+    flowgraph.collect_for_seconds(duration_sec=300)
