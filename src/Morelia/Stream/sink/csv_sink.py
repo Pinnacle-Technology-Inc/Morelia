@@ -76,8 +76,12 @@ class CSVSink(SinkInterface):
             self._csv_writer.writerow((timestamp,) + channel_data + aext_data + attl_data)
         
         elif isinstance(self._pod, Pod8274D):
-            for i in range(40):
-                self._csv_writer.writerow((timestamp,) + (packet.ch5[i], packet.ch6[i], packet.ch7[i]))
+            # Calculate time interval
+            sample_period_ns = int(1e9 / self._pod.sample_rate)
+
+            for i, (ch5, ch6, ch7) in enumerate(zip(packet.ch5, packet.ch6, packet.ch7)):
+                ts = timestamp + i * sample_period_ns
+                self._csv_writer.writerow((ts,) + (ch5, ch6, ch7))
 
     def get_dict(self):
         return {
