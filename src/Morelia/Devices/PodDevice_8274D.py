@@ -38,13 +38,23 @@ class Pod8274D(AcquisitionDevice) :
     """
 
     # Device primary and secondary gain map
-    DEVICE_GAINS = {
+    _DEVICE_GAINS = {
         # Device name   # Primary gain  # Secondary gain
         "8274-SL":      (100,           26),
         "8274-SE":      (100,           26),
         "8274-SE3":     (100,           26),
         "8274-IE":      (100,           13),
     }
+
+    # Sample rate index map
+    _SAMPLE_RATE_INDEX = {
+        0: 1024,
+        1: 512,
+        2: 256,
+        3: 128
+    }
+
+    SAMPLES_PER_PACKET = 40
 
     def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None, device_serial_number: str | None = None, scan_timeout_sec: int|float = 15, sample_rate: int | None = None) -> None :
         """Initialize the 8274D device and optionally connect to a remote device.
@@ -109,14 +119,6 @@ class Pod8274D(AcquisitionDevice) :
 
         # Holds device type, assigned when device is connected using connect_device()
         self._device_type = None
-
-        # Sample rate index map
-        self._sample_rate_index = {
-            0: 1024,
-            1: 512,
-            2: 256,
-            3: 128
-        }
 
         # Set device serial number
         self._device_serial_number = device_serial_number
@@ -224,8 +226,6 @@ class Pod8274D(AcquisitionDevice) :
                 return conv.ascii_bytes_to_string(bytes(read.payload))
             if cmd == 'GET SAMPLE RATE':
                 return self.get_dict()['sample_rate']
-                # sample_rate_index = read.payload[0] #TODO go back to using local _sample_rate
-                # return self._sample_rate_index[sample_rate_index]
             if cmd == 'SET SAMPLE RATE':
                 return read
             if cmd == 'CONNECT':
@@ -316,7 +316,7 @@ class Pod8274D(AcquisitionDevice) :
 
                             # Set gain values based on device type
                             try:
-                                self._primary_gain, self._secondary_gain = self.DEVICE_GAINS[self._device_type]
+                                self._primary_gain, self._secondary_gain = self._DEVICE_GAINS[self._device_type]
                             except KeyError:
                                 raise ConnectionError(
                                     f"Failed to connect to device {device_serial_number}. "
@@ -403,18 +403,20 @@ class Pod8274D(AcquisitionDevice) :
         if self._sample_rate is None:
         # r = self.write_read("GET SAMPLE RATE")
         # self._sample_rate = r
+            self.flush_port()
+            self.write_packet('GET SAMPLE RATE')
             r1 = self.read_pod_packet() # Returns the packet for the command
             r2 = self.read_pod_packet() # Returns the packet contianing the sample rate index value
             sample_rate_index = r2.payload[0]
-            self._sample_rate = self._sample_rate_index[sample_rate_index]
+            self._sample_rate = self._SAMPLE_RATE_INDEX[sample_rate_index]
         return self._sample_rate
         # return r
     
     @sample_rate.setter
     def sample_rate(self, rate: int) -> None:
-        key = next((k for k, v in self._sample_rate_index.items() if v == rate), None)
+        key = next((k for k, v in self._SAMPLE_RATE_INDEX.items() if v == rate), None)
         if key is None:
-            raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(self._sample_rate_index.values())}')
+            raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(self._SAMPLE_RATE_INDEX.values())}')
         r = self.write_read('SET SAMPLE RATE', key)
         if r.command_number != 211: # Successfully set sample rate
             raise RuntimeWarning(f"WARNING: Sample rate may not have been set. Current sample rate: {self.sample_rate}")
