@@ -2,7 +2,7 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -20,12 +20,46 @@ from Morelia.Devices import AcquisitionDevice, Pod8206HR, Pod8401HR, Pod8274D
 from Morelia.packet.data import DataPacket
 
 
-class UDPSink(SinkInterface):
+class UDPSink(SinkInterface):    
     """Stream data over UDP to a destination host/port.
 
-    Send-only UDP sink: one datagram per sample. Payload is a simple binary format
-    (little-endian): 8-byte timestamp (nanoseconds) followed by channel floats.
+    Send-only UDP sink: one datagram per sample (or per batch for batch-capable
+    devices). Payload is a simple binary format (little-endian):
+
+    - Pod8206HR: 8-byte timestamp followed by 3 channel floats
+    - Pod8401HR: 8-byte timestamp followed by 4 channel floats
+    - Pod8274D: 8-byte timestamp + 16-bit sample count + batch of 40, 3 channel floats
+
     Works on Windows, WSL, and Linux.
+
+    PACKET FORMATS:
+    Pod8206HR:
+        <Qfff>
+        - Q: uint64 timestamp (8 bytes)
+        - fff: 3 float32 channel values
+        Total: 20 bytes
+
+    Pod8401HR:
+        <Qffff>
+        - Q: uint64 timestamp (8 bytes)
+        - ffff: 4 float32 channel values
+        Total: 24 bytes
+
+    Pod8274D (batch of 40 samples, 3 channels per sample):
+        <QH + N × (fff)>
+        - Q: uint64 timestamp (8 bytes)
+        - H: uint16 sample count (40)
+        - fff: 3 float32 channel values per sample (channels 5–7)
+        Total: 490 bytes
+
+        Each batch is formed by zipping channel lists:
+            (ch5[i], ch6[i], ch7[i]) for i in range(N)
+
+    BEHAVIOR:
+    - One UDP datagram is emitted per flush().
+    - UDP is connectionless and does not guarantee delivery or ordering.
+    - No retransmission or buffering is performed.
+    - Intended for low-latency streaming of acquisition data.
 
     :param port: Destination port (required).
     :param pod: POD device data is being streamed from.
@@ -99,7 +133,16 @@ class UDPSink(SinkInterface):
                 float(packet.ch2),
                 float(packet.ch3),
             )
-        # Pod8274D: TODO if needed
+        elif isinstance(self._pod, Pod8274D):
+            header = struct.pack("<QH", timestamp, len(packet.ch5))
+
+            body = b"".join(
+                struct.pack("<fff", ch5, ch6, ch7)
+                for (ch5, ch6, ch7) in zip(packet.ch5, packet.ch6, packet.ch7)
+            )
+
+            return header + body
+        
         return None
 
     def get_dict(self) -> dict:
