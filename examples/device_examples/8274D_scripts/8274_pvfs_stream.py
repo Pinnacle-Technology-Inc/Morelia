@@ -1,5 +1,5 @@
 from Morelia.Devices import Pod8274D
-from Morelia.Stream.sink import InfluxSink
+from Morelia.Stream.sink import PvfsSink
 from Morelia.Stream.data_flow import DataFlow
 
 # Required for multiprocessing.
@@ -13,19 +13,11 @@ if __name__ == "__main__":
         sample_rate=1024
         )
 
-    # Create influx sink.
-    influx_sink = InfluxSink(
-        pod=pod, 
-        url='http://localhost:8086',
-        # TODO Replace the following parameters with the info from your database.
-        api_token='admin-token',
-        org='default-org', 
-        bucket='influx_dump',
-        measurement='default-measurement'
-        )
+    # Create PVFS sink.
+    pvfs_sink = PvfsSink("8274D_data.pvfs", pod)
 
-    # List that defines how sources map to sinks.
-    mapping = [ (pod, [influx_sink]) ]
+    # List that defines how sources map to sink.
+    mapping = [ (pod, [pvfs_sink]) ]
 
     # Create the flowgraph.
     flowgraph = DataFlow(mapping)

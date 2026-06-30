@@ -1,5 +1,8 @@
+import multiprocessing as mp
+import threading
+
 from Morelia.Devices import Pod8274D
-from Morelia.Stream.sink import CSVSink
+from Morelia.Stream.sink import PlotSink, PlotDisplay
 from Morelia.Stream.data_flow import DataFlow
 
 # Required for multiprocessing.
@@ -13,14 +16,24 @@ if __name__ == "__main__":
         sample_rate=1024
         )
 
-    # Create CSV sink.
-    csv_dump = CSVSink("8274D_data.csv", pod)
+    # Create queue
+    queue = mp.Queue(maxsize=2048)
 
-    # List that defines how sources map to sink.
-    mapping = [ (pod, [csv_dump]) ]
+    # Create plot sink.
+    plot_sink = PlotSink(queue, pod)
 
-    # Create the flowgraph.
+    # create mapping
+    mapping = [(pod, [plot_sink])]
+
+    # Create display
+    display = PlotDisplay(queue)
+
+    # Create flowgraph
     flowgraph = DataFlow(mapping)
 
-    # Stream data for a 5 minute time period.
-    flowgraph.collect_for_seconds(duration_sec=60*5)
+    # Run plotting in main thread
+    t = threading.Thread(target=flowgraph.collect)
+    t.start()
+
+    # Run
+    display.run()

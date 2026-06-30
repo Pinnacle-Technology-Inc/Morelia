@@ -2,17 +2,18 @@ from Morelia.Devices import Pod8274D
 from Morelia.Stream.sink import EDFSink
 from Morelia.Stream.data_flow import DataFlow
 
-# Required for multiprocessing
+# Required for multiprocessing.
 if __name__ == "__main__":
     # Connect to an 8274.
     pod = Pod8274D(
-        port="COM4",
+        # TODO: replace with your serial port (e.g. COM4 or /dev/ttyUSB0)
+        port="REPLACE_WITH_PORT",
         # TODO: Replace this with your device's serial number. It is printed on the top of the device.
         device_serial_number='YOUR_DEVICE_SERIAL_NUMBER',
         sample_rate=1024
         )
 
-    # Create CSV sinks
+    # Create EDF sink.
     edf_dump = EDFSink("8274D_data.edf", pod)
 
     # List that defines how sources map to sink.
@@ -22,4 +23,4 @@ if __name__ == "__main__":
     flowgraph = DataFlow(mapping)
 
     # Stream data for a 5 minute time period.
-    flowgraph.collect_for_seconds(duration_sec=300)
+    flowgraph.collect_for_seconds(duration_sec=60*5)
