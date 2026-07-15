@@ -140,7 +140,7 @@ Continuing along with our example, let us build our sinks.
    influx_sink_2 = InfluxSink(pod=pod_3, url='http://localhost:8086', api_token='admin-token', org='default-org', bucket='influx_dump', measurement='default-measurement')
 
 Finally, it's time to link them together with the mapping. We can do this using the 
-``data_flow`` object from ``Morelia.Stream``. In its constructor, the ``data_flow``
+``DataFlow`` object from ``Morelia.Stream.data_flow``. In its constructor, the ``DataFlow``
 object takes a single parameter, a list of tuples where each tuple contains an
 acquisition device as the first element, and a list of sinks that said device maps
 to as its second element. Instead of the headache of trying to parse that awful
@@ -151,7 +151,7 @@ sentence, let's see what it looks like in our example.
    # Import the proper class.
    from Morelia.Devices import Pod8206HR
    from Morelia.Stream.sink import EDFSink, InfluxSink
-   from Morelia.Stream import data_flow
+   from Morelia.Stream.data_flow import DataFlow
 
    # Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.
    pod_1 = Pod8206HR('/dev/ttyUSB0', 10)
@@ -174,7 +174,7 @@ sentence, let's see what it looks like in our example.
                (pod_2, [edf_dump_2, influx_sink_1]),
                (pod_3, [influx_sink_2])]
 
-   flowgraph = data_flow(mapping)
+   flowgraph = DataFlow(mapping)
 
 And presto, you are all ready to stream! In the next section, we will carry our example
 over and loop at how to start collecting data now that everything is in place.
@@ -194,8 +194,8 @@ for a specific time interval, or whenever we tell it to stop.
 ---------------------
 Temporal Streaming ⏳
 ---------------------
-The first way to stream is for a particular duration of time, using ``data_flow``'s ``collect_for_seconds`` method. This method takes one parameter, how many seconds to collect for,
-and **blocks until collection has finished**. When run, this will execute the data-flow graph defined by ``data_flow``, streaming data from sources to sinks. As a short example,
+The first way to stream is for a particular duration of time, using ``DataFlow``'s ``collect_for_seconds`` method. This method takes one parameter, how many seconds to collect for,
+and **blocks until collection has finished**. When run, this will execute the data-flow graph defined by ``DataFlow``, streaming data from sources to sinks. As a short example,
 to collect for 5 minutes using our example from earlier.
 
 .. code-block:: python
@@ -206,7 +206,7 @@ to collect for 5 minutes using our example from earlier.
 ---------------------
 Infinite Streaming 🌌
 ---------------------
-The other way to stream is for an undefined amount of time. To begin streaming, use ``data_flow``'s ``collect`` method. This method takes no parameters and is **non-blocking**.
+The other way to stream is for an undefined amount of time. To begin streaming, use ``DataFlow``'s ``collect`` method. This method takes no parameters and is **non-blocking**.
 When you are ready to stop streaming, use the ``stop_collecting`` method. This behavior is also supported through context managers, where you can use a ``with`` statement to automatically start
 and stop streaming. For example,
 

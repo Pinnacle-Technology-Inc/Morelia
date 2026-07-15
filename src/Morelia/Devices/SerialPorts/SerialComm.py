@@ -248,8 +248,8 @@ class PortIO :
         Args:
             numBytes (int): Integer number of bytes to read.
             timeout_sec (int|float, optional): Time in seconds to wait for serial data. \
-                Defaults to 5. 
-        
+                Defaults to 5.
+       
         Raises:
             TimeoutError: Timeout for serial read.
 
@@ -259,12 +259,12 @@ class PortIO :
         """
         if(self.is_serial_closed()) :
             return(None)
-        prev_timeout = self._serial_inst.timeout
-        try:
-            self._serial_inst.timeout = timeout_sec
-            r = self._serial_inst.read(numBytes)
-        finally:
-            self._serial_inst.timeout = prev_timeout
+        serial_port = self._serial_inst
+
+        if serial_port.timeout != timeout_sec:
+            serial_port.timeout = timeout_sec
+
+        r = serial_port.read(numBytes)
         if len(r) < numBytes:
             raise TimeoutError('[!] Timeout for serial read after '+str(timeout_sec)+' seconds.')
         return r

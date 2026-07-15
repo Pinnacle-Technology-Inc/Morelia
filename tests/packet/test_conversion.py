@@ -62,6 +62,14 @@ class TestConversion:
     def test_ascii_bytes_to_int_split(self):
         assert conv.ascii_bytes_to_int_split(b'\x41\x38\x30', 11, 8) == 2
 
+    def test_ascii_bytes_to_string(self):
+        assert conv.ascii_bytes_to_string(b'HELLO\x00\x00') == 'HELLO'
+        assert conv.ascii_bytes_to_string(b'WORLD', strip_null=False) == 'WORLD'
+
+    def test_string_to_ascii_bytes(self):
+        assert conv.string_to_ascii_bytes('HELLO') == b'HELLO'
+        assert conv.ascii_bytes_to_string(conv.string_to_ascii_bytes('WORLD')) == 'WORLD'
+
     def test_binary_bytes_to_int(self):
        assert conv.binary_bytes_to_int(b'ab') == 24930 
        assert conv.binary_bytes_to_int(b'ab', byteorder=conv.Endianness.LITTLE) == 25185

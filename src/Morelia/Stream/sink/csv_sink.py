@@ -2,7 +2,7 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -49,7 +49,7 @@ class CSVSink(SinkInterface):
             self._csv_writer.writerow(('time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
 
         elif isinstance(self._pod, Pod8274D):
-                self._csv_writer.writerow(('time', 'length_in_bytes', 'data'))
+                self._csv_writer.writerow(('time', 'Ch5', 'Ch6', 'Ch7'))
 
         else:
             raise ValueError(f'Device "{self._pod.device_name}" cannot be streamed from!')
@@ -75,7 +75,13 @@ class CSVSink(SinkInterface):
             attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
             self._csv_writer.writerow((timestamp,) + channel_data + aext_data + attl_data)
         
-        #TODO: 8274D
+        elif isinstance(self._pod, Pod8274D):
+            # Calculate time interval
+            sample_period_ns = int(1e9 / self._pod.sample_rate)
+
+            for i, (ch5, ch6, ch7) in enumerate(zip(packet.ch5, packet.ch6, packet.ch7)):
+                ts = timestamp + i * sample_period_ns
+                self._csv_writer.writerow((ts,) + (ch5, ch6, ch7))
 
     def get_dict(self):
         return {

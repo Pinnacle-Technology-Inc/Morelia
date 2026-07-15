@@ -32,6 +32,17 @@ class Pod8206HR(AcquisitionDevice) :
 
         # initialize POD_Basics
         super().__init__(port, 2000, baudrate, device_name, use_d2xx=use_d2xx)
+        
+        self._init_device(
+            preamp_gain=preamp_gain,
+            sample_rate=sample_rate,
+        )
+
+    def _init_device(
+            self,
+            preamp_gain: int,
+            sample_rate: int,
+            ):
         if sample_rate is not None:
             self._sample_rate = (sample_rate,) 
 
