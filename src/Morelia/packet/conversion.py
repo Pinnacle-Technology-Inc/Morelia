@@ -7,6 +7,7 @@ In layperson's terms, it is full of utility functions for converting between bin
 """
 
 from enum import Enum, auto
+from typing import List, Tuple
 
 class Endianness(Enum):
     """
@@ -155,6 +156,7 @@ def ascii_bytes_to_string(msg_b: bytes | tuple[int, ...] | list[int], strip_null
     :param strip_null: If True, truncate at the first null byte. Defaults to True.
     :param encoding: Text encoding to use. Defaults to 'ascii'.
 
+    
     :return: Decoded string.
     """
     if isinstance(msg_b, (tuple, list)):
@@ -164,6 +166,21 @@ def ascii_bytes_to_string(msg_b: bytes | tuple[int, ...] | list[int], strip_null
     if strip_null:
         msg_b = msg_b.split(b'\x00', 1)[0]
     return msg_b.decode(encoding)
+
+
+def string_to_ascii_bytes(msg_s: str, encoding: str = 'ascii') -> bytes:
+    """Convert a string to ASCII-encoded bytes.
+
+    This is the inverse of :func:`ascii_bytes_to_string` for text payloads.
+
+    :param msg_s: String to encode.
+    :param encoding: Text encoding to use. Defaults to 'ascii'.
+
+    :return: ASCII-encoded bytes for ``msg_s``.
+    """
+    if not isinstance(msg_s, str):
+        raise TypeError('msg_s must be a string')
+    return msg_s.encode(encoding)
 
 #note: does not support signed ints.
 def ascii_bytes_to_int_split(msg: bytes, msb_index: int, lsb_index: int) -> int : 
@@ -218,6 +235,55 @@ def binary_bytes_to_int_split(msg: bytes, msb_index: int, lsb_index: int, byteor
     #indexed right ot left (leftmost bit 0)
     # mask out upper bits using 2^n - 1 = 0b1...1 of n bits. Then shift right to remove lowest bits
     return( ( binary_bytes_to_int(msg,byteorder,signed) & (2**msb_index - 1) ) >> lsb_index)
+
+def ints_to_binary_bytes_split(
+    fields: List[Tuple[int, int, int]],
+    msg_len_bytes: int,
+    byteorder,
+) -> bytes:
+    """Packs integer values into a bitfield and returns bytes.
+
+    Each field is defined as (value, msb_index, lsb_index), where the value is
+    placed into the bit range [lsb_index : msb_index).
+
+    Negative values are encoded using two's complement within the field width.
+    Fields must not exceed their bit width.
+
+    Parameters
+    ----------
+    fields : list of (int, int, int)
+        (value, msb_index, lsb_index) bitfield definitions.
+    msg_len_bytes : int
+        Output byte length.
+    byteorder : Endianness
+        Output byte order.
+
+    Returns
+    -------
+    bytes
+        Packed binary message.
+    """
+
+    x = 0
+
+    for value, msb_index, lsb_index in fields:
+        width = msb_index - lsb_index
+        mask = (1 << width) - 1
+
+        if value < 0:
+            value = (1 << width) + value
+
+        # validate AFTER encoding
+        if value < 0 or value > mask:
+            raise ValueError(f"value does not fit in {width} bits")
+
+        x |= (value << lsb_index)
+
+    return x.to_bytes(
+        msg_len_bytes,
+        "big" if byteorder == Endianness.BIG else "little",
+        signed=False  # important for bitfields
+    )
 
 def binary_bytes_to_ascii_bytes(msg: bytes, num_chars: int, byteorder: Endianness=Endianness.BIG, signed:bool=False) -> bytes:
     """Converts a binary-coded decimal bytestring to an ASCII-encoded one.

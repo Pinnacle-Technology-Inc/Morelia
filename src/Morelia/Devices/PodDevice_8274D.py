@@ -69,7 +69,16 @@ class Pod8274D(AcquisitionDevice) :
         # init _sample_rate
         if sample_rate is not None:
             self._sample_rate = sample_rate
+        
+        # Set device serial number
+        self._device_serial_number = device_serial_number
 
+        # Set scan timeout for BT device scan
+        self._scan_timeout_sec = scan_timeout_sec
+
+        self._init_device()
+
+    def _init_device(self):
         # get constants for adding commands 
         UINT8  = Pod.get_u(8)
         UINT16 = Pod.get_u(16)
@@ -120,9 +129,6 @@ class Pod8274D(AcquisitionDevice) :
         # Holds device type, assigned when device is connected using connect_device()
         self._device_type = None
 
-        # Set device serial number
-        self._device_serial_number = device_serial_number
-
         # Set defaults to most common values
         self._primary_gain = 100
         self._secondary_gain = 26
@@ -132,7 +138,7 @@ class Pod8274D(AcquisitionDevice) :
 
         # Attempt to connect to device by serial number if provided by the user
         if self._device_serial_number:
-            self.connect_to_device(device_serial_number=self._device_serial_number, timeout_sec=scan_timeout_sec)
+            self.connect_to_device(device_serial_number=self._device_serial_number, timeout_sec=self._scan_timeout_sec)
 
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
             if cmd_number == 12:
@@ -179,7 +185,7 @@ class Pod8274D(AcquisitionDevice) :
 
         :meta private:
         """
-        # print(cmd) #NOTE This line is used for testing
+        # print("write_read sending command:", cmd) #NOTE This line is used for testing
         # Flush the port
         self.flush_port()
 
@@ -222,7 +228,6 @@ class Pod8274D(AcquisitionDevice) :
             ]:
             read: Packet = self.read_pod_packet()
             if cmd == 'GET NAME':
-                read: Packet = self.read_pod_packet()
                 return conv.ascii_bytes_to_string(bytes(read.payload))
             if cmd == 'GET SAMPLE RATE':
                 return self.get_dict()['sample_rate']
@@ -232,8 +237,6 @@ class Pod8274D(AcquisitionDevice) :
                 return read
             if cmd == 'GET MODEL NUMBER':
                 return conv.ascii_bytes_to_string(bytes(read.payload))
-        elif cmd == 'STREAM': #NOTE may not need this
-            pass
         return r
     
     def connect_to_device(self, device_serial_number: str, timeout_sec: int|float = 15) -> None:
@@ -281,74 +284,76 @@ class Pod8274D(AcquisitionDevice) :
             # Stores list of devices found during scan
             found_devices_list = []
 
-            # Loop for time limit
-            while time.time() - start < timeout_sec:
+            try:
+                # Loop for time limit
+                while time.time() - start < timeout_sec:
 
-                # Get device info for given index slot
-                r = self.write_read(cmd="DEVICE LIST INFO", payload=scan_index)
+                    # Get device info for given index slot
+                    r = self.write_read(cmd="DEVICE LIST INFO", payload=scan_index)
 
-                # If packet returned
-                if r:
-                    # Parse out device name from packet payload
-                    name = self._get_name_from_device_list_info_packet(r)
-                    # Skip empty slots
-                    if name in (None, "", "UNKNOWN"):
-                        continue
-                    # Add found device to list
-                    found_devices_list.append(name)
+                    # If packet returned
+                    if r:
+                        # Parse out device name from packet payload
+                        name = self._get_name_from_device_list_info_packet(r)
+                        # Skip empty slots
+                        if name in (None, "", "UNKNOWN"):
+                            continue
+                        # Add found device to list
+                        found_devices_list.append(name)
 
-                    # Check if device name matches
-                    if name == device_serial_number:
-                        # Connect to the device
-                        r = self.write_read(cmd="CONNECT", payload=scan_index)
-                        # Check connection success
-                        if r.command_number == 201:
-                            # Successful connection
-                            # Stop scanning for devices
-                            self.write_read(cmd="LOCAL SCAN", payload=0)
+                        # Check if device name matches
+                        if name == device_serial_number:
+                            # Connect to the device
+                            r = self.write_read(cmd="CONNECT", payload=scan_index)
+                            # Check connection success
+                            if r.command_number == 201:
+                                # Successful connection
 
-                            # Set device sample rate to local _sample_rate
-                            if self._sample_rate is not None:
-                                self.sample_rate = self._sample_rate
+                                # Set device sample rate to local _sample_rate
+                                if self._sample_rate is not None:
+                                    self.sample_rate = self._sample_rate
 
-                            # Get device type         
-                            self._device_type = self.write_read(cmd='GET MODEL NUMBER')
+                                # Get device type         
+                                self._device_type = self.write_read(cmd='GET MODEL NUMBER')
 
-                            # Set gain values based on device type
-                            try:
-                                self._primary_gain, self._secondary_gain = self._DEVICE_GAINS[self._device_type]
-                            except KeyError:
-                                raise ConnectionError(
-                                    f"Failed to connect to device {device_serial_number}. "
-                                    "Unable to get device type"
-                                )
+                                # Set gain values based on device type
+                                try:
+                                    self._primary_gain, self._secondary_gain = self._DEVICE_GAINS[self._device_type]
+                                except KeyError:
+                                    raise ConnectionError(
+                                        f"Failed to connect to device {device_serial_number}. "
+                                        "Unable to get device type"
+                                    )
 
-                            # exit loop
-                            break
-                        else:
-                            # Failure during connection
-                            raise ConnectionError(f"Failed to connect to device {device_serial_number}.")
+                                # exit loop
+                                break
+                            else:
+                                # Failure during connection
+                                raise ConnectionError(f"Failed to connect to device {device_serial_number}.")
 
-                # Increment index
-                scan_index += 1
-            
-            else:
-                # Time ran out for scan
-                # Show troubleshooting tips
-                raise TimeoutError(
-                    f"Failed to connect to the device '{device_serial_number}' within {timeout_sec} seconds.\n\n"
-                    "Troubleshooting:\n"
-                    "1. Verify the device serial number is correct and matches exactly.\n"
-                    "2. Ensure the battery is installed correctly.\n"
-                    "3. If the battery was recently unsealed, allow it to be "
-                    "exposed to air for at least 60 seconds before use.\n"
-                    "4. If you have many devices powered on, you may need to increase scan_timeout_sec to allow more time for the scan.\n"
-                    "5. Move the device closer to the USB dongle and remove "
-                    "potential sources of interference.\n"
-                    "6. Remove and replace the device battery.\n"
-                    "7. Unplug and plug back in USB dongle.\n"
-                    f"List of devices found during scan: {found_devices_list}"
-                )
+                    # Increment index
+                    scan_index += 1
+                
+                else:
+                    # Time ran out for scan
+                    # Show troubleshooting tips
+                    raise TimeoutError(
+                        f"Failed to connect to the device '{device_serial_number}' within {timeout_sec} seconds.\n\n"
+                        "Troubleshooting:\n"
+                        "1. Verify the device serial number is correct and matches exactly.\n"
+                        "2. Ensure the battery is installed correctly.\n"
+                        "3. If the battery was recently unsealed, allow it to be "
+                        "exposed to air for at least 60 seconds before use.\n"
+                        "4. If you have many devices powered on, you may need to increase scan_timeout_sec to allow more time for the scan.\n"
+                        "5. Move the device closer to the USB dongle and remove "
+                        "potential sources of interference.\n"
+                        "6. Remove and replace the device battery.\n"
+                        "7. Unplug and plug back in USB dongle.\n"
+                        f"List of devices found during scan: {found_devices_list}"
+                    )
+            finally:
+                # Stop scanning for devices
+                self.write_read(cmd="LOCAL SCAN", payload=0)
 
     # Fixed size of 8274D binary data packet, see docs for diagram of packet
     _STREAMING_PACKET_LEN = 259
@@ -365,6 +370,7 @@ class Pod8274D(AcquisitionDevice) :
         """
         return conv.ascii_bytes_to_string(bytes(packet.payload[8:24]))
     
+    # TODO checksum validation fails for each packet if set to TRUE, Possibly becaue there are 2 checksums in 8274 data packets
     def read_pod_packet_streaming(self, timeout_sec: float = 1.0, validate_checksum: bool = False):
         """Continuously reads POD packets and filters for valid data or control packets.
         
@@ -401,8 +407,6 @@ class Pod8274D(AcquisitionDevice) :
     def sample_rate(self) -> int:
         """Currently set sample rate."""
         if self._sample_rate is None:
-        # r = self.write_read("GET SAMPLE RATE")
-        # self._sample_rate = r
             self.flush_port()
             self.write_packet('GET SAMPLE RATE')
             r1 = self.read_pod_packet() # Returns the packet for the command

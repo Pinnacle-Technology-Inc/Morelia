@@ -79,7 +79,23 @@ class Pod8401HR(AcquisitionDevice) :
              # initialize POD_Basics
         super().__init__(port, 10000, baudrate=baudrate, device_name=device_name, use_d2xx=use_d2xx) 
 
-        # set preamp.
+        self._init_device(
+            preamp=preamp,
+            primary_channel_modes=primary_channel_modes,
+            secondary_channel_modes=secondary_channel_modes,
+            ss_gain=ss_gain,
+            preamp_gain=preamp_gain,
+        )
+
+    def _init_device(
+            self, 
+            preamp: Preamp,
+            primary_channel_modes: tuple[PrimaryChannelMode],
+            secondary_channel_modes: tuple[SecondaryChannelMode],
+            ss_gain: tuple[int|None]=(None, None, None, None), 
+            preamp_gain: tuple[int|None]=(None, None, None, None), 
+    ):
+            # set preamp.
         self._preamp: Preamp = preamp
         self._ss_gain = ss_gain
         self._preamp_gain = preamp_gain 

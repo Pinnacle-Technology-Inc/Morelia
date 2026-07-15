@@ -66,6 +66,10 @@ class TestConversion:
         assert conv.ascii_bytes_to_string(b'HELLO\x00\x00') == 'HELLO'
         assert conv.ascii_bytes_to_string(b'WORLD', strip_null=False) == 'WORLD'
 
+    def test_string_to_ascii_bytes(self):
+        assert conv.string_to_ascii_bytes('HELLO') == b'HELLO'
+        assert conv.ascii_bytes_to_string(conv.string_to_ascii_bytes('WORLD')) == 'WORLD'
+
     def test_binary_bytes_to_int(self):
        assert conv.binary_bytes_to_int(b'ab') == 24930 
        assert conv.binary_bytes_to_int(b'ab', byteorder=conv.Endianness.LITTLE) == 25185
