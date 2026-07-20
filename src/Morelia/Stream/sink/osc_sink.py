@@ -34,28 +34,45 @@ class OSCSink(SinkInterface):
 
     Packet format:
         - Pod8206HR:
-            /pod8206HR [timestamp, ch0, ch1, ch2]
+            [timestamp, ch0, ch1, ch2]
 
         - Pod8401HR:
-            /pod8401HR [timestamp, ch0, ch1, ch2, ch3]
+            [timestamp, ch0, ch1, ch2, ch3]
 
         - Pod8274D:
-            /pod8274D [timestamp, ch5..., ch6..., ch7...]
+            [timestamp, ch5..., ch6..., ch7...]
 
     The sink is intended for real-time streaming to applications that support
     OSC, such as Bonsai or other OSC-compatible software.
+
+    :param port: UDP port on the destination host to send OSC messages to.
+    :param pod: POD device whose streamed packets will be converted to OSC messages.
+    :param address: OSC address pattern used for transmitted messages. Defaults to "/".
+    :param host: Destination IP address or hostname. Defaults to "127.0.0.1" (localhost).
+    :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler. Optional; queue is unbounded.
     """
     
     def __init__(
         self,
         port: int,
         pod: AcquisitionDevice,
+        address: str = "/",
         host: str = "127.0.0.1",
         observe_on_scheduler: str | None = None,
     ) -> None:
+        
+        # Address validation
+        if not isinstance(address, str):
+            raise TypeError("address must be a string.")
+        if not address.startswith("/"):
+            raise ValueError("address must start with '/'.")
+        if " " in address:
+            raise ValueError("address cannot contain spaces.")
+
         self._host = host
         self._port = int(port)
         self._pod = pod
+        self._address = address
         self.observe_on_scheduler = observe_on_scheduler
 
         self._client: SimpleUDPClient | None = None
@@ -67,6 +84,10 @@ class OSCSink(SinkInterface):
     @property
     def port(self) -> int:
         return self._port
+    
+    @property
+    def address(self) -> str:
+        return self._address
 
     def __enter__(self) -> Self:
         self._client = SimpleUDPClient(self._host, self._port)
@@ -83,7 +104,7 @@ class OSCSink(SinkInterface):
         try:
             if isinstance(self._pod, Pod8206HR):
                 self._client.send_message(
-                    "/pod8206HR",
+                    self._address,
                     [
                         int(timestamp),
                         float(packet.ch0),
@@ -94,7 +115,7 @@ class OSCSink(SinkInterface):
 
             elif isinstance(self._pod, Pod8401HR):
                 self._client.send_message(
-                    "/pod8401HR",
+                    self._address,
                     [
                         int(timestamp),
                         float(packet.ch0),
@@ -106,7 +127,7 @@ class OSCSink(SinkInterface):
 
             elif isinstance(self._pod, Pod8274D):
                 self._client.send_message(
-                    "/pod8274D",
+                    self._address,
                     [
                         int(timestamp),
                         *[float(x) for x in packet.ch5],
@@ -115,12 +136,18 @@ class OSCSink(SinkInterface):
                     ],
                 )
 
+            else:
+                raise TypeError(
+                    f"Unsupported POD type: {type(self._pod).__name__}"
+                )
+
         except Exception as e:
-            print(f"UDPSink flush error: {e}", file=sys.stderr)
+            print(f"OSCSink flush error: {e}", file=sys.stderr)
 
     def get_dict(self) -> dict:
         return {
             'host': self._host,
             'port': self._port,
+            'address': self._address,
             'observe_on_scheduler': self.observe_on_scheduler,
         }

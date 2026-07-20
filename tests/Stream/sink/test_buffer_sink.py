@@ -194,7 +194,7 @@ def check_buffer(buffer, seconds, sample_rate, samples_per_packet=1, skip_header
         equal to zero.
     """
     expected_rows = int((seconds * sample_rate) / samples_per_packet)
-    actual_rows = len(buffer) - 1
+    actual_rows = len(buffer) - 1 # Remove header from length
 
     if expected_rows <= 0:
         raise ValueError("(seconds * sample_rate) / samples_per_packet) must be > 0")
