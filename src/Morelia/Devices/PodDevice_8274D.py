@@ -370,7 +370,6 @@ class Pod8274D(AcquisitionDevice) :
         """
         return conv.ascii_bytes_to_string(bytes(packet.payload[8:24]))
     
-    # TODO checksum validation fails for each packet if set to TRUE, Possibly becaue there are 2 checksums in 8274 data packets
     def read_pod_packet_streaming(self, timeout_sec: float = 1.0, validate_checksum: bool = False):
         """Continuously reads POD packets and filters for valid data or control packets.
         

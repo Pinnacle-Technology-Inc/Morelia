@@ -39,7 +39,7 @@ class MockPod8401HR(Pod8401HR):
 
         self._max_sample_rate = 20_000
 
-        self._sample_rate = sample_rate
+        self._sample_rate = (sample_rate,) if sample_rate else None
         
         # Default sample rate for device on boot if not set
         self._device_default_sample_rate = 2_000
@@ -272,5 +272,5 @@ class MockPod8401HR(Pod8401HR):
             'baudrate': self.baudrate,
             'device_name': self.device_name,
             'use_d2xx': self._use_d2xx,
-            'sample_rate': self._sample_rate,
+            'sample_rate': self.sample_rate,
         }

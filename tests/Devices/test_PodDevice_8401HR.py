@@ -20,7 +20,7 @@ from Morelia.packet.data import DataPacket8401HR
 from tests.mocks.device.pod_8401HR.MockPodDevice_8401HR import MockPod8401HR
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='function')
 def pod():
     # set preamp gain and ss gain for all channels
     preamp_gain = (10, 10, 10, 10)
@@ -57,7 +57,7 @@ def pod():
     yield pod
 
 
-def test_get_set_sample_rate_success(pod):
+def test_sample_rate_set_and_get_success(pod):
     sample_rates = [
         2_000,
         4_000,
