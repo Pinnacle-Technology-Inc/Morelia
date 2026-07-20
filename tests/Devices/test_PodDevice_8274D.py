@@ -22,7 +22,7 @@ from tests.mocks.device.pod_8274D.MockPodDevice_8274D import MockPod8274D
 
 DEVICE_SERIAL_NUMBER = "MOCK1"
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope='function')
 def pod():
     """
     Create a MockPod8274D instance shared by tests that do not
@@ -82,7 +82,7 @@ def test_connect_to_device_on_init_fail():
             scan_timeout_sec=0.1,
             )
 
-def test_get_set_sample_rate_success(pod):
+def test_sample_rate_set_and_get_success(pod):
     for sample_rate in pod._SAMPLE_RATE_INDEX.values():
         pod.sample_rate = sample_rate
 

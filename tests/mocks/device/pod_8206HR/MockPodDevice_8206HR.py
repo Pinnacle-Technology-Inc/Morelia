@@ -35,7 +35,7 @@ class MockPod8206HR(Pod8206HR):
 
         self._max_sample_rate = 2_000
 
-        self._sample_rate = sample_rate
+        self._sample_rate = (sample_rate,) if sample_rate else None
         
         # Default sample rate for device on boot if not set
         self._device_default_sample_rate = 2_000
@@ -130,10 +130,13 @@ class MockPod8206HR(Pod8206HR):
 
         # SAMPLE RATE GET
         if cmd == "GET SAMPLE RATE":
-            sample_rate = self._device_default_sample_rate if self._sample_rate is None else self._sample_rate
+            if self._sample_rate is None:
+                sample_rate = self._device_default_sample_rate
+            else:
+                sample_rate = self._sample_rate[0]
 
             self._port_read_queue.append(
-                MockControlPacket( # Return sample rate
+                MockControlPacket(
                     command_number=100,
                     payload=conv.int_to_ascii_bytes(sample_rate, 4),
                 ).to_bytes()
@@ -142,10 +145,16 @@ class MockPod8206HR(Pod8206HR):
 
         # SAMPLE RATE SET
         if cmd == "SET SAMPLE RATE":
-            self._sample_rate = payload[0] # Set mock device's sample rate
-            
+            rate = payload[0]
+
+            # Handle nested tuple if one is passed
+            if isinstance(rate, tuple):
+                rate = rate[0]
+
+            self._sample_rate = (rate,)
+
             self._port_read_queue.append(
-                MockControlPacket( # Return procedure complete
+                MockControlPacket(
                     command_number=101
                 ).to_bytes()
             )
