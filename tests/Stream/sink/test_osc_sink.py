@@ -1,96 +1,55 @@
 import threading
-import socket
-import struct
 import pytest
 
-from Morelia.Stream.sink.udp_sink import UDPSink
+from pythonosc.dispatcher import Dispatcher
+from pythonosc.osc_server import BlockingOSCUDPServer
+
+from Morelia.Stream.sink.osc_sink import OSCSink
 from Morelia.Stream.data_flow import DataFlow
 
-class UDPListener:
-    def __init__(self, host="0.0.0.0", port=9000):
-        self.host = host
-        self.port = port
+class OSCListener:
+    def __init__(self, address, host="127.0.0.1", port=9000):
+        self._address = address
 
-        self.packets = []
+        self._dispatcher = Dispatcher()
+        self._dispatcher.map(address, self._worker)
 
-        self._stop = threading.Event()
-        self._thread = None
+        self._server = BlockingOSCUDPServer(
+            (host, port),
+            self._dispatcher
+        )
+
+        self._packets = []
+
+        self._thread = threading.Thread(
+            target=self._server.serve_forever,
+            daemon=True
+        )
 
     def start(self):
-        if self._thread is None or not self._thread.is_alive():
-            self._stop.clear()
-            self._thread = threading.Thread(
-                target=self._worker,
-                daemon=True,
-            )
-            self._thread.start()
+        self._thread.start()
 
     def stop(self):
-        self._stop.set()
+        self._server.shutdown()
+        self._server.server_close()
+        self._thread.join()
 
-        if self._thread:
-            self._thread.join(timeout=1)
+    def _worker(self, address, *args):
+        self._packets.append(args)
 
-    def _worker(self):
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        sock.settimeout(0.5)
-        sock.bind((self.host, self.port))
-
-        try:
-            while not self._stop.is_set():
-                try:
-                    data, addr = sock.recvfrom(4096)
-                except socket.timeout:
-                    continue
-
-                n = len(data)
-
-                if n == 20:
-                    ts, ch0, ch1, ch2 = struct.unpack("<Qfff", data)
-                    self.packets.append({
-                        "device": "8206HR",
-                        "timestamp": ts,
-                        "channels": (ch0, ch1, ch2),
-                    })
-
-                elif n == 24:
-                    ts, ch0, ch1, ch2, ch3 = struct.unpack("<Qffff", data)
-                    self.packets.append({
-                        "device": "8401HR",
-                        "timestamp": ts,
-                        "channels": (ch0, ch1, ch2, ch3),
-                    })
-
-                elif n == 490:
-                    ts, n_samples = struct.unpack("<QH", data[:10])
-
-                    offset = 10
-                    samples = []
-
-                    for _ in range(n_samples):
-                        samples.append(struct.unpack("<fff", data[offset:offset + 12]))
-                        offset += 12
-
-                    self.packets.append({
-                        "device": "8274D",
-                        "timestamp": ts,
-                        "samples": samples,
-                    })
-
-        finally:
-            sock.close()
+    def get_packets(self):
+        return list(self._packets)
 
 @pytest.fixture(scope='function', autouse=True)
-def udp_listener():
-    listener = UDPListener(port=9000)
+def osc_listener():
+    listener = OSCListener(address="/test", port=9000)
     listener.start()
 
     yield listener
 
     listener.stop()
 
-def test_pod8274D_stream_udp(udp_listener):
+def test_pod8274D_stream_osc(osc_listener):
     from tests.mocks.device.pod_8274D.MockPodDevice_8274D import MockPod8274D
 
     # Static variables
@@ -103,29 +62,30 @@ def test_pod8274D_stream_udp(udp_listener):
         sample_rate=SAMPLE_RATE,
     )
 
-    # Create udp sink.
-    udp_sink = UDPSink(
+    # Create osc sink.
+    osc_sink = OSCSink(
         port=9000,
         pod=pod,
+        address='/test',
         host="127.0.0.1"
         )
 
     # create a list of tuples for the pod/sink mappings
-    mapping = [(pod, [udp_sink])]
+    mapping = [(pod, [osc_sink])]
 
     # create a new DataFlow object using the previous mapping
     flowgraph = DataFlow(mapping)
 
     flowgraph.collect_for_seconds(DURATION_SECONDS)
 
-    check_udp(
-        udp_packets_list=udp_listener.packets,
+    check_osc(
+        osc_packets_list=osc_listener.get_packets(),
         seconds=DURATION_SECONDS,
         sample_rate=SAMPLE_RATE,
         samples_per_packet=pod.SAMPLES_PER_PACKET,
     )
 
-def test_pod8401HR_stream_udp(udp_listener):
+def test_pod8401HR_stream_osc(osc_listener):
     from tests.mocks.device.pod_8401HR.MockPodDevice_8401HR import MockPod8401HR
     from Morelia.Devices import Preamp
     from Morelia.packet import PrimaryChannelMode, SecondaryChannelMode
@@ -156,28 +116,29 @@ def test_pod8401HR_stream_udp(udp_listener):
     
     pod.sample_rate = SAMPLE_RATE
 
-    # Create udp sink.
-    udp_sink = UDPSink(
+    # Create osc sink.
+    osc_sink = OSCSink(
         port=9000,
         pod=pod,
+        address='/test',
         host="127.0.0.1"
         )
 
     # create a list of tuples for the pod/sink mappings
-    mapping = [(pod, [udp_sink])]
+    mapping = [(pod, [osc_sink])]
 
     # create a new DataFlow object using the previous mapping
     flowgraph = DataFlow(mapping)
 
     flowgraph.collect_for_seconds(DURATION_SECONDS)
 
-    check_udp(
-        udp_packets_list=udp_listener.packets,
+    check_osc(
+        osc_packets_list=osc_listener.get_packets(),
         seconds=DURATION_SECONDS,
         sample_rate=SAMPLE_RATE,
     )
 
-def test_pod8206HR_stream_udp(udp_listener):
+def test_pod8206HR_stream_osc(osc_listener):
     from tests.mocks.device.pod_8206HR.MockPodDevice_8206HR import MockPod8206HR
 
     # Static variables
@@ -190,30 +151,31 @@ def test_pod8206HR_stream_udp(udp_listener):
         sample_rate=SAMPLE_RATE,
     )
 
-    # Create udp sink.
-    udp_sink = UDPSink(
+    # Create osc sink.
+    osc_sink = OSCSink(
         port=9000,
         pod=pod,
+        address="/test",
         host="127.0.0.1"
         )
 
     # create a list of tuples for the pod/sink mappings
-    mapping = [(pod, [udp_sink])]
+    mapping = [(pod, [osc_sink])]
 
     # create a new DataFlow object using the previous mapping
     flowgraph = DataFlow(mapping)
 
     flowgraph.collect_for_seconds(DURATION_SECONDS)
 
-    check_udp(
-        udp_packets_list=udp_listener.packets,
+    check_osc(
+        osc_packets_list=osc_listener.get_packets(),
         seconds=DURATION_SECONDS,
         sample_rate=SAMPLE_RATE,
     )
 
-def check_udp(udp_packets_list, seconds, sample_rate, samples_per_packet=1):
+def check_osc(osc_packets_list, seconds, sample_rate, samples_per_packet=1):
     expected_sampels = int((seconds * sample_rate) / samples_per_packet)
-    actual_packets = len(udp_packets_list)
+    actual_packets = len(osc_packets_list)
 
     if expected_sampels <= 0:
         raise ValueError("(seconds * sample_rate) / samples_per_packet) must be > 0")
