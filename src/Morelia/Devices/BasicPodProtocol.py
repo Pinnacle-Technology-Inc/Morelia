@@ -405,12 +405,16 @@ class Pod :
         return(packet)
     
     def write_read(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
-        """Writes a command with optional payload to POD device, then reads (once) the device response.
+        """
+        Writes a command with optional payload to POD device, then reads (once) the device response.
 
         :param cmd: Command number. 
         :param payload: None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.
         :param validate_checksum: Set to True to validate the checksum. Set to False to skip validation. Defaults to True.
+        :param timeout_sec: Time to wait for device to return a packet.
 
+        :raises TimeoutError: If the device does not respond within the specified timeout.
+        
         :return: POD packet beginning with STX and ending with ETX. This may \
                 be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
         """
