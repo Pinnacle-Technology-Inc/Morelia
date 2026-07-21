@@ -33,14 +33,17 @@ class DataFlow:
     :param filter_insert_value: Value to insert when using the INSERT filter method. Defaults to NaN.
     
     :param fail_tolerance: How many times in a row to fail reading before giving up on reading a "chunk" of data ("chunk" here is approximately 1 second of samples). Defaults to 3.
+
+    :param on_sink_error: Optional callback for handling sink failures. It receives one structured `SinkError` per failing sink, defaults to logging, and is picklable when used with multiprocessing.
     """
 
-    def __init__(self, network: list[tuple[AcquisitionDevice, list[pod_sink.SinkInterface]]]) -> None:
+    def __init__(self, network: list[tuple[AcquisitionDevice, list[pod_sink.SinkInterface]]], on_sink_error=None,) -> None: #include on_sink_error for tracking
         """Set class instance variables."""
 
         self._manual_stop_events: list[mp.Event] = [] #events that stop collection stored here.
         self._network = network
         self._workers: list[mp.Process] = []
+        self._on_sink_error = on_sink_error
 
     def stop_collection(self, join_timeout_sec: float = 15.0) -> None:
         """Stop collecting data.
@@ -120,23 +123,31 @@ class DataFlow:
             # Create worker process. On Unix (when supported), use a new session so only the main
             # process receives SIGINT (Ctrl+C); the worker then stops only when manual_stop_event
             # is set and can run sink __exit__ (flush/close PVFS, etc.).
+            worker_args = (#gather worker args here as per DRY
+                duration_sec,
+                manual_stop_event,
+                source_class,
+                source_dict,
+                sinks_list,
+                self._on_sink_error,
+            )
             worker: mp.Process
             if sys.platform != "win32":
                 try:
                     worker = mp.Process(
                         target=get_data_wrapper,
-                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                        args=worker_args,
                         start_new_session=True,
                     )
                 except TypeError:
                     worker = mp.Process(
                         target=get_data_wrapper,
-                        args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                        args=worker_args,
                     )
             else:
                 worker = mp.Process(
                     target=get_data_wrapper,
-                    args=(duration_sec, manual_stop_event, source_class, source_dict, sinks_list),
+                    args=worker_args,
                 )
 
             self._workers.append(worker)

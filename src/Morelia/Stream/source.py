@@ -11,6 +11,8 @@ __email__       = 'sales@pinnaclet.com'
 import signal
 import sys
 import traceback
+import logging
+from dataclasses import dataclass
 from multiprocessing import Event
 import threading
 import time
@@ -25,6 +27,186 @@ from Morelia.packet import ControlPacket
 import reactivex as rx
 from reactivex import operators as ops
 from reactivex.operators import do_action
+
+_log = logging.getLogger(__name__)
+
+# failure_kind vocabulary
+SINK_FAILURE_WRITE = "sink_write"
+# state vocabulary
+SINK_STATE_TERMINAL = "terminal"
+SINK_STATE_DEGRADED = "degraded"
+# Bound so a hostile/huge exception message cannot blow up durable telemetry.
+_MAX_SINK_ERROR_MESSAGE = 500
+
+
+@dataclass(frozen=True)
+class SinkError:
+    """One attributable sink-write failure event.
+
+    :param source_id: Stable identity of the source feeding the sink.
+    :param sink_id: Stable identity of the failing sink 
+    :param sink_class: Concrete sink class name.
+    :param failure_kind: One of the ``SINK_FAILURE_*`` vocabulary.
+    :param exception_type: ``type(exc).__name__`` of the raised exception.
+    :param message: Bounded/redacted ``str(exc)``.
+    :param state: One of the ``SINK_STATE_*`` vocabulary.
+    :param last_success_seq: Count of successful ``flush`` calls before this
+        failure (the last successful delivery/write), or ``None`` if unknown.
+    :param timestamp_ns: ``time.time_ns()`` when the event was created.
+    """
+
+    source_id: str
+    sink_id: str
+    sink_class: str
+    failure_kind: str
+    exception_type: str
+    message: str
+    state: str
+    last_success_seq: int | None
+    timestamp_ns: int
+
+
+def _source_identity(pod) -> str:
+    """Return a stable source identity string for telemetry."""
+    name = getattr(pod, "device_name", None)
+    if isinstance(name, str) and name:
+        return name
+    return type(pod).__name__
+
+
+def _sink_identity(sink) -> str:
+    """Prefer an explicit ``sink_id`` (set by managed backend sinks); else the class name."""
+    sink_id = getattr(sink, "sink_id", None)
+    if isinstance(sink_id, str) and sink_id:
+        return sink_id
+    return type(sink).__name__
+
+
+def _redact_sink_message(exc: BaseException) -> str:
+    """Bound the exception message so a single event stays small and safe to persist."""
+    text = str(exc)
+    if len(text) > _MAX_SINK_ERROR_MESSAGE:
+        return text[:_MAX_SINK_ERROR_MESSAGE] + "...[truncated]"
+    return text
+
+
+def _build_sink_error(dispatch: "_SinkDispatch", exc: BaseException, state: str) -> SinkError:
+    """Construct the structured event for a sink dispatch that just failed."""
+    return SinkError(
+        source_id=dispatch.source_id,
+        sink_id=_sink_identity(dispatch.sink),
+        sink_class=type(dispatch.sink).__name__,
+        failure_kind=SINK_FAILURE_WRITE,
+        exception_type=type(exc).__name__,
+        message=_redact_sink_message(exc),
+        state=state,
+        last_success_seq=dispatch.success_count,
+        timestamp_ns=time.time_ns(),
+    )
+
+
+def _emit_sink_error(on_sink_error, event: SinkError) -> None:
+    """Deliver ``event`` without ever letting reporting crash acquisition.
+
+    With no callback configured, the failure is logged so tests do not depend on stdout text. 
+    If the callback itself raises, the exception is swallowed and logged: acquisition and healthy 
+    sibling sinks keep running.
+    """
+    if on_sink_error is None:
+        _log.error(
+            "sink write failed source=%s sink=%s (%s) %s: %s [state=%s last_success_seq=%s]",
+            event.source_id,
+            event.sink_id,
+            event.sink_class,
+            event.exception_type,
+            event.message,
+            event.state,
+            event.last_success_seq,
+        )
+        return
+    try:
+        on_sink_error(event)
+    except Exception:
+        _log.error(
+            "on_sink_error callback raised for sink=%s; acquisition continues",
+            event.sink_id,
+            exc_info=True,
+        )
+
+
+class _SinkDispatch:
+    """Deliver source data to one sink and turn write failures into one event.
+    
+    This process is indendpent per source to sink pair, so sibling sink will not be
+    interrupted
+    """
+
+    __slots__ = ("sink", "source_id", "_on_sink_error", "success_count", "failed")
+
+    def __init__(self, sink, source_id: str, on_sink_error) -> None:
+        self.sink = sink
+        self.source_id = source_id
+        self._on_sink_error = on_sink_error
+        self.success_count = 0
+        self.failed = False
+
+    def send(self, args) -> None:
+        if self.failed:
+            return
+        try:
+            self.sink.flush(*args)
+        except Exception as exc:
+            self._handle_write_error(exc)
+        else:
+            self.success_count += 1
+
+    def send_batch(self, batch) -> None:
+        if self.failed:
+            return
+        for args in batch:
+            try:
+                self.sink.flush(*args)
+            except Exception as exc:
+                self._handle_write_error(exc)
+                return
+            self.success_count += 1
+
+    def _handle_write_error(self, exc: BaseException) -> None:
+        self.failed = True
+        _emit_sink_error(self._on_sink_error, _build_sink_error(self, exc, SINK_STATE_TERMINAL))
+
+    def on_stream_error(self, exc: BaseException) -> None:
+        """Handle a source/upstream stream error routed to this subscription.
+
+        """
+        _log.error(
+            "source stream error delivered to sink=%s source=%s: %s: %s",
+            _sink_identity(self.sink),
+            self.source_id,
+            type(exc).__name__,
+            _redact_sink_message(exc),
+        )
+
+
+def _subscribe_sink(stream, sink, source_id: str, on_sink_error, batch_size: int) -> "_SinkDispatch":
+    """Subscribe one sink to ``stream`` with structured error reporting based on the old report code.
+
+    Returns the dispatch so callers/tests can inspect delivery state.
+    """
+    dispatch = _SinkDispatch(sink, source_id, on_sink_error)
+    s = stream
+    scheduler_spec = getattr(sink, "observe_on_scheduler", None)
+    if scheduler_spec is not None:
+        scheduler = _scheduler_for(scheduler_spec)
+        if scheduler is not None:
+            s = s.pipe(
+                ops.buffer_with_count(batch_size),
+                ops.observe_on(scheduler),
+            )
+            s.subscribe(on_next=dispatch.send_batch, on_error=dispatch.on_stream_error)
+            return dispatch
+    s.subscribe(on_next=dispatch.send, on_error=dispatch.on_stream_error)
+    return dispatch
 
 # Optional: schedulers for observe_on (decouple slow sinks from emission thread)
 def _scheduler_for(spec):  # noqa: C901
@@ -167,14 +349,16 @@ def make_packet_putter(read_queue):
                 print(f"[!] Failed to queue control packet: {e}")
     return put_read_packet
 
-def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, sinks) -> None: 
+def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, sinks, on_sink_error=None) -> None:
     """Streams data from the POD device. The data drops about every 1 second.
-    Streaming will continue until a "stop streaming" packet is recieved. 
+    Streaming will continue until a "stop streaming" packet is recieved.
 
     :param duration: How long to stream data for.
     :param manual_stop_event: Used to synchronize multiple ``get_data`` operations in a flowgraph. When a flowgraph is told to stop collecting, \
             this event is set which stops the loop within the reactivex operator that is collecting data.
     :param pod: The device to collect data from.
+    :param on_sink_error: Optional callback invoked once per failing sink with a structured, attributable event. 
+        If ``None``, sink failures are logged. A failing sink never crashes acquisition or its healthy sibling sinks.
     """
     
     # Ensure port is open before we need it (e.g. sample_rate via write_read). D2XX defers open to first use.
@@ -222,35 +406,23 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
    
     # now, subscribe each sink to the connectable observable. Since sinks implment the context manager protocol, we can use an ExitStack.
     # Sinks that set observe_on_scheduler (e.g. "thread_pool") run their flush() on that scheduler, so the emission thread is not blocked by slow sinks.
-    #TODO: handle errors (via on_error, right now we just print them).
+    
     _OBSERVE_ON_BATCH_SIZE = 100
+
+    source_id = _source_identity(pod)
 
     with ExitStack() as context_manager_stack:
 
-        send_to_sink = lambda sink, args: sink.flush(*args)
-        send_batch_to_sink = lambda sink, batch: [sink.flush(*args) for args in batch]
-        
         for sink in sinks:
             context_manager_stack.enter_context(sink)
-            s = stream
-            scheduler_spec = getattr(sink, "observe_on_scheduler", None)
-            if scheduler_spec is not None:
-                scheduler = _scheduler_for(scheduler_spec)
-                if scheduler is not None:
-                    s = s.pipe(
-                        ops.buffer_with_count(_OBSERVE_ON_BATCH_SIZE),
-                        ops.observe_on(scheduler),
-                    )
-                    s.subscribe(on_next=partial(send_batch_to_sink, sink), on_error=lambda e: print(e))
-                    continue
-            s.subscribe(on_next=partial(send_to_sink, sink), on_error=lambda e: print(e))
-        
+            _subscribe_sink(stream, sink, source_id, on_sink_error, _OBSERVE_ON_BATCH_SIZE) # Sink write failures are reported through ``on_sink_error``instead of being printed. 
+
         # start streaming data from the observable!
         stream.connect()
         print("[DataFlow worker] stream.connect() returned, exiting sinks...", flush=True)
 
 # wrapper function for get_data which reconstructs pod devices and sources after the process is created
-def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list):
+def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list, on_sink_error=None):
     # Ignore SIGINT (Ctrl+C) in the worker so only the main process handles it. The main process
     # sets manual_stop_event and joins; the worker then exits the loop and runs sink __exit__.
     try:
@@ -268,7 +440,7 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
     # on Ctrl+C or shutdown (e.g. stop_collection), worker may get KeyboardInterrupt or I/O errors;
     # exit cleanly so we don't dump a traceback when the main process is stopping us
     try:
-        get_data(duration_sec, manual_stop_event, source, sinks)
+        get_data(duration_sec, manual_stop_event, source, sinks, on_sink_error=on_sink_error)
     except (KeyboardInterrupt, OSError, BrokenPipeError):
         if manual_stop_event.is_set():
             sys.exit(0)
