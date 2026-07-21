@@ -1,0 +1,5 @@
+policy = "recommend"
+
+[[device_flows]]
+device_template = "bench-rig"
+sink_type = "csv"

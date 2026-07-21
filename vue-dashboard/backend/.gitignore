@@ -1,0 +1,38 @@
+# Virtual environment
+.venv/
+
+# Python bytecode / caches
+__pycache__/
+*.py[cod]
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+
+# Local database files (SQLite) — never commit data
+*.db
+*.sqlite3
+
+.env
+
+# Editable-install metadata
+*.egg-info/
+.agents/
+.claude/
+
+backend/docs
+backend/.agents
+#tests/
+backend/.claude
+frontend/.agents
+frontend/.claude
+frontend/dist
+frontend/node_modules
+
+*.sqlite3-shm
+*.sqlite3-wal
+*.sqlite3-journal
+*.sqlite3.bak
+instance/output/
+instance/watchdog-hardware-locks/
+instance/watchdog-outbox/

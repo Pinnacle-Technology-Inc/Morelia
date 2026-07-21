@@ -1,0 +1,5 @@
+name = "pod8206hr-bobby-bob-235c4b32"
+type = "pod8206hr"
+
+[parameters]
+preamp_gain = 10

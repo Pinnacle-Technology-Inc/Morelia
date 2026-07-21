@@ -1,0 +1,5 @@
+Single-database migration repository managed through Flask-Migrate and Alembic.
+
+The database is disposable during this schema reset. ``versions/0001`` is the
+complete current schema, and device templates remain file-authoritative under
+``instance/device-templates`` rather than living in SQLite.

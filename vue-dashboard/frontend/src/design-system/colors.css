@@ -1,0 +1,59 @@
+:root {
+  --green-950: #053019;
+  --green-900: #074026;
+  --green-800: #09613e;
+  --green-700: #0a7249;
+  --green-600: #0e8455;
+  --green-500: #2f9168;
+  --green-400: #5aa685;
+
+  --sage-500: #7f9c84;
+  --sage-400: #9db29d;
+  --sage-300: #bccabc;
+  --sage-200: #d3e0d6;
+  --sage-100: #ebf2ef;
+  --sage-50: #f3f7f4;
+
+  --white: #ffffff;
+  --paper: #f4f4f2;
+  --offwhite: #ececec;
+  --gray-200: #dcdcdc;
+  --gray-300: #c4c4c4;
+  --gray-400: #9a9a9a;
+  --gray-500: #6f6f6f;
+  --ink-700: #333333;
+  --ink-800: #222222;
+  --ink-900: #141414;
+
+  --success: #0a7249;
+  --warning: #b9852b;
+  --error: #b23a32;
+  --info: #2f6f8f;
+
+  --color-bg: var(--offwhite);
+  --surface-page: var(--offwhite);
+  --surface-card: var(--white);
+  --surface-sage: var(--sage-100);
+  --surface-dark: var(--green-800);
+  --surface-dark-deep: var(--green-900);
+
+  --text-heading: var(--ink-900);
+  --text-body: var(--ink-700);
+  --text-muted: var(--gray-500);
+  --text-on-dark: var(--white);
+  --text-on-dark-muted: rgba(255, 255, 255, 0.72);
+  --text-accent: var(--green-700);
+  --text-link: var(--green-700);
+
+  --border-subtle: var(--gray-200);
+  --border-card: #dde7e0;
+  --accent: var(--green-700);
+  --accent-strong: var(--green-800);
+  --accent-rule: var(--green-700);
+
+  --btn-primary-bg: var(--green-800);
+  --btn-primary-fg: var(--white);
+  --btn-sage-bg: var(--sage-400);
+  --btn-sage-fg: var(--green-800);
+}
+

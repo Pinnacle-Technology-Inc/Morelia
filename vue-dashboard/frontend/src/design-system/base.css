@@ -1,0 +1,52 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  color: var(--text-body);
+  background-color: var(--surface-page);
+  background-image: var(--texture-diagonal);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5 {
+  margin: 0;
+  color: var(--text-heading);
+  font-family: var(--font-display);
+  font-weight: var(--fw-bold);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--ls-tight);
+}
+
+p { margin: 0; text-wrap: pretty; }
+a { color: var(--text-link); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.pt-halftone,
+.pt-signal-bg { position: relative; overflow: hidden; }
+
+.pt-halftone::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.48) 24%, transparent 26%);
+  background-size: 11px 11px;
+  opacity: 0.28;
+  mask-image: linear-gradient(to right, #000, transparent 78%);
+}
+
+.pt-signal-bg::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at right center, transparent 0, transparent 60px, rgba(255,255,255,0.05) 60px, rgba(255,255,255,0.05) 62px, transparent 62px),
+    radial-gradient(circle at right center, transparent 0, transparent 110px, rgba(255,255,255,0.04) 110px, rgba(255,255,255,0.04) 112px, transparent 112px),
+    radial-gradient(circle at right center, transparent 0, transparent 160px, rgba(255,255,255,0.03) 160px, rgba(255,255,255,0.03) 162px, transparent 162px);
+}
+

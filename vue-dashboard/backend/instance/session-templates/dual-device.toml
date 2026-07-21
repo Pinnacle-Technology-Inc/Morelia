@@ -1,0 +1,14 @@
+name = "dual-device"
+policy = "automate"
+
+[[device_flows]]
+nickname = "bob"
+device_template_path = "pod8206hr-bobby-bob-235c4b32.toml"
+device_template_content_hash = "235c4b32023094a2dc0a60413074f0021e29f78e1340458a6768f1f7a43ab8f4"
+sink_type = "csv"
+
+[[device_flows]]
+nickname = "brian"
+device_template_path = "df8401.toml"
+device_template_content_hash = "ee81a46bef6aff228cc50bbb6c183bbe6f3fd592cc0c4cc07af07ce446e7249f"
+sink_type = "csv"

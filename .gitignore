@@ -48,3 +48,18 @@ tests/pvfs/test_create_pvfs_file.pvfs
 examples/device_examples/8206HR_scripts/end_times.log
 
 end_times.log
+
+#Everything vue-dashboard related 
+/vue-dashboard/**/.env
+/vue-dashboard/**/.env.local
+/vue-dashboard/**/.agents/
+/vue-dashboard/**/.claude/
+/vue-dashboard/**/.pytest_cache/
+/vue-dashboard/**/.ruff_cache/
+/vue-dashboard/**/node_modules/
+/vue-dashboard/**/dist/
+/vue-dashboard/**/watchdog-outbox/
+/vue-dashboard/**/watchdog-hardware-locks/
+/vue-dashboard/backend/instance/output/
+/vue-dashboard/**/*.db
+/vue-dashboard/**/*.sqlite3*

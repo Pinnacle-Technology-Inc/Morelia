@@ -1,0 +1,6 @@
+name = "bench-rig.toml_customized"
+type = "pod8206hr"
+
+[parameters]
+preamp_gain = 100
+sample_rate = 2000

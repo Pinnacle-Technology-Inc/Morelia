@@ -1,0 +1,70 @@
+"""Versioned business API (/api/v1)."""
+
+from app.api.device_configs import blp as device_configs_blp
+from app.api.device_registrations import blp as device_registrations_blp
+from app.api.device_templates import blp as device_templates_blp
+from app.api.devices import blp as devices_blp
+from app.api.events_ingest import blp as events_ingest_blp
+from app.api.events_stream import blp as events_stream_blp
+from app.api.gaps import blp as gaps_blp
+from app.api.incidents import blp as incidents_blp
+from app.api.operations import blp as operations_blp
+from app.api.runtimes import blp as runtimes_blp
+from app.api.session_templates import blp as session_templates_blp
+from app.api.sessions import blp as sessions_blp
+from app.api.store import InMemorySessionStore
+from app.control.supervisor import HostSupervisor
+from app.services.discovery import (
+    DeviceDiscoveryService,
+    FakeDiscoveryProvider,
+    SerialPodProvider,
+    configured_device_types_from_db,
+)
+from app.watchdog.adapters import FakeWatchdogAdapter, HttpWatchdogAdapter
+
+
+def register_routes(api, app):
+    """Attach the placeholder store and register all /api/v1 blueprints on `api`.
+
+    Blueprints register on `api` (not `app`) so they appear in the OpenAPI spec.
+    The internal ingest blueprint registers on `app` directly to stay off-spec.
+    """
+    app.extensions["session_store"] = InMemorySessionStore()
+    watchdog_adapter = app.config["WATCHDOG_ADAPTER"]
+    if watchdog_adapter is None:
+        if app.testing:
+            watchdog_adapter = FakeWatchdogAdapter()
+        else:
+            watchdog_adapter = HttpWatchdogAdapter(
+                base_url=app.config["WATCHDOG_BASE_URL"],
+                timeout_seconds=app.config["WATCHDOG_TIMEOUT_SECONDS"],
+                max_response_bytes=app.config["WATCHDOG_MAX_RESPONSE_BYTES"],
+            )
+    app.extensions["watchdog_adapter"] = watchdog_adapter
+    # Compatibility alias for the existing command-correlation tests.
+    app.extensions["watchdog_dispatcher"] = watchdog_adapter
+    host_supervisor = app.config.get("HOST_SUPERVISOR")
+    if host_supervisor is None and app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
+        host_supervisor = HostSupervisor()
+    app.extensions["host_supervisor"] = host_supervisor
+    discovery_provider = FakeDiscoveryProvider() if app.testing else SerialPodProvider()
+    configured_device_types = None if app.testing else configured_device_types_from_db
+    app.extensions["device_discovery_provider"] = discovery_provider
+    app.extensions["device_discovery_service"] = DeviceDiscoveryService(
+        discovery_provider,
+        configured_device_types,
+    )
+    api.register_blueprint(sessions_blp)
+    api.register_blueprint(operations_blp)
+    api.register_blueprint(incidents_blp)
+    api.register_blueprint(gaps_blp)
+    api.register_blueprint(runtimes_blp)
+    api.register_blueprint(devices_blp)
+    api.register_blueprint(device_configs_blp)
+    api.register_blueprint(device_registrations_blp)
+    api.register_blueprint(device_templates_blp)
+    api.register_blueprint(session_templates_blp)
+    # Internal — loopback-only, excluded from the OpenAPI spec.
+    app.register_blueprint(events_ingest_blp)
+    # SSE stream — text/event-stream, excluded from JSON-centric OpenAPI spec.
+    app.register_blueprint(events_stream_blp)

@@ -1,0 +1,105 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "guarded-experiment-backend"
+version = "0.1.0"
+description = "Flask backend for the Guarded Experiment Dashboard"
+requires-python = ">=3.11"
+dependencies = [
+    "alembic>=1.13,<2.0",
+    "flask>=3.0",
+    "flask-migrate>=4.1,<5.0",
+    "flask-sqlalchemy>=3.1.1,<4.0",
+    "flask-smorest>=0.47",
+    "python-dotenv>=1.0,<2.0",
+    "sqlalchemy>=2.0.51,<3.0",
+    "structlog>=26.1",
+    "tabulate>=0.9,<1.0",
+]
+
+[project.scripts] #register how cli will be called
+pinnacle = "app.cli.main:pinnacle"
+
+[project.optional-dependencies]
+# Tools needed to develop/test, but not to *run* the app in production.
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+hardware = [
+    "pyserial>=3.5",
+]
+
+# ----------------------------------------------------------------------------
+# Optional sink dependency groups.
+#
+# The base install (above) only requires what a CSV-only backend needs. Each
+# non-CSV Morelia sink pulls its own third-party libraries; declaring them as
+# explicit extras keeps unselected sinks from breaking the base backend while
+# still allowing a reproducible install of exactly the sink(s) an operator
+# wants. None of these libraries are imported at backend module-import time
+# (see tests/test_package_imports.py); they are only needed when that sink type
+# is actually constructed by the runtime layer.
+#
+# Import-name -> pip-name map (for preflight / packet 09):
+#   edf    : import `pyedflib`          (pip `pyEDFlib`)   + `numpy`
+#   pvfs   : import `pvfs_tools`        (pip `pypvfs`, ships native binaries)
+#   influx : import `influxdb_client`   (pip `influxdb-client`) + `reactivex`
+#   quest  : import `questdb`           (official ILP/HTTP client) + `reactivex`
+#   csv/plot: stdlib / browser channel only -> no extra.
+edf = [
+    "pyEDFlib>=0.1.42,<0.2",
+    "numpy>=2.0,<3.0",
+]
+pvfs = [
+    # `pvfs_tools` is imported; the distribution is published as `pypvfs` and
+    # bundles the native PVFS library. Windows/Linux only.
+    "pypvfs>=1.0.6,<2.0",
+]
+influx = [
+    "influxdb-client>=1.50,<2.0",
+    "reactivex>=4.1,<5.0",
+]
+quest = [
+    "questdb>=3.0,<5.0",
+    "reactivex>=4.1,<5.0",
+]
+# Aggregate extra that installs every optional sink at once.
+all-sinks = [
+    "guarded-experiment-backend[edf,pvfs,influx,quest]",
+]
+
+# Tell setuptools that the importable package is `app` (so `pip install -e .`
+# makes `import app` work everywhere without sys.path hacks).
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+# ----------------------------------------------------------------------------
+# Ruff: linter + formatter (replaces flake8 + isort + black, but much faster).
+# ----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# `Watchdog/` is vendored Morelia reference code (hardware-bound, not installed
+# here). We commit it as-is for reference and do not own its style, so keep it
+# out of our lint/format gate.
+extend-exclude = ["Watchdog"]
+
+[tool.ruff.lint]
+# E/W = pycodestyle, F = pyflakes (real bugs), I = import sorting,
+# B = bugbear (likely-bug patterns), UP = pyupgrade (modern syntax),
+# SIM = simplify (redundant code).
+select = ["E", "W", "F", "I", "B", "UP", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+# ----------------------------------------------------------------------------
+# pytest configuration.
+# ----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# -ra = show a short summary of all non-passing tests at the end of a run.
+addopts = "-ra"

@@ -1,0 +1,11 @@
+policy = "automate"
+
+[[device_flows]]
+device_template_path = "pod8206hr-bobby-bob-235c4b32.toml"
+device_template_content_hash = "235c4b32023094a2dc0a60413074f0021e29f78e1340458a6768f1f7a43ab8f4"
+nickname = "bob"
+
+[[device_flows.sinks]]
+sink_name = "8206-edf"
+sink_type = "edf"
+sink_location = "C:\\Users\\ahoang\\vue-dashboard\\backend\\tests-15-1"
