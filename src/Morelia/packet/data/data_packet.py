@@ -4,5 +4,5 @@ class DataPacket(PodPacket):
     """
     The parent class of all data packets. Purely used for strengthening type safety.
     """
-    def __init__(self, raw_packet: bytes, min_length: int) -> None:
+    def __init__(self, raw_packet: bytes, min_length: int = 6) -> None:
         super().__init__(raw_packet, min_length)
