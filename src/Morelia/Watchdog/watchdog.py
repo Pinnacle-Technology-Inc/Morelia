@@ -61,6 +61,7 @@ _RECONNECT_FAILURE_REASONS = {
     "port_check_failed",
     "waiting_for_port",
     "waiting_for_port_release",
+    "worker_cold_open_failed",
     "restart_failed",
     "restart_completed_worker_not_response",
     "waiting_for_heartbeat",
@@ -786,6 +787,11 @@ class StreamWatcher (threading.Thread):
         self._response_grace = None
         self._first_packet_started_at = time.monotonic()
         self._first_packet_seen = False
+        # Cool-down ticks after a worker crashes on its cold open, so recovery
+        # keeps polling for the device without respawning a doomed worker every
+        # tick during the port/replug settle window.
+        self._cold_open_backoff_ticks = 2
+        self._cold_open_backoff_remaining = 0
 
     # ------------------------------------------------------------------ #
     # Thread lifecycle                                                   #
@@ -831,6 +837,7 @@ class StreamWatcher (threading.Thread):
         self._failure_count = 0
         self._recovery_attempt_count = 0
         self._response_grace = None
+        self._cold_open_backoff_remaining = 0
         self._first_packet_started_at = time.monotonic()
         self._first_packet_seen = False
 
@@ -1191,6 +1198,58 @@ class StreamWatcher (threading.Thread):
             "max": self._max_auto_restart_attempts,
         }
 
+    @staticmethod
+    def _worker_crashed_on_start(stream_status):
+        """
+        Return True when a just-restarted worker has already exited abnormally.
+
+        A worker that is "dead" (its process object exists but is no longer
+        alive) with a non-zero exit code right after a restart crashed during
+        startup -- almost always on the cold serial-port open while the port was
+        still settling after a stop/replug. This is distinct from a live worker
+        that is merely slow to produce its first packet, which is handled by the
+        heartbeat grace instead.
+
+        Output: bool (True | False).
+        """
+        if not isinstance(stream_status, dict):
+            return False
+        if stream_status.get("worker_status") != "dead":
+            return False
+        return stream_status.get("worker_exitcode") != 0
+
+    def _back_off_worker_cold_open(self, base, restart_result, verify_result,
+                                   stream_status):
+        """
+        Handle a worker that crashed on its cold open as a settle-window retry.
+
+        Refund the recovery attempt (a doomed cold open is not a real recovery
+        try), clear the dead worker slot, and arm a short cool-down so the next
+        tick does not immediately respawn another doomed worker. The stream stays
+        disconnected and keeps polling, so it recovers on its own once a spawned
+        worker can hold the port.
+
+        Output: dict. A waiting_for_port_release-style action result.
+        """
+        self._recovery_attempt_count = max(0, self._recovery_attempt_count - 1)
+        self._response_grace = None
+        self._cold_open_backoff_remaining = self._cold_open_backoff_ticks
+        try:
+            self._monitor.stop_stream(self.stream_index)   # clear the dead worker
+        except Exception:
+            pass
+        return {
+            **base,
+            "ok": False,
+            "action": "waiting_for_port_release",
+            "failure_reason": "worker_cold_open_failed",
+            "restart_result": restart_result,
+            "verify_result": verify_result,
+            "stream_status": stream_status,
+            "recovery_attempt": self._recovery_attempt(),
+            "recovery_policy": self._recovery_policy,
+        }
+
     def _response_grace_check_count(self):
         """Use ceiling-half of the detection threshold, with one minimum check."""
         return max(1, (self._failure_threshold + 1) // 2)
@@ -1298,6 +1357,15 @@ class StreamWatcher (threading.Thread):
                 grace["restart_result"],
                 grace["verify_result"],
                 heartbeat_verify=heartbeat_verify,
+            )
+
+        # A worker can survive long enough to enter grace (slow Windows spawn)
+        # and then crash on its cold open. Stop waiting for a heartbeat that will
+        # never arrive: treat it as a settle-window retry, not a used attempt.
+        crashed_status = self._safe_get_stream_status()
+        if self._worker_crashed_on_start(crashed_status):
+            return self._back_off_worker_cold_open(
+                base, grace["restart_result"], grace["verify_result"], crashed_status
             )
 
         if grace["remaining"] > 0:
@@ -1554,6 +1622,19 @@ class StreamWatcher (threading.Thread):
                     "failure_reason": "waiting_for_port_release",
                 }
             #if port exist and can be opened, restart stream
+            # Cooling down after a worker crashed on its cold open: don't respawn
+            # a doomed worker every tick while the device finishes settling. The
+            # port is still probed above, so we keep polling and come back on our
+            # own the moment a spawned worker can actually hold the port.
+            if self._cold_open_backoff_remaining > 0:
+                self._cold_open_backoff_remaining -= 1
+                return {
+                    **base,
+                    "ok": False,
+                    "action": "waiting_for_port_release",
+                    "failure_reason": "worker_cold_open_failed",
+                    "recovery_attempt": self._recovery_attempt(),
+                }
             self._recovery_attempt_count += 1
             restart_result = m.restart_one_stream(self.stream_index)
             if not restart_result["ok"]: #If restart status is bad
@@ -1597,6 +1678,18 @@ class StreamWatcher (threading.Thread):
                 return self._finish_recovery_success(
                     restart_result,
                     verify_result,
+                )
+
+            # restart_one_stream reports ok the instant worker.start() returns --
+            # it does NOT prove the worker survived opening the port. If the fresh
+            # worker has already died (crashed on its cold open during the port /
+            # replug settle window), that is "device not ready yet", not a used
+            # recovery attempt. Refund the budget and keep polling instead of
+            # entering the heartbeat grace and draining toward needs_action.
+            crashed_status = self._safe_get_stream_status()
+            if self._worker_crashed_on_start(crashed_status):
+                return self._back_off_worker_cold_open(
+                    base, restart_result, verify_result, crashed_status
                 )
 
             response_grace_checks = self._response_grace_check_count()

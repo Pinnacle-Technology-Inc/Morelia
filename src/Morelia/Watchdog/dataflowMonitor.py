@@ -47,6 +47,10 @@ class DataFlowMonitor:
         # - starting/stopping/stopped/start_failed/stop_failed: whole DataFlow commands
 
         self.last_error = None
+        # Captured from the attached DataFlow so watchdog-restarted workers keep
+        # reporting sink failures. Without this, a sink that fails after an
+        # auto-restart goes silent -- data loss with no observer.
+        self._on_sink_error = None
         self._poll_locks= {} #Internal lock to make sure only one command sending to read_queue at a time
         self._status_manager = None
         self._shared_status = None
@@ -63,6 +67,11 @@ class DataFlowMonitor:
         Attach a running or configured DataFlow and save its rebuild snapshot.
         """
         self.flowgraph = flowgraph
+        # Capture the app's sink-error callback so restarted workers can keep
+        # reporting sink failures (a full flowgraph rebuild would otherwise drop
+        # it). Held on the monitor, not read from self.flowgraph each time, so it
+        # survives restart_all replacing the flowgraph.
+        self._on_sink_error = getattr(flowgraph, "_on_sink_error", None)
         self._inject_health_sinks(flowgraph)
         self.snapshot_config = self._capture_dataflow_info(flowgraph)
         self.dataflow_status = "attached"
@@ -1309,12 +1318,18 @@ class DataFlowMonitor:
         sinks_list = [
             (type(sink), sink.get_dict()) for sink in sinks
         ]
+        # Forward on_sink_error (mirrors DataFlow.collect) so a sink that fails
+        # after an auto-restart still reports instead of dropping data silently.
+        # on_source_error is intentionally left at its default (None): its read
+        # status is redundant telemetry the watchdog already infers from the
+        # heartbeat, so it is not threaded through the restart path.
         args = (
             duration_sec,
             manual_stop_event,
-            source_class, 
-            source_dict, 
+            source_class,
+            source_dict,
             sinks_list,
+            self._on_sink_error,
         )
         if sys.platform != "win32":
             try:

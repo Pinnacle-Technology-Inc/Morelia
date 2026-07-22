@@ -40,10 +40,11 @@ _repository = DeviceConfigRepository()
 
 STARTING_CLAIM_LEASE_SECONDS = 120
 
-# Plan decision C ("Physical identity", resolved 2026-07-02): hardware_id is
-# exactly 5 alphanumeric characters, matched case-sensitively and exactly (it
-# mirrors the reported FTDI serial verbatim — no case-folding).
-_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{5}$")
+# Plan decision C ("Physical identity", resolved 2026-07-02): hardware_id
+# mirrors the reported FTDI serial verbatim, matched case-sensitively and
+# exactly (no case-folding). It may be 1–10 alphanumeric characters — we accept
+# whatever the user provides so long as it falls within that range.
+_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{4,8}$")
 
 
 def _canonical_parameters(device_type: DeviceType, raw: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -69,7 +70,7 @@ def create(
     Identity is ``device_type + hardware_id`` and must be unique; a duplicate
     raises ``DeviceConfigExists`` rather than surfacing a raw IntegrityError.
 
-    ``hardware_id`` must be exactly 5 alphanumeric characters (matches the
+    ``hardware_id`` must be 4-8 alphanumeric characters (matches the
     reported FTDI serial verbatim, case-sensitive); anything else raises
     ``InvalidHardwareId`` before the duplicate-identity check runs.
     """
