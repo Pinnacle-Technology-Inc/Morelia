@@ -11,14 +11,24 @@ from dotenv import load_dotenv
 
 # Every entrypoint (Flask app, `pinnacle` CLI, the runtime-host subprocess)
 # imports something under `app.*`, which runs this package's __init__ first —
-# so loading .env here, before any other app import, is the one place that
-# guarantees it lands before Config classes read os.environ at import time.
-# override=False: a real environment variable always wins over .env: .env is
-# just a convenient place to *set* one locally (e.g. MORELIA_SRC), not a
-# layer above the actual environment.
-load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+# so loading local config here, before any other app import, is the one place
+# that guarantees it lands before Config classes read os.environ at import time.
+#
+# Precedence (highest first):
+#   1. real process environment
+#   2. `.env` — secrets and machine-local paths
+#   3. `settings.toml` — portable non-secret knobs
+#   4. code defaults in app.config.Config
+#
+# override=False on both loaders: a higher layer always wins.
+_BACKEND_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_BACKEND_ROOT / ".env", override=False)
 
-from flask import Flask  # noqa: E402 - must follow load_dotenv() above
+from app.settings_file import default_settings_path, load_settings_file  # noqa: E402
+
+load_settings_file(default_settings_path(_BACKEND_ROOT), override=False)
+
+from flask import Flask  # noqa: E402 - must follow local config loads above
 from flask_smorest import Api  # noqa: E402
 
 from app.config import get_config  # noqa: E402

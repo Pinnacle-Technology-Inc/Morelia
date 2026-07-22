@@ -55,7 +55,8 @@ class Config:
     WATCHDOG_TIMEOUT_SECONDS = float(os.environ.get("WATCHDOG_TIMEOUT_SECONDS", "2.0"))
     # ---- Watchdog / runtime-host timing -----------------------------------
     # Keep every watchdog-control timing knob here so operators can inspect
-    # and tune the actual limits through .env without editing source.
+    # and tune the actual limits through settings.toml (or .env) without
+    # editing source. Prefer settings.toml for portable non-secret knobs.
     WATCHDOG_FAILURE_THRESHOLD = int(os.environ.get("WATCHDOG_FAILURE_THRESHOLD", "3"))
     WATCHDOG_MAX_HEARTBEAT_AGE_SECONDS = float(
         os.environ.get("WATCHDOG_MAX_HEARTBEAT_AGE_SECONDS", "10.0")
@@ -153,6 +154,15 @@ class Config:
     )
     WATCHDOG_STALE_AFTER_SECONDS = float(
         os.environ.get("WATCHDOG_STALE_AFTER_SECONDS", "10.0")
+    )
+    # How long a latched ``degraded`` source-read status stays authoritative
+    # without a fresh re-emit from the DataFlow worker. Morelia re-emits a
+    # still-failing source about once per second; once those stop, the source
+    # recovered or the stream ended. A latch older than this is cleared even if
+    # the one-shot ``recovered`` event was dropped. Default 3.0s (~3x the emit
+    # interval) so USB read jitter does not clear a still-failing source early.
+    SOURCE_STATUS_STALE_AFTER_SECONDS = float(
+        os.environ.get("SOURCE_STATUS_STALE_AFTER_SECONDS", "3.0")
     )
     WATCHDOG_RECOVERY_VERIFY_TIMEOUT_SECONDS = float(
         os.environ.get("WATCHDOG_RECOVERY_VERIFY_TIMEOUT_SECONDS", "5.0")

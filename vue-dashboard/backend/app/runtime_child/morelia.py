@@ -1,8 +1,7 @@
-"""Morelia-backed ``RuntimeControlDriver``.
+"""Morelia-backed runtime driver for one dataflow.
 
-This driver is intentionally opt-in. Importing the module does not import
-Morelia, pyserial, or touch hardware; those imports happen only when the driver
-is constructed for a real runtime host.
+Importing this module does not load Morelia or touch hardware; that happens
+only when ``MoreliaRuntime`` is constructed.
 """
 
 from __future__ import annotations
@@ -38,38 +37,26 @@ _log = structlog.get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
-# Worker-boundary injectables (packet 26).
-#
-# Morelia pickles sink construction (and the ``on_sink_error`` callback) into a
-# separate collection worker process (Windows spawn). Everything that crosses
-# that boundary must therefore be picklable *by reference* — a module-level
-# function or a slotted module-level class, never a lambda/closure. These are
-# the picklable seams ``_runtime_context`` and ``_build_stack`` inject.
+# Helpers passed into the DataFlow worker process (Windows spawn pickles them) so
+# that we can add the sink error report object and track if data is being received 
+# in Influx/Quest DB sink
 # ---------------------------------------------------------------------------
 
 
 def resolve_secret_from_env(env_var_name: str) -> str | None:
-    """Resolve an Influx ``api_token_env`` variable NAME to its token value.
+    """Look up an Influx token from an environment-variable *name*.
 
-    The worker-boundary secret resolver (design doc section 6 / SINK-07): the
-    manifest only ever carries the environment-variable *name*, never the token.
-    A managed Influx sink calls this worker-side, immediately before it
-    constructs its client, so the resolved token never enters the manifest,
-    a report, or a log. Module-level (not a closure) so it is picklable into the
-    DataFlow worker.
+    The manifest stores the name, never the token. Called inside the worker
+    just before the Influx client is built.
     """
     return os.environ.get(env_var_name)
 
 
 def open_sink_delivery_outbox(path: str) -> Any:
-    """Open a :class:`SinkDeliveryOutbox` at ``path`` (worker-side handle).
+    """Open a SQLite spool for samples that failed to reach Influx/Quest.
 
-    The picklable, path-based FACTORY the watchdog threads onto
-    ``RuntimeContext.sink_delivery_outbox_factory`` (packet 19/26). A live
-    ``SinkDeliveryOutbox`` wraps a SQLite connection and cannot cross the
-    DataFlow worker boundary, so the parent passes only this path-based callable
-    (via ``functools.partial(open_sink_delivery_outbox, path)``) and the Influx/
-    Quest worker opens its own handle. Module-level so the partial is picklable.
+    Path-based so the worker opens its own handle; a live connection cannot
+    cross the process boundary. Distinct from the watchdog telemetry outbox.
     """
     from app.watchdog_process.sink_delivery_outbox import SinkDeliveryOutbox
 
@@ -77,11 +64,7 @@ def open_sink_delivery_outbox(path: str) -> Any:
 
 
 def _normalize_sink_error(event: object) -> dict[str, Any]:
-    """Flatten a Morelia ``SinkError`` (dataclass or dict) to a plain-dict payload.
-
-    The worker enqueues plain dicts (primitive fields only) so the parent never
-    needs to import Morelia's ``SinkError`` type to drain them.
-    """
+    """Convert a Morelia ``SinkError`` (object or dict) into a plain dict."""
     if isinstance(event, Mapping):
         get = event.get  # type: ignore[assignment]
     else:
@@ -106,7 +89,7 @@ def _normalize_sink_error(event: object) -> dict[str, Any]:
 
 
 def _normalize_source_status(event: object) -> dict[str, Any]:
-    """Flatten a Morelia source-read status event to bounded primitive fields."""
+    """Convert a source-read status event into a bounded plain dict."""
     if isinstance(event, Mapping):
         get = event.get  # type: ignore[assignment]
     else:
@@ -126,16 +109,11 @@ def _normalize_source_status(event: object) -> dict[str, Any]:
 
 
 class _SinkErrorSender:
-    """Picklable ``on_sink_error`` callback: worker -> parent per-sink axis.
+    """Enqueue a sink write failure for the parent to turn into a ``SinkReport``.
 
-    Morelia (packet 23) invokes this once per failing sink with a structured
-    ``SinkError``. This normalizes the event and puts it on a queue the parent
-    runtime thread drains into per-sink :class:`SinkReport`s — so a failing sink
-    is attributed on the per-sink axis (gap SINK-19/SINK-23), never as source or
-    stream health. Slotted, module-level, and holds only the queue, so it is
-    picklable into the DataFlow worker (the queue crosses by process
-    inheritance). It must never raise: Morelia swallows callback errors, but
-    keeping this trivial guarantees acquisition and healthy siblings continue.
+    Passed as Morelia's ``on_sink_error``. Separate from watchdog stream health:
+    one destination can fail while samples still flow and sibling sinks succeed.
+    Must stay picklable (module-level, queue only) and must not raise.
     """
 
     __slots__ = ("_queue",)
@@ -148,7 +126,7 @@ class _SinkErrorSender:
 
 
 class _SourceErrorSender:
-    """Picklable worker-to-parent callback for structured source-read status."""
+    """Enqueue a source-read status event for the parent to drain."""
 
     __slots__ = ("_queue",)
 
@@ -160,11 +138,9 @@ class _SourceErrorSender:
 
 
 def _default_sink_error_queue() -> Any:
-    """Default queue factory: a real cross-process ``multiprocessing.Queue``.
+    """Create a cross-process queue for sink-error events.
 
-    Tests inject a plain ``queue.Queue`` factory for deterministic in-process
-    draining; production uses this so the picklable ``_SinkErrorSender`` can
-    carry sink failures out of the real DataFlow worker.
+    Tests may inject an in-process ``queue.Queue`` instead.
     """
     import multiprocessing
 
@@ -172,32 +148,27 @@ def _default_sink_error_queue() -> Any:
 
 
 def _default_source_error_queue() -> Any:
-    """Default cross-process queue for source-read status events."""
+    """Create a cross-process queue for source-read status events."""
     import multiprocessing
 
     return multiprocessing.Queue()
 
 
 def _sink_field(value: object, limit: int) -> str | None:
-    """Bounded optional sink-report label/message: ``None`` if empty/non-str."""
+    """Return a truncated string field, or ``None`` if empty/non-str."""
     text = _bounded_text(value, limit)
     return text or None
 
 
 def _sink_counter(value: object) -> int:
-    """Defensively normalize an untrusted worker counter."""
+    """Return a non-negative int from worker data, else ``0``."""
     if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
         return value
     return 0
 
 
 def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
-    """Import real Morelia classes lazily.
-
-    ``MORELIA_SRC`` can point at a checkout such as
-    ``C:\\Users\\ahoang\\Morelia\\src`` when Morelia is not installed into the
-    active Python environment.
-    """
+    """Import Morelia classes, optionally via ``MORELIA_SRC`` on ``sys.path``."""
 
     morelia_src = os.environ.get("MORELIA_SRC")
     if morelia_src and morelia_src not in sys.path:
@@ -222,27 +193,12 @@ def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
 
 
 def preflight_sink_dependencies(manifest: Manifest) -> None:
-    """Verify dependency availability for ONLY the sink types this manifest selects.
+    """Check that optional packages for this manifest's sink types are installed.
 
-    Selection-aware readiness (gap SINK-13): probe the optional/native
-    dependency of every ``SinkConfig`` that actually appears in the manifest
-    (``DeviceFlow.sinks``, packet 07) — never all six sink types. A CSV or Plot
-    sink has no external dependency and always passes, so a CSV-only session can
-    never be blocked here. A missing optional/native dependency disables ONLY
-    that sink type and raises the sink-addressed, redacted
-    :class:`~app.runtime_child.sink_factory.SinkDependencyMissing` (packets
-    08/13): it names the offending ``sink_id`` + ``sink_type`` and the pip
-    extra, and carries no credential value or resolved path.
-
-    Pure dependency discovery: it reuses the worker sink factory's single
-    dependency/platform probe (``importlib.util.find_spec`` only), so it imports
-    no Morelia, opens no file/socket/DB handle, spawns no worker process, and
-    acquires no hardware. It is therefore safe to run *before* hardware
-    ownership changes, and a successful preflight leaves nothing open.
+    Only probes sinks listed in the manifest. Raises
+    ``SinkDependencyMissing`` for the failing ``sink_id``; does not open
+    hardware, files, or network connections.
     """
-    # Imported lazily so the worker sink factory stays the one source of truth
-    # for the import-name/platform map (packet 13); a local import also
-    # sidesteps import-order coupling with that concurrently-evolving module.
     from app.runtime_child.sink_factory import _require_dependencies
 
     for device_flow in manifest.device_flows:
@@ -251,12 +207,7 @@ def preflight_sink_dependencies(manifest: Manifest) -> None:
 
 
 class MoreliaRuntime:
-    """Runtime driver that owns one real Morelia DataFlow and Watchdog.
-
-    Current scope is Pod8206HR/Pod8401HR sources and managed CSV sinks from the
-    manifest. Imports and hardware access remain lazy so fake/runtime-host tests
-    can run without Morelia installed.
-    """
+    """Owns one Morelia DataFlow + Watchdog for a single dataflow."""
 
     def __init__(
         self,
@@ -292,10 +243,7 @@ class MoreliaRuntime:
         self._timeout_sec = timeout_sec
         self._shutdown_timeout_sec = shutdown_timeout_sec
         self._importer = importer
-        # Worker-boundary injectables (packet 26). The outbox FACTORY (a picklable
-        # path-based callable) is threaded through from the watchdog entrypoint so
-        # Influx/Quest workers open their own SinkDeliveryOutbox handle; a live
-        # handle cannot cross the DataFlow worker boundary.
+        # Factories the worker uses to open its own outbox / error queues.
         self._sink_delivery_outbox_factory = sink_delivery_outbox_factory
         self._sink_error_queue_factory = sink_error_queue_factory
         self._source_error_queue_factory = source_error_queue_factory
@@ -314,10 +262,7 @@ class MoreliaRuntime:
         self._watchdog_thread: threading.Thread | None = None
         self._nonhealthy_streak_by_device = {device_id: 0 for device_id in self._device_ids}
 
-        # Per-sink failure axis (packet 20/23/26). Sink write failures reported by
-        # Morelia's worker are drained off this queue into the latest-known
-        # SinkReport per (source_id, sink_id) and ride every emitted report on the
-        # SEPARATE ``sinks`` axis — never as source/stream health.
+        # Latest sink-write failures, kept separate from device/stream health.
         self._sink_error_queue: Any | None = None
         self._sink_reports: dict[tuple[str, str], SinkReport] = {}
         self._sink_seq: dict[tuple[str, str], int] = {}
@@ -349,7 +294,8 @@ class MoreliaRuntime:
             self._flowgraph.collect()
         self._phase = RuntimePhase.RUNNING
         self._emit_all(StreamStatus.HEALTHY, phase=RuntimePhase.RUNNING)
-        self._watchdog_thread = threading.Thread(#multi-threaded because watchdog.run() is a blocking command, so we will not be able to ack if we dont parallelize
+        self._watchdog_thread = threading.Thread(
+            # watchdog.run() blocks; keep it off the command thread so we can still ack.
             target=self._run_watchdog,
             name=f"morelia-runtime-{self._manifest.dataflow_id}",
             daemon=True,
@@ -422,8 +368,7 @@ class MoreliaRuntime:
                         error_type=type(exc).__name__,
                         reason=str(exc),
                     )
-            # Watchdog.close remains the cleanup backstop for monitor/source
-            # resources, including Morelia versions without stop_dataflow().
+            # Always close the watchdog so monitor/source resources are released.
             self._watchdog.close()
             if shutdown_error is not None:
                 raise shutdown_error
@@ -450,7 +395,7 @@ class MoreliaRuntime:
         self._phase = RuntimePhase.CLOSED
 
     def _close_sink_error_queue(self) -> None:
-        """Release the sink-error channel exactly once on terminal close."""
+        """Close the sink-error queue if open."""
         q = self._sink_error_queue
         self._sink_error_queue = None
         if q is None:
@@ -465,7 +410,7 @@ class MoreliaRuntime:
                 join_thread()
 
     def _close_source_error_queue(self) -> None:
-        """Release the source-read status channel exactly once."""
+        """Close the source-status queue if open."""
         q = self._source_error_queue
         self._source_error_queue = None
         if q is None:
@@ -508,27 +453,14 @@ class MoreliaRuntime:
                     SecondaryChannelMode,
                     device_flow,
                 )
-                # Track the pod immediately: sink construction can fail after the
-                # source has allocated a serial/native resource.
+                # Track immediately so rollback can close the port if sinks fail next.
                 self._pods.append(pod)
-                # Read the resolved v2 sink collection (packet 07), not the single-sink
-                # compat bridge, and delegate ALL sink construction to the worker sink
-                # factory (packet 13): it is the sole manifest-type -> runtime-adapter
-                # mapping. It preserves manifest order/identity, builds CSV as a
-                # deferred-open descriptor, and produces a typed, sink-addressed
-                # outcome for types whose adapters land in later packets. On a
-                # mid-device failure it closes already-built sibling adapters in
-                # reverse order before propagating.
                 runtime_context = self._runtime_context(CSVSink, device_flow, device_type, pod)
                 sinks = build_sinks(device_flow.sinks, pod, runtime_context)
                 self._sinks.extend(sinks)
                 network.append((pod, sinks))
 
-            # Wire the structured sink-error channel (packet 23/26). The sender is
-            # PICKLED into each collection worker for a real multiprocessing run, so
-            # it must be the module-level ``_SinkErrorSender`` (holding only a queue),
-            # never a closure. Sink write failures then reach ``_drain_sink_errors``
-            # on the per-sink axis instead of Morelia's default log-only path.
+            # Worker calls these; parent drains the queues into reports.
             self._sink_error_queue = self._sink_error_queue_factory()
             sink_error_sender = _SinkErrorSender(self._sink_error_queue)
             self._source_error_queue = self._source_error_queue_factory()
@@ -551,7 +483,7 @@ class MoreliaRuntime:
             raise
 
     def _rollback_stack_construction(self) -> None:
-        """Release every resource built before an all-or-nothing stack failure."""
+        """Tear down pods/sinks/queues built before a failed stack setup."""
         self._watchdog = None
         self._flowgraph = None
         self._close_sink_error_queue()
@@ -580,22 +512,7 @@ class MoreliaRuntime:
         device_type: DeviceType,
         pod: Any,
     ) -> RuntimeContext:
-        """Assemble the per-source dependency-injection context for the factory.
-
-        Scoped to one device flow: it carries the manifest identity plus the
-        worker-owned CSV sink class and this device's resolved CSV header, and
-        (packet 26) the picklable worker-boundary injectables the service-sink
-        builders consume — the env-var ``secret_resolver`` (Influx) and the
-        path-based ``sink_delivery_outbox_factory`` (Influx/Quest). ``plot_transport``
-        remains ``None`` after packet 27: the managed Plot sink builds and runs in
-        bounded no-consumer/drop mode until an integrator wires a live handle or
-        picklable ``plot_transport_factory`` (``morelia.py`` was outside 27's edit
-        set). All three cross into the DataFlow worker
-        (via each sink's ``get_dict()``), so each is a module-level picklable
-        reference, never a closure. The outbox factory reaches every sink builder
-        but only the Influx/Quest branches read it — a file-only stack opens no
-        delivery outbox.
-        """
+        """Build the per-device context passed into the sink factory."""
         return RuntimeContext(
             dataflow_id=self._manifest.dataflow_id,
             device_id=device_flow.device_id,
@@ -616,18 +533,7 @@ class MoreliaRuntime:
         device_type: DeviceType,
         pod: Any,
     ) -> Any:
-        """Build one deferred-open CSV sink for a resolved ``SinkConfig``.
-
-        Compatibility entry point that funnels through the packet-13 factory so
-        there is a single construction path. Keeps the legacy CSV-only guard so a
-        non-CSV descriptor is still rejected here with the original message; the
-        factory itself (used by ``_build_stack``) raises the newer typed
-        ``SinkConstructionError`` outcomes for not-yet-implemented types.
-
-        SINK-21: still only a descriptor is built. No file, ``output_files`` row,
-        database handle, or writer is created in this (parent watchdog) process;
-        the live handle is opened later, worker-side, by ``ManagedCsvSink.open``.
-        """
+        """Build one CSV sink via the shared factory (legacy CSV-only entry)."""
         if sink_config.type != SinkType.CSV:
             raise ValueError(
                 f"unsupported Morelia sink type: {sink_config.type.value!r}"
@@ -765,11 +671,7 @@ class MoreliaRuntime:
     # -- reports ------------------------------------------------------------
 
     def _run_watchdog(self) -> None:
-        # This runs on a daemon thread with nothing supervising it: if
-        # watchdog.run() raises, the thread dies silently (Python's default
-        # threading.excepthook prints to stderr, which is otherwise unwatched
-        # here) and report_ring simply stops updating forever with zero
-        # visibility. Log before letting it die so a stall is diagnosable.
+        # Daemon thread: log unexpected death so a stalled report feed is visible.
         assert self._watchdog is not None
         try:
             self._run_watchdog_loop()
@@ -823,13 +725,7 @@ class MoreliaRuntime:
         report: dict[str, Any],
         diagnostics: dict[str, object],
     ) -> None:
-        """Emit a compact, queryable watchdog verdict for every report.
-
-        This is deliberately a normalized projection of Morelia's verbose
-        report. It makes a repeated recovery attempt legible in the watchdog
-        child log without placing raw packets, command arguments, or the
-        arbitrary action-detail object in logs.
-        """
+        """Log a compact watchdog status line (and per-stream details)."""
         watchdog_status = _bounded_text(report.get("watchdog_status"), 80)
         _log.info(
             "watchdog status report",
@@ -894,13 +790,7 @@ class MoreliaRuntime:
             )
 
     def _watchdog_diagnostics(self, stream_reports: list[object]) -> dict[str, object]:
-        """Keep the operator-useful watchdog verdict, not the raw hardware payload.
-
-        The control plane previously received only ``healthy/suspect/unhealthy``.
-        That made a long suspect streak indistinguishable from a short normal
-        reconnect.  This bounded allowlist explains the current recovery state
-        without exporting tokens, command payloads, or arbitrary device data.
-        """
+        """Project Morelia stream reports into a small operator-facing payload."""
         streams: list[dict[str, object]] = []
         for index, device_id in enumerate(self._device_ids):
             raw = stream_reports[index] if index < len(stream_reports) else {}
@@ -953,7 +843,7 @@ class MoreliaRuntime:
                         "status": _bounded_text(worker.get("status"), 120),
                         "exitcode": worker.get("exitcode"),
                     },
-                    "source_read": self._source_status_by_device.get(device_id),
+                    "source_read": self._current_source_read(device_id),
                     "startup": {
                         "elapsed_sec": startup.get("elapsed_sec"),
                         "timeout_sec": startup.get("timeout_sec"),
@@ -1003,10 +893,7 @@ class MoreliaRuntime:
         recovery_id: str | None = None,
         diagnostics: dict[str, object] | None = None,
     ) -> None:
-        # Fold any pending worker-reported sink failures into the per-sink axis
-        # first, then attach the current snapshot. Kept strictly separate from
-        # ``devices`` (source/stream health): a failing sink is reported per-sink,
-        # never as source health (gaps SINK-08/SINK-19/SINK-23).
+        # Drain sink failures first; they attach on ``sinks``, not ``devices``.
         self._drain_sink_errors()
         self._on_report(
             RuntimeReport(
@@ -1023,12 +910,7 @@ class MoreliaRuntime:
         self._sequence += 1
 
     def _drain_sink_errors(self) -> None:
-        """Pull all pending sink-write failures off the queue (non-blocking).
-
-        Each event updates the latest-known :class:`SinkReport` for its
-        ``(source_id, sink_id)``. Never blocks acquisition and never raises: a
-        closed/broken queue simply yields no new events.
-        """
+        """Apply pending sink-write failures into ``_sink_reports`` (non-blocking)."""
         q = self._sink_error_queue
         if q is None:
             return
@@ -1038,15 +920,31 @@ class MoreliaRuntime:
             except queue.Empty:
                 break
             except (OSError, ValueError):
-                # Queue closed during teardown — nothing more to drain.
+                # Queue already closed during teardown.
                 break
             if not isinstance(event, Mapping):
                 continue
             report = self._sink_report_from_event(event)
             self._sink_reports[(report.source_id, report.sink_id)] = report
 
+    def _current_source_read(self, device_id: str) -> dict[str, object] | None:
+        """Return this device's source-read status, clearing a stale degraded latch."""
+        status = self._source_status_by_device.get(device_id)
+        if status is None:
+            return None
+        if status.get("state") != "degraded":
+            return status
+        timestamp_ns = status.get("timestamp_ns")
+        if not isinstance(timestamp_ns, int) or isinstance(timestamp_ns, bool):
+            return status
+        age_sec = (time.time_ns() - timestamp_ns) / 1_000_000_000
+        if age_sec > get_config().SOURCE_STATUS_STALE_AFTER_SECONDS:
+            self._source_status_by_device.pop(device_id, None)
+            return None
+        return status
+
     def _drain_source_errors(self) -> None:
-        """Fold pending worker source-read events into one current status per device."""
+        """Apply pending source-read events into ``_source_status_by_device``."""
         q = self._source_error_queue
         if q is None:
             return
@@ -1079,16 +977,23 @@ class MoreliaRuntime:
                 or timestamp_ns < 0
             ):
                 status["timestamp_ns"] = time.time_ns()
+            # ``recovered``/``healthy`` clears the degraded latch; do not keep error fields.
+            if status.get("state") in ("recovered", "healthy"):
+                previous = self._source_status_by_device.pop(device_id, None)
+                if previous is not None:
+                    _log.info(
+                        "source read recovered",
+                        component="morelia_watchdog",
+                        dataflow_id=self._manifest.dataflow_id,
+                        device_id=device_id,
+                        exception_type=previous.get("exception_type"),
+                        failures_survived=status.get("consecutive_failures"),
+                    )
+                continue
             self._source_status_by_device[device_id] = status
 
     def _sink_report_from_event(self, event: Mapping[str, object]) -> SinkReport:
-        """Map one normalized Morelia ``SinkError`` payload to a bounded ``SinkReport``.
-
-        Morelia's ``state`` vocabulary (``terminal``/``degraded``) maps onto the
-        per-sink ``health`` axis; every string is re-bounded here because a
-        durable report must stay small (``message`` <= 500) even though the worker
-        already truncated it.
-        """
+        """Build a bounded ``SinkReport`` from one normalized sink-error event."""
         source_raw = event.get("source_id")
         source_id = source_raw if isinstance(source_raw, str) and source_raw else "unknown-source"
         sink_raw = event.get("sink_id")
@@ -1157,18 +1062,7 @@ class MoreliaRuntime:
 
     @contextmanager
     def _hardware_boundary(self, step: str):
-        """Log a hardware-facing failure, then re-raise it UNCHANGED.
-
-        Deliberately does not convert the exception type yet. ``server.py``'s
-        do_POST only maps ``CommandInFlight`` / ``ValueError`` / ``RuntimeError``
-        to an HTTP response, so anything else (``serial.SerialException``,
-        ``OSError``, ...) still escapes uncaught and drops the connection with
-        no report recorded — this only guarantees the exception gets logged to
-        the runtime host's own log first, so a real failure is diagnosable
-        instead of just "no reports appeared". Once real failures have been
-        observed here, decide in one place which types should collapse to
-        RuntimeError (-> 409) versus keep propagating as a loud bug.
-        """
+        """Log hardware-step failures, then re-raise unchanged."""
         try:
             yield
         except Exception as exc:
@@ -1197,7 +1091,7 @@ class MoreliaRuntime:
 
 
 def _bounded_text(value: object, limit: int) -> str | None:
-    """Return a bounded diagnostic string suitable for durable telemetry."""
+    """Truncate a string to ``limit``, or return ``None`` if not a str."""
     if not isinstance(value, str):
         return None
     return value[:limit]
