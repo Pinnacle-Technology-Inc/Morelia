@@ -35,15 +35,22 @@ class DataFlow:
     :param fail_tolerance: How many times in a row to fail reading before giving up on reading a "chunk" of data ("chunk" here is approximately 1 second of samples). Defaults to 3.
 
     :param on_sink_error: Optional callback for handling sink failures. It receives one structured `SinkError` per failing sink, defaults to logging, and is picklable when used with multiprocessing.
+    :param on_source_error: Optional callback for bounded source-read status events.
     """
 
-    def __init__(self, network: list[tuple[AcquisitionDevice, list[pod_sink.SinkInterface]]], on_sink_error=None,) -> None: #include on_sink_error for tracking
+    def __init__(
+        self,
+        network: list[tuple[AcquisitionDevice, list[pod_sink.SinkInterface]]],
+        on_sink_error=None,
+        on_source_error=None,
+    ) -> None:
         """Set class instance variables."""
 
         self._manual_stop_events: list[mp.Event] = [] #events that stop collection stored here.
         self._network = network
         self._workers: list[mp.Process] = []
         self._on_sink_error = on_sink_error
+        self._on_source_error = on_source_error
 
     def stop_collection(self, join_timeout_sec: float = 15.0) -> None:
         """Stop collecting data.
@@ -130,6 +137,7 @@ class DataFlow:
                 source_dict,
                 sinks_list,
                 self._on_sink_error,
+                self._on_source_error,
             )
             worker: mp.Process
             if sys.platform != "win32":

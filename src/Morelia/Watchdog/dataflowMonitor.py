@@ -521,30 +521,43 @@ class DataFlowMonitor:
 
             return False
 
-    def is_stream_port_openable(self, stream_index, timeout_sec=0.25):
+    def is_stream_port_openable(self, stream_index, timeout_sec=0.25, attempts=3, retry_delay_sec=0.2):
         """
         Return True if the stream's serial port can be opened by this process.
 
         Call this only after stopping the failed DataFlow stream worker.
         If the worker is still alive, it may still own the port and this method
         can return False because of 'Access is denied'.
+
+        A freshly replugged USB serial device (or one whose worker just released
+        the handle) can list as present yet transiently refuse to open for a few
+        hundred milliseconds while the OS settles the port. To avoid reporting a
+        premature "not openable" during that settle window, the open is retried
+        up to `attempts` times with `retry_delay_sec` between tries; the port is
+        only declared un-openable after every attempt has failed.
         """
         self._require_flowgraph()
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
             port_name = self._get_stream_port_unlocked(stream_index)
 
-            try:
-                ser = serial.Serial(
-                    port=port_name,
-                    timeout=timeout_sec,
-                    write_timeout=timeout_sec,
-                )
-                ser.close()
-                return True
+            for attempt in range(attempts):
+                try:
+                    ser = serial.Serial(
+                        port=port_name,
+                        timeout=timeout_sec,
+                        write_timeout=timeout_sec,
+                    )
+                    ser.close()
+                    return True
 
-            except Exception:
-                return False
+                except Exception:
+                    # Give the OS a moment to finish releasing/enumerating the
+                    # port before the next probe; skip the wait after the last.
+                    if attempt + 1 < attempts:
+                        time.sleep(retry_delay_sec)
+
+            return False
 
     #######################
     #  VALIDATION HELPERS #

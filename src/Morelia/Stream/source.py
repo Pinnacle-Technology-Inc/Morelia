@@ -32,11 +32,16 @@ _log = logging.getLogger(__name__)
 
 # failure_kind vocabulary
 SINK_FAILURE_WRITE = "sink_write"
+SOURCE_FAILURE_READ = "source_read"
 # state vocabulary
 SINK_STATE_TERMINAL = "terminal"
 SINK_STATE_DEGRADED = "degraded"
+SOURCE_STATE_DEGRADED = "degraded"
+SOURCE_STATE_RECOVERED = "recovered"
 # Bound so a hostile/huge exception message cannot blow up durable telemetry.
 _MAX_SINK_ERROR_MESSAGE = 500
+_MAX_SOURCE_ERROR_MESSAGE = 500
+_SOURCE_ERROR_EMIT_INTERVAL_SEC = 1.0
 
 
 @dataclass(frozen=True)
@@ -66,12 +71,35 @@ class SinkError:
     timestamp_ns: int
 
 
+@dataclass(frozen=True)
+class SourceReadStatus:
+    """One bounded source-read state transition or periodic failure update."""
+
+    source_id: str
+    source_port: str | None
+    failure_kind: str
+    exception_type: str | None
+    message: str | None
+    state: str
+    consecutive_failures: int
+    timestamp_ns: int
+
+
 def _source_identity(pod) -> str:
     """Return a stable source identity string for telemetry."""
     name = getattr(pod, "device_name", None)
     if isinstance(name, str) and name:
         return name
     return type(pod).__name__
+
+
+def _source_port(pod) -> str | None:
+    """Return the configured source port without exposing a live handle."""
+    for attr in ("port", "_port_name", "_name"):
+        value = getattr(pod, attr, None)
+        if isinstance(value, str) and value:
+            return value
+    return None
 
 
 def _sink_identity(sink) -> str:
@@ -87,6 +115,14 @@ def _redact_sink_message(exc: BaseException) -> str:
     text = str(exc)
     if len(text) > _MAX_SINK_ERROR_MESSAGE:
         return text[:_MAX_SINK_ERROR_MESSAGE] + "...[truncated]"
+    return text
+
+
+def _redact_source_message(exc: BaseException) -> str:
+    """Bound source exception text before it crosses the worker boundary."""
+    text = str(exc)
+    if len(text) > _MAX_SOURCE_ERROR_MESSAGE:
+        return text[:_MAX_SOURCE_ERROR_MESSAGE] + "...[truncated]"
     return text
 
 
@@ -130,6 +166,30 @@ def _emit_sink_error(on_sink_error, event: SinkError) -> None:
         _log.error(
             "on_sink_error callback raised for sink=%s; acquisition continues",
             event.sink_id,
+            exc_info=True,
+        )
+
+
+def _emit_source_status(on_source_error, event: SourceReadStatus) -> None:
+    """Deliver source-read telemetry without allowing reporting to stop acquisition."""
+    if on_source_error is None:
+        log = _log.info if event.state == SOURCE_STATE_RECOVERED else _log.warning
+        log(
+            "source read status source=%s port=%s state=%s error=%s failures=%s message=%s",
+            event.source_id,
+            event.source_port,
+            event.state,
+            event.exception_type,
+            event.consecutive_failures,
+            event.message,
+        )
+        return
+    try:
+        on_source_error(event)
+    except Exception:
+        _log.error(
+            "on_source_error callback raised for source=%s; acquisition continues",
+            event.source_id,
             exc_info=True,
         )
 
@@ -305,32 +365,72 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
 
 #TODO: type hints
 #function used by reactivex to create an observable from a packet stream from an acquisition device.
-def _stream_from_pod_device(pod: AcquisitionDevice, duration: float, manual_stop_event: Event):
+def _stream_from_pod_device(
+    pod: AcquisitionDevice,
+    duration: float,
+    manual_stop_event: Event,
+    on_source_error=None,
+):
     # Use fixed-size streaming read when available (1-2 read() per packet instead of many) for higher throughput
     read_fn = getattr(pod, "read_pod_packet_streaming", None)
     use_streaming = callable(read_fn)
     stream_timeout_sec = 0.2  # allow time for partial reads (e.g. 8206) and USB scheduling; still detects stall
 
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
-        timeout_message_shown = False  # only print first timeout so we don't forget it's there
+        source_id = _source_identity(pod)
+        source_port = _source_port(pod)
+        consecutive_failures = 0
+        last_error_emitted_at = 0.0
+        last_read_error = None
         with pod:
             stream_start_time : float = time.perf_counter()
             while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
 
                 try:
                     if use_streaming:
-                        observer.on_next(read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False))
+                        packet = read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False)
                     else:
-                        observer.on_next(pod.read_pod_packet())
+                        packet = pod.read_pod_packet()
                 except Exception as e:
-                    if type(e).__name__ == "TimeoutError" and timeout_message_shown:
-                        pass  # suppress after first timeout message
-                    else:
-                        print(f"Dropped packet due to {type(e).__name__}: {e}")
-                        if type(e).__name__ == "TimeoutError":
-                            timeout_message_shown = True
-                    #traceback.print_exc()
+                    consecutive_failures += 1
+                    last_read_error = e
+                    now = time.monotonic()
+                    if (
+                        consecutive_failures == 1
+                        or now - last_error_emitted_at >= _SOURCE_ERROR_EMIT_INTERVAL_SEC
+                    ):
+                        _emit_source_status(
+                            on_source_error,
+                            SourceReadStatus(
+                                source_id=source_id,
+                                source_port=source_port,
+                                failure_kind=SOURCE_FAILURE_READ,
+                                exception_type=type(e).__name__,
+                                message=_redact_source_message(e),
+                                state=SOURCE_STATE_DEGRADED,
+                                consecutive_failures=consecutive_failures,
+                                timestamp_ns=time.time_ns(),
+                            ),
+                        )
+                        last_error_emitted_at = now
                     continue
+                if consecutive_failures:
+                    _emit_source_status(
+                        on_source_error,
+                        SourceReadStatus(
+                            source_id=source_id,
+                            source_port=source_port,
+                            failure_kind=SOURCE_FAILURE_READ,
+                            exception_type=type(last_read_error).__name__,
+                            message=_redact_source_message(last_read_error),
+                            state=SOURCE_STATE_RECOVERED,
+                            consecutive_failures=consecutive_failures,
+                            timestamp_ns=time.time_ns(),
+                        ),
+                    )
+                    consecutive_failures = 0
+                    last_read_error = None
+                observer.on_next(packet)
         # After exiting "with pod": __exit__ has run (STREAM 0 sent, read buffer drained).
         # Now close the port so the USB/D2XX handle is released cleanly.
         pod.close_port()
@@ -349,7 +449,14 @@ def make_packet_putter(read_queue):
                 print(f"[!] Failed to queue control packet: {e}")
     return put_read_packet
 
-def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, sinks, on_sink_error=None) -> None:
+def get_data(
+    duration: float,
+    manual_stop_event: Event,
+    pod: AcquisitionDevice,
+    sinks,
+    on_sink_error=None,
+    on_source_error=None,
+) -> None:
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved.
 
@@ -372,7 +479,14 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
     put_read_packet = make_packet_putter(read_queue)
 
     # create an observable to stream from POD device.
-    device = rx.create(_stream_from_pod_device(pod, duration, manual_stop_event))
+    device = rx.create(
+        _stream_from_pod_device(
+            pod,
+            duration,
+            manual_stop_event,
+            on_source_error=on_source_error,
+        )
+    )
 
     # create background queue 
     def background_writer(pod: AcquisitionDevice):
@@ -422,7 +536,15 @@ def get_data(duration: float, manual_stop_event: Event, pod: AcquisitionDevice, 
         print("[DataFlow worker] stream.connect() returned, exiting sinks...", flush=True)
 
 # wrapper function for get_data which reconstructs pod devices and sources after the process is created
-def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict, sinks_list, on_sink_error=None):
+def get_data_wrapper(
+    duration_sec,
+    manual_stop_event,
+    source_class,
+    source_dict,
+    sinks_list,
+    on_sink_error=None,
+    on_source_error=None,
+):
     # Ignore SIGINT (Ctrl+C) in the worker so only the main process handles it. The main process
     # sets manual_stop_event and joins; the worker then exits the loop and runs sink __exit__.
     try:
@@ -435,12 +557,20 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
 
     # create list of sinks to use based on sink class/sink dictionary pair in the list
     sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
+    _bind_sink_error_callbacks(sinks, on_sink_error)
 
     # run get_data with the pod device and list of sinks
     # on Ctrl+C or shutdown (e.g. stop_collection), worker may get KeyboardInterrupt or I/O errors;
     # exit cleanly so we don't dump a traceback when the main process is stopping us
     try:
-        get_data(duration_sec, manual_stop_event, source, sinks, on_sink_error=on_sink_error)
+        get_data(
+            duration_sec,
+            manual_stop_event,
+            source,
+            sinks,
+            on_sink_error=on_sink_error,
+            on_source_error=on_source_error,
+        )
     except (KeyboardInterrupt, OSError, BrokenPipeError):
         if manual_stop_event.is_set():
             sys.exit(0)
@@ -449,3 +579,16 @@ def get_data_wrapper(duration_sec, manual_stop_event, source_class, source_dict,
         if manual_stop_event.is_set():
             sys.exit(0)
         raise
+
+
+def _bind_sink_error_callbacks(sinks, on_sink_error) -> None:
+    """Bind the worker-local reporter to sinks that expose the optional hook.
+
+    Binding happens only after multiprocessing reconstruction, so callbacks do
+    not need to be serialized inside sink dictionaries. Legacy sinks without
+    the hook retain their existing behavior.
+    """
+    for sink in sinks:
+        bind = getattr(sink, "bind_error_callback", None)
+        if callable(bind):
+            bind(on_sink_error)

@@ -47,6 +47,8 @@ _COMPACT_REASONS = {
     "heartbeat_missing": "heartbeat missing",
     "no_data_below_threshold": "no data yet, below threshold",
     "no_data_threshold_reached": "no data, threshold reached",
+    "first_packet_startup_grace": "waiting for first packet",
+    "waiting_for_port": "port not connected",
     "stream_reconnecting": "reconnecting",
     "needs_action": "needs action",
     "manual_stop": "stopped by command",
@@ -112,7 +114,7 @@ class Watchdog:
     - Assess stream health.
     - Return compact or verbose watchdog dictionaries.
     """
-    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None ):
+    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None ):
         """
         Initialize stream and standalone-device monitoring state.
 
@@ -125,9 +127,16 @@ class Watchdog:
         #Set default value
         if max_auto_restart_attempts < 1:
             raise ValueError("max_auto_restart_attempts must be at least 1.")
+        if first_packet_timeout_sec is not None and first_packet_timeout_sec <= 0:
+            raise ValueError("first_packet_timeout_sec must be greater than zero.")
 
         self.failure_threshold = failure_threshold
         self.max_heartbeat_age_sec = max_heartbeat_age_sec
+        self.first_packet_timeout_sec = (
+            max_heartbeat_age_sec
+            if first_packet_timeout_sec is None
+            else first_packet_timeout_sec
+        )
         self.max_auto_restart_attempts = max_auto_restart_attempts
         self.recovery_policy = _resolve_recovery_policy(
             manifest=manifest,
@@ -218,8 +227,9 @@ class Watchdog:
                         "rule": "starting",
                         "action": {"taken": "none", "detail": None}}
                 w = StreamWatcher(idx, self.dataflow_monitor,
-                              failure_threshold=self.failure_threshold,
-                              max_heartbeat_age_sec=self.max_heartbeat_age_sec,
+                               failure_threshold=self.failure_threshold,
+                               max_heartbeat_age_sec=self.max_heartbeat_age_sec,
+                               first_packet_timeout_sec=self.first_packet_timeout_sec,
                               interval_sec=_resolve_interval(stream_interval, idx, 30), timeout_sec=timeout_sec,
                               recovery_policy=self.recovery_policy,
                               max_auto_restart_attempts=self.max_auto_restart_attempts,
@@ -747,7 +757,7 @@ class StreamWatcher (threading.Thread):
     Owns ALL mutable state for its stream (failure count, disconnected flag),
     so a slow reconnect or a crash here cannot touch any other stream.
     """   
-    def __init__(self, stream_index: int, monitor: DataFlowMonitor, *, failure_threshold: int, max_heartbeat_age_sec: float, interval_sec: float, timeout_sec: float, recovery_policy: str, max_auto_restart_attempts: int = 3, publish):
+    def __init__(self, stream_index: int, monitor: DataFlowMonitor, *, failure_threshold: int, max_heartbeat_age_sec: float, first_packet_timeout_sec: float = None, interval_sec: float, timeout_sec: float, recovery_policy: str, max_auto_restart_attempts: int = 3, publish):
         """
         Initialize a daemon watcher for one DataFlow stream.
 
@@ -758,6 +768,11 @@ class StreamWatcher (threading.Thread):
         self._monitor = monitor #shared dataflow monitor handed to each thread
         self._failure_threshold = failure_threshold
         self._max_heartbeat_age_sec = max_heartbeat_age_sec
+        self._first_packet_timeout_sec = (
+            max_heartbeat_age_sec
+            if first_packet_timeout_sec is None
+            else first_packet_timeout_sec
+        )
         self._interval_sec = interval_sec
         self._timeout_sec = timeout_sec
         self._recovery_policy = _normalize_recovery_policy(recovery_policy)
@@ -765,10 +780,12 @@ class StreamWatcher (threading.Thread):
         self._publish = publish                #fire-and-forget to report back what it got
 
         self._stop_event = threading.Event()
-        self._failure_count = 0               
-        self._disconnected = False            
+        self._failure_count = 0
+        self._disconnected = False
         self._recovery_attempt_count = 0
         self._response_grace = None
+        self._first_packet_started_at = time.monotonic()
+        self._first_packet_seen = False
 
     # ------------------------------------------------------------------ #
     # Thread lifecycle                                                   #
@@ -814,6 +831,85 @@ class StreamWatcher (threading.Thread):
         self._failure_count = 0
         self._recovery_attempt_count = 0
         self._response_grace = None
+        self._first_packet_started_at = time.monotonic()
+        self._first_packet_seen = False
+
+    def _maybe_rearm_from_needs_action(self):
+        """
+        Decide whether a stream paused in needs_action should resume recovery.
+
+        Only the automate policy re-arms; recommend mode always waits for an
+        explicit control-plane command.
+
+        needs_action is only ever reached with the port present and openable
+        (restarts actually ran, but the worker would not verify), so:
+        - Port still present -> recovery is genuinely exhausted against a live
+          device; hold and wait for a command rather than thrashing restarts.
+        - Port absent -> a physical disconnect. Prioritize self-recovery: hand
+          straight back to the waiting_for_port loop, which already polls for
+          the port's return and restarts once it can be reopened. This avoids
+          gating on a two-tick "saw it leave then saw it come back" race that
+          can miss a fast unplug/replug and strand the stream in needs_action.
+
+        Output: bool (True | False).
+        - True: recovery re-armed; the caller should resume the reconnect loop.
+        - False: stay paused in needs_action.
+        """
+        if self._recovery_policy != "automate":
+            return False
+
+        try:
+            port_present = self._monitor.is_stream_port_present(self.stream_index)
+        except Exception:
+            return False
+
+        if port_present:
+            return False
+
+        self._rearm_recovery()
+        return True
+
+    def _rearm_recovery(self):
+        """
+        Reset recovery state so the waiting_for_port loop can self-recover.
+
+        Output: None.
+        """
+        self._recovery_attempt_count = 0     # a disconnect starts a fresh episode
+        self._response_grace = None
+        self._disconnected = True
+        self._monitor.set_lifecycle_state(
+            self.stream_index,
+            "running",
+            reason="port_absent",
+            requested_by="watchdog",
+            command="auto_rearm",
+        )
+
+    @staticmethod
+    def _is_port_lock_error(error_text):
+        """
+        Return True when a restart error means the serial port was still locked.
+
+        A restart that fails because the port could not be opened
+        (PermissionError / "Access is denied" / device busy) is the same
+        situation as waiting_for_port_release, not a genuine recovery attempt.
+
+        Output: bool (True | False).
+        """
+        if not error_text:
+            return False
+        text = str(error_text).lower()
+        return any(
+            marker in text
+            for marker in (
+                "permissionerror",
+                "access is denied",
+                "could not open port",
+                "resource busy",
+                "device or resource busy",
+            )
+        )
 
     # ------------------------------------------------------------------ #
     # Thread's 2 action paths: Detect & get info or recover disconnected  #
@@ -916,6 +1012,11 @@ class StreamWatcher (threading.Thread):
                     lifecycle_state=lifecycle_state,
                 )
             if lifecycle_state.get("state") == "needs_action":
+                # "Hardware came back" should resume automatic recovery without a
+                # manual control-plane command. Only re-arm under the automate
+                # policy; recommend mode always waits for an explicit command.
+                if self._maybe_rearm_from_needs_action():
+                    return self._try_reconnect()
                 return self._build_waiting_for_command_result(
                     action="needs_action",
                     failure_reason="needs_action",
@@ -987,6 +1088,9 @@ class StreamWatcher (threading.Thread):
         stream_status = m.get_stream_status(self.stream_index)
         heartbeat= self._get_heartbeat()
         base = {"stream_index":self.stream_index, "stream_status": stream_status, "heartbeat":heartbeat}
+
+        if heartbeat.get("status") in {"fresh", "stale"} or heartbeat.get("packet_count", 0):
+            self._first_packet_seen = True
         
         #Checking if the stream worker is doing good
         failure_reason = self._classify_stream_failure(stream_status, heartbeat) 
@@ -999,6 +1103,24 @@ class StreamWatcher (threading.Thread):
                 "failure_reason": None,
                 "failure_count": 0,
             }
+
+        if failure_reason == "data_never_started" and not self._first_packet_seen:
+            elapsed = time.monotonic() - self._first_packet_started_at
+            remaining = max(0.0, self._first_packet_timeout_sec - elapsed)
+            if remaining > 0:
+                self._failure_count = 0
+                return {
+                    **base,
+                    "ok": False,
+                    "action": "none",
+                    "failure_reason": "first_packet_pending",
+                    "failure_count": 0,
+                    "startup": {
+                        "elapsed_sec": elapsed,
+                        "timeout_sec": self._first_packet_timeout_sec,
+                        "remaining_sec": remaining,
+                    },
+                }
 
         #If the stream worker is in unknown-state, counting up for 3 times
         self._failure_count += 1
@@ -1046,6 +1168,7 @@ class StreamWatcher (threading.Thread):
                 "ok": False,
                 "action": "needs_action",
                 "failure_reason": "needs_action",
+                "initiating_failure_reason": failure_reason,
                 "failure_count": self._failure_count,
                 "recovery_policy": self._recovery_policy,
                 "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
@@ -1090,6 +1213,22 @@ class StreamWatcher (threading.Thread):
         recovery_attempt = self._recovery_attempt()
         self._recovery_attempt_count = 0
         self._response_grace = None
+        heartbeat_results = (
+            heartbeat_verify.get("results", [])
+            if isinstance(heartbeat_verify, dict)
+            else []
+        )
+        if any(
+            result.get("status") in {"fresh", "stale"}
+            or result.get("packet_count", 0)
+            for result in heartbeat_results
+            if isinstance(result, dict)
+        ):
+            self._first_packet_seen = True
+        elif not self._first_packet_seen:
+            # A PING can verify the worker before sample data starts. Give that
+            # replacement worker its own first-packet startup window.
+            self._first_packet_started_at = time.monotonic()
         self._monitor.set_lifecycle_state(
             self.stream_index,
             "running",
@@ -1130,6 +1269,7 @@ class StreamWatcher (threading.Thread):
             "ok": False,
             "action": "needs_action",
             "failure_reason": "needs_action",
+            "initiating_failure_reason": reason,
             "recovery_policy": self._recovery_policy,
             "recovery_attempt": self._recovery_attempt(),
             "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
@@ -1343,6 +1483,9 @@ class StreamWatcher (threading.Thread):
 
         lifecycle_state = m.get_lifecycle_state(self.stream_index)
         if self._recovery_policy == "recommend" or lifecycle_state.get("state") == "needs_action":
+            initiating_failure_reason = (
+                lifecycle_state.get("reason") or "waiting_for_explicit_command"
+            )
             if lifecycle_state.get("state") != "needs_action":
                 lifecycle_state = m.set_lifecycle_state(
                     self.stream_index,
@@ -1356,6 +1499,7 @@ class StreamWatcher (threading.Thread):
                 "ok": False,
                 "action": "needs_action",
                 "failure_reason": "needs_action",
+                "initiating_failure_reason": initiating_failure_reason,
                 "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
                 "lifecycle_state": lifecycle_state,
             }
@@ -1391,6 +1535,10 @@ class StreamWatcher (threading.Thread):
                 }
             #if port is unavailable, wait
             if not port_present:
+                # Port vanished again -> a new unplug/replug sub-episode. Refresh
+                # the auto-restart budget so the next replug gets a full set of
+                # attempts instead of inheriting a half-spent count.
+                self._recovery_attempt_count = 0
                 return {
                     **base,
                     "ok": False,
@@ -1409,6 +1557,21 @@ class StreamWatcher (threading.Thread):
             self._recovery_attempt_count += 1
             restart_result = m.restart_one_stream(self.stream_index)
             if not restart_result["ok"]: #If restart status is bad
+                # A restart that fails because the port is still locked
+                # (PermissionError / "Access is denied") means the port was not
+                # truly released -- the openable probe passed inside the settle
+                # window. Treat it exactly like waiting_for_port_release: refund
+                # the attempt and back off, so a flaky port lock never drains the
+                # auto-restart budget.
+                if self._is_port_lock_error(restart_result.get("error")):
+                    self._recovery_attempt_count -= 1
+                    return {
+                        **base,
+                        "ok": False,
+                        "action": "waiting_for_port_release",
+                        "failure_reason": "waiting_for_port_release",
+                        "restart_result": restart_result,
+                    }
                 if self._recovery_attempt_count >= self._max_auto_restart_attempts:
                     return self._transition_to_needs_action(
                         base,
@@ -1459,7 +1622,7 @@ class StreamWatcher (threading.Thread):
             }
 
     def _build_waiting_for_command_result(self, *, action, failure_reason, lifecycle_state):
-        return {
+        result = {
             "stream_index": self.stream_index,
             "ok": False,
             "action": action,
@@ -1471,6 +1634,9 @@ class StreamWatcher (threading.Thread):
             "recommended_commands": ["restart_stream", "restart_session", "start"],
             "lifecycle_state": lifecycle_state,
         }
+        if action == "needs_action":
+            result["initiating_failure_reason"] = lifecycle_state.get("reason")
+        return result
     
     # ------------------------------------------------------------------ #
     # Signal readers (need self._monitor -> instance methods)            #
@@ -1730,6 +1896,8 @@ class StreamWatcher (threading.Thread):
         }
         heartbeat = action_result.get("heartbeat") or self._get_heartbeat()
         failure_reason = action_result.get("failure_reason")
+        initiating_failure_reason = action_result.get("initiating_failure_reason")
+        startup = action_result.get("startup")
         failure_count = action_result.get("failure_count", 0)
         error = self._extract_action_error(action_result)
 
@@ -1743,11 +1911,15 @@ class StreamWatcher (threading.Thread):
                 "last_error_at": checked_at if error is not None else None,
             },
         }
+        if isinstance(startup, dict):
+            signals["startup"] = startup
 
         assessment = self._assess_stream(
             worker=worker,
             heartbeat=heartbeat,
             failure_reason=failure_reason,
+            initiating_failure_reason=initiating_failure_reason,
+            startup=startup,
             count=failure_count,
             threshold=self._failure_threshold,
         )
@@ -1762,13 +1934,24 @@ class StreamWatcher (threading.Thread):
             "port_owner": self._safe_get_port_owner(),
             "checked_at": checked_at,
             "rule": assessment["rule"],
+            "failure_reason": failure_reason,
+            "initiating_failure_reason": initiating_failure_reason,
             "action": self._build_action_signal(action_result),
             "signals": signals,
         }
         report["recovery_event"] = self._build_recovery_event(report, action_result)
         return report
     
-    def _assess_stream(self, worker, heartbeat, failure_reason, count, threshold):
+    def _assess_stream(
+        self,
+        worker,
+        heartbeat,
+        failure_reason,
+        initiating_failure_reason,
+        startup,
+        count,
+        threshold,
+    ):
         """
         Convert this pass's signals and failure count into a health verdict.
 
@@ -1811,6 +1994,22 @@ class StreamWatcher (threading.Thread):
                 "summary": "Worker is alive and heartbeat is fresh.",
             }
 
+        # An absent serial port is a distinct, human-meaningful condition: the
+        # hardware is physically not connected. Surface it as its own rule (not
+        # the generic "reconnecting") so the report can tell an operator the
+        # port is unplugged. It stays "suspect" because automate keeps polling
+        # for the port to return; recommend never reaches here (it pauses in
+        # needs_action instead).
+        if failure_reason == "waiting_for_port":
+            return {
+                "stream_health": "suspect",
+                "rule": "waiting_for_port",
+                "summary": (
+                    "Serial port is not connected; waiting for it to return. "
+                    f"Failure count is {count}/{threshold}."
+                ),
+            }
+
         # Recovery states come before the worker-not-alive check: the worker is
         # intentionally stopped while reconnecting, so it's "suspect" (retrying),
         # not "unhealthy".
@@ -1824,13 +2023,28 @@ class StreamWatcher (threading.Thread):
                 ),
             }
 
+        if failure_reason == "first_packet_pending":
+            remaining = startup.get("remaining_sec") if isinstance(startup, dict) else None
+            remaining_text = f"{remaining:.1f}s" if isinstance(remaining, (int, float)) else "unknown"
+            return {
+                "stream_health": "suspect",
+                "rule": "first_packet_startup_grace",
+                "summary": f"Waiting for the first data packet; startup grace has {remaining_text} remaining.",
+            }
+
         if failure_reason == "needs_action":
             return {
                 "stream_health": "unhealthy",
                 "rule": "needs_action",
                 "summary": (
-                    "Automatic recovery is paused; stream is stopped and "
-                    "waiting for an explicit control-plane command."
+                    "Automatic recovery is paused"
+                    + (
+                        f" after {initiating_failure_reason}"
+                        if initiating_failure_reason
+                        else ""
+                    )
+                    + "; stream is stopped and waiting for an explicit "
+                    "control-plane command."
                 ),
             }
 
@@ -1977,6 +2191,7 @@ class StreamWatcher (threading.Thread):
             "status": status,
             "stream_health": report.get("stream_health"),
             "failure_reason": action_result.get("failure_reason"),
+            "initiating_failure_reason": action_result.get("initiating_failure_reason"),
             "failure_count": report.get("signals", {}).get("failure", {}).get("count"),
             "recovery_policy": action_result.get("recovery_policy", "recommend"),
             "requested_by": detail.get("requested_by"),
