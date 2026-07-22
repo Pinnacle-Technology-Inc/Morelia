@@ -12,7 +12,7 @@ from app.models.device_registration import DeviceRegistration
 from app.repositories.device_registrations import DeviceRegistrationRepository
 
 _repository = DeviceRegistrationRepository()
-_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{5}$")
+_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{4,8}$")
 
 
 def _normalize_nickname(nickname: str) -> str:
