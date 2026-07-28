@@ -1,17 +1,57 @@
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref, watch } from "vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { incidents } from "../data";
+import { acknowledgeIncident, loadGaps, loadIncidents } from "../history-api";
 
 const activeTab = ref("incidents");
+const rows = ref([]);
+const pageState = ref("loading");
+const pageError = ref("");
+const nextCursor = ref(null);
+const hasMore = ref(false);
+const status = ref("");
+const confidence = ref("");
+const pageSize = 50;
 const tabs = [
   { id: "incidents", label: "Incidents" },
   { id: "gaps", label: "Data Gaps" },
   { id: "history", label: "Recovery History" },
 ];
+
+async function loadPage(cursor = null) {
+  if (activeTab.value === "history") return;
+  pageState.value = "loading";
+  pageError.value = "";
+  try {
+    const page = activeTab.value === "incidents"
+      ? await loadIncidents({ status: status.value || undefined, pageSize, cursor })
+      : await loadGaps({ confidence: confidence.value || undefined, pageSize, cursor });
+    rows.value = Array.isArray(page.items) ? page.items : [];
+    nextCursor.value = page.next_cursor ?? null;
+    hasMore.value = page.has_more === true;
+    pageState.value = "live";
+  } catch (error) {
+    rows.value = [];
+    nextCursor.value = null;
+    hasMore.value = false;
+    pageState.value = "unavailable";
+    pageError.value = error instanceof Error ? error.message : "History is unavailable.";
+  }
+}
+
+async function acknowledge(incident) {
+  const note = window.prompt("Acknowledgement note (optional):", "");
+  if (note === null) return;
+  await acknowledgeIncident(incident.incident_id, { acknowledgedBy: "operator", note });
+  await loadPage();
+}
+
+watch(activeTab, () => loadPage());
+watch([status, confidence], () => loadPage());
+onMounted(() => loadPage());
 </script>
 
 <template>
@@ -23,27 +63,29 @@ const tabs = [
     />
     <BaseCard class="workspace-card">
       <TabBar :tabs="tabs" :active="activeTab" @change="activeTab = $event" />
+      <div v-if="activeTab !== 'history'" class="detail-tab-actions">
+        <label>Filter <select v-if="activeTab === 'incidents'" v-model="status"><option value="">All states</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option><option value="resolved">Resolved</option></select><select v-else v-model="confidence"><option value="">All confidence</option><option value="confirmed">Confirmed</option><option value="estimated">Estimated</option><option value="uncertain">Uncertain</option></select></label>
+      </div>
+      <p v-if="pageState === 'loading'">Loading history…</p>
+      <p v-else-if="pageState === 'unavailable'" class="detail-alert">{{ pageError }}</p>
+      <p v-else-if="activeTab === 'history'" class="detail-alert">Recovery history is unavailable: no backend contract is defined yet.</p>
       <div class="table-wrap">
         <table v-if="activeTab === 'incidents'" class="data-table">
           <thead><tr><th>Time</th><th>Session</th><th>Stream</th><th>Reason</th><th>Policy</th><th>Outcome</th><th>State</th><th /></tr></thead>
           <tbody>
-            <tr v-for="incident in incidents" :key="incident.id">
-              <td><code>{{ incident.time }}</code></td><td><strong>{{ incident.sessionName }}</strong></td>
-              <td><code>{{ incident.stream }}</code></td><td>{{ incident.reason }}</td><td>Recommend</td>
-              <td><StatusBadge compact :value="incident.outcome" /></td>
-              <td>{{ incident.resolved ? "Resolved" : "Open" }}</td>
-              <td><div class="row-actions"><button class="table-action" type="button">Open</button><button v-if="!incident.resolved" class="table-action" type="button">Acknowledge</button></div></td>
+            <tr v-for="incident in rows" :key="incident.incident_id">
+              <td><code>{{ incident.opened_at ?? "—" }}</code></td><td><strong>Session {{ incident.session_id }}</strong></td>
+              <td><code>{{ incident.device_id ?? "—" }}</code></td><td>{{ incident.reason }}</td><td>{{ incident.policy ?? "—" }}</td>
+              <td><StatusBadge compact :value="incident.status" /></td><td>{{ incident.status }}</td>
+              <td><button v-if="incident.status === 'open'" class="table-action" type="button" @click="acknowledge(incident)">Acknowledge</button></td>
             </tr>
           </tbody>
         </table>
         <table v-else-if="activeTab === 'gaps'" class="data-table">
           <thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Session</th><th>Stream</th><th>Cause</th><th>Incident</th><th>Outcome</th><th /></tr></thead>
-          <tbody><tr><td><code>07:10:04</code></td><td><code>07:10:08</code></td><td>4 s</td><td>Cortical Array Session 07</td><td>M32-007</td><td>NFS mount stall</td><td>INC-i002</td><td>Recovered</td><td><button class="table-action" type="button">Add Note</button></td></tr></tbody>
+          <tbody><tr v-for="gap in rows" :key="gap.gap_id"><td><code>{{ gap.created_at ?? "—" }}</code></td><td>Session {{ gap.session_id }}</td><td><code>{{ gap.device_id ?? "—" }}</code></td><td>—</td><td>{{ gap.reason }}</td><td>{{ gap.incident_id ?? "—" }}</td><td>{{ gap.confidence }}</td><td /></tr></tbody>
         </table>
-        <table v-else class="data-table">
-          <thead><tr><th>Time</th><th>Session</th><th>Stream</th><th>Phase</th><th>Action</th><th>Verification</th><th>Outcome</th><th>Policy</th></tr></thead>
-          <tbody><tr><td><code>07:11</code></td><td>Cortical Array Session 07</td><td>M32-007</td><td>Verify</td><td>Reconnect</td><td>3/3 passed</td><td>Recovered</td><td>Recommend</td></tr></tbody>
-        </table>
+        <div v-if="activeTab !== 'history' && pageState === 'live' && hasMore"><button type="button" class="table-action" @click="loadPage(nextCursor)">Next page</button></div>
       </div>
     </BaseCard>
   </div>

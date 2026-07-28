@@ -117,6 +117,7 @@ def register_error_handlers(app) -> None:
         WatchdogTimeoutError,
         WatchdogUnavailableError,
     )
+    from app.services.experiments import ExperimentArchived, ExperimentNotFound
 
     app.register_error_handler(HTTPException, _problem_response)
 
@@ -154,6 +155,8 @@ def register_error_handlers(app) -> None:
         ))
 
     app.register_error_handler(SessionNotFound,             _domain(404, "session_not_found"))
+    app.register_error_handler(ExperimentNotFound,          _domain(404, "experiment_not_found"))
+    app.register_error_handler(ExperimentArchived,          _domain(409, "experiment_archived"))
     app.register_error_handler(
         SessionTemplateNotFound,
         _domain(404, "session_template_not_found"),

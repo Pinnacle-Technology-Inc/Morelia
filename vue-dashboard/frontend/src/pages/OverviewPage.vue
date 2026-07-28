@@ -1,23 +1,35 @@
 <script setup>
+import { computed } from "vue";
 import { ChevronDown } from "@lucide/vue";
 import ActiveSessionCard from "../components/ActiveSessionCard.vue";
 import BaseCard from "../components/BaseCard.vue";
 import OverviewSidebar from "../components/OverviewSidebar.vue";
 import OverviewSidebarSplitter from "../components/OverviewSidebarSplitter.vue";
 import SectionTitle from "../components/SectionTitle.vue";
-import StatusBadge from "../components/StatusBadge.vue";
-import { deviceFlows, incidents, sessions } from "../data";
+import emptySessionsArt from "../assets/overview-empty-mouse.png";
 import {
   DEFAULT_VISIBLE_ACTIVE_SESSIONS,
   useOverviewLayout,
 } from "../composables/useOverviewLayout";
 import { summarizeAttentionSessions } from "../session-utils";
 
-defineEmits(["open-session", "view-attention"]);
+const props = defineProps({
+  sessions: { type: Array, required: true },
+  catalogState: { type: String, default: "live" },
+  loadError: { type: String, default: "" },
+});
 
-const attention = summarizeAttentionSessions(sessions);
-const activeSessions = sessions.filter((session) => session.lifecycle === "Active");
-const scheduled = sessions.filter((session) => session.lifecycle === "Scheduled");
+defineEmits(["open-session", "view-attention", "create-session"]);
+
+const attention = computed(() => summarizeAttentionSessions(props.sessions));
+const activeSessions = computed(() => props.sessions.filter((session) => session.lifecycle === "Active"));
+const scheduled = computed(() => props.sessions.filter((session) => session.lifecycle === "Scheduled"));
+const deviceFlows = computed(() => props.sessions.flatMap((session) =>
+  (Array.isArray(session.deviceFlows) ? session.deviceFlows : []).map((flow) => ({
+    ...flow,
+    sessionId: session.id,
+  })),
+));
 let storage = null;
 try {
   storage = window.localStorage;
@@ -49,6 +61,13 @@ const {
 
 <template>
   <div class="page page--overview">
+    <div v-if="catalogState === 'unavailable'" class="detail-alert" role="alert">
+      <span>Backend unavailable. No live sessions are available. {{ loadError }}</span>
+      <button type="button" @click="$emit('view-attention')">Open Sessions</button>
+    </div>
+    <div v-else-if="catalogState === 'degraded'" class="detail-alert" role="alert">
+      <span>Partial session data: overview details are unavailable. {{ loadError }}</span>
+    </div>
 
     <div
       class="overview-columns"
@@ -62,7 +81,34 @@ const {
             Drag a session by its handle or use the arrow keys while the handle is focused.
           </p>
           <p class="visually-hidden" aria-live="polite">{{ reorderAnnouncement }}</p>
-          <div class="session-card-grid">
+          <div v-if="catalogState === 'loading'" class="empty-state">Loading live sessions…</div>
+          <div v-else-if="catalogState === 'unavailable'" class="empty-state empty-state--welcome">
+            <img
+              class="empty-state__art"
+              :src="emptySessionsArt"
+              alt=""
+              width="220"
+              height="220"
+            />
+            <h3>No live sessions right now</h3>
+            <p>The backend is unreachable, so session cards cannot load yet.</p>
+            <button type="button" class="button button--secondary" @click="$emit('view-attention')">
+              Open Sessions
+            </button>
+          </div>
+          <div v-else-if="!orderedActiveSessions.length" class="empty-state empty-state--welcome">
+            <img
+              class="empty-state__art"
+              :src="emptySessionsArt"
+              alt=""
+              width="220"
+              height="220"
+            />
+            <h3>No sessions are active</h3>
+            <p>Ready when you are — create a new session to start collecting.</p>
+          
+          </div>
+          <div v-else class="session-card-grid">
             <div
               v-for="session in visibleActiveSessions"
               :key="session.id"
@@ -128,22 +174,44 @@ const {
 
     <section>
       <SectionTitle title="Recent Incidents & Recoveries" />
-      <BaseCard>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Time</th><th>Session</th><th>Stream</th><th>Reason</th><th>Outcome</th></tr></thead>
-            <tbody>
-              <tr v-for="incident in incidents" :key="incident.id">
-                <td><code>{{ incident.time }}</code></td>
-                <td><button class="table-action" type="button" @click="$emit('open-session', incident.sessionId)">{{ incident.sessionName }}</button></td>
-                <td><code>{{ incident.stream }}</code></td>
-                <td>{{ incident.reason }}</td>
-                <td><StatusBadge compact :value="incident.outcome" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </BaseCard>
+      <BaseCard><div class="empty-state">Recent incidents and recoveries are unavailable until the live history contract is wired.</div></BaseCard>
     </section>
   </div>
 </template>
+
+<style scoped>
+.empty-state--welcome {
+  gap: var(--space-3);
+  padding: var(--space-6) var(--space-4);
+  border: 1px dashed var(--border-card);
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(circle at 50% 18%, color-mix(in srgb, var(--sage-50) 88%, transparent), transparent 58%),
+    var(--surface-card);
+}
+
+.empty-state__art {
+  display: block;
+  width: min(220px, 56vw);
+  height: auto;
+  margin-bottom: var(--space-1);
+  user-select: none;
+  pointer-events: none;
+}
+
+.empty-state--welcome h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
+}
+
+.empty-state--welcome p {
+  max-width: 28rem;
+  margin: 0;
+  line-height: var(--lh-body);
+}
+
+.empty-state--welcome .button {
+  margin-top: var(--space-2);
+}
+</style>

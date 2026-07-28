@@ -7,11 +7,16 @@ modules importing each other.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
 from flask import current_app
 
 _MAX_DEDUP_ATTEMPTS = 500
+
+
+class InvalidFolderName(ValueError):
+    """A "New folder" name was a path rather than a single segment."""
 
 
 def output_root() -> Path:
@@ -64,6 +69,91 @@ def path_is_claimed(location: str) -> bool:
     means this check and create()'s actual behavior never disagree.
     """
     return Path(location).exists()
+
+
+def host_roots() -> list[dict]:
+    """Top-level filesystem roots to start browsing from.
+
+    Windows has no single root, so a picker there has to offer the drives;
+    POSIX has exactly one. Unreadable drives (an empty card reader, a
+    disconnected network mapping) are dropped rather than offered and then
+    failing on click.
+    """
+    if os.name != "nt":
+        return [{"name": "/", "path": "/"}]
+    letters = os.listdrives() if hasattr(os, "listdrives") else [
+        f"{letter}:\\" for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    ]
+    roots = []
+    for drive in letters:
+        try:
+            if Path(drive).is_dir():
+                roots.append({"name": drive.rstrip("\\/"), "path": drive})
+        except OSError:
+            continue
+    return roots
+
+
+def resolve_host_path(path: str | None) -> Path:
+    """Absolute path the picker is pointing at; falls back to the output root.
+
+    The picker browses the whole machine the daemon runs on, so there is no
+    containment rule to enforce here — the API is bound to loopback and that
+    binding is the boundary. What this DOES do is normalize: a blank path means
+    "start where sinks normally go", which is the configured OUTPUT_DIR.
+    """
+    cleaned = (path or "").strip()
+    if not cleaned:
+        return output_root()
+    return Path(cleaned)
+
+
+def list_directories(path: str | None = None) -> dict:
+    """List the immediate subdirectories of an absolute path on this host.
+
+    Directories only: this picker chooses a destination folder, and listing
+    files would surface other sessions' recordings without giving the operator
+    anything to click. Entries whose type can't be read (permission denied, a
+    broken link, a disconnected mount) are skipped so one bad child never
+    fails the whole listing.
+    """
+    target = resolve_host_path(path)
+    entries = []
+    if target.is_dir():
+        for child in sorted(target.iterdir(), key=lambda item: item.name.lower()):
+            try:
+                if child.is_dir():
+                    entries.append({"name": child.name, "path": str(child)})
+            except OSError:
+                continue
+    resolved_parent = target.parent
+    return {
+        "path": str(target),
+        # At a filesystem root, Path.parent is the root itself — report None so
+        # the UI can offer the drive list instead of a no-op "Up".
+        "parent": None if resolved_parent == target else str(resolved_parent),
+        "name": target.name or str(target),
+        "separator": os.sep,
+        "exists": target.is_dir(),
+        "writable": target.is_dir() and os.access(target, os.W_OK),
+        "directories": entries,
+    }
+
+
+def create_directory(path: str | None, name: str) -> dict:
+    """Create one new subdirectory under ``path`` and return its listing.
+
+    ``name`` is a single path segment, never a path: separators would turn one
+    create into an arbitrary nested mkdir somewhere the operator never saw in
+    the picker, which is exactly the kind of surprise a "New folder" button
+    should not be capable of.
+    """
+    cleaned = name.strip()
+    if not cleaned or cleaned in {".", ".."} or "/" in cleaned or "\\" in cleaned:
+        raise InvalidFolderName(f"{name!r} is not a valid folder name.")
+    target = resolve_host_path(path) / cleaned
+    target.mkdir(parents=True, exist_ok=True)
+    return list_directories(str(target))
 
 
 def next_available_path(path: Path, *, session_id: int | None = None) -> Path:

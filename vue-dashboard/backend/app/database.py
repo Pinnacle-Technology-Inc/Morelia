@@ -23,6 +23,7 @@ MODEL_MODULES = (
     "app.models.device_registration",
     "app.models.device_seen",
     "app.models.device_template",
+    "app.models.experiment",
     "app.models.incident",
     "app.models.operation",
     "app.models.output_file",

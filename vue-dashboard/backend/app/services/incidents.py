@@ -30,6 +30,10 @@ is an annotation in between — it does not itself resolve.
 
 from __future__ import annotations
 
+import base64
+import json
+from datetime import datetime
+
 from app.database import db
 from app.domain.enums import IncidentStatus, LinkStatus, StreamStatus
 from app.domain.errors import IncidentNotFound
@@ -419,6 +423,54 @@ def evaluate_operation_success(operation: Operation) -> None:
 
 def list_for_session(session_id: int, *, status: IncidentStatus | None = None) -> list[Incident]:
     return _repo.list_for_session(session_id, status=status)
+
+
+def _encode_cursor(*, session_id, status, row: Incident) -> str:
+    """Opaque bookmark for the next page: last row position + the filters used."""
+    payload = {
+        "v": 1,
+        "k": "incidents",
+        "t": row.opened_at.isoformat() if row.opened_at else None,
+        "id": row.id,
+        "session": session_id,
+        "status": status.value if isinstance(status, IncidentStatus) else status,
+    }
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str, *, session_id, status) -> tuple[datetime | None, int]:
+    """Unpack a cursor into (opened_at, id); reject ones from a different filter set."""
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded).decode())
+        if payload.get("v") != 1 or payload.get("k") != "incidents":
+            raise ValueError
+        # Cursor is bound to the query that produced it — don't resume under different filters.
+        if payload.get("session") != session_id or payload.get("status") != (
+            status.value if isinstance(status, IncidentStatus) else status
+        ):
+            raise ValueError
+        row_id = int(payload["id"])
+        timestamp = payload.get("t")
+        return (datetime.fromisoformat(timestamp) if timestamp else None, row_id)
+    except (TypeError, ValueError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("invalid incident cursor") from exc
+
+
+def list_page(*, session_id: int | None, status: IncidentStatus | None, page_size: int, cursor: str | None) -> dict:
+    """Return one page of incidents; pass next_cursor back as cursor to continue."""
+    after = _decode_cursor(cursor, session_id=session_id, status=status) if cursor else None
+    rows, has_more = _repo.list_page(session_id=session_id, status=status, page_size=page_size, after=after)
+    return {
+        "items": rows,
+        "has_more": has_more,
+        "next_cursor": (
+            _encode_cursor(session_id=session_id, status=status, row=rows[-1])
+            if has_more and rows
+            else None
+        ),
+    }
 
 
 def get(incident_id: str) -> Incident:

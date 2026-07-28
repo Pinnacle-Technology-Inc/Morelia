@@ -21,8 +21,8 @@ from app.domain.enums import OperationState, SessionStatus
 from app.domain.errors import CommandInFlight, EmptySession, InvalidTransition, SessionNotFound
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
-from app.repositories.sessions import SessionRepository
-from app.services import device_configs, manifests, output_finalization
+from app.repositories.sessions import SessionRepository, default_session_name
+from app.services import device_configs, experiments, manifests, output_finalization
 from app.services.operations import (
     OperationConflict,
     create_operation,
@@ -57,7 +57,7 @@ def _active_watchdog_id(dataflow_id: str) -> str | None:
     return ownership.watchdog_id if ownership is not None else None
 
 # Statuses from which a session has NOT yet started — still safe to delete or start.
-_PRE_START = {SessionStatus.DRAFT, SessionStatus.SCHEDULED}
+_PRE_START = {SessionStatus.DRAFT, SessionStatus.SCHEDULED, SessionStatus.STOPPED}
 _STOPPABLE = {SessionStatus.ACTIVE}
 # Recovery only makes sense against a live dataflow.
 _RECOVERABLE = {SessionStatus.ACTIVE}
@@ -67,6 +67,7 @@ RECOVER_ACTIONS = frozenset({"reconnect", "restart", "reset-stream"})
 
 def create(data: dict) -> Session:
     canonical = dict(data)
+    experiments.ensure_assignable(canonical.get("experiment_id"))
     flows = canonical.get("device_flows") or []
     if flows:
         canonical["device_flows"] = validate_entries(flows)
@@ -84,6 +85,17 @@ def get_by_name(name: str) -> Session | None:
     return _repo.get_by_name(name)
 
 
+def suggest_name() -> str:
+    """The name create() would mint for a session submitted without one.
+
+    A preview, not a reservation: it reads peek_next_id(), so a concurrent
+    create can make it stale. Intended for display as a form placeholder, where
+    being wrong costs nothing — the authoritative name is still assigned by
+    create() from the real auto-increment id.
+    """
+    return default_session_name(_repo.peek_next_id())
+
+
 def list_all() -> list[Session]:
     return _repo.all()
 
@@ -93,6 +105,62 @@ def delete(session_id: int) -> None:
     if session.status not in _PRE_START:
         raise InvalidTransition(session.status)
     _repo.delete(session_id)
+
+
+def complete(session_id: int) -> Session:
+    """Explicitly archive a resource-free stopped session.
+
+    Completion is its own durable dataflow operation. It never calls Stop and
+    therefore cannot infer terminal history from a prior stop operation.
+    """
+    session = get(session_id)
+    if session.command_in_flight:
+        raise CommandInFlight(session_id)
+    if session.status is not SessionStatus.STOPPED:
+        raise InvalidTransition(session.status)
+
+    dataflow_id = session.dataflow_id or uuid4().hex
+    request_id = _request_id("completing")
+    try:
+        operation = create_operation(
+            session_id=session_id,
+            dataflow_id=dataflow_id,
+            command="complete",
+            request_key=request_id,
+            request_id=request_id,
+        )
+    except OperationConflict as exc:
+        raise CommandInFlight(session_id, code=exc.code, details=exc.details) from exc
+
+    # A retried request with the same durable request key is idempotent after
+    # successful completion; it must not create a second terminal operation.
+    if operation.state is OperationState.SUCCEEDED:
+        return session
+    if operation.state is not OperationState.QUEUED:
+        raise CommandInFlight(session_id)
+
+    transition_operation(operation.operation_id, OperationState.CLAIMED)
+    try:
+        with transaction():
+            if not _repo.try_acquire_in_flight_lock(session_id):
+                raise CommandInFlight(session_id)
+            session.command_in_flight = True
+            session.command_id = operation.command_id
+            session.status = SessionStatus.COMPLETED
+            session.command_in_flight = False
+        transition_operation(operation.operation_id, OperationState.DISPATCHED)
+        transition_operation(operation.operation_id, OperationState.SUCCEEDED)
+    except Exception as exc:
+        with transaction():
+            session.command_in_flight = False
+        transition_operation(
+            operation.operation_id,
+            OperationState.FAILED,
+            error_code=type(exc).__name__,
+            error_message=str(exc),
+        )
+        raise
+    return session
 
 
 def start(session_id: int, watchdog) -> Session:
@@ -126,8 +194,10 @@ def start(session_id: int, watchdog) -> Session:
     if not session.device_flows:
         raise EmptySession(session_id)
 
-    dataflow_id = session.dataflow_id or uuid4().hex
-    watchdog_id = session.watchdog_id or uuid4().hex
+    # A stopped session starts a new generation. Never reuse the prior
+    # dataflow/watchdog identity or append to its concluded outputs.
+    dataflow_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.dataflow_id or uuid4().hex)
+    watchdog_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.watchdog_id or uuid4().hex)
     request_id = get_contextvars().get("request_id")
     if not isinstance(request_id, str) or not request_id:
         raise RuntimeError("request_id must be bound before starting a session")
@@ -242,8 +312,8 @@ def start_managed(
         _apply_sink_overrides(session, sink_overrides)
 
     original_status = session.status
-    dataflow_id = session.dataflow_id or uuid4().hex
-    watchdog_id = session.watchdog_id or uuid4().hex
+    dataflow_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.dataflow_id or uuid4().hex)
+    watchdog_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.watchdog_id or uuid4().hex)
     request_id = _request_id("starting")
     manifest = manifests.resolve(session_id, dataflow_id=dataflow_id)
 
@@ -492,7 +562,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
             _release_session_device_configs(session)
             with transaction():
                 session.command_in_flight = False
-                session.status = SessionStatus.COMPLETED
+                session.status = SessionStatus.STOPPED
                 session.runtime_port = None
                 session.runtime_token = None
             transition_operation(
@@ -517,7 +587,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
     transition_operation(operation.operation_id, OperationState.DISPATCHED)
     transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
-    # Clean user stop is a COMPLETION BOUNDARY: mark each logical output's
+    # Clean user stop is a generation boundary: finalize each logical output's
     # acquisition complete and enqueue any EDF/PVFS merge WITHOUT waiting for it
     # (packet 29). Best-effort — a scheduling failure leaves the outputs in a
     # retryable, already-completed state and must never block the stop or trap
@@ -528,7 +598,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
 
     with transaction():
         session.command_in_flight = False
-        session.status = SessionStatus.COMPLETED
+        session.status = SessionStatus.STOPPED
         session.runtime_port = None
         session.runtime_token = None
 

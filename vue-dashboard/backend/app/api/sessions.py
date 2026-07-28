@@ -13,6 +13,7 @@ from app.api.schemas import (
     ExportSessionTemplateSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
+    SessionNameSuggestionSchema,
     SessionSchema,
     SessionStatusSnapshotSchema,
     SessionTemplateSchema,
@@ -77,6 +78,15 @@ def create_session(new_data):
 @blp.response(200, SessionSchema(many=True))
 def list_sessions():
     return session_service.list_all()
+
+
+@blp.route("/name-suggestion", methods=["GET"])
+@blp.response(200, SessionNameSuggestionSchema)
+def session_name_suggestion():
+    """Preview the name POST / would mint for a session created without one.
+
+    """
+    return {"name": session_service.suggest_name()}
 
 
 @blp.route("/overview", methods=["GET"])
@@ -153,6 +163,13 @@ def recover_session(payload, session_id):
         payload["action"],
         current_app.extensions["watchdog_adapter"],
     )
+
+
+@blp.route("/<int:session_id>/complete", methods=["POST"])
+@blp.response(202, SessionSchema)
+def complete_session(session_id):
+    _require_lifecycle_commands_enabled()
+    return session_service.complete(session_id)
 
 
 @blp.route("/<int:session_id>/template-export", methods=["POST"])

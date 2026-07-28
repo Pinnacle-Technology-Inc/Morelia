@@ -7,6 +7,8 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
+from sqlalchemy import and_, or_
+
 from app.database import db, transaction
 from app.domain.enums import IncidentStatus
 from app.models.incident import Incident
@@ -69,6 +71,37 @@ class IncidentRepository:
         if status is not None:
             query = query.where(Incident.status == _status_value(status))
         return db.session.scalars(query.order_by(Incident.opened_at.desc())).all()
+
+    def list_page(
+        self,
+        *,
+        session_id: int | None = None,
+        status: IncidentStatus | str | None = None,
+        page_size: int = 50,
+        after: tuple[datetime | None, int] | None = None,
+    ) -> tuple[list[Incident], bool]:
+        query = db.select(Incident)
+        if session_id is not None:
+            query = query.where(Incident.session_id == session_id)
+        if status is not None:
+            query = query.where(Incident.status == _status_value(status))
+        if after is not None:
+            timestamp, row_id = after
+            if timestamp is None:
+                query = query.where(Incident.opened_at.is_(None), Incident.id < row_id)
+            else:
+                query = query.where(
+                    or_(
+                        Incident.opened_at < timestamp,
+                        and_(Incident.opened_at == timestamp, Incident.id < row_id),
+                        Incident.opened_at.is_(None),
+                    )
+                )
+        query = query.order_by(
+            Incident.opened_at.is_(None), Incident.opened_at.desc(), Incident.id.desc()
+        ).limit(page_size + 1)
+        rows = list(db.session.scalars(query).all())
+        return rows[:page_size], len(rows) > page_size
 
     def find_open_for_device(
         self,

@@ -6,6 +6,8 @@ from app.api.device_templates import blp as device_templates_blp
 from app.api.devices import blp as devices_blp
 from app.api.events_ingest import blp as events_ingest_blp
 from app.api.events_stream import blp as events_stream_blp
+from app.api.experiments import blp as experiments_blp
+from app.api.filesystem import blp as filesystem_blp
 from app.api.gaps import blp as gaps_blp
 from app.api.incidents import blp as incidents_blp
 from app.api.operations import blp as operations_blp
@@ -58,12 +60,14 @@ def register_routes(api, app):
     api.register_blueprint(operations_blp)
     api.register_blueprint(incidents_blp)
     api.register_blueprint(gaps_blp)
+    api.register_blueprint(experiments_blp)
     api.register_blueprint(runtimes_blp)
     api.register_blueprint(devices_blp)
     api.register_blueprint(device_configs_blp)
     api.register_blueprint(device_registrations_blp)
     api.register_blueprint(device_templates_blp)
     api.register_blueprint(session_templates_blp)
+    api.register_blueprint(filesystem_blp)
     # Internal — loopback-only, excluded from the OpenAPI spec.
     app.register_blueprint(events_ingest_blp)
     # SSE stream — text/event-stream, excluded from JSON-centric OpenAPI spec.

@@ -28,6 +28,7 @@ from app.domain.errors import (
     DeviceConfigExists,
     DeviceConfigNotFound,
     DeviceConfigNotFree,
+    DeviceTemplateNotFound,
     InvalidHardwareId,
 )
 from app.models.device_config import DeviceConfig
@@ -42,7 +43,7 @@ STARTING_CLAIM_LEASE_SECONDS = 120
 
 # Plan decision C ("Physical identity", resolved 2026-07-02): hardware_id
 # mirrors the reported FTDI serial verbatim, matched case-sensitively and
-# exactly (no case-folding). It may be 1–10 alphanumeric characters — we accept
+# exactly (no case-folding). It may be 4-8 alphanumeric characters — we accept
 # whatever the user provides so long as it falls within that range.
 _HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{4,8}$")
 
@@ -172,11 +173,36 @@ def _require(config_id: int) -> DeviceConfig:
     return row
 
 
+def _resolve_template(reference: str, device_type: DeviceType) -> DeviceTemplate:
+    """Resolve a relink target by ``file_path`` first, then by portable name.
+
+    Session templates store the ``device-templates/foo.toml`` form while the
+    CLI's portable form is the bare name, and both reach this service.
+    """
+    try:
+        template = device_templates.get_by_path(reference)
+    except DeviceTemplateNotFound:
+        template = None
+    if template is None:
+        template = device_templates.get_by_name(reference)
+    if template is None:
+        raise DeviceTemplateNotFound(reference)
+    # A cross-type link would claim provenance the parameters can never satisfy:
+    # they are validated against the *config's* type, not the template's.
+    if template.type != DeviceType(device_type).value:
+        raise ValueError(
+            f"device template {template.name!r} is for {template.type}, "
+            f"not {DeviceType(device_type).value}"
+        )
+    return template
+
+
 def edit(
     config_id: int,
     *,
     parameters: Mapping[str, Any],
     update_source_template: bool,
+    source_template: str | None = None,
 ) -> DeviceConfig:
     """Rewrite a config's parameters. Allowed only while the config is FREE.
 
@@ -186,20 +212,49 @@ def edit(
     Provenance (Option C — a dedicated history column):
       • update_source_template=True  → also rewrite the linked template's content
         and KEEP the live ``source_template`` link.
-      • update_source_template=False → the config becomes "custom": the live link
-        is severed and its old value is preserved in ``source_template_history``.
+      • source_template=<path|name>  → relink to that template WITHOUT touching
+        its content, preserving any previous link in ``source_template_history``.
+        This is the "adopt a template's settings" direction: the template is
+        authoritative and the config is brought into line with it.
+      • neither → the config becomes "custom": the live link is severed and its
+        old value is preserved in ``source_template_history``.
+
+    The first two are mutually exclusive — they disagree about which side is the
+    source of truth, so accepting both would make the outcome order-dependent.
+
+    ``source_template_hash`` records the template revision the link was made
+    against, exactly as ``create_from_template`` does. Callers relinking are
+    responsible for passing parameters that actually match that template;
+    nothing here forces them to agree, because a relink is also how an operator
+    records "these settings came from here" for a hand-tuned config.
     """
+    if update_source_template and source_template is not None:
+        raise ValueError(
+            "update_source_template and source_template are mutually exclusive"
+        )
+
     row = _require(config_id)
     if row.claim_state is not DeviceClaimState.FREE:
         raise DeviceConfigNotFree(config_id)
 
     canonical = _canonical_parameters(row.device_type, parameters)
 
+    # Resolve before opening the transaction so an unknown template aborts the
+    # edit outright rather than leaving the parameters rewritten but unlinked.
+    relink_target = (
+        _resolve_template(source_template, row.device_type) if source_template is not None else None
+    )
+
     with transaction():
         # Set params first so the nested template write below commits both the
         # config row and the template in one flush (keeps the branch atomic).
         row.parameters = canonical
-        if update_source_template:
+        if relink_target is not None:
+            if row.source_template is not None and row.source_template != relink_target.file_path:
+                row.source_template_history = row.source_template
+            row.source_template = relink_target.file_path
+            row.source_template_hash = relink_target.content_hash
+        elif update_source_template:
             if row.source_template is not None:
                 # Push the edited params back into the (mutable) library template.
                 template = device_templates.get_by_path(row.source_template)

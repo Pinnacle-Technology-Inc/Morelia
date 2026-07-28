@@ -101,7 +101,12 @@ def edit_device_config(payload, config_id: int):
             config_id,
             parameters=payload["parameters"],
             update_source_template=payload["update_source_template"],
+            source_template=payload["source_template"],
         )
+    except DeviceTemplateNotFound:
+        # Has its own registered 404 handler — an unknown relink target is a
+        # missing template, not a malformed config.
+        raise
     except (UnknownConfigType, UnsupportedDeviceType, ValueError) as exc:
         _invalid_config(exc)
 

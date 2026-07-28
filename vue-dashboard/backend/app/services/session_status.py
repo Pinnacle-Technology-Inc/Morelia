@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from app.config import get_config
 from app.control.event_poller import telemetry_freshness
 from app.database import db
-from app.domain.enums import HealthState, IncidentStatus, SessionStatus, StreamStatus
+from app.domain.enums import HealthState, IncidentStatus, SessionStatus
 from app.domain.errors import SessionNotFound
 from app.models.backend_event import BackendEvent
 from app.models.incident import Incident
@@ -91,23 +91,21 @@ def _phase_value(latest: BackendEvent | None) -> str | None:
     return latest.phase if latest is not None else None
 
 
-def _hide_suspect(stream_status: object) -> object:
-    """Apply the suspect-hidden rule to one raw stream-status value."""
-    if stream_status == StreamStatus.SUSPECT.value:
-        return StreamStatus.HEALTHY.value
-    return stream_status
-
-
 def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
-    """Shape the newest persisted report for the snapshot, suspect folded away."""
+    """Shape the newest persisted report for the snapshot."""
     if latest is None:
         return None
-    raw_devices = (latest.payload or {}).get("devices") or []
+    payload = latest.payload or {}
+    raw_devices = payload.get("devices") or []
+    diagnostics = payload.get("diagnostics")
+    diagnostic_streams = diagnostics.get("streams") if isinstance(diagnostics, Mapping) else []
+    diagnostic_by_device = {
+        stream.get("device_id"): stream
+        for stream in diagnostic_streams or []
+        if isinstance(stream, Mapping) and stream.get("device_id") is not None
+    }
     devices = [
-        {
-            "device_id": device.get("device_id"),
-            "stream_status": _hide_suspect(device.get("stream_status")),
-        }
+        _latest_report_device(device, diagnostic_by_device.get(device.get("device_id"), {}))
         for device in raw_devices
         if isinstance(device, Mapping)
     ]
@@ -119,7 +117,38 @@ def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
         "recovery_id": latest.recovery_id,
         "received_at": latest.received_at,
         "devices": devices,
-        "diagnostics": (latest.payload or {}).get("diagnostics"),
+        "diagnostics": diagnostics,
+    }
+
+
+def _latest_report_device(
+    device: Mapping[str, object], diagnostic: Mapping[str, object]
+) -> dict[str, object | None]:
+    """Project bounded watchdog recovery context onto one device row."""
+    heartbeat = diagnostic.get("heartbeat")
+    heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
+    recovery = diagnostic.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    action = diagnostic.get("action")
+    reason = (
+        diagnostic.get("initiating_failure_reason")
+        or diagnostic.get("failure_reason")
+        or heartbeat.get("reason")
+    )
+    stage = recovery.get("status")
+    pending = action in {"waiting_for_port", "waiting_for_port_release"} or stage in {
+        "waiting_for_port",
+        "waiting_for_port_release",
+        "retry_wait",
+    }
+    return {
+        "device_id": device.get("device_id"),
+        "stream_status": device.get("stream_status"),
+        "action": action,
+        "reason": reason,
+        "recovery_stage": stage,
+        "recovery_attempt": diagnostic.get("consecutive_nonhealthy_ticks"),
+        "pending_recovery": pending,
     }
 
 

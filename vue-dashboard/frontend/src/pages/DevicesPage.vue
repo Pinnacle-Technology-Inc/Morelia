@@ -1,40 +1,173 @@
 <script setup>
-import { Plus, Radar } from "@lucide/vue";
+import { Check, Clock3, FileInput, Pencil, Radar, X } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
+import DeviceExportDialog from "../components/DeviceExportDialog.vue";
+import DeviceSettingsDialog from "../components/DeviceSettingsDialog.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { devices } from "../data";
-import { computed, ref } from "vue";
+import { computed, nextTick, onMounted, ref } from "vue";
+import { loadDevicePool, registerDeviceName } from "../devices-api";
 
 const activeTab = ref("all");
+const devices = ref([]);
+const state = ref("loading");
+const error = ref("");
+const scanId = ref(null);
+const scannedAt = ref(null);
+
+// Inline rename state, keyed by device.id.
+const renamingId = ref(null);
+const renameValue = ref("");
+const renameInput = ref(null);
+const renameError = ref("");
+
+// Delayed hover tooltip for the export icon.
+const exportTipId = ref(null);
+let exportTimer = null;
+
+// Settings / create dialog target.
+const activeDevice = ref(null);
+// Export-as-template dialog target.
+const exportDevice = ref(null);
+const notice = ref("");
+
 const tabs = [
   { id: "all", label: "All Devices" },
   { id: "available", label: "Available" },
   { id: "claimed", label: "Claimed" },
 ];
 
+// "Available" = physically present AND not claimed by a session. A configured
+// device that is FREE but not_found must NOT appear here (that was the bug):
+// claim state and physical presence are independent axes.
+function isAvailable(device) {
+  return device.availability === "available" && device.status !== "claimed";
+}
+
 const counts = computed(() => ({
-  all: devices.length,
-  available: devices.filter((device) => device.status === "free").length,
-  claimed: devices.filter((device) => device.status === "claimed").length,
+  all: devices.value.length,
+  available: devices.value.filter(isAvailable).length,
+  claimed: devices.value.filter((device) => device.status === "claimed").length,
 }));
 
 const visibleDevices = computed(() => {
-  if (activeTab.value === "available") return devices.filter((device) => device.status === "free");
-  if (activeTab.value === "claimed") return devices.filter((device) => device.status === "claimed");
-  return devices;
+  if (activeTab.value === "available") return devices.value.filter(isAvailable);
+  if (activeTab.value === "claimed") return devices.value.filter((device) => device.status === "claimed");
+  return devices.value;
+});
+
+// Render the scan timestamp as a readable local date/time, falling back to the
+// raw value if it is not a parseable date.
+const scannedAtLabel = computed(() => {
+  if (!scannedAt.value) return "—";
+  const date = new Date(scannedAt.value);
+  return Number.isNaN(date.getTime()) ? scannedAt.value : date.toLocaleString();
+});
+
+async function refresh() {
+  state.value = "loading";
+  error.value = "";
+  devices.value = [];
+  try {
+    const pool = await loadDevicePool();
+    devices.value = pool.devices;
+    scanId.value = pool.scanId;
+    scannedAt.value = pool.scannedAt;
+    state.value = pool.devices.length ? "ready" : "empty";
+  } catch (reason) {
+    state.value = "unavailable";
+    error.value = reason instanceof Error ? reason.message : "Device pool is unavailable.";
+  }
+}
+
+onMounted(() => {
+  refresh();
 });
 
 function displayLabel(value) {
   return {
     available: "Available",
     not_found: "Not found",
+    unopenable: "Unopenable",
     free: "Free",
     claimed: "Claimed",
     unconfigured: "Unconfigured",
   }[value] ?? value;
+}
+
+// --- Rename -----------------------------------------------------------------
+
+async function startRename(device) {
+  if (!device.hardwareId) return; // registration keys on hardware identity
+  renameError.value = "";
+  renamingId.value = device.id;
+  renameValue.value = device.nickname ?? device.name ?? "";
+  await nextTick();
+  // A `ref` inside v-for can resolve to an array; only one input is rendered.
+  const el = Array.isArray(renameInput.value) ? renameInput.value[0] : renameInput.value;
+  el?.focus?.();
+  el?.select?.();
+}
+
+function cancelRename() {
+  renamingId.value = null;
+  renameValue.value = "";
+  renameError.value = "";
+}
+
+async function confirmRename(device) {
+  const nickname = renameValue.value.trim();
+  if (!nickname || nickname === (device.nickname ?? "")) {
+    cancelRename();
+    return;
+  }
+  try {
+    await registerDeviceName({ type: device.type, hardware_id: device.hardwareId, nickname });
+    cancelRename();
+    await refresh();
+  } catch (reason) {
+    renameError.value = reason instanceof Error ? reason.message : "Rename failed.";
+  }
+}
+
+// --- Export -----------------------------------------------------------------
+
+function onExportEnter(device) {
+  clearTimeout(exportTimer);
+  exportTimer = setTimeout(() => {
+    exportTipId.value = device.id;
+  }, 2000);
+}
+
+function onExportLeave() {
+  clearTimeout(exportTimer);
+  exportTipId.value = null;
+}
+
+// Open the export-as-template flow (duplicate check → filename → create .toml).
+function onExport(device) {
+  onExportLeave();
+  if (device.configId == null) return;
+  notice.value = "";
+  exportDevice.value = device;
+}
+
+function onExported(name) {
+  exportDevice.value = null;
+  notice.value = `Saved settings to device template “${name}”.`;
+}
+
+// --- Settings dialog --------------------------------------------------------
+
+function openSettings(device) {
+  activeDevice.value = device;
+}
+
+async function onSaved() {
+  activeDevice.value = null;
+  await refresh();
 }
 </script>
 
@@ -45,14 +178,18 @@ function displayLabel(value) {
       title="Devices"
       description="Review connected hardware, configured devices, availability, and session ownership."
     >
-      <BaseButton variant="secondary"><Radar :size="16" /> Scan Devices</BaseButton>
-      <BaseButton><Plus :size="16" /> Add Device Config</BaseButton>
+      <BaseButton variant="secondary" :disabled="state === 'loading'" @click="refresh"><Radar :size="16" /> Scan Devices</BaseButton>
     </PageHeader>
 
     <BaseCard class="workspace-card">
       <TabBar :tabs="tabs" :active="activeTab" :counts="counts" @change="activeTab = $event" />
-      <div class="table-wrap">
-        <table class="data-table">
+      <p v-if="state === 'loading'" class="empty-state" aria-busy="true">Loading device pool…</p>
+      <p v-else-if="state === 'unavailable'" class="empty-state" role="alert">{{ error }}</p>
+      <p v-else-if="state === 'empty'" class="empty-state">No devices found in scan {{ scanId ?? "-" }}.</p>
+      <div v-else class="table-wrap">
+        <p v-if="notice" class="device-notice" role="status">{{ notice }}</p>
+        <p v-if="error" class="validation-copy" role="alert">{{ error }}</p>
+        <table class="data-table data-table--clickable">
           <thead>
             <tr>
               <th>Device</th>
@@ -68,28 +205,123 @@ function displayLabel(value) {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="device in visibleDevices" :key="device.hardwareId">
-              <td><strong>{{ device.name }}</strong></td>
+            <tr
+              v-for="device in visibleDevices"
+              :key="device.id"
+              tabindex="0"
+              @click="openSettings(device)"
+              @keydown.enter="openSettings(device)"
+            >
+              <!-- Name cell: single click never opens settings; double-click renames. -->
+              <td class="device-name" @click.stop @dblclick="startRename(device)">
+                <template v-if="renamingId === device.id">
+                  <span class="device-name__edit">
+                    <input
+                      ref="renameInput"
+                      v-model="renameValue"
+                      type="text"
+                      aria-label="Device name"
+                      @keydown.enter="confirmRename(device)"
+                      @keydown.esc="cancelRename"
+                    />
+                    <button class="icon-button icon-button--sm" type="button" aria-label="Save name" @click="confirmRename(device)"><Check :size="15" /></button>
+                    <button class="icon-button icon-button--sm" type="button" aria-label="Cancel rename" @click="cancelRename"><X :size="15" /></button>
+                  </span>
+                  <small v-if="renameError" class="validation-copy">{{ renameError }}</small>
+                </template>
+                <span v-else class="device-name__display">
+                  <strong>{{ device.name }}</strong>
+                  <button
+                    v-if="device.hardwareId"
+                    class="icon-button icon-button--sm"
+                    type="button"
+                    aria-label="Rename device"
+                    title="Rename"
+                    @click="startRename(device)"
+                  ><Pencil :size="14" /></button>
+                </span>
+              </td>
               <td>{{ device.type }}</td>
               <td><code>{{ device.hardwareId }}</code></td>
               <td><code>{{ device.port }}</code><small v-if="device.portMismatch">Configured port differs from latest scan</small></td>
               <td><StatusBadge compact :value="displayLabel(device.availability)" /></td>
               <td><StatusBadge compact :value="displayLabel(device.status)" /></td>
-              <td>{{ device.configSource }}<small v-if="device.templateDrift">Template drift</small></td>
-              <td>{{ device.owningSession }}</td>
-              <td><code>{{ device.lastSeen }}</code></td>
-              <td>
+              <td>{{ device.configSource ?? "—" }}<small v-if="device.templateDrift">Template drift</small></td>
+              <td>{{ device.owningSession ?? "—" }}</td>
+              <td><code>{{ device.lastSeen ?? "—" }}</code></td>
+              <td @click.stop>
                 <div class="row-actions">
-                  <button class="table-action" type="button">Open</button>
-                  <button v-if="device.status === 'free'" class="table-action" type="button">Edit Config</button>
-                  <button v-if="device.status === 'unconfigured'" class="table-action" type="button">Create Device Config</button>
-                  <button v-if="device.status !== 'unconfigured'" class="table-action" type="button">Export Template</button>
+                  <button
+                    v-if="device.status !== 'unconfigured'"
+                    class="icon-button icon-button--sm device-export"
+                    type="button"
+                    aria-label="Export template"
+                    @click="onExport(device)"
+                    @mouseenter="onExportEnter(device)"
+                    @mouseleave="onExportLeave"
+                    @focus="onExportEnter(device)"
+                    @blur="onExportLeave"
+                  >
+                    <FileInput :size="15" />
+                    <span v-if="exportTipId === device.id" class="device-export__tip" role="tooltip">Export</span>
+                  </button>
                 </div>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
+      <p v-if="state === 'ready' || state === 'empty'" class="scan-meta">
+        <Clock3 :size="12" aria-hidden="true" />
+        Scan <code>{{ scanId ?? "—" }}</code> · {{ scannedAtLabel }}
+      </p>
     </BaseCard>
+
+    <DeviceSettingsDialog
+      v-if="activeDevice"
+      :device="activeDevice"
+      @close="activeDevice = null"
+      @saved="onSaved"
+    />
+
+    <DeviceExportDialog
+      v-if="exportDevice"
+      :device="exportDevice"
+      @close="exportDevice = null"
+      @exported="onExported"
+    />
   </div>
 </template>
+
+<style scoped>
+.data-table--clickable tbody tr { cursor: pointer; }
+.data-table--clickable tbody tr:hover { background: var(--sage-50); }
+.data-table--clickable tbody tr:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.device-name { cursor: default; }
+.device-name__display, .device-name__edit { display: inline-flex; align-items: center; gap: 0.4rem; }
+.device-name__edit input { min-height: 32px; padding: 0.2rem 0.5rem; border: 1px solid var(--border-card); border-radius: var(--radius); background: var(--surface-sage); }
+.device-name__display .icon-button--sm { opacity: 0; transition: opacity 120ms; }
+.device-name:hover .icon-button--sm { opacity: 1; }
+.icon-button--sm { width: 26px; height: 26px; }
+.device-export { position: relative; overflow: visible; }
+.device-export__tip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 0.2rem 0.5rem; color: #fff; border-radius: var(--radius); background: var(--ink, #1a2b20); font-size: 0.68rem; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 10; }
+.device-notice { color: var(--green); font-size: 0.78rem; font-weight: 700; }
+/* Footer band welded to the bottom edge of the workspace card. `flex: 0 0 auto`
+   keeps it out of the internal table scroll, so it stays put as the list scrolls. */
+.workspace-card > .scan-meta {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--muted);
+  border-top: 1px solid var(--border-card);
+  background: var(--sage-50);
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+}
+.scan-meta code { color: inherit; font-size: var(--fs-xs); }
+.scan-meta svg { opacity: 0.6; }
+</style>

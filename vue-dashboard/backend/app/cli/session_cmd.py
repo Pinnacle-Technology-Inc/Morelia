@@ -1044,10 +1044,17 @@ def _guided_create_from_template(
 
     by_path, by_name = _device_template_index(client)
     pool_devices = _pool_devices(client)
+    assignment_plan = client.post(
+        f"/api/v1/session-templates/{_path_segment(label)}/assignment-plan", {}
+    )
+    planned_by_flow = {row["flow_index"]: row for row in assignment_plan.get("assignments", [])}
+    if assignment_plan.get("warnings"):
+        for warning in assignment_plan["warnings"]:
+            click.echo(f"warning: {warning['message']}", err=True)
 
     click.echo(f"instantiating session template: {label}")
     device_flows: list[dict[str, object]] = []
-    for raw_flow in raw_flows:
+    for flow_index, raw_flow in enumerate(raw_flows):
         if not isinstance(raw_flow, Mapping):
             raise ValueError("session template device_flows entries must be mappings")
         flow = _normalize_template_flow_ref(raw_flow, by_path, by_name)
@@ -1057,6 +1064,14 @@ def _guided_create_from_template(
         template_row = by_path[template_path]
         device_type = _template_device_type(template_row)
         suggestions = _matching_template_pool_devices(pool_devices, device_type)
+        planned = planned_by_flow.get(flow_index)
+        if planned is not None:
+            suggestions = [
+                device for device in suggestions
+                if device.get("id") == planned["device_config_id"]
+            ]
+        elif flow.get("hardware_id"):
+            raise ValueError(f"assignment plan could not satisfy flow {flow_index}")
 
         default_nickname = str(flow.get("nickname") or template_row.get("name"))
         click.echo(f"flow '{default_nickname}' (device template: {template_row.get('name')})")

@@ -65,7 +65,7 @@ function moveWithKeyboard(sessionId, event) {
       <dl class="session-stats">
         <div><dt>Duration</dt><dd>{{ session.duration }}</dd></div>
         <div><dt>Streams / Sinks</dt><dd>{{ session.streamCount ?? session.deviceCount }} / {{ session.sinkCount }}</dd></div>
-        <div><dt>Session Monitor</dt><dd><StatusBadge compact :value="session.watchdog" /></dd></div>
+     
       </dl>
 
       <section

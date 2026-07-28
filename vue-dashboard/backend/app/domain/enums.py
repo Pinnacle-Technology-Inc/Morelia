@@ -8,13 +8,14 @@ from enum import StrEnum
 
 
 class SessionStatus(StrEnum):
-    """Session lifecycle: draft -> scheduled -> starting -> active -> ending -> completed."""
+    """Session lifecycle, with restartable stop and explicit completion."""
 
     DRAFT = "draft"
     SCHEDULED = "scheduled"
     STARTING = "starting"
     ACTIVE = "active"
     ENDING = "ending"
+    STOPPED = "stopped"
     COMPLETED = "completed"
 
 

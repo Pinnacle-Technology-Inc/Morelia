@@ -1,11 +1,13 @@
 <script setup>
-import { ref } from "vue";
-import { Power, ShieldAlert } from "@lucide/vue";
+import { onMounted, ref } from "vue";
+import { Power, RefreshCw, ShieldAlert } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
+import GuardedDialog from "../components/GuardedDialog.vue";
+import { loadSystemHealth, reconcileRuntimes, restartControlPlane, shutdownControlPlane } from "../system-health-api";
 
 const activeTab = ref("session-monitors");
 const tabs = [
@@ -13,18 +15,35 @@ const tabs = [
   { id: "streams", label: "Streams" },
   { id: "storage", label: "Storage" },
 ];
+const healthState = ref("loading");
+const healthError = ref("");
+const health = ref(null);
+const ready = ref(null);
+const runtimes = ref([]);
+const action = ref(null);
+const actionBusy = ref(false);
+const actionError = ref("");
+const cascade = ref(false);
 
-const sessionMonitors = [
-  { id: "mon-3c8d", session: "Cortical Array #07", process: "Running", comms: "Current", report: "08:48:31", restarts: 0, reconciliation: "Reconciled", diagnosticId: "wdg-3c8d" },
-  { id: "mon-1b2c", session: "Cortical Array #07", process: "Running", comms: "Current", report: "08:48:31", restarts: 0, reconciliation: "Reconciled", diagnosticId: "wdg-1b2c" },
-  { id: "mon-9f2a", session: "Striatal LFP", process: "Stopped", comms: "Stopped", report: "08:42:11", restarts: 1, reconciliation: "Needs action", diagnosticId: "wdg-9f2a" },
-];
+onMounted(async () => {
+  try {
+    const result = await loadSystemHealth();
+    health.value = result.health;
+    ready.value = result.ready;
+    runtimes.value = result.runtimes;
+    healthError.value = result.errors.join("; ");
+    healthState.value = result.errors.length ? "degraded" : "live";
+  } catch (error) {
+    healthState.value = "unavailable";
+    healthError.value = error instanceof Error ? error.message : "System health is unavailable.";
+  }
+});
 
-const backendProcesses = [
-  { kind: "Runtime host", session: "Cortical Array Session 07", state: "Alive", contact: "0s ago" },
-  { kind: "Watchdog", session: "Cortical Array Session 07", state: "Alive", contact: "0s ago" },
-  { kind: "Runtime host", session: "Striatal LFP Recording", state: "Not alive", contact: "6m ago" },
-];
+async function runAction(fn) {
+  actionBusy.value = true;
+  actionError.value = "";
+  try { await fn(); action.value = null; } catch (error) { actionError.value = error instanceof Error ? error.message : "System action failed."; } finally { actionBusy.value = false; }
+}
 </script>
 
 <template>
@@ -36,15 +55,16 @@ const backendProcesses = [
     />
     <section class="system-health-overview" aria-label="Control plane health">
       <BaseCard class="detail-panel">
-        <div class="title-row"><h2>Daemon</h2><StatusBadge value="Running" /></div>
+        <div class="title-row"><h2>Daemon</h2><StatusBadge :value="health?.status === 'ok' ? 'Running' : 'Unavailable'" /></div>
         <dl class="detail-list">
-          <div><dt>Status</dt><dd>Running · PID 4182 · http://127.0.0.1:8080</dd></div>
-          <div><dt>Doctor</dt><dd>Database, runtime directory, and command channel checks passed</dd></div>
+          <div><dt>Status</dt><dd>{{ health?.status === "ok" ? "Liveness confirmed" : "Unavailable" }}</dd></div>
+          <div><dt>Readiness</dt><dd v-if="ready">{{ ready.ready ? "Ready" : "Not ready" }} · {{ Object.keys(ready.checks ?? {}).length }} checks reported</dd><dd v-else>Unavailable</dd></div>
         </dl>
         <div class="daemon-actions">
-          <BaseButton variant="danger"><Power :size="16" /> Shutdown</BaseButton>
-          <label class="cascade-option"><input type="checkbox" /> Cascade</label>
-          <BaseButton variant="secondary"><ShieldAlert :size="16" /> Force Stop Session</BaseButton>
+          <BaseButton variant="secondary" :disabled="actionBusy" @click="action = 'reconcile'"><RefreshCw :size="16" /> Reconcile</BaseButton>
+          <BaseButton variant="secondary" :disabled="actionBusy" @click="action = 'restart'"><RefreshCw :size="16" /> Restart Control Plane</BaseButton>
+          <BaseButton variant="danger" :disabled="actionBusy" @click="action = 'shutdown'"><Power :size="16" /> Shutdown</BaseButton>
+          <label class="cascade-option"><input v-model="cascade" type="checkbox" /> Force runtime shutdown</label>
         </div>
         <p class="helper-copy">Runtime agents self-terminate after about 30 minutes without daemon contact.</p>
       </BaseCard>
@@ -53,7 +73,7 @@ const backendProcesses = [
         <div class="table-wrap">
           <table class="data-table process-table">
             <thead><tr><th>Process</th><th>Session</th><th>State</th><th>Last Contact</th></tr></thead>
-            <tbody><tr v-for="process in backendProcesses" :key="`${process.kind}-${process.session}`"><td>{{ process.kind }}</td><td>{{ process.session }}</td><td>{{ process.state }}</td><td><code>{{ process.contact }}</code></td></tr></tbody>
+            <tbody><tr v-for="runtime in runtimes" :key="runtime.runtime_id"><td>Runtime host</td><td>Session {{ runtime.session_id }}</td><td>{{ runtime.state }}</td><td><code>{{ runtime.last_seen_at ?? "—" }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="4">No runtime ownership rows reported.</td></tr></tbody>
           </table>
         </div>
       </BaseCard>
@@ -63,23 +83,25 @@ const backendProcesses = [
       <div v-if="activeTab === 'session-monitors'" class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Monitor ID</th><th>Session</th><th>Process</th><th>Comms</th><th>Last Report</th><th>Reconciliation</th><th>Diagnostic ID</th></tr></thead>
-          <tbody><tr v-for="item in sessionMonitors" :key="item.id"><td><code>{{ item.id }}</code></td><td>{{ item.session }}</td><td>{{ item.process }}</td><td><StatusBadge compact :value="item.comms" /></td><td><code>{{ item.report }}</code></td><td>{{ item.reconciliation }}</td><td><code>{{ item.diagnosticId }}</code></td></tr></tbody>
+          <tbody><tr v-for="item in runtimes" :key="item.runtime_id"><td><code>{{ item.runtime_id }}</code></td><td>Session {{ item.session_id }}</td><td>{{ item.state }}</td><td><StatusBadge compact :value="item.state" /></td><td><code>{{ item.last_seen_at ?? "—" }}</code></td><td>{{ item.details?.reconciliation ?? "Unknown" }}</td><td><code>{{ item.watchdog_id ?? "—" }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="7">No runtime ownership rows reported.</td></tr></tbody>
         </table>
       </div>
       <div v-else-if="activeTab === 'streams'" class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Session</th><th>Stream</th><th>Device</th><th>Owner</th><th>Desired</th><th>Actual</th><th>Stream Status</th><th>Last Data</th></tr></thead>
-          <tbody>
-            <tr><td>Cortical Array #07</td><td>M32-007</td><td><code>M32-007-HW</code></td><td>Owner session</td><td>Active</td><td>Active</td><td><StatusBadge value="Healthy" /></td><td>0s ago</td></tr>
-            <tr><td>Striatal LFP</td><td>M16-003</td><td><code>M16-003-HW</code></td><td>Owner session</td><td>Active</td><td>Stopped</td><td><StatusBadge value="Unhealthy" /></td><td>6m ago</td></tr>
-          </tbody>
+          <tbody><tr><td colspan="8">Stream-level health is not exposed by the runtime ownership endpoint.</td></tr></tbody>
         </table>
       </div>
       <div v-else class="storage-grid">
-        <BaseCard><h3>Database</h3><dl class="detail-list"><div><dt>State</dt><dd>Healthy</dd></div><div><dt>Location</dt><dd>/var/lib/guarded/experiment.db</dd></div><div><dt>Size</dt><dd>142 MB</dd></div></dl></BaseCard>
-        <BaseCard><h3>Permanent Records</h3><dl class="detail-list"><div><dt>Incidents</dt><dd>47</dd></div><div><dt>Data gaps</dt><dd>12</dd></div><div><dt>Recovery records</dt><dd>38</dd></div><div><dt>Session notes</dt><dd>104</dd></div></dl></BaseCard>
-        <BaseCard class="storage-destinations"><h3>Output Destinations</h3><div class="table-wrap"><table class="data-table"><thead><tr><th>Path</th><th>Accessible</th><th>Writable</th><th>Free Space</th></tr></thead><tbody><tr><td><code>/data/cortical</code></td><td>Yes</td><td>Yes</td><td>4.2 GB</td></tr><tr><td><code>/data/striatal</code></td><td>Yes</td><td>Yes</td><td>8.7 GB</td></tr></tbody></table></div></BaseCard>
+        <BaseCard><h3>Storage</h3><p>Storage metadata is not exposed by the current health contract.</p></BaseCard>
+        <BaseCard><h3>Permanent Records</h3><p>Record counts are unavailable from the current health contract.</p></BaseCard>
+        <BaseCard class="storage-destinations"><h3>Output Destinations</h3><p>Path access and free-space evidence is unavailable.</p></BaseCard>
       </div>
     </BaseCard>
+    <p v-if="healthState === 'degraded' || healthState === 'unavailable'" class="detail-alert">Some system-health sources are unavailable: {{ healthError }}</p>
+    <p v-if="actionError" class="detail-alert">{{ actionError }}</p>
+    <GuardedDialog v-if="action === 'reconcile'" title="Reconcile Runtime Ownership" description="This refreshes ownership evidence and may release only runtimes proven to be stopped." confirm-label="Reconcile" @close="action = null" @confirm="() => runAction(reconcileRuntimes)" />
+    <GuardedDialog v-if="action === 'restart'" title="Restart Control Plane" description="The control plane will quiesce lifecycle commands and schedule its own restart. Runtime hosts are preserved." confirm-label="Restart Control Plane" danger @close="action = null" @confirm="() => runAction(restartControlPlane)" />
+    <GuardedDialog v-if="action === 'shutdown'" title="Shutdown Control Plane" description="This schedules control-plane shutdown and runtime shutdown. Force runtime shutdown is enabled only when explicitly selected." confirm-label="Shutdown" danger @close="action = null" @confirm="() => runAction(() => shutdownControlPlane(cascade))" />
   </div>
 </template>

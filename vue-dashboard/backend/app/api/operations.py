@@ -40,6 +40,7 @@ def get_operation(operation_id):
 def resolve_operation(payload, operation_id):
     return operation_service.resolve_uncertain_operation(
         operation_id,
+        outcome=payload["outcome"],
         resolved_by=payload["resolved_by"],
         resolution_note=payload["resolution_note"],
     )

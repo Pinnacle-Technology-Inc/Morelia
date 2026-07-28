@@ -3,7 +3,12 @@
 from flask_smorest import Blueprint, abort
 
 import app.services.session_templates as session_template_service
-from app.api.schemas import CreateSessionTemplateSchema, SessionTemplateSchema
+from app.api.schemas import (
+    AssignmentPlanSchema,
+    CreateSessionTemplateSchema,
+    SessionTemplateCatalogEntrySchema,
+    SessionTemplateSchema,
+)
 from app.domain.errors import SessionTemplateNameExists, SessionTemplateNotFound
 
 blp = Blueprint(
@@ -33,6 +38,29 @@ def create_session_template(payload):
 @blp.response(200, SessionTemplateSchema(many=True))
 def list_session_templates():
     return session_template_service.list()
+
+
+@blp.route("/catalog", methods=["GET"])
+@blp.response(200, SessionTemplateCatalogEntrySchema(many=True))
+def list_session_template_catalog():
+    """Stored templates plus on-disk drafts, tagged by ``source``.
+
+    The dashboard cannot read the session-template directory itself, so this
+    serves the same combined view the CLI assembles locally. Registered before
+    ``/<string:name>`` so "catalog" is never read as a template name.
+    """
+    return session_template_service.catalog()
+
+
+@blp.route("/<path:reference>/assignment-plan", methods=["POST"])
+@blp.response(200, AssignmentPlanSchema)
+def assignment_plan(reference):
+    """Plan assignments for a chosen session template when user in create sessions view.
+
+    """
+    from app.services.template_assignments import plan
+
+    return plan(reference)
 
 
 @blp.route("/<string:name>", methods=["GET"])

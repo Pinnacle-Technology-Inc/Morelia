@@ -1,11 +1,12 @@
 """Incidents resource — operator-facing failure/recovery history."""
 
-from flask_smorest import Blueprint
+from flask_smorest import Blueprint, abort
 
 import app.services.incidents as incident_service
 from app.api.schemas import (
     AckIncidentSchema,
     IncidentListQuerySchema,
+    IncidentPageSchema,
     IncidentSchema,
 )
 
@@ -19,9 +20,17 @@ blp = Blueprint(
 
 @blp.route("", methods=["GET"])
 @blp.arguments(IncidentListQuerySchema, location="query")
-@blp.response(200, IncidentSchema(many=True))
+@blp.response(200, IncidentPageSchema)
 def list_incidents(query):
-    return incident_service.list_for_session(query["session"], status=query.get("status"))
+    try:
+        return incident_service.list_page(
+            session_id=query.get("session"),
+            status=query.get("status"),
+            page_size=query["page_size"],
+            cursor=query.get("cursor"),
+        )
+    except ValueError as exc:
+        abort(400, message=str(exc), code="invalid_cursor")
 
 
 @blp.route("/<string:incident_id>", methods=["GET"])
