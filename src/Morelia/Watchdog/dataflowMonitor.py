@@ -691,6 +691,14 @@ class DataFlowMonitor:
             join_timeout_sec,
         )
 
+        if status_queue is not None:
+            close = getattr(status_queue, "close", None)
+            if callable(close):
+                close()
+            join_thread = getattr(status_queue, "join_thread", None)
+            if callable(join_thread):
+                join_thread()
+
         try:
             worker.close()
         except Exception:

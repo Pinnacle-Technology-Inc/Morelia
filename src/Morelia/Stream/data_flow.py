@@ -71,7 +71,13 @@ def coordinate_shutdown(worker, stop_event, status_queue, shutdown_id, stream_in
             except Empty:
                 break
 
-    if protocol.snapshot().phase not in (ShutdownPhase.FAILED, ShutdownPhase.COMPLETE):
+    if protocol.snapshot().phase not in (
+        ShutdownPhase.FAILED,
+        ShutdownPhase.COMPLETE,
+        ShutdownPhase.PHASE_FAILED,
+        ShutdownPhase.PROTOCOL_VIOLATION,
+        ShutdownPhase.DEADLINE_EXPIRED,
+    ):
         exit_action = ShutdownAction(
             shutdown_id=shutdown_id,
             stream_index=stream_index,
@@ -86,10 +92,16 @@ def coordinate_shutdown(worker, stop_event, status_queue, shutdown_id, stream_in
         protocol.apply(exit_action)
 
     snapshot = protocol.snapshot()
-    if snapshot.phase is not ShutdownPhase.COMPLETE and snapshot.phase is not ShutdownPhase.FAILED:
+    if snapshot.phase not in (
+        ShutdownPhase.COMPLETE,
+        ShutdownPhase.FAILED,
+        ShutdownPhase.PHASE_FAILED,
+        ShutdownPhase.PROTOCOL_VIOLATION,
+        ShutdownPhase.DEADLINE_EXPIRED,
+    ):
         protocol.complete()
         snapshot = protocol.snapshot()
-    if snapshot.phase is not ShutdownPhase.COMPLETE and snapshot.phase is not ShutdownPhase.FAILED:
+    if snapshot.phase not in (ShutdownPhase.COMPLETE, ShutdownPhase.FAILED):
         protocol.fail("missing_required_acknowledgement")
         snapshot = protocol.snapshot()
 
@@ -101,7 +113,9 @@ def coordinate_shutdown(worker, stop_event, status_queue, shutdown_id, stream_in
         "terminal_phase": snapshot.phase.value,
         "shutdown_phase": snapshot.phase.value,
         "forced_termination": snapshot.forced_termination,
-        "worker_exitcode": snapshot.worker_exitcode,
+        "worker_exitcode": snapshot.worker_exitcode
+        if snapshot.worker_exitcode is not None
+        else getattr(worker, "exitcode", None),
         "missing_phases": [phase.value for phase in snapshot.missing_phases],
         "transcript": snapshot.transcript,
         "shutdown_transcript": snapshot.transcript,
@@ -161,6 +175,13 @@ class DataFlow:
                 join_timeout_sec,
             )
             results.append(result)
+            if status_queue is not None:
+                close = getattr(status_queue, "close", None)
+                if callable(close):
+                    close()
+                join_thread = getattr(status_queue, "join_thread", None)
+                if callable(join_thread):
+                    join_thread()
             try:
                 worker.close()
             except Exception:

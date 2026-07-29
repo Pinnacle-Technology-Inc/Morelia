@@ -184,7 +184,7 @@ def _failure_action(state, source: ShutdownAction, phase: ShutdownPhase, reason:
         actor=source.actor,
         actor_pid=source.actor_pid,
         phase=phase,
-        action=phase.value,
+        action=source.action or phase.value,
         outcome=ShutdownOutcome.FAILED if phase != ShutdownPhase.DEADLINE_EXPIRED else ShutdownOutcome.TIMED_OUT,
         emitted_at_ns=source.emitted_at_ns,
         error_type=source.error_type,
@@ -225,6 +225,10 @@ def reduce_shutdown(state: ShutdownSnapshot, action: ShutdownAction) -> Shutdown
     if state.phase in TERMINAL_SHUTDOWN_PHASES:
         return state
 
+    if action.phase is ShutdownPhase.FAILED:
+        state, _ = _append_action(state, action)
+        return replace(state, phase=ShutdownPhase.FAILED, ok=False, reason=action.reason or "phase_failed")
+
     if action.phase in (
         ShutdownPhase.PHASE_FAILED,
         ShutdownPhase.PROTOCOL_VIOLATION,
@@ -249,10 +253,6 @@ def reduce_shutdown(state: ShutdownSnapshot, action: ShutdownAction) -> Shutdown
             state, _ = _append_action(state, action)
             return replace(state, phase=ShutdownPhase.COMPLETE, ok=True, reason=None)
         return _protocol_failure(state, action, "protocol_violation")
-
-    if action.phase is ShutdownPhase.FAILED:
-        state, _ = _append_action(state, action)
-        return replace(state, phase=ShutdownPhase.FAILED, ok=False, reason=action.reason or "phase_failed")
 
     if action.phase is not expected:
         return _protocol_failure(state, action, "protocol_violation")

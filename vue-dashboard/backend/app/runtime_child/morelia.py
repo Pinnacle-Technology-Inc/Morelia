@@ -346,17 +346,12 @@ class MoreliaRuntime:
                 try:
                     result = stop_dataflow(join_timeout_sec=self._shutdown_timeout_sec)
                     elapsed = time.monotonic() - started_at
-                    ok = not isinstance(result, Mapping) or result.get("ok") is not False
-                    _log.info(
-                        "dataflow_shutdown_completed",
-                        dataflow_id=self._manifest.dataflow_id,
-                        elapsed_seconds=elapsed,
-                        timeout_seconds=self._shutdown_timeout_sec,
-                        ok=ok,
-                    )
-                    if not ok:
+                    self._emit_shutdown_transcript(result, elapsed_seconds=elapsed)
+                    ok = not isinstance(result, Mapping) or result.get("ok") is True
+                    forced = isinstance(result, Mapping) and result.get("forced_termination") is True
+                    if not ok or forced:
                         shutdown_error = RuntimeError(
-                            str(result.get("error") or "DataFlow graceful shutdown failed")
+                            self._shutdown_failure_message(result)
                         )
                 except Exception as exc:
                     shutdown_error = exc
@@ -393,6 +388,89 @@ class MoreliaRuntime:
         self._close_sink_error_queue()
         self._close_source_error_queue()
         self._phase = RuntimePhase.CLOSED
+
+    def _emit_shutdown_transcript(self, result: object, *, elapsed_seconds: float) -> None:
+        """Print each parent-correlated shutdown action and one stream summary."""
+        if not isinstance(result, Mapping):
+            return
+        stream_results = result.get("stream_results", ())
+        if not isinstance(stream_results, (list, tuple)):
+            return
+        for stream_result in stream_results:
+            if not isinstance(stream_result, Mapping):
+                continue
+            transcript = stream_result.get("transcript", ())
+            for record in transcript:
+                payload = {
+                    "dataflow_id": self._manifest.dataflow_id,
+                    "shutdown_id": record.shutdown_id,
+                    "action_seq": record.action_seq,
+                    "stream_index": record.stream_index,
+                    "actor": record.actor,
+                    "actor_pid": record.actor_pid,
+                    "phase": record.phase.value,
+                    "action": record.action,
+                    "outcome": record.outcome.value,
+                    "emitted_at_ns": record.emitted_at_ns,
+                    "elapsed_ms": record.elapsed_ms,
+                }
+                for field in (
+                    "sink_id",
+                    "output_id",
+                    "worker_exitcode",
+                    "error_type",
+                    "reason",
+                ):
+                    value = getattr(record, field, None)
+                    if value is not None:
+                        payload[field] = value
+                _log.info("dataflow_shutdown_action", **payload)
+
+            _log.info(
+                "dataflow_shutdown_summary",
+                dataflow_id=self._manifest.dataflow_id,
+                shutdown_id=stream_result.get("shutdown_id"),
+                stream_index=stream_result.get("stream_index"),
+                terminal_phase=stream_result.get("terminal_phase"),
+                ok=stream_result.get("ok") is True,
+                forced_termination=stream_result.get("forced_termination") is True,
+                worker_exitcode=stream_result.get("worker_exitcode"),
+                action_count=len(transcript) if isinstance(transcript, (list, tuple)) else 0,
+                missing_phases=stream_result.get("missing_phases", []),
+                elapsed_ms=round(elapsed_seconds * 1000),
+            )
+
+    @staticmethod
+    def _shutdown_failure_message(result: object) -> str:
+        if not isinstance(result, Mapping):
+            return "DataFlow graceful shutdown returned no acknowledgement result"
+        details = []
+        if result.get("error"):
+            details.append(str(result["error"]))
+        if result.get("terminal_phase"):
+            details.append(f"terminal_phase={result['terminal_phase']}")
+        missing = result.get("missing_phases")
+        if missing:
+            details.append("missing_phases=" + ",".join(str(item) for item in missing))
+        if result.get("forced_termination"):
+            details.append("forced_termination=true")
+        stream_results = result.get("stream_results", ())
+        if isinstance(stream_results, (list, tuple)):
+            for stream_result in stream_results:
+                if not isinstance(stream_result, Mapping):
+                    continue
+                stream_details = []
+                if stream_result.get("terminal_phase"):
+                    stream_details.append(f"terminal_phase={stream_result['terminal_phase']}")
+                missing = stream_result.get("missing_phases")
+                if missing:
+                    stream_details.append("missing_phases=" + ",".join(str(item) for item in missing))
+                if stream_result.get("forced_termination"):
+                    stream_details.append("forced_termination=true")
+                if stream_details:
+                    stream_index = stream_result.get("stream_index", "?")
+                    details.append(f"stream_index={stream_index}:" + ";".join(stream_details))
+        return "DataFlow graceful shutdown failed" + (": " + "; ".join(details) if details else "")
 
     def _close_sink_error_queue(self) -> None:
         """Close the sink-error queue if open."""
