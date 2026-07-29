@@ -14,10 +14,13 @@ before ``tmp_path`` teardown (Windows keeps a lingering handle otherwise).
 """
 
 import numpy as np
+import multiprocessing as mp
+
 import pytest
 
 from app.models.output_file import OutputFile
 from app.output.managed_pvfs_sink import ManagedPvfsSink, ManagedPvfsSinkError
+from Morelia.Stream.source import _ShutdownReporter
 
 _DF = "dataflow-pvfs-001"
 _CH = ["EEG1", "EEG2"]
@@ -516,6 +519,43 @@ def test_writer_process_owned_cleanly_and_produces_readable_output(tmp_path, app
     values = _read_channel(path, "EEG1")
     assert len(values) == 2 * _RATE
     np.testing.assert_allclose(values, np.arange(2 * _RATE), atol=0.1)
+
+
+def test_writer_process_requires_and_reports_shutdown_evidence(tmp_path, app):
+    path = tmp_path / "wp-evidence.pvfs"
+    status_queue = mp.Queue()
+    reporter = _ShutdownReporter(status_queue, "shutdown-pvfs-1", 0)
+    with app.app_context():
+        sink = ManagedPvfsSink(
+            path=path,
+            dataflow_id=_DF,
+            channels=_CH,
+            sample_rate=_RATE,
+            use_writer_process=True,
+        )
+        sink.bind_shutdown_reporter(reporter)
+        sink.open()
+        for i in range(_RATE):
+            sink.write_frame([float(i), float(i)])
+        sink.close()
+
+        assert sink.forced_termination is False
+        assert sink.record.acquisition_state == "complete"
+
+    records = []
+    while True:
+        try:
+            records.append(status_queue.get_nowait())
+        except Exception:
+            break
+    actions = [record.action for record in records]
+    assert actions[:4] == [
+        "writer_stop_observed",
+        "writer_queue_drained",
+        "writer_native_flushed",
+        "writer_native_closed",
+    ]
+    assert actions[-1] == "pvfs_catalog_verified"
 
 
 # ---------------------------------------------------------------------------

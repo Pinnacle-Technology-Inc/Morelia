@@ -108,14 +108,16 @@ class _ShutdownReporter:
         sink_id: str | None = None,
         output_id: str | None = None,
         worker_exitcode: int | None = None,
+        actor: ShutdownActor = ShutdownActor.DATAFLOW_WORKER,
+        actor_pid: int | None = None,
     ) -> ShutdownAction:
         if phase is ShutdownPhase.SINKS_FINALIZING:
             self.finalization_started = True
         record = ShutdownAction(
             shutdown_id=self.shutdown_id,
             stream_index=self.stream_index,
-            actor=ShutdownActor.DATAFLOW_WORKER,
-            actor_pid=self.actor_pid,
+            actor=actor,
+            actor_pid=self.actor_pid if actor_pid is None else actor_pid,
             phase=phase,
             action=action,
             outcome=outcome,
