@@ -16,6 +16,7 @@ from functools import partial
 import sys
 import time
 import gc
+import uuid
 
 # local imports
 from Morelia.Devices import AcquisitionDevice
@@ -47,6 +48,8 @@ class DataFlow:
         """Set class instance variables."""
 
         self._manual_stop_events: list[mp.Event] = [] #events that stop collection stored here.
+        self._shutdown_status_queues: list[object | None] = []
+        self._shutdown_ids: list[str | None] = []
         self._network = network
         self._workers: list[mp.Process] = []
         self._on_sink_error = on_sink_error
@@ -108,6 +111,8 @@ class DataFlow:
             manual_stop_event = Event()
             
             self._manual_stop_events.append(manual_stop_event)
+            self._shutdown_status_queues.append(mp.Queue())
+            self._shutdown_ids.append(str(uuid.uuid4()))
 
             # close the port and delete the port instance
             # may want to use property here instead for better practice
@@ -138,6 +143,9 @@ class DataFlow:
                 sinks_list,
                 self._on_sink_error,
                 self._on_source_error,
+                self._shutdown_status_queues[-1],
+                self._shutdown_ids[-1],
+                len(self._manual_stop_events) - 1,
             )
             worker: mp.Process
             if sys.platform != "win32":

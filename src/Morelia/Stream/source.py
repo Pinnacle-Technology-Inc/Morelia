@@ -12,6 +12,7 @@ import signal
 import sys
 import traceback
 import logging
+import os
 from dataclasses import dataclass
 from multiprocessing import Event
 import threading
@@ -23,6 +24,7 @@ from contextlib import ExitStack
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
 from Morelia.packet import ControlPacket
+from Morelia.Stream.shutdown import ShutdownAction, ShutdownActor, ShutdownOutcome, ShutdownPhase
 
 import reactivex as rx
 from reactivex import operators as ops
@@ -83,6 +85,65 @@ class SourceReadStatus:
     state: str
     consecutive_failures: int
     timestamp_ns: int
+
+
+class _ShutdownReporter:
+    """Pickle-compatible worker-side reporter backed by a parent-owned queue."""
+
+    def __init__(self, status_queue, shutdown_id: str, stream_index: int) -> None:
+        self.status_queue = status_queue
+        self.shutdown_id = shutdown_id
+        self.stream_index = stream_index
+        self.actor_pid = os.getpid()
+        self.finalization_started = False
+
+    def emit(
+        self,
+        phase: ShutdownPhase,
+        action: str,
+        *,
+        outcome: ShutdownOutcome = ShutdownOutcome.ACKNOWLEDGED,
+        reason: str | None = None,
+        error_type: str | None = None,
+        sink_id: str | None = None,
+        output_id: str | None = None,
+        worker_exitcode: int | None = None,
+    ) -> ShutdownAction:
+        if phase is ShutdownPhase.SINKS_FINALIZING:
+            self.finalization_started = True
+        record = ShutdownAction(
+            shutdown_id=self.shutdown_id,
+            stream_index=self.stream_index,
+            actor=ShutdownActor.DATAFLOW_WORKER,
+            actor_pid=self.actor_pid,
+            phase=phase,
+            action=action,
+            outcome=outcome,
+            emitted_at_ns=time.time_ns(),
+            sink_id=sink_id,
+            output_id=output_id,
+            worker_exitcode=worker_exitcode,
+            error_type=error_type,
+            reason=reason,
+        )
+        # Reporting is part of the shutdown protocol. Queue failures must escape.
+        self.status_queue.put(record)
+        return record
+
+    def failed(self, action: str, exc: BaseException, *, phase=ShutdownPhase.PHASE_FAILED):
+        return self.emit(
+            phase,
+            action,
+            outcome=ShutdownOutcome.FAILED,
+            error_type=type(exc).__name__,
+            reason=str(exc),
+        )
+
+
+def _shutdown_reporter(status_queue, shutdown_id, stream_index):
+    if status_queue is None or shutdown_id is None:
+        return None
+    return _ShutdownReporter(status_queue, shutdown_id, stream_index)
 
 
 def _source_identity(pod) -> str:
@@ -370,6 +431,7 @@ def _stream_from_pod_device(
     duration: float,
     manual_stop_event: Event,
     on_source_error=None,
+    shutdown_reporter=None,
 ):
     # Use fixed-size streaming read when available (1-2 read() per packet instead of many) for higher throughput
     read_fn = getattr(pod, "read_pod_packet_streaming", None)
@@ -382,58 +444,67 @@ def _stream_from_pod_device(
         consecutive_failures = 0
         last_error_emitted_at = 0.0
         last_read_error = None
-        with pod:
-            stream_start_time : float = time.perf_counter()
-            while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
+        try:
+            with pod:
+                stream_start_time : float = time.perf_counter()
+                while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
 
-                try:
-                    if use_streaming:
-                        packet = read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False)
-                    else:
-                        packet = pod.read_pod_packet()
-                except Exception as e:
-                    consecutive_failures += 1
-                    last_read_error = e
-                    now = time.monotonic()
-                    if (
-                        consecutive_failures == 1
-                        or now - last_error_emitted_at >= _SOURCE_ERROR_EMIT_INTERVAL_SEC
-                    ):
+                    try:
+                        if use_streaming:
+                            packet = read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False)
+                        else:
+                            packet = pod.read_pod_packet()
+                    except Exception as e:
+                        consecutive_failures += 1
+                        last_read_error = e
+                        now = time.monotonic()
+                        if (
+                            consecutive_failures == 1
+                            or now - last_error_emitted_at >= _SOURCE_ERROR_EMIT_INTERVAL_SEC
+                        ):
+                            _emit_source_status(
+                                on_source_error,
+                                SourceReadStatus(
+                                    source_id=source_id,
+                                    source_port=source_port,
+                                    failure_kind=SOURCE_FAILURE_READ,
+                                    exception_type=type(e).__name__,
+                                    message=_redact_source_message(e),
+                                    state=SOURCE_STATE_DEGRADED,
+                                    consecutive_failures=consecutive_failures,
+                                    timestamp_ns=time.time_ns(),
+                                ),
+                            )
+                            last_error_emitted_at = now
+                        continue
+                    if consecutive_failures:
                         _emit_source_status(
                             on_source_error,
                             SourceReadStatus(
                                 source_id=source_id,
                                 source_port=source_port,
                                 failure_kind=SOURCE_FAILURE_READ,
-                                exception_type=type(e).__name__,
-                                message=_redact_source_message(e),
-                                state=SOURCE_STATE_DEGRADED,
+                                exception_type=type(last_read_error).__name__,
+                                message=_redact_source_message(last_read_error),
+                                state=SOURCE_STATE_RECOVERED,
                                 consecutive_failures=consecutive_failures,
                                 timestamp_ns=time.time_ns(),
                             ),
                         )
-                        last_error_emitted_at = now
-                    continue
-                if consecutive_failures:
-                    _emit_source_status(
-                        on_source_error,
-                        SourceReadStatus(
-                            source_id=source_id,
-                            source_port=source_port,
-                            failure_kind=SOURCE_FAILURE_READ,
-                            exception_type=type(last_read_error).__name__,
-                            message=_redact_source_message(last_read_error),
-                            state=SOURCE_STATE_RECOVERED,
-                            consecutive_failures=consecutive_failures,
-                            timestamp_ns=time.time_ns(),
-                        ),
-                    )
-                    consecutive_failures = 0
-                    last_read_error = None
-                observer.on_next(packet)
-        # After exiting "with pod": __exit__ has run (STREAM 0 sent, read buffer drained).
-        # Now close the port so the USB/D2XX handle is released cleanly.
-        pod.close_port()
+                        consecutive_failures = 0
+                        last_read_error = None
+                    observer.on_next(packet)
+                if shutdown_reporter is not None:
+                    shutdown_reporter.emit(ShutdownPhase.STOP_OBSERVED, "stop_event_observed")
+            # After exiting "with pod": __exit__ has run (STREAM 0 sent, read buffer drained).
+            # Now close the port so the USB/D2XX handle is released cleanly.
+            pod.close_port()
+            if shutdown_reporter is not None:
+                shutdown_reporter.emit(ShutdownPhase.SOURCE_STOPPED, "source_port_closed")
+        except BaseException as exc:
+            if shutdown_reporter is not None:
+                shutdown_reporter.failed("source_teardown_failed", exc)
+            raise
 
         # tell the observer we are finished.
         observer.on_completed()
@@ -456,6 +527,7 @@ def get_data(
     sinks,
     on_sink_error=None,
     on_source_error=None,
+    shutdown_reporter=None,
 ) -> None:
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved.
@@ -485,6 +557,7 @@ def get_data(
             duration,
             manual_stop_event,
             on_source_error=on_source_error,
+            shutdown_reporter=shutdown_reporter,
         )
     )
 
@@ -525,15 +598,23 @@ def get_data(
 
     source_id = _source_identity(pod)
 
-    with ExitStack() as context_manager_stack:
+    try:
+        with ExitStack() as context_manager_stack:
 
-        for sink in sinks:
-            context_manager_stack.enter_context(sink)
-            _subscribe_sink(stream, sink, source_id, on_sink_error, _OBSERVE_ON_BATCH_SIZE) # Sink write failures are reported through ``on_sink_error``instead of being printed. 
+            for sink in sinks:
+                context_manager_stack.enter_context(sink)
+                _subscribe_sink(stream, sink, source_id, on_sink_error, _OBSERVE_ON_BATCH_SIZE) # Sink write failures are reported through ``on_sink_error``instead of being printed. 
 
-        # start streaming data from the observable!
-        stream.connect()
-        print("[DataFlow worker] stream.connect() returned, exiting sinks...", flush=True)
+            # start streaming data from the observable!
+            stream.connect()
+            if shutdown_reporter is not None:
+                shutdown_reporter.emit(ShutdownPhase.SINKS_FINALIZING, "sink_close_started")
+        if shutdown_reporter is not None:
+            shutdown_reporter.emit(ShutdownPhase.SINKS_FINALIZED, "all_sinks_closed")
+    except BaseException as exc:
+        if shutdown_reporter is not None:
+            shutdown_reporter.failed("sink_teardown_failed", exc)
+        raise
 
 # wrapper function for get_data which reconstructs pod devices and sources after the process is created
 def get_data_wrapper(
@@ -544,6 +625,10 @@ def get_data_wrapper(
     sinks_list,
     on_sink_error=None,
     on_source_error=None,
+    shutdown_queue=None,
+    shutdown_id=None,
+    stream_index=0,
+    shutdown_reporter=None,
 ):
     # Ignore SIGINT (Ctrl+C) in the worker so only the main process handles it. The main process
     # sets manual_stop_event and joins; the worker then exits the loop and runs sink __exit__.
@@ -558,6 +643,8 @@ def get_data_wrapper(
     # create list of sinks to use based on sink class/sink dictionary pair in the list
     sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
     _bind_sink_error_callbacks(sinks, on_sink_error)
+    reporter = shutdown_reporter or _shutdown_reporter(shutdown_queue, shutdown_id, stream_index)
+    _bind_shutdown_reporters(sinks, reporter)
 
     # run get_data with the pod device and list of sinks
     # on Ctrl+C or shutdown (e.g. stop_collection), worker may get KeyboardInterrupt or I/O errors;
@@ -570,14 +657,17 @@ def get_data_wrapper(
             sinks,
             on_sink_error=on_sink_error,
             on_source_error=on_source_error,
+            shutdown_reporter=reporter,
         )
+        if reporter is not None:
+            reporter.emit(ShutdownPhase.WORKER_EXITING, "worker_exit_started")
     except (KeyboardInterrupt, OSError, BrokenPipeError):
-        if manual_stop_event.is_set():
+        if manual_stop_event.is_set() and (reporter is None or not reporter.finalization_started):
             sys.exit(0)
         raise
-    except BaseException:
-        if manual_stop_event.is_set():
-            sys.exit(0)
+    except BaseException as exc:
+        if reporter is not None:
+            reporter.failed("worker_shutdown_failed", exc)
         raise
 
 
@@ -592,3 +682,13 @@ def _bind_sink_error_callbacks(sinks, on_sink_error) -> None:
         bind = getattr(sink, "bind_error_callback", None)
         if callable(bind):
             bind(on_sink_error)
+
+
+def _bind_shutdown_reporters(sinks, shutdown_reporter) -> None:
+    """Bind the worker-local shutdown reporter after sink reconstruction."""
+    if shutdown_reporter is None:
+        return
+    for sink in sinks:
+        bind = getattr(sink, "bind_shutdown_reporter", None)
+        if callable(bind):
+            bind(shutdown_reporter)
