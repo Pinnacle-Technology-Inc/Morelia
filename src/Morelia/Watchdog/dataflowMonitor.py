@@ -2,11 +2,12 @@ import time
 import gc
 import multiprocessing as mp
 import sys
+import uuid
 import serial
 import serial.tools.list_ports
 from contextlib import contextmanager
 from threading import Lock, RLock
-from Morelia.Stream.data_flow import DataFlow
+from Morelia.Stream.data_flow import DataFlow, coordinate_shutdown
 from Morelia.Stream.source import get_data_wrapper
 from Morelia.Watchdog.healthSink import HealthSink
 from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
@@ -664,26 +665,41 @@ class DataFlowMonitor:
         if stop_event is not None:
             stop_event.set()
 
-        if worker is not None:
-            worker.join(timeout=join_timeout_sec)
+        lifecycle_state = self._lifecycle_states.get(stream_index, {}).get("state")
+        if worker is None:
+            already_stopped = lifecycle_state in {"stopped", "detached"}
+            return {
+                "ok": already_stopped,
+                "stream_index": stream_index,
+                "worker_status": "missing" if already_stopped else "failed",
+                "terminal_phase": "complete" if already_stopped else "failed",
+                "missing_phases": [] if already_stopped else ["worker_exited"],
+                "transcript": (),
+                "shutdown_transcript": (),
+            }
 
-            if worker.is_alive():
-                worker.terminate()
-                worker.join(timeout = 1.0)
-            
-            try:
-                worker.close()
-            except Exception:
-                pass
+        shutdown_queues = getattr(self.flowgraph, "_shutdown_status_queues", [])
+        shutdown_ids = getattr(self.flowgraph, "_shutdown_ids", [])
+        status_queue = shutdown_queues[stream_index] if stream_index < len(shutdown_queues) else None
+        shutdown_id = shutdown_ids[stream_index] if stream_index < len(shutdown_ids) else str(uuid.uuid4())
+        result = coordinate_shutdown(
+            worker,
+            stop_event,
+            status_queue,
+            shutdown_id,
+            stream_index,
+            join_timeout_sec,
+        )
+
+        try:
+            worker.close()
+        except Exception:
+            pass
 
         if stream_index < len(workers):
             workers[stream_index] = None
 
-        return {
-            "ok": True,
-            "stream_index": stream_index,
-            "worker_status": "missing",
-        }
+        return result
 
     def start_stream(self, stream_index, duration_sec= float("inf")):
         self._require_flowgraph()
@@ -711,6 +727,18 @@ class DataFlowMonitor:
         stop_events = self.flowgraph._manual_stop_events
         while len(stop_events) <= stream_index:
             stop_events.append(None)
+        shutdown_queues = getattr(self.flowgraph, "_shutdown_status_queues", None)
+        if shutdown_queues is None:
+            shutdown_queues = []
+            self.flowgraph._shutdown_status_queues = shutdown_queues
+        while len(shutdown_queues) <= stream_index:
+            shutdown_queues.append(None)
+        shutdown_ids = getattr(self.flowgraph, "_shutdown_ids", None)
+        if shutdown_ids is None:
+            shutdown_ids = []
+            self.flowgraph._shutdown_ids = shutdown_ids
+        while len(shutdown_ids) <= stream_index:
+            shutdown_ids.append(None)
 
         current_worker = workers[stream_index]
         if current_worker is not None and current_worker.is_alive():
@@ -724,6 +752,8 @@ class DataFlowMonitor:
 
         source, sinks = self._rebuild_dataflow(stream_index)
         manual_stop_event = mp.Event()
+        status_queue = mp.Queue()
+        shutdown_id = str(uuid.uuid4())
 
         # Match DataFlow behavior:
         if hasattr(source, "_port"):
@@ -735,12 +765,17 @@ class DataFlowMonitor:
             manual_stop_event=manual_stop_event,
             source=source,
             sinks=sinks,
+            status_queue=status_queue,
+            shutdown_id=shutdown_id,
+            stream_index=stream_index,
         )
 
         worker.start()
 
         self.flowgraph._network[stream_index] = (source, sinks)
         stop_events[stream_index] = manual_stop_event
+        shutdown_queues[stream_index] = status_queue
+        shutdown_ids[stream_index] = shutdown_id
         workers[stream_index] = worker
 
         self._poll_locks[stream_index] = Lock()
@@ -1310,7 +1345,7 @@ class DataFlowMonitor:
 
         return source, self._ensure_health_sink_for_rebuild(stream_index, source, sinks)
 
-    def _make_worker(self, duration_sec, manual_stop_event, source, sinks):
+    def _make_worker(self, duration_sec, manual_stop_event, source, sinks, status_queue=None, shutdown_id=None, stream_index=0):
         """Build only one source/sinks pair to manually only reconnect the one that is failing"""
         source_class = type(source)
         source_dict = source.get_dict()
@@ -1330,6 +1365,10 @@ class DataFlowMonitor:
             source_dict,
             sinks_list,
             self._on_sink_error,
+            None,
+            status_queue,
+            shutdown_id,
+            stream_index,
         )
         if sys.platform != "win32":
             try:

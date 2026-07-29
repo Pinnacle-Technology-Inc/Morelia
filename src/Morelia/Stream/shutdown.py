@@ -250,6 +250,10 @@ def reduce_shutdown(state: ShutdownSnapshot, action: ShutdownAction) -> Shutdown
             return replace(state, phase=ShutdownPhase.COMPLETE, ok=True, reason=None)
         return _protocol_failure(state, action, "protocol_violation")
 
+    if action.phase is ShutdownPhase.FAILED:
+        state, _ = _append_action(state, action)
+        return replace(state, phase=ShutdownPhase.FAILED, ok=False, reason=action.reason or "phase_failed")
+
     if action.phase is not expected:
         return _protocol_failure(state, action, "protocol_violation")
 
@@ -352,6 +356,22 @@ class ShutdownProtocol:
                 action="shutdown_completed",
                 outcome=ShutdownOutcome.COMPLETED,
                 emitted_at_ns=0,
+            )
+        )
+
+    def fail(self, reason: str = "phase_failed"):
+        """Record a terminal parent-owned failure from any non-terminal state."""
+        return self.apply(
+            ShutdownAction(
+                shutdown_id=self.shutdown_id,
+                stream_index=self.stream_index,
+                actor=ShutdownActor.MONITOR,
+                actor_pid=None,
+                phase=ShutdownPhase.FAILED,
+                action="shutdown_failed",
+                outcome=ShutdownOutcome.FAILED,
+                emitted_at_ns=0,
+                reason=reason,
             )
         )
 
