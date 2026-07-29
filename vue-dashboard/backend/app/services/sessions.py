@@ -11,18 +11,31 @@ wires this via request_logging middleware. CLI callers must bind it manually:
 """
 
 from contextlib import suppress
+from pathlib import Path
 from uuid import uuid4
 
 import structlog
 from structlog.contextvars import get_contextvars
 
 from app.database import transaction
-from app.domain.enums import OperationState, SessionStatus
-from app.domain.errors import CommandInFlight, EmptySession, InvalidTransition, SessionNotFound
+from app.domain.enums import OperationState, SessionStatus, SinkCategory
+from app.domain.errors import (
+    CommandInFlight,
+    EmptySession,
+    InvalidSessionEntry,
+    InvalidTransition,
+    SessionNotFound,
+)
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository, default_session_name
-from app.services import device_configs, experiments, manifests, output_finalization
+from app.services import (
+    device_configs,
+    experiments,
+    manifests,
+    output_finalization,
+    sink_paths,
+)
 from app.services.operations import (
     OperationConflict,
     create_operation,
@@ -30,6 +43,7 @@ from app.services.operations import (
     transition_operation,
     record_operation_failure_event,
 )
+from app.services.registry import UnknownConfigType, sink_parameter_schema
 from app.services.session_config import validate_entries
 from app.watchdog.commands import prepare_command
 
@@ -163,8 +177,18 @@ def complete(session_id: int) -> Session:
     return session
 
 
-def start(session_id: int, watchdog) -> Session:
+def start(
+    session_id: int,
+    watchdog,
+    *,
+    sink_overrides: dict[str, str] | None = None,
+) -> Session:
     """Transition a session to STARTING and dispatch the start command.
+
+    ``sink_overrides`` relocates file sinks before the manifest resolves — see
+    ``_apply_sink_overrides``. Accepted here as well as in ``start_managed`` so
+    an operator's chosen output names are never silently dropped just because
+    this deployment runs without a per-dataflow runtime host.
 
     Guard ordering matters — the lock check (command_in_flight) must come
     BEFORE state/precondition checks so a busy dataflow gets a 423, not a 409.
@@ -193,6 +217,8 @@ def start(session_id: int, watchdog) -> Session:
         raise InvalidTransition(session.status)
     if not session.device_flows:
         raise EmptySession(session_id)
+    if sink_overrides:
+        _apply_sink_overrides(session, sink_overrides)
 
     # A stopped session starts a new generation. Never reuse the prior
     # dataflow/watchdog identity or append to its concluded outputs.
@@ -267,25 +293,127 @@ def start(session_id: int, watchdog) -> Session:
     return session
 
 
+# The key that identifies one file sink in a ``sink_overrides`` mapping. This
+# IS the label a SinkLocationExists conflict reports, not a parallel copy of
+# it — the retry sends back exactly what the conflict handed out.
+sink_override_label = manifests.conflict_label
+
+
+def _is_file_sink(sink_type: object) -> bool:
+    """True for csv/edf/pvfs — the only sinks that own a ``sink_location``."""
+    try:
+        schema = sink_parameter_schema(str(sink_type))
+    except UnknownConfigType:
+        return False
+    return schema["category"] == SinkCategory.FILE.value
+
+
+def sink_restart_plan(session_id: int) -> dict:
+    """Every file sink this session would write to on its next start.
+
+    Read-only and side-effect free: it resolves and probes paths but creates
+    nothing, so a UI can call it to build a "name the outputs" prompt before
+    committing to a start.
+
+    Each entry's ``key`` is the ``sink_overrides`` key that relocates it, so a
+    caller can build the retry payload straight from this response without
+    reconstructing labels. Sinks with no explicit ``sink_location`` are reported
+    as ``assignment: "automatic"`` — start-time allocation names those inside
+    OUTPUT_DIR and deduplicates them on its own, so they never block a restart
+    and have no stable path to suggest ahead of time.
+
+    Non-file sinks (service, plot) are omitted entirely: they own no path, so
+    there is nothing to name and nothing that can collide.
+    """
+    session = get(session_id)
+    entries: list[dict] = []
+    for flow in session.device_flows or []:
+        nickname = flow.get("nickname")
+        for sink in flow.get("sinks") or []:
+            sink_name = sink.get("sink_name")
+            if sink_name is None or not _is_file_sink(sink.get("sink_type")):
+                continue
+            entry = {
+                "key": sink_override_label(nickname, str(sink_name)),
+                "nickname": nickname,
+                "sink_name": str(sink_name),
+                "sink_type": str(sink.get("sink_type")),
+            }
+            raw_location = sink.get("sink_location")
+            if not raw_location:
+                entries.append(
+                    entry
+                    | {
+                        "assignment": "automatic",
+                        "current_location": None,
+                        "occupied": False,
+                        "suggested_location": None,
+                    }
+                )
+                continue
+
+            resolved = sink_paths.resolve_sink_location(str(raw_location))
+            occupied = sink_paths.path_is_claimed(resolved)
+            entries.append(
+                entry
+                | {
+                    "assignment": "explicit",
+                    "current_location": resolved,
+                    "occupied": occupied,
+                    "suggested_location": str(
+                        sink_paths.next_available_path(
+                            Path(resolved), session_id=session_id
+                        )
+                    )
+                    if occupied
+                    else resolved,
+                }
+            )
+
+    return {"session_id": session_id, "status": session.status, "sinks": entries}
+
+
 def _apply_sink_overrides(session: Session, overrides: dict[str, str]) -> None:
     """Persist operator-confirmed sink_location fixes onto a not-yet-started session.
 
-    Raises ValueError for a nickname that doesn't match any device flow — a
-    stale override (the flows changed since the CLI computed it) should fail
-    loud rather than silently apply nothing.
+    Keys are the labels the conflict reported (``sink_override_label``):
+    ``"<nickname>:<sink_name>"``, or a bare ``"<sink_name>"`` when the flow has
+    no nickname. One source can own several file sinks, so a nickname alone
+    cannot say *which* sink moved — and the new location is written onto the
+    sink entry itself, which is the only place start-time resolution
+    (``manifests._build_sink``) ever reads it from.
+
+    Raises InvalidSessionEntry for a key matching no file sink — a stale
+    override (the flows changed since the caller computed it) must fail loud
+    rather than silently apply nothing and then re-raise the same conflict.
     """
     flows = [dict(flow) for flow in session.device_flows or []]
     matched: set[str] = set()
     for flow in flows:
         nickname = flow.get("nickname")
-        if nickname in overrides:
-            flow["sink_location"] = overrides[nickname]
-            matched.add(nickname)
+        sinks = [dict(sink) for sink in flow.get("sinks") or []]
+        for sink in sinks:
+            sink_name = sink.get("sink_name")
+            if sink_name is None:
+                continue
+            label = sink_override_label(nickname, str(sink_name))
+            if label not in overrides:
+                continue
+            if not _is_file_sink(sink.get("sink_type")):
+                raise InvalidSessionEntry(
+                    f"sink_overrides.{label}",
+                    f"sink_location is only valid for file sinks (csv, edf, pvfs); "
+                    f"{sink.get('sink_type')!r} is not one",
+                )
+            sink["sink_location"] = overrides[label]
+            matched.add(label)
+        flow["sinks"] = sinks
 
     unknown = set(overrides) - matched
     if unknown:
-        raise ValueError(
-            f"sink_overrides references unknown device flow nickname(s): {sorted(unknown)}"
+        raise InvalidSessionEntry(
+            "sink_overrides",
+            f"no file sink matches override key(s): {sorted(unknown)}",
         )
 
     with transaction():

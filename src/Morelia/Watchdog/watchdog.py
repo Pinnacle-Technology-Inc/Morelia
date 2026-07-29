@@ -202,6 +202,8 @@ class Watchdog:
         for dev in sources:
             results[str(getattr(dev, "port", id(dev)))] = hw.preflight_device(
                 dev, attempts=attempts, timeout_sec=timeout_sec)
+        if self.dataflow_monitor is not None:
+            self.dataflow_monitor.refresh_rebuild_snapshot()
         not_ready = [k for k, r in results.items() if not r["ok"]]
         if require_ready and not_ready:
             raise RuntimeError(f"preflight failed for {not_ready}")
@@ -2287,6 +2289,11 @@ class StreamWatcher (threading.Thread):
             "initiating_failure_reason": action_result.get("initiating_failure_reason"),
             "failure_count": report.get("signals", {}).get("failure", {}).get("count"),
             "recovery_policy": action_result.get("recovery_policy", "recommend"),
+            # {"current": n, "max": max_auto_restart_attempts}. The control plane
+            # cannot re-derive this — only this watcher knows how much of the
+            # restart budget an episode has actually spent — and without it an
+            # operator cannot tell "retrying, 1 of 3" from "retrying, 3 of 3".
+            "recovery_attempt": action_result.get("recovery_attempt"),
             "requested_by": detail.get("requested_by"),
             "summary": report.get("summary"),
         }

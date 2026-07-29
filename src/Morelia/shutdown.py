@@ -7,6 +7,8 @@ without sharing lifecycle ownership.
 
 from dataclasses import dataclass, replace
 from enum import Enum
+from queue import Empty
+import time
 from typing import Iterable
 
 
@@ -142,6 +144,8 @@ ShutdownResult = ShutdownSnapshot
 def _elapsed_ms(state: ShutdownSnapshot, action: ShutdownAction) -> int:
     if action.elapsed_ms is not None:
         return max(0, int(action.elapsed_ms))
+    if state.started_at_ns > 0 and action.emitted_at_ns > 0:
+        return max(0, (action.emitted_at_ns - state.started_at_ns) // 1_000_000)
     return 0
 
 
@@ -303,7 +307,7 @@ class ShutdownProtocol:
                 phase=phase,
                 action=action_name,
                 outcome=outcome,
-                emitted_at_ns=0,
+                emitted_at_ns=time.time_ns(),
                 reason=reason,
                 worker_exitcode=worker_exitcode,
             )
@@ -355,7 +359,7 @@ class ShutdownProtocol:
                 phase=ShutdownPhase.COMPLETE,
                 action="shutdown_completed",
                 outcome=ShutdownOutcome.COMPLETED,
-                emitted_at_ns=0,
+                emitted_at_ns=time.time_ns(),
             )
         )
 
@@ -370,10 +374,112 @@ class ShutdownProtocol:
                 phase=ShutdownPhase.FAILED,
                 action="shutdown_failed",
                 outcome=ShutdownOutcome.FAILED,
-                emitted_at_ns=0,
+                emitted_at_ns=time.time_ns(),
                 reason=reason,
             )
         )
+
+
+def coordinate_shutdown(
+    worker,
+    stop_event,
+    status_queue,
+    shutdown_id: str,
+    stream_index: int,
+    join_timeout_sec: float,
+    *,
+    deadline: float | None = None,
+):
+    """Stop one worker and return the complete, bounded acknowledgement result.
+
+    ``deadline`` lets a whole-flow caller share a single monotonic budget across
+    every stream.  A single-stream caller can omit it and receives the same
+    timeout semantics as the legacy monitor.
+    """
+    protocol = ShutdownProtocol(shutdown_id, stream_index, started_at_ns=time.time_ns())
+    protocol.request()
+    if stop_event is not None:
+        stop_event.set()
+
+    deadline = deadline if deadline is not None else time.monotonic() + max(0.0, float(join_timeout_sec))
+    while worker is not None and worker.is_alive():
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        if status_queue is not None:
+            try:
+                protocol.apply(status_queue.get(timeout=min(remaining, 0.05)))
+                continue
+            except Empty:
+                pass
+        worker.join(timeout=0)
+
+    if worker is not None and worker.is_alive():
+        protocol.deadline_expired()
+        protocol.force_termination_requested()
+        worker.terminate()
+        worker.join(timeout=1.0)
+        protocol.forced_termination(worker_exitcode=getattr(worker, "exitcode", None))
+    elif worker is not None:
+        worker.join(timeout=0)
+
+    if status_queue is not None:
+        while True:
+            try:
+                protocol.apply(status_queue.get_nowait())
+            except Empty:
+                break
+
+    if protocol.snapshot().phase not in (
+        ShutdownPhase.FAILED,
+        ShutdownPhase.COMPLETE,
+        ShutdownPhase.PHASE_FAILED,
+        ShutdownPhase.PROTOCOL_VIOLATION,
+        ShutdownPhase.DEADLINE_EXPIRED,
+    ):
+        protocol.apply(
+            ShutdownAction(
+                shutdown_id=shutdown_id,
+                stream_index=stream_index,
+                actor=ShutdownActor.MONITOR,
+                actor_pid=None,
+                phase=ShutdownPhase.WORKER_EXITED,
+                action="worker_exit_observed",
+                outcome=ShutdownOutcome.COMPLETED,
+                emitted_at_ns=time.time_ns(),
+                worker_exitcode=getattr(worker, "exitcode", None),
+            )
+        )
+
+    snapshot = protocol.snapshot()
+    if snapshot.phase not in (
+        ShutdownPhase.COMPLETE,
+        ShutdownPhase.FAILED,
+        ShutdownPhase.PHASE_FAILED,
+        ShutdownPhase.PROTOCOL_VIOLATION,
+        ShutdownPhase.DEADLINE_EXPIRED,
+    ):
+        protocol.complete()
+        snapshot = protocol.snapshot()
+    if snapshot.phase not in (ShutdownPhase.COMPLETE, ShutdownPhase.FAILED):
+        protocol.fail("missing_required_acknowledgement")
+        snapshot = protocol.snapshot()
+
+    return {
+        "ok": snapshot.ok is True,
+        "stream_index": stream_index,
+        "worker_status": "stopped" if snapshot.ok is True else "failed",
+        "shutdown_id": shutdown_id,
+        "terminal_phase": snapshot.phase.value,
+        "shutdown_phase": snapshot.phase.value,
+        "forced_termination": snapshot.forced_termination,
+        "worker_exitcode": snapshot.worker_exitcode
+        if snapshot.worker_exitcode is not None
+        else getattr(worker, "exitcode", None),
+        "missing_phases": [phase.value for phase in snapshot.missing_phases],
+        "transcript": snapshot.transcript,
+        "shutdown_transcript": snapshot.transcript,
+    }
 
 
 __all__ = [
@@ -387,5 +493,6 @@ __all__ = [
     "ShutdownProtocol",
     "ShutdownResult",
     "ShutdownSnapshot",
+    "coordinate_shutdown",
     "reduce_shutdown",
 ]

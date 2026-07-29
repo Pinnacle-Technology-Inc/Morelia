@@ -359,6 +359,73 @@ td strong { color: var(--ink); }
 .detail-panel { padding: 1rem; }
 .detail-panel > p { margin-bottom: 1rem; color: var(--muted); font-size: 0.78rem; line-height: 1.55; }
 .detail-panel--wide { grid-column: 1 / -1; }
+
+/* The record tabs — Incidents & Gaps, Operations. These two were the only detail
+   tabs rendering a bare table straight onto the tab body: no sage tray, no card,
+   and <h3>s that matched no rule (h3 is only styled inside .detail-panel,
+   .flow-card and .storage-grid). They now use the same tray-and-panel shell as
+   every other tab, with each table behind a disclosure.
+
+   Single column rather than two-up. Both tabs pair tables that run to six and
+   seven columns; side by side, each would get half a card and BOTH would scroll
+   horizontally — trading a vertical dimension nobody is short of for a
+   horizontal one that is already tight. */
+.records-layout { display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--surface-sage); }
+/* The disclosure header carries its own padding and the table runs edge to edge
+   inside the card, so the panel keeps none of its own. */
+.detail-panel--records { padding: 0; overflow: hidden; }
+.records-empty { margin: 0; color: var(--text-muted); font-size: var(--fs-xs); line-height: var(--lh-body); }
+.collapsible__body > .records-empty { padding: var(--space-4) var(--space-5); }
+
+.collapsible__head { display: flex; width: 100%; align-items: center; gap: var(--space-2); padding: var(--space-4) var(--space-5); color: var(--ink); border: 0; background: transparent; text-align: left; cursor: pointer; }
+.collapsible__head:hover { background: var(--surface-muted); }
+.collapsible__head:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
+.collapsible__head h3 { margin: 0; font-size: 0.9rem; }
+.collapsible__chevron { flex: 0 0 auto; color: var(--text-muted); }
+.collapsible__count { padding: 0.1rem 0.45rem; color: var(--text-accent); border-radius: var(--radius-pill); background: var(--surface-sage); font: var(--fw-bold) 0.68rem var(--font-mono); }
+.collapsible__count--warn { color: var(--warning); background: #fbf1de; }
+.collapsible__count--bad { color: var(--error); background: #fbe6e4; }
+/* Pinned to the far end so the title and count keep a fixed position as counts
+   change width, and so the hint reads as an aside rather than a subtitle. */
+.collapsible__hint { margin-left: auto; padding-left: var(--space-4); color: var(--text-muted); font-size: var(--fs-xs); text-align: right; }
+.collapsible__body { border-top: 1px solid var(--border-card); }
+
+/* .data-table's 900px floor is sized for the full-bleed workspace tables. These
+   sit inside a detail card that is narrower than that on any laptop, so the
+   floor alone guaranteed a horizontal scrollbar on both record tabs regardless
+   of content. Lowered to the width below which the columns genuinely stop being
+   readable — .table-wrap still scrolls past that — and ids wrap rather than
+   propping the table open. */
+.records-table { min-width: 640px; margin-top: 0; }
+.records-table code { overflow-wrap: anywhere; }
+.records-table th, .records-table td { padding-right: var(--space-3); padding-left: var(--space-3); }
+/* Row hover stays: it is how you follow one incident across seven columns. The
+   pointer does not — nothing in these tables is clickable, and the global
+   `tbody tr` cursor promised a row action that does not exist. */
+.records-table tbody tr { cursor: default; }
+
+/* Session-detail Commands table only (Operations page uses .operations-table
+   without .records-table). Under table-layout: auto a long error_message
+   claims leftover width and starves Operation/Target/Finished. Fixed layout
+   keeps columns readable; error still wraps rather than forcing a scrollbar. */
+.records-table.operations-table {
+  table-layout: fixed;
+}
+.records-table.operations-table th:nth-child(1),
+.records-table.operations-table td:nth-child(1) { width: 20%; }
+.records-table.operations-table th:nth-child(2),
+.records-table.operations-table td:nth-child(2) { width: 14%; }
+.records-table.operations-table th:nth-child(3),
+.records-table.operations-table td:nth-child(3) { width: 16%; }
+.records-table.operations-table th:nth-child(4),
+.records-table.operations-table td:nth-child(4) { width: 10%; }
+.records-table.operations-table th:nth-child(5),
+.records-table.operations-table td:nth-child(5) { width: 16%; }
+.records-table.operations-table th:nth-child(6),
+.records-table.operations-table td:nth-child(6) {
+  width: 24%;
+  overflow-wrap: anywhere;
+}
 /* Session-level verdict, placed before the supporting ownership metadata. */
 /* gap is 0 on purpose. Every sprite sheet carries transparent padding under the
    rat — 6% of canvas height on suspect, 10.6% on running, 16.5% on the sleeping

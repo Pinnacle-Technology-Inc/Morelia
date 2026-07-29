@@ -72,7 +72,7 @@ from app.domain.enums import SinkType
 from app.models.output_file import OutputFile
 from app.output import managed_file
 from app.output.managed_file import ManagedOutputFile
-from Morelia.Stream.shutdown import ShutdownActor, ShutdownOutcome, ShutdownPhase
+from Morelia.shutdown import ShutdownActor, ShutdownOutcome, ShutdownPhase
 
 _log = structlog.get_logger(__name__)
 

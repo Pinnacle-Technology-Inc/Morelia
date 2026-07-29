@@ -104,7 +104,11 @@ def _pvfs_merger(request: MergeRequest, *, publish: bool) -> MergeResult:
         # All native PVFS I/O happens here and is released when the child exits.
         outcome = _run_merge_worker(paths, temp_path)
         if not outcome.get("ok"):
-            return _failure(temp_path, outcome.get("reason", "pvfs merge worker failed"))
+            return _failure(
+                temp_path,
+                outcome.get("reason", "pvfs merge worker failed"),
+                retryable=outcome.get("retryable", True),
+            )
 
         if not temp_path.exists():
             return _failure(None, "merged artifact vanished before publish")
@@ -136,7 +140,7 @@ def _pvfs_merger(request: MergeRequest, *, publish: bool) -> MergeResult:
             },
         )
     except PvfsMergeError as exc:
-        return _failure(temp_path, str(exc))
+        return _failure(temp_path, str(exc), retryable=False)
     except Exception as exc:  # noqa: BLE001 - any read/write fault is a failed, retryable merge
         return _failure(temp_path, f"pvfs merge error: {exc!r}")
 
@@ -255,7 +259,7 @@ def _merge_worker(queue: "mp.Queue", paths: list[str], temp_path: str) -> None:
             }
         )
     except PvfsMergeError as exc:
-        queue.put({"ok": False, "reason": str(exc)})
+        queue.put({"ok": False, "reason": str(exc), "retryable": False})
     except Exception as exc:  # noqa: BLE001 - any fault is a failed, retryable merge
         queue.put({"ok": False, "reason": f"pvfs merge error: {exc!r}"})
 
@@ -545,10 +549,13 @@ def _temp_path(published_path: Path, finalization_id: str) -> Path:
     )
 
 
-def _failure(temp_path: Path | str | None, reason: str) -> MergeResult:
+def _failure(
+    temp_path: Path | str | None, reason: str, *, retryable: bool = True
+) -> MergeResult:
     return MergeResult(
         ok=False,
         temp_path=str(temp_path) if temp_path is not None else None,
         reason=reason,
+        retryable=retryable,
         details={"sink_type": "pvfs"},
     )

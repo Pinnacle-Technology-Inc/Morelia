@@ -14,6 +14,7 @@ from app.api.schemas import (
     FleetOverviewSchema,
     RecoverSessionSchema,
     SessionNameSuggestionSchema,
+    SinkRestartPlanSchema,
     SessionSchema,
     SessionStatusSnapshotSchema,
     SessionTemplateSchema,
@@ -109,6 +110,17 @@ def session_status(session_id):
     return session_status_service.detail(session_id, live_health=_live_health())
 
 
+@blp.route("/<int:session_id>/sink-plan", methods=["GET"])
+@blp.response(200, SinkRestartPlanSchema)
+def session_sink_plan(session_id):
+    """Where this session's file outputs would land if started right now.
+
+    Read-only: lets the UI prompt for output names BEFORE issuing start,
+    instead of discovering a collision as a 409 afterwards.
+    """
+    return session_service.sink_restart_plan(session_id)
+
+
 @blp.route("/<int:session_id>", methods=["DELETE"])
 @blp.response(204)
 def delete_session(session_id):
@@ -130,7 +142,11 @@ def start_session(payload, session_id):
                 sink_overrides=payload.get("sink_overrides") or None,
                 force=bool(payload.get("force", False)),
             )
-    return session_service.start(session_id, current_app.extensions["watchdog_adapter"])
+    return session_service.start(
+        session_id,
+        current_app.extensions["watchdog_adapter"],
+        sink_overrides=payload.get("sink_overrides") or None,
+    )
 
 
 @blp.route("/<int:session_id>/commands/stop", methods=["POST"])

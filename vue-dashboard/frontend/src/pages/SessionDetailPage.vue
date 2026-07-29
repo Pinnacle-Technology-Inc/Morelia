@@ -14,12 +14,13 @@ import {
 } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
+import CollapsibleSection from "../components/CollapsibleSection.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { completeSession, normalizeSession, startSession, stopSession } from "../session-api";
+import { completeSession, loadSinkPlan, normalizeSession, startSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import {
@@ -50,6 +51,10 @@ const detailState = ref("loading");
 const detailError = ref("");
 const commandError = ref("");
 const commandBusy = ref(false);
+// File sinks the operator must name before a stopped session restarts, plus
+// the ones the backend names on its own (shown, but not editable).
+const restartSinks = ref([]);
+const restartAutoNamed = ref([]);
 const activity = ref({ state: SessionEventState.IDLE, events: [], error: null });
 // Optimistic lifecycle from a just-issued command, shown until the refetch that
 // follows it lands. Cleared by refreshDetail() so the server always wins.
@@ -153,8 +158,84 @@ const sessionDeviceFlows = computed(() => {
     };
   });
 });
+// An incident means someone is waiting; a gap means data is missing. They are
+// different questions, so they are different things on screen even though the
+// backend ships them in one payload.
+//
+// Incidents also arrive on two surfaces (IncidentSchema.axis): the DATA PATH — a
+// device that stopped producing, a sink that stopped accepting — sits beside the
+// gaps it produces, and the CONTROL PLANE — processes, telemetry, failed
+// commands — sits with operations, because those are things the machinery did
+// rather than data you lost. Unknown/absent `axis` falls to the data path so an
+// older backend degrades to showing a row rather than hiding it.
+const OPEN_INCIDENT_STATUSES = new Set(["open", "acknowledged"]);
+
 const detailIncidents = computed(() => detail.value?.incidents ?? []);
+const dataPathIncidents = computed(() =>
+  detailIncidents.value.filter((incident) => incident.axis !== "control_plane"),
+);
+const controlPlaneIncidents = computed(() =>
+  detailIncidents.value.filter((incident) => incident.axis === "control_plane"),
+);
 const detailGaps = computed(() => detail.value?.gaps ?? []);
+// Already fetched on every poll and, until now, dropped on the floor.
+const detailOperations = computed(() => detail.value?.operations ?? []);
+
+/** Unresolved — `ack` is an annotation, not a resolution. */
+function isOpenIncident(incident) {
+  return OPEN_INCIDENT_STATUSES.has(incident.status);
+}
+
+/**
+ * Waiting on a PERSON, not on the system. A crashed watchdog respawns itself and
+ * an unreachable host is reconciled — those are worth showing and wrong to badge,
+ * because there is no lever an operator can pull that the supervisor is not
+ * already pulling. `needs_action` is served by the backend so the rule lives in
+ * one place; an older backend that omits it degrades to badging everything.
+ */
+function isWaitingOnOperator(incident) {
+  return isOpenIncident(incident) && incident.needs_action !== false;
+}
+
+const openDataPathIncidents = computed(() => dataPathIncidents.value.filter(isOpenIncident));
+const openControlPlaneIncidents = computed(() =>
+  controlPlaneIncidents.value.filter(isOpenIncident),
+);
+// Badge inputs — a strict subset of the tables above, which still show
+// everything unresolved so a self-healing condition stays visible while it heals.
+const actionableDataPathIncidents = computed(() =>
+  dataPathIncidents.value.filter(isWaitingOnOperator),
+);
+const actionableControlPlaneIncidents = computed(() =>
+  controlPlaneIncidents.value.filter(isWaitingOnOperator),
+);
+
+// Which record sections on the Incidents and Operations tabs start expanded.
+//
+// Both tabs pair a NEEDS-ACTION table with a HISTORY table, and history is the
+// one that grows without bound — a long healthy run accumulates gaps and
+// commands forever. Leading with history buries the two or three rows an
+// operator actually came for, so the rule is: open what is waiting on someone,
+// collapse what is merely recorded. When nothing is waiting, the history opens
+// instead, because a tab of collapsed headers looks broken rather than calm.
+// The all-empty case opens the lead section so its reassurance is the thing on
+// screen ("Nothing is waiting on you") rather than a bare `0`.
+//
+// These are DEFAULTS, not locks: CollapsibleSection owns the open state after
+// first render, so an operator's own toggle stands until the flag flips again.
+const openSections = computed(() => {
+  const incidents = openDataPathIncidents.value.length > 0;
+  const gaps = detailGaps.value.length > 0;
+  const controlPlane = openControlPlaneIncidents.value.length > 0;
+  const commands = detailOperations.value.length > 0;
+  return {
+    incidents: incidents || !gaps,
+    gaps: gaps && !incidents,
+    controlPlane: controlPlane || !commands,
+    commands: commands && !controlPlane,
+  };
+});
+
 const detailUnavailable = computed(() => detailState.value === "unavailable");
 
 // The rat (in Session Summary) and the rail (in Stream Health) are now in
@@ -199,6 +280,39 @@ function formatStatus(value) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+// Why an incident reached an operator, in their words rather than the wire's.
+// The backend records the cause on the incident at the moment it escalated
+// (app/services/escalation.py), because a later report no longer shows the
+// condition that triggered it.
+const ESCALATION_CAUSES = {
+  watchdog_auto_recovery_exhausted: "Automatic recovery gave up",
+  recommend_policy_awaits_operator: "Recommend policy — waiting for you",
+  port_absent_beyond_threshold: "Port absent too long",
+  sink_did_not_recover_with_source: "Did not return with its source",
+};
+
+function escalationCause(incident) {
+  const cause = incident.details?.escalation_cause;
+  if (!cause) return "—";
+  return ESCALATION_CAUSES[cause] ?? formatStatus(cause);
+}
+
+/** A gap's missing-data window, or an honest statement that it is unproven. */
+function gapWindow(gap) {
+  // gap_start/gap_end are declared on the schema but nothing populates them yet:
+  // the report wire carries no segment offsets, so the plane cannot prove where
+  // the pre-gap segment ended (see app/services/gaps.py). Saying so is better
+  // than rendering two empty cells that look like a rendering bug.
+  if (!gap.gap_start && !gap.gap_end) return "Boundaries not reported";
+  return `${gap.gap_start ?? "?"} → ${gap.gap_end ?? "?"}`;
+}
+
+function formatTimestamp(value) {
+  if (!value) return "—";
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
 }
 
 // While spectating, /status is re-read on a slow timer AND opportunistically
@@ -286,8 +400,61 @@ function confirmStop() {
   return runLifecycleCommand(() => stopSession(props.sessionId));
 }
 
-function restartStopped() {
-  return runLifecycleCommand(() => startSession(props.sessionId));
+// A stopped session's file sinks still point at the files the previous run
+// wrote, and a managed output file is never reopened or overwritten. So the
+// restart asks for the output names FIRST rather than letting start fail with
+// a 409 the operator then has to interpret.
+async function restartStopped() {
+  commandError.value = "";
+  const autoNamed = [];
+  const named = [];
+  try {
+    const plan = await loadSinkPlan(props.sessionId);
+    for (const sink of plan?.sinks ?? []) {
+      if (sink.assignment === "explicit") named.push(sink);
+      else autoNamed.push(sink);
+    }
+  } catch (error) {
+    commandError.value =
+      error instanceof Error ? error.message : "Could not read this session's output plan.";
+    return;
+  }
+
+  // Nothing to name (service/plot sinks only, or every path auto-assigned):
+  // start straight away rather than showing an empty dialog.
+  if (!named.length) return runLifecycleCommand(() => startSession(props.sessionId));
+
+  restartSinks.value = named.map((sink) => ({
+    ...sink,
+    location: sink.suggested_location ?? sink.current_location ?? "",
+  }));
+  restartAutoNamed.value = autoNamed;
+  dialog.value = "restart";
+}
+
+const restartOverrides = computed(() =>
+  Object.fromEntries(
+    restartSinks.value
+      .filter((sink) => sink.location && sink.location !== sink.current_location)
+      .map((sink) => [sink.key, sink.location]),
+  ),
+);
+
+// Reusing a path the previous run already wrote would be rejected at start
+// anyway; catching it here keeps the operator in the dialog they're already in.
+const restartReusedPaths = computed(() =>
+  restartSinks.value.filter((sink) => sink.occupied && sink.location === sink.current_location),
+);
+
+const restartBlocked = computed(
+  () => restartReusedPaths.value.length > 0 || restartSinks.value.some((sink) => !sink.location.trim()),
+);
+
+function confirmRestart() {
+  if (restartBlocked.value) return;
+  return runLifecycleCommand(() =>
+    startSession(props.sessionId, { sinkOverrides: restartOverrides.value }),
+  );
 }
 
 function sinkIsPlot(sink) {
@@ -316,6 +483,7 @@ const visibleTabs = computed(() => [
   ...(plotTargets.value.length ? [{ id: "plot", label: "Live Plot" }] : []),
   { id: "recovery", label: "Recovery" },
   { id: "incidents", label: "Incidents & Gaps" },
+  { id: "operations", label: "Operations" },
   { id: "activity", label: "Activity & Notes" },
   { id: "configuration", label: "Configuration" },
 ]);
@@ -328,15 +496,27 @@ const tabCounts = computed(() => {
   const counts = {};
   const troubled = streamRows.value.filter((row) => row.tone !== "good").length;
   if (troubled) counts.streams = troubled;
-  const openIssues = [...detailIncidents.value, ...detailGaps.value].length;
-  if (openIssues) counts.incidents = openIssues;
+  // Gaps are deliberately NOT counted. A gap is a permanent record, so counting
+  // them makes the badge climb forever on a long, healthy run — and resolved
+  // incidents are excluded for the same reason. The badge answers "is anything
+  // waiting on me right now", which is the only question that earns a red dot.
+  if (actionableDataPathIncidents.value.length) {
+    counts.incidents = actionableDataPathIncidents.value.length;
+  }
+  // Only self-healing FAILURES badge here: a watchdog that crashed and respawned
+  // is history, not a task. Crash loop (respawn budget spent) and outbox overflow
+  // (telemetry not draining) are the cases the system could not fix itself.
+  if (actionableControlPlaneIncidents.value.length) {
+    counts.operations = actionableControlPlaneIncidents.value.length;
+  }
   if (detail.value?.recovery) counts.recovery = 1;
   return counts;
 });
 
 const tabTones = computed(() => ({
   streams: streamRows.value.some((row) => row.tone === "bad") ? "bad" : "warn",
-  incidents: detailIncidents.value.length ? "bad" : "warn",
+  incidents: actionableDataPathIncidents.value.length ? "bad" : "warn",
+  operations: actionableControlPlaneIncidents.value.length ? "bad" : "warn",
   recovery: "warn",
 }));
 
@@ -488,9 +668,155 @@ const tabTones = computed(() => ({
         </BaseCard>
       </div>
 
-      <div v-else-if="activeTab === 'incidents'" class="table-wrap">
-        <p v-if="detailUnavailable">Incidents and gaps are unavailable.</p>
-        <table v-else class="data-table"><thead><tr><th>Incident / Gap</th><th>Device</th><th>Reason</th><th>State</th></tr></thead><tbody><tr v-for="incident in [...detailIncidents, ...detailGaps]" :key="incident.incident_id ?? incident.gap_id"><td><code>{{ incident.incident_id ?? incident.gap_id }}</code></td><td><code>{{ incident.device_id }}</code></td><td>{{ incident.reason }}</td><td>{{ incident.status ?? incident.confidence ?? "Open" }}</td></tr></tbody></table>
+      <!-- Two surfaces, not one merged list. The incidents table is what is
+           waiting on a person right now; the gap log is a permanent record of
+           missing data that nobody has to act on. Merging them meant a gap
+           carrying a linked incident_id rendered under the INCIDENT's id — so
+           its own gap_id was never shown anywhere and both rows shared a Vue
+           key. Each table now keys on its own identifier. -->
+      <div v-else-if="activeTab === 'incidents'" class="records-layout">
+        <BaseCard v-if="detailUnavailable" class="detail-panel">
+          <p class="records-empty">Incidents and gaps are unavailable.</p>
+        </BaseCard>
+        <template v-else>
+          <BaseCard class="detail-panel detail-panel--records">
+            <CollapsibleSection
+              title="Needs action"
+              hint="Unresolved incidents on the data path"
+              :count="openDataPathIncidents.length"
+              :tone="actionableDataPathIncidents.length ? 'bad' : 'neutral'"
+              :default-open="openSections.incidents"
+            >
+              <p v-if="!openDataPathIncidents.length" class="records-empty">
+                Nothing is waiting on you. Streams recovering on their own are not listed here —
+                they appear in the gap log once the episode closes.
+              </p>
+              <div v-else class="table-wrap">
+                <table class="data-table records-table">
+                  <thead>
+                    <tr><th>Incident</th><th>Device</th><th>Sink</th><th>Reason</th><th>Why now</th><th>State</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="incident in openDataPathIncidents" :key="incident.incident_id">
+                      <td><code>{{ incident.incident_id }}</code></td>
+                      <td><code>{{ incident.device_id ?? "—" }}</code></td>
+                      <td><code>{{ incident.sink_id ?? "—" }}</code></td>
+                      <td>{{ incident.reason }}</td>
+                      <td>{{ escalationCause(incident) }}</td>
+                      <td><StatusBadge compact :value="formatStatus(incident.status)" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleSection>
+          </BaseCard>
+
+          <!-- Neutral tone on purpose: the gap log is a permanent record, so its
+               count is a fact about the run's length, not a queue of problems. -->
+          <BaseCard class="detail-panel detail-panel--records">
+            <CollapsibleSection
+              title="Recovery gaps"
+              hint="Permanent record of missing data — nothing to action"
+              :count="detailGaps.length"
+              :default-open="openSections.gaps"
+            >
+              <p v-if="!detailGaps.length" class="records-empty">
+                No recovery gaps have been recorded for this session.
+              </p>
+              <div v-else class="table-wrap">
+                <table class="data-table records-table">
+                  <thead>
+                    <tr><th>Gap</th><th>Device</th><th>Sink</th><th>Reason</th><th>Window</th><th>Confidence</th><th>Recorded</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="gap in detailGaps" :key="gap.gap_id">
+                      <td><code>{{ gap.gap_id }}</code></td>
+                      <td><code>{{ gap.device_id ?? "—" }}</code></td>
+                      <td><code>{{ gap.sink_id ?? "—" }}</code></td>
+                      <td>{{ gap.reason }}</td>
+                      <td>{{ gapWindow(gap) }}</td>
+                      <td>{{ formatStatus(gap.confidence) }}</td>
+                      <td>{{ formatTimestamp(gap.created_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleSection>
+          </BaseCard>
+        </template>
+      </div>
+
+      <!-- The control-plane surface: what the machinery did, as opposed to what
+           happened to the data. The operations payload has been arriving on
+           every poll since this page was written and was never rendered. -->
+      <div v-else-if="activeTab === 'operations'" class="records-layout">
+        <BaseCard v-if="detailUnavailable" class="detail-panel">
+          <p class="records-empty">Operations are unavailable.</p>
+        </BaseCard>
+        <template v-else>
+          <BaseCard class="detail-panel detail-panel--records">
+            <CollapsibleSection
+              title="Control-plane incidents"
+              hint="Processes, telemetry and failed commands"
+              :count="openControlPlaneIncidents.length"
+              :tone="actionableControlPlaneIncidents.length ? 'bad' : 'neutral'"
+              :default-open="openSections.controlPlane"
+            >
+              <p v-if="!openControlPlaneIncidents.length" class="records-empty">
+                No open control-plane incidents.
+              </p>
+              <div v-else class="table-wrap">
+                <table class="data-table records-table">
+                  <thead>
+                    <tr><th>Incident</th><th>Reason</th><th>Opened</th><th>Waiting on</th><th>State</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="incident in openControlPlaneIncidents" :key="incident.incident_id">
+                      <td><code>{{ incident.incident_id }}</code></td>
+                      <td>{{ incident.reason }}</td>
+                      <td>{{ formatTimestamp(incident.opened_at) }}</td>
+                      <!-- Named explicitly rather than implied by a badge: a crashed
+                           watchdog respawning itself and a spent respawn budget look
+                           identical in a status column, and only one wants you. -->
+                      <td>{{ incident.needs_action === false ? "System — recovering itself" : "You" }}</td>
+                      <td><StatusBadge compact :value="formatStatus(incident.status)" /></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleSection>
+          </BaseCard>
+
+          <BaseCard class="detail-panel detail-panel--records">
+            <CollapsibleSection
+              title="Commands"
+              hint="Durable log of every command issued against this session"
+              :count="detailOperations.length"
+              :default-open="openSections.commands"
+            >
+              <p v-if="!detailOperations.length" class="records-empty">
+                No operations have been recorded for this session.
+              </p>
+              <div v-else class="table-wrap">
+                <table class="operations-table data-table records-table">
+                  <thead>
+                    <tr><th>Operation</th><th>Command</th><th>Target</th><th>State</th><th>Finished</th><th>Error</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="operation in detailOperations" :key="operation.operation_id">
+                      <td><code>{{ operation.operation_id }}</code></td>
+                      <td>{{ operation.command }}</td>
+                      <td><code>{{ operation.target_device_id ?? operation.scope }}</code></td>
+                      <td><StatusBadge compact :value="formatStatus(operation.state)" /></td>
+                      <td>{{ formatTimestamp(operation.finished_at) }}</td>
+                      <td>{{ operation.error_message ?? "—" }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </CollapsibleSection>
+          </BaseCard>
+        </template>
       </div>
 
       <div v-else-if="activeTab === 'activity'">
@@ -514,6 +840,32 @@ const tabTones = computed(() => ({
     </GuardedDialog>
     <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
       <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>
+    </GuardedDialog>
+    <GuardedDialog
+      v-if="dialog === 'restart'"
+      title="Start Session Again"
+      description="Each run writes its own output files. Name the outputs for this run."
+      confirm-label="Start Session"
+      @close="dialog = null"
+      @confirm="confirmRestart"
+    >
+      <div class="dialog-form">
+        <label v-for="sink in restartSinks" :key="sink.key" class="field">
+          <span>{{ sink.nickname ? `${sink.nickname} — ${sink.sink_name}` : sink.sink_name }} ({{ sink.sink_type }})</span>
+          <input v-model="sink.location" spellcheck="false" />
+          <small v-if="sink.occupied && sink.location === sink.current_location" class="form-notice">
+            <AlertTriangle :size="16" /> The previous run's file is still here. Choose a different name.
+          </small>
+          <small v-else-if="sink.occupied">Previous run: {{ sink.current_location }}</small>
+        </label>
+        <p v-if="restartAutoNamed.length" class="form-notice">
+          {{ restartAutoNamed.length }} further output{{ restartAutoNamed.length === 1 ? " is" : "s are" }}
+          named automatically at start.
+        </p>
+        <p v-if="restartBlocked" class="form-notice">
+          <AlertTriangle :size="18" /> Give every output a name that isn't already taken.
+        </p>
+      </div>
     </GuardedDialog>
     <GuardedDialog v-if="dialog === 'duplicate'" title="Duplicate Session" confirm-label="Create Session" @close="dialog = null" @confirm="dialog = null">
       <div class="dialog-form">

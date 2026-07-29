@@ -7,8 +7,9 @@ import serial
 import serial.tools.list_ports
 from contextlib import contextmanager
 from threading import Lock, RLock
-from Morelia.Stream.data_flow import DataFlow, coordinate_shutdown
+from Morelia.Stream.data_flow import DataFlow
 from Morelia.Stream.source import get_data_wrapper
+from Morelia.shutdown import coordinate_shutdown
 from Morelia.Watchdog.healthSink import HealthSink
 from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
 
@@ -101,6 +102,12 @@ class DataFlowMonitor:
             }
             for index, _ in enumerate(flowgraph._network)
         }
+
+    def refresh_rebuild_snapshot(self):
+        """Refresh restart metadata after Watchdog preflight updates devices."""
+        self._require_flowgraph()
+        self.snapshot_config = self._capture_dataflow_info(self.flowgraph)
+        return self.snapshot_config
     
     ######################
     # HEALTH SINK HELPER #
@@ -651,7 +658,7 @@ class DataFlowMonitor:
         result["dataflow_status"] = self.update_dataflow_status_from_workers()
         return result
 
-    def _stop_stream_unlocked(self, stream_index, join_timeout_sec):
+    def _stop_stream_unlocked(self, stream_index, join_timeout_sec, *, deadline=None):
         workers = self.flowgraph._workers
         worker = workers[stream_index] if stream_index < len(workers) else None
 
@@ -689,6 +696,7 @@ class DataFlowMonitor:
             shutdown_id,
             stream_index,
             join_timeout_sec,
+            deadline=deadline,
         )
 
         if status_queue is not None:
@@ -888,7 +896,12 @@ class DataFlowMonitor:
                     source, sinks = self._rebuild_dataflow(stream_index)
                     mapping.append((source, sinks))
 
-                new_flowgraph = DataFlow(mapping)
+                flowgraph_type = type(self.flowgraph)
+                new_flowgraph = flowgraph_type(
+                    mapping,
+                    on_sink_error=getattr(self.flowgraph, "_on_sink_error", None),
+                    on_source_error=getattr(self.flowgraph, "_on_source_error", None),
+                )
                 new_flowgraph.collect()
 
                 self.flowgraph = new_flowgraph
@@ -940,18 +953,30 @@ class DataFlowMonitor:
         with self._all_streams_lock():
             self.dataflow_status = "stopping"
             try:
+                deadline = time.monotonic() + max(0.0, float(join_timeout_sec))
+                for event in getattr(self.flowgraph, "_manual_stop_events", []):
+                    if event is not None:
+                        event.set()
+                stream_results = []
                 for stream_index in range(len(self.snapshot_config)):
-                    self._stop_stream_unlocked(
+                    stream_results.append(self._stop_stream_unlocked(
                         stream_index,
                         join_timeout_sec=join_timeout_sec,
-                    )
+                        deadline=deadline,
+                    ))
                 self.flowgraph._manual_stop_events = []
                 self.flowgraph._workers = []
-                self.last_error = None
-                self.dataflow_status = "stopped"
+                if hasattr(self.flowgraph, "_shutdown_status_queues"):
+                    self.flowgraph._shutdown_status_queues = []
+                if hasattr(self.flowgraph, "_shutdown_ids"):
+                    self.flowgraph._shutdown_ids = []
+                ok = all(result.get("ok") is True for result in stream_results)
+                self.last_error = None if ok else "one_or_more_stream_shutdowns_failed"
+                self.dataflow_status = "stopped" if ok else "stop_failed"
                 return {
-                    "ok": True,
+                    "ok": ok,
                     "dataflow_status": self.dataflow_status,
+                    "stream_results": stream_results,
                     "stream_statuses": self._get_all_stream_status_unlocked(),
                 }
             except Exception as e:
@@ -1355,6 +1380,17 @@ class DataFlowMonitor:
 
     def _make_worker(self, duration_sec, manual_stop_event, source, sinks, status_queue=None, shutdown_id=None, stream_index=0):
         """Build only one source/sinks pair to manually only reconnect the one that is failing"""
+        make_worker = getattr(self.flowgraph, "make_worker", None)
+        if callable(make_worker):
+            return make_worker(
+                duration_sec,
+                manual_stop_event,
+                source,
+                sinks,
+                status_queue=status_queue,
+                shutdown_id=shutdown_id,
+                stream_index=stream_index,
+            )
         source_class = type(source)
         source_dict = source.get_dict()
 

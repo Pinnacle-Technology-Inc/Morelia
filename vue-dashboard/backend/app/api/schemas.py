@@ -115,6 +115,31 @@ class SessionNameSuggestionSchema(Schema):
     name = fields.String(dump_only=True)
 
 
+class SinkRestartPlanEntrySchema(Schema):
+    """One file sink a session would write to on its next start."""
+
+    key = fields.String(dump_only=True)
+    nickname = fields.String(dump_only=True, allow_none=True)
+    sink_name = fields.String(dump_only=True)
+    sink_type = fields.String(dump_only=True)
+    assignment = fields.String(dump_only=True)
+    current_location = fields.String(dump_only=True, allow_none=True)
+    occupied = fields.Boolean(dump_only=True)
+    suggested_location = fields.String(dump_only=True, allow_none=True)
+
+
+class SinkRestartPlanSchema(Schema):
+    """Where a session's file outputs would land if started right now.
+
+    ``key`` on each entry is the ``sink_overrides`` key that relocates that
+    sink, so a client can build a start payload directly from this response.
+    """
+
+    session_id = fields.Integer(dump_only=True)
+    status = fields.String(dump_only=True)
+    sinks = fields.List(fields.Nested(SinkRestartPlanEntrySchema), dump_only=True)
+
+
 class SessionSchema(Schema):
     """How a stored session is represented on the wire (response shape)."""
 
@@ -153,7 +178,18 @@ class LatestStreamEventDeviceSchema(Schema):
     action = fields.String(allow_none=True)
     reason = fields.String(allow_none=True)
     recovery_stage = fields.String(allow_none=True)
+    # The watchdog's ACTUAL auto-restart budget for this stream, spent and total
+    # (``Watchdog._recovery_attempt``). Distinct from the staleness fields below:
+    # this counts restarts tried, those measure how long the stream has been
+    # down. Reporting a tick streak under ``recovery_attempt`` is what previously
+    # made "attempt 2 of 3" unrenderable.
     recovery_attempt = fields.Integer(allow_none=True)
+    recovery_attempt_max = fields.Integer(allow_none=True)
+    # Consecutive non-healthy watchdog reports, and that streak converted to
+    # seconds using the watchdog's own cadence — so the frontend never has to
+    # know the report interval to say "down for 45s".
+    nonhealthy_ticks = fields.Integer(allow_none=True)
+    nonhealthy_seconds = fields.Float(allow_none=True)
     pending_recovery = fields.Boolean()
 
 
@@ -521,6 +557,30 @@ class IncidentSchema(Schema):
     acknowledgement_note = fields.String(allow_none=True)
     resolved_at = fields.DateTime(allow_none=True)
     resolution = fields.String(allow_none=True)
+    # Which operator surface this belongs to: ``data_path`` (a device or sink
+    # stopped moving data — the same axis that produces recovery gaps) or
+    # ``control_plane`` (processes, telemetry, commands). Derived from ``reason``
+    # so the two surfaces cannot drift apart, and served rather than re-derived
+    # in the client so the vocabulary lives in exactly one place.
+    axis = fields.Method("_axis", dump_only=True)
+    # Whether this is waiting on a PERSON, as opposed to on the system. A crashed
+    # watchdog respawns itself and an unreachable host is reconciled, so those are
+    # recorded but never counted against an operator; the reasons that represent
+    # self-healing having FAILED (crash loop, outbox overflow) are.
+    needs_action = fields.Method("_needs_action", dump_only=True)
+
+    def _axis(self, incident) -> str:
+        # Imported here rather than at module scope: app.services.incidents pulls
+        # in repositories and models, and this module is imported by the API
+        # blueprints those services are reached through.
+        from app.services.incidents import axis_for_reason
+
+        return axis_for_reason(getattr(incident, "reason", None))
+
+    def _needs_action(self, incident) -> bool:
+        from app.services.incidents import requires_action_for_reason
+
+        return requires_action_for_reason(getattr(incident, "reason", None))
 
 
 class IncidentPageSchema(Schema):

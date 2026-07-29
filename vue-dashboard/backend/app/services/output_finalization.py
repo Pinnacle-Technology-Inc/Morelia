@@ -11,6 +11,7 @@ State machine (per logical output, carried on the head component)::
     not_required                      (single component: nothing to merge)
     merge_pending --claim--> merging --publish--> merged
                                      \--fail-----> merge_failed --claim--> merging ...
+                                     \--terminal-> merge_blocked
 
 Every transition out of ``merging`` is fenced by the claim's
 ``(finalization_id, fence_token)``: a crashed-then-revived finalizer whose
@@ -52,10 +53,17 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+import structlog
+
 from app.database import db, transaction
+from app.domain.enums import RuntimeOwnershipState, SessionStatus
 from app.models.output_file import OutputFile
+from app.models.runtime_ownership import RuntimeOwnership
+from app.models.session import Session
 from app.repositories.output_files import (
     ACQUISITION_COMPLETE,
+    ACQUISITION_INTERRUPTED,
+    ARTIFACT_MERGE_BLOCKED,
     ARTIFACT_MERGE_FAILED,
     ARTIFACT_MERGE_PENDING,
     ARTIFACT_MERGED,
@@ -64,9 +72,12 @@ from app.repositories.output_files import (
     STATUS_CLOSED,
     ComponentRef,
     FinalizationClaim,
+    NotFinalizable,
     OutputFilesRepository,
     StaleFinalizerClaim,
 )
+
+_log = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Merger contract (published for packets 17 and 18)
@@ -106,6 +117,7 @@ class MergeResult:
     final_output_id: str | None = None
     sample_count: int | None = None
     reason: str | None = None
+    retryable: bool = True
     details: dict = field(default_factory=dict)
 
 
@@ -139,6 +151,8 @@ class FinalizationCoordinator:
         lease_ttl_seconds: float,
         retention_seconds: float,
         heartbeat_interval_seconds: float = 15.0,
+        max_merge_attempts: int = 5,
+        retry_backoff_seconds: tuple[float, ...] = (5.0, 15.0, 60.0, 300.0),
         now_fn: Callable[[], datetime] = _now,
     ) -> None:
         self._repo = repository or OutputFilesRepository()
@@ -148,6 +162,12 @@ class FinalizationCoordinator:
         self._heartbeat_interval_seconds = float(heartbeat_interval_seconds)
         if self._heartbeat_interval_seconds <= 0:
             raise ValueError("heartbeat_interval_seconds must be greater than zero")
+        self._max_merge_attempts = int(max_merge_attempts)
+        if self._max_merge_attempts < 1:
+            raise ValueError("max_merge_attempts must be at least one")
+        self._retry_backoff_seconds = tuple(float(value) for value in retry_backoff_seconds)
+        if any(value < 0 for value in self._retry_backoff_seconds):
+            raise ValueError("retry_backoff_seconds cannot contain negative values")
         self._now_fn = now_fn
 
     @property
@@ -188,12 +208,16 @@ class FinalizationCoordinator:
                 worker_id=worker_id,
                 now=now,
                 lease_ttl_seconds=self._lease_ttl_seconds,
+                max_attempts=self._max_merge_attempts,
+                retry_backoff_seconds=self._retry_backoff_seconds,
             )
         else:
             claim = self._repo.claim_next(
                 worker_id=worker_id,
                 now=now,
                 lease_ttl_seconds=self._lease_ttl_seconds,
+                max_attempts=self._max_merge_attempts,
+                retry_backoff_seconds=self._retry_backoff_seconds,
             )
         if claim is None:
             return None
@@ -216,14 +240,22 @@ class FinalizationCoordinator:
         try:
             result = self._merge_with_heartbeats(merger, request, claim)
         except Exception as exc:  # noqa: BLE001 - a crashing merger must not publish
-            return self._fail(claim, reason=f"merger raised: {exc!r}", temp_path=None)
+            return self._fail(
+                claim,
+                reason=f"merger raised: {exc!r}",
+                temp_path=None,
+                retryable=True,
+            )
 
         # Verify before publish: never commit a merged state the merger cannot
         # back with a real, published file and a fresh artifact id.
         verification = self._verify(result)
         if verification is not None:
             return self._fail(
-                claim, reason=verification, temp_path=result.temp_path
+                claim,
+                reason=verification,
+                temp_path=result.temp_path,
+                retryable=result.retryable,
             )
 
         try:
@@ -252,6 +284,7 @@ class FinalizationCoordinator:
                 claim,
                 reason=f"atomic publish failed: {exc!r}",
                 temp_path=result.temp_path,
+                retryable=True,
             )
 
         return FinalizationOutcome(
@@ -294,15 +327,29 @@ class FinalizationCoordinator:
         return None
 
     def _fail(
-        self, claim: FinalizationClaim, *, reason: str, temp_path: str | None
+        self,
+        claim: FinalizationClaim,
+        *,
+        reason: str,
+        temp_path: str | None,
+        retryable: bool,
     ) -> FinalizationOutcome:
         try:
-            self._repo.mark_merge_failed(
-                claim.logical_sink_id,
-                finalization_id=claim.finalization_id,
-                fence_token=claim.fence_token,
-                now=self._now_fn(),
-            )
+            blocked = not retryable or claim.fence_token >= self._max_merge_attempts
+            if blocked:
+                self._repo.mark_merge_blocked(
+                    claim.logical_sink_id,
+                    finalization_id=claim.finalization_id,
+                    fence_token=claim.fence_token,
+                    now=self._now_fn(),
+                )
+            else:
+                self._repo.mark_merge_failed(
+                    claim.logical_sink_id,
+                    finalization_id=claim.finalization_id,
+                    fence_token=claim.fence_token,
+                    now=self._now_fn(),
+                )
         except StaleFinalizerClaim:
             return FinalizationOutcome(
                 logical_sink_id=claim.logical_sink_id,
@@ -312,7 +359,7 @@ class FinalizationCoordinator:
             )
         return FinalizationOutcome(
             logical_sink_id=claim.logical_sink_id,
-            action="failed",
+            action="blocked" if blocked else "failed",
             temp_path=temp_path,
             reason=reason,
         )
@@ -351,6 +398,8 @@ def coordinator_from_config(
         lease_ttl_seconds=config.FINALIZER_LEASE_TTL_SECONDS,
         retention_seconds=config.FINALIZER_COMPONENT_RETENTION_SECONDS,
         heartbeat_interval_seconds=config.FINALIZER_HEARTBEAT_INTERVAL_SECONDS,
+        max_merge_attempts=config.FINALIZER_MAX_MERGE_ATTEMPTS,
+        retry_backoff_seconds=config.FINALIZER_RETRY_BACKOFF_SECONDS,
         now_fn=now_fn,
     )
 
@@ -385,6 +434,7 @@ def coordinator_from_config(
 # daemon shutdown.
 COMPLETION_USER_STOP = "user_stop"
 COMPLETION_SHUTDOWN = "shutdown"
+COMPLETION_RECONCILIATION = "reconciliation"
 
 # Terminal ``termination_reason`` recorded on the completing component. Kept in
 # the packet-11 vocabulary (``clean`` / ``recovery`` / ``watchdog_crash`` /
@@ -399,6 +449,7 @@ _SCHEDULED_STATES = frozenset(
         ARTIFACT_MERGING,
         ARTIFACT_MERGED,
         ARTIFACT_MERGE_FAILED,
+        ARTIFACT_MERGE_BLOCKED,
     }
 )
 
@@ -496,7 +547,17 @@ def complete_session_acquisitions(
                 terminal, termination_reason=termination_reason, now=now
             )
 
-        head = repo.mark_merge_pending(logical)
+        try:
+            head = repo.mark_merge_pending(logical)
+        except NotFinalizable as exc:
+            head = repo.mark_merge_blocked(logical)
+            _log.warning(
+                "output_finalization_scheduling_blocked",
+                session_id=session_id,
+                logical_sink_id=logical,
+                reason=exc.reason,
+            )
+            continue
         outcomes.append(
             AcquisitionCompletion(
                 logical_sink_id=logical,
@@ -508,6 +569,217 @@ def complete_session_acquisitions(
             )
         )
 
+    return outcomes
+
+
+class OutputReconciliationRefused(RuntimeError):
+    """A stopped-session output repair failed its ownership safety gates."""
+
+
+def _require_repairable_session(session_id: int) -> Session:
+    session = db.session.get(Session, session_id)
+    if session is None:
+        raise KeyError(f"session {session_id} not found")
+    if session.status not in (SessionStatus.STOPPED, SessionStatus.COMPLETED):
+        raise OutputReconciliationRefused(
+            f"session {session_id} is {session.status!s}, not stopped or completed"
+        )
+    if session.runtime_port is not None or session.runtime_token is not None:
+        raise OutputReconciliationRefused(
+            f"session {session_id} still carries live runtime connection metadata"
+        )
+
+    ownerships = db.session.scalars(
+        db.select(RuntimeOwnership).where(RuntimeOwnership.session_id == session_id)
+    ).all()
+    unsafe = [row for row in ownerships if row.state != RuntimeOwnershipState.STOPPED]
+    if unsafe:
+        states = ", ".join(sorted({str(row.state) for row in unsafe}))
+        raise OutputReconciliationRefused(
+            f"session {session_id} still has runtime ownership in state(s): {states}"
+        )
+    return session
+
+
+def _plan_logical_output_repair(
+    repo: OutputFilesRepository, logical_sink_id: str
+) -> dict[str, object]:
+    components = repo.list_components(logical_sink_id)
+    head = components[0] if components else None
+    result: dict[str, object] = {
+        "logical_sink_id": logical_sink_id,
+        "action": "skipped",
+        "reason": None,
+        "artifact_state_before": None if head is None else head.artifact_state,
+        "artifact_state_after": None if head is None else head.artifact_state,
+        "components": [],
+    }
+    if not components:
+        result["reason"] = "no components exist"
+        return result
+
+    indices = [component.segment_index for component in components]
+    if indices != list(range(len(components))):
+        result["reason"] = f"component indices are not contiguous: {indices}"
+        return result
+    if components[0].previous_output_id is not None:
+        result["reason"] = "head component has a previous_output_id"
+        return result
+    for previous, successor in zip(components, components[1:]):
+        if successor.previous_output_id != previous.output_id:
+            result["reason"] = (
+                f"segment {successor.segment_index} does not link to its predecessor"
+            )
+            return result
+
+    terminal = components[-1]
+    if terminal.status != STATUS_CLOSED:
+        result["reason"] = "terminal component is not closed"
+        return result
+    if terminal.acquisition_state != ACQUISITION_COMPLETE:
+        result["reason"] = "terminal acquisition is not complete"
+        return result
+    missing = [component.path for component in components if not Path(component.path).is_file()]
+    if missing:
+        result["reason"] = f"component file is missing: {missing[0]}"
+        return result
+
+    assert head is not None
+    if (
+        head.finalization_id is not None
+        or head.finalizer_fence_token is not None
+        or head.final_output_id is not None
+    ):
+        result["reason"] = "head records a merge attempt or published artifact"
+        return result
+    if head.artifact_state not in (ARTIFACT_NOT_REQUIRED, ARTIFACT_MERGE_BLOCKED):
+        result["reason"] = f"artifact state {head.artifact_state!r} is not repairable"
+        return result
+
+    stale = [component for component in components[:-1] if component.status != STATUS_CLOSED]
+    if any(component.status != "open" for component in stale):
+        result["reason"] = "a superseded component has an unsupported writer state"
+        return result
+
+    result["components"] = [
+        {
+            "output_id": component.output_id,
+            "segment_index": component.segment_index,
+            "path": component.path,
+            "from_status": component.status,
+            "to_status": STATUS_CLOSED,
+        }
+        for component in stale
+    ]
+    result["action"] = "would_repair" if stale else "would_requeue"
+    result["reason"] = (
+        "superseded open components have linked successors"
+        if stale
+        else "chain is finalizable but its scheduling block has not been requeued"
+    )
+    result["artifact_state_after"] = (
+        ARTIFACT_MERGE_PENDING if len(components) > 1 else ARTIFACT_NOT_REQUIRED
+    )
+    return result
+
+
+def reconcile_stopped_session_outputs(session_id: int, *, apply: bool = False) -> dict:
+    """Preview or repair crash-orphaned predecessors for one terminal session.
+
+    This never repairs the terminal component and never requeues a head that has
+    been claimed by a merger.  A linked successor is the durable proof that an
+    older ``open`` row is superseded; terminal session + stopped ownership are
+    the control-plane proof that no writer may still own it.
+    """
+    _require_repairable_session(session_id)
+    repo = OutputFilesRepository()
+    logical_ids = _session_head_logical_ids(session_id)
+    plans = [_plan_logical_output_repair(repo, logical) for logical in logical_ids]
+    repairable = sum(len(plan["components"]) for plan in plans)
+
+    report = {
+        "session_id": session_id,
+        "mode": "apply" if apply else "dry_run",
+        "repairable_components": repairable,
+        "repaired_components": 0,
+        "scheduled_outputs": 0,
+        "logical_outputs": plans,
+    }
+    if not apply:
+        return report
+
+    applied_plans: list[dict[str, object]] = []
+    for original in plans:
+        logical = str(original["logical_sink_id"])
+        if original["action"] not in ("would_repair", "would_requeue"):
+            applied_plans.append(original)
+            continue
+
+        with transaction():
+            _require_repairable_session(session_id)
+            current = _plan_logical_output_repair(repo, logical)
+            if current["action"] not in ("would_repair", "would_requeue"):
+                applied_plans.append(current)
+                continue
+
+            components = repo.list_components(logical)
+            repair_ids = {
+                str(component["output_id"]) for component in current["components"]
+            }
+            for component in components[:-1]:
+                if component.output_id not in repair_ids:
+                    continue
+                component.status = STATUS_CLOSED
+                component.acquisition_state = ACQUISITION_INTERRUPTED
+                if component.termination_reason is None:
+                    component.termination_reason = "recovery"
+                component.byte_offset = Path(component.path).stat().st_size
+
+            head = components[0]
+            head.artifact_state = (
+                ARTIFACT_MERGE_PENDING if len(components) > 1 else ARTIFACT_NOT_REQUIRED
+            )
+            head.finalized_at = None
+
+            repaired_count = len(repair_ids)
+            report["repaired_components"] += repaired_count
+            report["scheduled_outputs"] += int(len(components) > 1)
+            current["action"] = "repaired" if repaired_count else "requeued"
+            current["artifact_state_after"] = head.artifact_state
+            applied_plans.append(current)
+
+    report["logical_outputs"] = applied_plans
+    return report
+
+
+def reconcile_stopped_session_acquisitions() -> list[AcquisitionCompletion]:
+    """Repair finalization scheduling that an older stop path left incomplete.
+
+    Only terminal sessions are considered. Per-output isolation inside
+    :func:`complete_session_acquisitions` quarantines malformed chains while
+    allowing later valid chains from the same session to be scheduled.
+    """
+    session_ids = db.session.scalars(
+        db.select(Session.id)
+        .where(Session.status.in_((SessionStatus.STOPPED, SessionStatus.COMPLETED)))
+        .order_by(Session.id.asc())
+    ).all()
+    outcomes: list[AcquisitionCompletion] = []
+    for session_id in session_ids:
+        try:
+            outcomes.extend(
+                complete_session_acquisitions(
+                    session_id,
+                    completion_cause=COMPLETION_RECONCILIATION,
+                )
+            )
+        except Exception as exc:  # noqa: BLE001 - one legacy session cannot starve others
+            _log.warning(
+                "output_finalization_reconciliation_failed",
+                session_id=session_id,
+                error_type=type(exc).__name__,
+                reason=str(exc),
+            )
     return outcomes
 
 

@@ -30,10 +30,34 @@ from app.runtime_child.driver import (
     SinkHealth,
     SinkReport,
 )
+from app.database import create_database_app, db
+from app.models.output_file import OutputFile
 from app.runtime_child.sink_factory import RuntimeContext, build_sink, build_sinks
 from app.runtime_host.manifest import Manifest
 
 _log = structlog.get_logger(__name__)
+
+
+@contextmanager
+def _database_context():
+    """App context for a parent-side ``output_files`` read, reusing any current one.
+
+    The runtime child normally already runs inside an app context; recovery can
+    also reach here from a watchdog thread that does not, so push a minimal one
+    rather than assuming either.
+    """
+    from flask import has_app_context
+
+    if has_app_context():
+        yield
+        return
+    context = create_database_app().app_context()
+    context.push()
+    try:
+        yield
+    finally:
+        with suppress(Exception):
+            context.pop()
 
 
 # ---------------------------------------------------------------------------
@@ -177,14 +201,14 @@ def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
     watchdog_module = importlib.import_module("Morelia.Watchdog.watchdog")
     devices_module = importlib.import_module("Morelia.Devices")
     packet_module = importlib.import_module("Morelia.packet")
-    dataflow_module = importlib.import_module("Morelia.Stream.data_flow")
+    from app.runtime_child.acknowledged_dataflow import AcknowledgedDataFlow
     from app.output.managed_csv_sink import ManagedCsvSink
 
     return (
         watchdog_module.Watchdog,
         devices_module.Pod8206HR,
         devices_module.Pod8401HR,
-        dataflow_module.DataFlow,
+        AcknowledgedDataFlow,
         ManagedCsvSink,
         devices_module.Preamp,
         packet_module.PrimaryChannelMode,
@@ -256,6 +280,10 @@ class MoreliaRuntime:
         }
 
         self._pods: list[Any] = []
+        # Current pod per stream index. Distinct from _pods, which accumulates
+        # every pod ever built (including superseded ones) purely so shutdown
+        # can close them all; recovery needs to know which one is live.
+        self._pod_by_stream: dict[int, Any] = {}
         self._sinks: list[Any] = []
         self._flowgraph: Any | None = None
         self._watchdog: Any | None = None
@@ -533,6 +561,7 @@ class MoreliaRuntime:
                 )
                 # Track immediately so rollback can close the port if sinks fail next.
                 self._pods.append(pod)
+                self._pod_by_stream[len(network)] = pod
                 runtime_context = self._runtime_context(CSVSink, device_flow, device_type, pod)
                 sinks = build_sinks(device_flow.sinks, pod, runtime_context)
                 self._sinks.extend(sinks)
@@ -555,10 +584,116 @@ class MoreliaRuntime:
                 max_heartbeat_age_sec=self._max_heartbeat_age_sec,
                 first_packet_timeout_sec=self._first_packet_timeout_sec,
                 recovery_policy=self._manifest.policy,
+                reconstruction_hook=self._reconstruct_stream,
             )
         except BaseException:
             self._rollback_stack_construction()
             raise
+
+    # -- recovery reconstruction --------------------------------------------
+
+    def _segment_resume(self, device_flow) -> dict[str, dict[str, object]]:
+        """Newest persisted component per file sink of this device flow.
+
+        The watchdog rebuilds a failed stream in the PARENT process, but the
+        ``output_files`` row is written by the WORKER when it opens the sink —
+        so the parent has no in-memory record of which component is current.
+        The database is the only place that identity exists, which is exactly
+        why the reconstruction hook belongs to the runtime child (it has DB
+        access) rather than the Morelia watchdog library (which does not).
+
+        Returns ``{}`` for a sink that has never opened; that sink then builds
+        as a first construction and mints component 0, which is correct.
+        """
+        resume: dict[str, dict[str, object]] = {}
+        with _database_context():
+            for sink in device_flow.sinks:
+                row = db.session.scalars(
+                    db.select(OutputFile)
+                    .where(
+                        OutputFile.dataflow_id == self._manifest.dataflow_id,
+                        OutputFile.sink_id == sink.sink_id,
+                    )
+                    .order_by(OutputFile.segment_index.desc())
+                ).first()
+                if row is None:
+                    continue
+                resume[sink.sink_id] = {
+                    "output_id": row.output_id,
+                    "logical_sink_id": row.logical_sink_id,
+                    "segment_index": row.segment_index,
+                }
+        return resume
+
+    def _reconstruct_stream(self, stream_index: int):
+        """Rebuild one stream's source and sinks for a watchdog recovery restart.
+
+        Installed as the DataFlowMonitor's ``reconstruction_hook``. Without it
+        the monitor replays ``snapshot_config``, which is captured once at
+        monitor construction — before any worker has run — so every rebuilt file
+        sink carries ``output_id=None`` and tries to create a fresh component 0
+        over the path the previous segment's file already occupies. That fails
+        with OutputFileAlreadyExistsError on every single attempt, and no retry
+        budget can ever clear it.
+
+        Resuming from the persisted component instead routes the sink through
+        ``managed_file.allocate_continuation``: the closed segment is never
+        reopened or overwritten, and the replacement worker writes the next
+        linked component.
+
+        Output: tuple (source, sinks) as the hook contract requires.
+        """
+        (
+            _Watchdog,
+            Pod8206HR,
+            Pod8401HR,
+            _DataFlow,
+            CSVSink,
+            Preamp,
+            PrimaryChannelMode,
+            SecondaryChannelMode,
+        ) = self._importer()
+
+        device_flow = self._manifest.device_flows[stream_index]
+        device_type = self._device_type(device_flow)
+        previous_pod = self._pod_by_stream.get(stream_index)
+        pod = self._build_pod(
+            device_type,
+            Pod8206HR,
+            Pod8401HR,
+            Preamp,
+            PrimaryChannelMode,
+            SecondaryChannelMode,
+            device_flow,
+        )
+
+        # Carry the sample rate forward so the replacement worker never issues
+        # GET SAMPLE RATE. That handshake is the most common way a replacement
+        # worker dies: the device is often still streaming from the worker that
+        # was just killed, so write_read returns whatever packet surfaces next
+        # rather than the reply we asked for, and parsing it kills the process
+        # before the sinks are ever opened. The rate cannot change mid-session,
+        # so the value preflight already read stays correct.
+        if previous_pod is not None:
+            with suppress(Exception):
+                known = previous_pod.known_sample_rate
+                if known:
+                    pod.cache_sample_rate(known)
+
+        # Track before building sinks so a sink failure still leaves the port
+        # closeable by the rollback path, matching _build_stack's ordering.
+        self._pods.append(pod)
+        self._pod_by_stream[stream_index] = pod
+        runtime_context = self._runtime_context(
+            CSVSink,
+            device_flow,
+            device_type,
+            pod,
+            segment_resume=self._segment_resume(device_flow),
+        )
+        sinks = build_sinks(device_flow.sinks, pod, runtime_context)
+        self._sinks.extend(sinks)
+        return pod, sinks
 
     def _rollback_stack_construction(self) -> None:
         """Tear down pods/sinks/queues built before a failed stack setup."""
@@ -589,8 +724,13 @@ class MoreliaRuntime:
         device_flow,
         device_type: DeviceType,
         pod: Any,
+        segment_resume: dict[str, dict[str, object]] | None = None,
     ) -> RuntimeContext:
-        """Build the per-device context passed into the sink factory."""
+        """Build the per-device context passed into the sink factory.
+
+        ``segment_resume`` is passed only on a recovery rebuild; on a first
+        build it stays None so every file sink mints component 0.
+        """
         return RuntimeContext(
             dataflow_id=self._manifest.dataflow_id,
             device_id=device_flow.device_id,
@@ -601,6 +741,7 @@ class MoreliaRuntime:
             secret_resolver=resolve_secret_from_env,
             plot_transport=None,
             sink_delivery_outbox_factory=self._sink_delivery_outbox_factory,
+            segment_resume=segment_resume,
         )
 
     def _build_csv_sink(
@@ -930,6 +1071,10 @@ class MoreliaRuntime:
                     "recovery": {
                         "status": _bounded_text(recovery_event.get("status"), 80),
                         "policy": _bounded_text(recovery_event.get("recovery_policy"), 80),
+                        # The watcher's real restart budget as {"current", "max"}
+                        # — distinct from consecutive_nonhealthy_ticks above,
+                        # which measures elapsed time, not attempts.
+                        "attempt": _attempt_counts(recovery_event.get("recovery_attempt")),
                     },
                 }
             )
@@ -1173,6 +1318,25 @@ def _bounded_text(value: object, limit: int) -> str | None:
     if not isinstance(value, str):
         return None
     return value[:limit]
+
+
+def _attempt_counts(value: object) -> dict[str, int] | None:
+    """Project the watcher's ``{"current", "max"}`` restart budget, or ``None``.
+
+    Both fields must be present and non-negative ints: a half-formed budget
+    would render as "attempt 2 of ?" and is worse than showing nothing. Bools
+    are rejected explicitly — ``isinstance(True, int)`` is True in Python, and a
+    stray flag must never render as an attempt count.
+    """
+    if not isinstance(value, Mapping):
+        return None
+    counts: dict[str, int] = {}
+    for key in ("current", "max"):
+        raw = value.get(key)
+        if not isinstance(raw, int) or isinstance(raw, bool) or raw < 0:
+            return None
+        counts[key] = raw
+    return counts
 
 
 def _required_four(value: object, key: str) -> tuple[object, object, object, object]:

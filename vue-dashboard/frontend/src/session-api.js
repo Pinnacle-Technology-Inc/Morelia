@@ -60,6 +60,15 @@ export async function createSessionDraft(payload) {
   });
 }
 
+/** Where this session's file outputs would land if started right now.
+ *
+ * Read-only. Each entry's `key` is the `sink_overrides` key that relocates
+ * that sink, so a start payload can be built straight from this response.
+ */
+export async function loadSinkPlan(sessionId) {
+  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/sink-plan`);
+}
+
 export async function startSession(sessionId, options = {}) {
   return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commands/start`, {
     method: "POST",
