@@ -246,7 +246,12 @@ def _merge_worker(queue: "mp.Queue", paths: list[str], temp_path: str) -> None:
             paths
         )
         _write_merged(Path(temp_path), schema, segments, device_preferences)
-        sample_count = _verify(Path(temp_path), schema, per_segment_counts)
+        sample_count = _verify(
+            Path(temp_path),
+            schema,
+            per_segment_counts,
+            [start for start, _segment in segments],
+        )
         queue.put(
             {
                 "ok": True,
@@ -272,14 +277,24 @@ def _merge_worker(queue: "mp.Queue", paths: list[str], temp_path: str) -> None:
 class _Schema:
     """The uniform PVFS metadata a compatible chain must share."""
 
-    __slots__ = ("channels", "units", "sample_rate")
+    __slots__ = (
+        "channels",
+        "units",
+        "sample_rate",
+        "experiment_start",
+    )
 
     def __init__(
-        self, channels: tuple[str, ...], units: tuple[str, ...], sample_rate: float
+        self,
+        channels: tuple[str, ...],
+        units: tuple[str, ...],
+        sample_rate: float,
+        experiment_start: float,
     ):
         self.channels = channels
         self.units = units
         self.sample_rate = sample_rate
+        self.experiment_start = experiment_start
 
     def signature(self) -> tuple:
         return (self.channels, self.units, self.sample_rate)
@@ -298,7 +313,7 @@ def _read_and_validate(paths: list[str]):
 
     reference: _Schema | None = None
     reference_prefs: list[dict] | None = None
-    segments: list[dict[str, list[float]]] = []
+    segments: list[tuple[float, dict[str, list[float]]]] = []
     per_segment_counts: list[int] = []
 
     for path_str in paths:
@@ -320,6 +335,7 @@ def _read_and_validate(paths: list[str]):
             units: list[str] = []
             rates: list[float] = []
             channel_data: dict[str, list[float]] = {}
+            channel_starts: list[float] = []
             for name in channels:
                 idf = reader.open_channel(name)
                 if idf is None:
@@ -329,14 +345,27 @@ def _read_and_validate(paths: list[str]):
                 info = reader.get_channel_info(name)
                 units.append((getattr(info, "unit", "") or "").strip())
                 rates.append(float(idf.get_data_rate()))
-                channel_data[name] = _read_channel(idf, HighTime)
+                channel_start, channel_data[name] = _read_channel(idf, HighTime)
+                channel_starts.append(channel_start)
 
             rate_set = set(rates)
             if len(rate_set) != 1:
                 raise PvfsMergeError(
                     f"component {path} mixes channel data rates {sorted(rate_set)}"
                 )
-            schema = _Schema(channels, tuple(units), rates[0])
+            if len(set(channel_starts)) != 1:
+                raise PvfsMergeError(
+                    f"component {path} has misaligned channel starts {channel_starts}"
+                )
+            experiment = reader.get_experiment_info()
+            if experiment is None or experiment.start_time is None:
+                raise PvfsMergeError(f"component {path} has no experiment start time")
+            schema = _Schema(
+                channels,
+                tuple(units),
+                rates[0],
+                experiment.start_time.to_seconds(),
+            )
             prefs = _read_device_preferences(reader)
 
             if reference is None:
@@ -360,7 +389,7 @@ def _read_and_validate(paths: list[str]):
                     f"component {path} has ragged channel sample counts "
                     f"{ {k: len(v) for k, v in channel_data.items()} }"
                 )
-            segments.append(channel_data)
+            segments.append((channel_starts[0], channel_data))
             per_segment_counts.append(next(iter(counts)))
         finally:
             reader.close()
@@ -369,14 +398,14 @@ def _read_and_validate(paths: list[str]):
     return reference, segments, per_segment_counts, (reference_prefs or [])
 
 
-def _read_channel(idf, HighTime) -> list[float]:
-    """Read every sample of one channel from an opened indexed data file."""
+def _read_channel(idf, HighTime) -> tuple[float, list[float]]:
+    """Read every sample and the original start of an opened channel."""
     start = idf.get_start_time().to_seconds()
     end = idf.get_end_time().to_seconds()
     _ts, values = idf.get_data(
         HighTime.from_seconds(start - 1.0), HighTime.from_seconds(end + 1.0)
     )
-    return list(values)
+    return start, list(values)
 
 
 def _read_device_preferences(reader) -> list[dict]:
@@ -421,7 +450,7 @@ def _read_device_preferences(reader) -> list[dict]:
 def _write_merged(
     temp_path: Path,
     schema: _Schema,
-    segments: list[dict[str, list[float]]],
+    segments: list[tuple[float, dict[str, list[float]]]],
     device_preferences: list[dict],
 ) -> None:
     """Create the merged container and append every segment's block in order."""
@@ -436,7 +465,7 @@ def _write_merged(
                 f"could not create merged PVFS container at {temp_path}"
             )
 
-        start_time = HighTime.from_seconds(time.time())
+        start_time = HighTime.from_seconds(schema.experiment_start)
         writer.set_experiment_info(
             name="Morelia PVFS recording (merged)",
             description="Merged continuation components from Morelia data collection",
@@ -448,21 +477,17 @@ def _write_merged(
                 raise PvfsMergeError(f"failed to create merged PVFS channel {name}")
             idf._delta_time = HighTime(0, 1.0 / rate)
 
-        # Append blocks in ordinal (chronological) order, timing each block off the
-        # running sample count exactly as the acquisition sink did.
-        samples_written = 0
-        for segment in segments:
+        # Each component retains its source start. This preserves a real recovery
+        # gap without manufacturing zero or interpolated samples.
+        for segment_start, segment in segments:
             n = len(next(iter(segment.values()))) if segment else 0
             if n == 0:
                 continue
-            block_start = HighTime.from_seconds(
-                start_time.to_seconds() + samples_written / rate
-            )
+            block_start = HighTime.from_seconds(segment_start)
             for name in schema.channels:
                 idf = writer._indexed_data_files.get(name)
                 if idf is not None:
                     idf.append_block(block_start, segment[name])
-            samples_written += n
 
         if device_preferences:
             writer.set_device_preferences(device_preferences)
@@ -480,7 +505,12 @@ def _write_merged(
 # ---------------------------------------------------------------------------
 
 
-def _verify(temp_path: Path, schema: _Schema, per_segment_counts: list[int]) -> int:
+def _verify(
+    temp_path: Path,
+    schema: _Schema,
+    per_segment_counts: list[int],
+    segment_starts: list[float],
+) -> int:
     """Re-open the merged container and confirm it backs a publish.
 
     Checks channel identity + order, per-channel unit and rate, and that every
@@ -490,6 +520,17 @@ def _verify(temp_path: Path, schema: _Schema, per_segment_counts: list[int]) -> 
     from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
 
     expected_total = sum(per_segment_counts)
+    populated_segments = [
+        (start, count)
+        for start, count in zip(segment_starts, per_segment_counts)
+        if count
+    ]
+    expected_start = populated_segments[0][0] if populated_segments else None
+    expected_end = (
+        max(start + (count - 1) / schema.sample_rate for start, count in populated_segments)
+        if populated_segments
+        else None
+    )
     reader = PvfsDataFile()
     try:
         if not reader.open(str(temp_path)):
@@ -501,6 +542,16 @@ def _verify(temp_path: Path, schema: _Schema, per_segment_counts: list[int]) -> 
             raise PvfsMergeError(
                 f"merged artifact channels {channels} != expected {schema.channels}"
             )
+        experiment = reader.get_experiment_info()
+        if (
+            expected_start is not None
+            and (
+                experiment is None
+                or experiment.start_time is None
+                or experiment.start_time.to_seconds() != expected_start
+            )
+        ):
+            raise PvfsMergeError("merged artifact experiment start differs from head component")
         for name, unit in zip(schema.channels, schema.units):
             idf = reader.open_channel(name)
             if idf is None:
@@ -520,11 +571,19 @@ def _verify(temp_path: Path, schema: _Schema, per_segment_counts: list[int]) -> 
                     f"merged artifact channel {name!r} unit {actual_unit!r} != "
                     f"expected {unit!r}"
                 )
-            actual_count = len(_read_channel(idf, HighTime))
+            _channel_start, values = _read_channel(idf, HighTime)
+            actual_count = len(values)
             if actual_count != expected_total:
                 raise PvfsMergeError(
                     f"merged artifact channel {name!r} sample count {actual_count} "
                     f"!= expected {expected_total}"
+                )
+            if expected_start is not None and (
+                idf.get_start_time().to_seconds() != expected_start
+                or idf.get_end_time().to_seconds() != expected_end
+            ):
+                raise PvfsMergeError(
+                    f"merged artifact channel {name!r} timeline does not retain component bounds"
                 )
     finally:
         reader.close()

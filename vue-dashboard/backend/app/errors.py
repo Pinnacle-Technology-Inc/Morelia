@@ -110,6 +110,7 @@ def register_error_handlers(app) -> None:
         SessionTemplateNameExists,
         SessionTemplateNotFound,
         SinkLocationExists,
+        SinkParentUnavailable,
         StopProofMissing,
     )
     from app.watchdog.adapters import (
@@ -202,6 +203,10 @@ def register_error_handlers(app) -> None:
     app.register_error_handler(InvalidTransition,           _domain(409, "invalid_transition"))
     app.register_error_handler(EmptySession,                _domain(409, "empty_session"))
     app.register_error_handler(SinkLocationExists,          _domain(409, "sink_location_exists"))
+    app.register_error_handler(
+        SinkParentUnavailable,
+        _domain(422, "sink_parent_unavailable"),
+    )
     app.register_error_handler(OperationNotFound,           _domain(404, "operation_not_found"))
     app.register_error_handler(IncidentNotFound,            _domain(404, "incident_not_found"))
     app.register_error_handler(RuntimeNotTracked,           _domain(409, "runtime_not_tracked"))

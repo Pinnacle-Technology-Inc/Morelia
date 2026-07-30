@@ -1,44 +1,25 @@
-"""Managed CSV sink: deferred-open, worker-owned CSV handle.
+"""Writes session samples to a CSV file.
 
-Ownership boundary (gap SINK-21)
---------------------------------
-Exactly one process — the DataFlow collection *worker* — may own the live CSV
-handle for a stream. Construction is therefore side-effect free: ``__init__``
-records a descriptor and opens **nothing** (no file, no ``output_files`` row, no
-database handle, no writer). The parent watchdog process builds these
-descriptors during stack construction and reconstructs them during recovery
-planning; it must never open them. The physical handle, the metadata row, and
-the header are created only when :meth:`open` runs — which happens in the worker
-via the context-manager protocol (Morelia's ``get_data`` enters each sink), or
-lazily on the first ``write_row``/``flush``.
+Only the DataFlow worker may open the file. The parent builds and rebuilds
+sink descriptors during the recovery process, but never opens them.
 
-Reconstruction calling convention (from Morelia ``get_data_wrapper`` and the
-watchdog ``_rebuild_dataflow``):
+Rebuild a sink with:
     ManagedCsvSink(**{**sink.get_dict(), "pod": source})
 
-open() semantics
-----------------
-When ``output_id`` is present in the descriptor the existing OutputFile row is
-fetched and the file is reopened in append mode: identical bytes before the
-boundary, new rows at EOF, no second header. When ``output_id`` is absent this
-is a first construction: exclusive file create (create-once), header written
-once — unless this dataflow already owns an open file at the same path (a
-respawned watchdog worker rebuilding from the same manifest), which is resumed
-in append mode instead.
+open()
+    With ``output_id``: reopen that file in append mode (no second header).
+    Without ``output_id``: create the file and write the header once. If this
+    dataflow already has the same path open (worker respawn), append instead.
 
-Lifecycle protocol (open -> write -> report -> close -> recover), for packet 13
-------------------------------------------------------------------------------
-- open():   idempotent; the sole point a live handle/row/header is created; must
-            run in the worker, never the parent. Failure after allocation closes
-            the handle and marks the component failed (never "started ok").
-- write_row()/flush(ts, packet): deliver one sample; lazy-open on first call.
-- get_dict(): descriptor for cross-process reconstruction; carries ``output_id``
-            only once opened, else ``None`` so the worker opens/resumes.
-- close():  idempotent; closes the handle exactly once and releases the worker's
-            database context. A never-opened descriptor closes as a no-op.
-- recover:  a fresh worker reconstructs from get_dict() (``output_id=None`` on a
-            crash) and open() resumes the same file by path, or appends a linked
-            continuation via app.output.managed_file.allocate_continuation.
+Methods
+    open()            Open the file. Safe to call more than once. Worker only.
+    write_row()/flush Write one sample. Opens on first use if needed.
+    get_dict()        Snapshot for rebuilding in another process.
+                      Includes ``output_id`` after open; else ``None``.
+    close()           Close the file. Safe to call more than once.
+                      No-op if never opened.
+    recover           Rebuild from get_dict() and open() again — same path,
+                      or a linked continuation file.
 """
 
 from __future__ import annotations

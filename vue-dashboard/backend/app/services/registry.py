@@ -202,6 +202,12 @@ def _check_bool(value: object, *, key: str) -> None:
         raise ValueError(f"{key} must be a boolean")
 
 
+def _check_pvfs_writer_process(value: object) -> None:
+    _check_bool(value, key="use_writer_process")
+    if value is not True:
+        raise ValueError("use_writer_process cannot be disabled for PVFS sinks")
+
+
 def _check_channel_names(value: object) -> None:
     if not isinstance(value, tuple) or not value:
         raise ValueError("channel_names must be a non-empty list of non-empty strings")
@@ -322,7 +328,7 @@ _SINK_SCHEMA: dict[SinkType, ParamSchema] = {
         ),
         validators={
             "observe_on_scheduler": _check_observe_on_scheduler,
-            "use_writer_process": partial(_check_bool, key="use_writer_process"),
+            "use_writer_process": _check_pvfs_writer_process,
             "device_preferences": _check_device_preferences,
         },
     ),

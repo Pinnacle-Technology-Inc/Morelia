@@ -140,7 +140,7 @@ watch(() => props.modelValue, (path) => open(path ?? ""), { immediate: true });
         <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
         <!-- A path that isn't a directory can't be confirmed: picking it would
              store a destination the runtime is guaranteed to fail to open. -->
-        <BaseButton :disabled="state !== 'ready' || !!roots || !listing?.exists" @click="$emit('select', listing.path)">
+        <BaseButton :disabled="state !== 'ready' || !!roots || !listing?.exists || !listing?.writable" @click="$emit('select', listing.path)">
           Use this folder
         </BaseButton>
       </footer>

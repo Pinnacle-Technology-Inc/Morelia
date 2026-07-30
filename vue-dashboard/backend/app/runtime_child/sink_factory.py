@@ -470,7 +470,10 @@ def _build_pvfs(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
         session_id=ctx.session_id,
         pod=pod,
         observe_on_scheduler=sink_config.parameters.get("observe_on_scheduler"),
-        use_writer_process=bool(sink_config.parameters.get("use_writer_process", False)),
+        # Enforce the invariant at the runtime boundary as defense in depth for
+        # legacy or externally supplied manifests. Segment identity remains
+        # controlled independently by _segment_kwargs.
+        use_writer_process=True,
         device_preferences=sink_config.parameters.get("device_preferences"),
         **_segment_kwargs(sink_config, ctx),
     )

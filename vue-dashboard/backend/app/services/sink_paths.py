@@ -71,6 +71,26 @@ def path_is_claimed(location: str) -> bool:
     return Path(location).exists()
 
 
+def sink_parent_issue(location: str) -> tuple[str, str] | None:
+    """Return ``(directory, reason)`` when a sink's parent cannot accept a file.
+
+    Start-time replay validation uses the exact resolved path the worker would
+    receive.  It must not create directories implicitly: choosing or creating a
+    destination is an operator action performed through the folder picker.
+    """
+    directory = Path(location).parent
+    try:
+        if not directory.exists():
+            return str(directory), "missing"
+        if not directory.is_dir():
+            return str(directory), "not_directory"
+        if not os.access(directory, os.W_OK):
+            return str(directory), "not_writable"
+    except OSError:
+        return str(directory), "not_writable"
+    return None
+
+
 def host_roots() -> list[dict]:
     """Top-level filesystem roots to start browsing from.
 

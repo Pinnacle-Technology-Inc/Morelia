@@ -160,6 +160,12 @@ def _build_sink(
             )
         parameters["file_path"] = sink_location
 
+    if sink_type is SinkType.PVFS:
+        # PVFS writer isolation is a runtime safety invariant, not a
+        # user-configurable session option. Normalizing it here also upgrades
+        # manifests resolved from older stored configurations.
+        parameters["use_writer_process"] = True
+
     return SinkConfig(
         sink_id=f"{device_id}:{sink_name}",
         name=sink_name,

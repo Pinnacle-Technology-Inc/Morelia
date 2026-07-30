@@ -25,6 +25,7 @@ from app.domain.errors import (
     InvalidSessionEntry,
     InvalidTransition,
     SessionNotFound,
+    SinkParentUnavailable,
 )
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
@@ -405,7 +406,18 @@ def _apply_sink_overrides(session: Session, overrides: dict[str, str]) -> None:
                     f"sink_location is only valid for file sinks (csv, edf, pvfs); "
                     f"{sink.get('sink_type')!r} is not one",
                 )
-            sink["sink_location"] = overrides[label]
+            requested_location = str(overrides[label])
+            resolved_location = sink_paths.resolve_sink_location(requested_location)
+            parent_issue = sink_paths.sink_parent_issue(resolved_location)
+            if parent_issue is not None:
+                directory, reason = parent_issue
+                raise SinkParentUnavailable(
+                    resolved_location,
+                    directory=directory,
+                    reason=reason,
+                    nickname=label,
+                )
+            sink["sink_location"] = requested_location
             matched.add(label)
         flow["sinks"] = sinks
 

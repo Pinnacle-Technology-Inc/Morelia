@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FilePlus2,
   FlaskConical,
+  FolderPen,
   Play,
   Shield,
   StopCircle,
@@ -15,6 +16,7 @@ import {
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import CollapsibleSection from "../components/CollapsibleSection.vue";
+import FolderPickerDialog from "../components/FolderPickerDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
@@ -55,6 +57,7 @@ const commandBusy = ref(false);
 // the ones the backend names on its own (shown, but not editable).
 const restartSinks = ref([]);
 const restartAutoNamed = ref([]);
+const restartFolderPickerKey = ref(null);
 const activity = ref({ state: SessionEventState.IDLE, events: [], error: null });
 // Optimistic lifecycle from a just-issued command, shown until the refetch that
 // follows it lands. Cleared by refreshDetail() so the server always wins.
@@ -449,6 +452,31 @@ const restartReusedPaths = computed(() =>
 const restartBlocked = computed(
   () => restartReusedPaths.value.length > 0 || restartSinks.value.some((sink) => !sink.location.trim()),
 );
+
+function splitOutputLocation(location) {
+  const value = String(location ?? "");
+  const boundary = Math.max(value.lastIndexOf("/"), value.lastIndexOf("\\"));
+  if (boundary < 0) return { folder: "", filename: value };
+  return { folder: value.slice(0, boundary), filename: value.slice(boundary + 1) };
+}
+
+function openRestartFolderPicker(sink) {
+  restartFolderPickerKey.value = sink.key;
+}
+
+const restartFolderPickerFolder = computed(() => {
+  const sink = restartSinks.value.find((entry) => entry.key === restartFolderPickerKey.value);
+  return splitOutputLocation(sink?.location).folder;
+});
+
+function chooseRestartFolder(folder) {
+  const sink = restartSinks.value.find((entry) => entry.key === restartFolderPickerKey.value);
+  if (!sink) return;
+  const filename = splitOutputLocation(sink.location).filename || `${sink.sink_name}.${sink.sink_type}`;
+  const separator = folder.includes("\\") ? "\\" : "/";
+  sink.location = `${folder.replace(/[\\/]$/, "")}${separator}${filename}`;
+  restartFolderPickerKey.value = null;
+}
 
 function confirmRestart() {
   if (restartBlocked.value) return;
@@ -852,7 +880,12 @@ const tabTones = computed(() => ({
       <div class="dialog-form">
         <label v-for="sink in restartSinks" :key="sink.key" class="field">
           <span>{{ sink.nickname ? `${sink.nickname} — ${sink.sink_name}` : sink.sink_name }} ({{ sink.sink_type }})</span>
-          <input v-model="sink.location" spellcheck="false" />
+          <div class="restart-location-control">
+            <input v-model="sink.location" spellcheck="false" />
+            <BaseButton variant="secondary" @click="openRestartFolderPicker(sink)">
+              <FolderPen :size="15" /> Choose folder
+            </BaseButton>
+          </div>
           <small v-if="sink.occupied && sink.location === sink.current_location" class="form-notice">
             <AlertTriangle :size="16" /> The previous run's file is still here. Choose a different name.
           </small>
@@ -867,6 +900,12 @@ const tabTones = computed(() => ({
         </p>
       </div>
     </GuardedDialog>
+    <FolderPickerDialog
+      v-if="restartFolderPickerKey"
+      :model-value="restartFolderPickerFolder"
+      @select="chooseRestartFolder"
+      @close="restartFolderPickerKey = null"
+    />
     <GuardedDialog v-if="dialog === 'duplicate'" title="Duplicate Session" confirm-label="Create Session" @close="dialog = null" @confirm="dialog = null">
       <div class="dialog-form">
         <label class="field"><span>Session Name</span><input v-model="duplicateName" /></label>
@@ -876,3 +915,16 @@ const tabTones = computed(() => ({
     </GuardedDialog>
   </div>
 </template>
+
+<style scoped>
+.restart-location-control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.restart-location-control input {
+  min-width: 0;
+  flex: 1;
+}
+</style>

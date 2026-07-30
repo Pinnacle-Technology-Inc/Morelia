@@ -1,57 +1,24 @@
-"""Managed PVFS sink: deferred-open, exclusively-claimed, immutable linked segments.
+"""Writes session samples to a PVFS file.
 
-Ownership / safety boundary (gap SINK-06; design doc section 6 "PVFS")
----------------------------------------------------------------------
-Morelia's raw ``PvfsSink`` and the ``pvfs_tools`` container are destructive on
-reuse: the isolated recovery experiment proved a writable reopen + ``append_block``
-reported success while *overwriting* the original ``0..9`` samples with ``10..19``
-(and then exposed ``10..19`` twice), and that ``PvfsDataFile.create()`` on an
-*existing populated* container erased its channels. Same-container continuation is
-therefore unsafe and disabled here until a future capability probe re-enables it.
+Only the DataFlow worker may open the file. The parent builds and rebuilds
+sink descriptors, but never opens them.
 
-This adapter never lets ``pvfs_tools`` create/reopen the logical configured path
-blindly. It allocates an **exclusive segment BEFORE constructing the writer**:
-:func:`app.output.managed_file.create` claims the path with ``open(path, "xb")`` —
-a create-once claim that refuses a foreign file — and commits the ``output_files``
-row first. The raw placeholder handle is then released so the path is provably
-empty *and* provably ours, and only that empty path is handed to
-``PvfsDataFile.create``. Creating a PVFS container over a zero-byte placeholder is
-non-destructive (verified against ``pvfs_tools``); creating over real channel data
-is the destructive case this design structurally prevents.
+Do not reopen an existing PVFS container to avoid data overwrite or data loss.
+Always claim a new empty path first, then hand that path to PvfsDataFile.create.
 
-Recovery model (immutable components + linked continuations)
------------------------------------------------------------
-PVFS component containers are immutable after close. A runtime-error interruption
-never reopens/mutates the prior segment: :meth:`recover` finalizes component ``N``
-(retained byte-for-byte, marked ``interrupted``) and allocates a monotonically
-indexed linked continuation ``N+1`` via
-:func:`app.output.managed_file.allocate_continuation`. Its deterministic name is
-``<stem>.recovery-<NNNN><suffix>`` (e.g. ``recording.pvfs`` ->
-``recording.recovery-0001.pvfs``), and the new row links back through
-``previous_output_id``. A clean user stop (:meth:`close`) finalizes the current
-component, marks the acquisition ``complete``, and allocates **no** continuation;
-format-aware merging of linked segments into one published container belongs to
-packet 18.
+After close, a segment is immutable. On error, recover keeps the old
+segment and starts a linked continuation (recording.pvfs -> recording.recovery-0001.pvfs).
+A clean close finalizes the current segment and does not allocate a continuation.
 
-Nested writer-process ownership (design doc: "own and stop the writer subprocess")
-----------------------------------------------------------------------------------
-When ``use_writer_process=True`` all native PVFS I/O for a segment runs in a
-dedicated child process (:func:`_pvfs_writer_target`) that the adapter owns
-exclusively: it starts the child, feeds it through an ``mp.Queue``, and on
-finalize signals the stop event, joins, and force-terminates a hung child before
-recording the segment closed. The child is the *only* owner of the container's
-native handles; the runtime host, watchdog, collection worker, and writer child
-never independently believe they own the same segment.
+When use_writer_process=True, native PVFS I/O runs in a child process
+this adapter owns. Nothing else may open the same segment.
 
-Lifecycle protocol (open -> write/flush -> get_dict -> close -> recover)
------------------------------------------------------------------------
-Construction is side-effect free (SINK-21): ``__init__`` opens nothing, imports no
-native PVFS library, and is safe to build/rebuild in the parent watchdog. The live
-container/child, the metadata row, and the channels exist only after :meth:`open`,
-which must run in the DataFlow worker. ``get_dict()`` carries the logical sink id
-and current segment identity for cross-process reconstruction — never permission to
-delete/reuse the old path: a reconstructing worker always allocates a linked
-continuation rather than reopening a closed segment.
+Methods
+    open()            Claim an empty path and create the container. Worker only.
+    write_row()/flush Write one sample. Opens on first use if needed.
+    get_dict()        Snapshot for rebuilding in another process.
+    close()           Finalize the current segment. No continuation.
+    recover           Finalize as interrupted; open a linked continuation.
 """
 
 from __future__ import annotations
@@ -117,8 +84,8 @@ def _pvfs_writer_target(
 
     Drains *queue* in batches, buffering one sample per channel and flushing a
     whole second of data at a time to the ``pvfs_tools`` container. Exits when
-    *stop_event* is set and the queue is empty. The ``pvfs_tools`` import is lazy
-    so importing this module never loads the native library (SINK-21).
+    *stop_event* is set and the queue is empty. The pvfs_tools import is lazy
+    so importing this module never loads the native library.
     """
     from pvfs_tools.Core.pvfs_binding import HighTime
     from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
@@ -231,7 +198,7 @@ class ManagedPvfsSink:
     Invariants:
     - Construction opens nothing and imports no native library (SINK-21).
     - The configured path is claimed create-once via ``managed_file.create``
-      before any ``pvfs_tools`` container is created (SINK-06); a foreign file is
+      before any pvfs_tools container is created; a foreign file is
       refused, and the container is only ever created over a zero-byte placeholder.
     - Component containers are immutable after close; error recovery always
       allocates a linked continuation and never reopens/mutates a prior segment.
