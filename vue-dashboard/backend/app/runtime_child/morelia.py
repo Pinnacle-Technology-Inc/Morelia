@@ -667,18 +667,24 @@ class MoreliaRuntime:
             device_flow,
         )
 
-        # Carry the sample rate forward so the replacement worker never issues
-        # GET SAMPLE RATE. That handshake is the most common way a replacement
-        # worker dies: the device is often still streaming from the worker that
-        # was just killed, so write_read returns whatever packet surfaces next
-        # rather than the reply we asked for, and parsing it kills the process
-        # before the sinks are ever opened. The rate cannot change mid-session,
-        # so the value preflight already read stays correct.
-        if previous_pod is not None:
-            with suppress(Exception):
-                known = previous_pod.known_sample_rate
-                if known:
-                    pod.cache_sample_rate(known)
+        # Read the private cached sample rate instead of sending command requesting from the device
+        cached_rate = getattr(previous_pod, "_sample_rate", None)
+        if (
+            isinstance(cached_rate, tuple)
+            and len(cached_rate) > 0
+            and isinstance(cached_rate[0], int)
+            and cached_rate[0] > 0
+        ):
+            pod._sample_rate = cached_rate
+        else:
+            # Not fatal: the replacement worker falls back to asking the
+            # device and it might trigger worker crash. Debug-purpose only.
+            _log.warning(
+                "sample_rate_not_carried_forward",
+                dataflow_id=self._manifest.dataflow_id,
+                stream_index=stream_index,
+                cached_sample_rate=repr(cached_rate),
+            )
 
         # Track before building sinks so a sink failure still leaves the port
         # closeable by the rollback path, matching _build_stack's ordering.
@@ -833,6 +839,8 @@ class MoreliaRuntime:
         baudrate = params.pop("baudrate", 9600)
         device_name = params.pop("device_name", device_flow.name)
         use_d2xx = params.pop("use_d2xx", False)
+      
+        sample_rate = params.pop("sample_rate", None)
 
         pod = Pod8401HR(
             device_flow.port,
@@ -844,6 +852,7 @@ class MoreliaRuntime:
             baudrate=baudrate,
             device_name=device_name,
             use_d2xx=use_d2xx,
+            sample_rate=sample_rate,
         )
         for key, value in params.items():
             if not hasattr(pod, key):

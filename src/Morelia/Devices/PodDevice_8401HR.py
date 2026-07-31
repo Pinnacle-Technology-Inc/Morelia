@@ -69,7 +69,8 @@ class Pod8401HR(AcquisitionDevice) :
                  preamp_gain: tuple[int|None]=(None, None, None, None), 
                  baudrate:int=9600,
                  device_name: str | None = None,
-                 use_d2xx: bool = False
+                 use_d2xx: bool = False,
+                 sample_rate: int | None = None
                 ) -> None :
         """Runs when an instance is constructed. It runs the parent's initialization. Then it updates \
         the _commands to contain the appropriate commands for an 8401HR POD device. Sets the _ss_gain \
@@ -85,16 +86,22 @@ class Pod8401HR(AcquisitionDevice) :
             secondary_channel_modes=secondary_channel_modes,
             ss_gain=ss_gain,
             preamp_gain=preamp_gain,
+            sample_rate=sample_rate,
         )
 
     def _init_device(
-            self, 
+            self,
             preamp: Preamp,
             primary_channel_modes: tuple[PrimaryChannelMode],
             secondary_channel_modes: tuple[SecondaryChannelMode],
-            ss_gain: tuple[int|None]=(None, None, None, None), 
-            preamp_gain: tuple[int|None]=(None, None, None, None), 
+            ss_gain: tuple[int|None]=(None, None, None, None),
+            preamp_gain: tuple[int|None]=(None, None, None, None),
+            sample_rate: int | None = None,
     ):
+
+        if sample_rate is not None:
+            self._sample_rate = (sample_rate,)
+
             # set preamp.
         self._preamp: Preamp = preamp
         self._ss_gain = ss_gain
@@ -988,7 +995,7 @@ class Pod8401HR(AcquisitionDevice) :
             return self._stream_packet_factory(data)
 
     def get_dict(self):
-        return {
+        d = {
             'port': self.port,
             'preamp': self.preamp,
             'primary_channel_modes': self.primary_channel_modes,
@@ -999,6 +1006,12 @@ class Pod8401HR(AcquisitionDevice) :
             'device_name': self.device_name,
             'use_d2xx': self._use_d2xx,
         }
+        # get_dict() is the only channel a rebuilt source has to the worker
+        # process, so a cached rate must ride along or the worker asks the
+        # device for it. Matches Pod8206HR.get_dict().
+        if self._sample_rate is not None:
+            d['sample_rate'] = self._sample_rate[0]
+        return d
 
     # ------------ CONFIGURATION ------------ 
 
