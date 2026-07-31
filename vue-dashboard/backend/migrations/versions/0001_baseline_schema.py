@@ -1,8 +1,9 @@
 """Current disposable database schema.
 
 The application intentionally starts from a clean database format. Device
-templates are files under ``instance/device-templates`` and are not stored in
-SQLite; session templates store their file path and content hash in JSON.
+templates are files under ``instance/device-templates`` and are not
+stored in SQLite; session templates store their file path and content hash in
+JSON.
 """
 
 from collections.abc import Sequence
@@ -79,6 +80,16 @@ def upgrade() -> None:
         sa.Column("gap_end", sa.JSON(), nullable=True),
         sa.Column("details", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
+        # Versioned boundary payload: boundaries no longer overload the
+        # offset-only segment-id strings above.
+        sa.Column("boundary_kind", sa.String(32), nullable=True),
+        sa.Column("boundary_version", sa.Integer(), nullable=True),
+        sa.Column("output_id", sa.String(36), nullable=True),
+        sa.Column("previous_output_id", sa.String(36), nullable=True),
+        sa.Column("next_output_id", sa.String(36), nullable=True),
+        sa.Column("pre_offset", sa.JSON(), nullable=True),
+        sa.Column("post_offset", sa.JSON(), nullable=True),
+        sa.Column("boundary_payload", sa.JSON(), nullable=True),
     )
     _create_recovery_gap_indexes()
 
@@ -93,6 +104,8 @@ def upgrade() -> None:
     op.create_index("ix_runtime_manifests_hash", "runtime_manifests", ["hash"], unique=True)
     op.create_index("ix_runtime_manifests_session_id", "runtime_manifests", ["session_id"])
 
+    # One logical sink output owns several linked physical components, each with
+    # explicit acquisition, artifact/finalization, delivery, and loss state.
     op.create_table(
         "output_files",
         sa.Column("id", sa.Integer(), primary_key=True),
@@ -108,11 +121,33 @@ def upgrade() -> None:
         sa.Column("byte_offset", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("row_offset", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now()),
+        # Lifecycle. No server defaults: the ORM supplies values for new rows and
+        # stays the single source of truth.
+        sa.Column("logical_sink_id", sa.String(36), nullable=False),
+        sa.Column("segment_index", sa.Integer(), nullable=False),
+        sa.Column("previous_output_id", sa.String(36), nullable=True),
+        sa.Column("final_output_id", sa.String(36), nullable=True),
+        sa.Column("acquisition_state", sa.String(16), nullable=False),
+        sa.Column("artifact_state", sa.String(16), nullable=False),
+        sa.Column("termination_reason", sa.String(32), nullable=True),
+        sa.Column("delivery_state", sa.String(16), nullable=True),
+        sa.Column("byte_loss", sa.Integer(), nullable=False),
+        sa.Column("sample_loss", sa.Integer(), nullable=False),
+        sa.Column("finalization_id", sa.String(64), nullable=True),
+        sa.Column("finalizer_fence_token", sa.BigInteger(), nullable=True),
+        sa.Column("finalized_at", sa.DateTime(timezone=True), nullable=True),
+        sa.UniqueConstraint("logical_sink_id", "segment_index", name="uq_output_files_logical_segment"),
+        sa.UniqueConstraint("logical_sink_id", "path", name="uq_output_files_logical_path"),
+        sa.CheckConstraint(
+            "previous_output_id IS NULL OR previous_output_id <> output_id",
+            name="ck_output_files_no_self_predecessor",
+        ),
     )
     op.create_index("ix_output_files_output_id", "output_files", ["output_id"], unique=True)
     op.create_index("ix_output_files_path", "output_files", ["path"], unique=True)
     op.create_index("ix_output_files_session_id", "output_files", ["session_id"])
     op.create_index("ix_output_files_dataflow_id", "output_files", ["dataflow_id"])
+    op.create_index("ix_output_files_logical_sink_id", "output_files", ["logical_sink_id"])
 
     op.create_table(
         "operations",
@@ -205,6 +240,9 @@ def upgrade() -> None:
         "device_configs",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("device_type", sa.String(64), nullable=False),
+        # The FTDI EEPROM serial with the Windows channel letter already stripped
+        # by discovery — 1-8 digits. Stays a string: leading zeros are
+        # significant (``0002`` is a real serial).
         sa.Column("hardware_id", sa.String(255), nullable=False),
         sa.Column("port", sa.String(255), nullable=False),
         sa.Column("parameters", sa.JSON(), nullable=False),
@@ -270,6 +308,18 @@ def upgrade() -> None:
     op.create_index("ix_device_registrations_nickname", "device_registrations", ["nickname"])
     op.create_index("ix_device_registrations_device_config_id", "device_registrations", ["device_config_id"])
 
+    op.create_table(
+        "experiments",
+        sa.Column("id", sa.String(64), primary_key=True),
+        sa.Column("name", sa.String(255, collation="NOCASE"), nullable=False),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.UniqueConstraint("name", name="uq_experiments_name"),
+    )
+    op.create_index("ix_experiments_name", "experiments", ["name"], unique=False)
+
 
 def _create_incident_indexes() -> None:
     op.create_index("ix_incidents_incident_id", "incidents", ["incident_id"], unique=True)
@@ -288,6 +338,8 @@ def _create_recovery_gap_indexes() -> None:
     op.create_index("ix_recovery_gaps_device_id", "recovery_gaps", ["device_id"])
     op.create_index("ix_recovery_gaps_recovery_id", "recovery_gaps", ["recovery_id"])
     op.create_index("ix_recovery_gaps_confidence", "recovery_gaps", ["confidence"])
+    op.create_index("ix_recovery_gaps_boundary_kind", "recovery_gaps", ["boundary_kind"])
+    op.create_index("ix_recovery_gaps_output_id", "recovery_gaps", ["output_id"])
 
 
 def _create_operation_indexes() -> None:
@@ -339,11 +391,16 @@ def _create_runtime_ownership_indexes() -> None:
 
 
 def downgrade() -> None:
+    op.drop_index("ix_experiments_name", table_name="experiments")
+    op.drop_table("experiments")
+
     for index, table in (
         ("ix_device_registrations_device_config_id", "device_registrations"),
         ("ix_device_registrations_nickname", "device_registrations"),
         ("ix_device_registrations_hardware_id", "device_registrations"),
         ("ix_device_registrations_device_type", "device_registrations"),
+        ("ix_session_templates_content_hash", "session_templates"),
+        ("ix_session_templates_name", "session_templates"),
         ("ix_device_seen_scan_id", "device_seen"),
         ("ix_device_seen_physical_device_id", "device_seen"),
         ("ix_device_configs_claimed_session_id", "device_configs"),
@@ -376,14 +433,15 @@ def downgrade() -> None:
         ("ix_operations_dataflow_id", "operations"),
         ("ix_operations_session_id", "operations"),
         ("ix_operations_operation_id", "operations"),
-        ("ix_session_templates_content_hash", "session_templates"),
-        ("ix_session_templates_name", "session_templates"),
+        ("ix_output_files_logical_sink_id", "output_files"),
         ("ix_output_files_dataflow_id", "output_files"),
         ("ix_output_files_session_id", "output_files"),
         ("ix_output_files_path", "output_files"),
         ("ix_output_files_output_id", "output_files"),
         ("ix_runtime_manifests_session_id", "runtime_manifests"),
         ("ix_runtime_manifests_hash", "runtime_manifests"),
+        ("ix_recovery_gaps_output_id", "recovery_gaps"),
+        ("ix_recovery_gaps_boundary_kind", "recovery_gaps"),
         ("ix_recovery_gaps_confidence", "recovery_gaps"),
         ("ix_recovery_gaps_recovery_id", "recovery_gaps"),
         ("ix_recovery_gaps_device_id", "recovery_gaps"),
