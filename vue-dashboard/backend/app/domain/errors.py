@@ -125,7 +125,8 @@ class InvalidHardwareId(ValueError):
     def __init__(self, hardware_id: str):
         self.hardware_id = hardware_id
         super().__init__(
-            f"Invalid hardware_id {hardware_id!r}: must match ^[0-9A-Za-z]{{4,8}}$ (exactly five alphanumeric characters)."
+            f"Invalid hardware_id {hardware_id!r}: must match ^[0-9]{{1,8}}$ (1-8 digits — the "
+            "FTDI EEPROM serial without its trailing channel letter)."
         )
 
 

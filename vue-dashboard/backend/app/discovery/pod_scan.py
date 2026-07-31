@@ -9,7 +9,8 @@ Discovery now has two phases:
 1. *Enumeration* — list visible serial ports (``port_lister``).
 2. *Identification* — open each candidate port and ask the device what it is via
    the POD ``TYPE`` command (``prober``). Identity comes from the FTDI serial
-   number exposed by pyserial's port descriptor.
+   number exposed by pyserial's port descriptor, normalized by
+   ``_normalize_ftdi_serial`` so Windows and Linux agree on one id per pod.
 
 Both collaborators are injectable so tests run with zero real hardware.
 """
@@ -18,6 +19,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import sys
 import threading
 from collections.abc import Callable, Iterable, Iterator
@@ -155,6 +157,38 @@ def _vid_from_hwid(value: object) -> int | None:
     return _parse_usb_vid(vid)
 
 
+# On Windows the FTDI VCP driver (``ftdibus.sys``) builds each port's device
+# instance id as ``FTDIBUS\VID_0403+PID_6001+<eeprom-serial><channel>\0000``,
+# where ``<channel>`` is the port letter on the chip — ``A`` for the first
+# channel, ``B``/``C``/``D`` for the extra channels of an FT2232/FT4232.
+# pyserial's FTDIBUS branch captures serial and channel together, so a pod whose
+# EEPROM holds ``12345`` is reported as ``12345A``. Linux reads the EEPROM string
+# straight from sysfs (``.../serial``) and reports ``12345``, so the same pod
+# would otherwise register under two different ids depending on the host OS.
+#
+# Any trailing letter is a channel designator and is dropped, not just ``A``:
+# ``12345B`` on a second channel normalizes the same way ``12345A`` does. The one
+# guard that remains is that the remainder must be all digits — pod EEPROM
+# serials are numeric, so the rule cannot chew a real trailing letter off an
+# alphanumeric FTDI serial (e.g. a factory-default ``A50285BI``, which Linux
+# reports verbatim). That also keeps it idempotent: an id ending in a digit never
+# normalizes twice.
+#
+# Consequence on multi-channel parts: both channels of an FT2232 report the same
+# EEPROM serial, so ``12345A`` and ``12345B`` now collapse to ``12345``. Pods are
+# single-channel FTDI, so this does not arise in practice; if a multi-channel
+# device is ever introduced, its channels are distinguishable only by ``port``.
+_FTDI_CHANNEL_SUFFIX = re.compile(r"^(\d+)[A-Za-z]$")
+
+
+def _normalize_ftdi_serial(value: str | None) -> str | None:
+    """Drop the Windows-only FTDI channel letter from a reported serial."""
+    if value is None:
+        return None
+    match = _FTDI_CHANNEL_SUFFIX.fullmatch(value)
+    return match.group(1) if match else value
+
+
 def _classify(
     *,
     port_info: object,
@@ -169,8 +203,9 @@ def _classify(
       3. A port that answers TYPE with a model not in ``TYPE_MAP`` is dropped.
       4. A clean supported POD (``TYPE_MAP`` hit, pinged) is ``available``.
     """
-    hardware_id = _optional_text(probe.hardware_id) or _optional_text(
-        _attribute(port_info, "serial_number", "serial", "hardware_id", "hwid")
+    hardware_id = _normalize_ftdi_serial(
+        _optional_text(probe.hardware_id)
+        or _optional_text(_attribute(port_info, "serial_number", "serial", "hardware_id", "hwid"))
     )
 
     if not probe.opened:
@@ -357,13 +392,21 @@ def _label(port_info: object, port: str) -> str:
 
 
 def _attribute(value: object, *names: str) -> Any | None:
+    """Return the first of *names* that is present *and* not None.
+
+    pyserial's ``ListPortInfo`` declares every descriptor field in ``__init__``
+    and leaves the unknown ones as None, so a presence-only check would stop at
+    ``serial_number=None`` and never reach the later fallbacks.
+    """
     if isinstance(value, dict):
         for name in names:
-            if name in value:
+            if value.get(name) is not None:
                 return value[name]
+        return None
     for name in names:
-        if hasattr(value, name):
-            return getattr(value, name)
+        attribute = getattr(value, name, None)
+        if attribute is not None:
+            return attribute
     return None
 
 
