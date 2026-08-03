@@ -10,6 +10,8 @@ from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
 from Morelia.Stream.sink.pvfs_sink import PvfsSink
 from Morelia.Stream.data_flow import DataFlow
 
+from tests.helpers.pvfs_utlis import count_samples_worker
+
 """
 PVFS files are analyzed in a separate process instead of the main pytest
 process. On Windows, the underlying ``pvfs_tools`` library can retain file
@@ -181,51 +183,83 @@ def check_pvfs_file(pvfs_path, seconds, sample_rate):
         f"({missing_percent:.2f}% missing)."
     )
 
-def _count_samples_worker(pvfs_path, queue):
-    pvfs = PvfsDataFile()
-
-    if not pvfs.open(str(pvfs_path)):
-        queue.put(RuntimeError(f"Could not open PVFS file: {pvfs_path}"))
-        return
-
-    try:
-        channels = list(pvfs._indexed_data_files.values())
-
-        if not channels:
-            queue.put(ValueError("PVFS contains no indexed data channels."))
-            return
-
-        lengths = []
-
-        for channel in channels:
-            start = channel.get_start_time()
-            end = channel.get_end_time()
-            _, samples = channel.get_data(start, end)
-            lengths.append(len(samples))
-
-        queue.put(lengths[0])
-
-    finally:
-        pvfs.close()
-
-
 def count_samples(pvfs_path):
     q = Queue()
 
-    p = Process(target=_count_samples_worker, args=(pvfs_path, q))
+    p = Process(
+        target=count_samples_worker,
+        args=(pvfs_path, q)
+    )
+
     p.start()
 
-    result = q.get()
+    try:
+        result = q.get(timeout=10)
+    except Exception:
+        p.terminate()
+        p.join()
+        raise RuntimeError(
+            "PVFS sample counting worker hung or crashed"
+        )
 
     p.join()
 
-    if p.is_alive():
-        p.terminate()
-        p.join()
-
-    p.close()
+    if p.exitcode != 0:
+        raise RuntimeError(
+            f"PVFS worker failed with exit code {p.exitcode}"
+        )
 
     if isinstance(result, Exception):
         raise result
 
     return result
+
+# def _count_samples_worker(pvfs_path, queue):
+#     pvfs = PvfsDataFile()
+
+#     if not pvfs.open(str(pvfs_path)):
+#         queue.put(RuntimeError(f"Could not open PVFS file: {pvfs_path}"))
+#         return
+
+#     try:
+#         channels = list(pvfs._indexed_data_files.values())
+
+#         if not channels:
+#             queue.put(ValueError("PVFS contains no indexed data channels."))
+#             return
+
+#         lengths = []
+
+#         for channel in channels:
+#             start = channel.get_start_time()
+#             end = channel.get_end_time()
+#             _, samples = channel.get_data(start, end)
+#             lengths.append(len(samples))
+
+#         queue.put(lengths[0])
+
+#     finally:
+#         pvfs.close()
+
+
+# def count_samples(pvfs_path):
+#     q = Queue()
+
+#     p = Process(target=_count_samples_worker, args=(pvfs_path, q))
+#     p.start()
+
+#     result = q.get()
+
+#     p.join()
+
+#     if p.is_alive():
+#         p.terminate()
+#         p.join()
+
+#     p.close()
+
+#     if isinstance(result, Exception):
+#         raise result
+
+#     return result
+

@@ -24,7 +24,7 @@ class OSCSink(SinkInterface):
 
     This sink converts packets produced by a supported acquisition device into
     OSC messages and transmits them to a configurable host and port using the
-    python-osc library. The OSC address and message payload are determined by
+    python-osc library. The OSC message payload is determined by
     the connected device type.
 
     Supported devices:

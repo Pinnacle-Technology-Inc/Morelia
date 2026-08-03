@@ -247,12 +247,12 @@ class Pod8274D(AcquisitionDevice) :
         a ``DEVICE LIST INFO`` request for each index until the requested device
         is found, then sends a ``CONNECT`` command to establish a connection.
 
-        :param device_name: The device name to connect to. By default, this is
+        :param device_serial_number: The device name to connect to. By default, this is
             the device's serial number printed on the device.
         :param timeout_sec: Maximum number of seconds to continue scanning for a
             matching device before raising a :class:`ConnectionError`. Defaults to 15 seconds.
 
-        :raises TypeError: If ``device_name`` is not a string.
+        :raises TypeError: If ``device_serial_number`` is not a string.
         :raises ConnectionError: If the device cannot be found.
         :raises TimeoutError:  if the connection attempt fails
             within the timeout period.
@@ -260,7 +260,7 @@ class Pod8274D(AcquisitionDevice) :
 
         # Validate type
         if not isinstance(device_serial_number, str):
-            raise TypeError(f"device_name must be a string, got {type(device_serial_number).__name__}")
+            raise TypeError(f"device_serial_number must be a string, got {type(device_serial_number).__name__}")
         
         # Reboot device
         self.write_read(cmd="RESET")
@@ -269,7 +269,7 @@ class Pod8274D(AcquisitionDevice) :
         self.write_read(cmd="LOCAL SCAN", payload=1)
 
         # Remove white space on ends and complete device name
-        device_serial_number.strip()
+        device_serial_number = device_serial_number.strip()
         device_serial_number = "8274-" + device_serial_number
 
         # Start tracking time
