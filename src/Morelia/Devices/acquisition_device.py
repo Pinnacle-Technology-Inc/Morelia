@@ -29,7 +29,10 @@ class AcquisitionDevice(Pod):
     :param use_d2xx: If True, use FTDI D2XX direct USB communication instead of COM port. Requires ftd2xx (Windows) or pylibftdi (Linux/Mac). Defaults to False.
 
     """
-    def __init__(self, port: str|int, max_sample_rate: int, baudrate:int=9600, device_name: str | None =  None, 
+    #: Class-wise const showing samples per channel carried in one data packet. Default to 1 for 8401 and 8206, will be overwritten by 8274.
+    SAMPLES_PER_PACKET: int = 1
+
+    def __init__(self, port: str|int, max_sample_rate: int, baudrate:int=9600, device_name: str | None =  None,
                  get_sample_rate_cmd_no: int = 100, set_sample_rate_cmd_no: int = 101, use_d2xx: bool = False) -> None:
 
         super().__init__(port, baudrate=baudrate, device_name=device_name, use_d2xx=use_d2xx) 

@@ -136,7 +136,7 @@ class DataFlowMonitor:
                 self._shared_status,
                 stream_name=f"stream{stream_index}",
                 pod=source,
-                samples_per_packet=getattr(source, "samples_per_packet", 1),
+                samples_per_packet=getattr(source, "SAMPLES_PER_PACKET", 1),
             )
             flowgraph._network[stream_index] = (source, [*sinks, health])
 
@@ -161,7 +161,7 @@ class DataFlowMonitor:
             self._shared_status,
             stream_name=f"stream{stream_index}",
             pod=source,
-            samples_per_packet=getattr(source, "samples_per_packet", 1),
+            samples_per_packet=getattr(source, "SAMPLES_PER_PACKET", 1),
         )
         return [*sinks, health]
 

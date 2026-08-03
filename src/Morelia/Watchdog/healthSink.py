@@ -6,43 +6,35 @@ from Morelia.Stream.sink import SinkInterface
 
 
 class HealthSink(SinkInterface):
-    """
-    Pass-through sink that stamps shared status whenever data flows.
+    """Pass-through sink that stamps shared status when data flows.
 
-    Append one per stream so the watchdog can tell "worker is receiving
-    samples" apart from "worker only answers PINGs". The worker writes the
-    status; the main process reads it back out of the same shared dict.
+    One per stream to monitor the dataflow health and sample rate.
 
-    Unlike a single-float heartbeat, this records several namespaced fields
-    per stream (last wall-clock time data arrived, the stream's own sample
-    timestamp, and a flowing flag), so one shared object can serve many
-    streams at once.
-
-    :param shared_status: a ``multiprocessing.Manager().dict()`` created by
-        the main process. It MUST be a Manager dict, not a plain ``dict`` --
-        a plain dict pickled into the worker becomes a private copy and the
-        main process never sees the writes. The Manager proxy crosses the
-        process boundary through mp.Process args (same pattern BufferSink
-        uses for its shared buffer) and both sides see updates.
-    :param stream_name: key prefix identifying which stream this sink
-        monitors, e.g. ``"pod8206hr.A"``. Lets one shared_status hold the
-        status of every stream without collisions.
-    :param pod: POD device data is being streamed from. Unused here, but
-        every sink must accept it because get_data_wrapper injects it
-        when rebuilding sinks inside the worker.
-    :param min_interval_sec: Stamp at most this often, so the per-sample
-        cost stays negligible at kHz sample rates. Each write is an IPC
-        round-trip over the Manager proxy, so throttling matters even more
-        here than for a plain shared Value.
+    :param shared_status: Dictionary shared between the worker and the main process.
+    :param stream_name: Name that prefixes this stream's keys so statuses do not collide.
+    :param pod: Device object. Unused here, but every sink must accept it.
+    :param min_interval_sec: Do not update the shared status more often than this.
+    :param rate_window_sec: How long to average packets when estimating sample rate.
+    :param samples_per_packet: How many samples each packet carries (turns packet
+        rate into sample rate).
     """
 
     def __init__(self, shared_status, stream_name: str, pod=None,
-                 min_interval_sec: float = 0.25) -> None:
+                 min_interval_sec: float = 0.25,
+                 rate_window_sec: float = 5.0,
+                 samples_per_packet: int = 1) -> None:
         self._shared_status = shared_status
         self._stream_name = stream_name
         self._min_interval_sec = min_interval_sec
+        self._rate_window_sec = rate_window_sec
+        self._samples_per_packet = samples_per_packet
         self._last_stamp = 0.0
         self._packet_count = int(self._shared_status.get(f"{self._stream_name}.packet_count",0))
+        # Opened by the first packet rather than here: a worker that is slow to
+        # produce its first packet would otherwise fold that startup delay into
+        # the first window and report an artificially low rate.
+        self._window_start = None
+        self._window_start_count = self._packet_count
 
     # get_data() enters every sink through an ExitStack, so the context
     # manager protocol is required even though there is nothing to open.
@@ -57,6 +49,9 @@ class HealthSink(SinkInterface):
         # uses wall time instead so the monitor can compare against now.
         self._packet_count += 1
         now = time.time()
+        if self._window_start is None:
+            self._window_start = now
+            self._window_start_count = self._packet_count
         if now - self._last_stamp >= self._min_interval_sec:
             prefix = self._stream_name
             self._shared_status[f'{prefix}.last_data_time'] = now
@@ -64,6 +59,18 @@ class HealthSink(SinkInterface):
             self._shared_status[f'{prefix}.data_flowing'] = True
             self._shared_status[f"{prefix}.packet_count"] = self._packet_count
             self._last_stamp = now
+
+            # Publish an observed sample rate once per rate window. Riding
+            # inside the throttled branch keeps the per-packet cost to the
+            # window_start check above; the arithmetic runs ~once per 5s.
+            elapsed = now - self._window_start
+            if elapsed >= self._rate_window_sec:
+                packets = self._packet_count - self._window_start_count
+                self._shared_status[f"{prefix}.measured_sample_rate"] = (
+                    packets * self._samples_per_packet / elapsed
+                )
+                self._window_start = now
+                self._window_start_count = self._packet_count
 
     def get_dict(self) -> dict:
         # The shared Manager dict rides along in the snapshot, so sinks
@@ -74,4 +81,6 @@ class HealthSink(SinkInterface):
             "shared_status": self._shared_status,
             "stream_name": self._stream_name,
             "min_interval_sec": self._min_interval_sec,
+            "rate_window_sec": self._rate_window_sec,
+            "samples_per_packet": self._samples_per_packet,
         }
