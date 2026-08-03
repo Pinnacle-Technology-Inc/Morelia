@@ -411,55 +411,27 @@ class DeviceConfigDeleteResponseSchema(Schema):
 
 
 class CreateSessionTemplateSchema(Schema):
-    relative_path = fields.String(required=True, validate=validate.Length(min=1, max=1024))
-    registered_hash = fields.String(required=True, validate=validate.Length(min=1, max=64))
-    observed_hash = fields.String(allow_none=True, load_default=None)
-    filesystem_identity = fields.String(allow_none=True, load_default=None)
-    state = fields.String(load_default="registered")
-    lineage_parent_id = fields.String(allow_none=True, load_default=None)
-    duplicate_of_template_id = fields.String(allow_none=True, load_default=None)
+    """What a user/client submit to create a template. device_flows already contain device template path and sink info"""
+    name = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    policy = fields.Enum(PolicyMode, by_value=True, load_default=PolicyMode.RECOMMEND)
+    device_flows = fields.List(fields.Raw(), required=True)
 
 
 class SessionTemplateSchema(Schema):
+    """A flat-file template definition joined with its registry state."""
+
     template_id = fields.String(dump_only=True)
-    relative_path = fields.String()
-    registered_hash = fields.String()
-    observed_hash = fields.String(allow_none=True)
-    filesystem_identity = fields.String(allow_none=True)
-    state = fields.String()
-    lineage_parent_id = fields.String(allow_none=True)
-    duplicate_of_template_id = fields.String(allow_none=True)
-    dependencies = fields.List(
-        fields.Nested("SessionTemplateDependencySchema"),
-        dump_only=True,
-        dump_default=list,
-    )
+    name = fields.String(dump_only=True)
+    reference = fields.String(dump_only=True)
+    registered_hash = fields.String(dump_only=True)
+    observed_hash = fields.String(dump_only=True, allow_none=True)
+    state = fields.String(dump_only=True)
+    lineage_parent_id = fields.String(dump_only=True, allow_none=True)
+    duplicate_of_template_id = fields.String(dump_only=True, allow_none=True)
+    content = fields.Raw(dump_only=True, allow_none=True)
     warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
-
-
-class SessionTemplateDependencySchema(Schema):
-    id = fields.Integer(dump_only=True)
-    template_id = fields.String(dump_only=True)
-    relative_path = fields.String()
-    resolved_hash = fields.String()
-    fingerprint = fields.String()
-    resolved_at = fields.DateTime(dump_only=True)
-
-
-class SessionTemplateCatalogEntrySchema(Schema):
-    """One row of the combined stored + on-disk library view.
-
-    "stored" = in the database; "local" = under session-templates folder.
-    """
-
-    source = fields.String(dump_only=True)
-    name = fields.String(dump_only=True)
-    content = fields.Raw(dump_only=True, allow_none=True)
-    content_hash = fields.String(dump_only=True)
-    reference = fields.String(dump_only=True)
-    warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
 
 
 class ExperimentSchema(Schema):

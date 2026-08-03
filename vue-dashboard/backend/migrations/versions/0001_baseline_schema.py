@@ -1,9 +1,8 @@
 """Current disposable database schema.
 
 The application intentionally starts from a clean database format. Device
-templates are files under ``instance/device-templates`` and are not
-stored in SQLite; session templates store their file path and content hash in
-JSON.
+templates are files under ``instance/device-templates`` and are not stored in
+SQLite; the registry stores only identity and reconciliation metadata.
 """
 
 from collections.abc import Sequence
@@ -281,14 +280,52 @@ def upgrade() -> None:
 
     op.create_table(
         "session_templates",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("name", sa.String(255), nullable=False),
-        sa.Column("content", sa.JSON(), nullable=False),
-        sa.Column("content_hash", sa.String(64), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("template_id", sa.String(64), primary_key=True),
+        sa.Column("relative_path", sa.String(1024), nullable=False),
+        sa.Column("registered_hash", sa.String(64), nullable=False),
+        sa.Column("observed_hash", sa.String(64), nullable=True),
+        sa.Column("filesystem_identity", sa.String(255), nullable=True),
+        sa.Column("state", sa.String(32), nullable=False, server_default="registered"),
+        sa.Column("lineage_parent_id", sa.String(64), nullable=True),
+        sa.Column("duplicate_of_template_id", sa.String(64), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.ForeignKeyConstraint(
+            ["lineage_parent_id"], ["session_templates.template_id"],
+            name="fk_session_templates_lineage_parent_id", ondelete="SET NULL",
+        ),
+        sa.ForeignKeyConstraint(
+            ["duplicate_of_template_id"], ["session_templates.template_id"],
+            name="fk_session_templates_duplicate_of_template_id", ondelete="SET NULL",
+        ),
+        sa.UniqueConstraint("relative_path", name="uq_session_templates_relative_path"),
     )
-    op.create_index("ix_session_templates_name", "session_templates", ["name"], unique=True)
-    op.create_index("ix_session_templates_content_hash", "session_templates", ["content_hash"])
+    op.create_index("ix_session_templates_relative_path", "session_templates", ["relative_path"], unique=True)
+    op.create_index("ix_session_templates_registered_hash", "session_templates", ["registered_hash"])
+    op.create_index("ix_session_templates_observed_hash", "session_templates", ["observed_hash"])
+    op.create_index("ix_session_templates_state", "session_templates", ["state"])
+    op.create_index("ix_session_templates_lineage_parent_id", "session_templates", ["lineage_parent_id"])
+    op.create_index("ix_session_templates_duplicate_of_template_id", "session_templates", ["duplicate_of_template_id"])
+
+    op.create_table(
+        "session_template_dependencies",
+        sa.Column("id", sa.Integer, primary_key=True),
+        sa.Column("template_id", sa.String(64), nullable=False),
+        sa.Column("relative_path", sa.String(1024), nullable=False),
+        sa.Column("resolved_hash", sa.String(64), nullable=False),
+        sa.Column("fingerprint", sa.String(64), nullable=False),
+        sa.Column("resolved_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
+        sa.ForeignKeyConstraint(
+            ["template_id"], ["session_templates.template_id"],
+            name="fk_session_template_dependencies_template_id", ondelete="CASCADE",
+        ),
+        sa.UniqueConstraint(
+            "template_id", "relative_path", name="uq_session_template_dependencies_template_path"
+        ),
+    )
+    op.create_index("ix_session_template_dependencies_template_id", "session_template_dependencies", ["template_id"])
+    op.create_index("ix_session_template_dependencies_relative_path", "session_template_dependencies", ["relative_path"])
+    op.create_index("ix_session_template_dependencies_fingerprint", "session_template_dependencies", ["fingerprint"])
 
     op.create_table(
         "device_registrations",
@@ -399,8 +436,15 @@ def downgrade() -> None:
         ("ix_device_registrations_nickname", "device_registrations"),
         ("ix_device_registrations_hardware_id", "device_registrations"),
         ("ix_device_registrations_device_type", "device_registrations"),
-        ("ix_session_templates_content_hash", "session_templates"),
-        ("ix_session_templates_name", "session_templates"),
+        ("ix_session_template_dependencies_fingerprint", "session_template_dependencies"),
+        ("ix_session_template_dependencies_relative_path", "session_template_dependencies"),
+        ("ix_session_template_dependencies_template_id", "session_template_dependencies"),
+        ("ix_session_templates_duplicate_of_template_id", "session_templates"),
+        ("ix_session_templates_lineage_parent_id", "session_templates"),
+        ("ix_session_templates_state", "session_templates"),
+        ("ix_session_templates_observed_hash", "session_templates"),
+        ("ix_session_templates_registered_hash", "session_templates"),
+        ("ix_session_templates_relative_path", "session_templates"),
         ("ix_device_seen_scan_id", "device_seen"),
         ("ix_device_seen_physical_device_id", "device_seen"),
         ("ix_device_configs_claimed_session_id", "device_configs"),
@@ -460,6 +504,7 @@ def downgrade() -> None:
 
     for table in (
         "device_registrations",
+        "session_template_dependencies",
         "session_templates",
         "device_seen",
         "device_configs",

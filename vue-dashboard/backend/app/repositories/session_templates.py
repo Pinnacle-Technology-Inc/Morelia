@@ -22,10 +22,12 @@ class SessionTemplateRepository:
         template_id: str | None = None,
         observed_hash: str | None = None,
         filesystem_identity: str | None = None,
-        state: str = "registered",
+        state: str = "DISCOVERED",
         lineage_parent_id: str | None = None,
         duplicate_of_template_id: str | None = None,
     ) -> SessionTemplate:
+        """Insert one metadata-only template registry row."""
+
         row = SessionTemplate(
             template_id=template_id or uuid4().hex,
             relative_path=relative_path,
@@ -54,6 +56,8 @@ class SessionTemplateRepository:
         ).all()
 
     def update_state(self, template_id: str, state: str) -> SessionTemplate:
+        """Apply one explicit lifecycle transition and refresh its audit timestamp."""
+
         row = self._require(template_id)
         row.state = state
         row.updated_at = datetime.now(UTC)
@@ -64,15 +68,63 @@ class SessionTemplateRepository:
         self,
         template_id: str,
         *,
-        observed_hash: str,
+        observed_hash: str | None,
         filesystem_identity: str | None = None,
         state: str | None = None,
     ) -> SessionTemplate:
+        """Record the latest filesystem identity, hash, and optional derived state."""
+
         row = self._require(template_id)
         row.observed_hash = observed_hash
         row.filesystem_identity = filesystem_identity
         if state is not None:
             row.state = state
+        row.updated_at = datetime.now(UTC)
+        db.session.flush()
+        return row
+
+    def reconcile(
+        self,
+        template_id: str,
+        *,
+        relative_path: str,
+        registered_hash: str,
+        observed_hash: str | None,
+        filesystem_identity: str | None,
+        state: str,
+        lineage_parent_id: str | None = None,
+        duplicate_of_template_id: str | None = None,
+    ) -> SessionTemplate:
+        """Apply one complete deterministic reconciliation result."""
+
+        row = self._require(template_id)
+        desired = (
+            relative_path,
+            registered_hash,
+            observed_hash,
+            filesystem_identity,
+            state,
+            lineage_parent_id,
+            duplicate_of_template_id,
+        )
+        current = (
+            row.relative_path,
+            row.registered_hash,
+            row.observed_hash,
+            row.filesystem_identity,
+            row.state,
+            row.lineage_parent_id,
+            row.duplicate_of_template_id,
+        )
+        if current == desired:
+            return row
+        row.relative_path = relative_path
+        row.registered_hash = registered_hash
+        row.observed_hash = observed_hash
+        row.filesystem_identity = filesystem_identity
+        row.state = state
+        row.lineage_parent_id = lineage_parent_id
+        row.duplicate_of_template_id = duplicate_of_template_id
         row.updated_at = datetime.now(UTC)
         db.session.flush()
         return row
@@ -84,6 +136,8 @@ class SessionTemplateRepository:
         lineage_parent_id: str | None = None,
         duplicate_of_template_id: str | None = None,
     ) -> SessionTemplate:
+        """Link a revision or duplicate to the durable row that owns its history."""
+
         row = self._require(template_id)
         row.lineage_parent_id = lineage_parent_id
         row.duplicate_of_template_id = duplicate_of_template_id
@@ -96,6 +150,8 @@ class SessionTemplateRepository:
         template_id: str,
         dependencies: Iterable[Mapping[str, Any]],
     ) -> list[SessionTemplateDependency]:
+        """Replace dependency fingerprints without storing dependency content."""
+
         row = self._require(template_id)
         row.dependencies.clear()
         for dependency in dependencies:
@@ -121,6 +177,7 @@ class SessionTemplateRepository:
 
     def delete(self, row: SessionTemplate) -> None:
         db.session.delete(row)
+        db.session.flush()
 
     @staticmethod
     def _require(template_id: str) -> SessionTemplate:
