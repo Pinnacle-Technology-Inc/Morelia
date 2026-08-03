@@ -548,6 +548,10 @@ class MoreliaRuntime:
         ) = self._importer()
         network = []
         try:
+            sample_rates = tuple(
+                self._manifest_sample_rate(device_flow)
+                for device_flow in self._manifest.device_flows
+            )
             for device_flow in self._manifest.device_flows:
                 device_type = self._device_type(device_flow)
                 pod = self._build_pod(
@@ -585,6 +589,7 @@ class MoreliaRuntime:
                 first_packet_timeout_sec=self._first_packet_timeout_sec,
                 recovery_policy=self._manifest.policy,
                 reconstruction_hook=self._reconstruct_stream,
+                sample_rates=sample_rates,
             )
         except BaseException:
             self._rollback_stack_construction()
@@ -656,7 +661,6 @@ class MoreliaRuntime:
 
         device_flow = self._manifest.device_flows[stream_index]
         device_type = self._device_type(device_flow)
-        previous_pod = self._pod_by_stream.get(stream_index)
         pod = self._build_pod(
             device_type,
             Pod8206HR,
@@ -666,25 +670,6 @@ class MoreliaRuntime:
             SecondaryChannelMode,
             device_flow,
         )
-
-        # Read the private cached sample rate instead of sending command requesting from the device
-        cached_rate = getattr(previous_pod, "_sample_rate", None)
-        if (
-            isinstance(cached_rate, tuple)
-            and len(cached_rate) > 0
-            and isinstance(cached_rate[0], int)
-            and cached_rate[0] > 0
-        ):
-            pod._sample_rate = cached_rate
-        else:
-            # Not fatal: the replacement worker falls back to asking the
-            # device and it might trigger worker crash. Debug-purpose only.
-            _log.warning(
-                "sample_rate_not_carried_forward",
-                dataflow_id=self._manifest.dataflow_id,
-                stream_index=stream_index,
-                cached_sample_rate=repr(cached_rate),
-            )
 
         # Track before building sinks so a sink failure still leaves the port
         # closeable by the rollback path, matching _build_stack's ordering.
@@ -787,6 +772,15 @@ class MoreliaRuntime:
                 device_flow,
             )
         raise ValueError(f"unsupported Morelia device type: {device_type.value!r}")
+
+    @staticmethod
+    def _manifest_sample_rate(device_flow) -> int:
+        value = device_flow.parameters.get("sample_rate")
+        if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+            raise ValueError(
+                f"device flow {device_flow.device_id!r} requires a positive integer sample_rate"
+            )
+        return value
 
     @staticmethod
     def _build_pod8206hr(Pod8206HR: type, device_flow) -> Any:

@@ -237,31 +237,63 @@ class HardwareMonitor:
                 self._safe_close_device(device) 
 
     @staticmethod
-    def _cache_verified_sample_rate(device, verify_cmd, response):
-        """Cache a sample rate verified while the device is quiet."""
+    def _sample_rate_from_response(verify_cmd, response):
+        """Return a validated sample rate from a GET SAMPLE RATE response."""
         if str(verify_cmd).strip().upper() != "GET SAMPLE RATE":
-            return
+            return None
 
         try:
-            payload = response.payload
-            sample_rate = int(payload[0])
-        except (AttributeError, IndexError, TypeError, ValueError) as error:
+            sample_rate = response.payload[0]
+        except (AttributeError, IndexError, TypeError) as error:
             raise ValueError("Invalid GET SAMPLE RATE response payload.") from error
 
-        if sample_rate <= 0:
-            raise ValueError("GET SAMPLE RATE returned a non-positive value.")
+        if (
+            isinstance(sample_rate, bool)
+            or not isinstance(sample_rate, int)
+            or sample_rate <= 0
+        ):
+            raise ValueError("GET SAMPLE RATE returned an invalid value.")
+
+        return sample_rate
+
+    @staticmethod
+    def _cache_verified_sample_rate(device, verify_cmd, response):
+        """Cache a sample rate verified while the device is quiet."""
+        sample_rate = HardwareMonitor._sample_rate_from_response(verify_cmd, response)
+        if sample_rate is None:
+            return
 
         # AcquisitionDevice.sample_rate stores the response payload in this
-        # exact shape. Keeping it here lets legacy get_dict() implementations
-        # carry the verified value into replacement workers without changing
-        # the device or stream layers.
-        device._sample_rate = payload
+        # exact shape. Keep the local device snapshot consistent with the
+        # hardware value that was just verified.
+        device._sample_rate = response.payload
 
-    def preflight_device(self, device, attempts=3, timeout_sec=5.0, verify_cmd="GET SAMPLE RATE"):
-        """Clean-slate a device and confirm it answers a control command, resetting
-        between attempts. Device-level readiness gate — valid whether or not the
-        device will ever join a DataFlow. Never raises."""
+    def preflight_device(
+        self,
+        device,
+        attempts=3,
+        timeout_sec=5.0,
+        verify_cmd="GET SAMPLE RATE",
+        desired_sample_rate=None,
+    ):
+        """Reset/drain a device and confirm it answers a control command.
+
+        When ``desired_sample_rate`` is supplied, SET that manifest-owned rate
+        after the channel becomes quiet, then GET it back and require an exact
+        match. The operation resets between attempts and never raises.
+        """
         opened_here = getattr(device, "_port", None) is None
+        if desired_sample_rate is not None:
+            if (
+                isinstance(desired_sample_rate, bool)
+                or not isinstance(desired_sample_rate, int)
+                or desired_sample_rate <= 0
+            ):
+                return {
+                    "ok": False,
+                    "attempts_used": 0,
+                    "error": "desired_sample_rate must be a positive integer",
+                }
         if opened_here:
             try:
                 device.open_port()
@@ -272,7 +304,28 @@ class HardwareMonitor:
             for attempt in range(attempts):
                 reset = self.reset_streaming_device(device)        # port already open -> no-op open
                 try:
+                    if desired_sample_rate is not None:
+                        if not reset.get("ok"):
+                            raise RuntimeError(
+                                f"device reset failed: {reset.get('error', 'unknown error')}"
+                            )
+                        if not reset.get("device_quiet"):
+                            raise RuntimeError("device did not become quiet before configuration")
+                        device.write_read(
+                            cmd="SET SAMPLE RATE",
+                            payload=(desired_sample_rate,),
+                            timeout_sec=timeout_sec,
+                        )
                     response = device.write_read(cmd=verify_cmd, timeout_sec=timeout_sec)
+                    actual_sample_rate = self._sample_rate_from_response(verify_cmd, response)
+                    if (
+                        desired_sample_rate is not None
+                        and actual_sample_rate != desired_sample_rate
+                    ):
+                        raise ValueError(
+                            f"expected {desired_sample_rate} Hz, "
+                            f"device reported {actual_sample_rate} Hz"
+                        )
                     ping_ok, error = True, None
                     self._cache_verified_sample_rate(device, verify_cmd, response)
                 except Exception as e:

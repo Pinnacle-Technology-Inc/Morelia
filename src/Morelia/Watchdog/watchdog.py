@@ -115,7 +115,7 @@ class Watchdog:
     - Assess stream health.
     - Return compact or verbose watchdog dictionaries.
     """
-    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None ):
+    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None, sample_rates=None ):
         """
         Initialize stream and standalone-device monitoring state.
 
@@ -139,6 +139,18 @@ class Watchdog:
             else first_packet_timeout_sec
         )
         self.max_auto_restart_attempts = max_auto_restart_attempts
+        self._sample_rates = tuple(sample_rates or ())
+        if flowgraph is not None and self._sample_rates:
+            stream_count = len(flowgraph._network)
+            if len(self._sample_rates) != stream_count:
+                raise ValueError(
+                    "sample_rates must contain one value per DataFlow stream."
+                )
+            if any(
+                isinstance(rate, bool) or not isinstance(rate, int) or rate <= 0
+                for rate in self._sample_rates
+            ):
+                raise ValueError("sample_rates must contain positive integers.")
         self.recovery_policy = _resolve_recovery_policy(
             manifest=manifest,
             recovery_policy=recovery_policy,
@@ -146,7 +158,11 @@ class Watchdog:
         
         #Setup dataflow monitor
         self.dataflow_monitor = (
-            DataFlowMonitor(flowgraph, reconstruction_hook=reconstruction_hook)
+            DataFlowMonitor(
+                flowgraph,
+                reconstruction_hook=reconstruction_hook,
+                sample_rates=self._sample_rates,
+            )
             if flowgraph is not None
             else None
         )
@@ -195,13 +211,22 @@ class Watchdog:
                 "preflight() must run before flowgraph.collect() — workers already own the ports.")
         hw = HardwareMonitor(failure_threshold=self.failure_threshold)
         results = {}
-        sources = []
+        flow_sources = []
         if self.dataflow_monitor is not None:
-            sources += [src for src, _ in self.dataflow_monitor.flowgraph._network]
-        sources += list(self._standalone_devices)
-        for dev in sources:
+            flow_sources = [src for src, _ in self.dataflow_monitor.flowgraph._network]
+        sources = flow_sources + list(self._standalone_devices)
+        for index, dev in enumerate(sources):
+            desired_sample_rate = (
+                self._sample_rates[index]
+                if index < len(flow_sources) and self._sample_rates
+                else None
+            )
             results[str(getattr(dev, "port", id(dev)))] = hw.preflight_device(
-                dev, attempts=attempts, timeout_sec=timeout_sec)
+                dev,
+                attempts=attempts,
+                timeout_sec=timeout_sec,
+                desired_sample_rate=desired_sample_rate,
+            )
         if self.dataflow_monitor is not None:
             self.dataflow_monitor.refresh_rebuild_snapshot()
         not_ready = [k for k, r in results.items() if not r["ok"]]
@@ -1759,6 +1784,11 @@ class StreamWatcher (threading.Thread):
         - age_sec: float or None.
         - max_age_sec: float.
         - packet_count: int or None.
+        - measured_sample_rate: float or None. Observed samples/sec per channel
+          over the sink's last completed rate window. None until the first
+          window closes. Reported as-is with no threshold or comparison against
+          the configured rate; only meaningful while status is "fresh", since a
+          stalled stream keeps reporting its final window.
         """
         try:
             hb = self._monitor.get_stream_heartbeat(self.stream_index, self._max_heartbeat_age_sec)
@@ -1769,6 +1799,7 @@ class StreamWatcher (threading.Thread):
                 "age_sec": hb.get("age_sec"),
                 "max_age_sec": hb.get("max_age_sec"),
                 "packet_count": hb.get("packet_count"),
+                "measured_sample_rate": hb.get("measured_sample_rate"),
             }
         except Exception as error:
             return {
@@ -1776,6 +1807,7 @@ class StreamWatcher (threading.Thread):
                 "reason": f"heartbeat_check_failed: {type(error).__name__}: {error}",
                 "last_data_at": None, "age_sec": None,
                 "max_age_sec": self._max_heartbeat_age_sec, "packet_count": None,
+                "measured_sample_rate": None,
             }
     
     def _safe_get_stream_status(self):

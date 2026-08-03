@@ -32,10 +32,16 @@ class DataFlowMonitor:
     - snapshot_config[stream_index] contains rebuild metadata
     """
 
-    def __init__(self, flowgraph:DataFlow = None, reconstruction_hook=None):
+    def __init__(
+        self,
+        flowgraph:DataFlow = None,
+        reconstruction_hook=None,
+        sample_rates=None,
+    ):
         self.flowgraph = None
         self.snapshot_config = None
         self._reconstruction_hook = reconstruction_hook
+        self._sample_rates = tuple(sample_rates or ())
         self.dataflow_status = "detached" # Overall DataFlow status.
         # Expected values:
         # - detached: no DataFlow attached
@@ -61,6 +67,7 @@ class DataFlowMonitor:
         self._lifecycle_busy = {}
         self._lifecycle_states = {}
         self._hw = HardwareMonitor(failure_threshold=1)  # device-level reset helper (failure_threshold unused here)
+        self._last_rebuild_reset = {}  # stream_index -> reset_streaming_device() result
         if flowgraph is not None:
             self.attach(flowgraph)
 
@@ -129,6 +136,7 @@ class DataFlowMonitor:
                 self._shared_status,
                 stream_name=f"stream{stream_index}",
                 pod=source,
+                samples_per_packet=getattr(source, "samples_per_packet", 1),
             )
             flowgraph._network[stream_index] = (source, [*sinks, health])
 
@@ -153,6 +161,7 @@ class DataFlowMonitor:
             self._shared_status,
             stream_name=f"stream{stream_index}",
             pod=source,
+            samples_per_packet=getattr(source, "samples_per_packet", 1),
         )
         return [*sinks, health]
 
@@ -180,6 +189,7 @@ class DataFlowMonitor:
             f"{prefix}.last_stream_timestamp",
             f"{prefix}.data_flowing",
             f"{prefix}.packet_count",
+            f"{prefix}.measured_sample_rate",
         )
         cleared = []
         try:
@@ -220,24 +230,31 @@ class DataFlowMonitor:
         if sink is None:
             return {"state": "missing", "reason": "no_health_sink_attached",
                     "last_data_at": None, "age_sec": None,
-                    "max_age_sec": max_age_sec, "packet_count": None}
+                    "max_age_sec": max_age_sec, "packet_count": None,
+                    "measured_sample_rate": None}
 
         prefix = sink._stream_name
         shared = sink._shared_status
         last_data_at = shared.get(f"{prefix}.last_data_time")
         packet_count = int(shared.get(f"{prefix}.packet_count", 0) or 0)
+        # None until the sink's first rate window closes. It is a snapshot of
+        # the last completed window, so it is only meaningful while state is
+        # "fresh" -- a stalled stream keeps reporting its final window forever.
+        measured_sample_rate = shared.get(f"{prefix}.measured_sample_rate")
 
         if last_data_at is None:
             return {"state": "missing", "reason": "no_data_seen_yet",
                     "last_data_at": None, "age_sec": None,
-                    "max_age_sec": max_age_sec, "packet_count": packet_count}
+                    "max_age_sec": max_age_sec, "packet_count": packet_count,
+                    "measured_sample_rate": measured_sample_rate}
 
         age_sec = time.time() - last_data_at
         state = "fresh" if age_sec <= max_age_sec else "stale"
         return {"state": state,
                 "reason": None if state == "fresh" else "data_older_than_max_age",
                 "last_data_at": last_data_at, "age_sec": age_sec,
-                "max_age_sec": max_age_sec, "packet_count": packet_count}
+                "max_age_sec": max_age_sec, "packet_count": packet_count,
+                "measured_sample_rate": measured_sample_rate}
     
     ####################################
     #  STREAM STATUS RETRIEVAL HELPERS #
@@ -1340,20 +1357,75 @@ class DataFlowMonitor:
         self._validate_stream_index(stream_index)
 
         if self._reconstruction_hook is not None:
-            return self._rebuild_dataflow_from_hook(stream_index)
+            source, sinks = self._rebuild_dataflow_from_hook(stream_index)
+        else:
+            stream_config = self.snapshot_config[stream_index]
 
-        stream_config = self.snapshot_config[stream_index]
+            source_class = stream_config["source"]["source_class"]
+            source_dict = stream_config["source"]["source_dict"]
+            source = source_class(**source_dict)
 
-        source_class = stream_config["source"]["source_class"]
-        source_dict = stream_config["source"]["source_dict"]
-        source = source_class(**source_dict)
+            sinks = []
+            for sink_config in stream_config["sinks"]:
+                sink_class = sink_config["sink_class"]
+                sink_dict = sink_config["sink_dict"]
+                sinks.append(sink_class(**{**sink_dict,"pod": source}))
 
-        sinks = []
-        for sink_config in stream_config["sinks"]:
-            sink_class = sink_config["sink_class"]
-            sink_dict = sink_config["sink_dict"]
-            sinks.append(sink_class(**{**sink_dict,"pod": source}))
+        # Both rebuild paths converge here so the drain applies to hook-based
+        # (runtime-host) and snapshot-based (standalone) reconstruction alike.
+        self._reset_rebuilt_source(stream_index, source)
         return source, sinks
+
+    def _reset_rebuilt_source(self, stream_index, source):
+        """Quiet the device before the replacement worker opens its port.
+
+        ``preflight_device`` resets and drains before every control handshake.
+        When the runtime supplies a manifest sample rate, it then sends SET
+        SAMPLE RATE and verifies the result with GET SAMPLE RATE before the new
+        worker is allowed to start. A worker killed mid-stream never ran
+        ``AcquisitionDevice.__exit__``, so STREAM was never cancelled and the
+        STREAM confirmation packet was never consumed; the replacement worker
+        then opened a port that was still carrying data plus stale control
+        packets. Matching control replies by command number prevents those
+        stale replies from being mistaken for the new handshake response.
+
+        A disconnect that actually re-enumerated the USB device recovered fine
+        precisely because enumeration gave it this reset for free; a disconnect
+        that only stopped the data flow did not.
+
+        The preparation helpers open the port only when it is closed and close
+        it again in ``finally``, so the port is still free for the worker.
+        Manifest-driven preparation is fail-closed: a replacement worker is
+        not created unless SET/GET verification succeeds.
+        """
+        desired_sample_rate = (
+            self._sample_rates[stream_index]
+            if stream_index < len(self._sample_rates)
+            else None
+        )
+        try:
+            if desired_sample_rate is None:
+                reset = self._hw.reset_streaming_device(source)
+            else:
+                reset = self._hw.preflight_device(
+                    source,
+                    attempts=1,
+                    desired_sample_rate=desired_sample_rate,
+                )
+        except Exception as exc:  # defensive: helper is documented never to raise
+            reset = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+
+        # Retain the result so restart telemetry can show whether the channel
+        # was quiet and, for manifest-driven streams, correctly configured.
+        # Legacy callers without an explicit sample rate keep reset-only,
+        # best-effort behavior.
+        self._last_rebuild_reset[stream_index] = reset
+        if desired_sample_rate is not None and not reset.get("ok"):
+            raise RuntimeError(
+                "replacement source sample-rate preparation failed: "
+                f"{reset.get('error', 'unknown error')}"
+            )
+        return reset
 
     def _rebuild_dataflow_from_hook(self, stream_index):
         """

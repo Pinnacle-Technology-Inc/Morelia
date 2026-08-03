@@ -82,6 +82,11 @@ def _check_preamp_gain(value: object) -> None:
         raise ValueError("preamp_gain must be 10 or 100")
 
 
+def _check_sample_rate(value: object) -> None:
+    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+        raise ValueError("sample_rate must be a positive integer")
+
+
 # -- pod8401hr validators ----------------------------------------------------
 # Source of truth: Morelia.Devices.PodDevice_8401HR.Pod8401HR and
 # DataPacket8401HR. Morelia's constructor takes a Preamp enum member, a
@@ -272,19 +277,23 @@ _DEVICE_SCHEMA: dict[DeviceType, ParamSchema] = {
                 "ttl_pin3",
             }
         ),
-        validators={"preamp_gain": _check_preamp_gain},
+        validators={
+            "preamp_gain": _check_preamp_gain,
+            "sample_rate": _check_sample_rate,
+        },
     ),
     DeviceType.POD8401HR: ParamSchema(
         required=frozenset(
             {"preamp", "primary_channel_modes", "secondary_channel_modes"}
         ),
-        optional=frozenset({"ss_gain", "preamp_gain"}),
+        optional=frozenset({"ss_gain", "preamp_gain", "sample_rate"}),
         validators={
             "preamp": _check_preamp,
             "primary_channel_modes": _check_primary_channel_modes,
             "secondary_channel_modes": _check_secondary_channel_modes,
             "ss_gain": _check_ss_gain,
             "preamp_gain": _check_preamp_gain_tuple,
+            "sample_rate": _check_sample_rate,
         },
     ),
 }

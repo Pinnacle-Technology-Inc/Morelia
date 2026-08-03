@@ -406,7 +406,7 @@ class Pod :
     
     def write_read(self, cmd: str|int, payload:int|bytes|tuple[int|bytes]=None, validate_checksum:bool=True, timeout_sec: int|float = 5) -> PodPacket :
         """
-        Writes a command with optional payload to POD device, then reads (once) the device response.
+        Write a command and return its matching control response.
 
         :param cmd: Command number. 
         :param payload: None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.
@@ -415,8 +415,7 @@ class Pod :
 
         :raises TimeoutError: If the device does not respond within the specified timeout.
         
-        :return: POD packet beginning with STX and ending with ETX. This may \
-                be a control packet, data packet, or an unformatted packet (STX+something+ETX). 
+        :return: The control packet whose command number matches ``cmd``.
         """
         #flushes leftover data in case of interrupt
         if self._port is not None:
@@ -434,8 +433,8 @@ class Pod :
         #if port exists,
         if self._port is not None:
 
-            #loops until it finds a control packet, and returns the found control packet.
-            #discard bad-checksum/stray packets (e.g. data packet or sync) so we only return a valid control response.
+            # Discard bad-checksum, data, sync, and stale control packets until
+            # the response for this command arrives.
             while time.time() - start < timeout_sec:
                 try:
                     packet = self.read_pod_packet(validate_checksum, timeout_sec)
@@ -446,7 +445,10 @@ class Pod :
                     # bad checksum, mis-sync, or other read error; discard and retry (e.g. worker first read after open)
                     continue
 
-                if isinstance(packet, ControlPacket):  # or however your control packets are defined
+                if (
+                    isinstance(packet, ControlPacket)
+                    and packet.command_number == expected_cmd_num
+                ):
                     return packet
 
                 continue
@@ -911,4 +913,3 @@ class Pod :
                     output_dict[logical_key] = prop_value
                 except Exception as e:
                     print(f"[CONFIG] Failed to read {prop_name}: {e}")
- 
