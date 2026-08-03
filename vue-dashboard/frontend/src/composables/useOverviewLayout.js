@@ -1,4 +1,4 @@
-import { computed, ref, watch } from "vue";
+import { computed, ref, toValue, watch } from "vue";
 import {
   getSessionDeviceFlows,
   getVisibleActiveSessions,
@@ -14,12 +14,14 @@ export const DEFAULT_VISIBLE_ACTIVE_SESSIONS = 4;
 
 export function useOverviewLayout(activeSessions, deviceFlows, storage) {
   const savedPreferences = loadOverviewPreferences(storage, OVERVIEW_STORAGE_KEY);
-  const activeSessionById = new Map(activeSessions.map((session) => [session.id, session]));
+  const activeSessionById = computed(() => new Map(
+    toValue(activeSessions).map((session) => [session.id, session]),
+  ));
   const orderedActiveSessionIds = ref(
-    reconcileActiveSessionOrder(activeSessions, savedPreferences.orderedSessionIds),
+    reconcileActiveSessionOrder(toValue(activeSessions), savedPreferences.orderedSessionIds),
   );
   const expandedSessionIds = ref(
-    savedPreferences.expandedSessionIds.filter((id) => activeSessionById.has(id)),
+    savedPreferences.expandedSessionIds.filter((id) => activeSessionById.value.has(id)),
   );
   const showAllActiveSessions = ref(savedPreferences.showAllActiveSessions);
   const isSidebarCollapsed = ref(savedPreferences.isSidebarCollapsed);
@@ -30,7 +32,7 @@ export function useOverviewLayout(activeSessions, deviceFlows, storage) {
 
   const orderedActiveSessions = computed(() =>
     orderedActiveSessionIds.value
-      .map((id) => activeSessionById.get(id))
+      .map((id) => activeSessionById.value.get(id))
       .filter(Boolean),
   );
   const visibleActiveSessions = computed(() =>
@@ -61,6 +63,12 @@ export function useOverviewLayout(activeSessions, deviceFlows, storage) {
     { deep: true },
   );
 
+  watch(activeSessions, (sessions) => {
+    const nextIds = reconcileActiveSessionOrder(toValue(activeSessions), orderedActiveSessionIds.value);
+    orderedActiveSessionIds.value = nextIds;
+    expandedSessionIds.value = expandedSessionIds.value.filter((id) => activeSessionById.value.has(id));
+  });
+
   function isSessionExpanded(sessionId) {
     return expandedSessionIds.value.includes(sessionId);
   }
@@ -72,7 +80,7 @@ export function useOverviewLayout(activeSessions, deviceFlows, storage) {
   }
 
   function devicesForSession(sessionId) {
-    return getSessionDeviceFlows(deviceFlows, sessionId);
+    return getSessionDeviceFlows(toValue(deviceFlows), sessionId);
   }
 
   function startSessionDrag(sessionId, event) {
@@ -107,7 +115,7 @@ export function useOverviewLayout(activeSessions, deviceFlows, storage) {
       sessionId,
       dropTarget.value.position,
     );
-    const movedSession = activeSessionById.get(draggedSessionId.value);
+    const movedSession = activeSessionById.value.get(draggedSessionId.value);
     reorderAnnouncement.value = `${movedSession?.name ?? "Session"} reordered.`;
     endSessionDrag();
   }
@@ -117,7 +125,7 @@ export function useOverviewLayout(activeSessions, deviceFlows, storage) {
     if (nextOrder.join() === orderedActiveSessionIds.value.join()) return;
 
     orderedActiveSessionIds.value = nextOrder;
-    const movedSession = activeSessionById.get(sessionId);
+    const movedSession = activeSessionById.value.get(sessionId);
     reorderAnnouncement.value = `${movedSession?.name ?? "Session"} moved ${
       offset < 0 ? "earlier" : "later"
     }.`;

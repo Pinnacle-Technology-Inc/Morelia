@@ -216,6 +216,7 @@ def allocate_continuation(
                 f"is already claimed by predecessor "
                 f"{existing.previous_output_id!r}, not {previous.output_id!r}"
             )
+        _mark_superseded(previous, termination_reason=termination_reason)
         return reopen(existing)  # idempotent retry / concurrent-loser adoption
 
     if path is None:
@@ -248,11 +249,26 @@ def allocate_continuation(
 
     # The predecessor is now the interrupted, superseded component. Recorded only
     # after the continuation exists, so a failed allocation leaves it immutable.
-    with transaction():
-        previous.termination_reason = termination_reason
-        previous.acquisition_state = "interrupted"
+    _mark_superseded(previous, termination_reason=termination_reason)
 
     return managed
+
+
+def _mark_superseded(previous: OutputFile, *, termination_reason: str) -> None:
+    """Reconcile metadata after a linked successor proves writer replacement.
+
+    A watchdog may have had to terminate the predecessor process before its sink
+    could update the row.  Continuation allocation is only valid after that
+    writer has stopped, so the durable predecessor can now be closed without
+    reopening or mutating its file contents.
+    """
+    path = Path(previous.path)
+    with transaction():
+        if path.exists():
+            previous.byte_offset = path.stat().st_size
+        previous.status = "closed"
+        previous.termination_reason = termination_reason
+        previous.acquisition_state = "interrupted"
 
 
 def _component_at(logical_sink_id: str, segment_index: int) -> OutputFile | None:

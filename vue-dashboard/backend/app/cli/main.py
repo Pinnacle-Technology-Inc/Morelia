@@ -10,6 +10,7 @@ from app.cli.gap_cmd import gap
 from app.cli.incident_cmd import incident
 from app.cli.lifecycle import restart_command, shutdown_command, start_command, status_command
 from app.cli.operation_cmd import operation
+from app.cli.output_cmd import output
 from app.cli.runtime_cmd import runtime
 from app.cli.session_cmd import session
 
@@ -26,6 +27,7 @@ pinnacle.add_command(status_command)
 pinnacle.add_command(device)
 pinnacle.add_command(session)
 pinnacle.add_command(operation)
+pinnacle.add_command(output)
 pinnacle.add_command(incident)
 pinnacle.add_command(gap)
 pinnacle.add_command(runtime)

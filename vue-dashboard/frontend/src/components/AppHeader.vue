@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import pinnacleLogo from "../assets/pinnacle-technology-logo.png";
 
 const now = ref(new Date());
 let timer;
@@ -22,7 +23,7 @@ const timeLabel = computed(() =>
     <div class="header-intro">
      
       <div class="header-intro__copy">
-        <span class="header-eyebrow">Operational overview</span>
+        <span class="header-eyebrow">{{ timeLabel }} America/Chicago</span>
         <strong class="header-title">Acquisition control center</strong>
         <span class="header-description">
           Monitor active sessions, review recovery decisions, and confirm system readiness from one workspace.
@@ -31,7 +32,11 @@ const timeLabel = computed(() =>
     </div>
 
     <div class="header-actions">
-      <span class="header-time">{{ timeLabel }} America/Chicago</span>
+      <img
+        class="header-logo"
+        :src="pinnacleLogo"
+        alt="Pinnacle Technology"
+      />
     </div>
   </header>
 </template>

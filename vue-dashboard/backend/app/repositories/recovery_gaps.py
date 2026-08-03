@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from datetime import datetime
 from typing import Any
 from uuid import uuid4
+
+from sqlalchemy import and_, or_
 
 from app.database import db, transaction
 from app.domain.enums import GapConfidence
@@ -87,6 +90,29 @@ class RecoveryGapRepository:
     def list_for_session(self, session_id: int) -> list[RecoveryGap]:
         query = db.select(RecoveryGap).where(RecoveryGap.session_id == session_id)
         return db.session.scalars(query.order_by(RecoveryGap.created_at.desc())).all()
+
+    def list_page(
+        self,
+        *,
+        session_id: int | None = None,
+        confidence: GapConfidence | str | None = None,
+        page_size: int = 50,
+        after: tuple[datetime | None, int] | None = None,
+    ) -> tuple[list[RecoveryGap], bool]:
+        query = db.select(RecoveryGap)
+        if session_id is not None:
+            query = query.where(RecoveryGap.session_id == session_id)
+        if confidence is not None:
+            query = query.where(RecoveryGap.confidence == _confidence_value(confidence))
+        if after is not None:
+            timestamp, row_id = after
+            if timestamp is None:
+                query = query.where(RecoveryGap.created_at.is_(None), RecoveryGap.id < row_id)
+            else:
+                query = query.where(or_(RecoveryGap.created_at < timestamp, and_(RecoveryGap.created_at == timestamp, RecoveryGap.id < row_id), RecoveryGap.created_at.is_(None)))
+        query = query.order_by(RecoveryGap.created_at.is_(None), RecoveryGap.created_at.desc(), RecoveryGap.id.desc()).limit(page_size + 1)
+        rows = list(db.session.scalars(query).all())
+        return rows[:page_size], len(rows) > page_size
 
     def list_for_incident(self, incident_id: str) -> list[RecoveryGap]:
         query = db.select(RecoveryGap).where(RecoveryGap.incident_id == incident_id)

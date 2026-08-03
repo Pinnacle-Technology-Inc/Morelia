@@ -53,6 +53,8 @@ def _normalize_reference(reference: str) -> str:
         normalized = normalized[len("device-templates/") :]
     if not normalized or normalized.startswith("/") or ".." in Path(normalized).parts:
         raise DeviceTemplateNotFound(reference)
+    if not normalized.lower().endswith(".toml"):
+        normalized = f"{normalized}.toml"
     return normalized
 
 
@@ -65,7 +67,7 @@ def _path_for_reference(reference: str) -> Path:
 
 
 def _relative_file_path(path: Path) -> str:
-    return path.resolve().relative_to(_template_library_dir()).as_posix()
+    return f"device-templates/{path.resolve().relative_to(_template_library_dir()).as_posix()}"
 
 
 def _canonicalize(raw_content: Mapping[str, Any]) -> dict[str, Any]:
@@ -160,6 +162,13 @@ def get_by_name(name: str) -> DeviceTemplate | None:
     )
 
 
+def get_by_id(template_id: int) -> DeviceTemplate | None:
+    """Return the file-backed template row matching its stable model id."""
+    from app.database import db
+
+    return db.session.get(DeviceTemplate, template_id)
+
+
 def get_by_content_hash(content_hash: str) -> DeviceTemplate | None:
     return next((template for template in list() if template.content_hash == content_hash), None)
 
@@ -202,7 +211,12 @@ def _referencing_session_templates(file_path: str) -> list[Any]:
         flows = (row.content or {}).get("device_flows", [])
         if any(
             isinstance(flow, Mapping)
-            and _normalize_reference(str(flow.get("device_template_path", ""))) == normalized
+            and (
+                (flow.get("device_template_path") or flow.get("device_template")) is not None
+            )
+            and _normalize_reference(
+                str(flow.get("device_template_path") or flow.get("device_template"))
+            ) == normalized
             for flow in flows
         ):
             references.append(row)
@@ -226,6 +240,9 @@ def rename(old_name: str, new_name: str) -> tuple[DeviceTemplate, list[Any]]:
     references = _referencing_session_templates(old.file_path)
     old_path.replace(new_path)
     _write_atomic(new_path, _to_toml({"name": new, **old.content}))
+    from app.services.session_templates import rewrite_device_template_reference
+
+    rewrite_device_template_reference(old.file_path, f"device-templates/{new_path.name}")
     return _read(new_path), references
 
 

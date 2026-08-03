@@ -17,7 +17,27 @@ python -m venv .venv
 
 # 3. Install the app plus dev tools, editable so code changes take effect live.
 pip install -e ".[dev]"
+
+# 4. Create / upgrade the SQLite schema (required on first start).
+flask --app app db upgrade
 ```
+
+Schema is managed by Flask-Migrate / Alembic under `migrations/`. The default
+database is `guarded-experiment.sqlite3` (override with `DATABASE_URL`). Relative
+SQLite paths resolve under Flask's `instance/` directory.
+
+To reset a disposable local database and re-apply migrations:
+
+```bash
+# PowerShell
+Remove-Item .\instance\guarded-experiment.sqlite3 -ErrorAction SilentlyContinue
+flask --app app db upgrade
+
+# Unix
+# rm -f instance/guarded-experiment.sqlite3 && flask --app app db upgrade
+```
+
+Optional readiness check: `flask --app app pinnacle doctor`.
 
 ## Run
 
@@ -76,6 +96,7 @@ ruff format     # auto-format (optional)
 | `app/config.py`       | Per-environment configuration profiles          |
 | `app/health/`         | Liveness (`/health`) & readiness (`/ready`)     |
 | `app/watchdog/`       | Versioned Watchdog contract and adapters         |
+| `migrations/`         | Alembic schema revisions (`flask db upgrade`)   |
 | `docs/watchdog-http-v1.md` | Local HTTP/JSON wire contract             |
 | `tests/`              | pytest suite + shared fixtures (`conftest.py`)  |
 | `pyproject.toml`      | Dependencies, ruff, and pytest configuration    |

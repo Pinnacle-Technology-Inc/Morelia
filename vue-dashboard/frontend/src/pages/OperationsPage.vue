@@ -5,7 +5,7 @@ import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import { listOperations, resolveOperation } from "../operations-api";
+import { canSubmitResolution, listOperations, resolveOperation } from "../operations-api";
 
 const operations = ref([]);
 const isLoading = ref(false);
@@ -13,6 +13,7 @@ const loadError = ref("");
 const selectedOperationId = ref(null);
 const resolvingId = ref(null);
 const resolution = reactive({
+  outcome: "",
   resolvedBy: "",
   resolutionNote: "",
 });
@@ -45,6 +46,7 @@ async function submitResolution() {
   try {
     await resolveOperation(selectedOperation.value.operation_id, resolution);
     resolution.resolvedBy = "";
+    resolution.outcome = "";
     resolution.resolutionNote = "";
     await loadUncertainOperations();
   } catch (error) {
@@ -166,6 +168,14 @@ function operationScope(operation) {
 
           <form v-if="selectedOperation" class="resolution-form" @submit.prevent="submitResolution">
             <label class="field">
+              <span>Outcome</span>
+              <select v-model="resolution.outcome" required>
+                <option value="" disabled>Select outcome</option>
+                <option value="succeeded">Succeeded</option>
+                <option value="failed">Failed</option>
+              </select>
+            </label>
+            <label class="field">
               <span>Resolved by</span>
               <input v-model.trim="resolution.resolvedBy" required type="text" autocomplete="name" />
             </label>
@@ -175,7 +185,7 @@ function operationScope(operation) {
             </label>
             <BaseButton
               type="submit"
-              :disabled="!resolution.resolvedBy || !resolution.resolutionNote || resolvingId === selectedOperation.operation_id"
+              :disabled="!canSubmitResolution(resolution) || resolvingId === selectedOperation.operation_id"
             >
               <ShieldCheck :size="16" />
               Record Resolution

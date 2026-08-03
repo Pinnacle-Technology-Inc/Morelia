@@ -47,15 +47,24 @@ def _path_segment(value: str) -> str:
     return value.replace(":", "-").replace("/", "-").replace("\\", "-")
 
 
-def _conflict_label(source_nickname: str | None, sink_name: str) -> str:
-    """Identify a conflicting file sink by its source nickname plus sink name.
+def conflict_label(source_nickname: str | None, sink_name: str) -> str:
+    """Identify a file sink by its source nickname plus sink name.
 
     A source can now own several file sinks, so the source nickname alone no
     longer pinpoints which sink's location collided — the label carries both.
+
+    Public because it is a wire contract in both directions: a
+    SinkLocationExists conflict reports this label, and
+    ``services.sessions._apply_sink_overrides`` accepts the same label back as
+    the ``sink_overrides`` key. One definition keeps the round trip honest.
     """
     if source_nickname:
         return f"{source_nickname}:{sink_name}"
     return sink_name
+
+
+# Retained so existing internal callers/tests keep working.
+_conflict_label = conflict_label
 
 
 def _allocate_sink_location(

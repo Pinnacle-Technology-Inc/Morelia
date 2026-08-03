@@ -1,15 +1,60 @@
 <script setup>
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import { ArrowUpRight, ChevronDown, ChevronRight, GripVertical } from "@lucide/vue";
 import BaseCard from "./BaseCard.vue";
+import SessionFlowBar from "./SessionFlowBar.vue";
 import StatusBadge from "./StatusBadge.vue";
+import { loadSessionDetail } from "../session-detail-api";
+import { normalizeSession } from "../session-api";
+import { deriveStreamRows, isOutboxUnproven } from "../session-flow-status";
 
-defineProps({
+const props = defineProps({
   session: { type: Object, required: true },
   devices: { type: Array, default: () => [] },
   expanded: Boolean,
 });
 
 const emit = defineEmits(["drag-start", "drag-end", "move", "open", "toggle"]);
+
+const detail = ref(null);
+const detailState = ref("loading");
+const detailError = ref("");
+let detailPollTimer = null;
+
+const displaySession = computed(() => {
+  if (!detail.value?.session) return props.session;
+  return normalizeSession(detail.value.session, {
+    health: detail.value.health,
+    phase: detail.value.phase,
+  });
+});
+
+const streamRows = computed(() =>
+  deriveStreamRows({
+    devices: detail.value?.latest_report?.devices ?? [],
+    sinks: detail.value?.sinks ?? [],
+    configuredFlows: detail.value?.session?.device_flows ?? props.session.deviceFlows ?? [],
+    unproven: isOutboxUnproven(detail.value?.outbox_health),
+  }),
+);
+
+const detailAvailable = computed(() => detailState.value !== "unavailable");
+const activityState = computed(() => {
+  if (detailState.value === "unavailable") return "unavailable";
+  if (detailState.value === "loading") return "connecting";
+  return "live";
+});
+
+async function refreshDetail() {
+  try {
+    detail.value = await loadSessionDetail(props.session.id);
+    detailState.value = "live";
+    detailError.value = "";
+  } catch (error) {
+    detailState.value = "unavailable";
+    detailError.value = error instanceof Error ? error.message : "Session detail is unavailable.";
+  }
+}
 
 function moveWithKeyboard(sessionId, event) {
   if (["ArrowLeft", "ArrowUp"].includes(event.key)) {
@@ -21,6 +66,15 @@ function moveWithKeyboard(sessionId, event) {
     emit("move", sessionId, 1);
   }
 }
+
+onMounted(() => {
+  refreshDetail();
+  detailPollTimer = setInterval(refreshDetail, 5000);
+});
+
+onUnmounted(() => {
+  if (detailPollTimer) clearInterval(detailPollTimer);
+});
 </script>
 
 <template>
@@ -28,18 +82,18 @@ function moveWithKeyboard(sessionId, event) {
     <article class="session-card">
       <header class="session-card__head">
         <div>
-          <h3>{{ session.name }}</h3>
-          <p>{{ session.experiment }}</p>
+          <h3>{{ displaySession.name }}</h3>
+          <p>{{ displaySession.experiment }}</p>
         </div>
         <div class="session-card__controls">
           <button
             class="session-drag-handle"
             type="button"
             draggable="true"
-            :aria-label="`Reorder ${session.name}. Use arrow keys or drag.`"
-            @dragstart="$emit('drag-start', session.id, $event)"
+            :aria-label="`Reorder ${displaySession.name}. Use arrow keys or drag.`"
+            @dragstart="$emit('drag-start', displaySession.id, $event)"
             @dragend="$emit('drag-end')"
-            @keydown="moveWithKeyboard(session.id, $event)"
+            @keydown="moveWithKeyboard(displaySession.id, $event)"
           >
             <GripVertical :size="18" />
           </button>
@@ -47,9 +101,9 @@ function moveWithKeyboard(sessionId, event) {
             class="session-disclosure"
             type="button"
             :aria-expanded="expanded"
-            :aria-controls="`session-streams-${session.id}`"
-            :aria-label="`${expanded ? 'Collapse' : 'Expand'} streams for ${session.name}`"
-            @click="$emit('toggle', session.id)"
+            :aria-controls="`session-streams-${displaySession.id}`"
+            :aria-label="`${expanded ? 'Collapse' : 'Expand'} streams for ${displaySession.name}`"
+            @click="$emit('toggle', displaySession.id)"
           >
             <ChevronDown v-if="expanded" :size="20" />
             <ChevronRight v-else :size="20" />
@@ -58,46 +112,41 @@ function moveWithKeyboard(sessionId, event) {
       </header>
 
       <div class="badge-row">
-        <StatusBadge :value="session.lifecycle" />
-        <StatusBadge :value="session.health" />
+        <StatusBadge :value="displaySession.lifecycle" />
+        <StatusBadge :value="displaySession.health" />
       </div>
 
       <dl class="session-stats">
-        <div><dt>Duration</dt><dd>{{ session.duration }}</dd></div>
-        <div><dt>Streams / Sinks</dt><dd>{{ session.streamCount ?? session.deviceCount }} / {{ session.sinkCount }}</dd></div>
-        <div><dt>Session Monitor</dt><dd><StatusBadge compact :value="session.watchdog" /></dd></div>
+        <div><dt>Duration</dt><dd>{{ displaySession.duration }}</dd></div>
+        <div><dt>Streams / Sinks</dt><dd>{{ displaySession.streamCount ?? displaySession.deviceCount }} / {{ displaySession.sinkCount }}</dd></div>
+     
       </dl>
 
       <section
         v-show="expanded"
-        :id="`session-streams-${session.id}`"
+        :id="`session-streams-${displaySession.id}`"
         class="session-devices"
-        :aria-label="`Streams in ${session.name}`"
+        :aria-label="`Streams in ${displaySession.name}`"
       >
         <div class="session-devices__heading">
-          <strong>Streams</strong>
-          <span>{{ devices.length }} stream{{ devices.length === 1 ? "" : "s" }}</span>
+          <strong>Stream Health</strong>
+          <span>{{ displaySession.streamCount ?? displaySession.deviceCount }} stream{{ (displaySession.streamCount ?? displaySession.deviceCount) === 1 ? "" : "s" }}</span>
         </div>
-        <ul v-if="devices.length">
-          <li v-for="device in devices" :key="device.id">
-            <div class="device-row__identity">
-              <strong>{{ device.device }}</strong>
-              <span>{{ device.type }}</span>
-              <code>{{ device.hardwareId }}</code>
-            </div>
-            <div class="device-row__status">
-              <StatusBadge compact :value="device.health" />
-              <span>{{ device.rate }}</span>
-              <span>{{ device.lastData }}</span>
-              <span>{{ device.sinks.length }} sink{{ device.sinks.length === 1 ? "" : "s" }}</span>
-            </div>
-          </li>
-        </ul>
-        <p v-else class="session-devices__empty">No stream details are available.</p>
+        <SessionFlowBar
+          :lifecycle="displaySession.lifecycle"
+          :health="displaySession.health"
+          :phase="displaySession.phase"
+          :activity-state="activityState"
+          :streams="streamRows"
+          :detail-available="detailAvailable"
+          :detail-error="detailError"
+          :outbox-health="detail?.outbox_health ?? null"
+          :last-report-at="detail?.latest_report?.received_at ?? null"
+        />
       </section>
 
       <footer class="session-card__footer">
-        <button class="session-open-action" type="button" @click="$emit('open', session.id)">
+        <button class="session-open-action" type="button" @click="$emit('open', displaySession.id)">
           Open session <ArrowUpRight :size="15" />
         </button>
       </footer>

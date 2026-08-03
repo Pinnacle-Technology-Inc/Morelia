@@ -17,6 +17,10 @@ incident that was open for the recovered stream and to the recovery operation.
 
 from __future__ import annotations
 
+import base64
+import json
+from datetime import datetime
+
 from app.database import db, transaction
 from app.domain.enums import GapConfidence, IncidentStatus, StreamStatus
 from app.models.incident import Incident
@@ -251,3 +255,29 @@ def _device_report(report: RuntimeReport, device_id: str) -> DeviceReport | None
 
 def list_for_session(session_id: int) -> list[RecoveryGap]:
     return _gaps.list_for_session(session_id)
+
+
+def _encode_cursor(*, session_id, confidence, row: RecoveryGap) -> str:
+    payload = {"v": 1, "k": "gaps", "t": row.created_at.isoformat() if row.created_at else None, "id": row.id, "session": session_id, "confidence": confidence}
+    return base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str, *, session_id, confidence) -> tuple[datetime | None, int]:
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded).decode())
+        if payload.get("v") != 1 or payload.get("k") != "gaps":
+            raise ValueError
+        if payload.get("session") != session_id or payload.get("confidence") != confidence:
+            raise ValueError
+        row_id = int(payload["id"])
+        timestamp = payload.get("t")
+        return (datetime.fromisoformat(timestamp) if timestamp else None, row_id)
+    except (TypeError, ValueError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("invalid gap cursor") from exc
+
+
+def list_page(*, session_id: int | None, confidence: str | None, page_size: int, cursor: str | None) -> dict:
+    after = _decode_cursor(cursor, session_id=session_id, confidence=confidence) if cursor else None
+    rows, has_more = _gaps.list_page(session_id=session_id, confidence=confidence, page_size=page_size, after=after)
+    return {"items": rows, "has_more": has_more, "next_cursor": _encode_cursor(session_id=session_id, confidence=confidence, row=rows[-1]) if has_more and rows else None}

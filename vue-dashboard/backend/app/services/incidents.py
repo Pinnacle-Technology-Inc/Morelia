@@ -1,10 +1,21 @@
 """Incident lifecycle — opened from daemon-side signals, surfaced to operators.
 
+An incident means SOMETHING IS WAITING ON A PERSON. It is not the record that a
+failure happened — that is a recovery gap (``app.services.gaps``), which is
+written on the healing edge, never clears, and needs nobody. A disconnect that
+automatic recovery handles on its own therefore leaves a gap and no incident at
+all. ``app.services.escalation`` owns that boundary for the two data-path
+triggers below (1 and 1b); the control-plane triggers (2, 4-7) are unconditional
+because there is no automatic recovery for them to wait on.
+
 The runtime host is DB-free: it only pushes ``RuntimeReport``s to the daemon's
 ingest endpoint, and the daemon's own poller independently probes host liveness.
 Every incident is born here, from one of these triggers:
 
-  1. ``evaluate_report``              — a device's stream went UNHEALTHY.
+  1. ``evaluate_report``              — a device's stream needs an operator:
+                                         the watchdog spent its restart budget,
+                                         the policy is RECOMMEND, or the port has
+                                         been absent past its limit.
   2. ``evaluate_link_status``         — control plane can't reach the host.
   3. ``evaluate_operation_failure``/``evaluate_operation_success``
                                        — a start/stop/recover command failed
@@ -30,13 +41,18 @@ is an annotation in between — it does not itself resolve.
 
 from __future__ import annotations
 
+import base64
+import json
+from datetime import datetime
+
 from app.database import db
-from app.domain.enums import IncidentStatus, LinkStatus, StreamStatus
+from app.domain.enums import IncidentStatus, LinkStatus, PolicyMode, StreamStatus
 from app.domain.errors import IncidentNotFound
 from app.models.incident import Incident
 from app.models.operation import Operation
 from app.repositories.incidents import IncidentRepository
 from app.runtime_child.driver import RuntimeReport, SinkHealth, SinkReport
+from app.services import escalation
 
 _repo = IncidentRepository()
 
@@ -59,20 +75,118 @@ def _operation_failure_reason(command: str) -> str:
     return f"operation failed: {command}"
 
 
+# Which surface an incident belongs to. The data path is what an operator asks
+# "did I lose data" about — a device that stopped producing, a sink that stopped
+# accepting — and it is the axis that also produces recovery gaps. Everything
+# else is the control plane doing its job badly: processes, telemetry, commands.
+# They are separate surfaces because they answer different questions and because
+# only the data-path axis is gated by ``app.services.escalation``.
+AXIS_DATA_PATH = "data_path"
+AXIS_CONTROL_PLANE = "control_plane"
+
+_DATA_PATH_REASONS = frozenset(
+    {STREAM_UNHEALTHY_REASON, SINK_FAILED_REASON, SINK_DEGRADED_REASON}
+)
+
+
+def axis_for_reason(reason: str | None) -> str:
+    """Classify an incident reason onto the data-path or control-plane surface.
+
+    Unknown reasons fall to the control plane deliberately: the data-path set is
+    closed and enumerable, while ``operation failed: <command>`` mints a new
+    reason string per command and must never be mistaken for lost data.
+    """
+    return AXIS_DATA_PATH if reason in _DATA_PATH_REASONS else AXIS_CONTROL_PLANE
+
+
+# Control-plane conditions the system is expected to clear WITHOUT a person: a
+# crashed watchdog is respawned by its driver, an unreachable host is reattached
+# by supervisor reconciliation, stale telemetry resumes when the push does. There
+# is no lever an operator can pull that the supervisor is not already pulling, so
+# these are recorded and shown — never counted as waiting on someone.
+#
+# The escalation of each of these is a SEPARATE reason that is deliberately NOT
+# in this set: ``watchdog crash loop`` is what the respawn budget running out
+# looks like (supervisor marks the runtime UNCERTAIN at that point), and
+# ``outbox overflow`` is stale telemetry that has gone on long enough to mean the
+# outbox is not draining. Those are exactly the cases self-healing has failed.
+_SELF_HEALING_REASONS = frozenset(
+    {
+        HOST_UNREACHABLE_REASON,
+        WATCHDOG_CRASH_REASON,
+        STALE_PROCESS_REASON,
+        STALE_TELEMETRY_REASON,
+    }
+)
+
+
+def requires_action_for_reason(reason: str | None) -> bool:
+    """Whether an incident of this reason is waiting on a person.
+
+    Fail-safe by construction: anything not explicitly known to self-heal counts
+    as needing action. Under-surfacing a real problem is worse than showing one
+    row too many, and the self-healing set is the part we can enumerate with
+    confidence. Data-path reasons are always True — after
+    ``app.services.escalation`` they only exist BECAUSE something escalated.
+    """
+    return reason not in _SELF_HEALING_REASONS
+
+
 # -- trigger 1: per-device stream health (ingest path) -----------------------
 
 
-def evaluate_report(report: RuntimeReport, *, session_id: int) -> None:
-    """Open or resolve incidents implied by one report's per-device stream health."""
+def evaluate_report(
+    report: RuntimeReport,
+    *,
+    session_id: int,
+    policy: PolicyMode | None = None,
+    port_absent_limit_seconds: float = escalation.DEFAULT_PORT_ABSENT_LIMIT_SECONDS,
+) -> None:
+    """Open or resolve incidents for streams that need an operator.
+
+    A stream that is merely down opens nothing: automatic recovery is expected to
+    handle it and leave a gap behind. Only ``escalation.stream_escalation`` can
+    open one, and the cause it returns is stored on the incident so an operator
+    can see WHY this reached them without re-deriving it from a later report that
+    no longer shows the condition.
+
+    ``policy`` is the session's configured mode, used only as a fallback: the
+    watchdog reports the policy it actually ran under, per stream.
+    """
+    diagnostics = escalation.diagnostics_by_device(report)
+    interval = escalation.report_interval_seconds(report)
     for device in report.devices:
-        if device.stream_status is StreamStatus.UNHEALTHY:
-            _open_if_absent(report, session_id=session_id, device_id=device.device_id)
-        elif device.stream_status is StreamStatus.HEALTHY:
+        if device.stream_status is StreamStatus.HEALTHY:
             _resolve_if_present(report, session_id=session_id, device_id=device.device_id)
-        # SUSPECT: in-window, non-operator-facing — no incident state change.
+            continue
+        diagnostic = diagnostics.get(device.device_id, {})
+        cause = escalation.stream_escalation(
+            stream_status=device.stream_status,
+            diagnostic=diagnostic,
+            policy=escalation.effective_policy(diagnostic, fallback=policy),
+            interval_seconds=interval,
+            port_absent_limit_seconds=port_absent_limit_seconds,
+        )
+        if cause is not None:
+            _open_if_absent(
+                report,
+                session_id=session_id,
+                device_id=device.device_id,
+                stream_status=device.stream_status,
+                cause=cause,
+            )
+        # No cause: recovery is still working the problem. The episode will be
+        # recorded as a gap once it heals — nothing for an operator to do yet.
 
 
-def _open_if_absent(report: RuntimeReport, *, session_id: int, device_id: str) -> None:
+def _open_if_absent(
+    report: RuntimeReport,
+    *,
+    session_id: int,
+    device_id: str,
+    stream_status: StreamStatus,
+    cause: str,
+) -> None:
     if _repo.find_open_for_device(
         session_id, report.dataflow_id, device_id, reason=STREAM_UNHEALTHY_REASON
     ) is not None:
@@ -83,7 +197,14 @@ def _open_if_absent(report: RuntimeReport, *, session_id: int, device_id: str) -
         device_id=device_id,
         reason=STREAM_UNHEALTHY_REASON,
         recovery_id=report.recovery_id,
-        details={"stream_status": StreamStatus.UNHEALTHY.value, "sequence": report.sequence},
+        details={
+            # The status AS OBSERVED. A stream can escalate while still SUSPECT
+            # (the watchdog gave up before the sample settled), and recording a
+            # flat "unhealthy" there would misreport what was actually seen.
+            "stream_status": stream_status.value,
+            "sequence": report.sequence,
+            "escalation_cause": cause,
+        },
     )
 
 
@@ -107,15 +228,24 @@ def _resolve_if_present(report: RuntimeReport, *, session_id: int, device_id: st
 # reflecting its current health; the source's stream incident is untouched.
 
 
-def evaluate_sink_reports(report: RuntimeReport, *, session_id: int) -> None:
-    """Open or resolve per-sink incidents from one report's per-sink health.
+def evaluate_sink_reports(
+    report: RuntimeReport, *, session_id: int, policy: PolicyMode | None = None
+) -> None:
+    """Open or resolve per-sink incidents for sinks that need an operator.
 
     Idempotent by durable sink identity: replaying a report of the same health
     opens no second incident (open-if-absent), and a health transition resolves
     the stale-reason incident before opening the new-reason one, so a sink never
-    has two open incidents at once. Source/stream health is never read or
-    written here.
+    has two open incidents at once.
+
+    Source stream health is READ here — and only here — to answer one question
+    ``escalation.sink_escalation`` needs: did the owning source come back while
+    this sink did not? That is the evidence that automatic recovery has already
+    had its turn on this sink. It is never WRITTEN: a sink's state still never
+    mutates source health, so SINK-08/SINK-23 hold.
     """
+    source_status = escalation.source_status_by_device(report)
+    diagnostics = escalation.diagnostics_by_device(report)
     for sink in report.sinks:
         desired = _sink_reason_for_health(sink.health)
         # A transition (e.g. degraded -> failed, or anything -> healthy) resolves
@@ -136,6 +266,15 @@ def evaluate_sink_reports(report: RuntimeReport, *, session_id: int) -> None:
             session_id, report.dataflow_id, sink.source_id, sink.sink_id, desired
         ) is not None:
             continue  # already open for this reason — dedup
+        cause = escalation.sink_escalation(
+            sink,
+            source_status=source_status.get(sink.source_id),
+            policy=escalation.effective_policy(
+                diagnostics.get(sink.source_id, {}), fallback=policy
+            ),
+        )
+        if cause is None:
+            continue  # recorded on the sink axis, but nobody is waiting on it
         _repo.create(
             session_id=session_id,
             dataflow_id=report.dataflow_id,
@@ -143,7 +282,7 @@ def evaluate_sink_reports(report: RuntimeReport, *, session_id: int) -> None:
             sink_id=sink.sink_id,
             recovery_id=report.recovery_id,
             reason=desired,
-            details=_sink_incident_details(sink, report),
+            details={**_sink_incident_details(sink, report), "escalation_cause": cause},
         )
 
 
@@ -419,6 +558,54 @@ def evaluate_operation_success(operation: Operation) -> None:
 
 def list_for_session(session_id: int, *, status: IncidentStatus | None = None) -> list[Incident]:
     return _repo.list_for_session(session_id, status=status)
+
+
+def _encode_cursor(*, session_id, status, row: Incident) -> str:
+    """Opaque bookmark for the next page: last row position + the filters used."""
+    payload = {
+        "v": 1,
+        "k": "incidents",
+        "t": row.opened_at.isoformat() if row.opened_at else None,
+        "id": row.id,
+        "session": session_id,
+        "status": status.value if isinstance(status, IncidentStatus) else status,
+    }
+    raw = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    return base64.urlsafe_b64encode(raw).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str, *, session_id, status) -> tuple[datetime | None, int]:
+    """Unpack a cursor into (opened_at, id); reject ones from a different filter set."""
+    try:
+        padded = cursor + "=" * (-len(cursor) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(padded).decode())
+        if payload.get("v") != 1 or payload.get("k") != "incidents":
+            raise ValueError
+        # Cursor is bound to the query that produced it — don't resume under different filters.
+        if payload.get("session") != session_id or payload.get("status") != (
+            status.value if isinstance(status, IncidentStatus) else status
+        ):
+            raise ValueError
+        row_id = int(payload["id"])
+        timestamp = payload.get("t")
+        return (datetime.fromisoformat(timestamp) if timestamp else None, row_id)
+    except (TypeError, ValueError, KeyError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+        raise ValueError("invalid incident cursor") from exc
+
+
+def list_page(*, session_id: int | None, status: IncidentStatus | None, page_size: int, cursor: str | None) -> dict:
+    """Return one page of incidents; pass next_cursor back as cursor to continue."""
+    after = _decode_cursor(cursor, session_id=session_id, status=status) if cursor else None
+    rows, has_more = _repo.list_page(session_id=session_id, status=status, page_size=page_size, after=after)
+    return {
+        "items": rows,
+        "has_more": has_more,
+        "next_cursor": (
+            _encode_cursor(session_id=session_id, status=status, row=rows[-1])
+            if has_more and rows
+            else None
+        ),
+    }
 
 
 def get(incident_id: str) -> Incident:

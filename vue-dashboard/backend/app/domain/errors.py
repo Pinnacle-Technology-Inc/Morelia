@@ -125,7 +125,7 @@ class InvalidHardwareId(ValueError):
     def __init__(self, hardware_id: str):
         self.hardware_id = hardware_id
         super().__init__(
-            f"Invalid hardware_id {hardware_id!r}: must be alphanumeric and within the allowed length."
+            f"Invalid hardware_id {hardware_id!r}: must match ^[0-9A-Za-z]{{4,8}}$ (exactly five alphanumeric characters)."
         )
 
 

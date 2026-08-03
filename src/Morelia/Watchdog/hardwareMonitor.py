@@ -236,6 +236,27 @@ class HardwareMonitor:
             if opened_here:
                 self._safe_close_device(device) 
 
+    @staticmethod
+    def _cache_verified_sample_rate(device, verify_cmd, response):
+        """Cache a sample rate verified while the device is quiet."""
+        if str(verify_cmd).strip().upper() != "GET SAMPLE RATE":
+            return
+
+        try:
+            payload = response.payload
+            sample_rate = int(payload[0])
+        except (AttributeError, IndexError, TypeError, ValueError) as error:
+            raise ValueError("Invalid GET SAMPLE RATE response payload.") from error
+
+        if sample_rate <= 0:
+            raise ValueError("GET SAMPLE RATE returned a non-positive value.")
+
+        # AcquisitionDevice.sample_rate stores the response payload in this
+        # exact shape. Keeping it here lets legacy get_dict() implementations
+        # carry the verified value into replacement workers without changing
+        # the device or stream layers.
+        device._sample_rate = payload
+
     def preflight_device(self, device, attempts=3, timeout_sec=5.0, verify_cmd="GET SAMPLE RATE"):
         """Clean-slate a device and confirm it answers a control command, resetting
         between attempts. Device-level readiness gate — valid whether or not the
@@ -251,8 +272,9 @@ class HardwareMonitor:
             for attempt in range(attempts):
                 reset = self.reset_streaming_device(device)        # port already open -> no-op open
                 try:
-                    device.write_read(cmd=verify_cmd, timeout_sec=timeout_sec)
+                    response = device.write_read(cmd=verify_cmd, timeout_sec=timeout_sec)
                     ping_ok, error = True, None
+                    self._cache_verified_sample_rate(device, verify_cmd, response)
                 except Exception as e:
                     ping_ok, error = False, str(e)
                 if ping_ok:

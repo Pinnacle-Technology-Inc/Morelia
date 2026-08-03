@@ -15,7 +15,7 @@ from app.models.operation import Operation
 from app.repositories.backend_events import BackendEventRepository
 from app.services import incidents
 
-DATAFLOW_COMMANDS = frozenset({"start", "stop", "restart-all-streams"})
+DATAFLOW_COMMANDS = frozenset({"start", "stop", "complete", "restart-all-streams"})
 STREAM_COMMANDS = frozenset({"reconnect", "restart", "reset-stream"})
 ACTIVE_STATES = frozenset(
     {
@@ -347,25 +347,41 @@ def get_operation(operation_id: str) -> Operation:
 def resolve_uncertain_operation(
     operation_id: str,
     *,
+    outcome: str,
     resolved_by: str,
     resolution_note: str,
 ) -> Operation:
-    """Record explicit operator resolution for an unresolved uncertain operation."""
+    """Atomically terminalize an uncertain operation with an explicit outcome."""
+    try:
+        next_state = OperationState(outcome)
+    except ValueError as exc:
+        raise OperationResolutionError(operation_id, "outcome must be succeeded or failed") from exc
+    if next_state not in {OperationState.SUCCEEDED, OperationState.FAILED}:
+        raise OperationResolutionError(operation_id, "outcome must be succeeded or failed")
     with transaction():
         operation = db.session.scalars(
             db.select(Operation).where(Operation.operation_id == operation_id)
         ).first()
         if operation is None:
             raise OperationNotFound(operation_id)
-        if operation.state != OperationState.UNCERTAIN:
-            raise OperationResolutionError(operation_id, "operation is not uncertain")
+        if operation.state in {OperationState.SUCCEEDED, OperationState.FAILED} and operation.resolved_at:
+            if operation.state is next_state:
+                return operation
+            raise OperationResolutionError(operation_id, "a different terminal outcome was already recorded")
+        if operation.state != OperationState.UNCERTAIN or operation.resolved_at is not None:
+            raise OperationResolutionError(operation_id, "operation is not unresolved uncertain")
 
-        if operation.resolved_at is None:
-            operation.resolved_by = resolved_by
-            operation.resolved_at = datetime.now(UTC)
-            operation.resolution_note = resolution_note
-            db.session.flush()
-        return operation
+        operation.resolved_by = resolved_by
+        operation.resolved_at = datetime.now(UTC)
+        operation.resolution_note = resolution_note
+        _stamp_transition(operation, next_state)
+        operation.state = next_state
+        db.session.flush()
+    if next_state is OperationState.FAILED:
+        incidents.evaluate_operation_failure(operation)
+    else:
+        incidents.evaluate_operation_success(operation)
+    return operation
 
 
 def _stamp_transition(operation: Operation, state: OperationState) -> None:

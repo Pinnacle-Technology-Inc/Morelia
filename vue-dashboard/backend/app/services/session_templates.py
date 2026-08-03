@@ -10,8 +10,12 @@ import builtins
 import hashlib
 import json
 import re
+import tomllib
 from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
+
+from flask import current_app
 
 from app.database import transaction
 from app.domain.errors import DeviceTemplateNotFound, InvalidSessionEntry, SessionTemplateNameExists, SessionTemplateNotFound
@@ -39,7 +43,7 @@ _FLOW_FIELDS = {
 }
 _CONTENT_FIELDS = {"policy", "device_flows"}
 _HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
-_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{5}$")
+_HARDWARE_ID_PATTERN = re.compile(r"^[0-9A-Za-z]{4,8}$")
 
 
 def _normalize_name(name: str) -> str:
@@ -192,6 +196,157 @@ def get_by_name(name: str) -> SessionTemplate | None:
 
 def list() -> list[SessionTemplate]:  # noqa: A001
     return [_attach_reference_warnings(row) for row in _repository.list()]
+
+
+def _library_dir() -> Path:
+    configured = Path(current_app.config["SESSION_TEMPLATE_DIR"])
+    directory = configured if configured.is_absolute() else Path(current_app.instance_path) / configured
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory.resolve()
+
+
+def _load_library_file(path: Path) -> dict[str, Any]:
+    """Leniently parse one library file.
+
+    Mirrors the CLI's ``_load_session_template_file``: no canonicalization and
+    no device-reference resolution, so a draft referencing a missing device
+    template still lists instead of disappearing.
+    """
+    text = path.read_text(encoding="utf-8")
+    parsed = json.loads(text) if path.suffix.lower() == ".json" else tomllib.loads(text)
+    if not isinstance(parsed, Mapping):
+        raise ValueError("session template file must parse to a mapping")
+    raw_flows = parsed.get("device_flows")
+    if not isinstance(raw_flows, builtins.list) or not raw_flows:
+        raise ValueError("session template file device_flows must be a non-empty list")
+    return {"policy": parsed.get("policy"), "device_flows": builtins.list(raw_flows)}
+
+
+def catalog() -> builtins.list[dict[str, Any]]:
+    """Stored templates plus on-disk library drafts, tagged by ``source``.
+
+    Server-side equivalent of the CLI's ``_session_template_catalog``, which the
+    browser cannot reproduce because it has no filesystem access. The
+    stored-then-local ordering and the ``source`` split match the CLI so both
+    surfaces describe the library the same way.
+
+    A name may appear twice — once ``stored``, once ``local`` — when a file has
+    also been imported; differing ``content_hash`` values then mean the on-disk
+    draft has diverged from the stored copy.
+    """
+    entries: builtins.list[dict[str, Any]] = [
+        {
+            "source": "stored",
+            "name": row.name,
+            "content_hash": row.content_hash,
+            "content": row.content,
+            "reference": row.name,
+            "warnings": getattr(row, "reference_warnings", []),
+        }
+        for row in list()
+    ]
+    candidates = sorted(
+        (
+            candidate
+            for candidate in _library_dir().iterdir()
+            if candidate.is_file() and candidate.suffix.lower() in {".toml", ".json"}
+        ),
+        key=lambda candidate: (candidate.stem.lower(), candidate.suffix.lower()),
+    )
+    for path in candidates:
+        entry: dict[str, Any] = {
+            "source": "local",
+            "name": path.stem,
+            "reference": f"session-templates/{path.name}",
+        }
+        try:
+            content = _load_library_file(path)
+        except (OSError, ValueError) as exc:
+            # An unreadable draft is reported in-band; one bad file must not
+            # blank the whole library view.
+            entries.append({**entry, "content_hash": "", "content": None, "warnings": [str(exc)]})
+            continue
+        entries.append({**entry, "content_hash": _content_hash(content), "content": content, "warnings": []})
+    return entries
+
+
+def _looks_like_library_reference(reference: str) -> bool:
+    normalized = reference.replace("\\", "/")
+    if normalized.startswith("session-templates/"):
+        return True
+    return Path(normalized).suffix.lower() in {".toml", ".json"}
+
+
+def _library_file_for_reference(reference: str) -> Path | None:
+    """Map a catalog/CLI reference onto a file under the session-template dir.
+
+    Accepts ``session-templates/<file>``, a bare filename, or a stem. Rejects
+    path traversal so a crafted reference cannot escape the library.
+    """
+    library = _library_dir()
+    relative = reference.strip().replace("\\", "/")
+    if relative.startswith("session-templates/"):
+        relative = relative[len("session-templates/") :]
+    if not relative or relative.startswith("/") or ".." in Path(relative).parts:
+        return None
+    candidates = [library / relative]
+    if Path(relative).suffix.lower() not in {".toml", ".json"}:
+        candidates.extend((library / f"{relative}.toml", library / f"{relative}.json"))
+    for candidate in candidates:
+        try:
+            resolved = candidate.resolve()
+        except OSError:
+            continue
+        if resolved.is_file() and (resolved == library or library in resolved.parents):
+            return resolved
+    return None
+
+
+class _PlanTemplate:
+    """Minimal name/content carrier shared by stored rows and local drafts."""
+
+    __slots__ = ("name", "content", "reference")
+
+    def __init__(self, *, name: str, content: Mapping[str, Any], reference: str):
+        self.name = name
+        self.content = dict(content)
+        self.reference = reference
+
+
+def resolve_for_plan(reference: str) -> _PlanTemplate:
+    """Resolve a catalog ``reference`` (or stored name) for assignment planning.
+
+    Explicit library refs (``session-templates/<file>`` or a ``.toml``/``.json``
+    path) always load the on-disk draft. Bare names try the stored table first,
+    then fall back to a same-stem library file so folder-only drafts still plan.
+    """
+    if not isinstance(reference, str) or not reference.strip():
+        raise SessionTemplateNotFound(reference if isinstance(reference, str) else "")
+    ref = reference.strip()
+
+    if _looks_like_library_reference(ref):
+        path = _library_file_for_reference(ref)
+        if path is None:
+            raise SessionTemplateNotFound(ref)
+        try:
+            content = _load_library_file(path)
+        except (OSError, ValueError) as exc:
+            raise SessionTemplateNotFound(ref) from exc
+        return _PlanTemplate(name=path.stem, content=content, reference=f"session-templates/{path.name}")
+
+    row = get_by_name(ref)
+    if row is not None:
+        return _PlanTemplate(name=row.name, content=row.content or {}, reference=row.name)
+
+    path = _library_file_for_reference(ref)
+    if path is not None:
+        try:
+            content = _load_library_file(path)
+        except (OSError, ValueError) as exc:
+            raise SessionTemplateNotFound(ref) from exc
+        return _PlanTemplate(name=path.stem, content=content, reference=f"session-templates/{path.name}")
+
+    raise SessionTemplateNotFound(ref)
 
 
 def delete(name: str) -> None:

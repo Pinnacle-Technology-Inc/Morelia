@@ -109,6 +109,37 @@ class CreateSessionSchema(Schema):
     device_flows = fields.List(fields.Raw(), load_default=list)
 
 
+class SessionNameSuggestionSchema(Schema):
+    """Help come up with default name for a session, precomputed in backend (Session + <next number>)."""
+
+    name = fields.String(dump_only=True)
+
+
+class SinkRestartPlanEntrySchema(Schema):
+    """One file sink a session would write to on its next start."""
+
+    key = fields.String(dump_only=True)
+    nickname = fields.String(dump_only=True, allow_none=True)
+    sink_name = fields.String(dump_only=True)
+    sink_type = fields.String(dump_only=True)
+    assignment = fields.String(dump_only=True)
+    current_location = fields.String(dump_only=True, allow_none=True)
+    occupied = fields.Boolean(dump_only=True)
+    suggested_location = fields.String(dump_only=True, allow_none=True)
+
+
+class SinkRestartPlanSchema(Schema):
+    """Where a session's file outputs would land if started right now.
+
+    ``key`` on each entry is the ``sink_overrides`` key that relocates that
+    sink, so a client can build a start payload directly from this response.
+    """
+
+    session_id = fields.Integer(dump_only=True)
+    status = fields.String(dump_only=True)
+    sinks = fields.List(fields.Nested(SinkRestartPlanEntrySchema), dump_only=True)
+
+
 class SessionSchema(Schema):
     """How a stored session is represented on the wire (response shape)."""
 
@@ -143,8 +174,23 @@ class FleetOverviewSchema(Schema):
 
 class LatestStreamEventDeviceSchema(Schema):
     device_id = fields.String(allow_none=True)
-    # suspect is folded to healthy before this is dumped (suspect-hidden rule).
     stream_status = fields.String(allow_none=True)
+    action = fields.String(allow_none=True)
+    reason = fields.String(allow_none=True)
+    recovery_stage = fields.String(allow_none=True)
+    # The watchdog's ACTUAL auto-restart budget for this stream, spent and total
+    # (``Watchdog._recovery_attempt``). Distinct from the staleness fields below:
+    # this counts restarts tried, those measure how long the stream has been
+    # down. Reporting a tick streak under ``recovery_attempt`` is what previously
+    # made "attempt 2 of 3" unrenderable.
+    recovery_attempt = fields.Integer(allow_none=True)
+    recovery_attempt_max = fields.Integer(allow_none=True)
+    # Consecutive non-healthy watchdog reports, and that streak converted to
+    # seconds using the watchdog's own cadence — so the frontend never has to
+    # know the report interval to say "down for 45s".
+    nonhealthy_ticks = fields.Integer(allow_none=True)
+    nonhealthy_seconds = fields.Float(allow_none=True)
+    pending_recovery = fields.Boolean()
 
 
 class LatestStreamEventSchema(Schema):
@@ -167,6 +213,7 @@ class OperationListQuerySchema(Schema):
 
 
 class ResolveOperationSchema(Schema):
+    outcome = fields.String(required=True, validate=validate.OneOf(["succeeded", "failed"]))
     resolved_by = fields.String(required=True, validate=validate.Length(min=1, max=255))
     resolution_note = fields.String(required=True, validate=validate.Length(min=1, max=1024))
 
@@ -325,8 +372,20 @@ class DeviceRegistrationSchema(Schema):
 
 
 class EditDeviceConfigSchema(Schema):
+    """Edit parameters; optionally push them to the linked template or relink to another (not both)."""
+
     parameters = fields.Dict(keys=fields.String(), values=fields.Raw(), required=True)
     update_source_template = fields.Boolean(load_default=False)
+    source_template = fields.String(load_default=None, validate=validate.Length(min=1))
+
+    @validates_schema
+    def _reject_conflicting_provenance(self, data, **kwargs):
+        if data.get("update_source_template") and data.get("source_template"):
+            raise ValidationError(
+                "Cannot both save edits back to the current template "
+                "(update_source_template) and switch to a different one (source_template).",
+                "source_template",
+            )
 
 
 class DeviceConfigSchema(Schema):
@@ -366,6 +425,72 @@ class SessionTemplateSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
 
 
+class SessionTemplateCatalogEntrySchema(Schema):
+    """One row of the combined stored + on-disk library view.
+
+    "stored" = in the database; "local" = under session-templates folder.
+    """
+
+    source = fields.String(dump_only=True)
+    name = fields.String(dump_only=True)
+    content = fields.Raw(dump_only=True, allow_none=True)
+    content_hash = fields.String(dump_only=True)
+    reference = fields.String(dump_only=True)
+    warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
+
+
+class ExperimentSchema(Schema):
+    id = fields.String(dump_only=True)
+    name = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    description = fields.String(allow_none=True, load_default=None, validate=validate.Length(max=4000))
+    archived_at = fields.DateTime(allow_none=True, dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+
+class ExperimentUpdateSchema(Schema):
+    name = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    description = fields.String(allow_none=True, load_default=None, validate=validate.Length(max=4000))
+
+
+class AssignmentCandidateSchema(Schema):
+    device_config_id = fields.Integer()
+    device_type = fields.String()
+    hardware_id = fields.String(allow_none=True)
+    port = fields.String()
+
+
+class AssignmentSchema(AssignmentCandidateSchema):
+    flow_index = fields.Integer()
+    match = fields.String(validate=validate.OneOf(["exact", "generic"]))
+
+
+class AssignmentWarningSchema(Schema):
+    flow_index = fields.Integer()
+    code = fields.String(validate=validate.OneOf(["identity_unavailable"]))
+    message = fields.String()
+    requested_hardware_id = fields.String(allow_none=True)
+    alternatives = fields.List(fields.Nested(AssignmentCandidateSchema))
+
+
+class UnresolvedAssignmentSchema(Schema):
+    flow_index = fields.Integer()
+    code = fields.String(validate=validate.OneOf(["no_compatible_device", "identity_unavailable"]))
+    message = fields.String()
+    device_type = fields.String(allow_none=True)
+    requested_hardware_id = fields.String(allow_none=True)
+
+
+class AssignmentPlanSchema(Schema):
+    template_name = fields.String()
+    scan_id = fields.String()
+    scanned_at = fields.DateTime()
+    assignments = fields.List(fields.Nested(AssignmentSchema))
+    warnings = fields.List(fields.Nested(AssignmentWarningSchema))
+    unresolved_requirements = fields.List(fields.Nested(UnresolvedAssignmentSchema))
+    complete = fields.Boolean()
+
+
 class ExportSessionTemplateSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     binding_mode = fields.String(
@@ -376,12 +501,6 @@ class ExportSessionTemplateSchema(Schema):
 
 class StartSessionSchema(Schema):
     """Input for starting a session.
-
-    ``sink_overrides`` carries operator-confirmed sink_location fixes,
-    keyed by device flow nickname — how the CLI retries a start after the
-    daemon rejects one of the session's stored sink_location values as
-    already existing (see SinkLocationExists / manifests.resolve()). Empty
-    on an ordinary start.
     """
 
     sink_overrides = fields.Dict(
@@ -407,8 +526,10 @@ class StopSessionSchema(Schema):
 
 
 class IncidentListQuerySchema(Schema):
-    session = fields.Integer(required=True)
+    session = fields.Integer(allow_none=True, load_default=None)
     status = fields.Enum(IncidentStatus, by_value=True, load_default=None)
+    page_size = fields.Integer(load_default=50, validate=validate.Range(min=1, max=200))
+    cursor = fields.String(allow_none=True, load_default=None)
 
 
 class AckIncidentSchema(Schema):
@@ -436,10 +557,79 @@ class IncidentSchema(Schema):
     acknowledgement_note = fields.String(allow_none=True)
     resolved_at = fields.DateTime(allow_none=True)
     resolution = fields.String(allow_none=True)
+    # Which operator surface this belongs to: ``data_path`` (a device or sink
+    # stopped moving data — the same axis that produces recovery gaps) or
+    # ``control_plane`` (processes, telemetry, commands). Derived from ``reason``
+    # so the two surfaces cannot drift apart, and served rather than re-derived
+    # in the client so the vocabulary lives in exactly one place.
+    axis = fields.Method("_axis", dump_only=True)
+    # Whether this is waiting on a PERSON, as opposed to on the system. A crashed
+    # watchdog respawns itself and an unreachable host is reconciled, so those are
+    # recorded but never counted against an operator; the reasons that represent
+    # self-healing having FAILED (crash loop, outbox overflow) are.
+    needs_action = fields.Method("_needs_action", dump_only=True)
+
+    def _axis(self, incident) -> str:
+        # Imported here rather than at module scope: app.services.incidents pulls
+        # in repositories and models, and this module is imported by the API
+        # blueprints those services are reached through.
+        from app.services.incidents import axis_for_reason
+
+        return axis_for_reason(getattr(incident, "reason", None))
+
+    def _needs_action(self, incident) -> bool:
+        from app.services.incidents import requires_action_for_reason
+
+        return requires_action_for_reason(getattr(incident, "reason", None))
+
+
+class IncidentPageSchema(Schema):
+    items = fields.List(fields.Nested(IncidentSchema))
+    next_cursor = fields.String(allow_none=True)
+    has_more = fields.Boolean()
+
+
+class DirectoryQuerySchema(Schema):
+    """Absolute folder to list. Omitted/blank starts at the configured OUTPUT_DIR."""
+
+    path = fields.String(load_default="")
+
+
+class NewDirectorySchema(Schema):
+    """One new folder under ``path``. ``name`` is a single segment, not a path."""
+
+    path = fields.String(load_default="")
+    name = fields.String(required=True, validate=validate.Length(min=1, max=255))
+
+
+class DirectoryEntrySchema(Schema):
+    name = fields.String()
+    path = fields.String()
+
+
+class RootListingSchema(Schema):
+    """Filesystem roots — drive letters on Windows, a single "/" on POSIX."""
+
+    roots = fields.List(fields.Nested(DirectoryEntrySchema))
+
+
+class DirectoryListingSchema(Schema):
+    """Absolute host paths for one folder in the sink-location folder picker."""
+
+    path = fields.String()
+    parent = fields.String(allow_none=True)
+    name = fields.String()
+    separator = fields.String()
+    exists = fields.Boolean()
+    writable = fields.Boolean()
+    directories = fields.List(fields.Nested(DirectoryEntrySchema))
 
 
 class GapListQuerySchema(Schema):
-    session = fields.Integer(required=True)
+    session = fields.Integer(allow_none=True, load_default=None)
+    confidence = fields.String(allow_none=True, load_default=None, validate=validate.OneOf(["confirmed", "estimated", "uncertain"]))
+    page_size = fields.Integer(load_default=50, validate=validate.Range(min=1, max=200))
+    cursor = fields.String(allow_none=True, load_default=None)
 
 
 class RecoveryGapSchema(Schema):
@@ -463,16 +653,14 @@ class RecoveryGapSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
 
 
-class SinkOutputStateSchema(Schema):
-    """Durable per-sink output evidence, distilled from packet-21 ``output_files``.
+class GapPageSchema(Schema):
+    items = fields.List(fields.Nested(RecoveryGapSchema))
+    next_cursor = fields.String(allow_none=True)
+    has_more = fields.Boolean()
 
-    A SEPARATE provenance from the live report snapshot on ``SinkStatusSchema``:
-    these are the control-plane's persisted finalization/delivery facts for a
-    sink's output, surviving even when no live report is on record. ``artifact_state``
-    is the finalization-job stage (``not_required``/``merge_pending``/``merging``/
-    ``merged``/``merge_failed``); ``delivery_state`` is the service-sink delivery
-    disposition; loss counters are durable and monotonic.
-    """
+
+class SinkOutputStateSchema(Schema):
+    """Persisted merge/delivery facts for a sink's output (not the live status snapshot)."""
 
     logical_sink_id = fields.String(allow_none=True)
     artifact_state = fields.String(allow_none=True)
@@ -482,23 +670,7 @@ class SinkOutputStateSchema(Schema):
 
 
 class SinkStatusSchema(Schema):
-    """One sink's runtime status — a SEPARATE axis from source/stream health.
-
-    Keyed by durable ``(source_id, sink_id)`` identity (gaps SINK-08/SINK-23): a
-    degraded, failed, buffering, or finalizing sink is reported here and is NEVER
-    folded into the session's source ``health``/``phase``/``latest_report``. A
-    running source and a failed sibling sink can therefore be true at once.
-
-    ``status`` is a freshness marker independent of ``health``: ``current`` when
-    the newest live report carried this sink, ``stale`` when only durable evidence
-    (open incidents / output_files) exists, ``unknown`` when live sink state could
-    not be loaded — so a healthy sink is always distinguishable from one whose
-    live state is merely missing. ``health`` (SinkHealth), ``delivery``
-    (SinkDeliveryState), and ``finalization`` (SinkFinalization) are the report's
-    controlled vocabularies; loss counters are explicit and monotonic. All
-    ``diagnostics`` are bounded and pre-redacted upstream — never raw samples,
-    tokens, or resolved credential material.
-    """
+    """Live sink health and delivery state, tracked separately from its source."""
 
     source_id = fields.String(allow_none=True)
     sink_id = fields.String(allow_none=True)

@@ -55,7 +55,7 @@ from __future__ import annotations
 
 import importlib.util
 import platform
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
@@ -123,6 +123,17 @@ class RuntimeContext:
     plot_transport: Any | None = None
     delivery_outbox: Any | None = None
     sink_delivery_outbox_factory: Any | None = None
+
+    # -- Recovery resume identity, keyed by sink_id (SINK-05/SINK-06) ---------
+    # Empty on a first build — which is exactly what makes that build mint
+    # component 0. Populated ONLY when a stream is being rebuilt after a
+    # failure (runtime_child.morelia's reconstruction hook), where each file
+    # sink must resume its EXISTING logical output instead of trying to create
+    # a fresh component 0 over a path the previous segment's file still holds.
+    # Without this the rebuilt descriptor carries output_id=None, and open()
+    # takes managed_file.create() -> OutputFileAlreadyExistsError, which no
+    # amount of retrying can clear.
+    segment_resume: Mapping[str, Mapping[str, Any]] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -328,6 +339,29 @@ def build_sinks(
 # ---------------------------------------------------------------------------
 
 
+def _resume_for(sink_config: SinkConfig, ctx: RuntimeContext) -> Mapping[str, Any]:
+    """This sink's resume identity, or an empty mapping on a first build.
+
+    Returning ``{}`` rather than ``None`` lets every builder spread it
+    unconditionally, so the first-build path stays literally unchanged (no
+    resume keys passed at all) while a rebuild carries the segment identity.
+    """
+    resume = (ctx.segment_resume or {}).get(sink_config.sink_id)
+    return resume or {}
+
+
+def _segment_kwargs(sink_config: SinkConfig, ctx: RuntimeContext) -> dict[str, Any]:
+    """Resume kwargs for a segmenting sink (EDF/PVFS): full component identity."""
+    resume = _resume_for(sink_config, ctx)
+    if not resume:
+        return {}
+    return {
+        "output_id": resume.get("output_id"),
+        "logical_sink_id": resume.get("logical_sink_id"),
+        "segment_index": resume.get("segment_index", 0),
+    }
+
+
 def _build_csv(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
     """Construct a deferred-open managed CSV sink descriptor (SINK-21).
 
@@ -354,6 +388,9 @@ def _build_csv(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
     if not file_path:
         raise ValueError(f"CSV sink {sink_config.sink_id!r} has no resolved file_path")
 
+    # CSV resumes by reopening its one file in append mode (no second header),
+    # so it takes output_id alone — it has no component chain to extend.
+    resume = _resume_for(sink_config, ctx)
     return csv_sink_class(
         path=file_path,
         dataflow_id=ctx.dataflow_id,
@@ -362,6 +399,7 @@ def _build_csv(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
         sink_id=sink_config.sink_id,
         schema_hash=ctx.schema_hash,
         pod=pod,
+        **({"output_id": resume["output_id"]} if resume.get("output_id") else {}),
     )
 
 
@@ -396,6 +434,7 @@ def _build_edf(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
         session_id=ctx.session_id,
         pod=pod,
         observe_on_scheduler=sink_config.parameters.get("observe_on_scheduler"),
+        **_segment_kwargs(sink_config, ctx),
     )
 
 
@@ -433,6 +472,7 @@ def _build_pvfs(sink_config: SinkConfig, pod: Any, ctx: RuntimeContext) -> Any:
         observe_on_scheduler=sink_config.parameters.get("observe_on_scheduler"),
         use_writer_process=bool(sink_config.parameters.get("use_writer_process", False)),
         device_preferences=sink_config.parameters.get("device_preferences"),
+        **_segment_kwargs(sink_config, ctx),
     )
 
 

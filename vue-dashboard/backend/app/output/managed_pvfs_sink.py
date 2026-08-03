@@ -61,6 +61,7 @@ import os
 import sqlite3
 import time
 from collections.abc import Callable
+from queue import Empty
 from pathlib import Path
 from uuid import uuid4
 
@@ -71,6 +72,7 @@ from app.domain.enums import SinkType
 from app.models.output_file import OutputFile
 from app.output import managed_file
 from app.output.managed_file import ManagedOutputFile
+from Morelia.shutdown import ShutdownActor, ShutdownOutcome, ShutdownPhase
 
 _log = structlog.get_logger(__name__)
 
@@ -108,6 +110,8 @@ def _pvfs_writer_target(
     units: tuple[str, ...],
     sample_rate: float,
     device_preferences: list[dict] | None = None,
+    shutdown_reporter=None,
+    evidence_queue=None,
 ) -> None:
     """Child-process PVFS writer. Owns the container's native I/O exclusively.
 
@@ -119,77 +123,106 @@ def _pvfs_writer_target(
     from pvfs_tools.Core.pvfs_binding import HighTime
     from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
 
-    pvfs_data = PvfsDataFile()
-    if not pvfs_data.create(file_path):
-        # Nothing durable to salvage; the parent records the segment failed when
-        # it observes a zero/short container after join.
-        return
-
-    start_time = HighTime.from_seconds(time.time())
-    pvfs_data.set_experiment_info(
-        name="Morelia PVFS recording",
-        description="Streamed data from Morelia data collection",
-        start_time=start_time,
-    )
-    for ch_name, unit in zip(channels, units):
-        idf = pvfs_data.create_channel(ch_name, data_rate=sample_rate, unit=unit or "uV")
-        if idf is None:
+    def report(phase, action, *, outcome=ShutdownOutcome.ACKNOWLEDGED, reason=None, error_type=None):
+        if shutdown_reporter is None:
             return
-        idf._delta_time = HighTime(0, 1.0 / sample_rate)
-
-    if device_preferences:
-        pvfs_data.set_device_preferences(device_preferences)
-
-    n_channels = len(channels)
-    buf: list[list[float]] = [[] for _ in channels]
-    samples_written = 0
-    flush_threshold = max(1, int(sample_rate))
-
-    def write_buf() -> None:
-        nonlocal samples_written
-        if not buf[0]:
-            return
-        n = len(buf[0])
-        block_start = HighTime.from_seconds(
-            start_time.to_seconds() + samples_written / sample_rate
+        record = shutdown_reporter.emit(
+            phase,
+            action,
+            outcome=outcome,
+            reason=reason,
+            error_type=error_type,
+            actor=ShutdownActor.PVFS_WRITER,
+            actor_pid=os.getpid(),
         )
-        for ch_name, ch_buf in zip(channels, buf):
-            idf = pvfs_data._indexed_data_files.get(ch_name)
-            if idf is not None:
-                idf.append_block(block_start, ch_buf)
-        samples_written += n
-        for b in buf:
-            b.clear()
+        if evidence_queue is not None:
+            evidence_queue.put(record)
 
-    def drain_queue() -> None:
-        while True:
+    try:
+        pvfs_data = PvfsDataFile()
+        if not pvfs_data.create(file_path):
+            raise ManagedPvfsSinkError("PVFS writer create returned false")
+
+        start_time = HighTime.from_seconds(time.time())
+        pvfs_data.set_experiment_info(
+            name="Morelia PVFS recording",
+            description="Streamed data from Morelia data collection",
+            start_time=start_time,
+        )
+        for ch_name, unit in zip(channels, units):
+            idf = pvfs_data.create_channel(ch_name, data_rate=sample_rate, unit=unit or "uV")
+            if idf is None:
+                raise ManagedPvfsSinkError(f"PVFS writer channel creation failed: {ch_name}")
+            idf._delta_time = HighTime(0, 1.0 / sample_rate)
+
+        if device_preferences:
+            pvfs_data.set_device_preferences(device_preferences)
+
+        n_channels = len(channels)
+        buf: list[list[float]] = [[] for _ in channels]
+        samples_written = 0
+        flush_threshold = max(1, int(sample_rate))
+
+        def write_buf() -> None:
+            nonlocal samples_written
+            if not buf[0]:
+                return
+            n = len(buf[0])
+            block_start = HighTime.from_seconds(
+                start_time.to_seconds() + samples_written / sample_rate
+            )
+            for ch_name, ch_buf in zip(channels, buf):
+                idf = pvfs_data._indexed_data_files.get(ch_name)
+                if idf is not None:
+                    idf.append_block(block_start, ch_buf)
+            samples_written += n
+            for b in buf:
+                b.clear()
+
+        def drain_queue() -> None:
+            while True:
+                try:
+                    item = queue.get_nowait()
+                except Exception:
+                    break
+                for ch_idx in range(n_channels):
+                    buf[ch_idx].append(item[ch_idx])
+                if len(buf[0]) >= flush_threshold:
+                    write_buf()
+
+        while not stop_event.is_set():
             try:
-                item = queue.get_nowait()
+                item = queue.get(timeout=0.1)
             except Exception:
-                break
+                continue
             for ch_idx in range(n_channels):
                 buf[ch_idx].append(item[ch_idx])
+            drain_queue()
             if len(buf[0]) >= flush_threshold:
                 write_buf()
 
-    while not stop_event.is_set():
-        try:
-            item = queue.get(timeout=0.1)
-        except Exception:
-            continue
-        for ch_idx in range(n_channels):
-            buf[ch_idx].append(item[ch_idx])
+        report(ShutdownPhase.SINKS_FINALIZING, "writer_stop_observed")
         drain_queue()
-        if len(buf[0]) >= flush_threshold:
-            write_buf()
-
-    drain_queue()
-    write_buf()
-    for idf in pvfs_data._indexed_data_files.values():
-        if idf is not None:
-            idf.flush(synchronous=True)
-    pvfs_data.flush(synchronous=True)
-    pvfs_data.close()
+        write_buf()
+        report(ShutdownPhase.SINKS_FINALIZING, "writer_queue_drained", outcome=ShutdownOutcome.COMPLETED)
+        for idf in pvfs_data._indexed_data_files.values():
+            if idf is not None:
+                idf.flush(synchronous=True)
+        pvfs_data.flush(synchronous=True)
+        report(ShutdownPhase.SINKS_FINALIZING, "writer_native_flushed", outcome=ShutdownOutcome.COMPLETED)
+        close_result = pvfs_data.close()
+        if close_result is not True:
+            raise ManagedPvfsSinkError("PVFS native close returned false")
+        report(ShutdownPhase.SINKS_FINALIZING, "writer_native_closed", outcome=ShutdownOutcome.COMPLETED)
+    except BaseException as exc:
+        report(
+            ShutdownPhase.PHASE_FAILED,
+            "writer_shutdown_failed",
+            outcome=ShutdownOutcome.FAILED,
+            reason=str(exc),
+            error_type=type(exc).__name__,
+        )
+        raise
 
 
 class ManagedPvfsSink:
@@ -269,6 +302,8 @@ class ManagedPvfsSink:
         self._writer_queue: "mp.Queue | None" = None
         self._writer_proc: "mp.Process | None" = None
         self._writer_stop = None
+        self._writer_evidence_queue = None
+        self._shutdown_reporter = None
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -392,6 +427,10 @@ class ManagedPvfsSink:
     def bind_error_callback(self, callback: Callable[[dict], None] | None) -> None:
         """Bind the worker-local sink reporter after Morelia reconstruction."""
         self._on_sink_error = callback
+
+    def bind_shutdown_reporter(self, reporter) -> None:
+        """Bind the worker-local shutdown reporter after sink reconstruction."""
+        self._shutdown_reporter = reporter
 
     # -- writes -------------------------------------------------------------
 
@@ -555,6 +594,7 @@ class ManagedPvfsSink:
 
     def _start_writer_process(self, path: str) -> None:
         self._writer_queue = mp.Queue(maxsize=0)
+        self._writer_evidence_queue = mp.Queue(maxsize=0) if self._shutdown_reporter is not None else None
         self._writer_stop = mp.Event()
         self._writer_proc = mp.Process(
             target=_pvfs_writer_target,
@@ -566,6 +606,8 @@ class ManagedPvfsSink:
                 tuple(self._units),
                 float(self._sample_rate),
                 self._device_preferences,
+                self._shutdown_reporter,
+                self._writer_evidence_queue,
             ),
         )
         self._writer_proc.start()
@@ -583,7 +625,7 @@ class ManagedPvfsSink:
 
         close_failure: str | None = None
         if self._use_writer_process:
-            self._stop_writer_process()
+            close_failure = self._stop_writer_process()
         else:
             close_failure = self._finalize_in_process(termination_reason)
             if close_failure is not None:
@@ -596,12 +638,19 @@ class ManagedPvfsSink:
         if close_failure is None:
             try:
                 self._verify_finalized_container(path)
+                self._emit_shutdown_action(
+                    ShutdownPhase.SINKS_FINALIZING,
+                    "pvfs_catalog_verified",
+                    outcome=ShutdownOutcome.COMPLETED,
+                )
             except Exception as exc:
                 close_failure = f"PVFS finalized container verification failed: {exc}"
                 termination_reason = "writer_failure"
+                self._emit_shutdown_failure("pvfs_catalog_verification_failed", exc)
 
         if close_failure is not None:
             acquisition_state = "interrupted"
+            self._emit_shutdown_failure("sink_close_failed", ManagedPvfsSinkError(close_failure))
 
         byte_size = os.path.getsize(path) if os.path.exists(path) else 0
         with transaction():
@@ -735,7 +784,7 @@ class ManagedPvfsSink:
                     sink_id=self._sink_id,
                 )
 
-    def _stop_writer_process(self) -> None:
+    def _stop_writer_process(self) -> str | None:
         if self._writer_stop is not None:
             self._writer_stop.set()
         proc = self._writer_proc
@@ -745,6 +794,21 @@ class ManagedPvfsSink:
                 self._forced_termination = True
                 proc.terminate()
                 proc.join(timeout=_WRITER_TERMINATE_TIMEOUT)
+        required = {
+            "writer_stop_observed",
+            "writer_queue_drained",
+            "writer_native_flushed",
+            "writer_native_closed",
+        }
+        observed = set()
+        if self._writer_evidence_queue is not None:
+            deadline = time.monotonic() + 1.0
+            while time.monotonic() < deadline and required - observed:
+                try:
+                    record = self._writer_evidence_queue.get(timeout=0.05)
+                except Empty:
+                    continue
+                observed.add(getattr(record, "action", None))
         # Release the queue's feeder resources deterministically.
         if self._writer_queue is not None:
             try:
@@ -752,9 +816,44 @@ class ManagedPvfsSink:
                 self._writer_queue.join_thread()
             except Exception:
                 pass
+        if self._writer_evidence_queue is not None:
+            try:
+                self._writer_evidence_queue.close()
+                self._writer_evidence_queue.join_thread()
+            except Exception:
+                pass
         self._writer_proc = None
         self._writer_queue = None
         self._writer_stop = None
+        self._writer_evidence_queue = None
+        if self._forced_termination:
+            return "PVFS writer process was force-terminated"
+        if proc is not None and getattr(proc, "exitcode", 0) != 0:
+            return f"PVFS writer process exited with code {proc.exitcode}"
+        if self._shutdown_reporter is not None and required - observed:
+            return "PVFS writer shutdown acknowledgement missing: " + ", ".join(sorted(required - observed))
+        return None
+
+    def _emit_shutdown_action(self, phase, action, *, outcome=ShutdownOutcome.ACKNOWLEDGED, reason=None):
+        if self._shutdown_reporter is None:
+            return
+        self._shutdown_reporter.emit(
+            phase,
+            action,
+            outcome=outcome,
+            reason=reason,
+            sink_id=self._sink_id,
+            output_id=None if self._record is None else self._record.output_id,
+            actor=ShutdownActor.SINK,
+        )
+
+    def _emit_shutdown_failure(self, action, exc):
+        self._emit_shutdown_action(
+            ShutdownPhase.PHASE_FAILED,
+            action,
+            outcome=ShutdownOutcome.FAILED,
+            reason=str(exc),
+        )
 
     def _write_buffer(self) -> None:
         from pvfs_tools.Core.pvfs_binding import HighTime

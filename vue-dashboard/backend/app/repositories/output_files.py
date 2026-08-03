@@ -54,6 +54,7 @@ ARTIFACT_MERGE_PENDING = "merge_pending"
 ARTIFACT_MERGING = "merging"
 ARTIFACT_MERGED = "merged"
 ARTIFACT_MERGE_FAILED = "merge_failed"
+ARTIFACT_MERGE_BLOCKED = "merge_blocked"
 
 ACQUISITION_OPEN = "open"
 ACQUISITION_INTERRUPTED = "interrupted"
@@ -259,6 +260,7 @@ class OutputFilesRepository:
                 ARTIFACT_MERGING,
                 ARTIFACT_MERGED,
                 ARTIFACT_MERGE_FAILED,
+                ARTIFACT_MERGE_BLOCKED,
             ):
                 return head
 
@@ -269,6 +271,60 @@ class OutputFilesRepository:
             db.session.flush()
         return head
 
+    def mark_merge_blocked(
+        self,
+        logical_sink_id: str,
+        *,
+        finalization_id: str | None = None,
+        fence_token: int | None = None,
+        now: datetime | None = None,
+    ) -> OutputFile:
+        """Quarantine a deterministic or structurally invalid merge.
+
+        Without an attempt identity this is the scheduling-boundary path for a
+        chain that cannot be finalized. With an identity it is a fenced terminal
+        transition from an active merge attempt. Components are never modified.
+        """
+        now = now or _now()
+        with transaction():
+            head = self._require_head(logical_sink_id)
+            if head.artifact_state == ARTIFACT_MERGE_BLOCKED:
+                return head
+
+            if finalization_id is None and fence_token is None:
+                if head.artifact_state not in (
+                    ARTIFACT_NOT_REQUIRED,
+                    ARTIFACT_MERGE_PENDING,
+                    ARTIFACT_MERGE_FAILED,
+                ):
+                    raise RuntimeError(
+                        f"cannot block logical output {logical_sink_id!r} "
+                        f"from state {head.artifact_state!r} without a fence"
+                    )
+                head.artifact_state = ARTIFACT_MERGE_BLOCKED
+                head.finalized_at = now
+                db.session.flush()
+                return head
+
+            if finalization_id is None or fence_token is None:
+                raise ValueError("finalization_id and fence_token must be provided together")
+
+            result = db.session.execute(
+                db.update(OutputFile)
+                .where(
+                    OutputFile.logical_sink_id == logical_sink_id,
+                    OutputFile.segment_index == 0,
+                    OutputFile.artifact_state == ARTIFACT_MERGING,
+                    OutputFile.finalization_id == finalization_id,
+                    OutputFile.finalizer_fence_token == fence_token,
+                )
+                .values(artifact_state=ARTIFACT_MERGE_BLOCKED, finalized_at=now)
+            )
+            if result.rowcount != 1:
+                self._raise_stale(logical_sink_id, finalization_id, fence_token)
+            db.session.flush()
+            return self._require_head(logical_sink_id)
+
     # -- claim / lease ------------------------------------------------------
 
     def claim(
@@ -278,6 +334,8 @@ class OutputFilesRepository:
         worker_id: str,
         now: datetime | None = None,
         lease_ttl_seconds: float,
+        max_attempts: int | None = None,
+        retry_backoff_seconds: tuple[float, ...] = (),
     ) -> FinalizationClaim | None:
         """Atomically claim the merge attempt for one logical output.
 
@@ -300,10 +358,27 @@ class OutputFilesRepository:
                 return None
 
             state = head.artifact_state
+            attempt_count = head.finalizer_fence_token or 0
+            exhausted = max_attempts is not None and attempt_count >= max_attempts
+            if state == ARTIFACT_MERGE_FAILED and exhausted:
+                head.artifact_state = ARTIFACT_MERGE_BLOCKED
+                db.session.flush()
+                return None
+            if state == ARTIFACT_MERGE_FAILED and not self._retry_is_ready(
+                head,
+                now=now,
+                attempt_count=attempt_count,
+                retry_backoff_seconds=retry_backoff_seconds,
+            ):
+                return None
             claimable = state in _CLAIMABLE_STATES
             if state == ARTIFACT_MERGING and self._lease_is_stale(
                 head, now=now, lease_ttl_seconds=lease_ttl_seconds
             ):
+                if exhausted:
+                    head.artifact_state = ARTIFACT_MERGE_BLOCKED
+                    db.session.flush()
+                    return None
                 claimable = True
             if not claimable:
                 return None
@@ -354,6 +429,8 @@ class OutputFilesRepository:
         worker_id: str,
         now: datetime | None = None,
         lease_ttl_seconds: float,
+        max_attempts: int | None = None,
+        retry_backoff_seconds: tuple[float, ...] = (),
     ) -> FinalizationClaim | None:
         """Claim the oldest claimable logical output, if any.
 
@@ -383,10 +460,29 @@ class OutputFilesRepository:
                 worker_id=worker_id,
                 now=now,
                 lease_ttl_seconds=lease_ttl_seconds,
+                max_attempts=max_attempts,
+                retry_backoff_seconds=retry_backoff_seconds,
             )
             if claim is not None:
                 return claim
         return None
+
+    @staticmethod
+    def _retry_is_ready(
+        head: OutputFile,
+        *,
+        now: datetime,
+        attempt_count: int,
+        retry_backoff_seconds: tuple[float, ...],
+    ) -> bool:
+        if not retry_backoff_seconds or head.finalized_at is None:
+            return True
+        last = head.finalized_at
+        if last.tzinfo is None:
+            last = last.replace(tzinfo=UTC)
+        delay_index = min(max(attempt_count - 1, 0), len(retry_backoff_seconds) - 1)
+        retry_at = last + timedelta(seconds=retry_backoff_seconds[delay_index])
+        return now >= retry_at
 
     @staticmethod
     def _lease_is_stale(

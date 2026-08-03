@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from app.config import get_config
 from app.control.event_poller import telemetry_freshness
 from app.database import db
-from app.domain.enums import HealthState, IncidentStatus, SessionStatus, StreamStatus
+from app.domain.enums import HealthState, IncidentStatus, SessionStatus
 from app.domain.errors import SessionNotFound
 from app.models.backend_event import BackendEvent
 from app.models.incident import Incident
@@ -40,7 +40,7 @@ from app.repositories.incidents import IncidentRepository
 from app.repositories.recovery_gaps import RecoveryGapRepository
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
-from app.services import operations
+from app.services import escalation, operations
 
 # A session counts as "running" in the fleet tally when its lifecycle is ACTIVE
 # (started, not yet ended). Lifecycle is the authority here — not liveness — so
@@ -91,23 +91,38 @@ def _phase_value(latest: BackendEvent | None) -> str | None:
     return latest.phase if latest is not None else None
 
 
-def _hide_suspect(stream_status: object) -> object:
-    """Apply the suspect-hidden rule to one raw stream-status value."""
-    if stream_status == StreamStatus.SUSPECT.value:
-        return StreamStatus.HEALTHY.value
-    return stream_status
-
-
 def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
-    """Shape the newest persisted report for the snapshot, suspect folded away."""
+    """Shape the newest persisted report for the snapshot."""
     if latest is None:
         return None
-    raw_devices = (latest.payload or {}).get("devices") or []
+    payload = latest.payload or {}
+    raw_devices = payload.get("devices") or []
+    diagnostics = payload.get("diagnostics")
+    diagnostic_streams = diagnostics.get("streams") if isinstance(diagnostics, Mapping) else []
+    diagnostic_by_device = {
+        stream.get("device_id"): stream
+        for stream in diagnostic_streams or []
+        if isinstance(stream, Mapping) and stream.get("device_id") is not None
+    }
+    watchdog_block = diagnostics.get("watchdog") if isinstance(diagnostics, Mapping) else None
+    raw_interval = (
+        watchdog_block.get("report_interval_seconds")
+        if isinstance(watchdog_block, Mapping)
+        else None
+    )
+    interval_seconds = (
+        float(raw_interval)
+        if isinstance(raw_interval, (int, float))
+        and not isinstance(raw_interval, bool)
+        and raw_interval > 0
+        else escalation.DEFAULT_REPORT_INTERVAL_SECONDS
+    )
     devices = [
-        {
-            "device_id": device.get("device_id"),
-            "stream_status": _hide_suspect(device.get("stream_status")),
-        }
+        _latest_report_device(
+            device,
+            diagnostic_by_device.get(device.get("device_id"), {}),
+            interval_seconds=interval_seconds,
+        )
         for device in raw_devices
         if isinstance(device, Mapping)
     ]
@@ -119,7 +134,57 @@ def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
         "recovery_id": latest.recovery_id,
         "received_at": latest.received_at,
         "devices": devices,
-        "diagnostics": (latest.payload or {}).get("diagnostics"),
+        "diagnostics": diagnostics,
+    }
+
+
+def _latest_report_device(
+    device: Mapping[str, object],
+    diagnostic: Mapping[str, object],
+    *,
+    interval_seconds: float,
+) -> dict[str, object | None]:
+    """Project bounded watchdog recovery context onto one device row."""
+    heartbeat = diagnostic.get("heartbeat")
+    heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
+    recovery = diagnostic.get("recovery")
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    action = diagnostic.get("action")
+    reason = (
+        diagnostic.get("initiating_failure_reason")
+        or diagnostic.get("failure_reason")
+        or heartbeat.get("reason")
+    )
+    stage = recovery.get("status")
+    pending = action in {"waiting_for_port", "waiting_for_port_release"} or stage in {
+        "waiting_for_port",
+        "waiting_for_port_release",
+        "retry_wait",
+    }
+    # The watchdog publishes its ACTUAL restart budget as {"current", "max"}
+    # (Watchdog._recovery_attempt). This row previously reported
+    # ``consecutive_nonhealthy_ticks`` under the name ``recovery_attempt``, which
+    # is a duration proxy, not an attempt count — so "attempt 2 of 3" existed at
+    # the source and was dropped one hop later. Both are surfaced now, under
+    # names that say what they are.
+    attempt = recovery.get("attempt")
+    attempt = attempt if isinstance(attempt, Mapping) else {}
+    nonhealthy_ticks = diagnostic.get("consecutive_nonhealthy_ticks")
+    return {
+        "device_id": device.get("device_id"),
+        "stream_status": device.get("stream_status"),
+        "action": action,
+        "reason": reason,
+        "recovery_stage": stage,
+        "recovery_attempt": attempt.get("current"),
+        "recovery_attempt_max": attempt.get("max"),
+        "nonhealthy_ticks": nonhealthy_ticks,
+        # Seconds this device has been continuously non-healthy, so the frontend
+        # never has to know the watchdog's cadence to render "down for 45s".
+        "nonhealthy_seconds": escalation.nonhealthy_seconds(
+            diagnostic, interval_seconds=interval_seconds
+        ),
+        "pending_recovery": pending,
     }
 
 

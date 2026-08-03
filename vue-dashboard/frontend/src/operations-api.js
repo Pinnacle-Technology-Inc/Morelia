@@ -9,15 +9,20 @@ export async function listOperations({ state } = {}) {
   return requestJson(`/api/v1/operations/${suffix}`);
 }
 
-export async function resolveOperation(operationId, { resolvedBy, resolutionNote }) {
+export async function resolveOperation(operationId, { outcome, resolvedBy, resolutionNote }) {
   return requestJson(`/api/v1/operations/${operationId}/resolve`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
+      outcome,
       resolved_by: resolvedBy,
       resolution_note: resolutionNote,
     }),
   });
+}
+
+export function canSubmitResolution({ outcome, resolvedBy, resolutionNote }) {
+  return Boolean(outcome && resolvedBy?.trim() && resolutionNote?.trim());
 }
 
 export function getBlockingOperation(problem) {

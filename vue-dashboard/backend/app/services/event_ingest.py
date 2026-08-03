@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from app.config import get_config
 from app.contracts.watchdog_process_protocol import WatchdogTelemetryEnvelope
 from app.domain.errors import StaleWatchdogReport, UnknownDataflow
 from app.repositories.backend_events import BackendEventRepository
@@ -67,10 +68,24 @@ def ingest_report(raw: Mapping) -> int:
     # independent axes: sink evaluation never mutates source incidents/gaps, and
     # a sink-only failure leaves source running-state untouched (SINK-23). Within
     # each axis, gaps precede incidents so a gap can link to a still-open incident.
+    #
+    # Gaps are recorded unconditionally — every healed episode is a fact about
+    # missing data. Incidents are not: they open only when the report shows
+    # something waiting on a person (app.services.escalation), so an automatic
+    # reconnect that works leaves a gap and nothing to acknowledge. The session's
+    # policy is a FALLBACK; the report's own per-stream policy wins.
+    config = get_config()
     gaps.evaluate_report(report, session_id=session.id)
-    incidents.evaluate_report(report, session_id=session.id)
+    incidents.evaluate_report(
+        report,
+        session_id=session.id,
+        policy=session.policy,
+        port_absent_limit_seconds=config.STREAM_PORT_ABSENT_ESCALATION_SECONDS,
+    )
     gaps.evaluate_sink_reports(report, session_id=session.id)
-    incidents.evaluate_sink_reports(report, session_id=session.id)
+    incidents.evaluate_sink_reports(
+        report, session_id=session.id, policy=session.policy
+    )
 
     return event_id
 

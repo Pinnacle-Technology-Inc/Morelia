@@ -195,7 +195,7 @@ def _reconcile_orphan_sessions(summary: ReconciliationSummary) -> Reconciliation
         if not claimed:
             continue  # nothing leaked (e.g. a non-managed session)
         with transaction():
-            session.status = SessionStatus.COMPLETED
+            session.status = SessionStatus.STOPPED
             session.runtime_port = None
             session.runtime_token = None
             session.command_in_flight = False
@@ -388,7 +388,7 @@ def _reconcile_stop_operation(
         _finish_operation(operation, OperationState.SUCCEEDED)
         _release_session_lock(
             operation,
-            status=SessionStatus.COMPLETED,
+            status=SessionStatus.STOPPED,
             release_device_configs=True,
         )
         return _inc(summary, succeeded_operations=1)

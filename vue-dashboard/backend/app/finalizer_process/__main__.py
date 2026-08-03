@@ -38,6 +38,7 @@ from app.services.output_finalization import (
     MergerRegistry,
     build_default_merger_registry,
     coordinator_from_config,
+    reconcile_stopped_session_acquisitions,
     resolve_merger,
 )
 
@@ -135,6 +136,7 @@ def main(
     def _cycle() -> None:
         with app.app_context():
             coordinator = coordinator_factory(config)
+            reconcile_stopped_session_acquisitions()
             run_cycle(coordinator, worker_id=args.worker_id, registry=registry)
 
     if args.once:

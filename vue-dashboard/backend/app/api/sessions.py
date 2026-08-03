@@ -13,6 +13,8 @@ from app.api.schemas import (
     ExportSessionTemplateSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
+    SessionNameSuggestionSchema,
+    SinkRestartPlanSchema,
     SessionSchema,
     SessionStatusSnapshotSchema,
     SessionTemplateSchema,
@@ -79,6 +81,15 @@ def list_sessions():
     return session_service.list_all()
 
 
+@blp.route("/name-suggestion", methods=["GET"])
+@blp.response(200, SessionNameSuggestionSchema)
+def session_name_suggestion():
+    """Preview the name POST / would mint for a session created without one.
+
+    """
+    return {"name": session_service.suggest_name()}
+
+
 @blp.route("/overview", methods=["GET"])
 @blp.response(200, FleetOverviewSchema)
 def sessions_overview():
@@ -97,6 +108,17 @@ def get_session(session_id):
 def session_status(session_id):
     """Detail snapshot (6g): aggregate join across sessions/runtime/events/ops/incidents/gaps."""
     return session_status_service.detail(session_id, live_health=_live_health())
+
+
+@blp.route("/<int:session_id>/sink-plan", methods=["GET"])
+@blp.response(200, SinkRestartPlanSchema)
+def session_sink_plan(session_id):
+    """Where this session's file outputs would land if started right now.
+
+    Read-only: lets the UI prompt for output names BEFORE issuing start,
+    instead of discovering a collision as a 409 afterwards.
+    """
+    return session_service.sink_restart_plan(session_id)
 
 
 @blp.route("/<int:session_id>", methods=["DELETE"])
@@ -120,7 +142,11 @@ def start_session(payload, session_id):
                 sink_overrides=payload.get("sink_overrides") or None,
                 force=bool(payload.get("force", False)),
             )
-    return session_service.start(session_id, current_app.extensions["watchdog_adapter"])
+    return session_service.start(
+        session_id,
+        current_app.extensions["watchdog_adapter"],
+        sink_overrides=payload.get("sink_overrides") or None,
+    )
 
 
 @blp.route("/<int:session_id>/commands/stop", methods=["POST"])
@@ -153,6 +179,13 @@ def recover_session(payload, session_id):
         payload["action"],
         current_app.extensions["watchdog_adapter"],
     )
+
+
+@blp.route("/<int:session_id>/complete", methods=["POST"])
+@blp.response(202, SessionSchema)
+def complete_session(session_id):
+    _require_lifecycle_commands_enabled()
+    return session_service.complete(session_id)
 
 
 @blp.route("/<int:session_id>/template-export", methods=["POST"])

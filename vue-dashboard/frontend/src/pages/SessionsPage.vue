@@ -16,7 +16,7 @@ const props = defineProps({
 
 defineEmits(["open-session", "new-session", "retry"]);
 
-const activeTab = ref("needs-attention");
+const activeTab = ref("all");
 const search = ref("");
 const visibleSessions = computed(() => filterSessions(props.sessions, activeTab.value, search.value));
 const counts = computed(() => Object.fromEntries(
@@ -49,27 +49,34 @@ function timeLabel(session) {
     </PageHeader>
 
     <BaseCard class="workspace-card">
-      <div v-if="catalogState === 'sample'" class="detail-alert" role="alert">
+      <div v-if="catalogState === 'unavailable'" class="detail-alert" role="alert">
         <AlertTriangle :size="17" />
-        <span>Backend unavailable. Showing sample sessions. {{ loadError }}</span>
+        <span>Backend unavailable. No sessions are available. {{ loadError }}</span>
+        <button type="button" @click="$emit('retry')"><RefreshCw :size="15" /> Retry</button>
+      </div>
+      <div v-else-if="catalogState === 'degraded'" class="detail-alert" role="alert">
+        <AlertTriangle :size="17" />
+        <span>Partial data: session overview is unavailable. {{ loadError }}</span>
         <button type="button" @click="$emit('retry')"><RefreshCw :size="15" /> Retry</button>
       </div>
       <div v-else-if="catalogState === 'loading'" class="detail-alert" aria-live="polite">
         <RefreshCw :size="17" class="spin" /> Loading sessions from the backend…
       </div>
-      <TabBar :tabs="sessionTabs" :active="activeTab" :counts="counts" @change="activeTab = $event" />
-      <div class="toolbar">
-        <label class="search-field">
-          <Search :size="17" />
-          <input v-model="search" type="search" placeholder="Search sessions or experiments..." />
-        </label>
-        <BaseButton variant="secondary"><Filter :size="16" /> Filter</BaseButton>
+      <div class="workspace-chrome">
+        <TabBar :tabs="sessionTabs" :active="activeTab" :counts="counts" @change="activeTab = $event" />
+        <div class="toolbar">
+          <label class="search-field">
+            <Search :size="17" />
+            <input v-model="search" type="search" placeholder="Search sessions or experiments..." />
+          </label>
+          <BaseButton variant="secondary"><Filter :size="16" /> Filter</BaseButton>
+        </div>
       </div>
 
       <div v-if="visibleSessions.length" class="table-wrap">
         <table class="data-table sessions-table">
           <thead>
-            <tr><th>Session</th><th>State</th><th>Session Health</th><th>Experiment</th><th>Streams</th><th>Session Monitor</th><th>Time</th><th /></tr>
+            <tr><th>Session</th><th>State</th><th>Session Health</th><th>Experiment</th><th>Streams</th><th>Time</th><th /></tr>
           </thead>
           <tbody>
             <tr v-for="session in visibleSessions" :key="session.id" @click="$emit('open-session', session.id)">
@@ -81,7 +88,6 @@ function timeLabel(session) {
               <td><StatusBadge :value="session.health" /></td>
               <td>{{ session.experiment ?? "-" }}</td>
               <td><code>{{ session.streamCount ?? session.deviceCount }}/{{ session.sinkCount }}</code></td>
-              <td><StatusBadge compact :value="session.watchdog" /></td>
               <td><code>{{ timeLabel(session) }}</code></td>
               <td><button class="table-action" type="button" @click.stop="$emit('open-session', session.id)">Open</button></td>
             </tr>

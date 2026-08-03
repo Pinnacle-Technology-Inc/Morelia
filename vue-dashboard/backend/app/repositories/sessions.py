@@ -3,6 +3,13 @@ from app.domain.enums import PolicyMode, SessionStatus
 from app.models.session import Session
 
 
+def default_session_name(session_id: int) -> str:
+    """The name an unnamed session gets. Depends on the id, so it can only be
+    minted after the insert.
+    """
+    return f"Session {session_id}"
+
+
 class SessionRepository:
 
     def create(self, data: dict) -> Session:
@@ -25,7 +32,7 @@ class SessionRepository:
             db.session.add(row)
             db.session.flush()
             if not row.name:
-                row.name = f"Session {row.id}"
+                row.name = default_session_name(row.id)
         return row
 
     def get(self, session_id: int) -> Session | None:
@@ -45,12 +52,19 @@ class SessionRepository:
         a concurrent create — or this one aborting before it commits — can
         make the guess wrong.
 
-        Safe to be wrong: the only consumer is a cosmetic sink_location
-        suggestion string (session_config._resolve_sink), never anything
-        that decides a real row's identity. A stale guess just makes an odd
-        filename, never a duplicate row or a corrupted id sequence — unlike
+        Safe to be wrong: both consumers are cosmetic — a sink_location
+        suggestion string (session_config._resolve_sink) and the name the
+        create-session form shows as a placeholder (sessions.suggest_name).
+        Neither decides a real row's identity. A stale guess just makes an odd
+        filename or a placeholder that doesn't match the name create() ends up
+        minting, never a duplicate row or a corrupted id sequence — unlike
         pre-computing MAX(id)+1 to use AS the actual id, which would be a
         real race.
+
+        Note the placeholder consumer only stays safe as long as the form
+        sends ``name: null`` when untouched. If it ever submitted the
+        suggestion as an explicit name, a stale guess would collide and get a
+        "-1" suffix from create()'s dedup loop.
         """
         highest = db.session.scalar(db.select(db.func.max(Session.id)))
         return (highest or 0) + 1

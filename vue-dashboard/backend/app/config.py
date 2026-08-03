@@ -76,6 +76,16 @@ class Config:
     WATCHDOG_OPERATION_TIMEOUT_SECONDS = float(
         os.environ.get("WATCHDOG_OPERATION_TIMEOUT_SECONDS", "5.0")
     )
+    # How long a stream may sit with its serial port absent before it stops
+    # counting as "recovering" and becomes an operator's problem. Under AUTOMATE
+    # the watchdog polls for the replug indefinitely rather than holding
+    # ``needs_action`` (Watchdog._maybe_rearm_from_needs_action), so without this
+    # limit a device unplugged overnight surfaces nowhere at all — no incident,
+    # and no gap either, since a gap needs a healed episode. See
+    # app.services.escalation.
+    STREAM_PORT_ABSENT_ESCALATION_SECONDS = float(
+        os.environ.get("STREAM_PORT_ABSENT_ESCALATION_SECONDS", "30.0")
+    )
     # Grace period for DataFlow workers to stop the device stream, drain pending
     # samples, flush file sinks, and exit. This must exceed the legacy Morelia
     # per-stream five-second default so PVFS catalog publication is not killed
