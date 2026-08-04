@@ -4,37 +4,20 @@ import { AlertTriangle, Check, ChevronRight, FolderPen, Plus, Radar, Trash2 } fr
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import DeviceSettingsDialog from "../components/DeviceSettingsDialog.vue";
-import DeviceTemplateDriftDialog from "../components/DeviceTemplateDriftDialog.vue";
 import FolderPickerDialog from "../components/FolderPickerDialog.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import {
-  createDeviceConfigFromTemplate,
-  editDeviceConfig,
-  loadDeviceConfig,
-  loadDevicePool,
-} from "../devices-api";
-import { loadDeviceTemplates, loadSessionTemplateCatalog } from "../templates-api";
-import { loadAssignmentPlan } from "../template-planner-api";
-import { loadExperiments } from "../experiments-api";
-import { createSessionDraft, loadSessionNameSuggestion, startSession } from "../session-api";
+import { loadDevicePool } from "../devices-api";
+import { createSessionTemplate } from "../templates-api";
 import { browseDirectories } from "../filesystem-api";
-import {
-  compareParameters,
-  defaultSinkStem,
-  deviceTemplateForFlow,
-  hasDrift,
-  matchFlowIndex,
-  templateSinksForFlow,
-  uniqueSinkIdentifier,
-} from "../template-import-utils";
+import { defaultSinkStem, uniqueSinkIdentifier } from "../template-import-utils";
 
-const emit = defineEmits(["cancel", "saved", "started"]);
+const emit = defineEmits(["cancel", "created", "open-existing-template"]);
 
 // Wizard state is snapshotted here so an accidental reload (or navigating away
 // and back) mid-wizard doesn't discard in-progress work. Device configuration
 // now happens in an inline dialog, so this no longer covers a Devices-page detour.
-const SNAPSHOT_KEY = "create-session-draft";
+const SNAPSHOT_KEY = "create-template-draft";
 
 // Sink types operators can attach to a stream. `file` sinks need a writable
 // location on disk; service/plot sinks don't (mirrors the backend registry
@@ -49,15 +32,8 @@ const SINK_TYPES = [
 ];
 
 const step = ref(0);
-const startFrom = ref("Blank session");
 const recoveryPolicy = ref("Recommend");
-const sessionTemplates = ref([]);
-// The device-template library, needed to read the *parameters* a session
-// template's flow expects. The assignment planner resolves each flow only as
-// far as a device type, so the settings comparison has to be done here.
-const deviceTemplates = ref([]);
-const experiments = ref([]);
-const experimentId = ref("");
+const templateName = ref("");
 const devices = ref([]);
 // Device discovery is a live serial scan, not a cached read, so the Streams step
 // gets an explicit rescan for hardware plugged in after the page loaded.
@@ -68,26 +44,18 @@ const scannedAt = ref(null);
 // load leaves `devices` empty and every restored selection looks "missing",
 // which blames the operator's hardware for what is really an offline backend.
 const poolLoaded = ref(false);
-const templateName = ref("");
-const planner = ref(null);
-const plannerState = ref("idle");
-const plannerError = ref("");
-const sessionName = ref("");
-// The name the backend would mint if we submit without one. Shown as the Name
-// field's placeholder and echoed on Review, but deliberately never written into
-// sessionName: the moment it becomes the field's *value* it would be submitted
-// as an explicit name, which skips the backend's auto-naming path and — if the
-// guess went stale behind a concurrent create — collides and picks up a "-1"
-// suffix. Left as a placeholder, an empty field still sends null and the
-// backend assigns the authoritative name from the real row id.
-const suggestedName = ref("");
-const saveState = ref("idle");
-const saveError = ref("");
-const draftId = ref(null);
-const startState = ref("idle");
+const createState = ref("idle");
+const createError = ref("");
+// The `existing_template` summary from a 409 duplicate_template response, so
+// Review can link straight to it instead of asking the operator to rename and
+// retry (the backend never trusts a renamed resubmission over the original).
+const duplicateTemplate = ref(null);
 
-// Streams the operator has added to this session, as device_config_ids, plus a
-// parallel map of each stream's ordered sinks: { sink_type, sink_location }.
+// Streams the operator has added as concrete examples of the devices this
+// template requires, as device_config_ids, plus a parallel map of each
+// stream's ordered sinks: { sink_type, sink_location }. Each stream's own
+// `source_template` (the device template it was configured from) becomes the
+// flow's device_template_path at submit time — see buildFlow().
 const selectedConfigIds = ref([]);
 const streamSinks = ref({});
 
@@ -106,277 +74,11 @@ const folderPickerTarget = ref(null);
 // to the Devices page, so an operator never loses the wizard mid-selection.
 const configureTarget = ref(null);
 
-// --- Session-template authority -------------------------------------------
-//
-// When a session template is chosen, its flows are the authority on how each
-// device should be configured. Three pieces of bookkeeping carry that:
-//
-//   flowClaims   which template flow each selected device stands in for, so two
-//                devices of the same type don't both answer to flow 0.
-//   driftQueue   devices whose saved settings disagree with their flow's device
-//                template, awaiting an operator decision. Non-empty blocks Next.
-//   driftChoices what was decided, kept for the Review step.
-const flowClaims = ref({});
-const driftQueue = ref([]);
-const driftChoices = ref({});
-const driftDialogOpen = ref(false);
-const driftBusy = ref(false);
-const driftError = ref("");
-// A device whose config could not be read can't be compared. That's an
-// assistive check, not a safety barrier — the backend still validates at start —
-// so a failed read reports itself instead of wedging the wizard.
-const driftCheckError = ref("");
-const autoConfigureState = ref("idle");
-const autoConfigureError = ref("");
-// Set when a template's pinned output folder doesn't resolve on this host.
-const templateFolderWarning = ref("");
-
-// The catalog arrives asynchronously, but a restored snapshot can set
-// templateName before it lands. Anything that reads template *content* waits on
-// this so a mid-wizard reload plans against the same data a fresh visit would.
-let markCatalogReady;
-const catalogReady = new Promise((resolve) => {
-  markCatalogReady = resolve;
-});
-
-const selectedSessionTemplate = computed(
-  () => sessionTemplates.value.find((template) => template.reference === templateName.value) ?? null,
-);
-
-const templateFlows = computed(() => {
-  const flows = selectedSessionTemplate.value?.content?.device_flows;
-  return Array.isArray(flows) ? flows : [];
-});
-
-function templateForFlow(flow) {
-  return deviceTemplateForFlow(flow, deviceTemplates.value);
-}
-
-// Which flow a device answers to. The planner already bound flows to specific
-// configs, so an assigned device uses its own flow_index; anything the operator
-// ticked by hand falls through to first-unclaimed-of-this-type.
-function claimFlowIndex(device) {
-  const flows = templateFlows.value;
-  if (!flows.length) return null;
-  const assignment = assignmentByConfigId.value.get(device.id);
-  if (assignment) return assignment.flow_index;
-  const claimed = [
-    ...Object.values(flowClaims.value),
-    ...[...assignmentByConfigId.value.values()].map((assigned) => assigned.flow_index),
-  ];
-  return matchFlowIndex(device, flows, deviceTemplates.value, claimed);
-}
-
-// Compare one selected device against its flow's device template, queueing a
-// decision when they disagree. Silent when there is no template to answer to.
-// A template flow describes outputs as well as settings, so a stream added
-// under a template starts with the sinks that flow asks for. Only seeded into
-// an empty sink list: once the operator has touched a stream's outputs, they
-// own them.
-// Sinks restored from a snapshot written when the Name field was a placeholder
-// carry an empty name, which would now read as a cleared field and block the
-// step. Fill them from the same rule a fresh sink uses — the device rows have
-// to be loaded first, so this runs after the pool arrives rather than inside
-// restoreSnapshot().
-function backfillSinkNames() {
-  const next = { ...streamSinks.value };
-  let changed = false;
-  for (const [configId, list] of Object.entries(next)) {
-    if (!list.some((sink) => !(sink.sink_name ?? "").trim())) continue;
-    const stream = devices.value.find((device) => String(device.id) === String(configId));
-    if (!stream) continue;
-    const filled = [];
-    for (const sink of list) {
-      filled.push(
-        (sink.sink_name ?? "").trim()
-          ? sink
-          : { ...sink, sink_name: defaultSinkName(stream, sink.sink_type, filled) },
-      );
-    }
-    next[configId] = filled;
-    changed = true;
-  }
-  if (changed) streamSinks.value = next;
-}
-
-// Is a template's pinned destination actually a folder we can write to? A
-// session template travels between machines and outlives the paths it names, and
-// its sink_location may have meant a FILE — an earlier run of this very template
-// can have left one sitting at that exact path. Adopting either blind hands the
-// operator a destination the runtime is guaranteed to fail on, so ask the host.
-// Answers are cached: several flows usually share one folder.
-const folderChecks = new Map();
-
-async function folderIsUsable(path) {
-  if (!path) return false;
-  if (folderChecks.has(path)) return folderChecks.get(path);
-  const check = browseDirectories(path)
-    .then((listing) => Boolean(listing?.exists && listing?.writable))
-    // A failed probe is not proof the folder is bad; let it through rather than
-    // silently discarding a destination the template author chose on purpose.
-    .catch(() => true);
-  folderChecks.set(path, check);
-  return check;
-}
-
-async function seedSinksFromFlow(configId, flow) {
-  if (streamSinkList(configId).length) return;
-  const imported = templateSinksForFlow(flow);
-  if (!imported.length) return;
-  // A template that pins a destination sets the working folder for whatever the
-  // operator adds next, the same way picking one by hand does — but only once
-  // we know the path still resolves to somewhere writable.
-  const pinned = imported.find((sink) => sink.sink_folder)?.sink_folder;
-  if (pinned && !(await folderIsUsable(pinned))) {
-    templateFolderWarning.value =
-      `This template's output folder (${pinned}) is missing or not writable on this machine, ` +
-      `so its sinks fall back to the session output folder. Pick another folder to override that.`;
-    for (const sink of imported) sink.sink_folder = "";
-  } else if (pinned) {
-    lastUsedFolder.value = pinned;
-  }
-  // Fill the blanks the template left. A flow that names its sink keeps that
-  // name; one that doesn't falls back to the same device-derived filename a
-  // hand-added sink would get, so every row reads the same way.
-  const stream = devices.value.find((device) => device.id === configId);
-  const filled = [];
-  for (const sink of imported) {
-    filled.push({
-      ...sink,
-      sink_name: sink.sink_name || defaultSinkName(stream, sink.sink_type, filled),
-      sink_folder: sink.sink_folder || lastUsedFolder.value || defaultOutputFolder.value,
-    });
-  }
-  streamSinks.value = { ...streamSinks.value, [configId]: filled };
-}
-
-async function checkDeviceAgainstTemplate(device) {
-  const flowIndex = claimFlowIndex(device);
-  if (flowIndex == null) return;
-  flowClaims.value = { ...flowClaims.value, [device.id]: flowIndex };
-  await seedSinksFromFlow(device.id, templateFlows.value[flowIndex]);
-  const template = templateForFlow(templateFlows.value[flowIndex]);
-  if (!template) return;
-  if (driftQueue.value.some((entry) => entry.configId === device.id)) return;
-
-  let config;
-  try {
-    config = await loadDeviceConfig(device.id);
-    driftCheckError.value = "";
-  } catch (error) {
-    driftCheckError.value =
-      error?.problem?.detail ?? error?.message ?? `Could not read ${device.name}'s settings to compare them.`;
-    return;
-  }
-  // Fast path: the config was minted from this exact template revision, so its
-  // parameters are that template's by construction.
-  if (config.source_template_hash && config.source_template_hash === template.content_hash) return;
-
-  const rows = compareParameters(template.content?.parameters ?? {}, config.parameters ?? {});
-  if (!hasDrift(rows)) return;
-  driftQueue.value = [...driftQueue.value, { configId: device.id, device, template, rows }];
-  driftDialogOpen.value = true;
-}
-
-const currentDrift = computed(() => driftQueue.value[0] ?? null);
-
-// What the operator decided, for the Review step. "Kept their own" is the one
-// worth surfacing: those devices will run with settings the template disowns.
-const driftSummary = computed(() => {
-  const choices = Object.values(driftChoices.value);
-  return {
-    template: choices.filter((choice) => choice === "template").length,
-    device: choices.filter((choice) => choice === "device").length,
-  };
-});
-
-async function resolveDrift(choice) {
-  const current = currentDrift.value;
-  if (!current) return;
-  if (choice === "device") {
-    // Keep the device as it is: the session simply runs with settings that
-    // differ from the template. Nothing is written.
-    driftChoices.value = { ...driftChoices.value, [current.configId]: "device" };
-    dequeueDrift();
-    return;
-  }
-  driftBusy.value = true;
-  driftError.value = "";
-  try {
-    // Adopt the template wholesale — edit() replaces parameters rather than
-    // merging, which is what makes the strict rule (drop what the template does
-    // not mention) fall out without any per-key deletion here.
-    await editDeviceConfig(current.configId, {
-      parameters: current.template.content?.parameters ?? {},
-      source_template: current.template.file_path,
-    });
-    driftChoices.value = { ...driftChoices.value, [current.configId]: "template" };
-    dequeueDrift();
-  } catch (error) {
-    driftError.value =
-      error?.problem?.detail ?? error?.message ?? "Could not apply the template's settings.";
-  } finally {
-    driftBusy.value = false;
-  }
-}
-
-function dequeueDrift() {
-  driftQueue.value = driftQueue.value.slice(1);
-  driftError.value = "";
-  driftDialogOpen.value = driftQueue.value.length > 0;
-}
-
-// Forgetting a device's template bookkeeping when it leaves the selection —
-// otherwise a deselected device keeps blocking Next from inside the queue.
-function forgetDevice(configId) {
-  driftQueue.value = driftQueue.value.filter((entry) => entry.configId !== configId);
-  driftDialogOpen.value = driftDialogOpen.value && driftQueue.value.length > 0;
-  const claims = { ...flowClaims.value };
-  delete claims[configId];
-  flowClaims.value = claims;
-  const choices = { ...driftChoices.value };
-  delete choices[configId];
-  driftChoices.value = choices;
-}
-
-function clearStreamSelection() {
-  selectedConfigIds.value = [];
-  streamSinks.value = {};
-  flowClaims.value = {};
-  driftQueue.value = [];
-  driftChoices.value = {};
-  driftDialogOpen.value = false;
-  driftError.value = "";
-  driftCheckError.value = "";
-  templateFolderWarning.value = "";
-}
-
 // Streams and sinks are one step: picking a device and giving it an output is a
 // single decision, and the two panes sit side by side so the sink editor reacts
 // to the row you just ticked without a wizard hop.
-const steps = ["Details", "Streams & Sinks", "Schedule & Recovery", "Review"];
+const steps = ["Details", "Streams & Sinks", "Recovery", "Review"];
 const progress = computed(() => `${Math.round(((step.value + 1) / steps.length) * 100)}%`);
-
-// Device types the template picked in Details requires. `null` means no template
-// (blank session), so the Streams step imposes no type restriction.
-const requiredDeviceTypes = computed(() => {
-  const plan = planner.value;
-  if (!plan) return null;
-  const types = new Set();
-  for (const assignment of plan.assignments ?? []) if (assignment.device_type) types.add(assignment.device_type);
-  for (const requirement of plan.unresolved_requirements ?? []) if (requirement.device_type) types.add(requirement.device_type);
-  return types;
-});
-
-// Pool row `id` == backend device_config_id, so we can join a device to the
-// planner's assignment to surface its exact/generic match.
-const assignmentByConfigId = computed(() => {
-  const map = new Map();
-  for (const assignment of planner.value?.assignments ?? []) {
-    if (assignment.device_config_id != null) map.set(assignment.device_config_id, assignment);
-  }
-  return map;
-});
 
 // A device can only become a stream once it has a config; "free" is the pool's
 // term for configured-and-unclaimed. Everything else in this list is present
@@ -388,31 +90,22 @@ function isSelectable(device) {
 // Devices the Streams step offers: physically present ("available") and not
 // already claimed by another session. Unconfigured present hardware is included
 // so operators can see (and go set up) devices that still need configuration.
-// When a template is selected, the list is restricted to its required types.
 // Selectable devices sort to the top so the actionable rows are the ones in
 // view; sort() is stable, so the pool's own ordering survives within each group.
 const streamDevices = computed(() =>
   devices.value
-    .filter((device) => {
-      if (device.availability !== "available") return false;
-      if (device.status === "claimed") return false;
-      const types = requiredDeviceTypes.value;
-      if (types && types.size > 0 && !types.has(device.type)) return false;
-      return true;
-    })
+    .filter((device) => device.availability === "available" && device.status !== "claimed")
     .sort((a, b) => Number(isSelectable(b)) - Number(isSelectable(a))),
 );
 
 // The notice under the device table is a problem report, not a permanent
-// caption. Standing orange on a finished, ready-to-start selection reads as
-// "something is wrong", so it renders only when there is a blocker to name: a
-// template requirement no present device can satisfy, or hardware sitting in the
-// list that has to be configured before it can be ticked. When neither holds,
-// the pane is quiet — which is itself the signal that the step is done.
+// caption. Standing orange on a finished, ready-to-create selection reads as
+// "something is wrong", so it renders only when there is a blocker to name:
+// hardware sitting in the list that has to be configured before it can be
+// ticked. When there is none, the pane is quiet — which is itself the signal
+// that the step is done.
 const streamNotices = computed(() => {
-  const notices = (planner.value?.unresolved_requirements ?? []).map(
-    (requirement) => `${requirement.message} Start remains blocked until this requirement is resolved.`,
-  );
+  const notices = [];
   if (streamDevices.value.some((device) => !isSelectable(device))) {
     notices.push(
       "Only free configured devices can be added. Configure present-but-unconfigured devices right here — the dialog opens in place and the device joins your streams once saved.",
@@ -421,16 +114,8 @@ const streamNotices = computed(() => {
   return notices;
 });
 
-function deviceMatch(device) {
-  return assignmentByConfigId.value.get(device.id)?.match ?? null;
-}
-
-// Match only says anything once a template has produced assignments, so the
-// column earns its width on the template path and is dropped on the blank one.
-const showMatchColumn = computed(() => Boolean(planner.value?.assignments?.length));
-
 // Kept in sync with the header below so the empty-state row spans the full table.
-const deviceColumnCount = computed(() => (showMatchColumn.value ? 7 : 6));
+const deviceColumnCount = 6;
 
 // --- Stream selection ------------------------------------------------------
 
@@ -444,12 +129,12 @@ function addStream(configId) {
   if (!streamSinks.value[configId]) streamSinks.value = { ...streamSinks.value, [configId]: [] };
 }
 
-async function toggleStream(device) {
+function toggleStream(device) {
   if (!isSelectable(device)) {
-    // Present but unconfigured. With a session template active this configures
-    // the device from the template's device template and adds it in one click —
-    // there are no existing settings to weigh, so nothing to confirm.
-    if (device.status === "unconfigured") await configureDevice(device);
+    // Present but unconfigured. There is no chosen template to auto-configure
+    // from here — this wizard is defining a template, not consuming one — so
+    // this always opens the manual settings dialog.
+    if (device.status === "unconfigured") configureDevice(device);
     return;
   }
   const id = device.id;
@@ -458,10 +143,8 @@ async function toggleStream(device) {
     const next = { ...streamSinks.value };
     delete next[id];
     streamSinks.value = next;
-    forgetDevice(id);
   } else {
     addStream(id);
-    await checkDeviceAgainstTemplate(device);
   }
 }
 
@@ -605,7 +288,7 @@ const folderPickerFolder = computed(() => {
 // between selection and rescan, or claimed by another session meanwhile. They
 // stay selected on purpose (dropping them would silently discard their sink
 // config), but they are NOT in `selectedStreams`, so without this they'd be
-// invisible on screen while still riding along in draftPayload().
+// invisible on screen while still riding along in templatePayload().
 const missingSelectedIds = computed(() =>
   poolLoaded.value
     ? selectedConfigIds.value.filter((id) => !devices.value.some((device) => device.id === id))
@@ -618,21 +301,12 @@ function dropMissingStreams() {
   const next = { ...streamSinks.value };
   for (const id of missing) delete next[id];
   streamSinks.value = next;
-  for (const id of missing) forgetDevice(id);
 }
 
 // Every added stream carries at least one valid sink — the gate the operator
-// must clear before a draft can be saved or the session started.
+// must clear before the template can be created.
 const streamsComplete = computed(
   () => selectedConfigIds.value.length > 0 && selectedConfigIds.value.every(streamIsValid),
-);
-
-// A blank draft (no streams yet) is a legal save; a draft with a half-configured
-// stream is not (the backend rejects a flow with no sink), so block that.
-const canPersist = computed(() => selectedConfigIds.value.length === 0 || streamsComplete.value);
-
-const templateReady = computed(
-  () => startFrom.value !== "Session template" || (planner.value?.complete && plannerState.value === "ready"),
 );
 
 // --- Sequential step gating ------------------------------------------------
@@ -641,18 +315,10 @@ const templateReady = computed(
 // next is reachable, so a later step never renders against half-made decisions.
 // Backwards movement stays free (the Back button); only forward is gated.
 
-// Details is done once a chosen template has actually been planned. A plan with
-// unresolved requirements still passes: the operator resolves those on the
-// Streams step by plugging hardware in and rescanning, and `startDisabled`
-// keeps Start blocked until they do.
-const detailsComplete = computed(
-  () =>
-    startFrom.value !== "Session template" ||
-    (Boolean(templateName.value) && plannerState.value === "ready"),
-);
+const detailsComplete = computed(() => Boolean(templateName.value.trim()));
 
 const streamsStepComplete = computed(
-  () => streamsComplete.value && missingSelectedIds.value.length === 0 && driftQueue.value.length === 0,
+  () => streamsComplete.value && missingSelectedIds.value.length === 0,
 );
 
 const canAdvance = computed(() => {
@@ -665,26 +331,19 @@ const canAdvance = computed(() => {
 // deal with first rather than by how the checks happen to be written.
 const advanceBlockedReason = computed(() => {
   if (canAdvance.value) return "";
-  if (step.value === 0) {
-    if (!templateName.value) return "Choose a session template to continue.";
-    if (plannerState.value === "loading") return "Planning assignments…";
-    return "This template's assignment plan is unavailable.";
-  }
-  if (driftQueue.value.length) {
-    return `Confirm settings for ${driftQueue.value.length} device${driftQueue.value.length === 1 ? "" : "s"} to continue.`;
-  }
+  if (step.value === 0) return "Name this template to continue.";
   if (missingSelectedIds.value.length) return "Reconnect or remove the missing streams to continue.";
   if (!selectedConfigIds.value.length) return "Add at least one stream to continue.";
   return "Finish each stream's sinks to continue.";
 });
 
-const startDisabled = computed(
+const createDisabled = computed(
   () =>
-    startState.value === "starting" ||
+    createState.value === "creating" ||
+    !templateName.value.trim() ||
     !streamsComplete.value ||
-    !templateReady.value ||
-    // Starting a flow whose device left the pool fails at spawn time anyway;
-    // blocking here turns a confusing runtime error into a fixable warning.
+    // Creating from a stream whose device left the pool would submit a flow
+    // the operator can no longer see or fix if it's rejected.
     missingSelectedIds.value.length > 0,
 );
 
@@ -693,10 +352,7 @@ const startDisabled = computed(
 function persistSnapshot() {
   const snapshot = {
     step: step.value,
-    startFrom: startFrom.value,
     recoveryPolicy: recoveryPolicy.value,
-    sessionName: sessionName.value,
-    experimentId: experimentId.value,
     templateName: templateName.value,
     selectedConfigIds: selectedConfigIds.value,
     streamSinks: streamSinks.value,
@@ -728,10 +384,7 @@ function restoreSnapshot() {
   // Clamp: a snapshot written before Streams and Sinks merged can carry a step
   // index past the end of the (now shorter) wizard, which would render nothing.
   step.value = Math.min(Math.max(snapshot.step ?? 0, 0), steps.length - 1);
-  startFrom.value = snapshot.startFrom ?? "Blank session";
   recoveryPolicy.value = snapshot.recoveryPolicy ?? "Recommend";
-  sessionName.value = snapshot.sessionName ?? "";
-  experimentId.value = snapshot.experimentId ?? "";
   templateName.value = snapshot.templateName ?? "";
   selectedConfigIds.value = Array.isArray(snapshot.selectedConfigIds) ? snapshot.selectedConfigIds : [];
   const sinks = snapshot.streamSinks && typeof snapshot.streamSinks === "object" ? snapshot.streamSinks : {};
@@ -759,9 +412,34 @@ function migrateSink(sink) {
   };
 }
 
+// A restored snapshot can carry sinks whose name was left as an empty
+// placeholder. Fill them from the same rule a fresh sink uses — the device
+// rows have to be loaded first, so this runs after the pool arrives rather
+// than inside restoreSnapshot().
+function backfillSinkNames() {
+  const next = { ...streamSinks.value };
+  let changed = false;
+  for (const [configId, list] of Object.entries(next)) {
+    if (!list.some((sink) => !(sink.sink_name ?? "").trim())) continue;
+    const stream = devices.value.find((device) => String(device.id) === String(configId));
+    if (!stream) continue;
+    const filled = [];
+    for (const sink of list) {
+      filled.push(
+        (sink.sink_name ?? "").trim()
+          ? sink
+          : { ...sink, sink_name: defaultSinkName(stream, sink.sink_type, filled) },
+      );
+    }
+    next[configId] = filled;
+    changed = true;
+  }
+  if (changed) streamSinks.value = next;
+}
+
 // Persist on every meaningful change so a mid-wizard detour never loses work.
 watch(
-  [step, startFrom, recoveryPolicy, sessionName, experimentId, templateName, selectedConfigIds, streamSinks],
+  [step, recoveryPolicy, templateName, selectedConfigIds, streamSinks],
   persistSnapshot,
   { deep: true },
 );
@@ -785,48 +463,11 @@ async function rescanDevices() {
   }
 }
 
-async function configureDevice(device) {
-  autoConfigureError.value = "";
-  const flowIndex = claimFlowIndex(device);
-  const template = flowIndex == null ? null : templateForFlow(templateFlows.value[flowIndex]);
-  // Nothing to adopt — a blank session, a flow with no device-template link, or
-  // hardware with no stable identity to key a config on. Configure in place:
-  // the same dialog the Devices page uses, in create mode. No detour, no
-  // snapshot hand-off, no "resume session creation" banner to come back through.
-  if (!template || !device.hardwareId) {
-    configureTarget.value = device;
-    return;
-  }
-
-  // The template path needs no confirmation: an unconfigured device has no
-  // settings to lose, so it simply becomes what the session template asks for.
-  autoConfigureState.value = "configuring";
-  try {
-    await createDeviceConfigFromTemplate({
-      template_name: template.name,
-      hardware_id: device.hardwareId,
-      port: device.port,
-      nickname: device.nickname ?? null,
-    });
-    await rescanDevices();
-    const configured = devices.value.find((row) => row.hardwareId === device.hardwareId);
-    if (configured && isSelectable(configured)) {
-      addStream(configured.id);
-      // Created *from* the template, so its parameters are that template's by
-      // construction — record the claim and skip the comparison entirely. The
-      // flow's outputs still have to be imported.
-      flowClaims.value = { ...flowClaims.value, [configured.id]: flowIndex };
-      driftChoices.value = { ...driftChoices.value, [configured.id]: "template" };
-      await seedSinksFromFlow(configured.id, templateFlows.value[flowIndex]);
-    }
-    autoConfigureState.value = "idle";
-  } catch (error) {
-    autoConfigureState.value = "error";
-    autoConfigureError.value =
-      error?.problem?.detail ??
-      error?.message ??
-      `Could not configure ${device.name} from ${template.name}.`;
-  }
+// Opens the same settings dialog the Devices page uses, in create mode. No
+// detour, no snapshot hand-off, no "resume wizard" banner to come back
+// through — the device joins the wizard's streams once the dialog saves.
+function configureDevice(device) {
+  configureTarget.value = device;
 }
 
 async function onDeviceConfigured() {
@@ -840,47 +481,17 @@ async function onDeviceConfigured() {
   // a stream automatically. The operator's next click is its sink, not a re-tick.
   if (!hardwareId) return;
   const configured = devices.value.find((device) => device.hardwareId === hardwareId);
-  if (configured && isSelectable(configured)) {
-    addStream(configured.id);
-    // Hand-authored settings can still contradict the template this session is
-    // built from, so the same comparison applies as for any other selection.
-    await checkDeviceAgainstTemplate(configured);
-  }
+  if (configured && isSelectable(configured)) addStream(configured.id);
 }
 
 onMounted(async () => {
   restoreSnapshot();
-  const [pool, templates, deviceTemplateList, exps, defaultFolder, nameSuggestion] =
-    await Promise.allSettled([
-      loadDevicePool(),
-      loadSessionTemplateCatalog(),
-      loadDeviceTemplates(),
-      loadExperiments(),
-      browseDirectories(),
-      loadSessionNameSuggestion(),
-    ]);
+  const [pool, defaultFolder] = await Promise.allSettled([loadDevicePool(), browseDirectories()]);
   if (pool.status === "fulfilled") {
     devices.value = pool.value.devices;
     scannedAt.value = pool.value.scannedAt;
     poolLoaded.value = true;
   }
-  // Same folder-authoritative catalog as Templates. Skip unreadable drafts
-  // (content null) — they can't plan. Select value is catalog `reference`
-  // so stored vs local copies of the same name stay distinct.
-  if (templates.status === "fulfilled") {
-    sessionTemplates.value = templates.value.filter((template) => template?.content != null);
-  }
-  if (deviceTemplateList.status === "fulfilled") {
-    deviceTemplates.value = Array.isArray(deviceTemplateList.value) ? deviceTemplateList.value : [];
-  }
-  // Releases anything waiting to read template content — see `catalogReady`.
-  // Fired unconditionally: a failed catalog load must not leave the planner
-  // waiting forever, it should plan against what it has and report the gap.
-  markCatalogReady();
-  if (exps.status === "fulfilled") experiments.value = Array.isArray(exps.value) ? exps.value : [];
-  // Cosmetic: on failure the placeholder just falls back to generic copy, and
-  // an untouched Name field still gets its real name assigned on save.
-  if (nameSuggestion.status === "fulfilled") suggestedName.value = nameSuggestion.value;
   // Deliberately NOT seeded into `lastUsedFolder`: a pre-filled folder would be
   // indistinguishable from one the operator chose, and the two mean different
   // things to the backend (an explicit location fails on collision, an omitted
@@ -892,74 +503,7 @@ onMounted(async () => {
   backfillSinkNames();
 });
 
-watch(templateName, async (name) => {
-  planner.value = null;
-  plannerError.value = "";
-  if (!name) return;
-  plannerState.value = "loading";
-  // The plan is read against the catalog entry's flows below, so both have to
-  // describe the same template — wait for the catalog before planning.
-  await catalogReady;
-  try {
-    planner.value = await loadAssignmentPlan(name);
-    plannerState.value = "ready";
-    // A template's resolved assignments become pre-selected streams the operator
-    // can then attach sinks to (or remove) — unifying the template and manual paths.
-    for (const assignment of planner.value.assignments ?? []) {
-      addStream(assignment.device_config_id);
-    }
-    // Compare every selected device, not just the ones the planner assigned.
-    // Assignments match a flow to a device on *type* alone, so a pre-selected
-    // device can still contradict the flow's device template — and a snapshot
-    // restored mid-wizard arrives with manual picks already selected, which
-    // would otherwise reach Review without ever having been checked.
-    for (const configId of selectedConfigIds.value) {
-      const device = devices.value.find((row) => row.id === configId);
-      if (device) await checkDeviceAgainstTemplate(device);
-    }
-  } catch (error) {
-    plannerState.value = "unavailable";
-    plannerError.value = error instanceof Error ? error.message : "Assignment planning is unavailable.";
-  }
-});
-
-// --- Guarded Details edits -------------------------------------------------
-
-// Changing the template re-decides every stream below it, so an operator with
-// work in progress is asked first. The native <select> has already moved to the
-// new option by the time this runs, hence the explicit DOM restore on cancel.
-function confirmDiscardStreams() {
-  const count = selectedConfigIds.value.length;
-  if (count === 0) return true;
-  return window.confirm(
-    `This will clear your ${count} selected stream${count === 1 ? "" : "s"} and their sinks. Continue?`,
-  );
-}
-
-function requestTemplateChange(event) {
-  const next = event.target.value;
-  if (next === templateName.value) return;
-  if (!confirmDiscardStreams()) {
-    event.target.value = templateName.value;
-    return;
-  }
-  clearStreamSelection();
-  templateName.value = next;
-}
-
-function requestStartFromChange(event) {
-  const next = event.target.value;
-  if (next === startFrom.value) return;
-  if (!confirmDiscardStreams()) {
-    event.target.value = startFrom.value;
-    return;
-  }
-  clearStreamSelection();
-  startFrom.value = next;
-  // Leaving the template path drops the template itself, which clears the
-  // planner through the watch above.
-  if (next !== "Session template") templateName.value = "";
-}
+// --- Submit ------------------------------------------------------------
 
 function buildSink(sink, existing, stream) {
   const payload = { sink_type: sink.sink_type };
@@ -970,85 +514,66 @@ function buildSink(sink, existing, stream) {
   const name = (sink.sink_name ?? "").trim();
   payload.sink_name = name || defaultSinkName(stream, sink.sink_type, existing);
   const location = sinkLocationFor(sink, payload.sink_name);
-  // A whole absolute host path. resolve_sink_location() passes absolute values
-  // through byte-for-byte, so the runtime opens exactly the file the wizard
-  // showed — no re-rooting, no separator rewriting.
   if (location) payload.sink_location = location;
   if (sink.sink_parameters) payload.sink_parameters = sink.sink_parameters;
   return payload;
 }
 
-function draftPayload() {
+// Each selected stream is a concrete example of the hardware this template
+// requires. Its own `configSource` — the device template that device's config
+// was created from (devices-api.js maps this from the pool's `source_template`
+// field) — becomes the flow's required device_template_path; nothing here
+// carries the stream's device_config_id into the template.
+function buildFlow(configId) {
+  const stream = devices.value.find((device) => device.id === configId);
+  const list = streamSinkList(configId);
+  const flow = {
+    device_template_path: stream?.configSource ?? null,
+    // Each sink sees only the sinks before it, so identifiers are assigned in
+    // list order and stay stable as later ones are added or removed.
+    sinks: list.map((sink, index) => buildSink(sink, list.slice(0, index), stream)),
+  };
+  if (stream?.nickname) flow.nickname = stream.nickname;
+  return flow;
+}
+
+function templatePayload() {
   return {
-    name: sessionName.value.trim() || null,
+    name: templateName.value.trim(),
     policy: recoveryPolicy.value.toLowerCase(),
-    experiment_id: experimentId.value || null,
-    device_flows: selectedConfigIds.value.map((configId) => {
-      const stream = devices.value.find((device) => device.id === configId);
-      const list = streamSinkList(configId);
-      // Each sink sees only the sinks before it, so identifiers are assigned in
-      // list order and stay stable as later ones are added or removed.
-      return {
-        device_config_id: configId,
-        sinks: list.map((sink, index) => buildSink(sink, list.slice(0, index), stream)),
-      };
-    }),
+    device_flows: selectedConfigIds.value.map(buildFlow),
   };
 }
 
-async function saveDraft({ navigate = true } = {}) {
-  saveState.value = "saving";
-  saveError.value = "";
-  try {
-    const session = await createSessionDraft(draftPayload());
-    draftId.value = session.id;
-    saveState.value = "saved";
-    clearSnapshot();
-    emit("saved", session.id);
-    if (navigate && session?.id != null) window.location.hash = `#session/${session.id}`;
-  } catch (error) {
-    saveState.value = "error";
-    saveError.value = describeSaveError(error, "Unable to save draft.");
-  }
+function describeCreateError(error, fallback) {
+  return error?.problem?.detail ?? error?.message ?? fallback;
 }
 
-// A 409 sink_location_exists carries `suggested_location` as an RFC 9457
-// extension field, computed by next_available_path — the backend's own
-// "<stem>-<session>-<n>" postfix. Surfacing it turns "that file exists" into
-// something the operator can act on without inventing a name.
-//
-// It is reported rather than applied because the wizard sends no flow
-// nicknames, so the error's label can't be tied back to one specific sink row
-// when several streams share a filename.
-function describeSaveError(error, fallback) {
-  const problem = error?.problem;
-  const detail = problem?.detail ?? error?.message ?? fallback;
-  if (problem?.code === "sink_location_exists" && problem?.suggested_location) {
-    return `${detail} A free name is available: ${problem.suggested_location}. Rename the sink, or clear its folder to let the session place the file.`;
-  }
-  return detail;
-}
-
-async function startDraft() {
-  if (startDisabled.value) return;
-  if (!draftId.value) {
-    await saveDraft({ navigate: false });
-    if (!draftId.value) return;
-  }
-  startState.value = "starting";
-  saveError.value = "";
+async function createTemplate() {
+  if (createDisabled.value) return;
+  createState.value = "creating";
+  createError.value = "";
+  duplicateTemplate.value = null;
   try {
-    const session = await startSession(draftId.value);
-    startState.value = "started";
+    const template = await createSessionTemplate(templatePayload());
+    createState.value = "created";
     clearSnapshot();
-    // Announce the start before navigating. Without this the wizard changed a
-    // session's lifecycle and the catalog never heard about it — the row stayed
-    // Draft on Overview and Sessions until the operator reloaded the app.
-    emit("started", session?.id ?? draftId.value);
-    if (session?.id != null) window.location.hash = `#session/${session.id}`;
+    emit("created", template.template_id);
   } catch (error) {
-    startState.value = "error";
-    saveError.value = describeSaveError(error, "Unable to start draft.");
+    createState.value = "error";
+    const problem = error?.problem;
+    // A duplicate configuration is not this operator's mistake to fix by
+    // renaming and resubmitting — the backend already has an ACTIVE template
+    // with this exact content, so Review links straight to it.
+    if (problem?.code === "duplicate_template" && problem?.existing_template) {
+      duplicateTemplate.value = problem.existing_template;
+      createError.value = describeCreateError(
+        error,
+        "A template with this exact configuration is already registered.",
+      );
+    } else {
+      createError.value = describeCreateError(error, "Unable to create template.");
+    }
   }
 }
 
@@ -1060,23 +585,14 @@ function onBack() {
     step.value -= 1;
   }
 }
-
-function deviceLabel(value) {
-  return { available: "Available", not_found: "Not found", unopenable: "Unopenable", free: "Free", claimed: "Claimed", exact: "Exact", generic: "Generic" }[value] ?? value;
-}
-
-function templateOptionLabel(template) {
-  if (template.source === "local") return `${template.name} (draft)`;
-  return template.name;
-}
 </script>
 
 <template>
   <div class="page page--workspace">
     <PageHeader
       eyebrow="Guided configuration"
-      title="Create Session"
-      description="Choose streams, outputs, scheduling, and guarded recovery behavior."
+      title="Create Template"
+      description="Define device-template requirements, streams, sinks, and recovery for a reusable session template."
     />
     <BaseCard class="wizard">
       <ol class="wizard-steps">
@@ -1099,35 +615,14 @@ function templateOptionLabel(template) {
       <div class="wizard-progress"><i :style="{ width: progress }" /></div>
 
       <section class="wizard-content">
-        <div v-if="step === 0" class="wizard-split wizard-split--forms">
-          <section class="wizard-split__pane wizard-split__pane--first wizard-selection">
-            <div class="form-grid">
-              <label class="field field--wide">
-                <span>Session Name</span>
-                <!-- Shows the backend's generated name (e.g. "Session 10") as a
-                     placeholder rather than a value: an empty field submits null,
-                     which is what makes the backend mint the authoritative name.
-                     Typing replaces it as usual. -->
-                <input v-model="sessionName" :placeholder="suggestedName" />
-              </label>
-              <label class="field field--wide"><span>Description</span><input placeholder="Optional description" /></label>
-              <label class="field"><span>Experiment</span><select v-model="experimentId"><option value="">None</option><option v-for="experiment in experiments" :key="experiment.id" :value="experiment.id">{{ experiment.name }}</option></select></label>
-              <!-- Both selects are guarded rather than v-modelled: changing
-                   either one invalidates every stream chosen below it, so the
-                   handler confirms before letting the change land. -->
-              <label class="field"><span>Start From</span><select :value="startFrom" @change="requestStartFromChange"><option>Blank session</option><option>Session template</option></select></label>
-              <label v-if="startFrom === 'Session template'" class="field field--wide"><span>Session Template</span><select :value="templateName" @change="requestTemplateChange"><option value="">Choose a session template</option><option v-for="template in sessionTemplates" :key="`${template.source}:${template.reference}`" :value="template.reference">{{ templateOptionLabel(template) }}</option></select></label>
-              <p v-if="startFrom === 'Session template'" class="field--wide validation-copy" :class="{ 'hint-copy': detailsComplete }">
-                <template v-if="plannerState === 'loading'">Planning device assignments…</template>
-                <template v-else-if="detailsComplete">This template's device settings take priority over each device's own configuration.</template>
-                <template v-else>{{ advanceBlockedReason }}</template>
-              </p>
-            </div>
-          </section>
-
-          <section class="wizard-split__pane wizard-split__pane--second wizard-selection">
-            <label class="field notes-field"><span>Notes</span><textarea placeholder="Optional session notes" /></label>
-          </section>
+        <div v-if="step === 0" class="wizard-selection">
+          <div class="form-grid">
+            <label class="field field--wide">
+              <span>Template Name</span>
+              <input v-model="templateName" placeholder="e.g. bench-2-pod" />
+            </label>
+            <label class="field field--wide"><span>Description</span><input placeholder="Optional description" /></label>
+          </div>
         </div>
 
         <!-- Streams (pane 1) and sinks (pane 2) read as one form. The panes are
@@ -1145,36 +640,16 @@ function templateOptionLabel(template) {
             </div>
             <p>Plugged something in just now? Scan Devices re-runs discovery.</p>
             <div v-if="scanState === 'error'" class="form-notice" role="alert"><AlertTriangle :size="18" /> {{ scanError }} Showing the previous scan.</div>
-            <div v-if="autoConfigureError" class="form-notice" role="alert"><AlertTriangle :size="18" /> {{ autoConfigureError }}</div>
-            <div v-if="driftCheckError" class="form-notice" role="alert">
-              <AlertTriangle :size="18" />
-              <span>{{ driftCheckError }} Its settings were not compared against the template.</span>
-            </div>
-            <!-- Closing the dialog defers a decision rather than making one, so
-                 the queue stays visible with a way back into it. -->
-            <div v-if="driftQueue.length && !driftDialogOpen" class="form-notice" role="alert">
-              <AlertTriangle :size="18" />
-              <span>
-                {{ driftQueue.length }}
-                device{{ driftQueue.length === 1 ? "" : "s" }}
-                {{ driftQueue.length === 1 ? "has" : "have" }} settings that differ from this
-                session's template. Next is blocked until you choose.
-              </span>
-              <button type="button" class="table-action" @click="driftDialogOpen = true">Review</button>
-            </div>
             <div v-if="missingSelectedIds.length" class="form-notice" role="alert">
               <AlertTriangle :size="18" />
               <span>
                 {{ missingSelectedIds.length }} selected
                 stream{{ missingSelectedIds.length === 1 ? " is" : "s are" }} no longer in the device pool —
-                unplugged, or claimed by another session. Start is blocked until
+                unplugged, or claimed by another session. Create is blocked until
                 {{ missingSelectedIds.length === 1 ? "it is" : "they are" }} reconnected or removed.
               </span>
               <button type="button" class="table-action" @click="dropMissingStreams">Remove them</button>
             </div>
-            <div v-if="plannerState === 'loading'">Planning assignments…</div>
-            <div v-else-if="plannerState === 'unavailable'" class="form-notice" role="alert">{{ plannerError }}</div>
-            <div v-if="planner?.warnings?.length" class="form-notice"><AlertTriangle :size="18" /><span v-for="warning in planner.warnings" :key="warning.flow_index">{{ warning.message }} Alternatives: {{ warning.alternatives.map(item => item.hardware_id).join(", ") || "none" }}.</span></div>
             <div class="table-wrap">
               <table class="data-table">
                 <!-- Availability and Status are dropped: the list is already
@@ -1182,9 +657,9 @@ function templateOptionLabel(template) {
                      same on every row, and "configured or not" is carried by the
                      checkbox-vs-warning cell. Config Source belongs to the
                      Devices page, not to picking a stream. -->
-                <thead><tr><th class="select-col" /><th>Device</th><th>Type</th><th v-if="showMatchColumn">Match</th><th>Hardware ID</th><th>Port</th><th /></tr></thead>
+                <thead><tr><th class="select-col" /><th>Device</th><th>Type</th><th>Hardware ID</th><th>Port</th><th /></tr></thead>
                 <tbody>
-                  <tr v-if="!streamDevices.length"><td :colspan="deviceColumnCount">{{ requiredDeviceTypes?.size ? "No available devices match this template's device types." : "No available devices to stream from." }}</td></tr>
+                  <tr v-if="!streamDevices.length"><td :colspan="deviceColumnCount">No available devices to stream from.</td></tr>
                   <tr
                     v-for="device in streamDevices"
                     :key="device.hardwareId"
@@ -1218,7 +693,6 @@ function templateOptionLabel(template) {
                       <span v-if="!isSelectable(device)" class="row-warning-copy">Configure before use</span>
                     </td>
                     <td>{{ device.type }}</td>
-                    <td v-if="showMatchColumn"><StatusBadge v-if="deviceMatch(device)" compact :value="deviceLabel(deviceMatch(device))" /><span v-else>—</span></td>
                     <td><code>{{ device.hardwareId }}</code></td>
                     <td><code>{{ device.port }}</code></td>
                     <td>
@@ -1226,10 +700,9 @@ function templateOptionLabel(template) {
                         v-if="device.status !== 'free'"
                         type="button"
                         class="table-action"
-                        :disabled="autoConfigureState === 'configuring'"
                         @click.stop="configureDevice(device)"
                       >
-                        {{ autoConfigureState === "configuring" ? "Configuring…" : "Configure" }}
+                        Configure
                       </button>
                     </td>
                   </tr>
@@ -1250,8 +723,6 @@ function templateOptionLabel(template) {
           <section class="wizard-split__pane wizard-split__pane--second wizard-selection">
             <h3>2 · Configure sinks and outputs</h3>
             <p>Each stream needs at least one sink. File sinks (CSV, EDF, PVFS) are written to this session's output folder under the name shown — pick a folder only if they belong somewhere specific.</p>
-            <p v-if="startFrom === 'Session template'">Sinks defined by the session template are added automatically when you add a stream.</p>
-            <div v-if="templateFolderWarning" class="form-notice" role="alert"><AlertTriangle :size="18" /> <span>{{ templateFolderWarning }}</span></div>
             <div v-if="!selectedStreams.length" class="form-notice"><AlertTriangle :size="18" /> Tick a device to configure its outputs here.</div>
             <div v-for="stream in selectedStreams" :key="stream.id" class="stream-sink-group">
               <div class="stream-sink-head">
@@ -1316,88 +787,53 @@ function templateOptionLabel(template) {
             @close="configureTarget = null"
             @saved="onDeviceConfigured"
           />
-
-          <!-- The session template and the device disagree about how this
-               device should be set up. One decision per device, queued so a
-               template that pre-selects several is worked through in order. -->
-          <DeviceTemplateDriftDialog
-            v-if="driftDialogOpen && currentDrift"
-            :device="currentDrift.device"
-            :template-name="currentDrift.template.name"
-            :rows="currentDrift.rows"
-            :busy="driftBusy"
-            :error="driftError"
-            @choose="resolveDrift"
-            @close="driftDialogOpen = false"
-          />
         </div>
 
-        <!-- Schedule and recovery are both "how should this run unattended?"
-             settings and fit in a screen together. Same two-pane mechanism as
-             Streams & Sinks, tuned narrower since these are short form fields. -->
-        <div v-else-if="step === 2" class="wizard-split wizard-split--forms">
-          <section class="wizard-split__pane wizard-split__pane--first wizard-selection">
-            <h3>1 · Schedule</h3>
-            <p>When the session should start. Manual leaves it to an operator.</p>
-            <div class="form-grid">
-              <label class="field"><span>Start Mode</span><select><option>Manual</option><option>One-time</option><option>Daily</option></select></label>
-              <label class="field"><span>Timezone</span><select><option>America/Chicago</option></select></label>
-              <label class="field"><span>Start Date</span><input type="date" /></label>
-              <label class="field"><span>Start Time</span><input type="time" /></label>
-            </div>
-          </section>
-
-          <section class="wizard-split__pane wizard-split__pane--second wizard-selection">
-            <h3>2 · Recovery</h3>
-            <p>What the watchdog may do on its own when a stream faults mid-run.</p>
-            <div class="form-grid">
-              <label class="field field--wide"><span>Recovery Policy</span><select v-model="recoveryPolicy"><option>Recommend</option><option>Automate</option></select></label>
-              <div class="form-notice field--wide"><AlertTriangle :size="18" /> Changed policies default to Recommend. Automation requires an explicit choice.</div>
-              <BaseCard class="field--wide detail-panel">
-                <dl class="detail-list">
-                  <div><dt>Recommend</dt><dd>Report software-fixable faults and wait for operator approval.</dd></div>
-                  <div><dt>Automate</dt><dd>Run software-fixable recovery when preconditions allow it.</dd></div>
-                </dl>
-              </BaseCard>
-            </div>
-          </section>
+        <div v-else-if="step === 2" class="wizard-selection">
+          <h3>Recovery</h3>
+          <p>What the watchdog may do on its own when a stream faults mid-run.</p>
+          <div class="form-grid">
+            <label class="field field--wide"><span>Recovery Policy</span><select v-model="recoveryPolicy"><option>Recommend</option><option>Automate</option></select></label>
+            <div class="form-notice field--wide"><AlertTriangle :size="18" /> Changed policies default to Recommend. Automation requires an explicit choice.</div>
+            <BaseCard class="field--wide detail-panel">
+              <dl class="detail-list">
+                <div><dt>Recommend</dt><dd>Report software-fixable faults and wait for operator approval.</dd></div>
+                <div><dt>Automate</dt><dd>Run software-fixable recovery when preconditions allow it.</dd></div>
+              </dl>
+            </BaseCard>
+          </div>
         </div>
 
         <div v-else class="review-state">
-          <div v-if="!streamsComplete" class="form-notice"><AlertTriangle :size="18" /> Complete stream and sink selection before starting.</div>
+          <div v-if="!streamsComplete" class="form-notice"><AlertTriangle :size="18" /> Complete stream and sink selection before creating.</div>
           <dl class="detail-list">
-            <div><dt>Session details</dt><dd>{{ sessionName.trim() || suggestedName || "Auto-generated on save" }}</dd></div>
+            <div><dt>Template name</dt><dd>{{ templateName.trim() || "—" }}</dd></div>
             <div><dt>Streams</dt><dd>{{ selectedConfigIds.length }} stream{{ selectedConfigIds.length === 1 ? "" : "s" }} selected</dd></div>
             <div><dt>Sinks &amp; outputs</dt><dd>{{ streamsComplete ? "Configured" : "Selection required" }}</dd></div>
-            <div v-if="startFrom === 'Session template'">
-              <dt>Template settings</dt>
-              <dd>
-                <template v-if="driftSummary.device">
-                  {{ driftSummary.device }} device{{ driftSummary.device === 1 ? "" : "s" }} keeping
-                  {{ driftSummary.device === 1 ? "its" : "their" }} own settings<template v-if="driftSummary.template">,
-                  {{ driftSummary.template }} using the template's</template>.
-                </template>
-                <template v-else-if="driftSummary.template">
-                  All {{ driftSummary.template }} device{{ driftSummary.template === 1 ? "" : "s" }} using the template's settings.
-                </template>
-                <template v-else>Every device already matches the template.</template>
-              </dd>
-            </div>
-            <div><dt>Schedule</dt><dd>Manual</dd></div>
             <div><dt>Recovery policy</dt><dd>{{ recoveryPolicy }}</dd></div>
           </dl>
+          <div v-if="createError" class="form-notice" role="alert">
+            <AlertTriangle :size="18" />
+            <span>{{ createError }}</span>
+            <button
+              v-if="duplicateTemplate"
+              type="button"
+              class="table-action"
+              @click="emit('open-existing-template', duplicateTemplate.template_id)"
+            >
+              Open {{ duplicateTemplate.name }}
+            </button>
+          </div>
         </div>
       </section>
 
       <footer class="wizard-footer">
         <BaseButton variant="secondary" @click="onBack">{{ step === 0 ? "Cancel" : "Back" }}</BaseButton>
         <div>
-          <span v-if="saveError" role="alert" class="validation-copy">{{ saveError }}</span>
-          <span v-else-if="!canPersist" class="validation-copy">Finish each stream's sinks to save.</span>
+          <span v-if="createError" role="alert" class="validation-copy">{{ createError }}</span>
           <span v-else-if="advanceBlockedReason" class="validation-copy">{{ advanceBlockedReason }}</span>
-          <BaseButton variant="secondary" :disabled="saveState === 'saving' || !canPersist" @click="saveDraft">{{ saveState === 'saving' ? "Saving…" : "Save as Draft" }}</BaseButton>
           <BaseButton v-if="step < steps.length - 1" :disabled="!canAdvance" @click="step++">Next: {{ steps[step + 1] }}</BaseButton>
-          <BaseButton v-else :disabled="startDisabled" @click="startDraft">{{ startState === "starting" ? "Starting…" : "Start Now" }}</BaseButton>
+          <BaseButton v-else :disabled="createDisabled" @click="createTemplate">{{ createState === "creating" ? "Creating…" : "Create Template" }}</BaseButton>
         </div>
       </footer>
     </BaseCard>
@@ -1406,8 +842,8 @@ function templateOptionLabel(template) {
 
 <style scoped>
 /* Two-pane wizard step: a pair of sections that read as one form side by side
-   and stack when the card is too narrow to seat both. Used by Streams & Sinks
-   and by Schedule & Recovery; instances tune the two custom properties. */
+   and stack when the card is too narrow to seat both. Used by Streams & Sinks.
+   Each instance tunes the two custom properties. */
 .wizard-split {
   /* One knob for the split, expressed as the first pane's share of the row.
      Both panes' widths derive from it, so rebalancing is a single edit. */
@@ -1445,11 +881,6 @@ function templateOptionLabel(template) {
 .wizard-split__pane--second {
   flex-basis: calc(100% - var(--split-share) - var(--space-6) / 2);
 }
-/* Schedule & Recovery holds short form fields rather than tables, so it packs
-   into narrower panes and stays side by side further down. */
-.wizard-split--forms {
-  --pane-min: 21rem;
-}
 /* A rule between the panes while they're side by side. Once they wrap, the
    second pane starts a new line and the border would read as a stray vertical
    mark — so it's drawn only above the wrap threshold, 2 × --pane-min + gap.
@@ -1458,19 +889,13 @@ function templateOptionLabel(template) {
    The query targets the panes rather than the row because a container can't
    style itself, only its descendants. */
 /* The sink editor carries four columns, one of them an absolute path; the
-   device list is six narrow ones. An even split starves the side that needs the
+   device list is five narrow ones. An even split starves the side that needs the
    room, so the streams pane gives some back. */
 .streams-sinks {
   --split-share: 42%;
 }
 @container (min-width: 54rem) {
   .streams-sinks > .wizard-split__pane--second {
-    padding-left: var(--space-6);
-    border-left: 1px solid var(--border-card);
-  }
-}
-@container (min-width: 44rem) {
-  .wizard-split--forms > .wizard-split__pane--second {
     padding-left: var(--space-6);
     border-left: 1px solid var(--border-card);
   }
@@ -1511,18 +936,11 @@ function templateOptionLabel(template) {
   margin-top: var(--space-2);
 }
 /* Browser default placeholder colour varies (Chrome uses a solid grey, Firefox
-   applies opacity), so pin it to the muted token. This is what marks the
-   suggested session name as a suggestion rather than a filled-in value. */
+   applies opacity), so pin it to the muted token. */
 .field input::placeholder,
 .field textarea::placeholder {
   color: var(--text-muted);
   opacity: 1;
-}
-/* Notes is the only control in its pane, so give it the height the neighbouring
-   form would otherwise leave as dead space. */
-.notes-field textarea {
-  min-height: 14rem;
-  resize: vertical;
 }
 /* styles.css floors every table at 780px, which is wider than a pane and would
    force a horizontal scrollbar inside each one. With the columns trimmed there's
@@ -1613,9 +1031,9 @@ function templateOptionLabel(template) {
   background: var(--sage-200);
 }
 /* Unconfigured hardware sits below the selectable rows: muted text, warning
-   glyph where the checkbox would be. It is still clickable — a click configures
-   it (from the session template when there is one) and adds it as a stream — so
-   it keeps the pointer that advertises that. */
+   glyph where the checkbox would be. It is still clickable — a click opens the
+   settings dialog and adds it as a stream — so it keeps the pointer that
+   advertises that. */
 .row-unconfigured {
   color: var(--text-muted);
   cursor: pointer;

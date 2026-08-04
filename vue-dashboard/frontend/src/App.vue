@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import AppHeader from "./components/AppHeader.vue";
 import PrimaryNav from "./components/PrimaryNav.vue";
 import CatalogPage from "./pages/CatalogPage.vue";
-import CreateSessionPage from "./pages/CreateSessionPage.vue";
+import CreateTemplatePage from "./pages/CreateTemplatePage.vue";
 import DevicesPage from "./pages/DevicesPage.vue";
 import ExperimentsPage from "./pages/ExperimentsPage.vue";
 import IncidentsPage from "./pages/IncidentsPage.vue";
@@ -122,14 +122,13 @@ onBeforeUnmount(() => {
         @view-attention="changeTab('sessions')"
         @create-session="newTemplate"
       />
-      <!-- Both handlers refresh silently: these fire while the operator is
-           looking at the wizard/detail page, and a foreground refresh would
-           drop the list to its loading placeholder behind them.-->
-      <CreateSessionPage
+      <!-- On success or a 409 duplicate, the wizard hands back a template id
+           and this opens that template's detail page directly. -->
+      <CreateTemplatePage
         v-else-if="templateView === 'new'"
         @cancel="changeTab('templates')"
-        @saved="refreshSessionCatalog({ silent: true })"
-        @started="refreshSessionCatalog({ silent: true })"
+        @created="openTemplate($event, 'detail')"
+        @open-existing-template="openTemplate($event, 'detail')"
       />
 
       <TemplatesPage
