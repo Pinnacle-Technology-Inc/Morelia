@@ -149,13 +149,11 @@ def start_session(payload, session_id):
             return session_service.start_managed(
                 session_id,
                 supervisor,
-                sink_overrides=payload.get("sink_overrides") or None,
                 force=bool(payload.get("force", False)),
             )
     return session_service.start(
         session_id,
         current_app.extensions["watchdog_adapter"],
-        sink_overrides=payload.get("sink_overrides") or None,
     )
 
 

@@ -165,7 +165,8 @@ class SessionNameSuggestionSchema(Schema):
 class SinkRestartPlanEntrySchema(Schema):
     """One file sink a session would write to on its next start."""
 
-    key = fields.String(dump_only=True)
+    flow_index = fields.Integer(dump_only=True)
+    sink_index = fields.Integer(dump_only=True)
     nickname = fields.String(dump_only=True, allow_none=True)
     sink_name = fields.String(dump_only=True)
     sink_type = fields.String(dump_only=True)
@@ -178,8 +179,9 @@ class SinkRestartPlanEntrySchema(Schema):
 class SinkRestartPlanSchema(Schema):
     """Where a session's file outputs would land if started right now.
 
-    ``key`` on each entry is the ``sink_overrides`` key that relocates that
-    sink, so a client can build a start payload directly from this response.
+    Each entry's ``flow_index``/``sink_index`` are the coordinates
+    ``PATCH /sessions/{id}/sink-locations`` takes, so a client can build its fix
+    payload directly from this response. Start itself accepts no locations.
     """
 
     session_id = fields.Integer(dump_only=True)
@@ -576,11 +578,6 @@ class StartSessionSchema(Schema):
     """Input for starting a session.
     """
 
-    sink_overrides = fields.Dict(
-        keys=fields.String(),
-        values=fields.String(),
-        load_default=dict,
-    )
     force = fields.Boolean(load_default=False)
 
 

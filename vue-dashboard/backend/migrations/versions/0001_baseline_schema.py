@@ -24,6 +24,7 @@ def upgrade() -> None:
         sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
         sa.Column("policy", sa.String(20), nullable=False, server_default="recommend"),
         sa.Column("experiment_id", sa.String(255), nullable=True),
+        sa.Column("notes", sa.Text(), nullable=True),
         sa.Column("schedule", sa.JSON(), nullable=True),
         sa.Column("device_flows", sa.JSON(), nullable=False, server_default="[]"),
         sa.Column("command_in_flight", sa.Boolean(), nullable=False, server_default="0"),

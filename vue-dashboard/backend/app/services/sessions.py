@@ -25,7 +25,6 @@ from app.domain.errors import (
     InvalidSessionEntry,
     InvalidTransition,
     SessionNotFound,
-    SinkParentUnavailable,
 )
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
@@ -76,8 +75,10 @@ def _active_watchdog_id(dataflow_id: str) -> str | None:
     ownership = _runtimes.active_for_dataflow(dataflow_id)
     return ownership.watchdog_id if ownership is not None else None
 
-# Statuses from which a session has NOT yet started — still safe to delete or start.
+# Safe to delete: no live dataflow. STOPPED is here but not in _STARTABLE.
 _PRE_START = {SessionStatus.DRAFT, SessionStatus.SCHEDULED, SessionStatus.STOPPED}
+# Safe to start: never run yet. One session = one run; repeat = new session.
+_STARTABLE = {SessionStatus.DRAFT, SessionStatus.SCHEDULED}
 _STOPPABLE = {SessionStatus.ACTIVE}
 # Recovery only makes sense against a live dataflow.
 _RECOVERABLE = {SessionStatus.ACTIVE}
@@ -259,28 +260,9 @@ def complete(session_id: int) -> Session:
 def start(
     session_id: int,
     watchdog,
-    *,
-    sink_overrides: dict[str, str] | None = None,
 ) -> Session:
-    """Transition a session to STARTING and dispatch the start command.
+    """Mark the session STARTING and dispatch start.
 
-    ``sink_overrides`` relocates file sinks before the manifest resolves — see
-    ``_apply_sink_overrides``. Accepted here as well as in ``start_managed`` so
-    an operator's chosen output names are never silently dropped just because
-    this deployment runs without a per-dataflow runtime host.
-
-    Guard ordering matters — the lock check (command_in_flight) must come
-    BEFORE state/precondition checks so a busy dataflow gets a 423, not a 409.
-
-    The Python fast-path checks (command_in_flight, status, device_flows) are
-    non-atomic but cheap; they short-circuit the common case without a DB round-
-    trip. The atomic UPDATE WHERE inside the transaction() is the real gate for
-    concurrent requests — two simultaneous callers can both pass the Python checks
-    but only one will get rowcount=1 from try_acquire_in_flight_lock().
-
-    watchdog.dispatch() runs inside the same transaction so a dispatch failure
-    triggers the transaction() rollback, releasing the lock automatically with
-    no cleanup code required.
 
     Raises:
         SessionNotFound     — no session with that id
@@ -292,17 +274,14 @@ def start(
     session = get(session_id)
     if session.command_in_flight:
         raise CommandInFlight(session_id)
-    if session.status not in _PRE_START:
+    if session.status not in _STARTABLE:
         raise InvalidTransition(session.status)
     if not session.device_flows:
         raise EmptySession(session_id)
-    if sink_overrides:
-        _apply_sink_overrides(session, sink_overrides)
 
-    # A stopped session starts a new generation. Never reuse the prior
-    # dataflow/watchdog identity or append to its concluded outputs.
-    dataflow_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.dataflow_id or uuid4().hex)
-    watchdog_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.watchdog_id or uuid4().hex)
+    # One generation per session, minted on first start and never replaced.
+    dataflow_id = session.dataflow_id or uuid4().hex
+    watchdog_id = session.watchdog_id or uuid4().hex
     request_id = get_contextvars().get("request_id")
     if not isinstance(request_id, str) or not request_id:
         raise RuntimeError("request_id must be bound before starting a session")
@@ -372,12 +351,6 @@ def start(
     return session
 
 
-# The key that identifies one file sink in a ``sink_overrides`` mapping. This
-# IS the label a SinkLocationExists conflict reports, not a parallel copy of
-# it — the retry sends back exactly what the conflict handed out.
-sink_override_label = manifests.conflict_label
-
-
 def _is_file_sink(sink_type: object) -> bool:
     """True for csv/edf/pvfs — the only sinks that own a ``sink_location``."""
     try:
@@ -388,32 +361,23 @@ def _is_file_sink(sink_type: object) -> bool:
 
 
 def sink_restart_plan(session_id: int) -> dict:
-    """Every file sink this session would write to on its next start.
+    """Preview where this session's file sinks would write on start.
 
-    Read-only and side-effect free: it resolves and probes paths but creates
-    nothing, so a UI can call it to build a "name the outputs" prompt before
-    committing to a start.
-
-    Each entry's ``key`` is the ``sink_overrides`` key that relocates it, so a
-    caller can build the retry payload straight from this response without
-    reconstructing labels. Sinks with no explicit ``sink_location`` are reported
-    as ``assignment: "automatic"`` — start-time allocation names those inside
-    OUTPUT_DIR and deduplicates them on its own, so they never block a restart
-    and have no stable path to suggest ahead of time.
-
-    Non-file sinks (service, plot) are omitted entirely: they own no path, so
-    there is nothing to name and nothing that can collide.
+    Read-only: probes paths so a UI can name outputs (or build a
+    ``update_sink_locations`` fix from ``flow_index``/``sink_index``) before starting.
+    Omits non-file sinks; unset paths are ``assignment: "automatic"`` and never block start.
     """
     session = get(session_id)
     entries: list[dict] = []
-    for flow in session.device_flows or []:
+    for flow_index, flow in enumerate(session.device_flows or []):
         nickname = flow.get("nickname")
-        for sink in flow.get("sinks") or []:
+        for sink_index, sink in enumerate(flow.get("sinks") or []):
             sink_name = sink.get("sink_name")
             if sink_name is None or not _is_file_sink(sink.get("sink_type")):
                 continue
             entry = {
-                "key": sink_override_label(nickname, str(sink_name)),
+                "flow_index": flow_index,
+                "sink_index": sink_index,
                 "nickname": nickname,
                 "sink_name": str(sink_name),
                 "sink_type": str(sink.get("sink_type")),
@@ -452,69 +416,10 @@ def sink_restart_plan(session_id: int) -> dict:
     return {"session_id": session_id, "status": session.status, "sinks": entries}
 
 
-def _apply_sink_overrides(session: Session, overrides: dict[str, str]) -> None:
-    """Persist operator-confirmed sink_location fixes onto a not-yet-started session.
-
-    Keys are the labels the conflict reported (``sink_override_label``):
-    ``"<nickname>:<sink_name>"``, or a bare ``"<sink_name>"`` when the flow has
-    no nickname. One source can own several file sinks, so a nickname alone
-    cannot say *which* sink moved — and the new location is written onto the
-    sink entry itself, which is the only place start-time resolution
-    (``manifests._build_sink``) ever reads it from.
-
-    Raises InvalidSessionEntry for a key matching no file sink — a stale
-    override (the flows changed since the caller computed it) must fail loud
-    rather than silently apply nothing and then re-raise the same conflict.
-    """
-    flows = [dict(flow) for flow in session.device_flows or []]
-    matched: set[str] = set()
-    for flow in flows:
-        nickname = flow.get("nickname")
-        sinks = [dict(sink) for sink in flow.get("sinks") or []]
-        for sink in sinks:
-            sink_name = sink.get("sink_name")
-            if sink_name is None:
-                continue
-            label = sink_override_label(nickname, str(sink_name))
-            if label not in overrides:
-                continue
-            if not _is_file_sink(sink.get("sink_type")):
-                raise InvalidSessionEntry(
-                    f"sink_overrides.{label}",
-                    f"sink_location is only valid for file sinks (csv, edf, pvfs); "
-                    f"{sink.get('sink_type')!r} is not one",
-                )
-            requested_location = str(overrides[label])
-            resolved_location = sink_paths.resolve_sink_location(requested_location)
-            parent_issue = sink_paths.sink_parent_issue(resolved_location)
-            if parent_issue is not None:
-                directory, reason = parent_issue
-                raise SinkParentUnavailable(
-                    resolved_location,
-                    directory=directory,
-                    reason=reason,
-                    nickname=label,
-                )
-            sink["sink_location"] = requested_location
-            matched.add(label)
-        flow["sinks"] = sinks
-
-    unknown = set(overrides) - matched
-    if unknown:
-        raise InvalidSessionEntry(
-            "sink_overrides",
-            f"no file sink matches override key(s): {sorted(unknown)}",
-        )
-
-    with transaction():
-        session.device_flows = flows
-
-
 def start_managed(
     session_id: int,
     supervisor,
     *,
-    sink_overrides: dict[str, str] | None = None,
     force: bool = False,
 ) -> Session:
     """Start a session through a per-dataflow runtime host managed by the daemon.
@@ -522,16 +427,15 @@ def start_managed(
     session = get(session_id)
     if session.command_in_flight:
         raise CommandInFlight(session_id)
-    if session.status not in _PRE_START:
+    if session.status not in _STARTABLE:
         raise InvalidTransition(session.status)
     if not session.device_flows:
         raise EmptySession(session_id)
-    if sink_overrides:
-        _apply_sink_overrides(session, sink_overrides)
 
     original_status = session.status
-    dataflow_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.dataflow_id or uuid4().hex)
-    watchdog_id = uuid4().hex if session.status is SessionStatus.STOPPED else (session.watchdog_id or uuid4().hex)
+    # One generation per session, minted on first start and never replaced.
+    dataflow_id = session.dataflow_id or uuid4().hex
+    watchdog_id = session.watchdog_id or uuid4().hex
     request_id = _request_id("starting")
     manifest = manifests.resolve(session_id, dataflow_id=dataflow_id)
 
