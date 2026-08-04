@@ -109,6 +109,7 @@ def register_error_handlers(app) -> None:
         SessionNotFound,
         SessionTemplateNameExists,
         SessionTemplateNotFound,
+        SessionTemplateReconciliationRetry,
         SinkLocationExists,
         SinkParentUnavailable,
         StopProofMissing,
@@ -165,6 +166,10 @@ def register_error_handlers(app) -> None:
     app.register_error_handler(
         SessionTemplateNameExists,
         _domain(409, "session_template_name_exists"),
+    )
+    app.register_error_handler(
+        SessionTemplateReconciliationRetry,
+        _domain(409, "reconciliation_retry"),
     )
     app.register_error_handler(
         DeviceTemplateNotFound,

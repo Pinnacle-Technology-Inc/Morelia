@@ -324,15 +324,24 @@ class ReferencingSessionSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
 
 
+class ReferencingTemplateSchema(Schema):
+    """A compact template reference returned by device-template safeguards."""
+
+    id = fields.String(dump_only=True)
+    name = fields.String(dump_only=True)
+    reference = fields.String(dump_only=True)
+    state = fields.String(dump_only=True)
+
+
 class DeviceTemplateRenameResponseSchema(Schema):
     device_template = fields.Nested(DeviceTemplateSchema)
-    referencing_sessions = fields.List(fields.Nested("SessionTemplateSchema"))
+    referencing_sessions = fields.List(fields.Nested("ReferencingTemplateSchema"))
     warning = fields.String()
 
 
 class DeviceTemplateDeleteResponseSchema(Schema):
     deleted_name = fields.String()
-    referencing_sessions = fields.List(fields.Nested("SessionTemplateSchema"))
+    referencing_sessions = fields.List(fields.Nested("ReferencingTemplateSchema"))
     warning = fields.String()
 
 
@@ -420,18 +429,18 @@ class CreateSessionTemplateSchema(Schema):
 class SessionTemplateSchema(Schema):
     """A flat-file template definition joined with its registry state."""
 
-    template_id = fields.String(dump_only=True)
+    template_id = fields.String(dump_only=True, allow_none=True)
     name = fields.String(dump_only=True)
     reference = fields.String(dump_only=True)
-    registered_hash = fields.String(dump_only=True)
+    registered_hash = fields.String(dump_only=True, allow_none=True)
     observed_hash = fields.String(dump_only=True, allow_none=True)
     state = fields.String(dump_only=True)
     lineage_parent_id = fields.String(dump_only=True, allow_none=True)
     duplicate_of_template_id = fields.String(dump_only=True, allow_none=True)
     content = fields.Raw(dump_only=True, allow_none=True)
     warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
-    created_at = fields.DateTime(dump_only=True)
-    updated_at = fields.DateTime(dump_only=True)
+    created_at = fields.DateTime(dump_only=True, allow_none=True)
+    updated_at = fields.DateTime(dump_only=True, allow_none=True)
 
 
 class ExperimentSchema(Schema):

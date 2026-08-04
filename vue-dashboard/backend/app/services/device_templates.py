@@ -202,12 +202,11 @@ def update(name: str, raw_content: Mapping[str, Any]) -> DeviceTemplate:
 
 
 def _referencing_session_templates(file_path: str) -> list[Any]:
-    from app.database import db
-    from app.models.session_template import SessionTemplate
+    from app.services import session_templates
 
     normalized = _normalize_reference(file_path)
     references: list[Any] = []
-    for row in db.session.scalars(db.select(SessionTemplate).order_by(SessionTemplate.name)).all():
+    for row in session_templates.catalog():
         flows = (row.content or {}).get("device_flows", [])
         if any(
             isinstance(flow, Mapping)
@@ -240,9 +239,6 @@ def rename(old_name: str, new_name: str) -> tuple[DeviceTemplate, list[Any]]:
     references = _referencing_session_templates(old.file_path)
     old_path.replace(new_path)
     _write_atomic(new_path, _to_toml({"name": new, **old.content}))
-    from app.services.session_templates import rewrite_device_template_reference
-
-    rewrite_device_template_reference(old.file_path, f"device-templates/{new_path.name}")
     return _read(new_path), references
 
 

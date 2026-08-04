@@ -12,6 +12,7 @@ import json
 import os
 import re
 import tempfile
+import threading
 import tomllib
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from flask import current_app
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from app.database import transaction
 from app.domain.errors import (
@@ -26,6 +28,7 @@ from app.domain.errors import (
     InvalidSessionEntry,
     SessionTemplateNameExists,
     SessionTemplateNotFound,
+    SessionTemplateReconciliationRetry,
 )
 from app.models.session import Session
 from app.models.session_template import SessionTemplate
@@ -35,6 +38,9 @@ from app.services.session_config import _policy_value, _resolve_sinks
 
 
 CANONICAL_HASH_VERSION = "session-template-v1"
+DEPENDENCY_FINGERPRINT_VERSION = "session-template-dependency-v1"
+_RECONCILIATION_ATTEMPTS = 3
+_reconciliation_lock = threading.RLock()
 _repository = SessionTemplateRepository()
 _FLOW_FIELDS = {
     "device_template_path",
@@ -239,8 +245,9 @@ def _canonicalize(raw_content: Mapping[str, Any], *, resolve_references: bool = 
 def _content_hash(content: Mapping[str, Any]) -> str:
     """Hash canonical configuration independently of TOML formatting and key order."""
 
-    encoded = json.dumps(content, sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode()).hexdigest()
+    encoded = json.dumps(content, sort_keys=True, separators=(",", ":")).encode()
+    version = CANONICAL_HASH_VERSION.encode()
+    return hashlib.sha256(version + b"\0" + encoded).hexdigest()
 
 
 def _toml_key(key: str) -> str:
@@ -367,61 +374,79 @@ def _snapshot_library() -> list[_FileObservation]:
 
 @dataclass
 class SessionTemplateFile:
-    metadata: SessionTemplate
+    metadata: SessionTemplate | None
     content: dict[str, Any] | None
     reference_warnings: list[str]
+    observation: _FileObservation | None = None
+    derived_state: str | None = None
+    derived_lineage_parent_id: str | None = None
+    derived_duplicate_of_template_id: str | None = None
 
     @property
-    def template_id(self) -> str:
-        return self.metadata.template_id
+    def template_id(self) -> str | None:
+        return self.metadata.template_id if self.metadata is not None else None
 
     @property
-    def id(self) -> str:
-        return self.metadata.template_id
+    def id(self) -> str | None:
+        return self.template_id
 
     @property
     def relative_path(self) -> str:
-        return self.metadata.relative_path
+        if self.metadata is not None:
+            return self.metadata.relative_path
+        if self.observation is None:
+            raise RuntimeError("template resource has neither metadata nor observation")
+        return self.observation.relative_path
 
     @property
     def name(self) -> str:
-        return Path(self.metadata.relative_path).stem
+        return Path(self.relative_path).stem
 
     @property
-    def registered_hash(self) -> str:
-        return self.metadata.registered_hash
+    def registered_hash(self) -> str | None:
+        return self.metadata.registered_hash if self.metadata is not None else None
 
     @property
     def observed_hash(self) -> str | None:
-        return self.metadata.observed_hash
+        if self.observation is not None:
+            return self.observation.observed_hash
+        return self.metadata.observed_hash if self.metadata is not None else None
 
     @property
     def content_hash(self) -> str:
-        return self.metadata.observed_hash or self.metadata.registered_hash
+        return self.observed_hash or self.registered_hash or ""
 
     @property
     def filesystem_identity(self) -> str | None:
-        return self.metadata.filesystem_identity
+        if self.observation is not None:
+            return self.observation.filesystem_identity
+        return self.metadata.filesystem_identity if self.metadata is not None else None
 
     @property
     def state(self) -> str:
+        if self.derived_state is not None:
+            return self.derived_state
+        if self.metadata is None:
+            return "DISCOVERED"
         return self.metadata.state
 
     @property
     def lineage_parent_id(self) -> str | None:
-        return self.metadata.lineage_parent_id
+        if self.derived_lineage_parent_id is not None:
+            return self.derived_lineage_parent_id
+        return self.metadata.lineage_parent_id if self.metadata is not None else None
 
     @property
     def duplicate_of_template_id(self) -> str | None:
-        return self.metadata.duplicate_of_template_id
+        return self.derived_duplicate_of_template_id
 
     @property
     def created_at(self):
-        return self.metadata.created_at
+        return self.metadata.created_at if self.metadata is not None else None
 
     @property
     def updated_at(self):
-        return self.metadata.updated_at
+        return self.metadata.updated_at if self.metadata is not None else None
 
     @property
     def reference(self) -> str:
@@ -456,22 +481,15 @@ def _attach_reference_warnings(template: SessionTemplateFile) -> SessionTemplate
     return template
 
 
-# DISCOVERED: a valid file exists but has not been registered for use.
-# PENDING: a create/update crossed the file/DB boundary but has not converged yet.
-# ACTIVE: the registered file matches its trusted hash and may create sessions.
-# DUPLICATE: another observed file has the same canonical content as an owner.
-# AMBIGUOUS_RENAME: several files could be one missing registered template.
-# CHANGED: an active file differs from its trusted registered hash.
-# REPLACED: an older immutable revision was replaced by an explicitly accepted revision.
-# ARCHIVED: a user-retired revision; hash differences remain visible as drift warnings.
-# MISSING: a registered active file cannot currently be found.
-# INVALID: a file cannot be safely parsed or canonicalized.
-_NON_OWNER_STATES = {"DISCOVERED", "DUPLICATE", "AMBIGUOUS_RENAME", "REPLACED"}
+# DISCOVERED, DUPLICATE, AMBIGUOUS_RENAME, and unregistered INVALID are derived
+# from the current folder snapshot and never receive durable registry IDs.
+# PENDING, ACTIVE, ARCHIVED, and REPLACED are durable lifecycle states.
+# UNKNOWN, MATCHED, CHANGED, MISSING, and INVALID are durable integrity states.
 _ARCHIVED_STATES = {"ARCHIVED"}
 
 
 def _is_registered_owner(row: SessionTemplate) -> bool:
-    return bool(row.registered_hash) and row.state not in _NON_OWNER_STATES
+    return row.lifecycle_state != "REPLACED"
 
 
 def _row_order(row: SessionTemplate) -> tuple[str, str]:
@@ -479,141 +497,113 @@ def _row_order(row: SessionTemplate) -> tuple[str, str]:
     return created_at, row.template_id
 
 
-def _owner_state(row: SessionTemplate, observation: _FileObservation) -> str:
-    """Derive an owner's safe display state while preserving pending and archive intent."""
+def _observed_axes(row: SessionTemplate, observation: _FileObservation) -> tuple[str, str]:
+    """Derive durable lifecycle/integrity axes from one trusted row and file observation."""
 
-    if row.state == "PENDING":
-        return (
-            "ACTIVE"
-            if observation.observed_hash is not None
-            and observation.observed_hash == row.registered_hash
-            else "PENDING"
-        )
+    if row.lifecycle_state == "PENDING":
+        if observation.observed_hash == row.registered_hash:
+            return "ACTIVE", "MATCHED"
+        return "PENDING", "UNKNOWN"
     if observation.observed_hash is None:
-        return "ARCHIVED" if row.state in _ARCHIVED_STATES else "INVALID"
-    if row.state in _ARCHIVED_STATES:
-        return "ARCHIVED"
-    return "ACTIVE" if observation.observed_hash == row.registered_hash else "CHANGED"
+        return row.lifecycle_state, "INVALID"
+    integrity = "MATCHED" if observation.observed_hash == row.registered_hash else "CHANGED"
+    return row.lifecycle_state, integrity
 
 
-def _missing_owner_state(row: SessionTemplate) -> str:
-    return row.state if row.state in _ARCHIVED_STATES else "MISSING"
+def _missing_axes(row: SessionTemplate) -> tuple[str, str]:
+    if row.lifecycle_state == "PENDING":
+        return "PENDING", "UNKNOWN"
+    return row.lifecycle_state, "MISSING"
 
 
 def _reconcile_row(
     row: SessionTemplate,
     observation: _FileObservation,
     *,
-    state: str,
-    lineage_parent_id: str | None = None,
-    duplicate_of_template_id: str | None = None,
+    lifecycle_state: str,
+    integrity_state: str,
 ) -> SessionTemplate:
-    """Apply one observation to an existing registry row without losing lineage."""
-
-    if lineage_parent_id is None:
-        lineage_parent_id = row.lineage_parent_id
-    if duplicate_of_template_id is None:
-        duplicate_of_template_id = row.duplicate_of_template_id
     return _repository.reconcile(
         row.template_id,
         relative_path=observation.relative_path,
         registered_hash=row.registered_hash,
         observed_hash=observation.observed_hash,
         filesystem_identity=observation.filesystem_identity,
-        state=state,
-        lineage_parent_id=lineage_parent_id,
-        duplicate_of_template_id=duplicate_of_template_id,
+        lifecycle_state=lifecycle_state,
+        integrity_state=integrity_state,
+        lineage_parent_id=row.lineage_parent_id,
     )
 
 
-def _upsert_observation_row(
-    observation: _FileObservation,
-    rows_by_path: dict[str, SessionTemplate],
-    *,
-    state: str,
-    lineage_parent_id: str | None = None,
-    duplicate_of_template_id: str | None = None,
-) -> SessionTemplate:
-    """Create or refresh metadata for one unclaimed filesystem observation."""
+def _dependency_fingerprints(content: Mapping[str, Any]) -> list[dict[str, str]]:
+    """Resolve dependency identities without copying any device-template definition."""
 
-    row = rows_by_path.get(observation.relative_path)
-    if row is None:
-        row = _repository.create(
-            relative_path=observation.relative_path,
-            registered_hash=observation.observed_hash or "",
-            observed_hash=observation.observed_hash,
-            filesystem_identity=observation.filesystem_identity,
-            state=state,
-            lineage_parent_id=lineage_parent_id,
-            duplicate_of_template_id=duplicate_of_template_id,
-        )
-        rows_by_path[observation.relative_path] = row
-        return row
-    return _repository.reconcile(
-        row.template_id,
-        relative_path=observation.relative_path,
-        registered_hash=observation.observed_hash or row.registered_hash,
-        observed_hash=observation.observed_hash,
-        filesystem_identity=observation.filesystem_identity,
-        state=state,
-        lineage_parent_id=lineage_parent_id,
-        duplicate_of_template_id=duplicate_of_template_id,
-    )
+    dependencies: dict[str, dict[str, str]] = {}
+    for flow in content.get("device_flows", []):
+        if not isinstance(flow, Mapping):
+            continue
+        try:
+            dependency, _ = resolve_device_template_reference(flow)
+        except (DeviceTemplateNotFound, ValueError):
+            continue
+        payload = json.dumps(
+            {
+                "version": DEPENDENCY_FINGERPRINT_VERSION,
+                "relative_path": dependency.file_path,
+                "resolved_hash": dependency.content_hash,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        dependencies[dependency.file_path] = {
+            "relative_path": dependency.file_path,
+            "resolved_hash": dependency.content_hash,
+            "fingerprint": hashlib.sha256(payload).hexdigest(),
+        }
+    return [dependencies[path] for path in sorted(dependencies)]
 
 
-def _claim_renamed_observation(
-    owner: SessionTemplate,
-    observation: _FileObservation,
-    rows_by_path: dict[str, SessionTemplate],
-) -> SessionTemplate:
-    """Rebind a confidently matched renamed file to its durable template ID."""
-
-    displaced = rows_by_path.get(observation.relative_path)
-    if displaced is not None and displaced.template_id != owner.template_id:
-        _repository.delete(displaced)
-    rows_by_path.pop(owner.relative_path, None)
-    owner = _reconcile_row(owner, observation, state=_owner_state(owner, observation))
-    rows_by_path[observation.relative_path] = owner
-    return owner
+def _sync_dependencies(template_id: str, content: Mapping[str, Any]) -> None:
+    desired = _dependency_fingerprints(content)
+    current = [
+        (item.relative_path, item.resolved_hash, item.fingerprint)
+        for item in _repository.list_dependencies(template_id)
+    ]
+    target = [(item["relative_path"], item["resolved_hash"], item["fingerprint"]) for item in desired]
+    if current != target:
+        _repository.replace_dependencies(template_id, desired)
 
 
 def _reconcile_snapshot(observations: list[_FileObservation]) -> None:
-    """Apply deterministic path, identity, hash, ambiguity, and duplicate precedence."""
+    """Reconcile durable owners; unregistered observations remain derived in memory."""
 
     observations_by_path = {item.relative_path: item for item in observations}
-    rows = _repository.list()
-    rows_by_path = {row.relative_path: row for row in rows}
-    owners = sorted(
-        (row for row in rows if _is_registered_owner(row)),
-        key=_row_order,
-    )
-    claimed_paths: set[str] = set()
-
     with transaction():
+        owners = sorted(
+            (row for row in _repository.list() if _is_registered_owner(row)),
+            key=_row_order,
+        )
+        claimed_paths: set[str] = set()
         # Registered path always wins, even when its file is invalid or changed.
         for owner in owners:
             observation = observations_by_path.get(owner.relative_path)
             if observation is None:
                 continue
-            _reconcile_row(owner, observation, state=_owner_state(owner, observation))
+            lifecycle_state, integrity_state = _observed_axes(owner, observation)
+            owner = _reconcile_row(
+                owner,
+                observation,
+                lifecycle_state=lifecycle_state,
+                integrity_state=integrity_state,
+            )
+            if lifecycle_state == "ACTIVE" and integrity_state == "MATCHED" and observation.content:
+                _sync_dependencies(owner.template_id, observation.content)
             claimed_paths.add(observation.relative_path)
 
         # Missing owners next use filesystem identity, then a unique hash. A
         # candidate row from an earlier scan is replaced by the preserved ID.
         for owner in owners:
             if owner.relative_path in claimed_paths:
-                continue
-            if owner.state == "PENDING":
-                _repository.reconcile(
-                    owner.template_id,
-                    relative_path=owner.relative_path,
-                    registered_hash=owner.registered_hash,
-                    observed_hash=None,
-                    filesystem_identity=owner.filesystem_identity,
-                    state="PENDING",
-                    lineage_parent_id=owner.lineage_parent_id,
-                    duplicate_of_template_id=owner.duplicate_of_template_id,
-                )
                 continue
             available = [item for item in observations if item.relative_path not in claimed_paths]
             identity_matches = [
@@ -631,92 +621,28 @@ def _reconcile_snapshot(observations: list[_FileObservation]) -> None:
             if selected is None and not identity_matches and len(hash_matches) == 1:
                 selected = hash_matches[0]
             if selected is not None:
-                _claim_renamed_observation(owner, selected, rows_by_path)
+                lifecycle_state, integrity_state = _observed_axes(owner, selected)
+                owner = _reconcile_row(
+                    owner,
+                    selected,
+                    lifecycle_state=lifecycle_state,
+                    integrity_state=integrity_state,
+                )
+                if lifecycle_state == "ACTIVE" and integrity_state == "MATCHED" and selected.content:
+                    _sync_dependencies(owner.template_id, selected.content)
                 claimed_paths.add(selected.relative_path)
                 continue
-            if len(hash_matches) > 1:
-                _repository.reconcile(
-                    owner.template_id,
-                    relative_path=owner.relative_path,
-                    registered_hash=owner.registered_hash,
-                    observed_hash=None,
-                    filesystem_identity=owner.filesystem_identity,
-                    state=_missing_owner_state(owner),
-                )
-                for candidate in hash_matches:
-                    _upsert_observation_row(
-                        candidate,
-                        rows_by_path,
-                        state="AMBIGUOUS_RENAME",
-                        lineage_parent_id=owner.template_id,
-                    )
-                    claimed_paths.add(candidate.relative_path)
-                continue
+            lifecycle_state, integrity_state = _missing_axes(owner)
             _repository.reconcile(
                 owner.template_id,
                 relative_path=owner.relative_path,
                 registered_hash=owner.registered_hash,
                 observed_hash=None,
                 filesystem_identity=owner.filesystem_identity,
-                state=_missing_owner_state(owner),
+                lifecycle_state=lifecycle_state,
+                integrity_state=integrity_state,
+                lineage_parent_id=owner.lineage_parent_id,
             )
-
-        current_rows = _repository.list()
-        active_by_hash: dict[str, SessionTemplate] = {}
-        for row in sorted(current_rows, key=_row_order):
-            if row.state != "ACTIVE" or row.relative_path not in claimed_paths:
-                continue
-            original = active_by_hash.get(row.registered_hash)
-            if original is None:
-                active_by_hash[row.registered_hash] = row
-                continue
-            observation = observations_by_path[row.relative_path]
-            _reconcile_row(
-                row,
-                observation,
-                state="DUPLICATE",
-                duplicate_of_template_id=original.template_id,
-            )
-
-        current_rows = _repository.list()
-        duplicate_target_by_hash: dict[str, SessionTemplate] = {}
-        target_rows = sorted(
-            (
-                row
-                for row in current_rows
-                if row.relative_path in claimed_paths
-                and row.state not in _NON_OWNER_STATES
-                and row.state != "INVALID"
-            ),
-            key=lambda row: (row.state != "ACTIVE", *_row_order(row)),
-        )
-        for row in target_rows:
-            current_hash = row.observed_hash or row.registered_hash
-            duplicate_target_by_hash.setdefault(current_hash, row)
-
-        # Anything not claimed by a registered owner is invalid, a duplicate,
-        # or a unique discovery. Process by path so scan order cannot decide IDs.
-        for observation in observations:
-            if observation.relative_path in claimed_paths:
-                continue
-            if observation.observed_hash is None:
-                _upsert_observation_row(observation, rows_by_path, state="INVALID")
-                continue
-            duplicate_of = duplicate_target_by_hash.get(observation.observed_hash)
-            if duplicate_of is not None:
-                _upsert_observation_row(
-                    observation,
-                    rows_by_path,
-                    state="DUPLICATE",
-                    duplicate_of_template_id=duplicate_of.template_id,
-                )
-            else:
-                discovered = _upsert_observation_row(
-                    observation,
-                    rows_by_path,
-                    state="DISCOVERED",
-                )
-                duplicate_target_by_hash[observation.observed_hash] = discovered
 
 
 def _state_warning(state: str, relative_path: str) -> str | None:
@@ -737,15 +663,26 @@ def _catalog_from_snapshot(observations: list[_FileObservation]) -> builtins.lis
     """Join reconciled metadata to immutable disk observations for API consumption."""
 
     observations_by_path = {item.relative_path: item for item in observations}
+    rows = _repository.list()
     result: list[SessionTemplateFile] = []
-    for row in _repository.list():
-        observation = observations_by_path.get(row.relative_path)
+    claimed_paths: set[str] = set()
+    duplicate_targets: dict[str, str | None] = {}
+    for row in rows:
+        observation = (
+            observations_by_path.get(row.relative_path)
+            if row.lifecycle_state != "REPLACED"
+            else None
+        )
+        if observation is not None:
+            claimed_paths.add(observation.relative_path)
+            if observation.observed_hash is not None:
+                duplicate_targets.setdefault(observation.observed_hash, row.template_id)
         warnings = builtins.list(observation.warnings) if observation is not None else []
-        if observation is None and row.state in _ARCHIVED_STATES:
+        if observation is None and row.lifecycle_state == "ARCHIVED":
             warnings.append(f"registered template file {row.relative_path!r} is missing")
         if (
             observation is not None
-            and row.state == "ARCHIVED"
+            and row.lifecycle_state == "ARCHIVED"
             and row.observed_hash is not None
             and row.observed_hash != row.registered_hash
         ):
@@ -759,10 +696,60 @@ def _catalog_from_snapshot(observations: list[_FileObservation]) -> builtins.lis
                     row,
                     observation.content if observation is not None else None,
                     warnings,
+                    observation=observation,
                 )
             )
         )
-    return sorted(result, key=lambda item: (item.relative_path.lower(), item.template_id))
+
+    missing_owners = [
+        row
+        for row in rows
+        if row.lifecycle_state != "REPLACED" and row.integrity_state == "MISSING"
+    ]
+    ambiguous_by_path: dict[str, str] = {}
+    for owner in missing_owners:
+        matches = [
+            item
+            for item in observations
+            if item.relative_path not in claimed_paths and item.observed_hash == owner.registered_hash
+        ]
+        if len(matches) > 1:
+            for match in matches:
+                ambiguous_by_path.setdefault(match.relative_path, owner.template_id)
+
+    for observation in observations:
+        if observation.relative_path in claimed_paths:
+            continue
+        warnings = builtins.list(observation.warnings)
+        lineage_parent_id = ambiguous_by_path.get(observation.relative_path)
+        duplicate_of_template_id: str | None = None
+        if observation.observed_hash is None:
+            state = "INVALID"
+        elif lineage_parent_id is not None:
+            state = "AMBIGUOUS_RENAME"
+        elif observation.observed_hash in duplicate_targets:
+            state = "DUPLICATE"
+            duplicate_of_template_id = duplicate_targets[observation.observed_hash]
+        else:
+            state = "DISCOVERED"
+            duplicate_targets[observation.observed_hash] = None
+        state_warning = _state_warning(state, observation.relative_path)
+        if state_warning is not None:
+            warnings.append(state_warning)
+        result.append(
+            _attach_reference_warnings(
+                SessionTemplateFile(
+                    None,
+                    observation.content,
+                    warnings,
+                    observation=observation,
+                    derived_state=state,
+                    derived_lineage_parent_id=lineage_parent_id,
+                    derived_duplicate_of_template_id=duplicate_of_template_id,
+                )
+            )
+        )
+    return sorted(result, key=lambda item: (item.relative_path.lower(), item.template_id or ""))
 
 
 def _observe(path: Path) -> SessionTemplateFile:
@@ -778,9 +765,23 @@ def _observe(path: Path) -> SessionTemplateFile:
 def catalog() -> builtins.list[SessionTemplateFile]:
     """Reconcile a stable folder snapshot and return every registry state."""
 
-    observations = _snapshot_library()
-    _reconcile_snapshot(observations)
-    return _catalog_from_snapshot(observations)
+    with _reconciliation_lock:
+        for attempt in range(_RECONCILIATION_ATTEMPTS):
+            observations = _snapshot_library()
+            try:
+                _reconcile_snapshot(observations)
+                return _catalog_from_snapshot(observations)
+            except IntegrityError as exc:
+                if "unique constraint failed: session_templates" not in str(exc).lower():
+                    raise
+                if attempt + 1 == _RECONCILIATION_ATTEMPTS:
+                    raise SessionTemplateReconciliationRetry() from exc
+            except OperationalError as exc:
+                if "locked" not in str(exc).lower():
+                    raise
+                if attempt + 1 == _RECONCILIATION_ATTEMPTS:
+                    raise SessionTemplateReconciliationRetry() from exc
+    raise RuntimeError("template reconciliation exhausted without a result")
 
 
 def list() -> builtins.list[SessionTemplateFile]:  # noqa: A001
@@ -798,7 +799,7 @@ def get_by_name(name: str) -> SessionTemplateFile | None:
             key=lambda item: (
                 item.state != "ACTIVE",
                 item.created_at.isoformat() if item.created_at is not None else "",
-                item.template_id,
+                item.template_id or "",
             ),
         )
         if matches
@@ -810,7 +811,8 @@ def get_by_reference(reference: str) -> SessionTemplateFile | None:
     relative_path = _relative_reference(reference)
     if relative_path is None:
         return None
-    return next((row for row in catalog() if row.relative_path == relative_path), None)
+    matches = [row for row in catalog() if row.relative_path == relative_path]
+    return min(matches, key=lambda row: (row.state == "REPLACED", row.template_id or "")) if matches else None
 
 
 def get_by_id(template_id: str) -> SessionTemplateFile | None:
@@ -861,7 +863,6 @@ def _create_pending(path: Path, registered_hash: str) -> SessionTemplate:
         return _repository.create(
             relative_path=path.name,
             registered_hash=registered_hash,
-            state="PENDING",
         )
 
 
@@ -878,7 +879,23 @@ def create(name: str, raw_content: Mapping[str, Any]) -> SessionTemplateFile:
             return existing
         raise SessionTemplateNameExists(normalized_name)
 
-    _create_pending(path, content_hash)
+    duplicate = next(
+        (
+            template
+            for template in catalog()
+            if template.template_id is not None
+            and template.state != "REPLACED"
+            and template.registered_hash == content_hash
+        ),
+        None,
+    )
+    if duplicate is not None:
+        raise SessionTemplateNameExists(duplicate.name)
+
+    try:
+        _create_pending(path, content_hash)
+    except IntegrityError as exc:
+        raise SessionTemplateNameExists(normalized_name) from exc
     _write_atomic(path, _to_toml(canonical))
     return _observe(path)
 
@@ -895,38 +912,55 @@ def update(name: str, raw_content: Mapping[str, Any]) -> SessionTemplateFile:
         return existing
 
     with transaction():
-        row = _repository.get_by_id(existing.template_id)
-        if row is None:
-            raise SessionTemplateNotFound(name)
-        row.registered_hash = content_hash
-        row.state = "PENDING"
+        if existing.template_id is None:
+            row = _repository.create(
+                relative_path=existing.relative_path,
+                registered_hash=content_hash,
+            )
+        else:
+            row = _repository.get_by_id(existing.template_id)
+            if row is None:
+                raise SessionTemplateNotFound(name)
+            _repository.reconcile(
+                row.template_id,
+                relative_path=row.relative_path,
+                registered_hash=content_hash,
+                observed_hash=row.observed_hash,
+                filesystem_identity=row.filesystem_identity,
+                lifecycle_state="PENDING",
+                integrity_state="UNKNOWN",
+                lineage_parent_id=row.lineage_parent_id,
+            )
     path = _library_dir() / existing.relative_path
     _write_atomic(path, _to_toml(canonical))
     return _observe(path)
 
 
-def register(template_id: str) -> SessionTemplateFile:
+def register_discovered(reference: str) -> SessionTemplateFile:
     """Promote one unique discovered file to a trusted active template."""
 
-    template = get_by_id(template_id)
+    template = get_by_reference(reference)
     if template is None:
-        raise SessionTemplateNotFound(template_id)
+        raise SessionTemplateNotFound(reference)
     if template.state == "ACTIVE":
         return template
     if template.state != "DISCOVERED" or template.observed_hash is None:
-        raise ValueError(f"template {template_id!r} cannot be registered from state {template.state}")
-    with transaction():
-        row = _repository.get_by_id(template_id)
-        if row is None:
-            raise SessionTemplateNotFound(template_id)
-        _repository.reconcile(
-            template_id,
-            relative_path=row.relative_path,
-            registered_hash=template.observed_hash,
-            observed_hash=template.observed_hash,
-            filesystem_identity=row.filesystem_identity,
-            state="ACTIVE",
-        )
+        raise ValueError(f"template {reference!r} cannot be registered from state {template.state}")
+    try:
+        with transaction():
+            row = _repository.create(
+                relative_path=template.relative_path,
+                registered_hash=template.observed_hash,
+                observed_hash=template.observed_hash,
+                filesystem_identity=template.filesystem_identity,
+                lifecycle_state="ACTIVE",
+                integrity_state="MATCHED",
+            )
+            if template.content is not None:
+                _sync_dependencies(row.template_id, template.content)
+            template_id = row.template_id
+    except IntegrityError as exc:
+        raise SessionTemplateNameExists(template.name) from exc
     registered = get_by_id(template_id)
     if registered is None:
         raise SessionTemplateNotFound(template_id)
@@ -944,15 +978,18 @@ def archive(template_id: str) -> SessionTemplateFile:
     if template.state not in {"ACTIVE", "CHANGED"}:
         raise ValueError(f"template {template_id!r} cannot be archived from state {template.state}")
     with transaction():
-        _repository.update_state(template_id, "ARCHIVED")
+        row = _repository.get_by_id(template_id)
+        if row is None:
+            raise SessionTemplateNotFound(template_id)
+        _repository.transition(
+            template_id,
+            lifecycle_state="ARCHIVED",
+            integrity_state=row.integrity_state,
+        )
     archived = get_by_id(template_id)
     if archived is None:
         raise SessionTemplateNotFound(template_id)
     return archived
-
-
-def _replaced_relative_path(row: SessionTemplate) -> str:
-    return f".revisions/{row.template_id}/{Path(row.relative_path).name}"
 
 
 def accept_change(template_id: str) -> SessionTemplateFile:
@@ -970,20 +1007,25 @@ def accept_change(template_id: str) -> SessionTemplateFile:
             raise SessionTemplateNotFound(template_id)
         _repository.reconcile(
             template_id,
-            relative_path=_replaced_relative_path(row),
+            relative_path=row.relative_path,
             registered_hash=row.registered_hash,
             observed_hash=row.observed_hash,
             filesystem_identity=row.filesystem_identity,
-            state="REPLACED",
+            lifecycle_state="REPLACED",
+            integrity_state="UNKNOWN",
+            lineage_parent_id=row.lineage_parent_id,
         )
         accepted = _repository.create(
             relative_path=original_path,
             registered_hash=template.observed_hash,
             observed_hash=template.observed_hash,
             filesystem_identity=template.filesystem_identity,
-            state="ACTIVE",
+            lifecycle_state="ACTIVE",
+            integrity_state="MATCHED",
             lineage_parent_id=template_id,
         )
+        if template.content is not None:
+            _sync_dependencies(accepted.template_id, template.content)
         accepted_id = accepted.template_id
     result = get_by_id(accepted_id)
     if result is None:
@@ -1015,35 +1057,24 @@ def resolve_ambiguous_rename(template_id: str, selected_relative_path: str) -> S
         or selected.observed_hash is None
     ):
         raise ValueError("selected file is not an ambiguous rename candidate for this template")
-    selected_id = selected.template_id
     selected_hash = selected.observed_hash
     selected_identity = selected.filesystem_identity
     with transaction():
-        candidate = _repository.get_by_id(selected_id)
         source = _repository.get_by_id(template_id)
-        if candidate is None or source is None:
+        if source is None:
             raise SessionTemplateNotFound(selected_relative_path)
-        _repository.delete(candidate)
         _repository.reconcile(
             template_id,
             relative_path=selected.relative_path,
             registered_hash=source.registered_hash,
             observed_hash=selected_hash,
             filesystem_identity=selected_identity,
-            state="ARCHIVED" if owner.state in _ARCHIVED_STATES else "ACTIVE",
+            lifecycle_state=source.lifecycle_state,
+            integrity_state="MATCHED",
+            lineage_parent_id=source.lineage_parent_id,
         )
-        for other in _repository.list():
-            if other.state != "AMBIGUOUS_RENAME" or other.lineage_parent_id != template_id:
-                continue
-            _repository.reconcile(
-                other.template_id,
-                relative_path=other.relative_path,
-                registered_hash=other.registered_hash,
-                observed_hash=other.observed_hash,
-                filesystem_identity=other.filesystem_identity,
-                state="DUPLICATE",
-                duplicate_of_template_id=template_id,
-            )
+        if selected.content is not None and source.lifecycle_state == "ACTIVE":
+            _sync_dependencies(template_id, selected.content)
     result = get_by_id(template_id)
     if result is None:
         raise SessionTemplateNotFound(template_id)

@@ -302,6 +302,13 @@ class SessionTemplateNameExists(ValueError):
         super().__init__(f"Session template name already exists: {name!r}.")
 
 
+class SessionTemplateReconciliationRetry(Exception):
+    """The template catalog changed repeatedly while reconciliation was committing."""
+
+    def __init__(self):
+        super().__init__("Template catalog changed concurrently; retry the request.")
+
+
 __all__ = [
     "CommandInFlight",
     "DeviceClaimConflict",
@@ -322,6 +329,7 @@ __all__ = [
     "SessionNotFound",
     "SessionTemplateNameExists",
     "SessionTemplateNotFound",
+    "SessionTemplateReconciliationRetry",
     "SinkLocationExists",
     "StaleWatchdogReport",
     "StopProofMissing",
