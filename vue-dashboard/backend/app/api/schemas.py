@@ -435,12 +435,25 @@ class SessionTemplateSchema(Schema):
     registered_hash = fields.String(dump_only=True, allow_none=True)
     observed_hash = fields.String(dump_only=True, allow_none=True)
     state = fields.String(dump_only=True)
+    lifecycle_state = fields.String(dump_only=True, allow_none=True)
+    integrity_state = fields.String(dump_only=True, allow_none=True)
     lineage_parent_id = fields.String(dump_only=True, allow_none=True)
     duplicate_of_template_id = fields.String(dump_only=True, allow_none=True)
     content = fields.Raw(dump_only=True, allow_none=True)
     warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
+    allowed_actions = fields.List(fields.String(), dump_only=True, dump_default=list)
     created_at = fields.DateTime(dump_only=True, allow_none=True)
     updated_at = fields.DateTime(dump_only=True, allow_none=True)
+
+
+class ResolveSessionTemplateRenameSchema(Schema):
+    selected_relative_path = fields.String(
+        required=True,
+        validate=[
+            validate.Length(min=1, max=1024),
+            validate.Regexp(r"^(?!.*\.\.)[^/\\]+$"),
+        ],
+    )
 
 
 class ExperimentSchema(Schema):

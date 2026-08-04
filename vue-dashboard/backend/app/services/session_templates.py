@@ -381,6 +381,7 @@ class SessionTemplateFile:
     derived_state: str | None = None
     derived_lineage_parent_id: str | None = None
     derived_duplicate_of_template_id: str | None = None
+    derived_allowed_actions: list[str] | None = None
 
     @property
     def template_id(self) -> str | None:
@@ -429,6 +430,24 @@ class SessionTemplateFile:
         if self.metadata is None:
             return "DISCOVERED"
         return self.metadata.state
+
+    @property
+    def lifecycle_state(self) -> str | None:
+        return self.metadata.lifecycle_state if self.metadata is not None else None
+
+    @property
+    def integrity_state(self) -> str | None:
+        return self.metadata.integrity_state if self.metadata is not None else None
+
+    @property
+    def allowed_actions(self) -> list[str]:
+        if self.derived_allowed_actions is not None:
+            return self.derived_allowed_actions
+        return {
+            "DISCOVERED": ["register"],
+            "ACTIVE": ["archive"],
+            "CHANGED": ["accept_change", "archive"],
+        }.get(self.state, [])
 
     @property
     def lineage_parent_id(self) -> str | None:
@@ -717,6 +736,13 @@ def _catalog_from_snapshot(observations: list[_FileObservation]) -> builtins.lis
             for match in matches:
                 ambiguous_by_path.setdefault(match.relative_path, owner.template_id)
 
+    ambiguous_owner_ids = set(ambiguous_by_path.values())
+    for resource in result:
+        if resource.state == "MISSING":
+            resource.derived_allowed_actions = (
+                ["resolve_rename"] if resource.template_id in ambiguous_owner_ids else []
+            )
+
     for observation in observations:
         if observation.relative_path in claimed_paths:
             continue
@@ -896,42 +922,6 @@ def create(name: str, raw_content: Mapping[str, Any]) -> SessionTemplateFile:
         _create_pending(path, content_hash)
     except IntegrityError as exc:
         raise SessionTemplateNameExists(normalized_name) from exc
-    _write_atomic(path, _to_toml(canonical))
-    return _observe(path)
-
-
-def update(name: str, raw_content: Mapping[str, Any]) -> SessionTemplateFile:
-    """Replace API-managed content through the pending crash-recovery protocol."""
-
-    existing = get_by_reference(name) or get_by_name(name)
-    if existing is None:
-        raise SessionTemplateNotFound(name)
-    canonical = _canonicalize(raw_content)
-    content_hash = _content_hash(canonical)
-    if existing.content_hash == content_hash and existing.content is not None:
-        return existing
-
-    with transaction():
-        if existing.template_id is None:
-            row = _repository.create(
-                relative_path=existing.relative_path,
-                registered_hash=content_hash,
-            )
-        else:
-            row = _repository.get_by_id(existing.template_id)
-            if row is None:
-                raise SessionTemplateNotFound(name)
-            _repository.reconcile(
-                row.template_id,
-                relative_path=row.relative_path,
-                registered_hash=content_hash,
-                observed_hash=row.observed_hash,
-                filesystem_identity=row.filesystem_identity,
-                lifecycle_state="PENDING",
-                integrity_state="UNKNOWN",
-                lineage_parent_id=row.lineage_parent_id,
-            )
-    path = _library_dir() / existing.relative_path
     _write_atomic(path, _to_toml(canonical))
     return _observe(path)
 

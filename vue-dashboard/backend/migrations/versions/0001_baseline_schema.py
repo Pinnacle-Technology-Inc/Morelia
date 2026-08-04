@@ -285,27 +285,44 @@ def upgrade() -> None:
         sa.Column("registered_hash", sa.String(64), nullable=False),
         sa.Column("observed_hash", sa.String(64), nullable=True),
         sa.Column("filesystem_identity", sa.String(255), nullable=True),
-        sa.Column("state", sa.String(32), nullable=False, server_default="registered"),
+        sa.Column("lifecycle_state", sa.String(32), nullable=False, server_default="PENDING"),
+        sa.Column("integrity_state", sa.String(32), nullable=False, server_default="UNKNOWN"),
         sa.Column("lineage_parent_id", sa.String(64), nullable=True),
-        sa.Column("duplicate_of_template_id", sa.String(64), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(
             ["lineage_parent_id"], ["session_templates.template_id"],
             name="fk_session_templates_lineage_parent_id", ondelete="SET NULL",
         ),
-        sa.ForeignKeyConstraint(
-            ["duplicate_of_template_id"], ["session_templates.template_id"],
-            name="fk_session_templates_duplicate_of_template_id", ondelete="SET NULL",
+        sa.CheckConstraint(
+            "lifecycle_state IN ('PENDING', 'ACTIVE', 'ARCHIVED', 'REPLACED')",
+            name="ck_session_templates_lifecycle_state",
         ),
-        sa.UniqueConstraint("relative_path", name="uq_session_templates_relative_path"),
+        sa.CheckConstraint(
+            "integrity_state IN ('UNKNOWN', 'MATCHED', 'CHANGED', 'MISSING', 'INVALID')",
+            name="ck_session_templates_integrity_state",
+        ),
     )
-    op.create_index("ix_session_templates_relative_path", "session_templates", ["relative_path"], unique=True)
+    op.create_index("ix_session_templates_relative_path", "session_templates", ["relative_path"])
     op.create_index("ix_session_templates_registered_hash", "session_templates", ["registered_hash"])
     op.create_index("ix_session_templates_observed_hash", "session_templates", ["observed_hash"])
-    op.create_index("ix_session_templates_state", "session_templates", ["state"])
+    op.create_index("ix_session_templates_lifecycle_state", "session_templates", ["lifecycle_state"])
+    op.create_index("ix_session_templates_integrity_state", "session_templates", ["integrity_state"])
     op.create_index("ix_session_templates_lineage_parent_id", "session_templates", ["lineage_parent_id"])
-    op.create_index("ix_session_templates_duplicate_of_template_id", "session_templates", ["duplicate_of_template_id"])
+    op.create_index(
+        "uq_session_templates_current_path",
+        "session_templates",
+        ["relative_path"],
+        unique=True,
+        sqlite_where=sa.text("lifecycle_state != 'REPLACED'"),
+    )
+    op.create_index(
+        "uq_session_templates_current_hash",
+        "session_templates",
+        ["registered_hash"],
+        unique=True,
+        sqlite_where=sa.text("lifecycle_state != 'REPLACED'"),
+    )
 
     op.create_table(
         "session_template_dependencies",
@@ -439,9 +456,11 @@ def downgrade() -> None:
         ("ix_session_template_dependencies_fingerprint", "session_template_dependencies"),
         ("ix_session_template_dependencies_relative_path", "session_template_dependencies"),
         ("ix_session_template_dependencies_template_id", "session_template_dependencies"),
-        ("ix_session_templates_duplicate_of_template_id", "session_templates"),
+        ("uq_session_templates_current_hash", "session_templates"),
+        ("uq_session_templates_current_path", "session_templates"),
         ("ix_session_templates_lineage_parent_id", "session_templates"),
-        ("ix_session_templates_state", "session_templates"),
+        ("ix_session_templates_integrity_state", "session_templates"),
+        ("ix_session_templates_lifecycle_state", "session_templates"),
         ("ix_session_templates_observed_hash", "session_templates"),
         ("ix_session_templates_registered_hash", "session_templates"),
         ("ix_session_templates_relative_path", "session_templates"),

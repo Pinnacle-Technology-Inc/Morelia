@@ -306,7 +306,38 @@ class SessionTemplateReconciliationRetry(Exception):
     """The template catalog changed repeatedly while reconciliation was committing."""
 
     def __init__(self):
+        self.details = {
+            "current_state": None,
+            "allowed_actions": [],
+        }
         super().__init__("Template catalog changed concurrently; retry the request.")
+
+
+class SessionTemplateDuplicate(SessionTemplateNameExists):
+    """A create/import matches an existing registered template definition."""
+
+    code = "duplicate_template"
+
+    def __init__(self, existing_template: dict, current_state: str, allowed_actions: list[str]):
+        self.details = {
+            "existing_template": existing_template,
+            "current_state": current_state,
+            "allowed_actions": allowed_actions,
+        }
+        ValueError.__init__(self, "Template configuration is already registered.")
+
+
+class SessionTemplateStateConflict(SessionTemplateNameExists):
+    """An action is not legal from the template's current reconciled state."""
+
+    code = "template_state_conflict"
+
+    def __init__(self, message: str, current_state: str, allowed_actions: list[str]):
+        self.details = {
+            "current_state": current_state,
+            "allowed_actions": allowed_actions,
+        }
+        ValueError.__init__(self, message)
 
 
 __all__ = [
@@ -329,7 +360,9 @@ __all__ = [
     "SessionNotFound",
     "SessionTemplateNameExists",
     "SessionTemplateNotFound",
+    "SessionTemplateDuplicate",
     "SessionTemplateReconciliationRetry",
+    "SessionTemplateStateConflict",
     "SinkLocationExists",
     "StaleWatchdogReport",
     "StopProofMissing",

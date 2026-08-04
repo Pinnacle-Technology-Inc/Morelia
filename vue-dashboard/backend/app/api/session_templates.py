@@ -6,9 +6,15 @@ import app.services.session_templates as session_template_service
 from app.api.schemas import (
     AssignmentPlanSchema,
     CreateSessionTemplateSchema,
+    ResolveSessionTemplateRenameSchema,
     SessionTemplateSchema,
 )
-from app.domain.errors import SessionTemplateNameExists, SessionTemplateNotFound
+from app.domain.errors import (
+    SessionTemplateDuplicate,
+    SessionTemplateNameExists,
+    SessionTemplateNotFound,
+    SessionTemplateStateConflict,
+)
 
 blp = Blueprint(
     "session_templates",
@@ -24,10 +30,24 @@ blp = Blueprint(
 def create_session_template(payload):
     try:
         return session_template_service.import_config(payload)
-    except SessionTemplateNameExists:
-        # SessionTemplateNameExists/DeviceTemplateNotFound propagate to their
-        # own registered handlers (409/404); this only catches genuine
-        # validation failures (InvalidSessionEntry is itself a ValueError).
+    except SessionTemplateNameExists as exc:
+        existing = session_template_service.get_by_name(exc.name)
+        if existing is not None:
+            if exc.name != payload["name"]:
+                raise SessionTemplateDuplicate(
+                    {
+                        "template_id": existing.template_id,
+                        "name": existing.name,
+                        "reference": existing.reference,
+                        "detail_url": f"/api/v1/session-templates/{existing.template_id}",
+                    },
+                    existing.state,
+                    existing.allowed_actions,
+                ) from exc
+            exc.details = {
+                "current_state": existing.state,
+                "allowed_actions": existing.allowed_actions,
+            }
         raise
     except ValueError as exc:
         abort(422, message=str(exc), code="invalid_session_template")
@@ -64,20 +84,77 @@ def get_session_template(reference):
     if template is None:
         template = session_template_service.get_by_name(reference)
     if template is None:
+        template = session_template_service.get_by_id(reference)
+    if template is None:
         raise SessionTemplateNotFound(reference)
     return template
 
 
-@blp.route("/<path:reference>", methods=["PUT"])
-@blp.arguments(CreateSessionTemplateSchema)
+def _template_by_id(template_id):
+    template = session_template_service.get_by_id(template_id)
+    if template is None:
+        raise SessionTemplateNotFound(template_id)
+    return template
+
+
+def _raise_state_conflict(template, exc):
+    raise SessionTemplateStateConflict(
+        str(exc),
+        template.state,
+        template.allowed_actions,
+    ) from exc
+
+
+@blp.route("/<path:reference>/actions/register", methods=["POST"])
 @blp.response(200, SessionTemplateSchema)
-def update_session_template(payload, reference):
+def register_discovered_template(reference):
+    template = session_template_service.get_by_reference(reference)
+    if template is None:
+        raise SessionTemplateNotFound(reference)
+    if template.state == "INVALID":
+        abort(
+            422,
+            message=f"session template {reference!r} is not valid TOML",
+            code="invalid_session_template",
+        )
     try:
-        payload = dict(payload)
-        payload.pop("name", None)
-        return session_template_service.update(reference, payload)
+        return session_template_service.register_discovered(reference)
     except ValueError as exc:
-        abort(422, message=str(exc), code="invalid_session_template")
+        _raise_state_conflict(template, exc)
+
+
+@blp.route("/<string:template_id>/actions/accept-change", methods=["POST"])
+@blp.response(200, SessionTemplateSchema)
+def accept_template_change(template_id):
+    template = _template_by_id(template_id)
+    try:
+        return session_template_service.accept_change(template_id)
+    except ValueError as exc:
+        _raise_state_conflict(template, exc)
+
+
+@blp.route("/<string:template_id>/actions/archive", methods=["POST"])
+@blp.response(200, SessionTemplateSchema)
+def archive_template(template_id):
+    template = _template_by_id(template_id)
+    try:
+        return session_template_service.archive(template_id)
+    except ValueError as exc:
+        _raise_state_conflict(template, exc)
+
+
+@blp.route("/<string:template_id>/actions/resolve-rename", methods=["POST"])
+@blp.arguments(ResolveSessionTemplateRenameSchema)
+@blp.response(200, SessionTemplateSchema)
+def resolve_template_rename(payload, template_id):
+    template = _template_by_id(template_id)
+    try:
+        return session_template_service.resolve_ambiguous_rename(
+            template_id,
+            payload["selected_relative_path"],
+        )
+    except ValueError as exc:
+        _raise_state_conflict(template, exc)
 
 
 @blp.route("/<path:reference>", methods=["DELETE"])
