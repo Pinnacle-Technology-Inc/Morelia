@@ -1,0 +1,969 @@
+<script setup>
+// Starting a run from a registered template, as a modal over the template it
+// starts from. The template owns the configuration — stream count, sink types,
+// sink order, recovery — and this collects only what belongs to one run: which
+// physical device fills each flow, where each file sink writes, and the run's
+// own metadata.
+//
+// Device assignment is a live scan rather than a typed device_config_id: the id
+// is an internal key an operator has no way to know, and the pool already
+// carries everything needed to choose (name, hardware id, port, whether it is
+// free). The planner's suggestion arrives pre-selected, so the common case is a
+// glance rather than a decision.
+import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
+import { AlertTriangle, CheckCircle2, FolderPen, RefreshCw, X } from "@lucide/vue";
+import BaseButton from "./BaseButton.vue";
+import DeviceScanTable from "./DeviceScanTable.vue";
+import DeviceSettingsDialog from "./DeviceSettingsDialog.vue";
+import FolderPickerDialog from "./FolderPickerDialog.vue";
+import StatusBadge from "./StatusBadge.vue";
+import {
+  buildTemplateRunPayload,
+  composeSinkLocation,
+  createTemplateRun,
+  isFileSink,
+  loadSessionNameSuggestion,
+  templateRevisionChanged,
+} from "../session-api";
+import { isDeviceSelectable, loadDevicePool } from "../devices-api";
+import { browseDirectories } from "../filesystem-api";
+import { loadAssignmentPlan } from "../template-planner-api";
+import { loadSessionTemplate, templateStateHint } from "../templates-api";
+import { defaultSinkStem, normalizeTemplateRef, uniqueSinkIdentifier } from "../template-import-utils";
+
+const props = defineProps({
+  templateId: { type: String, required: true },
+});
+const emit = defineEmits(["cancel", "created", "template-stale"]);
+
+const template = ref(null);
+const loadedRevision = ref(null);
+const assignmentPlan = ref(null);
+const assignments = ref([]);
+const loadState = ref("loading");
+const submitState = ref("idle");
+const loadError = ref("");
+const submitError = ref("");
+const nameSuggestion = ref("");
+const draft = ref(null);
+const stale = ref(false);
+
+const name = ref("");
+const experimentId = ref("");
+const notes = ref("");
+const runMode = ref("start");
+const scheduleAt = ref("");
+
+// Device discovery is a live serial scan, so the assignment step gets an
+// explicit rescan for hardware plugged in after the dialog opened.
+const devices = ref([]);
+const scanState = ref("idle");
+const scanError = ref("");
+const defaultOutputFolder = ref("");
+
+// Which sink the folder picker is open for: { flowIndex, sinkIndex } or null.
+const folderPickerTarget = ref(null);
+// The unconfigured pool row whose settings dialog is open, plus the flow that
+// opened it so the device can be assigned there once it saves.
+const configureTarget = ref(null);
+// A rejected create carrying the backend's proposed alternative path, so a
+// collision is one click to resolve rather than a path to retype.
+const collision = ref(null);
+
+const flows = computed(() => template.value?.content?.device_flows ?? []);
+const submitting = computed(() => submitState.value === "creating");
+
+// The template's sinks per flow, in the shape this form edits around them.
+//
+// Deliberately walks `flow.sinks` unfiltered: a position in this list IS the
+// `sink_index` the payload sends, and the backend resolves that index against
+// the frozen snapshot's own sink list (session_config._locations_by_index). Any
+// view that dropped or reordered an entry would silently address the wrong sink.
+//
+// A template's stored sink_location is read as a FOLDER, not a file path — a
+// template is a reusable recipe, so its destination means "put this run's output
+// here"; taking it as an exact filename would make the second run from that
+// template fail with SinkLocationExists. Same reading as templateSinksForFlow().
+const templateSinks = computed(() =>
+  flows.value.map((flow) =>
+    (flow.sinks ?? []).map((sink) => {
+      const sinkName = (sink.sink_name ?? "").trim();
+      return {
+        sink_type: sink.sink_type,
+        // A name that merely equals the type is the backend's own default
+        // written out, not a name anybody chose — keeping it would pin a file
+        // called "csv.csv".
+        sink_name: sinkName === sink.sink_type ? "" : sinkName,
+        sink_folder: (sink.sink_location ?? "").trim(),
+      };
+    }),
+  ),
+);
+
+function describeError(error, fallback) {
+  return error?.problem?.detail ?? error?.message ?? fallback;
+}
+
+function deviceFor(configId) {
+  return configId == null ? null : devices.value.find((device) => device.id === configId) ?? null;
+}
+
+function plannerAssignment(flowIndex) {
+  return assignmentPlan.value?.assignments?.find((item) => item.flow_index === flowIndex) ?? null;
+}
+
+// --- Device candidates per flow --------------------------------------------
+
+function matchesFlowTemplate(device, flowIndex) {
+  const required = normalizeTemplateRef(flows.value[flowIndex]?.device_template_path);
+  // A pool row may not report its source template at all (see gap register
+  // D-01/D-02). Unknown is not "wrong": it must not rank a device below one we
+  // positively know is a mismatch, and it must never hide it from the list.
+  const source = normalizeTemplateRef(device.configSource);
+  return Boolean(required) && Boolean(source) && required === source;
+}
+
+// One device cannot fill two flows of one run, so a device taken by another
+// flow leaves this flow's list entirely rather than sitting there un-tickable.
+function candidateDevices(flowIndex) {
+  const takenElsewhere = new Set(
+    assignments.value
+      .filter((assignment) => assignment.flowIndex !== flowIndex)
+      .map((assignment) => assignment.deviceConfigId)
+      .filter((id) => id != null),
+  );
+  // Rank, high to low: the device this flow's template asks for, any other free
+  // device, then present-but-unconfigured hardware. sort() is stable, so the
+  // pool's own ordering survives within each band.
+  const rank = (device) => {
+    if (!isDeviceSelectable(device)) return 0;
+    return matchesFlowTemplate(device, flowIndex) ? 2 : 1;
+  };
+  return devices.value
+    .filter(
+      (device) =>
+        device.availability === "available" &&
+        device.status !== "claimed" &&
+        !takenElsewhere.has(device.id),
+    )
+    .sort((a, b) => rank(b) - rank(a));
+}
+
+function annotateFor(flowIndex) {
+  return (device) => {
+    const planned = plannerAssignment(flowIndex);
+    if (planned && planned.device_config_id === device.id) {
+      return planned.match ? `Planner: ${planned.match} match` : "Planner suggestion";
+    }
+    if (matchesFlowTemplate(device, flowIndex)) return "Matches the required device template";
+    return "";
+  };
+}
+
+function assignDevice(flowIndex, device) {
+  const assignment = assignments.value[flowIndex];
+  if (!assignment) return;
+  // Radio semantics: re-clicking the assigned device clears it, which is the
+  // only way to undo an assignment without picking a different one.
+  assignment.deviceConfigId = assignment.deviceConfigId === device.id ? null : device.id;
+}
+
+// --- Sink destinations ------------------------------------------------------
+
+// The filename this sink writes when the operator types nothing, borrowed from
+// what the backend would name it itself (manifests._allocate_sink_location):
+// <device_type>-<hardware_id>-<sink_name>. Left as a placeholder rather than
+// written in as a value, so it re-derives when the assigned device changes
+// instead of stranding the previous device's name in the field.
+function defaultSinkName(flowIndex, sinkIndex) {
+  const device = deviceFor(assignments.value[flowIndex]?.deviceConfigId);
+  if (!device) return "";
+  const sinks = templateSinks.value[flowIndex] ?? [];
+  const sink = sinks[sinkIndex];
+  if (!sink) return "";
+  // A template sink usually carries its own name; fall back to the same
+  // uniquifier the wizard uses so two CSVs on one stream can't collide.
+  const identifier = sink.sink_name || uniqueSinkIdentifier(sink.sink_type, sinks.slice(0, sinkIndex));
+  return defaultSinkStem(device, identifier);
+}
+
+function sinkName(flowIndex, sinkIndex) {
+  const typed = (assignments.value[flowIndex]?.sinks?.[sinkIndex]?.name ?? "").trim();
+  return typed || defaultSinkName(flowIndex, sinkIndex);
+}
+
+// The rows are driven by `templateSinks` (which the backend indexes against)
+// while the edits live on `assignments`. A revision that drifts mid-form
+// replaces the first before this dialog unmounts, so every read of the second
+// goes through a guard rather than assuming the two are still the same length.
+function sinkEdit(flowIndex, sinkIndex) {
+  return assignments.value[flowIndex]?.sinks?.[sinkIndex] ?? null;
+}
+
+function setSinkName(flowIndex, sinkIndex, value) {
+  const sink = sinkEdit(flowIndex, sinkIndex);
+  if (sink) sink.name = value;
+}
+
+function sinkLocation(flowIndex, sinkIndex) {
+  const sink = templateSinks.value[flowIndex]?.[sinkIndex];
+  if (!sink) return "";
+  return composeSinkLocation(
+    assignments.value[flowIndex]?.sinks?.[sinkIndex]?.folder,
+    sinkName(flowIndex, sinkIndex),
+    sink.sink_type,
+  );
+}
+
+// Unlike the template wizard — where a blank folder means "let the backend
+// place it" — a template run must supply an explicit path for every file sink
+// (session_config._locations_by_index rejects a create that omits one). So an
+// unresolved destination here is a blocker, not a default.
+function flowSinksResolved(flowIndex) {
+  return (templateSinks.value[flowIndex] ?? []).every(
+    (sink, sinkIndex) => !isFileSink(sink.sink_type) || Boolean(sinkLocation(flowIndex, sinkIndex)),
+  );
+}
+
+function flowReady(flowIndex) {
+  const assignment = assignments.value[flowIndex];
+  return Boolean(assignment?.deviceConfigId) && flowSinksResolved(flowIndex);
+}
+
+// A folder column is never wide enough for an absolute path, and plain ellipsis
+// truncates the wrong end. The trailing segments are what name a destination.
+const FOLDER_TAIL_BUDGET = 24;
+
+function shortFolder(path) {
+  if (!path) return "";
+  const separator = path.includes("\\") ? "\\" : "/";
+  const segments = path.split(separator).filter(Boolean);
+  if (segments.length <= 2) return path;
+  const tail = segments.slice(-2).join(separator);
+  return `…${separator}${tail.length <= FOLDER_TAIL_BUDGET ? tail : segments[segments.length - 1]}`;
+}
+
+function openFolderPicker(flowIndex, sinkIndex) {
+  folderPickerTarget.value = { flowIndex, sinkIndex };
+}
+
+const folderPickerFolder = computed(() => {
+  const target = folderPickerTarget.value;
+  if (!target) return "";
+  return assignments.value[target.flowIndex]?.sinks?.[target.sinkIndex]?.folder ?? "";
+});
+
+function chooseFolder(path) {
+  const target = folderPickerTarget.value;
+  if (target) {
+    const sink = assignments.value[target.flowIndex]?.sinks?.[target.sinkIndex];
+    if (sink) sink.folder = path;
+  }
+  folderPickerTarget.value = null;
+}
+
+// The backend refuses to overwrite an explicit path but proposes a free one
+// alongside the refusal (SinkLocationExists.suggested_location). Applying it
+// writes back through the same folder + name fields the operator edits, so what
+// they see afterwards is still the whole truth about where the file goes.
+function applySuggestedLocation() {
+  const conflict = collision.value;
+  if (!conflict) return;
+  const sink = assignments.value[conflict.flowIndex]?.sinks?.[conflict.sinkIndex];
+  const sinkType = templateSinks.value[conflict.flowIndex]?.[conflict.sinkIndex]?.sink_type;
+  if (!sink || !sinkType) return;
+  const separator = conflict.suggested.includes("\\") ? "\\" : "/";
+  const cut = conflict.suggested.lastIndexOf(separator);
+  sink.folder = cut === -1 ? sink.folder : conflict.suggested.slice(0, cut);
+  const file = conflict.suggested.slice(cut + 1);
+  sink.name = file.toLowerCase().endsWith(`.${sinkType}`)
+    ? file.slice(0, -(sinkType.length + 1))
+    : file;
+  collision.value = null;
+  submitError.value = "";
+}
+
+// --- Gating -----------------------------------------------------------------
+
+const unassignedCount = computed(
+  () => assignments.value.filter((assignment) => !assignment.deviceConfigId).length,
+);
+const unresolvedSinkCount = computed(
+  () => assignments.value.filter((assignment) => !flowSinksResolved(assignment.flowIndex)).length,
+);
+const scheduleIncomplete = computed(() => runMode.value === "schedule" && !scheduleAt.value);
+
+const submitDisabled = computed(
+  () =>
+    loadState.value !== "ready" ||
+    submitting.value ||
+    stale.value ||
+    Boolean(draft.value) ||
+    !assignments.value.length ||
+    unassignedCount.value > 0 ||
+    unresolvedSinkCount.value > 0 ||
+    scheduleIncomplete.value,
+);
+
+// Why Start is disabled, in the operator's terms, ordered by what they should
+// deal with first rather than by how the checks happen to be written.
+const blockedReason = computed(() => {
+  if (!submitDisabled.value || loadState.value !== "ready" || submitting.value || draft.value) return "";
+  if (stale.value) return "";
+  if (unassignedCount.value) {
+    return `Assign a device to ${unassignedCount.value} more stream${unassignedCount.value === 1 ? "" : "s"}.`;
+  }
+  if (unresolvedSinkCount.value) return "Every file sink needs a folder and a filename.";
+  if (scheduleIncomplete.value) return "Pick a start time to schedule this run.";
+  return "";
+});
+
+const submitLabel = computed(() => {
+  if (submitState.value === "creating") return "Creating session…";
+  if (runMode.value === "draft") return "Create Draft";
+  if (runMode.value === "schedule") return "Schedule session";
+  return "Start session";
+});
+
+// --- Load -------------------------------------------------------------------
+
+function resetAssignments(plan) {
+  assignments.value = flows.value.map((_, flowIndex) => ({
+    flowIndex,
+    deviceConfigId: plan?.assignments?.find((item) => item.flow_index === flowIndex)?.device_config_id ?? null,
+    // Seeded from the template's own destination when it names one, else the
+    // host's output root — a run cannot proceed without a folder, so starting
+    // from a real one is the difference between confirming and hunting.
+    sinks: (templateSinks.value[flowIndex] ?? []).map((sink) => ({
+      folder: sink.sink_folder || defaultOutputFolder.value,
+      name: "",
+    })),
+  }));
+}
+
+function returnToCurrentTemplate(guidance = "") {
+  stale.value = true;
+  submitError.value = guidance || templateStateHint(template.value) || "This template revision can no longer start a run.";
+  emit("template-stale", props.templateId);
+}
+
+async function rescanDevices() {
+  scanState.value = "scanning";
+  scanError.value = "";
+  try {
+    const pool = await loadDevicePool();
+    devices.value = pool.devices;
+    scanState.value = "ready";
+  } catch (reason) {
+    // The previous list stays on screen: a live scan takes a couple of seconds,
+    // and blanking the table would make an already-assigned device flicker out.
+    scanState.value = "error";
+    scanError.value = reason?.problem?.detail ?? reason?.message ?? "Device scan is unavailable.";
+  }
+}
+
+async function load() {
+  loadState.value = "loading";
+  loadError.value = "";
+  submitError.value = "";
+  stale.value = false;
+  draft.value = null;
+  collision.value = null;
+  try {
+    const selected = await loadSessionTemplate(props.templateId);
+    template.value = selected;
+    loadedRevision.value = selected;
+    if (selected.state !== "ACTIVE") {
+      loadState.value = "ready";
+      returnToCurrentTemplate(templateStateHint(selected));
+      return;
+    }
+    // Deliberately WITHOUT the device pool. The assignment planner runs its own
+    // device discovery, and the two scans contend: issued concurrently, the
+    // planner request never returns and the dialog sits on "Preparing template
+    // run…" forever. Everything batched here is scan-free.
+    const [planResult, suggestionResult, folderResult] = await Promise.allSettled([
+      loadAssignmentPlan(selected.reference || selected.templateId),
+      loadSessionNameSuggestion(),
+      browseDirectories(),
+    ]);
+    if (planResult.status === "rejected") throw planResult.reason;
+    assignmentPlan.value = planResult.value;
+    nameSuggestion.value = suggestionResult.status === "fulfilled" ? suggestionResult.value : "";
+    if (folderResult.status === "fulfilled") defaultOutputFolder.value = folderResult.value.path ?? "";
+    resetAssignments(planResult.value);
+    loadState.value = "ready";
+    // Now that the planner has answered, discover the pool — not awaited, so the
+    // form paints immediately and the device tables fill in behind their own
+    // "Scanning…" state rather than holding the whole dialog back.
+    rescanDevices();
+  } catch (error) {
+    template.value = null;
+    loadError.value = describeError(error, "This template run could not be prepared.");
+    loadState.value = "error";
+  }
+}
+
+// Same settings dialog the Devices page uses, opened in create mode for an
+// unconfigured pool row. On save we rescan and assign the now-free device to
+// the flow that opened it — the operator's next click is the folder, not a
+// re-tick.
+function configureDevice(flowIndex, device) {
+  configureTarget.value = { device, flowIndex };
+}
+
+async function onDeviceConfigured() {
+  // Remember which physical device was being set up before the rescan: the
+  // dialog reports "saved" but not the new config's id, and hardware_id is the
+  // stable identity that survives the pool refresh.
+  const hardwareId = configureTarget.value?.device?.hardwareId ?? null;
+  const flowIndex = configureTarget.value?.flowIndex ?? null;
+  configureTarget.value = null;
+  await rescanDevices();
+  if (!hardwareId || flowIndex == null) return;
+  const configured = devices.value.find((device) => device.hardwareId === hardwareId);
+  if (configured && isDeviceSelectable(configured)) {
+    const assignment = assignments.value[flowIndex];
+    if (assignment) assignment.deviceConfigId = configured.id;
+  }
+}
+
+// --- Submit -----------------------------------------------------------------
+
+async function revisionIsCurrent() {
+  const current = await loadSessionTemplate(props.templateId);
+  template.value = current;
+  if (!templateRevisionChanged(loadedRevision.value, current)) return true;
+  returnToCurrentTemplate(templateStateHint(current));
+  return false;
+}
+
+function payload() {
+  return buildTemplateRunPayload({
+    template: loadedRevision.value,
+    // The composed name is passed rather than the raw field: a blank field
+    // means "use the generated default", and the default is what the operator
+    // has been reading in the placeholder all along.
+    assignments: assignments.value.map((assignment) => ({
+      flowIndex: assignment.flowIndex,
+      deviceConfigId: assignment.deviceConfigId,
+      sinks: assignment.sinks.map((sink, sinkIndex) => ({
+        folder: sink.folder,
+        name: sinkName(assignment.flowIndex, sinkIndex),
+      })),
+    })),
+    name: name.value,
+    experimentId: experimentId.value,
+    notes: notes.value,
+    scheduleAt: runMode.value === "schedule" ? scheduleAt.value : "",
+  });
+}
+
+// A refused path comes back with the coordinates the client submitted, because
+// a template run addresses sinks positionally and the operator never sees a
+// sink name to match on.
+function readCollision(problem) {
+  if (problem?.code !== "sink_location_exists" || !problem.suggested_location) return null;
+  if (!Number.isInteger(problem.flow_index) || !Number.isInteger(problem.sink_index)) return null;
+  return {
+    flowIndex: problem.flow_index,
+    sinkIndex: problem.sink_index,
+    suggested: problem.suggested_location,
+  };
+}
+
+async function submit() {
+  if (submitDisabled.value) return;
+  submitError.value = "";
+  collision.value = null;
+  submitState.value = "creating";
+  try {
+    // The template may have drifted after this form loaded. Check immediately
+    // before create; the backend repeats the same ID/hash check atomically.
+    if (!(await revisionIsCurrent())) return;
+    // Create only — the start command is NOT issued from here even in "Start
+    // now" mode. Once the Draft exists there is a real session to look at, and
+    // its own page already owns the lifecycle animation, the live event stream
+    // and the error surface for a start that fails. Handing the start over
+    // there puts the operator in front of the run as it comes up, instead of
+    // holding them on a modal spinner until the runtime has finished starting.
+    const result = await createTemplateRun(payload(), { startImmediately: false });
+    draft.value = result.draft;
+    submitState.value = "complete";
+    emit("created", String(result.draft.id), { autoStart: runMode.value === "start" });
+  } catch (error) {
+    if (/template/i.test(error?.problem?.code ?? "")) {
+      submitState.value = "stale";
+      returnToCurrentTemplate(describeError(error, "The template changed before the Draft was created."));
+      return;
+    }
+    submitState.value = "error";
+    collision.value = readCollision(error?.problem);
+    submitError.value = describeError(error, "The session Draft could not be created.");
+  } finally {
+    if (submitState.value === "creating") submitState.value = "idle";
+  }
+}
+
+// Esc closes the dialog, but only when it is the frontmost one — otherwise
+// dismissing the folder picker would take the whole run form with it.
+function onKeydown(event) {
+  if (event.key !== "Escape") return;
+  if (folderPickerTarget.value || configureTarget.value) return;
+  emit("cancel");
+}
+
+onMounted(() => {
+  load();
+  window.addEventListener("keydown", onKeydown);
+});
+onBeforeUnmount(() => window.removeEventListener("keydown", onKeydown));
+watch(() => props.templateId, load);
+</script>
+
+<template>
+  <div class="dialog-backdrop" role="presentation" @mousedown.self="emit('cancel')">
+    <section class="dialog start-run" role="dialog" aria-modal="true" aria-labelledby="start-run-title">
+      <header>
+        <div>
+          <h2 id="start-run-title">Start a new session</h2>
+          <p>The template supplies configuration. Add only what is specific to this run.</p>
+        </div>
+        <button class="icon-button" type="button" aria-label="Close dialog" @click="emit('cancel')"><X :size="19" /></button>
+      </header>
+
+      <div class="dialog__content">
+        <p v-if="loadState === 'loading'" class="empty-state" aria-busy="true">Preparing template run…</p>
+        <div v-else-if="loadError" class="form-notice" role="alert">
+          <AlertTriangle :size="18" />
+          <span>{{ loadError }}</span>
+          <BaseButton variant="secondary" @click="load"><RefreshCw :size="16" /> Retry</BaseButton>
+        </div>
+
+        <template v-else-if="template">
+          <section class="run-banner" aria-label="Selected template">
+            <div>
+              <span class="section-kicker">Selected template</span>
+              <h3>{{ template.name }}</h3>
+              <p>
+                {{ flows.length }} stream{{ flows.length === 1 ? "" : "s" }} ·
+                {{ flows.reduce((total, flow) => total + (flow.sinks?.length ?? 0), 0) }} sinks ·
+                {{ template.content?.policy || "No recovery policy" }}
+              </p>
+            </div>
+            <StatusBadge :value="stale ? 'Stale' : 'Ready'" compact />
+          </section>
+
+          <section class="run-section">
+            <div class="section-heading">
+              <div><span class="section-kicker">Run details</span><h3>Optional metadata</h3></div>
+              <p>Blank values use backend defaults.</p>
+            </div>
+            <div class="form-grid">
+              <label class="field">
+                <span>Session name (optional)</span>
+                <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" :disabled="Boolean(draft)" />
+              </label>
+              <label class="field">
+                <span>Experiment ID (optional)</span>
+                <input v-model="experimentId" placeholder="No experiment" :disabled="Boolean(draft)" />
+              </label>
+              <label class="field field--wide">
+                <span>Notes (optional)</span>
+                <textarea v-model="notes" placeholder="Add a note for this run…" :disabled="Boolean(draft)" />
+              </label>
+            </div>
+          </section>
+
+          <p v-for="warning in assignmentPlan?.warnings ?? []" :key="warning" class="form-notice">
+            <AlertTriangle :size="18" /> {{ warning }}
+          </p>
+
+          <!-- One block per template flow: the device that fills it, then where
+               that device's sinks write. Sink type, order and count come from
+               the frozen revision and are shown, never offered. -->
+          <section v-for="assignment in assignments" :key="assignment.flowIndex" class="run-section flow-block">
+            <div class="section-heading">
+              <div>
+                <span class="section-kicker">Stream {{ assignment.flowIndex + 1 }}</span>
+                <h3>{{ flows[assignment.flowIndex]?.nickname || `Stream ${assignment.flowIndex + 1}` }}</h3>
+                <p>Requires <code>{{ flows[assignment.flowIndex]?.device_template_path || "any device" }}</code></p>
+              </div>
+              <StatusBadge compact :value="flowReady(assignment.flowIndex) ? 'Ready' : 'Needs setup'" />
+            </div>
+
+            <DeviceScanTable
+              :group="`flow-${assignment.flowIndex}`"
+              :devices="candidateDevices(assignment.flowIndex)"
+              :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
+              :annotate="annotateFor(assignment.flowIndex)"
+              :scanning="scanState === 'scanning'"
+              :scan-error="scanState === 'error' ? scanError : ''"
+              empty-message="No free device is available for this stream."
+              @toggle="assignDevice(assignment.flowIndex, $event)"
+              @configure="configureDevice(assignment.flowIndex, $event)"
+              @rescan="rescanDevices"
+            >
+              <template #heading><h4>Device for this stream</h4></template>
+            </DeviceScanTable>
+
+            <h4 class="sink-heading">Sink destinations</h4>
+            <p class="sink-caption">
+              Sink types come from the template and cannot change here. Every file sink needs
+              a folder and a filename — a template run writes to paths you choose, so nothing
+              is placed automatically.
+            </p>
+            <div class="table-wrap">
+              <table class="data-table sink-table">
+                <thead><tr><th>Sink type</th><th>Name</th><th>Folder</th></tr></thead>
+                <tbody>
+                  <tr v-if="!templateSinks[assignment.flowIndex]?.length"><td colspan="3">This stream has no sinks.</td></tr>
+                  <tr v-for="(sink, sinkIndex) in templateSinks[assignment.flowIndex] ?? []" :key="sinkIndex">
+                    <!-- Locked by the template: rendered as a value, not a
+                         control, so there is nothing to try and fail to change. -->
+                    <td><span class="sink-locked">{{ sink.sink_type }}</span></td>
+                    <td>
+                      <div v-if="isFileSink(sink.sink_type)" class="sink-name">
+                        <input
+                          :value="sinkEdit(assignment.flowIndex, sinkIndex)?.name ?? ''"
+                          class="sink-control"
+                          aria-label="Sink filename"
+                          :placeholder="defaultSinkName(assignment.flowIndex, sinkIndex) || 'Assign a device first'"
+                          :title="sinkName(assignment.flowIndex, sinkIndex)"
+                          :disabled="Boolean(draft)"
+                          @input="setSinkName(assignment.flowIndex, sinkIndex, $event.target.value)"
+                        />
+                        <span class="sink-extension">.{{ sink.sink_type }}</span>
+                      </div>
+                      <span v-else class="sink-muted">{{ sink.sink_name || sink.sink_type }}</span>
+                    </td>
+                    <td>
+                      <button
+                        v-if="isFileSink(sink.sink_type)"
+                        type="button"
+                        class="sink-control sink-folder-tile"
+                        :class="{ 'sink-folder-tile--empty': !sinkEdit(assignment.flowIndex, sinkIndex)?.folder }"
+                        :aria-label="`Change folder for ${sink.sink_type} sink`"
+                        :title="sinkLocation(assignment.flowIndex, sinkIndex) || 'Choose a folder for this sink'"
+                        :disabled="Boolean(draft)"
+                        @click="openFolderPicker(assignment.flowIndex, sinkIndex)"
+                      >
+                        <span class="sink-folder-path">{{ shortFolder(sinkEdit(assignment.flowIndex, sinkIndex)?.folder) || "Choose a folder…" }}</span>
+                        <FolderPen :size="16" class="sink-folder-icon" />
+                      </button>
+                      <span v-else class="sink-muted">No file output</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="run-section">
+            <div class="section-heading"><div><span class="section-kicker">Timing</span><h3>Create and start</h3></div></div>
+            <fieldset class="run-mode" :disabled="Boolean(draft)">
+              <label><input v-model="runMode" type="radio" value="start" /><span><strong>Start now</strong><small>Create the Draft, then start that same session.</small></span></label>
+              <label><input v-model="runMode" type="radio" value="draft" /><span><strong>Save as Draft</strong><small>Create it without claiming hardware.</small></span></label>
+              <label><input v-model="runMode" type="radio" value="schedule" /><span><strong>Schedule for later</strong><small>Create a scheduled session without issuing start now.</small></span></label>
+            </fieldset>
+            <label v-if="runMode === 'schedule'" class="field schedule-field">
+              <span>Scheduled start</span>
+              <input v-model="scheduleAt" type="datetime-local" :disabled="Boolean(draft)" />
+            </label>
+          </section>
+
+          <div v-if="submitError" class="form-notice" role="alert">
+            <AlertTriangle :size="18" />
+            <span>
+              <strong>{{ draft ? `Draft ${draft.id} is safe` : "Run not created" }}</strong>
+              <span class="notice-detail">{{ submitError }}</span>
+            </span>
+            <button v-if="collision" type="button" class="table-action" @click="applySuggestedLocation">
+              Use {{ collision.suggested }}
+            </button>
+          </div>
+          <div v-else-if="draft" class="run-result" role="status">
+            <CheckCircle2 :size="18" /> Draft {{ draft.id }} was created.
+          </div>
+        </template>
+      </div>
+
+      <footer>
+        <p class="run-footnote">A new session ID and dataflow ID will be created. The template is not modified.</p>
+        <span v-if="blockedReason" class="validation-copy">{{ blockedReason }}</span>
+        <BaseButton v-if="draft" variant="secondary" @click="emit('created', String(draft.id))">Open Draft {{ draft.id }}</BaseButton>
+        <template v-else>
+          <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
+          <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
+        </template>
+      </footer>
+    </section>
+  </div>
+
+  <!-- Siblings rather than children: both render their own fixed backdrop, and
+       nesting them inside this one would put them in its stacking context and
+       add stray cells to its centering grid. -->
+  <FolderPickerDialog
+    v-if="folderPickerTarget"
+    :model-value="folderPickerFolder"
+    @select="chooseFolder"
+    @close="folderPickerTarget = null"
+  />
+  <DeviceSettingsDialog
+    v-if="configureTarget"
+    :device="configureTarget.device"
+    @close="configureTarget = null"
+    @saved="onDeviceConfigured"
+  />
+</template>
+
+<style scoped>
+/* Wider than the 600px default: this dialog carries a device table and a sink
+   table per stream, and the shared width would put both under a scrollbar. */
+.start-run {
+  width: min(1040px, 100%);
+}
+/* The content is the scrolling region, so it gets more of the viewport than the
+   shared 60vh — a two-stream template otherwise scrolls in a letterbox. */
+.start-run .dialog__content {
+  display: grid;
+  max-height: min(72vh, 900px);
+  gap: var(--space-4);
+}
+.section-kicker {
+  color: var(--primary);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.run-banner {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-card);
+  border-left: 4px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: var(--sage-50);
+}
+.run-banner h3 {
+  margin-top: var(--space-1);
+  color: var(--ink);
+  font-size: var(--fs-lg);
+}
+.run-banner p,
+.section-heading p,
+.sink-caption {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.run-section {
+  padding: var(--space-4);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+}
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.section-heading h3 {
+  margin-top: var(--space-1);
+  color: var(--ink);
+  font-size: var(--fs-md);
+}
+.section-heading code {
+  overflow-wrap: anywhere;
+}
+.flow-block h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--fs-sm);
+}
+.sink-heading {
+  margin-top: var(--space-4) !important;
+}
+.sink-caption {
+  margin-bottom: var(--space-3);
+}
+/* The sink table holds an absolute path, which under `table-layout: auto` sizes
+   its column to the whole string and forces the table past the dialog. Fixed
+   layout makes the declared widths authoritative, which is also what lets the
+   ellipsis in .sink-folder-path engage. */
+.sink-table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+}
+.sink-table th,
+.sink-table td {
+  padding: var(--space-3) var(--space-2);
+}
+.sink-table th:nth-child(1),
+.sink-table td:nth-child(1) {
+  width: 14%;
+}
+.sink-table th:nth-child(2),
+.sink-table td:nth-child(2) {
+  width: 40%;
+}
+.sink-table th:nth-child(3),
+.sink-table td:nth-child(3) {
+  width: 46%;
+}
+/* Template-owned, so it reads as a label rather than a disabled control — a
+   greyed <select> invites the click it would then refuse. */
+.sink-locked {
+  display: inline-block;
+  padding: 0.15rem var(--space-2);
+  color: var(--muted);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sage);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.sink-muted {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.sink-control {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-body);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-sage);
+  font-size: var(--fs-sm);
+}
+/* Name + extension read as one field: the input carries the editable stem and
+   the suffix sits inside the same box, greyed, so the row shows the whole
+   filename without letting anyone type an extension the template contradicts. */
+.sink-name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-right: var(--space-3);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-sage);
+}
+.sink-name .sink-control {
+  border: 0;
+  background: none;
+}
+.sink-name:focus-within {
+  border-color: var(--primary, var(--border-card));
+}
+.sink-extension {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+}
+.sink-folder-tile {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  text-align: left;
+  cursor: pointer;
+}
+/* A run cannot start without this, so an empty tile is a blocker rather than an
+   invitation — amber says so before Start has to. */
+.sink-folder-tile--empty {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+.sink-folder-tile:hover,
+.sink-folder-tile:focus-visible {
+  border-color: var(--primary, var(--border-card));
+  background: var(--sage-50);
+}
+.sink-folder-path {
+  flex: 1 1 auto;
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sink-folder-icon {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+.run-mode {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  padding: 0;
+  border: 0;
+}
+.run-mode label {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.run-mode label:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--sage-50);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.run-mode input {
+  margin-top: 0.18rem;
+  accent-color: var(--accent);
+}
+.run-mode span {
+  display: grid;
+  gap: var(--space-1);
+}
+.run-mode small {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+.schedule-field {
+  max-width: 24rem;
+  margin-top: var(--space-4);
+}
+.notice-detail {
+  display: block;
+  margin-top: var(--space-1);
+}
+.run-result {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  color: var(--success);
+  border: 1px solid var(--sage-300);
+  border-radius: var(--radius-md);
+  background: var(--sage-50);
+  font-size: var(--fs-sm);
+}
+/* The footnote takes the free space so the buttons stay hard right. */
+.start-run > footer {
+  align-items: center;
+}
+.run-footnote {
+  flex: 1;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+@media (max-width: 760px) {
+  .run-mode {
+    grid-template-columns: 1fr;
+  }
+  .start-run > footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+</style>
