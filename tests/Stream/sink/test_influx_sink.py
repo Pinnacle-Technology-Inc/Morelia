@@ -6,7 +6,7 @@ from Morelia.Stream.data_flow import DataFlow
 
 from tests.mocks.sink.influx_sink.MockInfluxSink import MockInfluxSink
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture
 def shared_records():
     '''
     DataFlow runs in a separate process, so a multiprocessing.Manager is used
@@ -17,6 +17,8 @@ def shared_records():
     shared_records = manager.list()
 
     yield shared_records
+
+    manager.shutdown()
 
 def test_pod8274D_stream_influx_sink(shared_records):
     from tests.mocks.device.pod_8274D.MockPodDevice_8274D import MockPod8274D
