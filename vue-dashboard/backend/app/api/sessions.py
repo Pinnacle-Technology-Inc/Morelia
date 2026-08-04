@@ -20,6 +20,7 @@ from app.api.schemas import (
     SessionTemplateSchema,
     StartSessionSchema,
     StopSessionSchema,
+    UpdateSinkLocationsSchema,
 )
 
 _log = structlog.get_logger(__name__)
@@ -119,6 +120,15 @@ def session_sink_plan(session_id):
     instead of discovering a collision as a 409 afterwards.
     """
     return session_service.sink_restart_plan(session_id)
+
+
+@blp.route("/<int:session_id>/sink-locations", methods=["PATCH"])
+@blp.arguments(UpdateSinkLocationsSchema)
+@blp.response(200, SessionSchema)
+def update_sink_locations(payload, session_id):
+    """Relocate a never-started Draft's file outputs.
+    """
+    return session_service.update_sink_locations(session_id, payload["locations"])
 
 
 @blp.route("/<int:session_id>", methods=["DELETE"])

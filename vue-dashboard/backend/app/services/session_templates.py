@@ -29,6 +29,7 @@ from app.domain.errors import (
     SessionTemplateNameExists,
     SessionTemplateNotFound,
     SessionTemplateReconciliationRetry,
+    SessionTemplateStateConflict,
 )
 from app.models.session import Session
 from app.models.session_template import SessionTemplate
@@ -843,6 +844,86 @@ def get_by_reference(reference: str) -> SessionTemplateFile | None:
 
 def get_by_id(template_id: str) -> SessionTemplateFile | None:
     return next((row for row in catalog() if row.template_id == template_id), None)
+
+
+@dataclass(frozen=True)
+class RunTemplateResolution:
+    """One registered revision, freshly reread, ready to freeze into a session.
+
+    ``content`` is the canonical semantic object a session snapshot stores, and
+    ``content_hash`` is recomputed from it here — not copied from the registry —
+    so the caller can prove the snapshot/hash invariant holds for the bytes that
+    were on disk at this instant.
+    """
+
+    template: SessionTemplateFile
+    content: dict[str, Any]
+    content_hash: str
+
+
+def resolve_for_run(template_id: str) -> RunTemplateResolution:
+    """Resolve a runnable revision and reread its file once, safely.
+
+    Read-only wrapper over the existing primitives: it reconciles through
+    ``catalog()``, then rereads the single registered file under the
+    reconciliation lock with the same stat-signature guard ``_snapshot_library``
+    uses, so a file edited mid-request aborts instead of being captured
+    half-written. It never writes registry state and never re-runs a full
+    catalog reconcile for the reread.
+
+    Canonicalization is ``resolve_references=False`` because that is the form
+    every disk observation — and therefore both ``registered_hash`` and
+    ``observed_hash`` — is computed over. Resolving references here would
+    produce a hash that cannot be checked against the registry and would fail a
+    run for a missing *device* template rather than for template drift.
+    """
+
+    template = get_by_id(template_id)
+    if template is None:
+        raise SessionTemplateNotFound(template_id)
+
+    if template.lifecycle_state != "ACTIVE" or template.integrity_state != "MATCHED":
+        raise SessionTemplateStateConflict(
+            f"Session template {template.name!r} is not runnable from state {template.state}.",
+            template.state,
+            template.allowed_actions,
+        )
+
+    with _reconciliation_lock:
+        path = _direct_file(_library_dir() / template.relative_path)
+        if path is None:
+            raise SessionTemplateNotFound(template.relative_path)
+        before = _stat_signature(path)
+        if before is None:
+            raise SessionTemplateNotFound(template.relative_path)
+        try:
+            content = _load_library_file(path)
+        except (OSError, ValueError) as exc:
+            raise SessionTemplateStateConflict(
+                f"Session template {template.name!r} could not be reread: {exc}",
+                template.state,
+                template.allowed_actions,
+            ) from exc
+        content_hash = _content_hash(content)
+        if _stat_signature(path) != before:
+            raise SessionTemplateStateConflict(
+                f"Session template {template.name!r} changed while the run was being created.",
+                template.state,
+                template.allowed_actions,
+            )
+
+    if content_hash != template.registered_hash:
+        raise SessionTemplateStateConflict(
+            f"Session template {template.name!r} no longer matches its registered revision.",
+            template.state,
+            template.allowed_actions,
+        )
+
+    return RunTemplateResolution(
+        template=template,
+        content=content,
+        content_hash=content_hash,
+    )
 
 
 def resolve_device_template_reference(flow: Mapping[str, Any]):

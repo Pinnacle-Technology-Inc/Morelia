@@ -170,15 +170,26 @@ class SinkLocationExists(Exception):
         *,
         nickname: str | None = None,
         suggested_location: str | None = None,
+        flow_index: int | None = None,
+        sink_index: int | None = None,
     ):
         self.sink_location = sink_location
         self.nickname = nickname
         self.suggested_location = suggested_location
-        self.details: dict[str, str] = {"sink_location": sink_location}
+        self.flow_index = flow_index
+        self.sink_index = sink_index
+        self.details: dict[str, object] = {"sink_location": sink_location}
         if nickname:
             self.details["nickname"] = nickname
         if suggested_location:
             self.details["suggested_location"] = suggested_location
+        # Template-created runs address sinks positionally — the operator never
+        # sees or types a sink name — so a collision has to come back with the
+        # coordinates the client submitted, not just a nickname.
+        if flow_index is not None:
+            self.details["flow_index"] = flow_index
+        if sink_index is not None:
+            self.details["sink_index"] = sink_index
 
         label = f" for device flow {nickname!r}" if nickname else ""
         suggestion_note = (

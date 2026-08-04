@@ -92,6 +92,19 @@ def _normalize_int(value: Any, field: str) -> int:
     return normalized
 
 
+def _normalize_index(value: Any, field: str) -> int:
+    """Like ``_normalize_int`` but zero-based — positions start at 0, not 1."""
+    if isinstance(value, bool):
+        raise InvalidSessionEntry(field, "must be an integer")
+    try:
+        normalized = int(value)
+    except (TypeError, ValueError):
+        raise InvalidSessionEntry(field, "must be an integer") from None
+    if normalized < 0:
+        raise InvalidSessionEntry(field, "must not be negative")
+    return normalized
+
+
 def _policy_value(value: Any) -> PolicyMode:
     if value is None:
         return PolicyMode.RECOMMEND
@@ -164,6 +177,8 @@ def _resolve_one_sink(
     *,
     label: str,
     nickname: str | None,
+    flow_index: int | None = None,
+    sink_index: int | None = None,
 ) -> dict[str, Any]:
     """Validate and canonicalize one sink object into its stored form."""
     if not isinstance(raw_sink, Mapping):
@@ -227,6 +242,8 @@ def _resolve_one_sink(
                 resolved,
                 nickname=nickname,
                 suggested_location=str(suggested),
+                flow_index=flow_index,
+                sink_index=sink_index,
             )
         params["file_path"] = location_str
 
@@ -305,7 +322,11 @@ def _resolve_sink(entry: Mapping[str, Any]) -> dict[str, str]:
     return canonical
 
 
-def _resolve_sinks(entry: Mapping[str, Any]) -> list[dict[str, Any]]:
+def _resolve_sinks(
+    entry: Mapping[str, Any],
+    *,
+    flow_index: int | None = None,
+) -> list[dict[str, Any]]:
     """Resolve an entry's sinks into a non-empty ordered canonical list.
 
     Accepts two input shapes: the canonical nested ``sinks[]`` list and the
@@ -345,7 +366,13 @@ def _resolve_sinks(entry: Mapping[str, Any]) -> list[dict[str, Any]]:
     resolved: list[dict[str, Any]] = []
     seen_names: set[str] = set()
     for index, raw_sink in enumerate(raw_list):
-        sink = _resolve_one_sink(raw_sink, label=f"sinks[{index}]", nickname=nickname)
+        sink = _resolve_one_sink(
+            raw_sink,
+            label=f"sinks[{index}]",
+            nickname=nickname,
+            flow_index=flow_index,
+            sink_index=index,
+        )
         name = sink["sink_name"]
         if name in seen_names:
             raise InvalidSessionEntry(
@@ -423,8 +450,18 @@ def _template_reference_entry(raw_entry: Mapping[str, Any]) -> dict[str, Any]:
     return canonical
 
 
-def validate_entry(raw_entry: Mapping[str, Any], *, instantiate: bool = True) -> dict[str, Any]:
-    """Validate and canonicalize one ``Session.device_flows`` entry."""
+def validate_entry(
+    raw_entry: Mapping[str, Any],
+    *,
+    instantiate: bool = True,
+    flow_index: int | None = None,
+) -> dict[str, Any]:
+    """Validate and canonicalize one ``Session.device_flows`` entry.
+
+    ``flow_index`` is carried only so a sink-location collision can report the
+    positional coordinates a template-created run submitted; it does not change
+    validation.
+    """
     entry = _require_mapping(raw_entry, "session device flow")
 
     unknown = set(entry) - _ENTRY_FIELDS
@@ -437,7 +474,7 @@ def validate_entry(raw_entry: Mapping[str, Any], *, instantiate: bool = True) ->
     if not instantiate:
         return _template_reference_entry(entry)
 
-    sinks = _resolve_sinks(entry)
+    sinks = _resolve_sinks(entry, flow_index=flow_index)
 
     if "device_config_id" in entry:
         disallowed = {"device_template_path", "hardware_id", "port"} & set(entry)
@@ -466,11 +503,20 @@ def validate_entries(
     raw_entries: list[Mapping[str, Any]],
     *,
     instantiate: bool = True,
+    positional: bool = False,
 ) -> list[dict[str, Any]]:
-    """Validate a flow list and reject duplicate physical identities."""
+    """Validate a flow list and reject duplicate physical identities.
+
+    ``positional`` marks a template-created run, whose flows are addressed by
+    index end to end; it only enriches sink-location conflicts with coordinates.
+    """
     device_flows = [
-        validate_entry(entry, instantiate=instantiate)
-        for entry in raw_entries
+        validate_entry(
+            entry,
+            instantiate=instantiate,
+            flow_index=index if positional else None,
+        )
+        for index, entry in enumerate(raw_entries)
     ]
     if not instantiate:
         return device_flows
@@ -488,6 +534,228 @@ def validate_entries(
             )
         identities.add(identity)
     return device_flows
+
+
+def _is_file_sink(sink_type: Any) -> bool:
+    """True when a sink type owns an output path the operator can relocate."""
+    try:
+        schema = sink_parameter_schema(str(sink_type).strip().lower())
+    except UnknownConfigType:
+        return False
+    return schema["category"] == SinkCategory.FILE.value
+
+
+def _snapshot_flow_device_type(flow: Mapping[str, Any]) -> str:
+    """Derive a snapshot flow's required device type.
+
+    Mirrors ``template_assignments._device_type_for_flow`` — path first, then
+    the portable name form — so the compatibility check the server enforces
+    here matches the plan the operator reviewed in the form.
+    """
+    path = flow.get("device_template_path")
+    if isinstance(path, str) and path.strip():
+        template = device_templates.get_by_path(path)
+        if template is None:
+            template = device_templates.get_by_name(Path(path).stem)
+        if template is not None:
+            return template.type
+    raise DeviceTemplateNotFound(str(path))
+
+
+def _locations_by_index(
+    assignment: Mapping[str, Any],
+    *,
+    flow_index: int,
+    sinks: list[Mapping[str, Any]],
+) -> dict[int, str]:
+    """Validate one flow's sink_locations against its snapshot sink list.
+
+    Indices address the frozen snapshot positionally, counting every sink
+    regardless of category — the operator never sees a sink name — so an index
+    outside the list, a repeat, a missing file-sink location, or a location on
+    a non-file sink are all structural errors rather than something to repair.
+    """
+    raw = assignment.get("sink_locations") or []
+    if not isinstance(raw, list):
+        raise InvalidSessionEntry(
+            f"assignments[{flow_index}].sink_locations", "must be a list"
+        )
+
+    by_index: dict[int, str] = {}
+    for position, item in enumerate(raw):
+        label = f"assignments[{flow_index}].sink_locations[{position}]"
+        entry = _require_mapping(item, label)
+        sink_index = _normalize_index(entry.get("sink_index"), f"{label}.sink_index")
+        if not 0 <= sink_index < len(sinks):
+            raise InvalidSessionEntry(
+                f"{label}.sink_index",
+                f"is out of range for a template flow with {len(sinks)} sink(s)",
+            )
+        if sink_index in by_index:
+            raise InvalidSessionEntry(
+                f"{label}.sink_index", f"duplicate sink_index {sink_index}"
+            )
+        if not _is_file_sink(sinks[sink_index].get("sink_type")):
+            raise InvalidSessionEntry(
+                f"{label}.sink_location",
+                "only file sinks have a location",
+            )
+        by_index[sink_index] = _normalize_nonempty_string(
+            entry.get("sink_location"), f"{label}.sink_location"
+        )
+
+    for sink_index, sink in enumerate(sinks):
+        if _is_file_sink(sink.get("sink_type")) and sink_index not in by_index:
+            raise InvalidSessionEntry(
+                f"assignments[{flow_index}].sink_locations",
+                f"file sink at index {sink_index} needs a location",
+            )
+    return by_index
+
+
+def materialize_template_flows(
+    snapshot_content: Mapping[str, Any],
+    assignments: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Turn a frozen template snapshot plus accepted assignments into run flows.
+
+    The snapshot is authoritative for everything the template owns — sink type,
+    parameters, order and count — and the assignment list supplies only what the
+    operator reviewed: which configured device runs each flow, and where each
+    file sink writes. Nothing here claims a device or reserves a path; both are
+    checked for the operator's benefit and acquired only at start.
+    """
+    snapshot_flows = snapshot_content.get("device_flows") or []
+    if not isinstance(assignments, list):
+        raise InvalidSessionEntry("assignments", "must be a list")
+
+    seen: set[int] = set()
+    by_flow: dict[int, Mapping[str, Any]] = {}
+    for position, item in enumerate(assignments):
+        assignment = _require_mapping(item, f"assignments[{position}]")
+        flow_index = _normalize_index(
+            assignment.get("flow_index"), f"assignments[{position}].flow_index"
+        )
+        if not 0 <= flow_index < len(snapshot_flows):
+            raise InvalidSessionEntry(
+                f"assignments[{position}].flow_index",
+                f"is out of range for a template with {len(snapshot_flows)} flow(s)",
+            )
+        if flow_index in seen:
+            raise InvalidSessionEntry(
+                f"assignments[{position}].flow_index",
+                f"duplicate flow_index {flow_index}",
+            )
+        seen.add(flow_index)
+        by_flow[flow_index] = assignment
+
+    missing = [index for index in range(len(snapshot_flows)) if index not in by_flow]
+    if missing:
+        raise InvalidSessionEntry(
+            "assignments",
+            "every template flow needs exactly one assignment; missing flow_index "
+            + ", ".join(str(index) for index in missing),
+        )
+
+    entries: list[dict[str, Any]] = []
+    for flow_index, snapshot_flow in enumerate(snapshot_flows):
+        assignment = by_flow[flow_index]
+        snapshot_sinks = list(snapshot_flow.get("sinks") or [])
+
+        config_id = _normalize_int(
+            assignment.get("device_config_id"),
+            f"assignments[{flow_index}].device_config_id",
+        )
+        config = device_configs.get_by_id(config_id)
+        if config is None:
+            raise DeviceConfigNotFound(config_id)
+
+        required_type = _snapshot_flow_device_type(snapshot_flow)
+        actual_type = DeviceType(config.device_type).value
+        if actual_type != required_type:
+            raise InvalidSessionEntry(
+                f"assignments[{flow_index}].device_config_id",
+                f"device {config_id} is a {actual_type}, but this flow needs a {required_type}",
+            )
+
+        locations = _locations_by_index(
+            assignment, flow_index=flow_index, sinks=snapshot_sinks
+        )
+        sinks: list[dict[str, Any]] = []
+        for sink_index, snapshot_sink in enumerate(snapshot_sinks):
+            sink = dict(snapshot_sink)
+            if sink_index in locations:
+                sink["sink_location"] = locations[sink_index]
+            sinks.append(sink)
+
+        entry: dict[str, Any] = {"device_config_id": config_id, "sinks": sinks}
+        if snapshot_flow.get("nickname"):
+            entry["nickname"] = snapshot_flow["nickname"]
+        entries.append(entry)
+
+    return validate_entries(entries, instantiate=True, positional=True)
+
+
+def apply_sink_locations(
+    device_flows: list[Mapping[str, Any]],
+    locations: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Relocate file-sink outputs on a Draft that has never started.
+
+    Addresses the stored effective flows with the same positional coordinates
+    the create request used, so a client can replay a ``sink_location_exists``
+    conflict straight back as a fix. Only locations move: device bindings, sink
+    type, parameters, order and count are untouched.
+    """
+    if not isinstance(locations, list) or not locations:
+        raise InvalidSessionEntry("locations", "must contain at least one location")
+
+    flows = [dict(flow) for flow in device_flows]
+    for flow in flows:
+        flow["sinks"] = [dict(sink) for sink in (flow.get("sinks") or [])]
+
+    seen: set[tuple[int, int]] = set()
+    for position, item in enumerate(locations):
+        label = f"locations[{position}]"
+        entry = _require_mapping(item, label)
+        flow_index = _normalize_index(entry.get("flow_index"), f"{label}.flow_index")
+        if not 0 <= flow_index < len(flows):
+            raise InvalidSessionEntry(
+                f"{label}.flow_index",
+                f"is out of range for a session with {len(flows)} flow(s)",
+            )
+        sinks = flows[flow_index]["sinks"]
+        sink_index = _normalize_index(entry.get("sink_index"), f"{label}.sink_index")
+        if not 0 <= sink_index < len(sinks):
+            raise InvalidSessionEntry(
+                f"{label}.sink_index",
+                f"is out of range for a flow with {len(sinks)} sink(s)",
+            )
+        if (flow_index, sink_index) in seen:
+            raise InvalidSessionEntry(
+                f"{label}", f"duplicate location for flow {flow_index} sink {sink_index}"
+            )
+        seen.add((flow_index, sink_index))
+        if not _is_file_sink(sinks[sink_index].get("sink_type")):
+            raise InvalidSessionEntry(
+                f"{label}.sink_location", "only file sinks have a location"
+            )
+        sinks[sink_index]["sink_location"] = _normalize_nonempty_string(
+            entry.get("sink_location"), f"{label}.sink_location"
+        )
+
+    entries = [
+        {
+            "device_config_id": flow["device_config_id"],
+            "nickname": flow.get("nickname"),
+            "sinks": flow["sinks"],
+        }
+        for flow in flows
+    ]
+    for entry in entries:
+        if entry["nickname"] is None:
+            del entry["nickname"]
+    return validate_entries(entries, instantiate=True, positional=True)
 
 
 def _parse_source(

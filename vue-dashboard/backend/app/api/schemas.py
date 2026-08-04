@@ -98,16 +98,62 @@ class ScheduleSchema(Schema):
             raise ValidationError("Must be in the future.", field_name="start_at")
 
 
-class CreateSessionSchema(Schema):
-    """Input for creating a Draft. Everything is optional — a blank Draft is valid."""
+class SinkLocationAssignmentSchema(Schema):
+    """One sink index per one file path location
+    """
 
-    # name omitted -> None here, then auto-generated in the store (decision B).
+    sink_index = fields.Integer(required=True, validate=validate.Range(min=0))
+    sink_location = fields.String(required=True, validate=validate.Length(min=1))
+
+
+class FlowAssignmentSchema(Schema):
+    """The reviewed assignment for one template flow: one flow index with multiple sink indexes : location pairs."""
+
+    flow_index = fields.Integer(required=True, validate=validate.Range(min=0))
+    device_config_id = fields.Integer(required=True)
+    sink_locations = fields.List(
+        fields.Nested(SinkLocationAssignmentSchema),
+        load_default=list,
+    )
+
+
+class CreateSessionSchema(Schema):
+    """Input for creating a Draft from one registered template revision: device assignment, sink location, notes, schedule.""
+    """
+
+    source_template_id = fields.String(required=True, validate=validate.Length(min=1))
+    expected_template_hash = fields.String(
+        required=True,
+        validate=validate.Regexp(r"^[0-9a-f]{64}$", error="must be a SHA-256 hex digest"),
+    )
+    assignments = fields.List(
+        fields.Nested(FlowAssignmentSchema),
+        required=True,
+        validate=validate.Length(min=1),
+    )
+    # name omitted -> None here, then minted as "Run {id}" from the committed id.
     name = fields.String(load_default=None, validate=validate.Length(min=1, max=120))
-    policy = fields.Enum(PolicyMode, by_value=True, load_default=PolicyMode.RECOMMEND)
     experiment_id = fields.String(load_default=None)
     notes = fields.String(load_default=None, allow_none=True)
     schedule = fields.Nested(ScheduleSchema, load_default=None)
-    device_flows = fields.List(fields.Raw(), load_default=list)
+
+
+class SinkLocationUpdateSchema(Schema):
+    """One relocation applied to a never-started Draft."""
+
+    flow_index = fields.Integer(required=True, validate=validate.Range(min=0))
+    sink_index = fields.Integer(required=True, validate=validate.Range(min=0))
+    sink_location = fields.String(required=True, validate=validate.Length(min=1))
+
+
+class UpdateSinkLocationsSchema(Schema):
+    """Update output locations after a start-time collision detected"""
+
+    locations = fields.List(
+        fields.Nested(SinkLocationUpdateSchema),
+        required=True,
+        validate=validate.Length(min=1),
+    )
 
 
 class SessionNameSuggestionSchema(Schema):
@@ -153,6 +199,14 @@ class SessionSchema(Schema):
     schedule = fields.Nested(ScheduleSchema, allow_none=True)
     device_flows = fields.List(fields.Raw())
     command_id = fields.String(allow_none=True)
+    # Copied provenance, not a foreign key: a session stays readable — and its
+    # run reconstructable — after the template is edited, archived, or the
+    # registry is rebuilt from scratch.
+    source_template_id = fields.String(dump_only=True, allow_none=True)
+    source_template_name = fields.String(dump_only=True, allow_none=True)
+    source_template_ref = fields.String(dump_only=True, allow_none=True)
+    source_template_hash = fields.String(dump_only=True, allow_none=True)
+    source_template_snapshot = fields.Raw(dump_only=True, allow_none=True)
     created_at = fields.DateTime(dump_only=True)
 
 

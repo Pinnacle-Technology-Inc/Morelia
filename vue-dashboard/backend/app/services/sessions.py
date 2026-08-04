@@ -18,7 +18,7 @@ import structlog
 from structlog.contextvars import get_contextvars
 
 from app.database import transaction
-from app.domain.enums import OperationState, SessionStatus, SinkCategory
+from app.domain.enums import OperationState, PolicyMode, SessionStatus, SinkCategory
 from app.domain.errors import (
     CommandInFlight,
     EmptySession,
@@ -44,8 +44,13 @@ from app.services.operations import (
     transition_operation,
     record_operation_failure_event,
 )
+from app.services import session_templates
 from app.services.registry import UnknownConfigType, sink_parameter_schema
-from app.services.session_config import validate_entries
+from app.services.session_config import (
+    apply_sink_locations,
+    materialize_template_flows,
+    validate_entries,
+)
 from app.watchdog.commands import prepare_command
 
 _log = structlog.get_logger(__name__)
@@ -81,12 +86,85 @@ RECOVER_ACTIONS = frozenset({"reconnect", "restart", "reset-stream"})
 
 
 def create(data: dict) -> Session:
-    canonical = dict(data)
-    experiments.ensure_assignable(canonical.get("experiment_id"))
-    flows = canonical.get("device_flows") or []
-    if flows:
-        canonical["device_flows"] = validate_entries(flows)
-    return _repo.create(canonical)
+    """Create a Draft from exactly one trusted registered template revision.
+
+    Ordering matters and is the whole point of this function. The template is
+    resolved and reread first, and its canonical content is frozen into the
+    session's source snapshot BEFORE any run-specific assignment is applied —
+    so the snapshot records what the template said, not what this run did with
+    it. The effective ``policy``/``device_flows`` are materialized afterwards
+    and stored separately; runtime start reads only those and never rereads the
+    template.
+
+    Nothing is claimed here. A device assignment and an output path are both
+    validated for the operator's benefit and acquired only at start, so a run
+    that is reviewed and abandoned leaves nothing held.
+    """
+    experiments.ensure_assignable(data.get("experiment_id"))
+
+    # The HTTP schema already requires both, but the service is also called
+    # directly (CLI, tests, other services), and those callers deserve the same
+    # typed failure rather than a KeyError from three frames down.
+    for required in ("source_template_id", "expected_template_hash"):
+        if not data.get(required):
+            raise InvalidSessionEntry(required, "is required; a session runs one template revision")
+
+    resolution = session_templates.resolve_for_run(data["source_template_id"])
+    template = resolution.template
+
+    # Two independent proofs must agree before anything is inserted: the bytes
+    # on disk still hash to the accepted revision (checked in resolve_for_run),
+    # and they still hash to what the client was shown when it built this
+    # request. A stale client hash means the operator reviewed a revision that
+    # is no longer the one they are about to run.
+    if resolution.content_hash != data.get("expected_template_hash"):
+        raise session_templates.SessionTemplateStateConflict(
+            f"Session template {template.name!r} changed since it was read; "
+            "review the current revision before starting a run.",
+            template.state,
+            template.allowed_actions,
+        )
+
+    source_snapshot = {
+        "canonical_hash_version": session_templates.CANONICAL_HASH_VERSION,
+        "content": resolution.content,
+    }
+    device_flows = materialize_template_flows(
+        resolution.content,
+        data.get("assignments") or [],
+    )
+
+    return _repo.create({
+        "name": data.get("name"),
+        "experiment_id": data.get("experiment_id"),
+        "notes": data.get("notes"),
+        "schedule": data.get("schedule"),
+        "policy": PolicyMode(resolution.content["policy"]),
+        "device_flows": device_flows,
+        "source_template_id": template.template_id,
+        "source_template_name": template.name,
+        "source_template_ref": template.reference,
+        "source_template_hash": template.registered_hash,
+        "source_template_snapshot": source_snapshot,
+    })
+
+
+def update_sink_locations(session_id: int, locations: list[dict]) -> Session:
+    """Relocate a never-started Draft's file outputs.
+
+    Gated on ``dataflow_id`` rather than status: "has never started" is the
+    durable fact, and it stays true regardless of how the status vocabulary
+    evolves around it. Once a run has minted a dataflow, its assignments and
+    locations are historical evidence and stop being editable.
+    """
+    session = get(session_id)
+    if session.dataflow_id is not None:
+        raise InvalidTransition(session.status)
+
+    flows = apply_sink_locations(session.device_flows or [], locations)
+    with transaction():
+        session.device_flows = flows
+    return session
 
 
 def get(session_id: int) -> Session:
