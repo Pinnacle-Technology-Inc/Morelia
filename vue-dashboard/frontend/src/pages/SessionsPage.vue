@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { AlertTriangle, Filter, Plus, RefreshCw, Search } from "@lucide/vue";
+import { AlertTriangle, Filter, RefreshCw, Search } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -14,7 +14,7 @@ const props = defineProps({
   loadError: { type: String, default: "" },
 });
 
-defineEmits(["open-session", "new-session", "retry"]);
+defineEmits(["open-session", "open-templates", "retry"]);
 
 const activeTab = ref("all");
 const search = ref("");
@@ -43,9 +43,9 @@ function timeLabel(session) {
     <PageHeader
       eyebrow="Session workspace"
       title="Sessions"
-      description="Find, configure, schedule, and review acquisition sessions."
+      description="Review acquisition runs, then return to a reusable template when you need another."
     >
-      <BaseButton @click="$emit('new-session')"><Plus :size="16" /> New Session</BaseButton>
+      <BaseButton @click="$emit('open-templates')">Browse Templates</BaseButton>
     </PageHeader>
 
     <BaseCard class="workspace-card">

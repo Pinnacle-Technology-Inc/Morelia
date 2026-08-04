@@ -47,7 +47,7 @@ const RESTING_REASON = {
   Unknown: "Fetching this session's current status…",
   Draft: "Not started. This session has never run.",
   Scheduled: "Scheduled. Waiting for its start time.",
-  Stopped: "Stopped. The dataflow was concluded and can be restarted.",
+  Stopped: "Stopped. This run is closed; start another run from its source template.",
   Completed: "Completed. This session is archived and read-only.",
 };
 

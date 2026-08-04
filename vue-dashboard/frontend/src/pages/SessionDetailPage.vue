@@ -4,11 +4,9 @@ import {
   AlertTriangle,
   ArrowLeft,
   CheckCircle2,
-  Copy,
   ExternalLink,
   FilePlus2,
   FlaskConical,
-  FolderPen,
   Play,
   Shield,
   StopCircle,
@@ -16,13 +14,12 @@ import {
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import CollapsibleSection from "../components/CollapsibleSection.vue";
-import FolderPickerDialog from "../components/FolderPickerDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { completeSession, loadSinkPlan, normalizeSession, startSession, stopSession } from "../session-api";
+import { completeSession, normalizeSession, startSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import {
@@ -32,6 +29,7 @@ import {
   isOutboxUnproven,
 } from "../session-flow-status";
 import { isRunningLifecycle } from "../session-utils";
+import { canRunTemplate, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator
 // arrived from the sessions list. This page resolves everything it needs from
@@ -41,29 +39,31 @@ import { isRunningLifecycle } from "../session-utils";
 const props = defineProps({
   session: { type: Object, default: null },
   sessionId: { type: [String, Number], required: true },
+  // Set once, by App, for a session the start-run dialog just created in "Start
+  // now" mode: issue the start command on arrival so the operator watches the
+  // run come up here rather than in the modal that created it.
+  autoStart: { type: Boolean, default: false },
 });
-const emit = defineEmits(["back", "state-changed"]);
+const emit = defineEmits(["back", "start-another-run", "state-changed"]);
 
 const activeTab = ref("overview");
 const dialog = ref(null);
-const duplicateMode = ref("Copy device identity");
-const duplicateName = ref("");
 const detail = ref(null);
 const detailState = ref("loading");
 const detailError = ref("");
 const commandError = ref("");
 const commandBusy = ref(false);
-// File sinks the operator must name before a stopped session restarts, plus
-// the ones the backend names on its own (shown, but not editable).
-const restartSinks = ref([]);
-const restartAutoNamed = ref([]);
-const restartFolderPickerKey = ref(null);
+const sourceTemplate = ref(null);
+const sourceTemplateState = ref("idle");
+const sourceTemplateError = ref("");
 const activity = ref({ state: SessionEventState.IDLE, events: [], error: null });
 // Optimistic lifecycle from a just-issued command, shown until the refetch that
 // follows it lands. Cleared by refreshDetail() so the server always wins.
 const pendingLifecycle = ref(null);
 let eventStream;
 let pollTimer = null;
+let sourceTemplateRequest = 0;
+let resolvedSourceTemplateId = null;
 
 // Shown for the one round-trip between mounting on a bare id (deep link from the
 // Create wizard) and /status answering. `lifecycle: "Unknown"` is deliberate —
@@ -109,6 +109,47 @@ const view = computed(() => {
 });
 
 const lifecycle = computed(() => pendingLifecycle.value ?? view.value.lifecycle);
+
+// Session provenance is immutable history. The registry resource below is a
+// separate, current-state lookup used only to decide whether a NEW child run can
+// be created; the frozen snapshot is never used to restart this session.
+const sourceTemplateId = computed(() => detail.value?.session?.source_template_id ?? null);
+const sourceTemplateSnapshot = computed(() => detail.value?.session?.source_template_snapshot ?? null);
+const sourceSnapshotContent = computed(() => sourceTemplateSnapshot.value?.content ?? null);
+const sourceSnapshotFlows = computed(() =>
+  Array.isArray(sourceSnapshotContent.value?.device_flows) ? sourceSnapshotContent.value.device_flows : [],
+);
+const sourceSnapshotSinkCount = computed(() =>
+  sourceSnapshotFlows.value.reduce(
+    (total, flow) => total + (Array.isArray(flow?.sinks) ? flow.sinks.length : 0),
+    0,
+  ),
+);
+const sourceSnapshotJson = computed(() => JSON.stringify(sourceTemplateSnapshot.value, null, 2));
+const sourceTemplateRunnable = computed(() =>
+  lifecycle.value === "Stopped" &&
+  sourceTemplateState.value === "live" &&
+  Boolean(sourceTemplate.value?.templateId) &&
+  canRunTemplate(sourceTemplate.value),
+);
+const sourceTemplateGuidance = computed(() => {
+  if (!sourceTemplateId.value) {
+    return "This legacy run has no source template identity. Its stored provenance remains available, but another run cannot be launched from it.";
+  }
+  if (sourceTemplateState.value === "loading") {
+    return "Checking the source template's current registry state…";
+  }
+  if (sourceTemplateState.value === "unavailable") {
+    return sourceTemplateError.value || "The source template could not be resolved. Restore or reconcile it before starting another run.";
+  }
+  if (sourceTemplateState.value === "live") {
+    if (canRunTemplate(sourceTemplate.value)) {
+      return "The source revision is currently ACTIVE. Starting again creates a new child run and leaves this run unchanged.";
+    }
+    return templateStateHint(sourceTemplate.value) || "The source revision is not runnable in its current state.";
+  }
+  return "Current source state has not been checked.";
+});
 
 // The runtime has gone quiet: everything derived from the newest report is
 // last-known rather than current, and the whole page has to say so rather than
@@ -326,6 +367,47 @@ const DETAIL_POLL_MS = 5000;
 const EVENT_REFRESH_THROTTLE_MS = 2000;
 let lastDetailFetch = 0;
 
+async function resolveSourceTemplate({ force = false } = {}) {
+  const templateId = sourceTemplateId.value;
+  if (!templateId) {
+    sourceTemplate.value = null;
+    sourceTemplateState.value = "idle";
+    sourceTemplateError.value = "";
+    resolvedSourceTemplateId = null;
+    return;
+  }
+  if (!force && resolvedSourceTemplateId === templateId && sourceTemplateState.value !== "idle") return;
+
+  const request = ++sourceTemplateRequest;
+  resolvedSourceTemplateId = templateId;
+  sourceTemplate.value = null;
+  sourceTemplateState.value = "loading";
+  sourceTemplateError.value = "";
+  try {
+    const current = await loadSessionTemplate(templateId);
+    if (request !== sourceTemplateRequest) return;
+    sourceTemplate.value = current;
+    sourceTemplateState.value = "live";
+  } catch (error) {
+    if (request !== sourceTemplateRequest) return;
+    sourceTemplateState.value = "unavailable";
+    sourceTemplateError.value =
+      error instanceof Error
+        ? error.message
+        : "The source template could not be resolved. Restore or reconcile it before starting another run.";
+  }
+}
+
+async function startAnotherRun() {
+  // Revalidate at the click boundary as well as on page load. Unit 14 repeats
+  // this check before create, but a stale button must not navigate there after
+  // the source changes state in another process.
+  await resolveSourceTemplate({ force: true });
+  if (sourceTemplateRunnable.value) {
+    emit("start-another-run", sourceTemplate.value.templateId);
+  }
+}
+
 /** `silent` keeps a background refresh from flashing the page back to loading. */
 async function refreshDetail({ silent = false } = {}) {
   if (!silent) detailState.value = "loading";
@@ -336,6 +418,7 @@ async function refreshDetail({ silent = false } = {}) {
     detailError.value = "";
     // The server has now spoken; drop any optimistic post-command lifecycle.
     pendingLifecycle.value = null;
+    if (lifecycle.value === "Stopped") await resolveSourceTemplate();
   } catch (error) {
     // A failed *background* refresh keeps the last good snapshot on screen —
     // blanking a live view because one poll missed is worse than mild staleness.
@@ -354,7 +437,24 @@ function onActivitySnapshot(snapshot) {
 }
 
 onMounted(() => {
-  refreshDetail();
+  // Gated on the fetched lifecycle rather than fired blind: the flag says the
+  // operator asked for "Start now", the server says whether there is still a
+  // Draft to start. A session that already moved on is never re-commanded.
+  refreshDetail().then(() => {
+    if (!props.autoStart) return;
+    if (lifecycle.value === "Draft") {
+      runLifecycleCommand(() => startSession(props.sessionId));
+      return;
+    }
+    // The operator asked for "Start now" and we are not going to issue it —
+    // because the detail fetch failed, or the session already moved on. Say so.
+    // Silently skipping is what strands someone on a Draft that looks like
+    // nothing happened, with no clue whether to wait or to act.
+    commandError.value =
+      lifecycle.value === "Unknown"
+        ? "Created, but this session's state could not be read, so it was not started. Use Start below."
+        : `Created, but not started automatically — this session is ${lifecycle.value}.`;
+  });
   eventStream = createSessionEventStream({
     sessionId: props.sessionId,
     onChange: onActivitySnapshot,
@@ -379,11 +479,6 @@ function applyCommandResult(result) {
   emit("state-changed", result);
 }
 
-function openDuplicate() {
-  duplicateName.value = `${view.value.name} Copy`;
-  dialog.value = "duplicate";
-}
-
 async function runLifecycleCommand(command) {
   commandBusy.value = true;
   commandError.value = "";
@@ -399,90 +494,18 @@ async function runLifecycleCommand(command) {
   }
 }
 
+// A Draft has never run, so its sink locations are still unused. Starting it is
+// a plain command; once it reaches Stopped, this session can never start again.
+//
+// Without this the detail page offered Start only for a Stopped session, which
+// left every Draft a dead end: a session saved from the run dialog, or one
+// whose automatic start did not fire, could not be started from the UI at all.
+function startDraft() {
+  return runLifecycleCommand(() => startSession(props.sessionId));
+}
+
 function confirmStop() {
   return runLifecycleCommand(() => stopSession(props.sessionId));
-}
-
-// A stopped session's file sinks still point at the files the previous run
-// wrote, and a managed output file is never reopened or overwritten. So the
-// restart asks for the output names FIRST rather than letting start fail with
-// a 409 the operator then has to interpret.
-async function restartStopped() {
-  commandError.value = "";
-  const autoNamed = [];
-  const named = [];
-  try {
-    const plan = await loadSinkPlan(props.sessionId);
-    for (const sink of plan?.sinks ?? []) {
-      if (sink.assignment === "explicit") named.push(sink);
-      else autoNamed.push(sink);
-    }
-  } catch (error) {
-    commandError.value =
-      error instanceof Error ? error.message : "Could not read this session's output plan.";
-    return;
-  }
-
-  // Nothing to name (service/plot sinks only, or every path auto-assigned):
-  // start straight away rather than showing an empty dialog.
-  if (!named.length) return runLifecycleCommand(() => startSession(props.sessionId));
-
-  restartSinks.value = named.map((sink) => ({
-    ...sink,
-    location: sink.suggested_location ?? sink.current_location ?? "",
-  }));
-  restartAutoNamed.value = autoNamed;
-  dialog.value = "restart";
-}
-
-const restartOverrides = computed(() =>
-  Object.fromEntries(
-    restartSinks.value
-      .filter((sink) => sink.location && sink.location !== sink.current_location)
-      .map((sink) => [sink.key, sink.location]),
-  ),
-);
-
-// Reusing a path the previous run already wrote would be rejected at start
-// anyway; catching it here keeps the operator in the dialog they're already in.
-const restartReusedPaths = computed(() =>
-  restartSinks.value.filter((sink) => sink.occupied && sink.location === sink.current_location),
-);
-
-const restartBlocked = computed(
-  () => restartReusedPaths.value.length > 0 || restartSinks.value.some((sink) => !sink.location.trim()),
-);
-
-function splitOutputLocation(location) {
-  const value = String(location ?? "");
-  const boundary = Math.max(value.lastIndexOf("/"), value.lastIndexOf("\\"));
-  if (boundary < 0) return { folder: "", filename: value };
-  return { folder: value.slice(0, boundary), filename: value.slice(boundary + 1) };
-}
-
-function openRestartFolderPicker(sink) {
-  restartFolderPickerKey.value = sink.key;
-}
-
-const restartFolderPickerFolder = computed(() => {
-  const sink = restartSinks.value.find((entry) => entry.key === restartFolderPickerKey.value);
-  return splitOutputLocation(sink?.location).folder;
-});
-
-function chooseRestartFolder(folder) {
-  const sink = restartSinks.value.find((entry) => entry.key === restartFolderPickerKey.value);
-  if (!sink) return;
-  const filename = splitOutputLocation(sink.location).filename || `${sink.sink_name}.${sink.sink_type}`;
-  const separator = folder.includes("\\") ? "\\" : "/";
-  sink.location = `${folder.replace(/[\\/]$/, "")}${separator}${filename}`;
-  restartFolderPickerKey.value = null;
-}
-
-function confirmRestart() {
-  if (restartBlocked.value) return;
-  return runLifecycleCommand(() =>
-    startSession(props.sessionId, { sinkOverrides: restartOverrides.value }),
-  );
 }
 
 function sinkIsPlot(sink) {
@@ -580,9 +603,9 @@ const tabTones = computed(() => ({
       </div>
       <div class="detail-actions">
         <BaseButton v-if="lifecycle !== 'Completed'" variant="secondary"><FilePlus2 :size="16" /> Add Note</BaseButton>
-        <BaseButton v-if="lifecycle !== 'Completed'" variant="secondary" @click="openDuplicate"><Copy :size="16" /> Duplicate</BaseButton>
         <BaseButton v-if="lifecycle === 'Stopped'" variant="secondary" :disabled="commandBusy" @click="dialog = 'complete'"><CheckCircle2 :size="16" /> Complete</BaseButton>
-        <BaseButton v-if="lifecycle === 'Stopped'" variant="primary" :disabled="commandBusy" @click="restartStopped"><Play :size="16" /> Start</BaseButton>
+        <BaseButton v-if="lifecycle === 'Draft' || lifecycle === 'Scheduled'" variant="primary" :disabled="commandBusy" @click="startDraft"><Play :size="16" /> Start</BaseButton>
+        <BaseButton v-if="sourceTemplateRunnable" variant="primary" @click="startAnotherRun"><Play :size="16" /> Start another run</BaseButton>
         <BaseButton v-if="isRunningLifecycle(lifecycle)" variant="danger" :disabled="commandBusy" @click="dialog = 'stop'"><StopCircle :size="16" /> Stop</BaseButton>
         <p v-if="commandError" class="form-notice">{{ commandError }}</p>
       </div>
@@ -628,6 +651,45 @@ const tabTones = computed(() => ({
             :detail-error="detailError"
             :last-report-at="detail?.latest_report?.received_at ?? null"
           />
+        </BaseCard>
+        <BaseCard
+          v-if="lifecycle === 'Stopped'"
+          class="detail-panel detail-panel--wide source-template-card"
+        >
+          <header class="source-template-heading">
+            <div>
+              <h3>Source template</h3>
+              <p>Immutable provenance captured when this run was created.</p>
+            </div>
+            <StatusBadge v-if="sourceTemplateState === 'live'" :value="sourceTemplate.state" />
+          </header>
+          <p :class="{ 'form-notice': sourceTemplateState === 'unavailable' || (sourceTemplateState === 'live' && !canRunTemplate(sourceTemplate)) }">
+            {{ sourceTemplateGuidance }}
+          </p>
+          <dl class="detail-list">
+            <div><dt>Stored name</dt><dd>{{ detail?.session?.source_template_name ?? "Unavailable" }}</dd></div>
+            <div><dt>Stored reference</dt><dd><code>{{ detail?.session?.source_template_ref ?? "Unavailable" }}</code></dd></div>
+            <div><dt>Template revision ID</dt><dd><code>{{ sourceTemplateId ?? "Unavailable" }}</code></dd></div>
+            <div><dt>Accepted hash</dt><dd><code>{{ detail?.session?.source_template_hash ?? "Unavailable" }}</code></dd></div>
+          </dl>
+          <details v-if="sourceTemplateSnapshot" class="source-snapshot">
+            <summary>Frozen source snapshot</summary>
+            <dl class="detail-list">
+              <div><dt>Hash version</dt><dd><code>{{ sourceTemplateSnapshot.canonical_hash_version }}</code></dd></div>
+              <div><dt>Policy</dt><dd>{{ sourceSnapshotContent?.policy ?? "Unavailable" }}</dd></div>
+              <div><dt>Streams</dt><dd>{{ sourceSnapshotFlows.length }}</dd></div>
+              <div><dt>Sinks</dt><dd>{{ sourceSnapshotSinkCount }}</dd></div>
+            </dl>
+            <pre>{{ sourceSnapshotJson }}</pre>
+          </details>
+          <p v-else class="form-notice">No frozen source snapshot was stored for this legacy run.</p>
+          <BaseButton
+            v-if="lifecycle === 'Stopped' && sourceTemplateState === 'unavailable' && sourceTemplateId"
+            variant="secondary"
+            @click="resolveSourceTemplate({ force: true })"
+          >
+            Retry source lookup
+          </BaseButton>
         </BaseCard>
         <!-- Only rendered when there IS a recovery. Its entire content was
              otherwise "No active recovery context is reported." — a permanent
@@ -860,7 +922,7 @@ const tabTones = computed(() => ({
       </div>
     </BaseCard>
 
-    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and output generation. The session remains restartable." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
+    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and output generation. This run cannot be restarted; another run must come from its source template." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
       <div class="dialog-notice"><strong>Streams affected</strong><code v-for="flow in sessionDeviceFlows" :key="flow.id">{{ flow.device }}</code></div>
     </GuardedDialog>
     <GuardedDialog v-if="dialog === 'complete'" title="Complete Session" description="This permanently archives the stopped session. Future Start, Stop, Recover, and configuration mutations are prohibited." confirm-label="Complete Session" danger @close="dialog = null" @confirm="() => runLifecycleCommand(() => completeSession(props.sessionId))">
@@ -869,62 +931,38 @@ const tabTones = computed(() => ({
     <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
       <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>
     </GuardedDialog>
-    <GuardedDialog
-      v-if="dialog === 'restart'"
-      title="Start Session Again"
-      description="Each run writes its own output files. Name the outputs for this run."
-      confirm-label="Start Session"
-      @close="dialog = null"
-      @confirm="confirmRestart"
-    >
-      <div class="dialog-form">
-        <label v-for="sink in restartSinks" :key="sink.key" class="field">
-          <span>{{ sink.nickname ? `${sink.nickname} — ${sink.sink_name}` : sink.sink_name }} ({{ sink.sink_type }})</span>
-          <div class="restart-location-control">
-            <input v-model="sink.location" spellcheck="false" />
-            <BaseButton variant="secondary" @click="openRestartFolderPicker(sink)">
-              <FolderPen :size="15" /> Choose folder
-            </BaseButton>
-          </div>
-          <small v-if="sink.occupied && sink.location === sink.current_location" class="form-notice">
-            <AlertTriangle :size="16" /> The previous run's file is still here. Choose a different name.
-          </small>
-          <small v-else-if="sink.occupied">Previous run: {{ sink.current_location }}</small>
-        </label>
-        <p v-if="restartAutoNamed.length" class="form-notice">
-          {{ restartAutoNamed.length }} further output{{ restartAutoNamed.length === 1 ? " is" : "s are" }}
-          named automatically at start.
-        </p>
-        <p v-if="restartBlocked" class="form-notice">
-          <AlertTriangle :size="18" /> Give every output a name that isn't already taken.
-        </p>
-      </div>
-    </GuardedDialog>
-    <FolderPickerDialog
-      v-if="restartFolderPickerKey"
-      :model-value="restartFolderPickerFolder"
-      @select="chooseRestartFolder"
-      @close="restartFolderPickerKey = null"
-    />
-    <GuardedDialog v-if="dialog === 'duplicate'" title="Duplicate Session" confirm-label="Create Session" @close="dialog = null" @confirm="dialog = null">
-      <div class="dialog-form">
-        <label class="field"><span>Session Name</span><input v-model="duplicateName" /></label>
-        <label class="field"><span>Device Copy Mode</span><select v-model="duplicateMode"><option>Copy device identity</option><option>Generic copy</option></select></label>
-        <p v-if="duplicateMode === 'Generic copy'" class="form-notice"><AlertTriangle :size="18" /> Pick devices before starting this session.</p>
-      </div>
-    </GuardedDialog>
   </div>
 </template>
 
 <style scoped>
-.restart-location-control {
+.source-template-heading {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
 }
 
-.restart-location-control input {
-  min-width: 0;
-  flex: 1;
+.source-template-heading h3,
+.source-template-heading p {
+  margin: 0;
+}
+
+.source-snapshot {
+  margin-top: var(--space-3);
+}
+
+.source-snapshot summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.source-snapshot pre {
+  max-height: 22rem;
+  overflow: auto;
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sage);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 </style>
