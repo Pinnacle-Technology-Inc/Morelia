@@ -32,6 +32,18 @@ export async function loadDevicePool() {
   };
 }
 
+/**
+ * Whether a pool row can be used as a stream.
+ *
+ * "free" is the pool's term for configured-and-unclaimed, and only a configured
+ * row has the persisted `device_config_id` that an assignment or a template flow
+ * ultimately needs. Shared by the template wizard and the start-run dialog so
+ * both agree on what a pickable device is.
+ */
+export function isDeviceSelectable(device) {
+  return device?.status === "free" && device?.id != null;
+}
+
 async function mutate(path, options) {
   return requestJson(path, { ...options, headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) } });
 }

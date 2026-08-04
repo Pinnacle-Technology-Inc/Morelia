@@ -9,16 +9,40 @@ import {
 
 afterEach(() => vi.restoreAllMocks());
 
+// A session template is always a registry resource now: it carries a reconciled
+// `state`, and the loaders normalize to that shape rather than passing raw rows
+// through. Device templates are a different resource and stay untouched.
+const REGISTRY_ROW = {
+  template_id: "tmpl-1",
+  name: "s",
+  reference: "s.toml",
+  registered_hash: "a".repeat(64),
+  observed_hash: "a".repeat(64),
+  state: "ACTIVE",
+  allowed_actions: ["archive"],
+  warnings: [],
+  content: { policy: "recommend" },
+};
+
 it("loads both live template collections", async () => {
-  vi.stubGlobal("fetch", vi.fn(async (url) => ({ ok: true, json: async () => url.includes("device") ? [{ name: "d" }] : [{ name: "s" }] })));
+  vi.stubGlobal("fetch", vi.fn(async (url) => ({ ok: true, json: async () => url.includes("device") ? [{ name: "d" }] : [REGISTRY_ROW] })));
   await expect(loadDeviceTemplates()).resolves.toEqual([{ name: "d" }]);
-  await expect(loadSessionTemplates()).resolves.toEqual([{ name: "s" }]);
+  await expect(loadSessionTemplates()).resolves.toMatchObject([
+    { templateId: "tmpl-1", name: "s", state: "ACTIVE", allowedActions: ["archive"] },
+  ]);
 });
 
 it("loads the folder-authoritative session template catalog", async () => {
-  const rows = [{ source: "local", name: "draft", reference: "session-templates/draft.toml", content: { policy: "recommend" } }];
+  const rows = [{ ...REGISTRY_ROW, template_id: null, name: "draft", reference: "draft.toml", state: "DISCOVERED", allowed_actions: ["register"] }];
   vi.stubGlobal("fetch", vi.fn(async (url) => ({ ok: true, json: async () => (String(url).includes("/catalog") ? rows : []) })));
-  await expect(loadSessionTemplateCatalog()).resolves.toEqual(rows);
+  await expect(loadSessionTemplateCatalog()).resolves.toMatchObject([
+    { templateId: null, name: "draft", state: "DISCOVERED", allowedActions: ["register"] },
+  ]);
+});
+
+it("refuses a session template row with no reconciled state instead of rendering a guess", async () => {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [{ name: "legacy" }] })));
+  await expect(loadSessionTemplates()).rejects.toThrow(/unknown state/);
 });
 
 it("uses the destructive device-template route without inventing export", async () => {
