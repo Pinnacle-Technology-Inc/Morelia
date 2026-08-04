@@ -12,7 +12,9 @@ import {
 } from "@lucide/vue";
 
 defineProps({ active: { type: String, required: true } });
-defineEmits(["change", "new-session"]);
+// A run always starts from a template now, so the global create action makes a
+// template rather than a blank session.
+defineEmits(["change", "new-template"]);
 
 const items = [
   { id: "overview", label: "Overview", icon: Monitor },
@@ -45,11 +47,11 @@ const items = [
     <button
       class="nav-new"
       type="button"
-      aria-label="Create new session"
-      @click="$emit('new-session')"
+      aria-label="Create new template"
+      @click="$emit('new-template')"
     >
       <Plus :size="17" />
-      <span>New Session</span>
+      <span>New Template</span>
     </button>
   </nav>
 </template>

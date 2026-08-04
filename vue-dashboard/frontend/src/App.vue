@@ -19,7 +19,8 @@ import { useSessionCatalog } from "./composables/useSessionCatalog";
 const initialRoute = parseHash(window.location.hash);
 const activeTab = ref(initialRoute.tab);
 const selectedSessionId = ref(initialRoute.sessionId);
-const creating = ref(initialRoute.creating);
+const selectedTemplateId = ref(initialRoute.templateId);
+const templateView = ref(initialRoute.templateView);
 // The catalog polls itself in the background, so Overview and Sessions pick up
 // lifecycle changes made anywhere — this tab's wizard, the CLI, the runtime
 // promoting a Starting session to Active — without a reload. The explicit
@@ -38,13 +39,23 @@ const selectedSession = computed(() =>
 function changeTab(tab) {
   activeTab.value = tab;
   selectedSessionId.value = null;
-  creating.value = false;
+  selectedTemplateId.value = null;
+  templateView.value = null;
   syncHash();
 }
 
 function openSession(id) {
   selectedSessionId.value = id;
-  creating.value = false;
+  selectedTemplateId.value = null;
+  templateView.value = null;
+  syncHash();
+}
+
+function openTemplate(id, view = "detail") {
+  activeTab.value = "templates";
+  selectedSessionId.value = null;
+  selectedTemplateId.value = id;
+  templateView.value = view;
   syncHash();
 }
 
@@ -56,10 +67,14 @@ function returnToSessions() {
   changeTab("sessions");
 }
 
-function newSession() {
-  activeTab.value = "sessions";
+// The single entry point for "make something new". A run is no longer created
+// from nothing, so every former new-session affordance — the global button, the
+// Sessions page, Overview's empty state — lands here.
+function newTemplate() {
+  activeTab.value = "templates";
   selectedSessionId.value = null;
-  creating.value = true;
+  selectedTemplateId.value = null;
+  templateView.value = "new";
   syncHash();
 }
 
@@ -67,7 +82,8 @@ function syncHash() {
   const nextHash = toHash({
     tab: activeTab.value,
     sessionId: selectedSessionId.value,
-    creating: creating.value,
+    templateId: selectedTemplateId.value,
+    templateView: templateView.value,
   });
   if (window.location.hash !== nextHash) window.history.pushState(null, "", nextHash);
 }
@@ -76,7 +92,8 @@ function applyHash() {
   const route = parseHash(window.location.hash);
   activeTab.value = route.tab;
   selectedSessionId.value = route.sessionId;
-  creating.value = route.creating;
+  selectedTemplateId.value = route.templateId;
+  templateView.value = route.templateView;
 }
 
 onMounted(() => {
@@ -94,25 +111,36 @@ onBeforeUnmount(() => {
 <template>
   <div class="app-shell">
     <AppHeader />
-    <PrimaryNav :active="activeTab" @change="changeTab" @new-session="newSession" />
+    <PrimaryNav :active="activeTab" @change="changeTab" @new-template="newTemplate" />
     <main class="app-main">
       <OverviewPage
-        v-if="activeTab === 'overview' && !selectedSessionId && !creating"
+        v-if="activeTab === 'overview' && !selectedSessionId && !templateView"
         :sessions="sessionCatalog"
         :catalog-state="sessionCatalogState"
         :load-error="sessionCatalogError"
         @open-session="openSession"
         @view-attention="changeTab('sessions')"
-        @create-session="newSession"
+        @create-session="newTemplate"
       />
       <!-- Both handlers refresh silently: these fire while the operator is
            looking at the wizard/detail page, and a foreground refresh would
-           drop the list to its loading placeholder behind them. -->
+           drop the list to its loading placeholder behind them.-->
       <CreateSessionPage
-        v-else-if="creating"
-        @cancel="changeTab('sessions')"
+        v-else-if="templateView === 'new'"
+        @cancel="changeTab('templates')"
         @saved="refreshSessionCatalog({ silent: true })"
         @started="refreshSessionCatalog({ silent: true })"
+      />
+
+      <TemplatesPage
+        v-else-if="templateView"
+        :template-id="selectedTemplateId"
+        :view="templateView"
+        @open-template="openTemplate($event, 'detail')"
+        @review-template="openTemplate($event, 'review')"
+        @run-template="openTemplate($event, 'run')"
+        @new-template="newTemplate"
+        @back="changeTab('templates')"
       />
       <!-- Routed on the id, NOT on a catalog hit: a session created seconds ago
            by the wizard is not in `sessionCatalog` yet, and gating the route on
@@ -133,12 +161,18 @@ onBeforeUnmount(() => {
         :catalog-state="sessionCatalogState"
         :load-error="sessionCatalogError"
         @open-session="openSession"
-        @new-session="newSession"
+        @new-session="newTemplate"
         @retry="refreshSessionCatalog"
       />
       <ExperimentsPage v-else-if="activeTab === 'experiments'" />
       <DevicesPage v-else-if="activeTab === 'devices'" />
-      <TemplatesPage v-else-if="activeTab === 'templates'" />
+      <TemplatesPage
+        v-else-if="activeTab === 'templates'"
+        @open-template="openTemplate($event, 'detail')"
+        @review-template="openTemplate($event, 'review')"
+        @run-template="openTemplate($event, 'run')"
+        @new-template="newTemplate"
+      />
       <IncidentsPage v-else-if="activeTab === 'incidents'" />
       <OperationsPage v-else-if="activeTab === 'operations'" />
       <SystemHealthPage v-else-if="activeTab === 'system-health'" />
