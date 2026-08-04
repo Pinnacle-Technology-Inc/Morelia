@@ -2,9 +2,14 @@
 import { computed } from "vue";
 import {
   AlertTriangle,
+  Archive,
   CheckCircle2,
   CircleDashed,
   CircleHelp,
+  CopySlash,
+  PencilOff,
+  FileQuestionMark,
+  ListRestart,
   Clock3,
   EyeOff,
   FileText,
@@ -78,6 +83,15 @@ const config = {
   Failed: { icon: XCircle, tone: "red" },
   Uncertain: { icon: AlertTriangle, tone: "orange" },
   Attention: { icon: AlertTriangle, tone: "orange" },
+  ACTIVE: { icon: CheckCircle2, tone: "green" },
+  DISCOVERED: { icon: FileText, tone: "blue" },
+  PENDING: { icon: CircleDashed, tone: "amber" },
+  DUPLICATE: { icon: CopySlash, tone: "blue" },
+  AMBIGUOUS_RENAME: { icon: FileQuestionMark, tone: "neutral" },
+  CHANGED: { icon: ListRestart, tone: "neutral" },
+  REPLACED: { icon: PencilOff, tone: "neutral" },
+  ARCHIVED: { icon: Archive, tone: "neutral" },
+  INVALID: { icon: AlertTriangle, tone: "amber" },
 };
 
 const current = computed(() => config[props.value] ?? config.Unknown);

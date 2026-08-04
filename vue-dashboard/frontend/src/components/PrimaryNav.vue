@@ -18,10 +18,10 @@ defineEmits(["change", "new-template"]);
 
 const items = [
   { id: "overview", label: "Overview", icon: Monitor },
-  { id: "sessions", label: "Sessions", icon: List },
-  { id: "experiments", label: "Experiments", icon: FlaskConical },
-  { id: "devices", label: "Devices", icon: Cpu },
   { id: "templates", label: "Templates", icon: FileText },
+  { id: "sessions", label: "Sessions", icon: List },
+  { id: "devices", label: "Devices", icon: Cpu },
+  { id: "experiments", label: "Experiments", icon: FlaskConical },
   { id: "incidents", label: "Incidents & Gaps", icon: AlertTriangle, count: 1 },
   { id: "operations", label: "Operations", icon: ListChecks },
   { id: "system-health", label: "System Health", icon: Server },

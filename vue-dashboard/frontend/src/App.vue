@@ -11,6 +11,7 @@ import OperationsPage from "./pages/OperationsPage.vue";
 import OverviewPage from "./pages/OverviewPage.vue";
 import SessionDetailPage from "./pages/SessionDetailPage.vue";
 import SessionsPage from "./pages/SessionsPage.vue";
+import StartRunDialog from "./components/StartRunDialog.vue";
 import SystemHealthPage from "./pages/SystemHealthPage.vue";
 import TemplatesPage from "./pages/TemplatesPage.vue";
 import { parseHash, toHash } from "./navigation-utils";
@@ -44,11 +45,28 @@ function changeTab(tab) {
   syncHash();
 }
 
+// A session the run dialog just created in "Start now" mode, handed to its
+// detail page to issue the start command. One-shot and never in the URL: a
+// reload, a back button, or any ordinary navigation to the same session must
+// not re-command a run, so every other path through openSession() clears it.
+const autoStartSessionId = ref(null);
+
 function openSession(id) {
+  autoStartSessionId.value = null;
   selectedSessionId.value = id;
   selectedTemplateId.value = null;
   templateView.value = null;
   syncHash();
+}
+
+// The dialog creates the Draft and hands the start over rather than running it
+// itself, so the operator lands on the session as it comes up — the detail page
+// already owns the lifecycle badge, the live event stream and the poll that
+// carries Draft → Starting → Active.
+function openCreatedSession(id, { autoStart = false } = {}) {
+  refreshSessionCatalog({ silent: true });
+  openSession(id);
+  if (autoStart) autoStartSessionId.value = id;
 }
 
 function openTemplate(id, view = "detail") {
@@ -131,10 +149,14 @@ onBeforeUnmount(() => {
         @open-existing-template="openTemplate($event, 'detail')"
       />
 
+      <!-- `run` is not a page of its own: starting a session is a modal over
+           the template detail it starts from, so the template stays on screen
+           behind it and Cancel is a close rather than a navigation. The route
+           survives, so a #run deep link and back/forward still work. -->
       <TemplatesPage
         v-else-if="templateView"
         :template-id="selectedTemplateId"
-        :view="templateView"
+        :view="templateView === 'run' ? 'detail' : templateView"
         @open-template="openTemplate($event, 'detail')"
         @review-template="openTemplate($event, 'review')"
         @run-template="openTemplate($event, 'run')"
@@ -151,6 +173,7 @@ onBeforeUnmount(() => {
         :key="selectedSessionId"
         :session="selectedSession ?? null"
         :session-id="selectedSessionId"
+        :auto-start="autoStartSessionId === selectedSessionId"
         @back="returnToSessions"
         @state-changed="refreshSessionCatalog({ silent: true })"
       />
@@ -176,5 +199,14 @@ onBeforeUnmount(() => {
       <OperationsPage v-else-if="activeTab === 'operations'" />
       <SystemHealthPage v-else-if="activeTab === 'system-health'" />
     </main>
+
+    <StartRunDialog
+      v-if="templateView === 'run' && selectedTemplateId"
+      :key="selectedTemplateId"
+      :template-id="selectedTemplateId"
+      @cancel="openTemplate(selectedTemplateId, 'detail')"
+      @created="openCreatedSession"
+      @template-stale="openTemplate($event, 'detail')"
+    />
   </div>
 </template>

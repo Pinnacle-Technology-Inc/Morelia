@@ -235,7 +235,14 @@ td strong { color: var(--ink); }
 .button--ghost:hover:not(:disabled) { color: var(--ink); background: var(--surface-muted); }
 .button--danger { color: var(--error); border: 1px solid #d9aaa6; background: #faf0ef; }
 .button--danger:hover:not(:disabled) { border-color: var(--error); background: #f5e4e2; }
+/* Low-emphasis but still visibly a control at rest — unlike `ghost`, which is
+   borderless. For rows that carry several actions, where `secondary` repeated
+   down a table would compete with the one action the row is actually for. */
+.button--quiet { color: var(--text-body); border: 1px solid var(--border-card); background: var(--surface-card); }
+.button--quiet:hover:not(:disabled) { border-color: var(--primary); background: var(--surface-muted); }
 .button:disabled { opacity: 0.45; cursor: not-allowed; }
+/* Sized to sit inside a table row without setting the row's height. */
+.button--small { min-height: 32px; padding: 0 var(--space-3); }
 
 .page--workspace {
   display: flex;
