@@ -4,10 +4,9 @@ from app.models.session import Session
 
 
 def default_session_name(session_id: int) -> str:
-    """The name an unnamed session gets. Depends on the id, so it can only be
-    minted after the insert.
+    """The name an unnamed session gets. Counting up on number of run, one run per session, multiple session per template.
     """
-    return f"Session {session_id}"
+    return f"Run {session_id}"
 
 
 class SessionRepository:
@@ -26,6 +25,7 @@ class SessionRepository:
                 status=SessionStatus.DRAFT,
                 policy=data.get("policy", PolicyMode.RECOMMEND),
                 experiment_id=data.get("experiment_id"),
+                notes=(str(data.get("notes")).strip() or None) if data.get("notes") is not None else None,
                 schedule=data.get("schedule"),
                 device_flows=data.get("device_flows") or [],
                 source_template_id=data.get("source_template_id"),
@@ -49,28 +49,7 @@ class SessionRepository:
         ).first()
 
     def peek_next_id(self) -> int:
-        """Best-effort guess at the id the next created session will get.
-
-        NOT authoritative and NOT reserved — the real id is only ever
-        assigned atomically by SQLite's own auto-increment at insert time
-        (create(), via db.session.flush()). This is a plain unlocked read, so
-        a concurrent create — or this one aborting before it commits — can
-        make the guess wrong.
-
-        Safe to be wrong: both consumers are cosmetic — a sink_location
-        suggestion string (session_config._resolve_sink) and the name the
-        create-session form shows as a placeholder (sessions.suggest_name).
-        Neither decides a real row's identity. A stale guess just makes an odd
-        filename or a placeholder that doesn't match the name create() ends up
-        minting, never a duplicate row or a corrupted id sequence — unlike
-        pre-computing MAX(id)+1 to use AS the actual id, which would be a
-        real race.
-
-        Note the placeholder consumer only stays safe as long as the form
-        sends ``name: null`` when untouched. If it ever submitted the
-        suggestion as an explicit name, a stale guess would collide and get a
-        "-1" suffix from create()'s dedup loop.
-        """
+        """Guess the next session id for UI placeholders only — not reserved, can be stale."""
         highest = db.session.scalar(db.select(db.func.max(Session.id)))
         return (highest or 0) + 1
 

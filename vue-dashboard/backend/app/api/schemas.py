@@ -105,6 +105,7 @@ class CreateSessionSchema(Schema):
     name = fields.String(load_default=None, validate=validate.Length(min=1, max=120))
     policy = fields.Enum(PolicyMode, by_value=True, load_default=PolicyMode.RECOMMEND)
     experiment_id = fields.String(load_default=None)
+    notes = fields.String(load_default=None, allow_none=True)
     schedule = fields.Nested(ScheduleSchema, load_default=None)
     device_flows = fields.List(fields.Raw(), load_default=list)
 
@@ -148,6 +149,7 @@ class SessionSchema(Schema):
     status = fields.Enum(SessionStatus, by_value=True)
     policy = fields.Enum(PolicyMode, by_value=True)
     experiment_id = fields.String(allow_none=True)
+    notes = fields.String(allow_none=True)
     schedule = fields.Nested(ScheduleSchema, allow_none=True)
     device_flows = fields.List(fields.Raw())
     command_id = fields.String(allow_none=True)

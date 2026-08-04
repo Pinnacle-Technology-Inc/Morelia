@@ -13,6 +13,7 @@ class Session(db.Model):
     status          = db.Column(db.Enum(SessionStatus), nullable=False, default=SessionStatus.DRAFT)
     policy          = db.Column(db.Enum(PolicyMode))
     experiment_id   = db.Column(db.String(255))
+    notes             = db.Column(db.Text, nullable=True)
     schedule          = db.Column(db.JSON, nullable=True)
     device_flows      = db.Column(db.JSON, nullable=False, default=list)
     command_in_flight = db.Column(db.Boolean, nullable=False, default=False)
