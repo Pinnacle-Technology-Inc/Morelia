@@ -237,7 +237,7 @@ def test_dispatched_stop_succeeds_when_stopping_runtime_is_absent():
         )
         assert result.succeeded_operations == 1
         assert operation.state is OperationState.SUCCEEDED
-        assert session.status is SessionStatus.COMPLETED
+        assert session.status is SessionStatus.STOPPED
         assert session.command_in_flight is False
         assert ownership.state is RuntimeOwnershipState.STOPPED
         assert ownership.stopped_at is not None
@@ -462,7 +462,7 @@ def test_orphan_active_session_without_runtime_port_is_completed_and_released():
 
         db.session.refresh(session)
         assert result.released_orphan_sessions == 1
-        assert session.status is SessionStatus.COMPLETED
+        assert session.status is SessionStatus.STOPPED
         config = db.session.get(DeviceConfig, config_id)
         assert config.claim_state is DeviceClaimState.FREE
         assert config.claimed_session_id is None

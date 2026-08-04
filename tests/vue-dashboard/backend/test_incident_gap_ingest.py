@@ -97,7 +97,8 @@ def test_incident_list_show_and_ack_routes(app):
 
     listed = client.get(f"/api/v1/incidents?session={session_id}")
     assert listed.status_code == 200
-    assert [i["incident_id"] for i in listed.get_json()] == [incident_id]
+    body = listed.get_json()
+    assert [i["incident_id"] for i in body["items"]] == [incident_id]
 
     shown = client.get(f"/api/v1/incidents/{incident_id}")
     assert shown.status_code == 200

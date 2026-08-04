@@ -40,7 +40,9 @@ def _use_app(monkeypatch, app) -> None:
 
 
 def post_calls_payload(fake: FakeDaemonClient) -> dict:
-    post_calls = [call for call in fake.calls if call[0] == "POST"]
+    post_calls = [
+        call for call in fake.calls if call[0] == "POST" and call[1] == "/api/v1/sessions/"
+    ]
     assert len(post_calls) == 1
     return post_calls[0][2]
 
@@ -237,7 +239,10 @@ def test_guided_create_flow2_instantiates_a_stored_template_by_name(monkeypatch)
                 ],
             },
         },
-        posts=[{"id": "2", "status": "draft"}],
+        posts=[
+            {"assignments": []},
+            {"id": "2", "status": "draft"},
+        ],
     )
     _use_fake_client(monkeypatch, fake)
 
@@ -249,7 +254,9 @@ def test_guided_create_flow2_instantiates_a_stored_template_by_name(monkeypatch)
     )
 
     assert result.exit_code == 0, result.output
-    post_calls = [call for call in fake.calls if call[0] == "POST"]
+    post_calls = [
+        call for call in fake.calls if call[0] == "POST" and call[1] == "/api/v1/sessions/"
+    ]
     assert len(post_calls) == 1
     _, path, payload = post_calls[0]
     assert path == "/api/v1/sessions/"
@@ -318,7 +325,10 @@ def test_guided_create_flow2_pick_mode_selects_by_config_id_and_notes_unconfigur
                 ],
             },
         },
-        posts=[{"id": "9", "status": "draft"}],
+        posts=[
+            {"assignments": []},
+            {"id": "9", "status": "draft"},
+        ],
     )
     _use_fake_client(monkeypatch, fake)
 
@@ -379,7 +389,10 @@ def test_guided_create_flow2_instantiates_a_stored_template_by_number(monkeypatc
                 ],
             },
         },
-        posts=[{"id": "3", "status": "draft"}],
+        posts=[
+            {"assignments": []},
+            {"id": "3", "status": "draft"},
+        ],
     )
     _use_fake_client(monkeypatch, fake)
 
@@ -433,7 +446,10 @@ def test_guided_create_flow2_file_reference_resolves_names_to_ids(monkeypatch, t
                 ],
             },
         },
-        posts=[{"id": "4", "status": "draft"}],
+        posts=[
+            {"assignments": []},
+            {"id": "4", "status": "draft"},
+        ],
     )
     _use_fake_client(monkeypatch, fake)
     template_path = tmp_path / "portable-template.toml"
@@ -471,8 +487,11 @@ def test_guided_create_flow2_file_reference_resolves_names_to_ids(monkeypatch, t
             "sinks": [_DEFAULT_CSV_SINK],
         }
     ]
-    # a file reference never hits /api/v1/session-templates at all.
-    assert not any(call[1].startswith("/api/v1/session-templates") for call in fake.calls)
+    # a file reference never does a stored-template GET lookup.
+    assert not any(
+        call[0] == "GET" and call[1].startswith("/api/v1/session-templates")
+        for call in fake.calls
+    )
 
 
 def test_guided_create_flow2_template_number_can_resolve_local_library_file(
@@ -522,7 +541,10 @@ def test_guided_create_flow2_template_number_can_resolve_local_library_file(
                 ],
             },
         },
-        posts=[{"id": "4", "status": "draft"}],
+        posts=[
+            {"assignments": []},
+            {"id": "4", "status": "draft"},
+        ],
     )
     _use_fake_client(monkeypatch, fake)
     _use_app(monkeypatch, app)

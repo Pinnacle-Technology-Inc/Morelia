@@ -71,7 +71,7 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
         },
     ).get_json()
 
-    assert created["source_template"] == "pod-high.toml"
+    assert created["source_template"] == "device-templates/pod-high.toml"
     assert created["source_template_hash"] == template["content_hash"]
 
     edited = client.patch(
@@ -83,7 +83,7 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
     body = edited.get_json()
     assert body["source_template"] is None
     assert body["source_template_hash"] is None
-    assert body["source_template_history"] == "pod-high.toml"
+    assert body["source_template_history"] == "device-templates/pod-high.toml"
 
     unchanged_template = client.get("/api/v1/device-templates/pod-high").get_json()
     assert unchanged_template["content"]["parameters"] == {"preamp_gain": 10}
@@ -184,7 +184,7 @@ def test_edit_with_writeback_updates_linked_template_and_keeps_provenance(client
 
     assert edited.status_code == 200
     body = edited.get_json()
-    assert body["source_template"] == "pod-high.toml"
+    assert body["source_template"] == "device-templates/pod-high.toml"
     assert body["source_template_hash"] != template["content_hash"]
     updated_template = client.get("/api/v1/device-templates/pod-high").get_json()
     assert updated_template["content"]["parameters"] == {"preamp_gain": 100}

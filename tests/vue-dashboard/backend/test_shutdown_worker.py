@@ -3,8 +3,8 @@ from queue import Queue
 import pytest
 
 import Morelia.Stream.source as source_module
-from Morelia.Stream.shutdown import ShutdownPhase, ShutdownOutcome
-from Morelia.Stream.source import _ShutdownReporter, get_data_wrapper
+from Morelia.shutdown import ShutdownPhase, ShutdownOutcome
+from app.runtime_child.acknowledged_dataflow import ShutdownReporter, acknowledged_get_data_wrapper
 
 
 class FakeEvent:
@@ -17,17 +17,32 @@ class FakeEvent:
 
 class FakeSource:
     def __init__(self, **_kwargs):
-        pass
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def close_port(self):
+        self.closed = True
 
 
 class FakeSink:
     def __init__(self, **_kwargs):
         pass
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
 
 def test_shutdown_reporter_emits_picklable_action_records():
     queue = Queue()
-    reporter = _ShutdownReporter(queue, "shutdown-1", 2)
+    reporter = ShutdownReporter(queue, "shutdown-1", 2)
 
     reporter.emit(ShutdownPhase.STOP_OBSERVED, "stop_event_observed")
 
@@ -40,20 +55,22 @@ def test_shutdown_reporter_emits_picklable_action_records():
     assert record.outcome is ShutdownOutcome.ACKNOWLEDGED
 
 
-def test_wrapper_emits_worker_exiting_after_clean_get_data(monkeypatch):
+def test_backend_worker_emits_legacy_teardown_transcript(monkeypatch):
     queue = Queue()
-    events = []
 
-    def fake_get_data(*_args, shutdown_reporter=None, **_kwargs):
-        events.append(shutdown_reporter)
-        shutdown_reporter.emit(ShutdownPhase.STOP_OBSERVED, "stop_event_observed")
-        shutdown_reporter.emit(ShutdownPhase.SOURCE_STOPPED, "source_port_closed")
-        shutdown_reporter.emit(ShutdownPhase.SINKS_FINALIZING, "sink_close_started")
-        shutdown_reporter.emit(ShutdownPhase.SINKS_FINALIZED, "all_sinks_closed")
+    def fake_get_data(_duration, _event, pod, sinks, **_kwargs):
+        with pod:
+            pass
+        pod.close_port()
+        entered = []
+        for sink in sinks:
+            entered.append(sink.__enter__())
+        for sink in reversed(entered):
+            sink.__exit__(None, None, None)
 
     monkeypatch.setattr(source_module, "get_data", fake_get_data)
 
-    get_data_wrapper(
+    acknowledged_get_data_wrapper(
         1.0,
         FakeEvent(True),
         FakeSource,
@@ -64,37 +81,27 @@ def test_wrapper_emits_worker_exiting_after_clean_get_data(monkeypatch):
         stream_index=0,
     )
 
-    assert events and events[0].finalization_started is True
     records = [queue.get_nowait() for _ in range(queue.qsize())]
-    assert records[-1].phase is ShutdownPhase.WORKER_EXITING
-    assert records[-1].action == "worker_exit_started"
+    assert [record.phase for record in records] == [
+        ShutdownPhase.STOP_OBSERVED,
+        ShutdownPhase.SOURCE_STOPPED,
+        ShutdownPhase.SINKS_FINALIZING,
+        ShutdownPhase.SINKS_FINALIZED,
+        ShutdownPhase.WORKER_EXITING,
+    ]
 
 
-def test_shutdown_exception_after_stop_is_not_converted_to_zero(monkeypatch):
+def test_backend_worker_preserves_teardown_failures(monkeypatch):
     def failing_get_data(*_args, **_kwargs):
         raise RuntimeError("sink close failed")
 
     monkeypatch.setattr(source_module, "get_data", failing_get_data)
 
     with pytest.raises(RuntimeError, match="sink close failed"):
-        get_data_wrapper(
+        acknowledged_get_data_wrapper(
             1.0,
             FakeEvent(True),
             FakeSource,
             {},
             [],
         )
-
-
-def test_wrapper_without_reporter_keeps_legacy_call_shape(monkeypatch):
-    called = []
-
-    def fake_get_data(*args, **kwargs):
-        called.append((args, kwargs))
-
-    monkeypatch.setattr(source_module, "get_data", fake_get_data)
-
-    get_data_wrapper(1.0, FakeEvent(False), FakeSource, {}, [])
-
-    assert called
-    assert called[0][1]["shutdown_reporter"] is None

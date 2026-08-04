@@ -197,10 +197,7 @@ def test_scenario_sink_failure_isolates_from_siblings_and_source(tmp_path):
         assert "presentation disconnected" in sink.message
 
     finally:
-        if hasattr(runtime, "stop"):
-            runtime.stop()
-        elif hasattr(runtime._flowgraph, "stop"):
-            runtime._flowgraph.stop()
+        runtime.close()
 
 
 # ── Scenario 3: EDF continuation merge preserves exact ordered samples ───────
@@ -305,7 +302,7 @@ def test_scenario_stop_then_restart_allocates_new_output_identity(tmp_path, app)
 
         bind_contextvars(request_id="gate-stop-1")
         stopped = session_service.stop_managed(started.id, supervisor)
-        assert stopped.status == SessionStatus.COMPLETED
+        assert stopped.status == SessionStatus.STOPPED
 
         repo = OutputFilesRepository()
         components = repo.list_components(logical_a)

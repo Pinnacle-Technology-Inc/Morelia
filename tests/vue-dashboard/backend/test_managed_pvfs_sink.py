@@ -20,7 +20,7 @@ import pytest
 
 from app.models.output_file import OutputFile
 from app.output.managed_pvfs_sink import ManagedPvfsSink, ManagedPvfsSinkError
-from Morelia.Stream.source import _ShutdownReporter
+from app.runtime_child.acknowledged_dataflow import ShutdownReporter, acknowledged_get_data_wrapper
 
 _DF = "dataflow-pvfs-001"
 _CH = ["EEG1", "EEG2"]
@@ -524,7 +524,7 @@ def test_writer_process_owned_cleanly_and_produces_readable_output(tmp_path, app
 def test_writer_process_requires_and_reports_shutdown_evidence(tmp_path, app):
     path = tmp_path / "wp-evidence.pvfs"
     status_queue = mp.Queue()
-    reporter = _ShutdownReporter(status_queue, "shutdown-pvfs-1", 0)
+    reporter = ShutdownReporter(status_queue, "shutdown-pvfs-1", 0)
     with app.app_context():
         sink = ManagedPvfsSink(
             path=path,

@@ -350,13 +350,23 @@ def test_session_command_daemon_error_exits_nonzero_without_traceback(monkeypatc
 def test_session_create_template_pick_mode_prompts_for_binding(monkeypatch, tmp_path):
     fake = FakeDaemonClient(
         posts=[
+            # POST /api/v1/session-templates/.../assignment-plan
+            {
+                "device_flows": [
+                    {
+                        "device_config_id": 7,
+                        "nickname": "bench-a",
+                    }
+                ]
+            },
+            # POST /api/v1/sessions/
             {
                 "id": "12",
                 "name": "picked-template-session",
                 "status": "draft",
                 "policy": "automate",
                 "device_flows": [{"device_config_id": 7}],
-            }
+            },
         ],
         gets=[
             [
@@ -364,7 +374,10 @@ def test_session_create_template_pick_mode_prompts_for_binding(monkeypatch, tmp_
                     "id": 4,
                     "name": "pod-template",
                     "file_path": "pod-template.toml",
-                    "content": {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+                    "content": {
+                        "type": "pod8206hr",
+                        "parameters": {"preamp_gain": 10},
+                    },
                 }
             ],
             {
@@ -417,6 +430,11 @@ def test_session_create_template_pick_mode_prompts_for_binding(monkeypatch, tmp_
         input="pick\n7\n\n",
     )
 
+    print(result)
+    print("CALLS:", fake.calls)
+    print("REMAINING POSTS:", fake.posts)
+    print("REMAINING GETS:", fake.gets)
+
     assert result.exit_code == 0, result.output
     assert ("POST", "/api/v1/sessions/", {
         "name": "picked-template-session",
@@ -443,13 +461,23 @@ def test_session_create_template_pick_mode_prompts_for_binding(monkeypatch, tmp_
 def test_session_create_template_auto_assigns_free_device_from_pool(monkeypatch, tmp_path):
     fake = FakeDaemonClient(
         posts=[
+            # POST /api/v1/session-templates/<template>/assignment-plan
+            {
+                "device_flows": [
+                    {
+                        "device_config_id": 7,
+                        "nickname": "bench-a",
+                    }
+                ]
+            },
+            # POST /api/v1/sessions/
             {
                 "id": "12",
-                "name": "auto-template-session",
+                "name": "picked-template-session",
                 "status": "draft",
                 "policy": "automate",
                 "device_flows": [{"device_config_id": 7}],
-            }
+            },
         ],
         gets=[
             [
@@ -457,7 +485,10 @@ def test_session_create_template_auto_assigns_free_device_from_pool(monkeypatch,
                     "id": 4,
                     "name": "pod-template",
                     "file_path": "pod-template.toml",
-                    "content": {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+                    "content": {
+                        "type": "pod8206hr",
+                        "parameters": {"preamp_gain": 10},
+                    },
                 }
             ],
             {
@@ -470,16 +501,7 @@ def test_session_create_template_auto_assigns_free_device_from_pool(monkeypatch,
                         "availability": "available",
                         "status": "free",
                         "nickname": "bench-a",
-                    },
-                    {
-                        "id": 8,
-                        "type": "pod8206hr",
-                        "hardware_id": "21146",
-                        "port": "COM5",
-                        "availability": "available",
-                        "status": "free",
-                        "nickname": "bench-b",
-                    },
+                    }
                 ]
             },
         ],

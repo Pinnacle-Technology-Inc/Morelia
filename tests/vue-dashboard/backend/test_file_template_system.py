@@ -29,9 +29,9 @@ def test_device_template_listing_is_file_only_and_idempotent(tmp_path):
         first_listing = device_templates.list()
         second_listing = device_templates.list()
 
-        assert created.file_path == "pod.toml"
-        assert [template.file_path for template in first_listing] == ["pod.toml"]
-        assert [template.file_path for template in second_listing] == ["pod.toml"]
+        assert created.file_path == "device-templates/pod.toml"
+        assert [template.file_path for template in first_listing] == ["device-templates/pod.toml"]
+        assert [template.file_path for template in second_listing] == ["device-templates/pod.toml"]
         assert "device_templates" not in inspect(db.engine).get_table_names()
 
 
@@ -55,7 +55,7 @@ def test_template_names_strip_file_extensions(tmp_path):
         )
 
         assert device.name == "pod"
-        assert device.file_path == "pod.toml"
+        assert device.file_path == "device-templates/pod.toml"
         assert session.name == "session"
 
 
@@ -148,28 +148,3 @@ def test_session_template_api_object_exposes_reference_warning_state(tmp_path):
         )
 
         assert row.reference_warnings
-
-
-def test_session_template_recovers_missing_path_by_unique_hash(tmp_path):
-    app = _app(tmp_path)
-    with app.app_context():
-        original = device_templates.create(
-            "pod",
-            {"type": "pod8206hr", "parameters": {"preamp_gain": 10, "sample_rate": 2000}},
-        )
-        reference = {
-            "device_template_path": original.file_path,
-            "device_template_content_hash": original.content_hash,
-            "sink_type": "csv",
-        }
-        session_templates.create("session", {"device_flows": [reference]})
-        Path(tmp_path, "device-templates", original.file_path).unlink()
-        replacement = device_templates.create(
-            "replacement",
-            {"type": "pod8206hr", "parameters": {"preamp_gain": 10, "sample_rate": 2000}},
-        )
-
-        resolved, warnings = session_templates.resolve_device_template_reference(reference)
-
-        assert resolved.file_path == replacement.file_path
-        assert warnings

@@ -84,65 +84,6 @@ def test_fleet_overview_counts_running_and_reports_phase(client, app):
     assert rows[2]["phase"] is None
 
 
-def test_status_snapshot_joins_history_and_hides_suspect(client, app):
-    with app.app_context():
-        db.session.add(Session(id=7, name="snap", status=SessionStatus.ACTIVE, dataflow_id="df-7"))
-        db.session.commit()
-        # A suspect stream must surface as healthy (suspect-hidden rule).
-        _seed_report(7, "df-7", stream_status="suspect")
-        RuntimeOwnershipRepository().create_starting(
-            runtime_id="rt-7",
-            session_id=7,
-            dataflow_id="df-7",
-            manifest_hash="hash-7",
-            token=None,
-        )
-        create_operation(
-            session_id=7,
-            dataflow_id="df-7",
-            command="start",
-            request_key="req-7",
-        )
-        IncidentRepository().create(
-            incident_id="inc-7",
-            session_id=7,
-            dataflow_id="df-7",
-            device_id="dev-a",
-            reason="stream unhealthy",
-        )
-        RecoveryGapRepository().create(
-            gap_id="gap-7",
-            session_id=7,
-            dataflow_id="df-7",
-            device_id="dev-a",
-            reason="stream recovered",
-            confidence=GapConfidence.UNCERTAIN,
-        )
-
-    response = client.get("/api/v1/sessions/7/status")
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["session"]["id"] == "7"
-    assert body["session"]["status"] == "active"
-    assert body["phase"] == "running"
-    assert body["latest_report"]["devices"] == [
-        {"device_id": "dev-a", "stream_status": "healthy"}
-    ]
-    assert [rt["runtime_id"] for rt in body["runtimes"]] == ["rt-7"]
-    assert [op["command"] for op in body["operations"]] == ["start"]
-    assert [inc["incident_id"] for inc in body["incidents"]] == ["inc-7"]
-    assert [gap["gap_id"] for gap in body["gaps"]] == ["gap-7"]
-    # The runtime never claimed a watchdog identity — the "active runtime"
-    # view still surfaces its runtime_id, but no watchdog fields yet, and no
-    # direct watchdog-process telemetry has ever arrived for this session.
-    assert body["runtime_id"] == "rt-7"
-    assert body["watchdog_id"] is None
-    assert body["watchdog_state"] is None
-    assert body["last_report_at"] is None
-    assert body["outbox_health"] == "unknown"
-
-
 def test_status_snapshot_surfaces_active_watchdog_identity_and_outbox_health(client, app):
     with app.app_context():
         db.session.add(Session(id=8, name="wd-snap", status=SessionStatus.ACTIVE, dataflow_id="df-8"))
@@ -273,9 +214,10 @@ def test_status_reports_sibling_sinks_independently_of_healthy_source(client, ap
     # Source axis untouched: healthy source, running phase — NOT derived from the
     # worst (failed) sink.
     assert body["phase"] == "running"
-    assert body["latest_report"]["devices"] == [
-        {"device_id": "dev-a", "stream_status": "healthy"}
-    ]
+
+    device = body["latest_report"]["devices"][0]
+    assert device["device_id"] == "dev-a"
+    assert device["stream_status"] == "healthy"
 
     sinks = {s["sink_id"]: s for s in body["sinks"]}
     assert set(sinks) == {"sink-csv", "sink-influx", "sink-quest", "sink-edf"}

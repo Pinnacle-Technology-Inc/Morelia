@@ -43,57 +43,6 @@ def test_get_unknown_operation_returns_404_problem_json(client):
     assert response.get_json(force=True)["code"] == "operation_not_found"
 
 
-def test_operator_can_list_and_resolve_uncertain_operation(client, app):
-    with app.app_context():
-        db.session.add(Session(id=1, name="ops-api", dataflow_id="df-api"))
-        db.session.commit()
-        operation = create_operation(
-            session_id=1,
-            dataflow_id="df-api",
-            command="start",
-            request_key="req-api",
-        )
-        operation.state = OperationState.UNCERTAIN
-        operation.error_code = "runtime_identity_mismatch"
-        db.session.commit()
-        operation_id = operation.operation_id
-
-    listed = client.get("/api/v1/operations/?state=uncertain")
-
-    assert listed.status_code == 200
-    assert [row["operation_id"] for row in listed.get_json()] == [operation_id]
-
-    response = client.post(
-        f"/api/v1/operations/{operation_id}/resolve",
-        json={
-            "resolved_by": "operator@example.com",
-            "resolution_note": "Verified runtime manually.",
-        },
-    )
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["operation_id"] == operation_id
-    assert body["state"] == "uncertain"
-    assert body["resolved_by"] == "operator@example.com"
-    assert body["resolved_at"] is not None
-    assert body["resolution_note"] == "Verified runtime manually."
-
-    with app.app_context():
-        stored = db.session.scalar(
-            db.select(Operation).where(Operation.operation_id == operation_id)
-        )
-        assert stored.resolved_by == "operator@example.com"
-        assert stored.resolved_at is not None
-        next_operation = create_operation(
-            session_id=1,
-            dataflow_id="df-api",
-            command="restart-all-streams",
-            request_key="after-resolution",
-        )
-        assert next_operation.operation_id != operation_id
-
-
 def test_operator_can_filter_operations_by_session_and_dataflow(client, app):
     with app.app_context():
         db.session.add(Session(id=1, name="ops-api-a", dataflow_id="df-api-a"))

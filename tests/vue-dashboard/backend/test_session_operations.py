@@ -310,7 +310,7 @@ def test_managed_stop_stops_runtime_releases_config_and_completes_session():
         ).all()
         config = db.session.get(DeviceConfig, config_id)
 
-        assert stopped.status == SessionStatus.COMPLETED
+        assert stopped.status == SessionStatus.STOPPED
         assert stopped.command_in_flight is False
         assert stopped.runtime_port is None
         assert operations[-1].command == "stop"
@@ -356,7 +356,7 @@ def test_managed_stop_force_releases_device_and_records_unclean_stop():
         ).all()
         config = db.session.get(DeviceConfig, config_id)
 
-        assert stopped.status == SessionStatus.COMPLETED
+        assert stopped.status == SessionStatus.STOPPED
         assert stopped.command_in_flight is False
         assert stopped.runtime_port is None
         assert stopped.runtime_token is None
@@ -454,7 +454,7 @@ def test_managed_stop_force_after_proof_missing_retry_completes_the_session():
         ).all()
         config = db.session.get(DeviceConfig, config_id)
 
-        assert stopped.status == SessionStatus.COMPLETED
+        assert stopped.status == SessionStatus.STOPPED
         assert stopped.command_in_flight is False
         assert operations[-1].command == "stop"
         assert operations[-1].state is OperationState.UNCERTAIN
@@ -798,7 +798,7 @@ def test_managed_stop_completes_acquisition_and_schedules_finalization(tmp_path)
         components = repo.list_components(logical)
         head, terminal = components[0], components[-1]
 
-        assert stopped.status == SessionStatus.COMPLETED
+        assert stopped.status == SessionStatus.STOPPED
         # Durable completion boundary: terminal component complete + clean.
         assert terminal.acquisition_state == ACQUISITION_COMPLETE
         assert terminal.termination_reason == "clean"

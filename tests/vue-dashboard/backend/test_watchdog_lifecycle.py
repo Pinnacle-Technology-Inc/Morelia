@@ -2,7 +2,7 @@ import threading
 from queue import Queue
 
 from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
-from Morelia.Stream.shutdown import ShutdownAction, ShutdownOutcome, ShutdownPhase
+from Morelia.shutdown import ShutdownAction, ShutdownOutcome, ShutdownPhase
 
 
 class FakeEvent:

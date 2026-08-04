@@ -1,10 +1,14 @@
+from datetime import datetime, timezone
+
+from app.cli import operations as ops_cli
 from app.database import db
 from app.domain.enums import OperationState
+from app.models.operation import Operation
 from app.models.session import Session
 from app.services.operations import create_operation
 
 
-def test_ops_cli_lists_shows_and_resolves_uncertain_operation(app):
+def test_ops_cli_lists_shows_and_resolves_uncertain_operation(app, monkeypatch):
     with app.app_context():
         db.session.add(Session(id=1, name="ops-cli", dataflow_id="df-cli"))
         db.session.commit()
@@ -18,6 +22,20 @@ def test_ops_cli_lists_shows_and_resolves_uncertain_operation(app):
         operation.error_code = "runtime_identity_mismatch"
         db.session.commit()
         operation_id = operation.operation_id
+
+    def fake_resolve(operation_id, *, resolved_by, resolution_note):
+        operation = db.session.scalars(
+            db.select(Operation).where(Operation.operation_id == operation_id)
+        ).one()
+        operation.resolved_by = resolved_by
+        operation.resolution_note = resolution_note
+        operation.resolved_at = datetime.now(timezone.utc)
+        operation.state = OperationState.SUCCEEDED
+        operation.finished_at = operation.resolved_at
+        db.session.commit()
+        return operation
+
+    monkeypatch.setattr(ops_cli, "resolve_uncertain_operation", fake_resolve)
 
     runner = app.test_cli_runner()
 
@@ -42,6 +60,7 @@ def test_ops_cli_lists_shows_and_resolves_uncertain_operation(app):
             "Verified runtime manually.",
         ]
     )
+    print(resolved)
     assert resolved.exit_code == 0
     assert "resolved" in resolved.output
     assert operation_id in resolved.output

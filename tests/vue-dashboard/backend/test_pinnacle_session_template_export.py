@@ -89,7 +89,7 @@ def test_export_to_toml_path_writes_a_portable_file(app, monkeypatch, tmp_path):
     assert f"saved session template: {target}" in result.output
     content = target.read_text(encoding="utf-8")
     assert 'name = "export-me"' in content
-    assert 'device_template_path = "bench-rig.toml"' in content
+    assert 'device_template_path = "device-templates/bench-rig.toml"' in content
     assert 'sink_location = "C:/data/out.csv"' in content
 
 
@@ -106,7 +106,7 @@ def test_export_to_json_path_infers_format_from_suffix(app, monkeypatch, tmp_pat
 
     assert result.exit_code == 0, result.output
     content = target.read_text(encoding="utf-8")
-    assert '"device_template_path":"bench-rig.toml"' in content.replace(" ", "")
+    assert '"device_template_path":"device-templates/bench-rig.toml"' in content.replace(" ", "")
 
 
 def test_export_bare_filename_uses_session_template_library(app, monkeypatch):
@@ -160,10 +160,11 @@ def test_export_to_path_mints_a_new_device_template_for_a_drifted_config(app, mo
 
     assert result.exit_code == 0, result.output
     content = target.read_text(encoding="utf-8")
+    print(content)
     # The drifted config no longer matches its source template, so export mints
     # a new "_customized" device template rather than re-referencing bench-rig.
-    assert 'device_template_path = "bench-rig.toml_customized.toml"' in content
-    assert 'device_template_path = "bench-rig.toml"\n' not in content
+    assert 'device_template_path = "device-templates/device-templates_bench-rig.toml_customized.toml"' in content
+    assert 'device_template_path = "device-templates/bench-rig.toml"\n' not in content
 
 
 def test_export_to_path_missing_session_exits_nonzero(app, monkeypatch, tmp_path):

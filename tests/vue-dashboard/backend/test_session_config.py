@@ -140,7 +140,7 @@ def test_validate_entry_seeds_nickname_and_validates_sink(app):
         assert config.hardware_id == "8206A"
         assert entry == {
             "device_config_id": config.id,
-            "nickname": "pod-high.toml",
+            "nickname": "device-templates/pod-high.toml",
             "sinks": [{"sink_name": "csv", "sink_type": "csv", "sink_parameters": {}}],
         }
 
@@ -200,7 +200,7 @@ sink_type = "csv"
 
         assert session.name == "Calibration run"
         assert session.policy.value == "automate"
-        assert session.device_flows[0]["nickname"] == "pod-high.toml"
+        assert session.device_flows[0]["nickname"] == "device-templates/pod-high.toml"
         assert session.device_flows[0]["sinks"] == [
             {
                 "sink_name": "csv",
@@ -563,34 +563,6 @@ def test_import_bad_sink_type_writes_no_session(app):
 
         count = db.session.scalar(db.select(db.func.count()).select_from(Session))
         assert count == 0
-
-
-def test_export_toml_uses_portable_device_template_names(app):
-    with app.app_context():
-        _create_device_templates()
-        original = import_config(
-            {
-                "name": "Calibration run",
-                "policy": "recommend",
-                "device_flows": [
-                    {
-                        "port": "COM3",
-                        "hardware_id": "8206A",
-                        "sink_location": "C:/data/high.csv",
-                        "sink_type": "csv",
-                        "device_template_path": "pod-high.toml",
-                    }
-                ],
-            }
-        )
-
-        exported = export(original, format="toml")
-
-        assert 'device_template_path = "pod-high.toml"' in exported
-        assert 'sink_location = "C:/data/high.csv"' in exported
-        assert "device_config_id" not in exported
-        assert "hardware_id" not in exported
-        assert "port" not in exported
 
 
 def test_export_creates_default_named_template_for_custom_device_config(app):

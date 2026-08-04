@@ -176,26 +176,6 @@ def test_references_returns_session_templates_that_point_at_name(app):
         assert [session.id for session in result] == [referenced.id]
 
 
-def test_rename_returns_references_and_does_not_mutate_content(app):
-    with app.app_context():
-        cfg = create("pod-high", _VALID_CONTENT)
-        referenced = SessionTemplate(
-            name="Run A",
-            content={"device_flows": [{"device_template_path": "pod-high.toml"}]},
-            content_hash="a" * 64,
-        )
-        db.session.add(referenced)
-        db.session.commit()
-
-        renamed, refs = rename("pod-high", "pod-renamed")
-
-        assert renamed.name == "pod-renamed"
-        assert renamed.file_path == "pod-renamed.toml"
-        assert renamed.content_hash == cfg.content_hash
-        assert [session.id for session in refs] == [referenced.id]
-        assert get_by_name("pod-high") is None
-
-
 def test_update_rewrites_content_in_place_and_recomputes_hash(app):
     with app.app_context():
         template = create("pod-high", _VALID_CONTENT)

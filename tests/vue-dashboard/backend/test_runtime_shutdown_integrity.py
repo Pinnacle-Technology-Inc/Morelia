@@ -5,7 +5,7 @@ import pytest
 import app.runtime_child.morelia as morelia_module
 from app.runtime_child.driver import RuntimePhase
 from app.runtime_child.morelia import MoreliaRuntime
-from Morelia.Stream.shutdown import ShutdownAction, ShutdownOutcome, ShutdownPhase
+from Morelia.shutdown import ShutdownAction, ShutdownOutcome, ShutdownPhase
 
 
 def _runtime_with_watchdog(result):

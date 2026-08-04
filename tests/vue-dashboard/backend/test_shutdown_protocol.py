@@ -1,4 +1,4 @@
-from Morelia.Stream.shutdown import (
+from Morelia.shutdown import (
     REQUIRED_SHUTDOWN_PHASES,
     ShutdownAction,
     ShutdownPhase,

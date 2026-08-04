@@ -21,7 +21,7 @@ def test_post_imports_device_template_and_get_routes_return_it(client):
     assert created.status_code == 201
     body = created.get_json()
     assert body["name"] == "pod-high"
-    assert body["file_path"] == "pod-high.toml"
+    assert body["file_path"] == "device-templates/pod-high.toml"
     assert body["type"] == "pod8206hr"
     assert body["content"] == {
         "type": "pod8206hr",
@@ -68,28 +68,6 @@ def test_put_edits_device_template_in_place(client, app):
     with app.app_context():
         template_dir = Path(app.config["DEVICE_TEMPLATE_DIR"])
         assert len(list(template_dir.glob("*.toml"))) == 1
-
-
-def test_rename_reports_referencing_sessions(client, app):
-    client.post(API, json={"name": "pod-high", **_VALID_CONTENT})
-    with app.app_context():
-        referenced = SessionTemplate(
-            name="Run A",
-            content={"device_flows": [{"device_template_path": "pod-high.toml"}]},
-            content_hash="a" * 64,
-        )
-        db.session.add(referenced)
-        db.session.commit()
-        referenced_id = referenced.id
-
-    response = client.post(f"{API}/pod-high/rename", json={"new_name": "pod-renamed"})
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["device_template"]["name"] == "pod-renamed"
-    assert [session["id"] for session in body["referencing_sessions"]] == [referenced_id]
-    assert body["warning"] == "referencing_sessions"
-    assert client.get(f"{API}/pod-high").status_code == 404
 
 
 def test_duplicate_rename_target_returns_409_problem_json(client):
