@@ -32,7 +32,17 @@ def upgrade() -> None:
         sa.Column("watchdog_id", sa.String(64), nullable=True),
         sa.Column("runtime_port", sa.Integer(), nullable=True),
         sa.Column("runtime_token", sa.String(128), nullable=True),
+        sa.Column("source_template_id", sa.String(64), nullable=True),
+        sa.Column("source_template_name", sa.String(255), nullable=True),
+        sa.Column("source_template_ref", sa.String(1024), nullable=True),
+        sa.Column("source_template_hash", sa.String(64), nullable=True),
+        sa.Column("source_template_snapshot", sa.JSON(), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
+    )
+    op.create_index(
+        "ix_sessions_source_template_history",
+        "sessions",
+        ["source_template_id", "created_at", "id"],
     )
 
     op.create_table(

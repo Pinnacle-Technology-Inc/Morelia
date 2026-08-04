@@ -21,4 +21,18 @@ class Session(db.Model):
     watchdog_id     = db.Column(db.String(64))
     runtime_port      = db.Column(db.Integer, nullable=True)
     runtime_token     = db.Column(db.String(128), nullable=True)
+    source_template_id = db.Column(db.String(64), nullable=True)
+    source_template_name = db.Column(db.String(255), nullable=True)
+    source_template_ref = db.Column(db.String(1024), nullable=True)
+    source_template_hash = db.Column(db.String(64), nullable=True)
+    source_template_snapshot = db.Column(db.JSON, nullable=True)
     created_at      = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(UTC))
+
+    __table_args__ = (
+        db.Index(
+            "ix_sessions_source_template_history",
+            "source_template_id",
+            "created_at",
+            "id",
+        ),
+    )

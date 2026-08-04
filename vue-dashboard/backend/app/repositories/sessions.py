@@ -28,6 +28,11 @@ class SessionRepository:
                 experiment_id=data.get("experiment_id"),
                 schedule=data.get("schedule"),
                 device_flows=data.get("device_flows") or [],
+                source_template_id=data.get("source_template_id"),
+                source_template_name=data.get("source_template_name"),
+                source_template_ref=data.get("source_template_ref"),
+                source_template_hash=data.get("source_template_hash"),
+                source_template_snapshot=data.get("source_template_snapshot"),
             )
             db.session.add(row)
             db.session.flush()
@@ -71,6 +76,13 @@ class SessionRepository:
 
     def all(self) -> list[Session]:
         return db.session.scalars(db.select(Session)).all()
+
+    def list_by_source_template_id(self, template_id: str) -> list[Session]:
+        return db.session.scalars(
+            db.select(Session)
+            .where(Session.source_template_id == template_id)
+            .order_by(Session.created_at.desc(), Session.id.desc())
+        ).all()
 
     def set_runtime_host_identity(
         self,
