@@ -18,10 +18,13 @@ from app.domain.enums import PolicyMode, SinkType
 from app.domain.errors import (
     DeviceConfigNotFound,
     EmptySession,
+    InvalidSessionEntry,
     SessionNotFound,
     SinkLocationExists,
     SinkParentUnavailable,
+    UnknownConfigType,
     UnresolvableSession,
+    UnsupportedDeviceType,
 )
 from app.models.runtime_manifest import RuntimeManifest
 from app.repositories.sessions import SessionRepository
@@ -34,6 +37,7 @@ from app.runtime_host.manifest import (
 from app.services import device_configs as _device_configs
 from app.services import session_config as _session_config
 from app.services import sink_paths
+from app.services.registry import lookup_device
 
 _repo = SessionRepository()
 
@@ -331,7 +335,7 @@ def _build_manifest(
     # Resolve all entries before touching the DB: fail-loud, no partial writes.
     device_flows: list[DeviceFlow] = []
     allocated_counts: dict[tuple[int, SinkType], int] = {}
-    for entry in flows:
+    for flow_index, entry in enumerate(flows):
         config_id = entry.get("device_config_id")
         if config_id is None:
             if session_id_for_errors is None:
@@ -361,6 +365,17 @@ def _build_manifest(
             if hasattr(config.device_type, "value")
             else config.device_type
         )
+        raw_parameters = config.parameters or {}
+        try:
+            if not isinstance(raw_parameters, Mapping):
+                raise ValueError("parameters must be a mapping")
+            device_spec = lookup_device(device_type, raw_parameters)
+        except (UnknownConfigType, UnsupportedDeviceType, ValueError) as exc:
+            raise InvalidSessionEntry(
+                f"device_flows[{flow_index}].device_config_id",
+                f"persisted device config {normalized_config_id!r} ({device_type!r}) "
+                f"is invalid: {exc}",
+            ) from exc
         device_id = f"{device_type}:{hardware_id}"
         device_name = str(config.nickname).strip() if config.nickname else None
         source_nickname = entry.get("nickname")
@@ -410,7 +425,7 @@ def _build_manifest(
                 nickname=source_nickname,  # type: ignore[arg-type]
                 hardware_id=hardware_id,
                 port=port,
-                parameters=dict(config.parameters or {}),
+                parameters=device_spec.as_dict(),
                 sinks=sinks,
             )
         )

@@ -118,6 +118,7 @@ class SessionTemplateRepository:
     ) -> list[SessionTemplateDependency]:
         row = self._require(template_id)
         row.dependencies.clear()
+        db.session.flush()
         for dependency in dependencies:
             row.dependencies.append(
                 SessionTemplateDependency(
