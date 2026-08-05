@@ -54,8 +54,8 @@ function onRow(device) {
   <div class="device-scan">
     <div class="device-scan__head">
       <slot name="heading" />
-      <BaseButton variant="secondary" :disabled="scanning" @click="emit('rescan')">
-        <Radar :size="16" /> {{ scanning ? "Scanning…" : "Scan Devices" }}
+      <BaseButton variant="secondary" size="small" :disabled="scanning" @click="emit('rescan')">
+        <Radar :size="16" /> {{ scanning ? "Scanning…" : "Scan" }}
       </BaseButton>
     </div>
 
@@ -139,6 +139,7 @@ function onRow(device) {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  margin-bottom: var(--space-1);
 }
 .device-scan__head :deep(h3) {
   margin: 0;

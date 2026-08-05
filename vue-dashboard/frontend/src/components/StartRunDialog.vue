@@ -14,7 +14,6 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { AlertTriangle, CheckCircle2, FolderPen, RefreshCw, X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import DeviceScanTable from "./DeviceScanTable.vue";
-import DeviceSettingsDialog from "./DeviceSettingsDialog.vue";
 import FolderPickerDialog from "./FolderPickerDialog.vue";
 import StatusBadge from "./StatusBadge.vue";
 import {
@@ -25,10 +24,10 @@ import {
   loadSessionNameSuggestion,
   templateRevisionChanged,
 } from "../session-api";
-import { isDeviceSelectable, loadDevicePool } from "../devices-api";
+import { createDeviceConfigFromTemplate, isDeviceSelectable, loadDevicePool } from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
-import { loadAssignmentPlan } from "../template-planner-api";
-import { loadSessionTemplate, templateStateHint } from "../templates-api";
+import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
+import { loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
 import {
   defaultRunFileStem,
   normalizeTemplateRef,
@@ -61,15 +60,14 @@ const scheduleAt = ref("");
 // Device discovery is a live serial scan, so the assignment step gets an
 // explicit rescan for hardware plugged in after the dialog opened.
 const devices = ref([]);
+const deviceTemplates = ref([]);
 const scanState = ref("idle");
 const scanError = ref("");
 const defaultOutputFolder = ref("");
 
 // Which sink the folder picker is open for: { flowIndex, sinkIndex } or null.
 const folderPickerTarget = ref(null);
-// The unconfigured pool row whose settings dialog is open, plus the flow that
-// opened it so the device can be assigned there once it saves.
-const configureTarget = ref(null);
+const configuringHardware = new Set();
 // A rejected create carrying the backend's proposed alternative path, so a
 // collision is one click to resolve rather than a path to retype.
 const collision = ref(null);
@@ -127,15 +125,20 @@ function matchesFlowTemplate(device, flowIndex) {
   return Boolean(required) && Boolean(source) && required === source;
 }
 
+function deviceTemplateForFlow(flowIndex) {
+  const required = normalizeTemplateRef(flows.value[flowIndex]?.device_template_path);
+  return deviceTemplates.value.find(
+    (template) => normalizeTemplateRef(template.file_path) === required,
+  ) ?? null;
+}
+
+function requiredDeviceType(flowIndex) {
+  return deviceTypeForFlow(assignmentPlan.value, flowIndex) ?? deviceTemplateForFlow(flowIndex)?.type ?? null;
+}
+
 // One device cannot fill two flows of one run, so a device taken by another
 // flow leaves this flow's list entirely rather than sitting there un-tickable.
 function candidateDevices(flowIndex) {
-  const takenElsewhere = new Set(
-    assignments.value
-      .filter((assignment) => assignment.flowIndex !== flowIndex)
-      .map((assignment) => assignment.deviceConfigId)
-      .filter((id) => id != null),
-  );
   // Rank, high to low: the device this flow's template asks for, any other free
   // device, then present-but-unconfigured hardware. sort() is stable, so the
   // pool's own ordering survives within each band.
@@ -143,14 +146,11 @@ function candidateDevices(flowIndex) {
     if (!isDeviceSelectable(device)) return 0;
     return matchesFlowTemplate(device, flowIndex) ? 2 : 1;
   };
-  return devices.value
-    .filter(
-      (device) =>
-        device.availability === "available" &&
-        device.status !== "claimed" &&
-        !takenElsewhere.has(device.id),
-    )
-    .sort((a, b) => rank(b) - rank(a));
+  return compatiblePoolDevicesForFlow(devices.value, {
+    flowIndex,
+    assignments: assignments.value,
+    deviceType: requiredDeviceType(flowIndex),
+  }).sort((a, b) => rank(b) - rank(a));
 }
 
 function annotateFor(flowIndex) {
@@ -405,15 +405,17 @@ async function load() {
     // device discovery, and the two scans contend: issued concurrently, the
     // planner request never returns and the dialog sits on "Preparing template
     // run…" forever. Everything batched here is scan-free.
-    const [planResult, suggestionResult, folderResult] = await Promise.allSettled([
+    const [planResult, suggestionResult, folderResult, deviceTemplateResult] = await Promise.allSettled([
       loadAssignmentPlan(selected.reference || selected.templateId),
       loadSessionNameSuggestion(selected.templateId),
       browseDirectories(),
+      loadDeviceTemplates(),
     ]);
     if (planResult.status === "rejected") throw planResult.reason;
     assignmentPlan.value = planResult.value;
     nameSuggestion.value = suggestionResult.status === "fulfilled" ? suggestionResult.value : "";
     if (folderResult.status === "fulfilled") defaultOutputFolder.value = folderResult.value.path ?? "";
+    deviceTemplates.value = deviceTemplateResult.status === "fulfilled" ? deviceTemplateResult.value : [];
     resetAssignments(planResult.value);
     loadState.value = "ready";
     // Now that the planner has answered, discover the pool — not awaited, so the
@@ -427,27 +429,44 @@ async function load() {
   }
 }
 
-// Same settings dialog the Devices page uses, opened in create mode for an
-// unconfigured pool row. On save we rescan and assign the now-free device to
-// the flow that opened it — the operator's next click is the folder, not a
-// re-tick.
-function configureDevice(flowIndex, device) {
-  configureTarget.value = { device, flowIndex };
-}
-
-async function onDeviceConfigured() {
-  // Remember which physical device was being set up before the rescan: the
-  // dialog reports "saved" but not the new config's id, and hardware_id is the
-  // stable identity that survives the pool refresh.
-  const hardwareId = configureTarget.value?.device?.hardwareId ?? null;
-  const flowIndex = configureTarget.value?.flowIndex ?? null;
-  configureTarget.value = null;
-  await rescanDevices();
-  if (!hardwareId || flowIndex == null) return;
-  const configured = devices.value.find((device) => device.hardwareId === hardwareId);
-  if (configured && isDeviceSelectable(configured)) {
-    const assignment = assignments.value[flowIndex];
-    if (assignment) assignment.deviceConfigId = configured.id;
+// An unconfigured compatible row is configured from this stream's template,
+// so the operator chooses hardware without recreating its settings.
+async function configureDevice(flowIndex, device) {
+  const template = deviceTemplateForFlow(flowIndex);
+  const hardwareId = device.hardwareId;
+  const port = device.port;
+  if (!template || !hardwareId || !port) {
+    scanError.value = "This device cannot be configured because the stream template or hardware details are unavailable.";
+    return;
+  }
+  const key = `${flowIndex}:${hardwareId}`;
+  if (configuringHardware.has(key)) return;
+  configuringHardware.add(key);
+  scanError.value = "";
+  try {
+    await createDeviceConfigFromTemplate({
+      template_name: template.name,
+      hardware_id: hardwareId,
+      port,
+      nickname: device.nickname,
+    });
+    await rescanDevices();
+    const configured = devices.value.find(
+      (candidate) =>
+        candidate.hardwareId === hardwareId &&
+        candidate.type === requiredDeviceType(flowIndex) &&
+        isDeviceSelectable(candidate),
+    );
+    if (configured) {
+      const assignment = assignments.value[flowIndex];
+      if (assignment) assignment.deviceConfigId = configured.id;
+    } else {
+      scanError.value = "The device was configured, but it was not available to assign after the rescan.";
+    }
+  } catch (error) {
+    scanError.value = describeError(error, "The selected device could not be configured from this stream's template.");
+  } finally {
+    configuringHardware.delete(key);
   }
 }
 
@@ -532,7 +551,7 @@ async function submit() {
 // dismissing the folder picker would take the whole run form with it.
 function onKeydown(event) {
   if (event.key !== "Escape") return;
-  if (folderPickerTarget.value || configureTarget.value) return;
+  if (folderPickerTarget.value) return;
   emit("cancel");
 }
 
@@ -550,7 +569,6 @@ watch(() => props.templateId, load);
       <header>
         <div>
           <h2 id="start-run-title">Start a new session</h2>
-          <p>The template supplies configuration. Add only what is specific to this run.</p>
         </div>
         <button class="icon-button" type="button" aria-label="Close dialog" @click="emit('cancel')"><X :size="19" /></button>
       </header>
@@ -582,7 +600,7 @@ watch(() => props.templateId, load);
               <div><span class="section-kicker">Run details</span><h3>Optional metadata</h3></div>
               <p>Blank values use backend defaults.</p>
             </div>
-            <div class="form-grid">
+            <div class="form-grid metadata-grid">
               <label class="field">
                 <span>Session label (optional)</span>
                 <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" :disabled="Boolean(draft)" />
@@ -602,83 +620,106 @@ watch(() => props.templateId, load);
             <AlertTriangle :size="18" /> {{ warning }}
           </p>
 
-          <!-- One block per template flow: the device that fills it, then where
-               that device's sinks write. Sink type, order and count come from
-               the frozen revision and are shown, never offered. -->
-          <section v-for="assignment in assignments" :key="assignment.flowIndex" class="run-section flow-block">
+          <!-- One run section owns every template flow. Each flow is a sub-card:
+               the device that fills it, then where that device's sinks write.
+               Sink type, order and count come from the frozen revision and are
+               shown, never offered. -->
+          <section class="run-section">
             <div class="section-heading">
-              <div>
-                <span class="section-kicker">Stream {{ assignment.flowIndex + 1 }}</span>
-                <h3>{{ flows[assignment.flowIndex]?.nickname || `Stream ${assignment.flowIndex + 1}` }}</h3>
-                <p>Requires <code>{{ flows[assignment.flowIndex]?.device_template_path || "any device" }}</code></p>
-              </div>
-              <StatusBadge compact :value="flowReady(assignment.flowIndex) ? 'Ready' : 'Needs setup'" />
+              <div><span class="section-kicker">Dataflow Details</span><h3>Devices and sinks connection</h3></div>
             </div>
 
-            <DeviceScanTable
-              :group="`flow-${assignment.flowIndex}`"
-              :devices="candidateDevices(assignment.flowIndex)"
-              :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
-              :annotate="annotateFor(assignment.flowIndex)"
-              :scanning="scanState === 'scanning'"
-              :scan-error="scanState === 'error' ? scanError : ''"
-              empty-message="No free device is available for this stream."
-              @toggle="assignDevice(assignment.flowIndex, $event)"
-              @configure="configureDevice(assignment.flowIndex, $event)"
-              @rescan="rescanDevices"
-            >
-              <template #heading><h4>Device for this stream</h4></template>
-            </DeviceScanTable>
+            <div class="flow-stack">
+              <article
+                v-for="assignment in assignments"
+                :key="assignment.flowIndex"
+                class="flow-card"
+                :aria-labelledby="`stream-${assignment.flowIndex}-title`"
+              >
+                <div class="flow-card__heading">
+                  <div>
+                    <div class="flow-card__kicker-row">
+                      <h4 :id="`stream-${assignment.flowIndex}-title`" class="section-kicker">
+                        Stream {{ assignment.flowIndex + 1 }}
+                      </h4>
+                      <StatusBadge compact :value="flowReady(assignment.flowIndex) ? 'Ready' : 'Needs setup'" />
+                    </div>
+                    <strong
+                      v-if="flows[assignment.flowIndex]?.nickname && flows[assignment.flowIndex]?.nickname !== `Stream ${assignment.flowIndex + 1}`"
+                      class="flow-nickname"
+                    >
+                      {{ flows[assignment.flowIndex].nickname }}
+                    </strong>
+                    <p>Requires <code>{{ flows[assignment.flowIndex]?.device_template_path || "any device" }}</code></p>
+                  </div>
+                </div>
 
-            <h4 class="sink-heading">Sink destinations</h4>
-            <p class="sink-caption">
-              Sink types come from the template and cannot change here. Every file sink needs
-              a folder and a filename — a template run writes to paths you choose, so nothing
-              is placed automatically.
-            </p>
-            <div class="table-wrap">
-              <table class="data-table sink-table">
-                <thead><tr><th>Sink type</th><th>Name</th><th>Folder</th></tr></thead>
-                <tbody>
-                  <tr v-if="!templateSinks[assignment.flowIndex]?.length"><td colspan="3">This stream has no sinks.</td></tr>
-                  <tr v-for="(sink, sinkIndex) in templateSinks[assignment.flowIndex] ?? []" :key="sinkIndex">
-                    <!-- Locked by the template: rendered as a value, not a
-                         control, so there is nothing to try and fail to change. -->
-                    <td><span class="sink-locked">{{ sink.sink_type }}</span></td>
-                    <td>
-                      <div v-if="isFileSink(sink.sink_type)" class="sink-name">
-                        <input
-                          :value="sinkEdit(assignment.flowIndex, sinkIndex)?.name ?? ''"
-                          class="sink-control"
-                          aria-label="Sink filename"
-                          :placeholder="defaultSinkName(assignment.flowIndex, sinkIndex) || 'Assign a device first'"
-                          :title="sinkName(assignment.flowIndex, sinkIndex)"
-                          :disabled="Boolean(draft)"
-                          @input="setSinkName(assignment.flowIndex, sinkIndex, $event.target.value)"
-                        />
-                        <span class="sink-extension">.{{ sink.sink_type }}</span>
-                      </div>
-                      <span v-else class="sink-muted">{{ sink.sink_name || sink.sink_type }}</span>
-                    </td>
-                    <td>
-                      <button
-                        v-if="isFileSink(sink.sink_type)"
-                        type="button"
-                        class="sink-control sink-folder-tile"
-                        :class="{ 'sink-folder-tile--empty': !sinkEdit(assignment.flowIndex, sinkIndex)?.folder }"
-                        :aria-label="`Change folder for ${sink.sink_type} sink`"
-                        :title="sinkLocation(assignment.flowIndex, sinkIndex) || 'Choose a folder for this sink'"
-                        :disabled="Boolean(draft)"
-                        @click="openFolderPicker(assignment.flowIndex, sinkIndex)"
-                      >
-                        <span class="sink-folder-path">{{ shortFolder(sinkEdit(assignment.flowIndex, sinkIndex)?.folder) || "Choose a folder…" }}</span>
-                        <FolderPen :size="16" class="sink-folder-icon" />
-                      </button>
-                      <span v-else class="sink-muted">No file output</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                <DeviceScanTable
+                  :group="`flow-${assignment.flowIndex}`"
+                  :devices="candidateDevices(assignment.flowIndex)"
+                  :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
+                  :annotate="annotateFor(assignment.flowIndex)"
+                  :scanning="scanState === 'scanning'"
+                  :scan-error="scanState === 'error' ? scanError : ''"
+                  empty-message="No free device is available for this stream."
+                  @toggle="assignDevice(assignment.flowIndex, $event)"
+                  @configure="configureDevice(assignment.flowIndex, $event)"
+                  @rescan="rescanDevices"
+                >
+                  <template #heading><h4>Pick a device for this stream</h4></template>
+                </DeviceScanTable>
+
+                <h4 class="sink-heading">Sink destinations</h4>
+                <p class="sink-caption">
+                  Sink types come from the template and cannot change here. Every file sink needs
+                  a folder and a filename — a template run writes to paths you choose, so nothing
+                  is placed automatically.
+                </p>
+                <div class="table-wrap sink-table-wrap">
+                  <table class="data-table sink-table">
+                    <thead><tr><th>Sink type</th><th>Name</th><th>Folder</th></tr></thead>
+                    <tbody>
+                      <tr v-if="!templateSinks[assignment.flowIndex]?.length"><td colspan="3">This stream has no sinks.</td></tr>
+                      <tr v-for="(sink, sinkIndex) in templateSinks[assignment.flowIndex] ?? []" :key="sinkIndex">
+                        <!-- Locked by the template: rendered as a value, not a
+                             control, so there is nothing to try and fail to change. -->
+                        <td><span class="sink-locked">{{ sink.sink_type }}</span></td>
+                        <td>
+                          <div v-if="isFileSink(sink.sink_type)" class="sink-name">
+                            <input
+                              :value="sinkEdit(assignment.flowIndex, sinkIndex)?.name ?? ''"
+                              class="sink-control"
+                              aria-label="Sink filename"
+                              :placeholder="defaultSinkName(assignment.flowIndex, sinkIndex) || 'Assign a device first'"
+                              :title="sinkName(assignment.flowIndex, sinkIndex)"
+                              :disabled="Boolean(draft)"
+                              @input="setSinkName(assignment.flowIndex, sinkIndex, $event.target.value)"
+                            />
+                            <span class="sink-extension">.{{ sink.sink_type }}</span>
+                          </div>
+                          <span v-else class="sink-muted">{{ sink.sink_name || sink.sink_type }}</span>
+                        </td>
+                        <td>
+                          <button
+                            v-if="isFileSink(sink.sink_type)"
+                            type="button"
+                            class="sink-control sink-folder-tile"
+                            :class="{ 'sink-folder-tile--empty': !sinkEdit(assignment.flowIndex, sinkIndex)?.folder }"
+                            :aria-label="`Change folder for ${sink.sink_type} sink`"
+                            :title="sinkLocation(assignment.flowIndex, sinkIndex) || 'Choose a folder for this sink'"
+                            :disabled="Boolean(draft)"
+                            @click="openFolderPicker(assignment.flowIndex, sinkIndex)"
+                          >
+                            <span class="sink-folder-path">{{ shortFolder(sinkEdit(assignment.flowIndex, sinkIndex)?.folder) || "Choose a folder…" }}</span>
+                            <FolderPen :size="16" class="sink-folder-icon" />
+                          </button>
+                          <span v-else class="sink-muted">No file output</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </article>
             </div>
           </section>
 
@@ -732,12 +773,6 @@ watch(() => props.templateId, load);
     @select="chooseFolder"
     @close="folderPickerTarget = null"
   />
-  <DeviceSettingsDialog
-    v-if="configureTarget"
-    :device="configureTarget.device"
-    @close="configureTarget = null"
-    @saved="onDeviceConfigured"
-  />
 </template>
 
 <style scoped>
@@ -752,6 +787,10 @@ watch(() => props.templateId, load);
   display: grid;
   max-height: min(72vh, 900px);
   gap: var(--space-4);
+  background: var(--surface-page);
+}
+.start-run > header {
+  align-items: center;
 }
 .section-kicker {
   color: var(--primary);
@@ -769,7 +808,7 @@ watch(() => props.templateId, load);
   border: 1px solid var(--border-card);
   border-left: 4px solid var(--accent);
   border-radius: var(--radius-md);
-  background: var(--sage-50);
+  background: var(--white);
 }
 .run-banner h3 {
   margin-top: var(--space-1);
@@ -787,6 +826,7 @@ watch(() => props.templateId, load);
   padding: var(--space-4);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
+  background: var(--white);
 }
 .section-heading {
   display: flex;
@@ -803,10 +843,74 @@ watch(() => props.templateId, load);
 .section-heading code {
   overflow-wrap: anywhere;
 }
-.flow-block h4 {
+.metadata-grid {
+  max-width: none;
+  grid-template-columns: 1fr;
+}
+.flow-stack {
+  display: grid;
+  gap: var(--space-4);
+}
+.flow-card {
+  padding: var(--space-4);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--sage-50);
+}
+.flow-card__heading {
+  margin-bottom: var(--space-4);
+}
+.flow-card__kicker-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.flow-card__kicker-row .section-kicker,
+.flow-card h4 {
   margin: 0;
+}
+.flow-card__kicker-row .section-kicker {
+  color: var(--ink-900);
+  font-size: var(--fs-xs);
+}
+.flow-card h4:not(.section-kicker) {
   color: var(--ink);
   font-size: var(--fs-sm);
+}
+.flow-nickname {
+  display: block;
+  margin-top: var(--space-1);
+  color: var(--ink);
+  font-size: var(--fs-md);
+}
+.flow-card__heading p {
+  margin-top: var(--space-1);
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+.flow-card :deep(.device-scan .table-wrap),
+.sink-table-wrap {
+  border: 1px solid var(--sage-50);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+}
+.flow-card :deep(.device-scan .data-table),
+.sink-table {
+  margin-top: 0;
+}
+.flow-card :deep(.device-scan th),
+.sink-table th {
+  background: var(--green-800);
+  color: var(--sage-50);
+}
+.flow-card :deep(.device-scan td),
+.sink-table td {
+  border-top: 1px solid var(--sage-200);
+}
+.flow-card :deep(.device-scan tbody tr:nth-child(even)),
+.sink-table tbody tr:nth-child(even) {
+  background: var(--sage-50);
 }
 .sink-heading {
   margin-top: var(--space-4) !important;
