@@ -586,7 +586,6 @@ watch(() => props.templateId, load);
               <label class="field">
                 <span>Session label (optional)</span>
                 <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" :disabled="Boolean(draft)" />
-                <small>The final name also includes the template name and its run number.</small>
               </label>
               <label class="field">
                 <span>Experiment ID (optional)</span>

@@ -3,7 +3,6 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   AlertTriangle,
   ArrowLeft,
-  CheckCircle2,
   ExternalLink,
   FilePlus2,
   FlaskConical,
@@ -19,7 +18,7 @@ import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { completeSession, normalizeSession, startSession, stopSession } from "../session-api";
+import { normalizeSession, startSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import {
@@ -108,7 +107,13 @@ const view = computed(() => {
   return props.session ?? PLACEHOLDER_SESSION;
 });
 
-const lifecycle = computed(() => pendingLifecycle.value ?? view.value.lifecycle);
+// STOPPED was the old intermediate state before an explicit Complete command.
+// Stopping is terminal now, but this compatibility mapping keeps historical or
+// briefly stale payloads from leaking the retired lifecycle into the page.
+const lifecycle = computed(() => {
+  const value = pendingLifecycle.value ?? view.value.lifecycle;
+  return String(value).toLowerCase() === "stopped" ? "Completed" : value;
+});
 
 // Session provenance is immutable history. The registry resource below is a
 // separate, current-state lookup used only to decide whether a NEW child run can
@@ -127,7 +132,7 @@ const sourceSnapshotSinkCount = computed(() =>
 );
 const sourceSnapshotJson = computed(() => JSON.stringify(sourceTemplateSnapshot.value, null, 2));
 const sourceTemplateRunnable = computed(() =>
-  lifecycle.value === "Stopped" &&
+  lifecycle.value === "Completed" &&
   sourceTemplateState.value === "live" &&
   Boolean(sourceTemplate.value?.templateId) &&
   canRunTemplate(sourceTemplate.value),
@@ -418,7 +423,7 @@ async function refreshDetail({ silent = false } = {}) {
     detailError.value = "";
     // The server has now spoken; drop any optimistic post-command lifecycle.
     pendingLifecycle.value = null;
-    if (lifecycle.value === "Stopped") await resolveSourceTemplate();
+    if (lifecycle.value === "Completed") await resolveSourceTemplate();
   } catch (error) {
     // A failed *background* refresh keeps the last good snapshot on screen —
     // blanking a live view because one poll missed is worse than mild staleness.
@@ -460,7 +465,7 @@ onMounted(() => {
     onChange: onActivitySnapshot,
   });
   eventStream.start();
-  // Resting sessions (Draft/Stopped/Completed) only change through this page's
+  // Resting sessions (Draft/Completed) only change through this page's
   // own commands, which refetch directly — no need to poll those.
   pollTimer = setInterval(() => {
     if (isRunningLifecycle(lifecycle.value) || lifecycle.value === "Unknown") {
@@ -474,7 +479,7 @@ onUnmounted(() => {
 });
 
 function applyCommandResult(result) {
-  const labels = { draft: "Draft", scheduled: "Scheduled", starting: "Starting", active: "Active", ending: "Ending", stopped: "Stopped", completed: "Completed" };
+  const labels = { draft: "Draft", scheduled: "Scheduled", starting: "Starting", active: "Active", ending: "Ending", stopped: "Completed", completed: "Completed" };
   if (result?.status && labels[result.status]) pendingLifecycle.value = labels[result.status];
   emit("state-changed", result);
 }
@@ -495,9 +500,9 @@ async function runLifecycleCommand(command) {
 }
 
 // A Draft has never run, so its sink locations are still unused. Starting it is
-// a plain command; once it reaches Stopped, this session can never start again.
+// a plain command; once it reaches Completed, this session can never start again.
 //
-// Without this the detail page offered Start only for a Stopped session, which
+// Without this the detail page offered Start only for a terminal session, which
 // left every Draft a dead end: a session saved from the run dialog, or one
 // whose automatic start did not fire, could not be started from the UI at all.
 function startDraft() {
@@ -603,9 +608,15 @@ const tabTones = computed(() => ({
       </div>
       <div class="detail-actions">
         <BaseButton v-if="lifecycle !== 'Completed'" variant="secondary"><FilePlus2 :size="16" /> Add Note</BaseButton>
-        <BaseButton v-if="lifecycle === 'Stopped'" variant="secondary" :disabled="commandBusy" @click="dialog = 'complete'"><CheckCircle2 :size="16" /> Complete</BaseButton>
         <BaseButton v-if="lifecycle === 'Draft' || lifecycle === 'Scheduled'" variant="primary" :disabled="commandBusy" @click="startDraft"><Play :size="16" /> Start</BaseButton>
-        <BaseButton v-if="sourceTemplateRunnable" variant="primary" @click="startAnotherRun"><Play :size="16" /> Start another run</BaseButton>
+        <BaseButton
+          v-if="sourceTemplateRunnable"
+          variant="primary"
+          title="Start another run from this completed session's source template"
+          @click="startAnotherRun"
+        >
+          <Play :size="16" /> Run source template
+        </BaseButton>
         <BaseButton v-if="isRunningLifecycle(lifecycle)" variant="danger" :disabled="commandBusy" @click="dialog = 'stop'"><StopCircle :size="16" /> Stop</BaseButton>
         <p v-if="commandError" class="form-notice">{{ commandError }}</p>
       </div>
@@ -653,7 +664,7 @@ const tabTones = computed(() => ({
           />
         </BaseCard>
         <BaseCard
-          v-if="lifecycle === 'Stopped'"
+          v-if="lifecycle === 'Completed'"
           class="detail-panel detail-panel--wide source-template-card"
         >
           <header class="source-template-heading">
@@ -684,7 +695,7 @@ const tabTones = computed(() => ({
           </details>
           <p v-else class="form-notice">No frozen source snapshot was stored for this legacy run.</p>
           <BaseButton
-            v-if="lifecycle === 'Stopped' && sourceTemplateState === 'unavailable' && sourceTemplateId"
+            v-if="lifecycle === 'Completed' && sourceTemplateState === 'unavailable' && sourceTemplateId"
             variant="secondary"
             @click="resolveSourceTemplate({ force: true })"
           >
@@ -922,11 +933,8 @@ const tabTones = computed(() => ({
       </div>
     </BaseCard>
 
-    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and output generation. This run cannot be restarted; another run must come from its source template." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
+    <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and marks the run Completed. This run cannot be restarted; another run must come from its source template." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
       <div class="dialog-notice"><strong>Streams affected</strong><code v-for="flow in sessionDeviceFlows" :key="flow.id">{{ flow.device }}</code></div>
-    </GuardedDialog>
-    <GuardedDialog v-if="dialog === 'complete'" title="Complete Session" description="This permanently archives the stopped session. Future Start, Stop, Recover, and configuration mutations are prohibited." confirm-label="Complete Session" danger @close="dialog = null" @confirm="() => runLifecycleCommand(() => completeSession(props.sessionId))">
-      <div class="dialog-notice"><strong>Terminal action</strong><span>The completed session remains read-only history.</span></div>
     </GuardedDialog>
     <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
       <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>

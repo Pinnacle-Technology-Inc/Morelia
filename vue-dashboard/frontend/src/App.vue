@@ -175,6 +175,7 @@ onBeforeUnmount(() => {
         :session-id="selectedSessionId"
         :auto-start="autoStartSessionId === selectedSessionId"
         @back="returnToSessions"
+        @start-another-run="openTemplate($event, 'run')"
         @state-changed="refreshSessionCatalog({ silent: true })"
       />
       <SessionsPage
