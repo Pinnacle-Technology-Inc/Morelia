@@ -34,6 +34,10 @@ export const updateDeviceTemplate = (name, payload) => send(`/api/v1/device-temp
 export const renameDeviceTemplate = (name, newName) => send(`/api/v1/device-templates/${encodeURIComponent(name)}/rename`, "POST", { new_name: newName });
 export const deleteDeviceTemplate = (name) => send(`/api/v1/device-templates/${encodeURIComponent(name)}`, "DELETE");
 export const createSessionTemplate = (payload) => send("/api/v1/session-templates", "POST", payload);
+export const validateSessionTemplateToml = (toml) =>
+  send("/api/v1/session-templates/validations", "POST", { toml });
+export const createSessionTemplateFromToml = ({ name, toml }) =>
+  send("/api/v1/session-templates/imports", "POST", { name, toml });
 export const updateSessionTemplate = (name, payload) => send(`/api/v1/session-templates/${encodeURIComponent(name)}`, "PUT", payload);
 export const deleteSessionTemplate = (name) => send(`/api/v1/session-templates/${encodeURIComponent(name)}`, "DELETE");
 
@@ -48,7 +52,6 @@ export const TEMPLATE_STATES = Object.freeze([
   "DUPLICATE",
   "AMBIGUOUS_RENAME",
   "CHANGED",
-  "REPLACED",
   "ARCHIVED",
   "MISSING",
   "INVALID",
@@ -66,13 +69,13 @@ const SERVER_ACTIONS = Object.freeze({
   accept_change: {
     id: "accept_change",
     label: "Accept as new revision",
-    // The wording matters: accepting records a NEW revision and retires the old
-    // one. It never writes to the file — the operator's edit already did that.
-    title: "Record the edited file as a new revision and mark the previous one REPLACED. Your TOML file is not rewritten.",
+    // Accepting records a NEW active registry entry. It never writes to the
+    // file — the operator's edit already did that.
+    title: "Record the edited file as a new active revision. Your TOML file is not rewritten.",
     confirm:
       "Accept this file as a new revision?\n\n" +
-      "The current revision becomes REPLACED and keeps its own run history. " +
-      "A new revision takes over as ACTIVE. Your TOML file is not modified by this action.",
+      "A new registry entry becomes ACTIVE. Past runs keep their recorded source revision. " +
+      "Your TOML file is not modified by this action.",
   },
   archive: {
     id: "archive",
@@ -184,7 +187,6 @@ export function templateStateHint(template) {
     DUPLICATE: "A copy of a registered template. Only the registered original can run.",
     AMBIGUOUS_RENAME: "Several files match this revision. Select which one is the original.",
     CHANGED: "The file on disk no longer matches the accepted revision. Review the change and accept it as a new revision before running.",
-    REPLACED: "A previous revision, kept for its run history.",
     ARCHIVED: "Archived. Restore it as a new revision if you need to run it again.",
     MISSING: "The registered file cannot be found. Restore it, or resolve a rename.",
     INVALID: "The file cannot be parsed. Repair it on disk.",
