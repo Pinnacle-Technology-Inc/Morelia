@@ -3,11 +3,13 @@ import {
   compareParameters,
   deviceTemplateForFlow,
   hasDrift,
+  defaultRunFileStem,
   defaultSinkStem,
   matchFlowIndex,
   normalizeTemplateRef,
   templateSinksForFlow,
   uniqueSinkIdentifier,
+  sessionNameFromSuggestion,
 } from "./template-import-utils";
 
 const POD_HIGH = {
@@ -189,6 +191,42 @@ describe("defaultSinkStem", () => {
 
   it("survives a device with no hardware id", () => {
     expect(defaultSinkStem({ type: "pod8206hr" }, "csv")).toBe("pod8206hr--csv");
+  });
+});
+
+describe("template run file naming", () => {
+  it("uses a custom session label with the suggested template run number", () => {
+    expect(sessionNameFromSuggestion("sleep analysis • Run 2", "epic")).toBe(
+      "sleep analysis • epic 2",
+    );
+  });
+
+  it("adds the mandatory device code and device nickname", () => {
+    expect(defaultRunFileStem("sleep analysis • epic 2", {
+      type: "pod8206hr",
+      nickname: "Rig A",
+      configId: 17,
+    })).toBe(
+      "sleep-analysis-epic-2-8206-rig-a",
+    );
+  });
+
+  it("uses the config id when the device has no nickname", () => {
+    expect(defaultRunFileStem("sleep analysis • epic 2", {
+      type: "pod8401hr",
+      nickname: null,
+      configId: 17,
+    })).toBe("sleep-analysis-epic-2-8401-config-17");
+  });
+
+  it("adds an ordinal only for a later same-format output", () => {
+    expect(defaultRunFileStem("sleep analysis • epic 2", {
+      type: "pod8206hr",
+      nickname: "Rig A",
+      configId: 17,
+    }, 2)).toBe(
+      "sleep-analysis-epic-2-8206-rig-a-2",
+    );
   });
 });
 

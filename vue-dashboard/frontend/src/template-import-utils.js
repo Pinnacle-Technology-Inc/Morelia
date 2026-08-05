@@ -97,11 +97,9 @@ export function matchFlowIndex(device, flows = [], deviceTemplates = [], claimed
 // --- Sink import and default naming ----------------------------------------
 //
 // The backend already has a complete answer for "where does this file go" when
-// a sink omits ``sink_location`` (manifests._allocate_sink_location):
-//
-//     <OUTPUT_DIR>/<dataflow_id>/<device_id>-<sink_name>.<ext>
-//
-// and the two paths behave differently on collision — an allocated path
+// a sink omits ``sink_location`` (manifests._allocate_sink_location): the run's
+// hyphenated session name under its dataflow directory. The two paths behave
+// differently on collision — an allocated path
 // deduplicates (-2, -3, ...), an operator-supplied one raises
 // SinkLocationExists on purpose. So the wizard's job is to *show* what the
 // backend would pick and otherwise stay out of the way, exactly as the Session
@@ -134,15 +132,41 @@ export function uniqueSinkIdentifier(sinkType, existing = []) {
 }
 
 /**
- * The filename stem the backend would allocate for this sink, without the
- * extension: ``<device_type>-<hardware_id>-<sink_name>``.
- *
- * Shown as the Name field's placeholder so an operator can see what they will
- * get before deciding whether to override it.
+ * Legacy device/sink filename fallback for callers without a session name.
  */
 export function defaultSinkStem(device, sinkIdentifier) {
   const deviceId = `${device?.type ?? ""}:${device?.hardwareId ?? ""}`;
   return `${pathSegment(deviceId)}-${pathSegment(sinkIdentifier)}`;
+}
+
+/** Replace the default `Run` label while retaining the backend's suggested number. */
+export function sessionNameFromSuggestion(suggestion, requestedName = "") {
+  const label = String(requestedName ?? "").trim();
+  if (!label) return String(suggestion ?? "");
+  return String(suggestion ?? "").replace(/ • Run (\d+)$/, ` • ${label} $1`);
+}
+
+/** Hyphenated template + session label + run number for a default output file. */
+function filenameSlug(value) {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/** The required `<device-code>-<device-name>` portion of a run filename. */
+export function deviceRunFileStem(device) {
+  const rawType = String(device?.type ?? "");
+  const code = rawType.match(/\d+/)?.[0] || filenameSlug(rawType) || "device";
+  const configId = device?.configId ?? (Number.isInteger(device?.id) ? device.id : null);
+  const deviceName = filenameSlug(device?.nickname) || `config-${configId ?? "unknown"}`;
+  return `${filenameSlug(code)}-${deviceName}`;
+}
+
+export function defaultRunFileStem(sessionName, device, duplicateOrdinal = 1) {
+  const runStem = `${filenameSlug(sessionName)}-${deviceRunFileStem(device)}`;
+  return duplicateOrdinal > 1 ? `${runStem}-${duplicateOrdinal}` : runStem;
 }
 
 /**

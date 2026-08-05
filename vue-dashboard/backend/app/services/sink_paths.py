@@ -74,9 +74,10 @@ def path_is_claimed(location: str) -> bool:
 def sink_parent_issue(location: str) -> tuple[str, str] | None:
     """Return ``(directory, reason)`` when a sink's parent cannot accept a file.
 
-    Start-time replay validation uses the exact resolved path the worker would
-    receive.  It must not create directories implicitly: choosing or creating a
-    destination is an operator action performed through the folder picker.
+    A pure probe against the exact resolved path the worker would receive:
+    it reports, it never repairs. Read-only callers (previews, restart plans)
+    want exactly this. Start-time resolution wants ensure_sink_parent()
+    instead, which repairs the one reason that is repairable.
     """
     directory = Path(location).parent
     try:
@@ -89,6 +90,37 @@ def sink_parent_issue(location: str) -> tuple[str, str] | None:
     except OSError:
         return str(directory), "not_writable"
     return None
+
+
+def ensure_sink_parent(location: str) -> tuple[str, str] | None:
+    """Create the parent directory for an operator-named sink, or say why we can't.
+
+    Returns None once the parent exists and is writable, otherwise the same
+    ``(directory, reason)`` pair as sink_parent_issue().
+
+    Creating it is deliberate. A session template is authored well before the
+    run it describes, routinely naming a destination that does not exist yet
+    ("output/sleep-analysis"), and that destination is as much part of the
+    template as the sink type is. Allocated paths are already mkdir'd for the
+    same reason (manifests._allocate_sink_location), so declining to do it for
+    an explicit path only made two paths through the same resolver behave
+    differently — and the difference surfaced as a worker that exited 1 with
+    no packets, since the missing directory is not discovered until
+    output.managed_file.create() runs inside the worker process.
+
+    What is NOT created away is a genuine obstruction: a parent that exists as
+    a *file*, or a directory that is not writable. Those come back as a reason
+    for the caller to raise on, because no amount of mkdir fixes them.
+    """
+    directory = Path(location).parent
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+    except (OSError, ValueError):
+        # FileExistsError (the parent names a file), permission denied, an
+        # unmapped drive. Which one it is decides the operator's next move, so
+        # fall through and let the probe name it rather than guessing here.
+        pass
+    return sink_parent_issue(location)
 
 
 def host_roots() -> list[dict]:

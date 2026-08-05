@@ -29,7 +29,11 @@ import { isDeviceSelectable, loadDevicePool } from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
 import { loadAssignmentPlan } from "../template-planner-api";
 import { loadSessionTemplate, templateStateHint } from "../templates-api";
-import { defaultSinkStem, normalizeTemplateRef, uniqueSinkIdentifier } from "../template-import-utils";
+import {
+  defaultRunFileStem,
+  normalizeTemplateRef,
+  sessionNameFromSuggestion,
+} from "../template-import-utils";
 
 const props = defineProps({
   templateId: { type: String, required: true },
@@ -170,21 +174,40 @@ function assignDevice(flowIndex, device) {
 
 // --- Sink destinations ------------------------------------------------------
 
-// The filename this sink writes when the operator types nothing, borrowed from
-// what the backend would name it itself (manifests._allocate_sink_location):
-// <device_type>-<hardware_id>-<sink_name>. Left as a placeholder rather than
-// written in as a value, so it re-derives when the assigned device changes
-// instead of stranding the previous device's name in the field.
+const sessionNamePreview = computed(() =>
+  sessionNameFromSuggestion(nameSuggestion.value, name.value),
+);
+
+function defaultFileOrdinal(flowIndex, sinkIndex) {
+  const targetType = templateSinks.value[flowIndex]?.[sinkIndex]?.sink_type;
+  const targetConfigId = assignments.value[flowIndex]?.deviceConfigId;
+  let ordinal = 0;
+  for (let currentFlow = 0; currentFlow <= flowIndex; currentFlow += 1) {
+    if (assignments.value[currentFlow]?.deviceConfigId !== targetConfigId) continue;
+    const sinks = templateSinks.value[currentFlow] ?? [];
+    const lastSink = currentFlow === flowIndex ? sinkIndex : sinks.length - 1;
+    for (let currentSink = 0; currentSink <= lastSink; currentSink += 1) {
+      if (isFileSink(sinks[currentSink]?.sink_type) && sinks[currentSink].sink_type === targetType) {
+        ordinal += 1;
+      }
+    }
+  }
+  return Math.max(ordinal, 1);
+}
+
+// The filename this sink writes when the operator types nothing: the
+// hyphenated template/session/run identity followed by device code and name.
 function defaultSinkName(flowIndex, sinkIndex) {
   const device = deviceFor(assignments.value[flowIndex]?.deviceConfigId);
   if (!device) return "";
   const sinks = templateSinks.value[flowIndex] ?? [];
   const sink = sinks[sinkIndex];
   if (!sink) return "";
-  // A template sink usually carries its own name; fall back to the same
-  // uniquifier the wizard uses so two CSVs on one stream can't collide.
-  const identifier = sink.sink_name || uniqueSinkIdentifier(sink.sink_type, sinks.slice(0, sinkIndex));
-  return defaultSinkStem(device, identifier);
+  return defaultRunFileStem(
+    sessionNamePreview.value,
+    device,
+    defaultFileOrdinal(flowIndex, sinkIndex),
+  );
 }
 
 function sinkName(flowIndex, sinkIndex) {
@@ -384,7 +407,7 @@ async function load() {
     // run…" forever. Everything batched here is scan-free.
     const [planResult, suggestionResult, folderResult] = await Promise.allSettled([
       loadAssignmentPlan(selected.reference || selected.templateId),
-      loadSessionNameSuggestion(),
+      loadSessionNameSuggestion(selected.templateId),
       browseDirectories(),
     ]);
     if (planResult.status === "rejected") throw planResult.reason;
@@ -561,8 +584,9 @@ watch(() => props.templateId, load);
             </div>
             <div class="form-grid">
               <label class="field">
-                <span>Session name (optional)</span>
+                <span>Session label (optional)</span>
                 <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" :disabled="Boolean(draft)" />
+                <small>The final name also includes the template name and its run number.</small>
               </label>
               <label class="field">
                 <span>Experiment ID (optional)</span>
