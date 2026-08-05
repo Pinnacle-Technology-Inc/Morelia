@@ -13,6 +13,7 @@ from app.api.schemas import (
     ExportSessionTemplateSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
+    SessionNameSuggestionQuerySchema,
     SessionNameSuggestionSchema,
     SinkRestartPlanSchema,
     SessionSchema,
@@ -83,12 +84,13 @@ def list_sessions():
 
 
 @blp.route("/name-suggestion", methods=["GET"])
+@blp.arguments(SessionNameSuggestionQuerySchema, location="query")
 @blp.response(200, SessionNameSuggestionSchema)
-def session_name_suggestion():
+def session_name_suggestion(query):
     """Preview the name POST / would mint for a session created without one.
 
     """
-    return {"name": session_service.suggest_name()}
+    return {"name": session_service.suggest_name(query["source_template_id"])}
 
 
 @blp.route("/overview", methods=["GET"])

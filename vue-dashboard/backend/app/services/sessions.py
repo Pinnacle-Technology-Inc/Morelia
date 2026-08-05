@@ -28,7 +28,7 @@ from app.domain.errors import (
 )
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
-from app.repositories.sessions import SessionRepository, default_session_name
+from app.repositories.sessions import SessionRepository
 from app.services import (
     device_configs,
     experiments,
@@ -179,15 +179,16 @@ def get_by_name(name: str) -> Session | None:
     return _repo.get_by_name(name)
 
 
-def suggest_name() -> str:
-    """The name create() would mint for a session submitted without one.
+def suggest_name(source_template_id: str) -> str:
+    """The name create() would mint for an unlabeled run of one template.
 
-    A preview, not a reservation: it reads peek_next_id(), so a concurrent
-    create can make it stale. Intended for display as a form placeholder, where
-    being wrong costs nothing — the authoritative name is still assigned by
-    create() from the real auto-increment id.
+    This is a preview, not a reservation, so a concurrent create can make it
+    stale. The repository recomputes the authoritative name during create().
     """
-    return default_session_name(_repo.peek_next_id())
+    template = session_templates.get_by_id(source_template_id)
+    if template is None:
+        raise session_templates.SessionTemplateNotFound(source_template_id)
+    return _repo.next_template_session_name(source_template_id, template.name)
 
 
 def list_all() -> list[Session]:

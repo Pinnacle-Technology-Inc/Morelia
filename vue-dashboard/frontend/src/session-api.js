@@ -53,11 +53,11 @@ export async function loadSessionCatalog() {
   };
 }
 
-// The name the backend would mint for a session created without one. A preview
-// for placeholder text only — send `name: null` to actually get it, since the
-// authoritative name is assigned from the row's id at insert time.
-export async function loadSessionNameSuggestion() {
-  const response = await requestJson("/api/v1/sessions/name-suggestion");
+// The template-scoped name the backend would mint for a run with no label.
+// This is placeholder text only; create() recomputes the authoritative number.
+export async function loadSessionNameSuggestion(sourceTemplateId) {
+  const query = new URLSearchParams({ source_template_id: sourceTemplateId });
+  const response = await requestJson(`/api/v1/sessions/name-suggestion?${query}`);
   return typeof response?.name === "string" ? response.name : "";
 }
 

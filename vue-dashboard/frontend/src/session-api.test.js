@@ -3,12 +3,28 @@ import {
   completeSession,
   createSessionDraft,
   createTemplateRun,
+  loadSessionNameSuggestion,
   loadSinkPlan,
   startSession,
   stopSession,
 } from "./session-api";
 
 afterEach(() => vi.restoreAllMocks());
+
+it("requests a name suggestion for the selected template", async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: true,
+    json: async () => ({ name: "sleep analysis • Run 2" }),
+  }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(loadSessionNameSuggestion("template revision/2")).resolves.toBe(
+    "sleep analysis • Run 2",
+  );
+  expect(fetchMock.mock.calls[0][0]).toBe(
+    "/api/v1/sessions/name-suggestion?source_template_id=template+revision%2F2",
+  );
+});
 
 it("posts a canonical draft exactly once", async () => {
   const fetchMock = vi.fn(async (_url, options) => ({ ok: true, json: async () => JSON.parse(options.body) }));

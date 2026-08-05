@@ -1,12 +1,45 @@
+from dataclasses import dataclass
+from datetime import datetime
+
 from app.database import db, transaction
 from app.domain.enums import PolicyMode, SessionStatus
 from app.models.session import Session
 
 
 def default_session_name(session_id: int) -> str:
-    """The name an unnamed session gets. Counting up on number of run, one run per session, multiple session per template.
-    """
+    """Legacy fallback for sessions that have no template provenance."""
     return f"Run {session_id}"
+
+
+def template_session_name(template_name: str, requested_name: str | None, run_number: int) -> str:
+    """Compose the operator-facing name of one template run."""
+    label = str(requested_name or "").strip() or "Run"
+    return f"{template_name.strip()} • {label} {run_number}"
+
+
+@dataclass(frozen=True)
+class SessionRunRef:
+    """Enough of a session to name it, without loading the run itself."""
+
+    id: int
+    name: str
+    status: SessionStatus
+    created_at: datetime | None
+
+
+@dataclass(frozen=True)
+class TemplateRunHistory:
+    """What one template revision has produced so far.
+
+    ``latest`` is None only when ``run_count`` is 0 — a template that exists but
+    has never been started.
+    """
+
+    run_count: int = 0
+    latest: SessionRunRef | None = None
+
+
+NO_RUNS = TemplateRunHistory()
 
 
 class SessionRepository:
@@ -14,8 +47,17 @@ class SessionRepository:
     def create(self, data: dict) -> Session:
         with transaction():
             requested_name = str(data.get("name") or "").strip()
-            session_name = requested_name
-            if session_name:
+            source_template_id = data.get("source_template_id")
+            source_template_name = str(data.get("source_template_name") or "").strip()
+            if source_template_id and source_template_name:
+                session_name = self.next_template_session_name(
+                    source_template_id,
+                    source_template_name,
+                    requested_name,
+                )
+            else:
+                session_name = requested_name
+            if session_name and not (source_template_id and source_template_name):
                 suffix = 1
                 while self.get_by_name(session_name) is not None:
                     session_name = f"{requested_name}-{suffix}"
@@ -28,8 +70,8 @@ class SessionRepository:
                 notes=(str(data.get("notes")).strip() or None) if data.get("notes") is not None else None,
                 schedule=data.get("schedule"),
                 device_flows=data.get("device_flows") or [],
-                source_template_id=data.get("source_template_id"),
-                source_template_name=data.get("source_template_name"),
+                source_template_id=source_template_id,
+                source_template_name=source_template_name or None,
                 source_template_ref=data.get("source_template_ref"),
                 source_template_hash=data.get("source_template_hash"),
                 source_template_snapshot=data.get("source_template_snapshot"),
@@ -53,6 +95,30 @@ class SessionRepository:
         highest = db.session.scalar(db.select(db.func.max(Session.id)))
         return (highest or 0) + 1
 
+    def count_by_source_template_id(self, template_id: str) -> int:
+        return int(
+            db.session.scalar(
+                db.select(db.func.count())
+                .select_from(Session)
+                .where(Session.source_template_id == template_id)
+            )
+            or 0
+        )
+
+    def next_template_session_name(
+        self,
+        template_id: str,
+        template_name: str,
+        requested_name: str | None = None,
+    ) -> str:
+        """Preview the next template-scoped name without reserving it."""
+        run_number = self.count_by_source_template_id(template_id) + 1
+        candidate = template_session_name(template_name, requested_name, run_number)
+        while self.get_by_name(candidate) is not None:
+            run_number += 1
+            candidate = template_session_name(template_name, requested_name, run_number)
+        return candidate
+
     def all(self) -> list[Session]:
         return db.session.scalars(db.select(Session)).all()
 
@@ -62,6 +128,48 @@ class SessionRepository:
             .where(Session.source_template_id == template_id)
             .order_by(Session.created_at.desc(), Session.id.desc())
         ).all()
+
+    def run_history_by_source_template(self) -> dict[str, TemplateRunHistory]:
+        """Run count and newest run for every template that has produced one.
+
+        One indexed pass over ``ix_sessions_source_template_history`` rather than
+        a query per template, and only the columns a caller needs to *name* a run
+        — a session's frozen template snapshot is large and nothing here reads it.
+
+        Templates with no runs are simply absent; callers substitute ``NO_RUNS``.
+        """
+        rows = db.session.execute(
+            db.select(
+                Session.source_template_id,
+                Session.id,
+                Session.name,
+                Session.status,
+                Session.created_at,
+            )
+            .where(Session.source_template_id.isnot(None))
+            .order_by(Session.created_at.desc(), Session.id.desc())
+        ).all()
+
+        history: dict[str, TemplateRunHistory] = {}
+        for template_id, session_id, name, status, created_at in rows:
+            previous = history.get(template_id)
+            if previous is None:
+                # Rows arrive newest-first, so the first one seen is the latest.
+                history[template_id] = TemplateRunHistory(
+                    run_count=1,
+                    latest=SessionRunRef(
+                        id=session_id,
+                        name=name,
+                        status=status,
+                        created_at=created_at,
+                    ),
+                )
+            else:
+                history[template_id] = TemplateRunHistory(
+                    run_count=previous.run_count + 1,
+                    latest=previous.latest,
+                )
+        return history
 
     def set_runtime_host_identity(
         self,

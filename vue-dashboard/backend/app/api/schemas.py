@@ -131,7 +131,8 @@ class CreateSessionSchema(Schema):
         required=True,
         validate=validate.Length(min=1),
     )
-    # name omitted -> None here, then minted as "Run {id}" from the committed id.
+    # This is a run label, not the final stored name. The server composes
+    # "<template>.<label> <template run number>"; blank uses the label "Run".
     name = fields.String(load_default=None, validate=validate.Length(min=1, max=120))
     experiment_id = fields.String(load_default=None)
     notes = fields.String(load_default=None, allow_none=True)
@@ -156,8 +157,12 @@ class UpdateSinkLocationsSchema(Schema):
     )
 
 
+class SessionNameSuggestionQuerySchema(Schema):
+    source_template_id = fields.String(required=True, validate=validate.Length(min=1))
+
+
 class SessionNameSuggestionSchema(Schema):
-    """Help come up with default name for a session, precomputed in backend (Session + <next number>)."""
+    """Template-scoped default name preview computed by the backend."""
 
     name = fields.String(dump_only=True)
 
@@ -484,6 +489,39 @@ class CreateSessionTemplateSchema(Schema):
     device_flows = fields.List(fields.Raw(), required=True)
 
 
+class SessionTemplateTomlSchema(Schema):
+    """An in-memory TOML draft submitted for validation."""
+
+    toml = fields.String(required=True, validate=validate.Length(min=1, max=1_000_000))
+
+
+class CreateSessionTemplateFromTomlSchema(SessionTemplateTomlSchema):
+    """A named TOML draft submitted for persistence."""
+
+    name = fields.String(required=True, validate=validate.Length(min=1, max=255))
+
+
+class SessionTemplateTomlSummarySchema(Schema):
+    device_flows = fields.Integer(dump_only=True)
+    sinks = fields.Integer(dump_only=True)
+    hardware_preferences = fields.Integer(dump_only=True)
+    policy = fields.String(dump_only=True)
+
+
+class SessionTemplateTomlValidationSchema(Schema):
+    content = fields.Raw(dump_only=True)
+    summary = fields.Nested(SessionTemplateTomlSummarySchema, dump_only=True)
+
+
+class SessionTemplateRunSchema(Schema):
+    """Enough of a session run to name it in a template listing."""
+
+    id = fields.Integer(dump_only=True)
+    name = fields.String(dump_only=True)
+    status = fields.Enum(SessionStatus, by_value=True, dump_only=True)
+    created_at = fields.DateTime(dump_only=True, allow_none=True)
+
+
 class SessionTemplateSchema(Schema):
     """A flat-file template definition joined with its registry state."""
 
@@ -500,6 +538,11 @@ class SessionTemplateSchema(Schema):
     content = fields.Raw(dump_only=True, allow_none=True)
     warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
     allowed_actions = fields.List(fields.String(), dump_only=True, dump_default=list)
+    # Run history is joined by /catalog only. `null` therefore means "this route
+    # did not count runs", which is not the same as zero — a registered template
+    # nobody has started reports 0 with a null latest_session.
+    run_count = fields.Integer(dump_only=True, allow_none=True)
+    latest_session = fields.Nested(SessionTemplateRunSchema, dump_only=True, allow_none=True)
     created_at = fields.DateTime(dump_only=True, allow_none=True)
     updated_at = fields.DateTime(dump_only=True, allow_none=True)
 
