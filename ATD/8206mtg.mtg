@@ -1,0 +1,65 @@
+<?xml version="1.0"?>
+<EDFbrowser_montage>
+  <signalcomposition>
+    <alias></alias>
+    <num_of_signals>1</num_of_signals>
+    <voltpercm>1.000000e+02</voltpercm>
+    <screen_offset>0.000000e+00</screen_offset>
+    <screen_offset_unit>0.000000e+00</screen_offset_unit>
+    <polarity>1</polarity>
+    <color>12</color>
+    <spike_filter_cnt>0</spike_filter_cnt>
+    <math_func_cnt_before>0</math_func_cnt_before>
+    <math_func_cnt_after>0</math_func_cnt_after>
+    <filter_cnt>0</filter_cnt>
+    <fidfilter_cnt>0</fidfilter_cnt>
+    <ravg_filter_cnt>0</ravg_filter_cnt>
+    <fir_filter_cnt>0</fir_filter_cnt>
+    <signal>
+      <label>EEG1            </label>
+      <factor>1.000000e+00</factor>
+    </signal>
+  </signalcomposition>
+  <signalcomposition>
+    <alias></alias>
+    <num_of_signals>1</num_of_signals>
+    <voltpercm>1.000000e+02</voltpercm>
+    <screen_offset>0.000000e+00</screen_offset>
+    <screen_offset_unit>0.000000e+00</screen_offset_unit>
+    <polarity>1</polarity>
+    <color>8</color>
+    <spike_filter_cnt>0</spike_filter_cnt>
+    <math_func_cnt_before>0</math_func_cnt_before>
+    <math_func_cnt_after>0</math_func_cnt_after>
+    <filter_cnt>0</filter_cnt>
+    <fidfilter_cnt>0</fidfilter_cnt>
+    <ravg_filter_cnt>0</ravg_filter_cnt>
+    <fir_filter_cnt>0</fir_filter_cnt>
+    <signal>
+      <label>EEG3/EMG        </label>
+      <factor>1.000000e+00</factor>
+    </signal>
+  </signalcomposition>
+  <signalcomposition>
+    <alias></alias>
+    <num_of_signals>1</num_of_signals>
+    <voltpercm>1.000000e+02</voltpercm>
+    <screen_offset>0.000000e+00</screen_offset>
+    <screen_offset_unit>0.000000e+00</screen_offset_unit>
+    <polarity>1</polarity>
+    <color>7</color>
+    <spike_filter_cnt>0</spike_filter_cnt>
+    <math_func_cnt_before>0</math_func_cnt_before>
+    <math_func_cnt_after>0</math_func_cnt_after>
+    <filter_cnt>0</filter_cnt>
+    <fidfilter_cnt>0</fidfilter_cnt>
+    <ravg_filter_cnt>0</ravg_filter_cnt>
+    <fir_filter_cnt>0</fir_filter_cnt>
+    <signal>
+      <label>EEG2            </label>
+      <factor>1.000000e+00</factor>
+    </signal>
+  </signalcomposition>
+  <pagetime>10000000</pagetime>
+  <ecg_view_mode>0</ecg_view_mode>
+</EDFbrowser_montage>
