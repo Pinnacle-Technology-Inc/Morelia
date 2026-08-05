@@ -9,6 +9,10 @@ import Morelia.packet.legacy.Packet as Packet
 from functools import partial
 from typing import Union
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
+_PRIMARY_CHANNEL_MODE_NAMES = frozenset({"EEG_EMG", "BIOSENSOR"})
+_SECONDARY_CHANNEL_MODE_NAMES = frozenset({"ANALOG", "DIGITAL"})
 
 def _deep_merge(base: dict, override: dict) -> None:
     """Merge *override* into *base* in-place.  Override values win for
@@ -1237,3 +1241,62 @@ class Pod8401HR(AcquisitionDevice) :
             "input_ground3": "input_ground3",
         },
     }
+
+    def _check_four_tuple(self, value: object, allowed: frozenset[str], key: str) -> None:
+        if not isinstance(value, tuple) or len(value) != 4:
+            raise ValueError(f"{key} must be a 4-tuple (one per channel A-D)")
+        self._check_tuple_values(value, allowed, key)
+
+
+    def _check_six_tuple(self, value: object, allowed: frozenset[str], key: str) -> None:
+        if not isinstance(value, tuple) or len(value) != 6:
+            raise ValueError(f"{key} must be a 6-tuple (EXT0, EXT1, TTL1, TTL2, TTL3, TTL4)")
+        self._check_tuple_values(value, allowed, key)
+
+
+    def _check_tuple_values(self, value: tuple[object, ...], allowed: frozenset[str], key: str) -> None:
+        bad = [v for v in value if v not in allowed]
+        if bad:
+            raise ValueError(f"{key} elements must be one of {sorted(allowed)}; got {bad!r}")
+
+
+    def _check_primary_channel_modes(self, value: object) -> None:
+        self._check_four_tuple(value, _PRIMARY_CHANNEL_MODE_NAMES, "primary_channel_modes")
+
+
+    def _check_secondary_channel_modes(self, value: object) -> None:
+        self._check_six_tuple(value, _SECONDARY_CHANNEL_MODE_NAMES, "secondary_channel_modes")
+
+
+    def _check_ss_gain(self, value: object) -> None:
+        if not isinstance(value, tuple) or len(value) != 4:
+            raise ValueError("ss_gain must be a 4-tuple (one per channel A-D)")
+        for v in value:
+            if v != 1 and v != 5 and v is not None:
+                raise ValueError("ss_gain must be 1 or 5; set ss_gain to None if no-connect")
+
+
+    def _check_preamp_gain_tuple(self, value: object) -> None:
+        if not isinstance(value, tuple) or len(value) != 4:
+            raise ValueError("preamp_gain must be a 4-tuple (one per channel A-D)")
+        for v in value:
+            if v != 10 and v != 100 and v is not None:
+                raise ValueError(
+                    "preamp_gain must be 10 or 100; for biosensors, preamp_gain is None"
+                )
+
+    @property
+    def param_schema(self):
+        return ParamSchema(
+            required=frozenset(
+                {"preamp", "primary_channel_modes", "secondary_channel_modes"}
+            ),
+            optional=frozenset({"ss_gain", "preamp_gain"}),
+            validators={
+                "preamp": self._check_preamp,
+                "primary_channel_modes": self._check_primary_channel_modes,
+                "secondary_channel_modes": self._check_secondary_channel_modes,
+                "ss_gain": self._check_ss_gain,
+                "preamp_gain": self._check_preamp_gain_tuple,
+            },
+        )

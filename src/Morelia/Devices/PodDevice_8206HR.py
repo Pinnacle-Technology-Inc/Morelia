@@ -6,6 +6,8 @@ from Morelia.packet.data import DataPacket8206HR
 from Morelia.Commands import CommandSet
 import Morelia.packet.conversion as conv
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 from functools import partial
 
 # authorship
@@ -302,3 +304,26 @@ class Pod8206HR(AcquisitionDevice) :
         if self._sample_rate is not None:
             d['sample_rate'] = self._sample_rate[0]
         return d
+
+    def _check_preamp_gain(self, value: object) -> None:
+        if value not in (10, 100):
+            raise ValueError("preamp_gain must be 10 or 100")
+
+    @property
+    def param_schema(self):
+        return ParamSchema(
+            required=frozenset({"preamp_gain"}),
+            optional=frozenset(
+                {
+                    "sample_rate",
+                    "lowpass_ch0",
+                    "lowpass_ch1",
+                    "lowpass_ch2",
+                    "ttl_pin0",
+                    "ttl_pin1",
+                    "ttl_pin2",
+                    "ttl_pin3",
+                }
+            ),
+            validators={"preamp_gain": self._check_preamp_gain},
+        )

@@ -1,6 +1,8 @@
 # local imports 
 from Morelia.Devices import AcquisitionDevice, Pod
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 # authorship
 __author__      = "Mackenzie Meier"
 __maintainer__  = "Mackenzie Meier"
@@ -75,4 +77,10 @@ class PodATD(AcquisitionDevice) :
     #     # return packet
     #     return packet
 
-    
+    @property
+    def param_schema(self):
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset(),
+            validators={},
+        )    

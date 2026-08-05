@@ -7,6 +7,8 @@ __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2023, James Hurd'
 __email__       = 'sales@pinnaclet.com'
 
+import abc
+
 try:
     from typing import Self
 except ImportError:
@@ -14,9 +16,11 @@ except ImportError:
 from datetime import datetime
 from typing import Union
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 from Morelia.Devices import Pod
 
-class AcquisitionDevice(Pod):
+class AcquisitionDevice(Pod, metaclass=abc.ABCMeta):
     """
     This class is the parent of any device that can stream (i.e. data acquisiton devices).
 
@@ -166,6 +170,36 @@ class AcquisitionDevice(Pod):
             combined.update(device_map)
         return combined
 
+    @property
+    @abc.abstractmethod
+    def param_schema(self) -> ParamSchema:
+        pass
+
+    def _import_preamp_enum(self) -> type:
+        """Import Morelia's ``Preamp`` enum lazily, honoring ``MORELIA_SRC`` like
+        ``app/discovery/pod_scan.py`` does — keeps this module importable without
+        Morelia installed; only paid for when a pod8401hr ``preamp`` value is
+        actually validated.
+        """
+        import importlib
+        import os
+        import sys
+
+        morelia_src = os.environ.get("MORELIA_SRC")
+        if morelia_src and morelia_src not in sys.path:
+            sys.path.insert(0, morelia_src)
+
+        module = importlib.import_module("Morelia.Devices.preamp")
+        return module.Preamp
+
+
+    def _check_preamp(self, value: object) -> None:
+        preamp_enum = self._import_preamp_enum()
+        if value not in preamp_enum.__members__:
+            raise ValueError(
+                f"preamp must be one of {sorted(preamp_enum.__members__)}; got {value!r}"
+            )
+
     def __enter__(self) -> Self:
         # Open port on first use when using D2XX (port is deferred in __init__ to avoid
         # main process holding the device and causing the worker to block on open).
@@ -198,3 +232,4 @@ class AcquisitionDevice(Pod):
 
         #explicitly tell the context manager to propagate execptions.
         return False
+

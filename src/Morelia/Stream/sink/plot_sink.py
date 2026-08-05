@@ -25,6 +25,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+from functools import partial
 
 # Control and data message types for the plot queue
 _PLOT_REGISTER = "register"
@@ -210,6 +212,18 @@ class PlotSink(SinkInterface):
         if self._channel_names is not None:
             d["channel_names"] = self._channel_names
         return d
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset({"chunk_samples", "max_display_rate", "channel_names"}),
+            validators={
+                "chunk_samples": partial(self._check_positive_int, key="chunk_samples"),
+                "max_display_rate": partial(self._check_positive_number, key="max_display_rate"),
+                "channel_names": self._check_channel_names,
+            },
+        )
 
 
 # ---------------------------------------------------------------------------

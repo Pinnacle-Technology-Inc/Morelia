@@ -16,6 +16,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import AcquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
 from Morelia.packet.data import DataPacket
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 class BufferSink(SinkInterface):
     """Stream data to a buffer.
 
@@ -91,3 +93,11 @@ class BufferSink(SinkInterface):
             'buffer': self.buffer,
             'batch_size': self._batch_size,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset({"batch_size"}),
+            validators={},
+        )

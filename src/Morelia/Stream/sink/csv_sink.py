@@ -17,6 +17,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import AcquisitionDevice, Pod8274D, Pod8206HR, Pod8401HR
 from Morelia.packet.data import DataPacket
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 class CSVSink(SinkInterface):
     """Stream data to a CSV file, truncates the destination file each time.
     
@@ -88,3 +90,11 @@ class CSVSink(SinkInterface):
             'file_path': self._file_path,
             'observe_on_scheduler': self.observe_on_scheduler,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset({"file_path", "observe_on_scheduler"}),
+            validators={"observe_on_scheduler": self._check_observe_on_scheduler},
+        )
