@@ -203,7 +203,9 @@ class HostSupervisor:
             os.unlink(manifest_path)
             raise
 
-        ingest_base = current_app.config.get("INGEST_BASE_URL", "")
+        ingest_base = current_app.config.get("INGEST_BASE_URL") or current_app.config.get(
+            "CONTROL_PLANE_BASE_URL", ""
+        )
         ingest_token = current_app.config.get("INGEST_TOKEN") or ""
         ingest_args: list[str] = []
         if ingest_base:

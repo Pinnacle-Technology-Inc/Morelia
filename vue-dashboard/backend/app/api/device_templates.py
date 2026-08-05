@@ -19,7 +19,7 @@ blp = Blueprint(
     url_prefix="/api/v1/device-templates",
     description="Manage reusable, mutable device templates.",
 )
-
+# TODO Something changed with the DeviceTemplate id because it no longer exists. What did it change to or should it be added back?
 
 def _invalid_template(exc: Exception) -> None:
     abort(422, message=str(exc), code="invalid_device_template")

@@ -1,0 +1,5 @@
+name = "from-ui"
+type = "pod8206hr"
+
+[parameters]
+preamp_gain = 10

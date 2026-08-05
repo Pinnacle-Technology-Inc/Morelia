@@ -1,0 +1,6 @@
+name = "before"
+type = "pod8206hr"
+
+[parameters]
+preamp_gain = 10
+sample_rate = 2000

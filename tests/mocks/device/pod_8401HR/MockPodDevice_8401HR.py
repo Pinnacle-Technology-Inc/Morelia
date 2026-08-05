@@ -22,10 +22,10 @@ _BINARY_CMD_NUM = 181
 
 class MockPod8401HR(Pod8401HR):
     def __init__(self,
-                preamp: Preamp,
-                primary_channel_modes: tuple[PrimaryChannelMode],
-                secondary_channel_modes: tuple[SecondaryChannelMode],
                 port=None, # port must be in here for when the obj is recreated from get_dict during sink use
+                preamp: Preamp=None,
+                primary_channel_modes: tuple[PrimaryChannelMode]=None,
+                secondary_channel_modes: tuple[SecondaryChannelMode]=None,
                 ss_gain: tuple[int|None]=(None, None, None, None), 
                 preamp_gain: tuple[int|None]=(None, None, None, None), 
                 baudrate:int=9600,
