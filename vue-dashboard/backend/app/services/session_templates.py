@@ -34,6 +34,12 @@ from app.domain.errors import (
 from app.models.session import Session
 from app.models.session_template import SessionTemplate
 from app.repositories.session_templates import SessionTemplateRepository
+from app.repositories.sessions import (
+    NO_RUNS,
+    SessionRepository,
+    SessionRunRef,
+    TemplateRunHistory,
+)
 from app.services import device_templates
 from app.services.session_config import _policy_value, _resolve_sinks
 
@@ -383,6 +389,10 @@ class SessionTemplateFile:
     derived_lineage_parent_id: str | None = None
     derived_duplicate_of_template_id: str | None = None
     derived_allowed_actions: list[str] | None = None
+    # None means "this route did not join session history", NOT "no runs" —
+    # never started is TemplateRunHistory(0, None). Only catalog_with_run_history
+    # fills this in; the registry itself holds no run history.
+    run_history: TemplateRunHistory | None = None
 
     @property
     def template_id(self) -> str | None:
@@ -430,11 +440,15 @@ class SessionTemplateFile:
             return self.derived_state
         if self.metadata is None:
             return "DISCOVERED"
+        if self.metadata.lifecycle_state == "REPLACED":
+            return "ARCHIVED"
         return self.metadata.state
 
     @property
     def lifecycle_state(self) -> str | None:
-        return self.metadata.lifecycle_state if self.metadata is not None else None
+        if self.metadata is None:
+            return None
+        return "ARCHIVED" if self.metadata.lifecycle_state == "REPLACED" else self.metadata.lifecycle_state
 
     @property
     def integrity_state(self) -> str | None:
@@ -459,6 +473,14 @@ class SessionTemplateFile:
     @property
     def duplicate_of_template_id(self) -> str | None:
         return self.derived_duplicate_of_template_id
+
+    @property
+    def run_count(self) -> int | None:
+        return self.run_history.run_count if self.run_history is not None else None
+
+    @property
+    def latest_session(self) -> SessionRunRef | None:
+        return self.run_history.latest if self.run_history is not None else None
 
     @property
     def created_at(self):
@@ -503,7 +525,10 @@ def _attach_reference_warnings(template: SessionTemplateFile) -> SessionTemplate
 
 # DISCOVERED, DUPLICATE, AMBIGUOUS_RENAME, and unregistered INVALID are derived
 # from the current folder snapshot and never receive durable registry IDs.
-# PENDING, ACTIVE, ARCHIVED, and REPLACED are durable lifecycle states.
+# PENDING, ACTIVE, and ARCHIVED are public lifecycle states. REPLACED remains
+# an internal tombstone so an accepted revision can keep its run provenance
+# while releasing its path/hash uniqueness to the new ACTIVE row; it is never
+# returned as a catalog resource.
 # UNKNOWN, MATCHED, CHANGED, MISSING, and INVALID are durable integrity states.
 _ARCHIVED_STATES = {"ARCHIVED"}
 
@@ -674,7 +699,6 @@ def _state_warning(state: str, relative_path: str) -> str | None:
         "DUPLICATE": "duplicate template configuration; open the registered original",
         "AMBIGUOUS_RENAME": "several files could be the renamed registered template",
         "CHANGED": "observed configuration differs from the trusted registered revision",
-        "REPLACED": "template revision was replaced by a newer accepted revision",
     }
     return messages.get(state)
 
@@ -683,16 +707,14 @@ def _catalog_from_snapshot(observations: list[_FileObservation]) -> builtins.lis
     """Join reconciled metadata to immutable disk observations for API consumption."""
 
     observations_by_path = {item.relative_path: item for item in observations}
-    rows = _repository.list()
+    # Superseded rows remain in SQLite solely to preserve source-template IDs
+    # already copied into past runs. They are not current template resources.
+    rows = [row for row in _repository.list() if row.lifecycle_state != "REPLACED"]
     result: list[SessionTemplateFile] = []
     claimed_paths: set[str] = set()
     duplicate_targets: dict[str, str | None] = {}
     for row in rows:
-        observation = (
-            observations_by_path.get(row.relative_path)
-            if row.lifecycle_state != "REPLACED"
-            else None
-        )
+        observation = observations_by_path.get(row.relative_path)
         if observation is not None:
             claimed_paths.add(observation.relative_path)
             if observation.observed_hash is not None:
@@ -724,7 +746,7 @@ def _catalog_from_snapshot(observations: list[_FileObservation]) -> builtins.lis
     missing_owners = [
         row
         for row in rows
-        if row.lifecycle_state != "REPLACED" and row.integrity_state == "MISSING"
+        if row.integrity_state == "MISSING"
     ]
     ambiguous_by_path: dict[str, str] = {}
     for owner in missing_owners:
@@ -790,7 +812,7 @@ def _observe(path: Path) -> SessionTemplateFile:
 
 
 def catalog() -> builtins.list[SessionTemplateFile]:
-    """Reconcile a stable folder snapshot and return every registry state."""
+    """Reconcile a stable folder snapshot and return current registry resources."""
 
     with _reconciliation_lock:
         for attempt in range(_RECONCILIATION_ATTEMPTS):
@@ -809,6 +831,25 @@ def catalog() -> builtins.list[SessionTemplateFile]:
                 if attempt + 1 == _RECONCILIATION_ATTEMPTS:
                     raise SessionTemplateReconciliationRetry() from exc
     raise RuntimeError("template reconciliation exhausted without a result")
+
+
+def catalog_with_run_history() -> builtins.list[SessionTemplateFile]:
+    """The catalog, each revision joined with the runs it has produced.
+
+    The join is over *recorded provenance*, not a foreign key: a session copies
+    its source template id at creation (see ``SessionSchema``), so an archived
+    or edited revision keeps the runs it already started. That is the point — a
+    template's run count is history, and history does not change when the file
+    does. Superseded revisions stay internal and are not catalog rows.
+
+    An unregistered file has no id for a session to have recorded, so it reports
+    zero runs rather than an unknown count.
+    """
+    history = SessionRepository().run_history_by_source_template()
+    rows = catalog()
+    for row in rows:
+        row.run_history = history.get(row.template_id, NO_RUNS) if row.template_id else NO_RUNS
+    return rows
 
 
 def list() -> builtins.list[SessionTemplateFile]:  # noqa: A001
@@ -839,11 +880,21 @@ def get_by_reference(reference: str) -> SessionTemplateFile | None:
     if relative_path is None:
         return None
     matches = [row for row in catalog() if row.relative_path == relative_path]
-    return min(matches, key=lambda row: (row.state == "REPLACED", row.template_id or "")) if matches else None
+    return min(matches, key=lambda row: row.template_id or "") if matches else None
 
 
 def get_by_id(template_id: str) -> SessionTemplateFile | None:
-    return next((row for row in catalog() if row.template_id == template_id), None)
+    current = next((row for row in catalog() if row.template_id == template_id), None)
+    if current is not None:
+        return current
+    historical = _repository.get_by_id(template_id)
+    if historical is None or historical.lifecycle_state != "REPLACED":
+        return None
+    return SessionTemplateFile(
+        historical,
+        None,
+        ["A newer active revision superseded this historical revision."],
+    )
 
 
 @dataclass(frozen=True)
@@ -991,7 +1042,6 @@ def create(name: str, raw_content: Mapping[str, Any]) -> SessionTemplateFile:
             template
             for template in catalog()
             if template.template_id is not None
-            and template.state != "REPLACED"
             and template.registered_hash == content_hash
         ),
         None,
@@ -1227,6 +1277,30 @@ def import_config(source: Mapping[str, Any], *, name: str | None = None) -> Sess
         raise ValueError("session template name is required")
     data.pop("name", None)
     return create(template_name, data)
+
+
+def validate_toml(source: str) -> dict[str, Any]:
+    """Parse and semantically validate an in-memory session-template draft.
+
+    Validation resolves device-template references but performs no writes.  The
+    returned object is the same canonical content that ``create`` persists.
+    """
+
+    if not isinstance(source, str) or not source.strip():
+        raise ValueError("session template TOML is required")
+    try:
+        parsed = tomllib.loads(source)
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"invalid session template TOML: {exc}") from exc
+    if not isinstance(parsed, Mapping):
+        raise ValueError("session template TOML must parse to a mapping")
+    return _canonicalize(parsed)
+
+
+def import_toml(source: str, *, name: str) -> SessionTemplateFile:
+    """Create a registered session template from validated TOML text."""
+
+    return create(name, validate_toml(source))
 
 
 def create_from_session(

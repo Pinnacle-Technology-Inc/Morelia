@@ -1064,6 +1064,11 @@ class MoreliaRuntime:
                     "worker": {
                         "status": _bounded_text(worker.get("status"), 120),
                         "exitcode": worker.get("exitcode"),
+                        # The worker's own account of its death, when it left
+                        # one. Without this the report carries an exit code and
+                        # nothing else, and a config fault raised inside the
+                        # worker reads identically to a device that unplugged.
+                        "fault": _worker_fault(worker.get("fault")),
                     },
                     "source_read": self._current_source_read(device_id),
                     "startup": {
@@ -1340,6 +1345,34 @@ def _attempt_counts(value: object) -> dict[str, int] | None:
             return None
         counts[key] = raw
     return counts
+
+
+def _worker_fault(value: object) -> dict[str, object] | None:
+    """Project the worker's reported death cause, or ``None``.
+
+    Carries whichever of ``error_type``/``reason`` the worker managed to
+    report; a fault with neither says nothing an exit code does not, so it
+    projects to None rather than an empty shell the UI would have to special-
+    case. ``reason`` is exception text of unbounded length (a path, a driver
+    message, occasionally a whole SQL statement) and this rides the report
+    wire on every tick, so it is bounded like every other free-text field
+    here — see _bounded_text.
+    """
+    if not isinstance(value, Mapping):
+        return None
+    error_type = _bounded_text(value.get("error_type"), 120)
+    reason = _bounded_text(value.get("reason"), 500)
+    if error_type is None and reason is None:
+        return None
+    exitcode = value.get("worker_exitcode")
+    return {
+        "error_type": error_type,
+        "reason": reason,
+        "action": _bounded_text(value.get("action"), 120),
+        "worker_exitcode": (
+            exitcode if isinstance(exitcode, int) and not isinstance(exitcode, bool) else None
+        ),
+    }
 
 
 def _required_four(value: object, key: str) -> tuple[object, object, object, object]:

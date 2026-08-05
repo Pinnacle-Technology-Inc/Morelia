@@ -202,7 +202,8 @@ class SinkLocationExists(Exception):
 
 
 class SinkParentUnavailable(Exception):
-    """A replay sink path names a parent that cannot accept a new output file."""
+    """A sink path names a parent that cannot accept a new output file.
+    """
 
     def __init__(
         self,
@@ -221,15 +222,15 @@ class SinkParentUnavailable(Exception):
             self.details["nickname"] = nickname
 
         if reason == "missing":
-            problem = "does not exist"
+            problem = "does not exist and could not be created"
         elif reason == "not_directory":
-            problem = "is not a directory"
+            problem = "is a file, not a directory"
         else:
             problem = "is not writable"
         label = f" for sink {nickname!r}" if nickname else ""
         super().__init__(
             f"Output directory{label} {directory!r} {problem}. "
-            "Create it or choose an existing writable folder before starting."
+            "Choose an existing writable folder before starting."
         )
 
 

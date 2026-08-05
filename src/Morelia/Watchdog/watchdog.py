@@ -417,6 +417,8 @@ class Watchdog:
                 Uses the same meanings as compact worker_status above.
               - pid: int or None.
               - exitcode: int or None.
+              - fault: dict or None. The exception the worker reported before
+                exiting (error_type, reason, action, worker_exitcode), or None.
             - heartbeat: dict.
               - status: str (fresh | stale | missing).
                 Uses the same meanings as compact heartbeat above.
@@ -819,6 +821,10 @@ class StreamWatcher (threading.Thread):
         # tick during the port/replug settle window.
         self._cold_open_backoff_ticks = 2
         self._cold_open_backoff_remaining = 0
+        # Last fatal fault the worker itself reported, harvested from the
+        # shutdown transcript (see _capture_worker_fault). None until a worker
+        # dies with something to say.
+        self._worker_fault = None
 
     # ------------------------------------------------------------------ #
     # Thread lifecycle                                                   #
@@ -1186,7 +1192,7 @@ class StreamWatcher (threading.Thread):
                     "busy": busy,
                     "recovery_policy": self._recovery_policy,
                 }
-            m.stop_stream(self.stream_index)
+            self._capture_worker_fault(m.stop_stream(self.stream_index))
 
         if self._recovery_policy == "recommend":
             lifecycle_state = m.set_lifecycle_state(
@@ -1225,6 +1231,38 @@ class StreamWatcher (threading.Thread):
             "max": self._max_auto_restart_attempts,
         }
 
+    def _capture_worker_fault(self, shutdown_result):
+        """Harvest the worker's own account of why it died, if it left one.
+
+        Output: dict or None. The captured fault, if any.
+        """
+        if self._worker_fault is not None or not isinstance(shutdown_result, dict):
+            return self._worker_fault
+
+        for record in shutdown_result.get("transcript") or ():
+            # ShutdownPhase/ShutdownOutcome are str enums, so these compare
+            # equal whether the record carries enum members (the live path) or
+            # plain strings (a transcript rebuilt from stored JSON).
+            phase = getattr(record, "phase", None)
+            outcome = getattr(record, "outcome", None)
+            if phase != "phase_failed" and outcome != "failed":
+                continue
+            reason = getattr(record, "reason", None)
+            error_type = getattr(record, "error_type", None)
+            if reason is None and error_type is None:
+                # A failure with no attached exception says nothing an exit
+                # code does not; keep looking for one that does.
+                continue
+            self._worker_fault = {
+                "error_type": error_type,
+                "reason": reason,
+                "action": getattr(record, "action", None),
+                "worker_exitcode": getattr(record, "worker_exitcode", None),
+            }
+            break
+
+        return self._worker_fault
+
     @staticmethod
     def _worker_crashed_on_start(stream_status):
         """
@@ -1262,7 +1300,9 @@ class StreamWatcher (threading.Thread):
         self._response_grace = None
         self._cold_open_backoff_remaining = self._cold_open_backoff_ticks
         try:
-            self._monitor.stop_stream(self.stream_index)   # clear the dead worker
+            # Also the only chance to learn why the worker died: stop_stream
+            # drains its status queue, and nobody else ever reads it.
+            self._capture_worker_fault(self._monitor.stop_stream(self.stream_index))
         except Exception:
             pass
         return {
@@ -1991,6 +2031,13 @@ class StreamWatcher (threading.Thread):
               - None: no worker status is available.
             - pid: int or None.
             - exitcode: int or None.
+            - fault: dict or None. The exception the worker died on, when it
+              reported one before exiting; None when it died silently or is
+              still alive.
+              - error_type: str or None. Exception class name.
+              - reason: str or None. Exception text.
+              - action: str or None. Worker step that raised.
+              - worker_exitcode: int or None.
           - heartbeat: dict.
             - status: str (fresh | stale | missing).
               - fresh: data arrived within max_age_sec.
@@ -2020,6 +2067,11 @@ class StreamWatcher (threading.Thread):
             "status": stream_status.get("worker_status"),
             "pid": stream_status.get("worker_pid"),
             "exitcode": stream_status.get("worker_exitcode"),
+            # The exception the worker died on, when it managed to report one.
+            # An exit code alone cannot distinguish a config fault from a
+            # device fault, and the recovery machinery downstream will happily
+            # describe a doomed stream in terms of the port it cannot reopen.
+            "fault": self._worker_fault,
         }
         heartbeat = action_result.get("heartbeat") or self._get_heartbeat()
         failure_reason = action_result.get("failure_reason")

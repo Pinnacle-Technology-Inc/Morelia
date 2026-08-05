@@ -5,9 +5,12 @@ from flask_smorest import Blueprint, abort
 import app.services.session_templates as session_template_service
 from app.api.schemas import (
     AssignmentPlanSchema,
+    CreateSessionTemplateFromTomlSchema,
     CreateSessionTemplateSchema,
     ResolveSessionTemplateRenameSchema,
     SessionTemplateSchema,
+    SessionTemplateTomlSchema,
+    SessionTemplateTomlValidationSchema,
 )
 from app.domain.errors import (
     SessionTemplateDuplicate,
@@ -24,6 +27,27 @@ blp = Blueprint(
 )
 
 
+def _raise_name_conflict(exc, requested_name):
+    existing = session_template_service.get_by_name(exc.name)
+    if existing is not None:
+        if exc.name != requested_name:
+            raise SessionTemplateDuplicate(
+                {
+                    "template_id": existing.template_id,
+                    "name": existing.name,
+                    "reference": existing.reference,
+                    "detail_url": f"/api/v1/session-templates/{existing.template_id}",
+                },
+                existing.state,
+                existing.allowed_actions,
+            ) from exc
+        exc.details = {
+            "current_state": existing.state,
+            "allowed_actions": existing.allowed_actions,
+        }
+    raise exc
+
+
 @blp.route("", methods=["POST"])
 @blp.arguments(CreateSessionTemplateSchema)
 @blp.response(201, SessionTemplateSchema)
@@ -31,24 +55,43 @@ def create_session_template(payload):
     try:
         return session_template_service.import_config(payload)
     except SessionTemplateNameExists as exc:
-        existing = session_template_service.get_by_name(exc.name)
-        if existing is not None:
-            if exc.name != payload["name"]:
-                raise SessionTemplateDuplicate(
-                    {
-                        "template_id": existing.template_id,
-                        "name": existing.name,
-                        "reference": existing.reference,
-                        "detail_url": f"/api/v1/session-templates/{existing.template_id}",
-                    },
-                    existing.state,
-                    existing.allowed_actions,
-                ) from exc
-            exc.details = {
-                "current_state": existing.state,
-                "allowed_actions": existing.allowed_actions,
-            }
-        raise
+        _raise_name_conflict(exc, payload["name"])
+    except ValueError as exc:
+        abort(422, message=str(exc), code="invalid_session_template")
+
+
+@blp.route("/validations", methods=["POST"])
+@blp.arguments(SessionTemplateTomlSchema)
+@blp.response(200, SessionTemplateTomlValidationSchema)
+def validate_session_template_toml(payload):
+    """Validate a TOML draft without creating template or registry files."""
+
+    try:
+        content = session_template_service.validate_toml(payload["toml"])
+    except ValueError as exc:
+        abort(422, message=str(exc), code="invalid_session_template")
+    flows = content["device_flows"]
+    return {
+        "content": content,
+        "summary": {
+            "device_flows": len(flows),
+            "sinks": sum(len(flow["sinks"]) for flow in flows),
+            "hardware_preferences": sum("hardware_id" in flow for flow in flows),
+            "policy": content["policy"],
+        },
+    }
+
+
+@blp.route("/imports", methods=["POST"])
+@blp.arguments(CreateSessionTemplateFromTomlSchema)
+@blp.response(201, SessionTemplateSchema)
+def import_session_template_toml(payload):
+    """Create a registered template from user-authored TOML text."""
+
+    try:
+        return session_template_service.import_toml(payload["toml"], name=payload["name"])
+    except SessionTemplateNameExists as exc:
+        _raise_name_conflict(exc, payload["name"])
     except ValueError as exc:
         abort(422, message=str(exc), code="invalid_session_template")
 
@@ -62,8 +105,8 @@ def list_session_templates():
 @blp.route("/catalog", methods=["GET"])
 @blp.response(200, SessionTemplateSchema(many=True))
 def list_session_template_catalog():
-    """Compatibility alias for the file-authoritative template list."""
-    return session_template_service.catalog()
+    """The file-authoritative template list, joined with each revision's runs."""
+    return session_template_service.catalog_with_run_history()
 
 
 @blp.route("/<path:reference>/assignment-plan", methods=["POST"])

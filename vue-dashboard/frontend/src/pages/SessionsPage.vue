@@ -1,8 +1,9 @@
 <script setup>
-import { computed, ref } from "vue";
-import { AlertTriangle, Filter, RefreshCw, Search } from "@lucide/vue";
+import { computed, ref, watch } from "vue";
+import { Filter, RefreshCw, Search } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
+import ErrorNotification from "../components/ErrorNotification.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
@@ -22,6 +23,21 @@ const visibleSessions = computed(() => filterSessions(props.sessions, activeTab.
 const counts = computed(() => Object.fromEntries(
   sessionTabs.map((tab) => [tab.id, countSessionsForTab(props.sessions, tab.id)]),
 ));
+const dismissedSessionError = ref("");
+const sessionErrorMessage = computed(() => {
+  const detail = props.loadError.trim();
+  let summary = "";
+  if (props.catalogState === "unavailable") summary = "Backend unavailable. No sessions are available.";
+  if (props.catalogState === "degraded") summary = "Partial data: session overview is unavailable.";
+  return summary && detail ? `${summary} ${detail}` : summary;
+});
+const showSessionError = computed(
+  () => sessionErrorMessage.value && sessionErrorMessage.value !== dismissedSessionError.value,
+);
+
+watch(sessionErrorMessage, (message, previousMessage) => {
+  if (message !== previousMessage) dismissedSessionError.value = "";
+});
 
 function timeLabel(session) {
   if (session.lifecycle === "Active") return session.duration ?? "In progress";
@@ -49,17 +65,7 @@ function timeLabel(session) {
     </PageHeader>
 
     <BaseCard class="workspace-card">
-      <div v-if="catalogState === 'unavailable'" class="detail-alert" role="alert">
-        <AlertTriangle :size="17" />
-        <span>Backend unavailable. No sessions are available. {{ loadError }}</span>
-        <button type="button" @click="$emit('retry')"><RefreshCw :size="15" /> Retry</button>
-      </div>
-      <div v-else-if="catalogState === 'degraded'" class="detail-alert" role="alert">
-        <AlertTriangle :size="17" />
-        <span>Partial data: session overview is unavailable. {{ loadError }}</span>
-        <button type="button" @click="$emit('retry')"><RefreshCw :size="15" /> Retry</button>
-      </div>
-      <div v-else-if="catalogState === 'loading'" class="detail-alert" aria-live="polite">
+      <div v-if="catalogState === 'loading'" class="detail-alert" aria-live="polite">
         <RefreshCw :size="17" class="spin" /> Loading sessions from the backend…
       </div>
       <div class="workspace-chrome">
@@ -99,5 +105,13 @@ function timeLabel(session) {
         <p>Try another tab or change the current search.</p>
       </div>
     </BaseCard>
+
+    <ErrorNotification
+      v-if="showSessionError"
+      :message="sessionErrorMessage"
+      @dismiss="dismissedSessionError = sessionErrorMessage"
+    >
+      <button type="button" @click="$emit('retry')"><RefreshCw :size="15" /> Retry</button>
+    </ErrorNotification>
   </div>
 </template>

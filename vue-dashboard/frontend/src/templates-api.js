@@ -69,8 +69,6 @@ const SERVER_ACTIONS = Object.freeze({
   accept_change: {
     id: "accept_change",
     label: "Accept as new revision",
-    // Accepting records a NEW active registry entry. It never writes to the
-    // file — the operator's edit already did that.
     title: "Record the edited file as a new active revision. Your TOML file is not rewritten.",
     confirm:
       "Accept this file as a new revision?\n\n" +

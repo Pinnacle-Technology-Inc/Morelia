@@ -7,7 +7,6 @@ import {
   CircleDashed,
   CircleHelp,
   CopySlash,
-  PencilOff,
   FileQuestionMark,
   ListRestart,
   Clock3,
@@ -89,8 +88,8 @@ const config = {
   DUPLICATE: { icon: CopySlash, tone: "blue" },
   AMBIGUOUS_RENAME: { icon: FileQuestionMark, tone: "neutral" },
   CHANGED: { icon: ListRestart, tone: "neutral" },
-  REPLACED: { icon: PencilOff, tone: "neutral" },
   ARCHIVED: { icon: Archive, tone: "neutral" },
+  MISSING: { icon: FileQuestionMark, tone: "amber" },
   INVALID: { icon: AlertTriangle, tone: "amber" },
 };
 

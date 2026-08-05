@@ -1732,6 +1732,8 @@ def _render_watch_event(event: Mapping[str, object]) -> list[str]:
             heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
             worker = stream.get("worker")
             worker = worker if isinstance(worker, Mapping) else {}
+            worker_fault = worker.get("fault")
+            worker_fault = worker_fault if isinstance(worker_fault, Mapping) else {}
             recovery = stream.get("recovery")
             recovery = recovery if isinstance(recovery, Mapping) else {}
             source_read = stream.get("source_read")
@@ -1759,6 +1761,14 @@ def _render_watch_event(event: Mapping[str, object]) -> list[str]:
                         "failures": _fraction(failure.get("count"), failure.get("threshold")),
                         "worker": worker.get("status"),
                         "worker_exitcode": worker.get("exitcode"),
+                        # Only present when the worker reported why it died,
+                        # and _render_structlog_console drops None — so these
+                        # two stay off every healthy line and appear exactly on
+                        # the tick that has something to say.
+                        "worker_fault": worker_fault.get("error_type"),
+                        "worker_fault_message": _bounded_watch_text(
+                            worker_fault.get("reason"), 500
+                        ),
                         "heartbeat": heartbeat.get("status"),
                         "heartbeat_age": heartbeat.get("age_sec"),
                         "heartbeat_max_age": heartbeat.get("max_age_sec"),
