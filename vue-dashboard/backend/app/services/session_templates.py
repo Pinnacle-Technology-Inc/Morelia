@@ -1096,7 +1096,7 @@ def archive(template_id: str) -> SessionTemplateFile:
         raise SessionTemplateNotFound(template_id)
     if template.state in _ARCHIVED_STATES:
         return template
-    if template.state not in {"ACTIVE", "CHANGED"}:
+    if template.state not in {"ACTIVE", "CHANGED", "MISSING"}:
         raise ValueError(f"template {template_id!r} cannot be archived from state {template.state}")
     with transaction():
         row = _repository.get_by_id(template_id)
@@ -1252,18 +1252,65 @@ class _PlanTemplate:
         self.reference = reference
 
 
+def read_source(reference: str) -> str:
+    """Read one direct flat-library TOML file for the repair editor."""
+
+    template = get_by_reference(reference)
+    path = _library_file_for_reference(reference)
+    if template is None or path is None:
+        raise SessionTemplateNotFound(reference)
+    try:
+        if path.stat().st_size > 1_000_000:
+            raise ValueError("session template TOML must be no larger than 1,000,000 bytes")
+        return path.read_text(encoding="utf-8")
+    except UnicodeError as exc:
+        raise ValueError("session template source must be valid UTF-8 text") from exc
+    except OSError as exc:
+        raise SessionTemplateNotFound(reference) from exc
+
+
+def repair_source(reference: str, source: str) -> SessionTemplateFile:
+    """Validate and atomically replace one INVALID flat-library TOML file."""
+
+    if not isinstance(source, str) or not source.strip():
+        raise ValueError("session template TOML is required")
+    if len(source) > 1_000_000:
+        raise ValueError("session template TOML must be no larger than 1,000,000 characters")
+    validate_toml(source)
+
+    with _reconciliation_lock:
+        template = get_by_reference(reference)
+        path = _library_file_for_reference(reference)
+        if template is None or path is None:
+            raise SessionTemplateNotFound(reference)
+        if template.state != "INVALID":
+            raise ValueError(f"template {reference!r} can only be repaired while it is INVALID")
+        _write_atomic(path, source)
+        repaired = get_by_reference(reference)
+    if repaired is None:
+        raise SessionTemplateNotFound(reference)
+    return repaired
+
+
 def delete(name: str) -> None:
     """Delete an explicitly named template file and its corresponding metadata."""
 
-    template = get_by_reference(name) or get_by_name(name)
-    if template is None:
-        raise SessionTemplateNotFound(name)
-    path = _library_dir() / template.relative_path
-    path.unlink()
-    with transaction():
-        row = _repository.get_by_id(template.template_id)
-        if row is not None:
-            _repository.delete(row)
+    with _reconciliation_lock:
+        template = get_by_reference(name) or get_by_name(name)
+        if template is None:
+            raise SessionTemplateNotFound(name)
+        # A MISSING resource has durable registry metadata but no file to
+        # unlink. If the file reappears before this lock is acquired, catalog()
+        # changes the state and the normal explicit-file delete path applies.
+        if template.state != "MISSING":
+            path = _library_file_for_reference(template.relative_path)
+            if path is None:
+                raise SessionTemplateNotFound(name)
+            path.unlink()
+        with transaction():
+            row = _repository.get_by_id(template.template_id)
+            if row is not None:
+                _repository.delete(row)
 
 
 def import_config(source: Mapping[str, Any], *, name: str | None = None) -> SessionTemplateFile:

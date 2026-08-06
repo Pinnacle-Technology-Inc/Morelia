@@ -178,6 +178,8 @@ class SinkRestartPlanEntrySchema(Schema):
     assignment = fields.String(dump_only=True)
     current_location = fields.String(dump_only=True, allow_none=True)
     occupied = fields.Boolean(dump_only=True)
+    parent_directory = fields.String(dump_only=True, allow_none=True)
+    parent_issue = fields.String(dump_only=True, allow_none=True)
     suggested_location = fields.String(dump_only=True, allow_none=True)
 
 
@@ -370,6 +372,24 @@ class DeviceTemplateSchema(Schema):
     content = fields.Raw()
     content_hash = fields.String()
     created_at = fields.DateTime(dump_only=True)
+    modified_at = fields.DateTime(dump_only=True, allow_none=True)
+    status = fields.String(dump_only=True)
+    validation_error = fields.String(dump_only=True, allow_none=True)
+
+
+class DeviceTemplateTomlSchema(Schema):
+    """An in-memory device-template TOML draft."""
+
+    toml = fields.String(required=True, validate=validate.Length(min=1, max=1_000_000))
+
+
+class DeviceTemplateSourceSchema(DeviceTemplateTomlSchema):
+    reference = fields.String(dump_only=True)
+
+
+class DeviceTemplateTomlValidationSchema(Schema):
+    content = fields.Raw(dump_only=True)
+    parameter_count = fields.Integer(dump_only=True)
 
 
 class RenameDeviceTemplateSchema(Schema):
@@ -493,6 +513,12 @@ class SessionTemplateTomlSchema(Schema):
     """An in-memory TOML draft submitted for validation."""
 
     toml = fields.String(required=True, validate=validate.Length(min=1, max=1_000_000))
+
+
+class SessionTemplateSourceSchema(SessionTemplateTomlSchema):
+    """Editable source for one flat-library session template."""
+
+    reference = fields.String(dump_only=True)
 
 
 class CreateSessionTemplateFromTomlSchema(SessionTemplateTomlSchema):

@@ -6,6 +6,12 @@ export async function loadDeviceTemplates() {
   return value;
 }
 
+export async function loadDeviceTemplateCatalog() {
+  const value = await requestJson("/api/v1/device-templates/catalog");
+  if (!Array.isArray(value)) throw new TypeError("The device template catalog API returned an unexpected response shape.");
+  return value;
+}
+
 export async function loadSessionTemplates() {
   const value = await requestJson("/api/v1/session-templates");
   if (!Array.isArray(value)) throw new TypeError("The session template API returned an unexpected response shape.");
@@ -33,6 +39,17 @@ export const createDeviceTemplate = (payload) => send("/api/v1/device-templates"
 export const updateDeviceTemplate = (name, payload) => send(`/api/v1/device-templates/${encodeURIComponent(name)}`, "PUT", payload);
 export const renameDeviceTemplate = (name, newName) => send(`/api/v1/device-templates/${encodeURIComponent(name)}/rename`, "POST", { new_name: newName });
 export const deleteDeviceTemplate = (name) => send(`/api/v1/device-templates/${encodeURIComponent(name)}`, "DELETE");
+export const validateDeviceTemplateToml = (toml) =>
+  send("/api/v1/device-templates/validations", "POST", { toml });
+export async function loadDeviceTemplateSource(reference) {
+  const value = await requestJson(`/api/v1/device-template-sources/${byReference(reference)}`);
+  if (!value || typeof value.toml !== "string") {
+    throw new TypeError("The device template source API returned an unexpected response shape.");
+  }
+  return value;
+}
+export const repairDeviceTemplateSource = (reference, toml) =>
+  send(`/api/v1/device-template-sources/${byReference(reference)}`, "PUT", { toml });
 export const createSessionTemplate = (payload) => send("/api/v1/session-templates", "POST", payload);
 export const validateSessionTemplateToml = (toml) =>
   send("/api/v1/session-templates/validations", "POST", { toml });
@@ -40,6 +57,18 @@ export const createSessionTemplateFromToml = ({ name, toml }) =>
   send("/api/v1/session-templates/imports", "POST", { name, toml });
 export const updateSessionTemplate = (name, payload) => send(`/api/v1/session-templates/${encodeURIComponent(name)}`, "PUT", payload);
 export const deleteSessionTemplate = (name) => send(`/api/v1/session-templates/${encodeURIComponent(name)}`, "DELETE");
+export async function loadSessionTemplateSource(reference) {
+  const value = await requestJson(`/api/v1/session-template-sources/${byReference(reference)}`);
+  if (!value || typeof value.toml !== "string") {
+    throw new TypeError("The session template source API returned an unexpected response shape.");
+  }
+  return value;
+}
+export async function repairSessionTemplateSource(reference, toml) {
+  return normalizeTemplate(
+    await send(`/api/v1/session-template-sources/${byReference(reference)}`, "PUT", { toml }),
+  );
+}
 
 // --- registry resource -----------------------------------------------------
 
@@ -195,7 +224,7 @@ export function templateStateHint(template) {
 // One function per backend action. Reference-addressed routes take the flat
 // filename; identity-addressed routes take the internal id.
 
-const byReference = (reference) => encodeURIComponent(reference);
+const byReference = (reference) => reference.split("/").map(encodeURIComponent).join("/");
 
 export async function loadSessionTemplate(reference) {
   return normalizeTemplate(await requestJson(`/api/v1/session-templates/${byReference(reference)}`));

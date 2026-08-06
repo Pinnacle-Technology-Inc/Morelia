@@ -9,6 +9,7 @@ from app.api.schemas import (
     CreateSessionTemplateSchema,
     ResolveSessionTemplateRenameSchema,
     SessionTemplateSchema,
+    SessionTemplateSourceSchema,
     SessionTemplateTomlSchema,
     SessionTemplateTomlValidationSchema,
 )
@@ -24,6 +25,12 @@ blp = Blueprint(
     __name__,
     url_prefix="/api/v1/session-templates",
     description="Manage flat-file session-template definitions and registry metadata.",
+)
+source_blp = Blueprint(
+    "session_template_sources",
+    __name__,
+    url_prefix="/api/v1/session-template-sources",
+    description="Read and repair editable session-template TOML source.",
 )
 
 
@@ -109,6 +116,20 @@ def list_session_template_catalog():
     return session_template_service.catalog_with_run_history()
 
 
+@source_blp.route("/<path:reference>", methods=["GET"])
+@source_blp.response(200, SessionTemplateSourceSchema)
+def get_session_template_source(reference):
+    """Return editable TOML source without exposing arbitrary filesystem paths."""
+
+    try:
+        return {
+            "reference": reference,
+            "toml": session_template_service.read_source(reference),
+        }
+    except ValueError as exc:
+        abort(422, message=str(exc), code="invalid_session_template")
+
+
 @blp.route("/<path:reference>/assignment-plan", methods=["POST"])
 @blp.response(200, AssignmentPlanSchema)
 def assignment_plan(reference):
@@ -131,6 +152,18 @@ def get_session_template(reference):
     if template is None:
         raise SessionTemplateNotFound(reference)
     return template
+
+
+@source_blp.route("/<path:reference>", methods=["PUT"])
+@source_blp.arguments(SessionTemplateTomlSchema)
+@source_blp.response(200, SessionTemplateSchema)
+def repair_session_template_source(payload, reference):
+    """Validate and atomically replace the source of an invalid template."""
+
+    try:
+        return session_template_service.repair_source(reference, payload["toml"])
+    except ValueError as exc:
+        abort(422, message=str(exc), code="invalid_session_template")
 
 
 def _template_by_id(template_id):
