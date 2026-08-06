@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   buildTemplateRunPayload,
@@ -36,6 +37,8 @@ const RESOLVED = [
   },
 ];
 
+const startRunSource = readFileSync(new URL("./StartRunDialog.vue", import.meta.url), "utf8");
+
 describe("sink destination composition", () => {
   it("takes the extension from the sink type, not from what was typed", () => {
     expect(composeSinkLocation("D:/runs", "left", "csv")).toBe("D:/runs/left.csv");
@@ -65,6 +68,15 @@ describe("sink destination composition", () => {
 });
 
 describe("compact template-run payload", () => {
+  it("validates host output folders before creating the Draft", () => {
+    expect(startRunSource).toContain("await validateOutputFolders(");
+    expect(startRunSource).toContain("Boolean(folderValidationError.value)");
+    expect(startRunSource).toContain("await verifyOutputFolders().catch(() => {})");
+    expect(startRunSource.indexOf("await validateOutputFolders(")).toBeLessThan(
+      startRunSource.indexOf("createTemplateRun(payload()"),
+    );
+  });
+
   it("copies invisible template identity and sends only run-owned fields", () => {
     const payload = buildTemplateRunPayload({
       template: ACTIVE_TEMPLATE,

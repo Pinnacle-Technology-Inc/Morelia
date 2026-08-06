@@ -391,6 +391,8 @@ def sink_restart_plan(session_id: int) -> dict:
                         "assignment": "automatic",
                         "current_location": None,
                         "occupied": False,
+                        "parent_directory": None,
+                        "parent_issue": None,
                         "suggested_location": None,
                     }
                 )
@@ -398,19 +400,23 @@ def sink_restart_plan(session_id: int) -> dict:
 
             resolved = sink_paths.resolve_sink_location(str(raw_location))
             occupied = sink_paths.path_is_claimed(resolved)
+            parent_problem = sink_paths.sink_parent_issue(resolved)
+            parent_directory, parent_issue = parent_problem or (None, None)
             entries.append(
                 entry
                 | {
                     "assignment": "explicit",
                     "current_location": resolved,
                     "occupied": occupied,
+                    "parent_directory": parent_directory,
+                    "parent_issue": parent_issue,
                     "suggested_location": str(
                         sink_paths.next_available_path(
                             Path(resolved), session_id=session_id
                         )
                     )
-                    if occupied
-                    else resolved,
+                    if occupied and parent_problem is None
+                    else (resolved if parent_problem is None else None),
                 }
             )
 

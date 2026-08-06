@@ -222,13 +222,18 @@ export async function createTemplateRun(payload, { startImmediately = false } = 
   }
 }
 
-/** Where this session's file outputs would land if started right now.
- *
- * Read-only. Each entry's `key` is the `sink_overrides` key that relocates
- * that sink, so a start payload can be built straight from this response.
- */
+/** Where this session's file outputs would land if started right now. */
 export async function loadSinkPlan(sessionId) {
   return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/sink-plan`);
+}
+
+/** Relocate file outputs while the session has never started. */
+export async function updateSinkLocations(sessionId, locations) {
+  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/sink-locations`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ locations }),
+  });
 }
 
 export async function startSession(sessionId) {

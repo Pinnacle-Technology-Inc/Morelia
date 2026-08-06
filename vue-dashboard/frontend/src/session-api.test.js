@@ -7,6 +7,7 @@ import {
   loadSinkPlan,
   startSession,
   stopSession,
+  updateSinkLocations,
 } from "./session-api";
 
 afterEach(() => vi.restoreAllMocks());
@@ -58,12 +59,20 @@ it("reads the sink plan without mutating anything", async () => {
   expect(fetchMock.mock.calls[0][1]?.method ?? "GET").toBe("GET");
 });
 
-it("carries operator-chosen output names into the start command", async () => {
+it("patches operator-chosen output names onto the Draft before start", async () => {
   const fetchMock = vi.fn(async (_url, options) => ({ ok: true, json: async () => JSON.parse(options.body) }));
   vi.stubGlobal("fetch", fetchMock);
-  await startSession(19, { sinkOverrides: { "peter:8206-edf": "C:/out/run-2.edf" } });
+
+  await updateSinkLocations(19, [
+    { flow_index: 0, sink_index: 1, sink_location: "C:/out/run-2.edf" },
+  ]);
+
+  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/19/sink-locations");
+  expect(fetchMock.mock.calls[0][1].method).toBe("PATCH");
   const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-  expect(body.sink_overrides).toEqual({ "peter:8206-edf": "C:/out/run-2.edf" });
+  expect(body).toEqual({
+    locations: [{ flow_index: 0, sink_index: 1, sink_location: "C:/out/run-2.edf" }],
+  });
 });
 
 it("completes through its distinct terminal route", async () => {

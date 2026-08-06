@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { deriveFlowStatus } from "../session-flow-status";
 
 const sessionDetailSource = readFileSync(new URL("./SessionDetailPage.vue", import.meta.url), "utf8");
+const sinkRecoverySource = readFileSync(new URL("../sink-location-recovery.js", import.meta.url), "utf8");
 const sessionsPageSource = readFileSync(new URL("./SessionsPage.vue", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../App.vue", import.meta.url), "utf8");
 
@@ -17,11 +18,26 @@ describe("template-centric session closure", () => {
   it("never restarts a stopped session in place", () => {
     expect(sessionDetailSource).not.toContain("restartStopped");
     expect(sessionDetailSource).not.toContain("confirmRestart");
-    expect(sessionDetailSource).not.toContain("loadSinkPlan");
     expect(sessionDetailSource).not.toContain("dialog === 'restart'");
     expect(sessionDetailSource).not.toContain("Duplicate Session");
     expect(sessionDetailSource).toContain("Start another run");
     expect(sessionDetailSource).toContain("start-another-run");
+  });
+
+  it("keeps a refused Draft actionable through output repair and retry", () => {
+    expect(sessionDetailSource).toContain("loadSinkPlan");
+    expect(sessionDetailSource).toContain("updateSinkLocations");
+    expect(sinkRecoverySource).toContain("sink_location_exists");
+    expect(sinkRecoverySource).toContain("sink_parent_unavailable");
+    expect(sessionDetailSource).toContain("Edit output paths");
+    expect(sessionDetailSource).not.toContain("Retry Start");
+    expect(sessionDetailSource.match(/@click="startDraft"/g)).toHaveLength(1);
+  });
+
+  it("shows command failures in a dismissible dialog instead of inline page chrome", () => {
+    expect(sessionDetailSource).toContain("CommandErrorDialog");
+    expect(sessionDetailSource).toContain('@close="dismissCommandError"');
+    expect(sessionDetailSource).not.toContain('v-if="commandError" class="sink-repair-feedback"');
   });
 
   it("gates another run on the current source while retaining frozen provenance", () => {

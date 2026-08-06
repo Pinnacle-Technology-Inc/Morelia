@@ -26,6 +26,7 @@ import {
 } from "../session-api";
 import { createDeviceConfigFromTemplate, isDeviceSelectable, loadDevicePool } from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
+import { outputFolder, validateOutputFolders } from "../sink-location-recovery";
 import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
 import { loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
 import {
@@ -47,6 +48,7 @@ const loadState = ref("loading");
 const submitState = ref("idle");
 const loadError = ref("");
 const submitError = ref("");
+const folderValidationError = ref("");
 const nameSuggestion = ref("");
 const draft = ref(null);
 const stale = ref(false);
@@ -276,13 +278,34 @@ const folderPickerFolder = computed(() => {
   return assignments.value[target.flowIndex]?.sinks?.[target.sinkIndex]?.folder ?? "";
 });
 
-function chooseFolder(path) {
+async function chooseFolder(path) {
   const target = folderPickerTarget.value;
   if (target) {
     const sink = assignments.value[target.flowIndex]?.sinks?.[target.sinkIndex];
     if (sink) sink.folder = path;
   }
   folderPickerTarget.value = null;
+  await verifyOutputFolders().catch(() => {});
+}
+
+function currentOutputFolders() {
+  return assignments.value.flatMap((assignment) =>
+    (templateSinks.value[assignment.flowIndex] ?? []).flatMap((sink, sinkIndex) =>
+      isFileSink(sink.sink_type)
+        ? [assignment.sinks?.[sinkIndex]?.folder]
+        : [],
+    ),
+  );
+}
+
+async function verifyOutputFolders() {
+  try {
+    await validateOutputFolders(currentOutputFolders(), browseDirectories);
+    folderValidationError.value = "";
+  } catch (error) {
+    folderValidationError.value = describeError(error, "An output folder is unavailable on the session host.");
+    throw error;
+  }
 }
 
 // The backend refuses to overwrite an explicit path but proposes a free one
@@ -295,10 +318,9 @@ function applySuggestedLocation() {
   const sink = assignments.value[conflict.flowIndex]?.sinks?.[conflict.sinkIndex];
   const sinkType = templateSinks.value[conflict.flowIndex]?.[conflict.sinkIndex]?.sink_type;
   if (!sink || !sinkType) return;
-  const separator = conflict.suggested.includes("\\") ? "\\" : "/";
-  const cut = conflict.suggested.lastIndexOf(separator);
-  sink.folder = cut === -1 ? sink.folder : conflict.suggested.slice(0, cut);
-  const file = conflict.suggested.slice(cut + 1);
+  const folder = outputFolder(conflict.suggested);
+  if (folder) sink.folder = folder;
+  const file = conflict.suggested.split(/[\\/]/).pop() ?? "";
   sink.name = file.toLowerCase().endsWith(`.${sinkType}`)
     ? file.slice(0, -(sinkType.length + 1))
     : file;
@@ -325,6 +347,7 @@ const submitDisabled = computed(
     !assignments.value.length ||
     unassignedCount.value > 0 ||
     unresolvedSinkCount.value > 0 ||
+    Boolean(folderValidationError.value) ||
     scheduleIncomplete.value,
 );
 
@@ -337,6 +360,7 @@ const blockedReason = computed(() => {
     return `Assign a device to ${unassignedCount.value} more stream${unassignedCount.value === 1 ? "" : "s"}.`;
   }
   if (unresolvedSinkCount.value) return "Every file sink needs a folder and a filename.";
+  if (folderValidationError.value) return folderValidationError.value;
   if (scheduleIncomplete.value) return "Pick a start time to schedule this run.";
   return "";
 });
@@ -389,6 +413,7 @@ async function load() {
   loadState.value = "loading";
   loadError.value = "";
   submitError.value = "";
+  folderValidationError.value = "";
   stale.value = false;
   draft.value = null;
   collision.value = null;
@@ -417,6 +442,9 @@ async function load() {
     if (folderResult.status === "fulfilled") defaultOutputFolder.value = folderResult.value.path ?? "";
     deviceTemplates.value = deviceTemplateResult.status === "fulfilled" ? deviceTemplateResult.value : [];
     resetAssignments(planResult.value);
+    // Validate template-seeded paths during preparation so an unavailable
+    // destination disables Start immediately, before the operator submits.
+    await verifyOutputFolders().catch(() => {});
     loadState.value = "ready";
     // Now that the planner has answered, discover the pool — not awaited, so the
     // form paints immediately and the device tables fill in behind their own
@@ -523,6 +551,11 @@ async function submit() {
     // The template may have drifted after this form loaded. Check immediately
     // before create; the backend repeats the same ID/hash check atomically.
     if (!(await revisionIsCurrent())) return;
+    // Template defaults can name a drive or folder that disappeared after the
+    // template was authored. The picker validates operator choices, but seeded
+    // values need the same host-side check. This gate deliberately precedes
+    // Draft creation so an unusable destination cannot strand a session.
+    await verifyOutputFolders();
     // Create only — the start command is NOT issued from here even in "Start
     // now" mode. Once the Draft exists there is a real session to look at, and
     // its own page already owns the lifecycle animation, the live event stream
@@ -845,7 +878,7 @@ watch(() => props.templateId, load);
 }
 .metadata-grid {
   max-width: none;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .flow-stack {
   display: grid;
@@ -1085,6 +1118,9 @@ watch(() => props.templateId, load);
   font-size: var(--fs-xs);
 }
 @media (max-width: 760px) {
+  .metadata-grid {
+    grid-template-columns: 1fr;
+  }
   .run-mode {
     grid-template-columns: 1fr;
   }

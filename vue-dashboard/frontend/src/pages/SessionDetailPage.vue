@@ -13,12 +13,20 @@ import {
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import CollapsibleSection from "../components/CollapsibleSection.vue";
+import CommandErrorDialog from "../components/CommandErrorDialog.vue";
+import EditSinkLocationsDialog from "../components/EditSinkLocationsDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { normalizeSession, startSession, stopSession } from "../session-api";
+import {
+  loadSinkPlan,
+  normalizeSession,
+  startSession,
+  stopSession,
+  updateSinkLocations,
+} from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import {
@@ -28,6 +36,7 @@ import {
   isOutboxUnproven,
 } from "../session-flow-status";
 import { isRunningLifecycle } from "../session-utils";
+import { hasOccupiedSink, hasUnreadySink, isRecoverableSinkProblem } from "../sink-location-recovery";
 import { canRunTemplate, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator
@@ -52,6 +61,12 @@ const detailState = ref("loading");
 const detailError = ref("");
 const commandError = ref("");
 const commandBusy = ref(false);
+const sinkPlan = ref(null);
+const sinkPlanState = ref("idle");
+const sinkPlanError = ref("");
+const sinkRepairReason = ref("");
+const sinkRepairAvailable = ref(false);
+const sinkSaveBusy = ref(false);
 const sourceTemplate = ref(null);
 const sourceTemplateState = ref("idle");
 const sourceTemplateError = ref("");
@@ -448,7 +463,7 @@ onMounted(() => {
   refreshDetail().then(() => {
     if (!props.autoStart) return;
     if (lifecycle.value === "Draft") {
-      runLifecycleCommand(() => startSession(props.sessionId));
+      startDraft();
       return;
     }
     // The operator asked for "Start now" and we are not going to issue it —
@@ -484,6 +499,100 @@ function applyCommandResult(result) {
   emit("state-changed", result);
 }
 
+const sinkLocationsEditable = computed(() =>
+  lifecycle.value === "Draft" || lifecycle.value === "Scheduled",
+);
+
+function problemMessage(error, fallback) {
+  return error?.problem?.detail ?? (error instanceof Error ? error.message : fallback);
+}
+
+function sinkPlanBlockReason(plan) {
+  if (hasOccupiedSink(plan)) {
+    return "An output file already exists at this run's destination. Choose another path before starting.";
+  }
+  if (!hasUnreadySink(plan)) return "";
+  const blocked = plan.sinks.find((sink) => sink?.parent_issue);
+  const folder = blocked.parent_directory ? ` “${blocked.parent_directory}”` : "";
+  const issue = blocked.parent_issue === "missing"
+    ? "does not exist"
+    : blocked.parent_issue === "not_directory"
+      ? "is not a folder"
+      : "is not writable";
+  return `The output folder${folder} ${issue} on the session host. Choose another folder before starting.`;
+}
+
+function dismissCommandError() {
+  commandError.value = "";
+  sinkRepairAvailable.value = false;
+}
+
+async function openSinkLocationEditor({ reason = "", plan = null } = {}) {
+  sinkRepairReason.value = reason;
+  sinkPlanError.value = "";
+  dialog.value = "sink-locations";
+  if (plan) {
+    sinkPlan.value = plan;
+    sinkPlanState.value = "ready";
+    return;
+  }
+
+  sinkPlanState.value = "loading";
+  try {
+    sinkPlan.value = await loadSinkPlan(props.sessionId);
+    sinkPlanState.value = "ready";
+  } catch (error) {
+    sinkPlan.value = null;
+    sinkPlanState.value = "error";
+    sinkPlanError.value = problemMessage(error, "Output paths could not be loaded.");
+  }
+}
+
+async function saveSinkLocations(locations) {
+  if (sinkSaveBusy.value) return;
+  sinkSaveBusy.value = true;
+  sinkPlanError.value = "";
+  try {
+    const updated = await updateSinkLocations(props.sessionId, locations);
+    emit("state-changed", updated);
+    await refreshDetail();
+
+    // PATCH stores the operator's choice; this second read catches choosing a
+    // different path that is already occupied without making them press Start
+    // just to discover it. Start still validates again for filesystem races.
+    try {
+      const plan = await loadSinkPlan(props.sessionId);
+      sinkPlan.value = plan;
+      sinkPlanState.value = "ready";
+      const blockedReason = sinkPlanBlockReason(plan);
+      if (blockedReason) {
+        sinkPlanError.value = blockedReason;
+        return;
+      }
+    } catch {
+      // The PATCH succeeded. A failed confirmation read must not claim the save
+      // failed; the authoritative Start request will validate the path again.
+    }
+
+    dialog.value = null;
+    commandError.value = "";
+    sinkRepairAvailable.value = false;
+    sinkRepairReason.value = "";
+  } catch (error) {
+    sinkPlanError.value = problemMessage(error, "The output paths could not be saved.");
+    if (error?.problem?.code === "invalid_transition") {
+      await refreshDetail({ silent: true });
+      if (!sinkLocationsEditable.value) {
+        dialog.value = null;
+        sinkRepairAvailable.value = false;
+        commandError.value = sinkPlanError.value;
+      }
+    }
+  } finally {
+    sinkSaveBusy.value = false;
+  }
+}
+
 async function runLifecycleCommand(command) {
   commandBusy.value = true;
   commandError.value = "";
@@ -493,6 +602,7 @@ async function runLifecycleCommand(command) {
     dialog.value = null;
     await refreshDetail();
   } catch (error) {
+    dialog.value = null;
     commandError.value = error instanceof Error ? error.message : "The lifecycle command failed.";
   } finally {
     commandBusy.value = false;
@@ -505,8 +615,47 @@ async function runLifecycleCommand(command) {
 // Without this the detail page offered Start only for a terminal session, which
 // left every Draft a dead end: a session saved from the run dialog, or one
 // whose automatic start did not fire, could not be started from the UI at all.
-function startDraft() {
-  return runLifecycleCommand(() => startSession(props.sessionId));
+async function startDraft() {
+  if (commandBusy.value) return;
+  commandBusy.value = true;
+  commandError.value = "";
+  sinkRepairAvailable.value = false;
+  try {
+    // Preflight prevents a known collision from becoming a failed command. It
+    // is advisory only: if the read fails we still let Start perform the
+    // authoritative validation rather than inventing a new dead end.
+    let plan = null;
+    try {
+      plan = await loadSinkPlan(props.sessionId);
+    } catch {
+      // Start below will return the real lifecycle/path error, if any.
+    }
+    const preflightReason = sinkPlanBlockReason(plan);
+    if (preflightReason) {
+      const reason = preflightReason;
+      commandError.value = reason;
+      sinkRepairAvailable.value = true;
+      await openSinkLocationEditor({ reason, plan });
+      return;
+    }
+
+    const result = await startSession(props.sessionId);
+    applyCommandResult(result);
+    dialog.value = null;
+    sinkRepairAvailable.value = false;
+    await refreshDetail();
+  } catch (error) {
+    if (isRecoverableSinkProblem(error)) {
+      const reason = problemMessage(error, "The output destination must be changed before this run can start.");
+      commandError.value = reason;
+      sinkRepairAvailable.value = true;
+      await openSinkLocationEditor({ reason });
+    } else {
+      commandError.value = problemMessage(error, "The lifecycle command failed.");
+    }
+  } finally {
+    commandBusy.value = false;
+  }
 }
 
 function confirmStop() {
@@ -618,7 +767,6 @@ const tabTones = computed(() => ({
           <Play :size="16" /> Run source template
         </BaseButton>
         <BaseButton v-if="isRunningLifecycle(lifecycle)" variant="danger" :disabled="commandBusy" @click="dialog = 'stop'"><StopCircle :size="16" /> Stop</BaseButton>
-        <p v-if="commandError" class="form-notice">{{ commandError }}</p>
       </div>
     </header>
 
@@ -929,7 +1077,12 @@ const tabTones = computed(() => ({
 
       <div v-else class="configuration-grid">
         <BaseCard class="detail-panel"><h3>Metadata</h3><dl class="detail-list"><div><dt>Name</dt><dd>{{ view.name }}</dd></div><div><dt>Experiment</dt><dd>{{ view.experiment ?? "None" }}</dd></div><div><dt>Schedule</dt><dd>{{ view.scheduledTime ? "One-time" : "Manual" }}</dd></div><div><dt>Recovery Policy</dt><dd>{{ view.policy ?? "Recommend" }}</dd></div></dl></BaseCard>
-        <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>{{ lifecycle === "Draft" ? "Configuration is editable before start." : "Stream and sink configuration is read-only after start." }}</p></BaseCard>
+        <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>{{ sinkLocationsEditable ? "Output locations are editable before start." : "Stream and sink configuration is read-only after start." }}</p></BaseCard>
+        <BaseCard class="detail-panel">
+          <h3>Output Locations</h3>
+          <p>{{ sinkLocationsEditable ? "Review or relocate file outputs before this run starts." : "Output locations are frozen as run history." }}</p>
+          <BaseButton v-if="sinkLocationsEditable" variant="secondary" @click="openSinkLocationEditor()">Edit output paths</BaseButton>
+        </BaseCard>
       </div>
     </BaseCard>
 
@@ -939,6 +1092,24 @@ const tabTones = computed(() => ({
     <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
       <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>
     </GuardedDialog>
+    <EditSinkLocationsDialog
+      v-if="dialog === 'sink-locations'"
+      :sinks="sinkPlan?.sinks ?? []"
+      :loading="sinkPlanState === 'loading'"
+      :busy="sinkSaveBusy"
+      :error="sinkPlanError"
+      :reason="sinkRepairReason"
+      @close="dialog = null"
+      @retry="openSinkLocationEditor({ reason: sinkRepairReason })"
+      @save="saveSinkLocations"
+    />
+    <CommandErrorDialog
+      v-if="commandError && dialog !== 'sink-locations'"
+      :message="commandError"
+      :action-label="sinkRepairAvailable && sinkLocationsEditable ? 'Edit output paths' : ''"
+      @close="dismissCommandError"
+      @action="openSinkLocationEditor({ reason: commandError })"
+    />
   </div>
 </template>
 
@@ -973,4 +1144,5 @@ const tabTones = computed(() => ({
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
 </style>
