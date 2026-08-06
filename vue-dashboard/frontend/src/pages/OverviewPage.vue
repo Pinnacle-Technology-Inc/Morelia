@@ -105,7 +105,7 @@ const {
               height="220"
             />
             <h3>No sessions are active</h3>
-            <p>Ready when you are — create a new session to start collecting.</p>
+            <p>Ready when you are — Spin up a session from an existing template</p>
           
           </div>
           <div v-else class="session-card-grid">
