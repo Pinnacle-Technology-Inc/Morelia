@@ -131,13 +131,15 @@ def _read(path: Path) -> DeviceTemplate:
     name = _normalize_name(str(raw.get("name") or path.stem))
     canonical = _canonicalize(raw)
     stat = path.stat()
+    modified_at = datetime.fromtimestamp(stat.st_mtime, UTC)
     return DeviceTemplate(
         name=name,
         file_path=_relative_file_path(path),
         type=canonical["type"],
         content=canonical,
         content_hash=_content_hash(canonical),
-        created_at=datetime.fromtimestamp(stat.st_mtime, UTC),
+        created_at=modified_at,
+        modified_at=modified_at,
     )
 
 
@@ -146,7 +148,84 @@ def _iter_paths() -> list[Path]:
 
 
 def list() -> list[DeviceTemplate]:  # noqa: A001
-    return [_read(path) for path in _iter_paths()]
+    templates = []
+    for path in _iter_paths():
+        try:
+            templates.append(_read(path))
+        except ValueError:
+            # Configuration pickers must never offer an invalid template. The
+            # catalog below still exposes it so an operator can inspect/repair it.
+            continue
+    return templates
+
+
+def catalog() -> list[DeviceTemplate]:
+    """Return every device-template file, including invalid repair candidates."""
+
+    entries = []
+    for path in _iter_paths():
+        try:
+            entries.append(_read(path))
+            continue
+        except ValueError as exc:
+            validation_error = str(exc)
+
+        modified_at = datetime.fromtimestamp(path.stat().st_mtime, UTC)
+        raw: Mapping[str, Any] = {}
+        try:
+            parsed = tomllib.loads(path.read_text(encoding="utf-8"))
+            if isinstance(parsed, Mapping):
+                raw = parsed
+        except (OSError, tomllib.TOMLDecodeError):
+            pass
+
+        raw_name = raw.get("name")
+        raw_type = raw.get("type")
+        entries.append(DeviceTemplate(
+            name=str(raw_name).strip() if isinstance(raw_name, str) and raw_name.strip() else path.stem,
+            file_path=_relative_file_path(path),
+            type=str(raw_type).strip() if isinstance(raw_type, str) else "",
+            content=dict(raw),
+            content_hash="",
+            created_at=modified_at,
+            modified_at=modified_at,
+            status="INVALID",
+            validation_error=validation_error,
+        ))
+    return entries
+
+
+def read_source(reference: str) -> str:
+    """Read one library TOML file without allowing paths outside the library."""
+
+    path = _path_for_reference(reference)
+    if not path.is_file():
+        raise DeviceTemplateNotFound(reference)
+    return path.read_text(encoding="utf-8")
+
+
+def validate_toml(source: str) -> dict[str, Any]:
+    """Validate device-template TOML in memory without writing it."""
+
+    try:
+        raw = tomllib.loads(source)
+    except tomllib.TOMLDecodeError as exc:
+        raise ValueError(f"invalid device template TOML: {exc}") from exc
+    if not isinstance(raw, Mapping):
+        raise ValueError("device template source must contain a mapping")
+    name = _normalize_name(str(raw.get("name", "device-template")))
+    return {"name": name, **_canonicalize(raw)}
+
+
+def repair_source(reference: str, source: str) -> DeviceTemplate:
+    """Validate and atomically replace one existing device-template source."""
+
+    path = _path_for_reference(reference)
+    if not path.is_file():
+        raise DeviceTemplateNotFound(reference)
+    validate_toml(source)
+    _write_atomic(path, source if source.endswith("\n") else f"{source}\n")
+    return _read(path)
 
 
 def get_by_path(file_path: str) -> DeviceTemplate | None:
@@ -244,10 +323,19 @@ def rename(old_name: str, new_name: str) -> tuple[DeviceTemplate, list[Any]]:
 
 def delete(name: str) -> list[Any]:
     template = get_by_name(name)
-    if template is None:
-        raise DeviceTemplateNotFound(name)
-    references = _referencing_session_templates(template.file_path)
-    _path_for_reference(template.file_path).unlink()
+    if template is not None:
+        path = _path_for_reference(template.file_path)
+        file_path = template.file_path
+    else:
+        # Invalid files are absent from list()/get_by_name() so they cannot be
+        # selected for device configuration, but the catalog inspector may
+        # still remove one by its safe, library-relative filename.
+        path = _path_for_reference(name)
+        if not path.is_file():
+            raise DeviceTemplateNotFound(name)
+        file_path = _relative_file_path(path)
+    references = _referencing_session_templates(file_path)
+    path.unlink()
     return references
 
 

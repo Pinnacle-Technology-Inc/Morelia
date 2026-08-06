@@ -20,3 +20,6 @@ class DeviceTemplate:
     content: dict[str, Any]
     content_hash: str
     created_at: datetime | None = None
+    modified_at: datetime | None = None
+    status: str = "VALID"
+    validation_error: str | None = None

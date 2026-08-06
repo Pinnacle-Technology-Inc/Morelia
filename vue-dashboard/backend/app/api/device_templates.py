@@ -9,6 +9,9 @@ from app.api.schemas import (
     DeviceTemplateDeleteResponseSchema,
     DeviceTemplateRenameResponseSchema,
     DeviceTemplateSchema,
+    DeviceTemplateSourceSchema,
+    DeviceTemplateTomlSchema,
+    DeviceTemplateTomlValidationSchema,
     RenameDeviceTemplateSchema,
 )
 from app.domain.errors import DeviceTemplateNotFound, UnknownConfigType
@@ -18,6 +21,12 @@ blp = Blueprint(
     __name__,
     url_prefix="/api/v1/device-templates",
     description="Manage reusable, mutable device templates.",
+)
+source_blp = Blueprint(
+    "device_template_sources",
+    __name__,
+    url_prefix="/api/v1/device-template-sources",
+    description="Read and repair editable device-template TOML source.",
 )
 # TODO Something changed with the DeviceTemplate id because it no longer exists. What did it change to or should it be added back?
 
@@ -46,6 +55,45 @@ def create_device_template(payload):
 @blp.response(200, DeviceTemplateSchema(many=True))
 def list_device_templates():
     return device_template_service.list()
+
+
+@blp.route("/catalog", methods=["GET"])
+@blp.response(200, DeviceTemplateSchema(many=True))
+def list_device_template_catalog():
+    return device_template_service.catalog()
+
+
+@blp.route("/validations", methods=["POST"])
+@blp.arguments(DeviceTemplateTomlSchema)
+@blp.response(200, DeviceTemplateTomlValidationSchema)
+def validate_device_template_toml(payload):
+    try:
+        content = device_template_service.validate_toml(payload["toml"])
+    except (UnknownConfigType, ValueError) as exc:
+        _invalid_template(exc)
+    return {
+        "content": content,
+        "parameter_count": len(content.get("parameters", {})),
+    }
+
+
+@source_blp.route("/<path:reference>", methods=["GET"])
+@source_blp.response(200, DeviceTemplateSourceSchema)
+def get_device_template_source(reference):
+    return {
+        "reference": reference,
+        "toml": device_template_service.read_source(reference),
+    }
+
+
+@source_blp.route("/<path:reference>", methods=["PUT"])
+@source_blp.arguments(DeviceTemplateTomlSchema)
+@source_blp.response(200, DeviceTemplateSchema)
+def repair_device_template_source(payload, reference):
+    try:
+        return device_template_service.repair_source(reference, payload["toml"])
+    except (UnknownConfigType, ValueError) as exc:
+        _invalid_template(exc)
 
 
 @blp.route("/<string:name>", methods=["GET"])

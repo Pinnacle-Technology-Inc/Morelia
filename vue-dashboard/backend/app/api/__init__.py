@@ -3,6 +3,7 @@
 from app.api.device_configs import blp as device_configs_blp
 from app.api.device_registrations import blp as device_registrations_blp
 from app.api.device_templates import blp as device_templates_blp
+from app.api.device_templates import source_blp as device_template_sources_blp
 from app.api.devices import blp as devices_blp
 from app.api.events_ingest import blp as events_ingest_blp
 from app.api.events_stream import blp as events_stream_blp
@@ -13,6 +14,7 @@ from app.api.incidents import blp as incidents_blp
 from app.api.operations import blp as operations_blp
 from app.api.runtimes import blp as runtimes_blp
 from app.api.session_templates import blp as session_templates_blp
+from app.api.session_templates import source_blp as session_template_sources_blp
 from app.api.sessions import blp as sessions_blp
 from app.api.store import InMemorySessionStore
 from app.control.supervisor import HostSupervisor
@@ -66,7 +68,9 @@ def register_routes(api, app):
     api.register_blueprint(device_configs_blp)
     api.register_blueprint(device_registrations_blp)
     api.register_blueprint(device_templates_blp)
+    api.register_blueprint(device_template_sources_blp)
     api.register_blueprint(session_templates_blp)
+    api.register_blueprint(session_template_sources_blp)
     api.register_blueprint(filesystem_blp)
     # Internal — loopback-only, excluded from the OpenAPI spec.
     app.register_blueprint(events_ingest_blp)
