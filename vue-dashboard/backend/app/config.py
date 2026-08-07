@@ -51,6 +51,13 @@ class Config:
         os.environ.get("SESSION_RUNTIME_HOST_ENABLED", "1").strip().lower()
         not in {"0", "false", "no", "off"}
     )
+    SESSION_SCHEDULER_ENABLED = (
+        os.environ.get("SESSION_SCHEDULER_ENABLED", "1").strip().lower()
+        not in {"0", "false", "no", "off"}
+    )
+    SESSION_SCHEDULER_INTERVAL_SECONDS = float(
+        os.environ.get("SESSION_SCHEDULER_INTERVAL_SECONDS", "1.0")
+    )
     HOST_SUPERVISOR = None
     WATCHDOG_TIMEOUT_SECONDS = float(os.environ.get("WATCHDOG_TIMEOUT_SECONDS", "2.0"))
     # ---- Watchdog / runtime-host timing -----------------------------------
@@ -346,6 +353,7 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     STARTUP_RECONCILIATION_ENABLED = False
     SESSION_RUNTIME_HOST_ENABLED = False
+    SESSION_SCHEDULER_ENABLED = False
     FINALIZER_PROCESS_ENABLED = False
     INGEST_BASE_URL = ""
     # No sleep between polls so SSE generator tests are instant.

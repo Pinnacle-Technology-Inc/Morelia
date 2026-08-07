@@ -696,68 +696,6 @@ def materialize_template_flows(
     return validate_entries(entries, instantiate=True, positional=True)
 
 
-def apply_sink_locations(
-    device_flows: list[Mapping[str, Any]],
-    locations: list[Mapping[str, Any]],
-) -> list[dict[str, Any]]:
-    """Relocate file-sink outputs on a Draft that has never started.
-
-    Addresses the stored effective flows with the same positional coordinates
-    the create request used, so a client can replay a ``sink_location_exists``
-    conflict straight back as a fix. Only locations move: device bindings, sink
-    type, parameters, order and count are untouched.
-    """
-    if not isinstance(locations, list) or not locations:
-        raise InvalidSessionEntry("locations", "must contain at least one location")
-
-    flows = [dict(flow) for flow in device_flows]
-    for flow in flows:
-        flow["sinks"] = [dict(sink) for sink in (flow.get("sinks") or [])]
-
-    seen: set[tuple[int, int]] = set()
-    for position, item in enumerate(locations):
-        label = f"locations[{position}]"
-        entry = _require_mapping(item, label)
-        flow_index = _normalize_index(entry.get("flow_index"), f"{label}.flow_index")
-        if not 0 <= flow_index < len(flows):
-            raise InvalidSessionEntry(
-                f"{label}.flow_index",
-                f"is out of range for a session with {len(flows)} flow(s)",
-            )
-        sinks = flows[flow_index]["sinks"]
-        sink_index = _normalize_index(entry.get("sink_index"), f"{label}.sink_index")
-        if not 0 <= sink_index < len(sinks):
-            raise InvalidSessionEntry(
-                f"{label}.sink_index",
-                f"is out of range for a flow with {len(sinks)} sink(s)",
-            )
-        if (flow_index, sink_index) in seen:
-            raise InvalidSessionEntry(
-                f"{label}", f"duplicate location for flow {flow_index} sink {sink_index}"
-            )
-        seen.add((flow_index, sink_index))
-        if not _is_file_sink(sinks[sink_index].get("sink_type")):
-            raise InvalidSessionEntry(
-                f"{label}.sink_location", "only file sinks have a location"
-            )
-        sinks[sink_index]["sink_location"] = _normalize_nonempty_string(
-            entry.get("sink_location"), f"{label}.sink_location"
-        )
-
-    entries = [
-        {
-            "device_config_id": flow["device_config_id"],
-            "nickname": flow.get("nickname"),
-            "sinks": flow["sinks"],
-        }
-        for flow in flows
-    ]
-    for entry in entries:
-        if entry["nickname"] is None:
-            del entry["nickname"]
-    return validate_entries(entries, instantiate=True, positional=True)
-
-
 def _parse_source(
     source: str | Mapping[str, Any],
     *,
@@ -809,7 +747,7 @@ def import_config(
     *,
     format: str | None = None,
 ) -> Session:
-    """Import a session config and persist it as a draft ``Session`` row."""
+    """Import a session config as an internal ``PREPARING`` session row."""
     data = _parse_source(source, format=format)
     canonical = _canonicalize(data)
     return _repo.create(canonical)

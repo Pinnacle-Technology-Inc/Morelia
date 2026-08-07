@@ -11,6 +11,18 @@ class SessionNotFound(Exception):
         super().__init__(f"No session with id {session_id!r}.")
 
 
+class SessionRunRequestConflict(Exception):
+    """An idempotency key was reused for a different run request."""
+
+    code = "session_run_request_conflict"
+
+    def __init__(self, request_key: str):
+        self.request_key = request_key
+        super().__init__(
+            f"Idempotency key {request_key!r} already belongs to a different run request."
+        )
+
+
 class CommandInFlight(Exception):
     def __init__(
         self,

@@ -80,7 +80,7 @@ def conflict_label(source_nickname: str | None, sink_name: str) -> str:
     Public because it is a wire contract: a SinkLocationExists conflict
     reports this label as its ``nickname`` so a client can say which sink's
     location collided. It is outbound only — the fix comes back positionally
-    via ``services.session_config.apply_sink_locations``, not keyed by label.
+    by positional run assignments, not keyed by label.
     """
     if source_nickname:
         return f"{source_nickname}:{sink_name}"

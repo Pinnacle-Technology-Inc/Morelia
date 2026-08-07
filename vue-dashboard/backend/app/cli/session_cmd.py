@@ -7,9 +7,11 @@ import json
 import sys
 import threading
 from collections.abc import Mapping
+from datetime import datetime
 from pathlib import Path
 from time import monotonic, sleep
 from urllib.parse import quote
+from uuid import uuid4
 
 import click
 import structlog
@@ -47,7 +49,6 @@ _SINK_ACTIONS = ("done", "add", "edit", "remove", "reorder")
 _SINK_PARAM_PROMPT_LABELS = {
     "api_token_env": "Influx API token environment variable NAME (not the token value)",
 }
-_POLICY_CHOICES = ("recommend", "automate")
 _SESSION_EXPORT_ERRORS = (
     SessionNotFound,
     DeviceConfigNotFound,
@@ -61,144 +62,130 @@ def _path_segment(value: str) -> str:
     return quote(value, safe="")
 
 
-def _prompt_sink_location_conflict(exc: DaemonError) -> tuple[str, str] | None:
-    """Turn a sink_location_exists DaemonError into an interactive fix-up prompt.
-
-    Returns (nickname, chosen_path) if the operator should be offered a
-    retry, or None if this error isn't one (or doesn't carry enough to act
-    on) — the caller should then let it propagate as an ordinary failure.
-    """
-    if exc.code != "sink_location_exists":
-        return None
-    nickname = exc.extensions.get("nickname")
-    suggested = exc.extensions.get("suggested_location")
-    if not isinstance(nickname, str) or not isinstance(suggested, str):
-        return None
-
-    original = exc.extensions.get("sink_location", "?")
-    flow_label = f" (flow {nickname!r})" if nickname else ""
-    chosen = click.prompt(
-        f"File already exists at {original!r}{flow_label}. "
-        f"Press Enter to use {suggested!r} instead, or type a new path",
-        default=suggested,
-    )
-    return nickname, chosen
-
-
 @click.group(name="session")
 def session() -> None:
     """Manage session-related local commands."""
 
 
-@session.command(name="create")
-@click.option(
-    "--from",
-    "config_file",
-    default=None,
-    type=click.Path(exists=True, dir_okay=False, path_type=Path),
-    help="Session config file to send to the daemon (skips the guided flow).",
-)
+@session.command(name="run")
 @click.option(
     "--template",
     "template_ref",
-    default=None,
-    metavar="<template-name | template-number | file>",
-    help=(
-        "Guided flow: instantiate a stored/portable session template, "
-        "auto-configuring any device flow whose hardware isn't registered yet."
-    ),
+    required=True,
+    metavar="<template-name | template-number>",
+    help="Registered session template to run.",
 )
-@click.option("--name", "session_name", default=None, help="Session name.")
+@click.option("--name", "session_name", default=None, help="Optional run label.")
 @click.option(
-    "--policy",
-    type=click.Choice(_POLICY_CHOICES),
+    "--at",
+    "start_at",
     default=None,
-    help="Recovery policy mode.",
+    metavar="<ISO-8601>",
+    help="Schedule for a future time; omit to run immediately.",
 )
-def create_command(
-    config_file: Path | None,
+@click.option(
+    "--watch/--no-watch",
+    default=False,
+    help="Follow events after an immediate run is accepted.",
+)
+@click.option(
+    "--wait-timeout",
+    type=float,
+    default=60.0,
+    show_default=True,
+    help="Maximum seconds to wait for the immediate operation to finish.",
+)
+@click.option(
+    "--wait-interval",
+    type=float,
+    default=0.5,
+    show_default=True,
+    help="Seconds between operation status polls.",
+)
+@click.option("--wait", is_flag=True, help="Wait for an immediate run operation to finish.")
+def run_command(
     template_ref: str | None,
     session_name: str | None,
-    policy: str | None,
+    start_at: str | None,
+    watch: bool,
+    wait: bool,
+    wait_interval: float,
+    wait_timeout: float,
 ) -> None:
-    """Create a Draft session through the daemon.
-
-    Without --from, walks an interactive questionnaire: Flow 1 (default) picks
-    from already-configured, free devices; Flow 2 (--template) snapshot-copies
-    a stored or portable session template, auto-configuring any device flow
-    that references hardware with no device config yet.
-    """
+    """Run now or schedule one run from a registered template."""
     try:
+        if wait_interval <= 0:
+            raise ValueError("--wait-interval must be greater than zero")
+        if wait_timeout < 0:
+            raise ValueError("--wait-timeout must be greater than or equal to zero")
+        if start_at is not None:
+            datetime.fromisoformat(start_at.replace("Z", "+00:00"))
+            if watch or wait:
+                raise ValueError("--watch and --wait are only available for immediate runs")
+
         client = DaemonClient()
-        if config_file is not None:
-            source = load_config_file(config_file)
-            payload = dict(_parse_session_source(source.content, format=source.format))
-        elif template_ref is not None:
-            payload = _guided_create_from_template(
+        template = _resolve_registered_run_template(client, str(template_ref))
+        guided = _guided_create_from_template(
+            client,
+            str(template["reference"]),
+            name=session_name,
+        )
+        execution = {
+            "mode": "scheduled" if start_at is not None else "immediate",
+        }
+        if start_at is not None:
+            execution["start_at"] = start_at
+        payload = {
+            "source_template_id": template["template_id"],
+            "expected_template_hash": template["registered_hash"],
+            "assignments": _run_assignments(guided["device_flows"]),
+            "execution": execution,
+            "idempotency_key": uuid4().hex,
+        }
+        if guided.get("name"):
+            payload["name"] = guided["name"]
+        response = client.post("/api/v1/session-runs", payload)
+        echo_json(response)
+        if wait:
+            operation = _wait_for_operation(
                 client,
-                template_ref,
-                name=session_name,
-                policy=policy,
+                _operation_id_from_session_response(response),
+                timeout_seconds=wait_timeout,
+                interval_seconds=wait_interval,
             )
-        else:
-            payload = _guided_create_from_configs(client, name=session_name, policy=policy)
-        response = _create_session_with_sink_retry(client, payload)
+            _report_wait_result(operation)
+        if watch:
+            _watch_session_events(client, int(response["id"]))
+    except KeyboardInterrupt:
+        raise click.exceptions.Exit(130) from None
     except (DaemonUnavailable, DaemonError, OSError, ValueError) as exc:
         exit_with_error(exc)
 
-    echo_json(response)
 
-
-def _create_session_with_sink_retry(
-    client: DaemonClient,
-    payload: dict[str, object],
-) -> dict[str, object]:
-    """POST a new session, looping the sink_location conflict prompt until it lands.
-
-    The device_flows list is still local to this process at create time (the
-    session doesn't exist on the daemon yet), so a chosen replacement path is
-    just written back into the payload before retrying — no server-side
-    state to reconcile, unlike the start-time conflict (see
-    _start_session_with_sink_retry).
-    """
-    flows = payload.get("device_flows")
-    while True:
-        try:
-            return client.post("/api/v1/sessions/", payload)
-        except DaemonError as exc:
-            resolution = _prompt_sink_location_conflict(exc)
-            if resolution is None or not isinstance(flows, list):
-                raise
-            nickname, chosen = resolution
-            original = exc.extensions.get("sink_location")
-            for flow in flows:
-                if isinstance(flow, dict) and flow.get("nickname") == nickname:
-                    _apply_sink_location_override(flow, original, chosen)
-                    break
-
-
-def _apply_sink_location_override(
-    flow: dict[str, object],
-    original: object,
-    chosen: str,
-) -> None:
-    """Write a conflict-resolved location back onto the right sink.
-
-    A source now owns an ordered ``sinks[]`` collection, so the replacement
-    path targets the specific file sink whose original location conflicted
-    (matched by that location, falling back to the first sink). Legacy flat
-    flows keep the top-level ``sink_location`` patch.
-    """
-    sinks = flow.get("sinks")
-    if isinstance(sinks, list):
-        for sink in sinks:
-            if isinstance(sink, dict) and sink.get("sink_location") == original:
-                sink["sink_location"] = chosen
-                return
-        if sinks and isinstance(sinks[0], dict):
-            sinks[0]["sink_location"] = chosen
-        return
-    flow["sink_location"] = chosen
+def _run_assignments(device_flows: object) -> list[dict[str, object]]:
+    if not isinstance(device_flows, list) or not device_flows:
+        raise ValueError("the template run must contain at least one device flow")
+    assignments = []
+    for flow_index, flow in enumerate(device_flows):
+        if not isinstance(flow, Mapping) or not isinstance(flow.get("device_config_id"), int):
+            raise ValueError(
+                f"flow {flow_index} has no configured device; run 'pinnacle device config' first"
+            )
+        sink_locations = []
+        for sink_index, sink in enumerate(flow.get("sinks") or []):
+            location = sink.get("sink_location") if isinstance(sink, Mapping) else None
+            if isinstance(location, str) and location:
+                sink_locations.append(
+                    {"sink_index": sink_index, "sink_location": location}
+                )
+        assignments.append(
+            {
+                "flow_index": flow_index,
+                "device_config_id": flow["device_config_id"],
+                "sink_locations": sink_locations,
+            }
+        )
+    return assignments
 
 
 def _prompt_session_name(name: str | None) -> str | None:
@@ -206,12 +193,6 @@ def _prompt_session_name(name: str | None) -> str | None:
         return name
     raw = click.prompt("Session name (blank to auto-generate)", default="", show_default=False)
     return raw.strip() or None
-
-
-def _prompt_policy(policy: str | None) -> str:
-    if policy is not None:
-        return policy
-    return click.prompt("Policy", type=click.Choice(_POLICY_CHOICES), default="recommend")
 
 
 def _sink_type_choices() -> tuple[str, ...]:
@@ -429,17 +410,6 @@ def _template_flow_initial_sinks(flow: Mapping[str, object]) -> list[dict[str, o
     return []
 
 
-def _free_device_configs(client: DaemonClient) -> list[dict[str, object]]:
-    response = client.get("/api/v1/device-configs")
-    if not isinstance(response, list):
-        raise ValueError("Device config list response must be an array.")
-    return [
-        dict(config)
-        for config in response
-        if isinstance(config, Mapping) and config.get("claim_state") == "free"
-    ]
-
-
 def _pool_devices(client: DaemonClient) -> list[dict[str, object]]:
     response = client.get("/api/v1/devices/pool")
     if not isinstance(response, Mapping):
@@ -448,14 +418,6 @@ def _pool_devices(client: DaemonClient) -> list[dict[str, object]]:
     if not isinstance(raw_devices, list):
         raise ValueError("Device pool response must include a devices list.")
     return [dict(device) for device in raw_devices if isinstance(device, Mapping)]
-
-
-def _unconfigured_pool_devices(client: DaemonClient) -> list[dict[str, object]]:
-    return [
-        device
-        for device in _pool_devices(client)
-        if device.get("status") == "unconfigured" and device.get("hardware_id")
-    ]
 
 
 def _device_template_rows(client: DaemonClient) -> list[dict[str, object]]:
@@ -476,49 +438,6 @@ def _find_device_config(rows: list[dict[str, object]], reference: str) -> dict[s
 def _device_nickname(config: Mapping[str, object], *, fallback: str) -> str:
     nickname = config.get("nickname")
     return str(nickname) if isinstance(nickname, str) and nickname.strip() else fallback
-
-
-def _guided_create_from_configs(
-    client: DaemonClient,
-    *,
-    name: str | None,
-    policy: str | None,
-) -> dict[str, object]:
-    """Flow 1: compose a session from already-configured, free devices."""
-    configs = _free_device_configs(client)
-    if not configs:
-        raise ValueError(
-            "No free device configs found. Run 'device config' to create one, "
-            "or use 'session create --template' to auto-configure a scanned device."
-        )
-
-    device_flows: list[dict[str, object]] = []
-    while True:
-        echo_table(configs, ("id", "type", "hardware_id", "port", "nickname"))
-        reference = click.prompt("Device config id or name")
-        config = _find_device_config(configs, reference)
-        if config is None:
-            click.echo(f"no free device config named or numbered {reference!r}", err=True)
-            continue
-
-        nickname = _device_nickname(
-            config,
-            fallback=f"{config.get('type')}-{config.get('hardware_id')}",
-        )
-        sinks = _prompt_sinks()
-        device_flows.append(
-            {"device_config_id": config["id"], "nickname": nickname, "sinks": sinks}
-        )
-
-        configs = [c for c in configs if c.get("id") != config.get("id")]
-        if not configs or not click.confirm("Add another device flow?", default=False):
-            break
-
-    return {
-        "name": _prompt_session_name(name),
-        "policy": _prompt_policy(policy),
-        "device_flows": device_flows,
-    }
 
 
 def _session_template_rows(client: DaemonClient) -> list[dict[str, object]]:
@@ -580,14 +499,67 @@ def _session_template_catalog(client: DaemonClient) -> list[dict[str, object]]:
         stored.append(
             {
                 "source": "stored",
-                "id": row.get("id", ""),
+                "id": row.get("template_id", ""),
                 "name": row.get("name", ""),
-                "content_hash": row.get("content_hash", ""),
-                "reference": row.get("name", ""),
+                "content_hash": row.get("registered_hash") or row.get("observed_hash", ""),
+                "reference": row.get("reference") or row.get("name", ""),
                 "content": row.get("content"),
             }
         )
     return [*stored, *_library_session_template_rows()]
+
+
+def _resolve_registered_run_template(
+    client: DaemonClient,
+    ref: str,
+) -> dict[str, object]:
+    """Resolve a CLI reference to an immutable registered template revision."""
+    if Path(ref).is_file():
+        raise ValueError(
+            "local templates cannot be run directly; import the template with "
+            "'pinnacle session template import' first"
+        )
+
+    try:
+        ordinal = int(ref)
+    except ValueError:
+        ordinal = None
+
+    if ordinal is not None:
+        catalog = _session_template_catalog(client)
+        if not (1 <= ordinal <= len(catalog)):
+            raise ValueError(
+                f"no session template at position {ordinal}; run 'pinnacle session template list'"
+            )
+        selected = catalog[ordinal - 1]
+        if selected.get("source") != "stored":
+            raise ValueError(
+                "local templates cannot be run directly; import the template with "
+                "'pinnacle session template import' first"
+            )
+        reference = selected.get("reference")
+        if not isinstance(reference, str) or not reference:
+            raise ValueError("registered template catalog row has no reference")
+    else:
+        reference = ref
+
+    response = client.get(f"/api/v1/session-templates/{_path_segment(reference)}")
+    if not isinstance(response, Mapping):
+        raise ValueError("Session template response must be an object.")
+    template_id = response.get("template_id")
+    registered_hash = response.get("registered_hash")
+    if not isinstance(template_id, str) or not template_id:
+        raise ValueError(
+            "the selected template is not registered; import or register it before running"
+        )
+    if not isinstance(registered_hash, str) or len(registered_hash) != 64:
+        raise ValueError("the selected template has no accepted registered revision")
+    resolved_reference = response.get("reference") or response.get("name") or reference
+    return {
+        "template_id": template_id,
+        "registered_hash": registered_hash,
+        "reference": str(resolved_reference),
+    }
 
 
 def _library_template_path(ref: str) -> Path | None:
@@ -846,8 +818,8 @@ def _matching_template_pool_devices(
         device
         for device in pool_devices
         if device.get("type") == device_type
-        and device.get("status") in {"free", "unconfigured"}
-        and device.get("hardware_id")
+        and device.get("status") == "free"
+        and isinstance(device.get("id"), int)
     ]
 
 
@@ -905,14 +877,6 @@ def _prompt_template_flow_mode() -> str:
     )
 
 
-def _unconfigured_note(count: int) -> str:
-    noun = "device" if count == 1 else "devices"
-    return (
-        f"note: {count} matching {noun} unconfigured — "
-        "run 'pinnacle device config' first to see them here"
-    )
-
-
 def _manual_template_flow_entry(
     flow: Mapping[str, object],
     *,
@@ -925,24 +889,11 @@ def _manual_template_flow_entry(
         for device in pool_devices
         if device.get("status") == "free" and isinstance(device.get("id"), int)
     ]
-    unconfigured_count = sum(
-        1 for device in pool_devices if device.get("status") == "unconfigured"
-    )
-
     if not free_devices:
-        message = f"no configured {device_type} devices are available to pick"
-        if unconfigured_count:
-            message = (
-                f"{message} ({_unconfigured_note(unconfigured_count)}, "
-                "or re-run and choose auto mode to auto-configure one)"
-            )
-        raise ValueError(message)
+        raise ValueError(f"no configured {device_type} devices are available to pick")
 
     click.echo("Matching device configs in the pool:")
     echo_table(free_devices, ("id", "type", "hardware_id", "port", "nickname"))
-    if unconfigured_count:
-        click.echo(_unconfigured_note(unconfigured_count))
-
     while True:
         reference = click.prompt("Device config id or name")
         config = _find_device_config(free_devices, reference)
@@ -963,7 +914,6 @@ def _manual_template_flow_entry(
 def _auto_template_flow_entry(
     flow: Mapping[str, object],
     *,
-    template_path: str,
     device_type: str,
     default_nickname: str,
     pool_devices: list[dict[str, object]],
@@ -975,14 +925,6 @@ def _auto_template_flow_entry(
         for device in candidates
         if device.get("status") == "free" and isinstance(device.get("id"), int)
     ]
-    unconfigured_devices = [
-        device
-        for device in candidates
-        if device.get("status") == "unconfigured"
-        and isinstance(device.get("hardware_id"), str)
-        and isinstance(device.get("port"), str)
-    ]
-
     if free_devices:
         chosen = free_devices[0]
         click.echo(
@@ -1001,27 +943,7 @@ def _auto_template_flow_entry(
             "sinks": sinks,
         }
 
-    if unconfigured_devices:
-        chosen = unconfigured_devices[0]
-        click.echo(
-            "Picked 1 unconfigured device from the pool: "
-            f"{chosen['type']} {chosen['hardware_id']} on {chosen['port']}"
-        )
-        _echo_pool_devices(
-            "Devices left in the pool:",
-            _remaining_pool_devices(pool_devices, chosen),
-        )
-        sinks = _prompt_sinks(initial=_template_flow_initial_sinks(flow))
-        return {
-            "device_template_path": template_path,
-            "device_template_content_hash": flow.get("device_template_content_hash"),
-            "hardware_id": chosen["hardware_id"],
-            "port": chosen["port"],
-            "nickname": default_nickname,
-            "sinks": sinks,
-        }
-
-    raise ValueError(f"no free or unconfigured {device_type} devices are available for auto mode")
+    raise ValueError(f"no free configured {device_type} devices are available for auto mode")
 
 
 def _guided_create_from_template(
@@ -1029,14 +951,8 @@ def _guided_create_from_template(
     ref: str,
     *,
     name: str | None,
-    policy: str | None,
 ) -> dict[str, object]:
-    """Flow 2: instantiate a stored/portable session template.
-
-    Every flow references a device template, never a device config, so any
-    flow whose hardware isn't registered yet gets auto-configured on submit
-    (session_config.validate_entry's find-or-create-config resolution).
-    """
+    """Review device and sink assignments for one registered template run."""
     content, label = _resolve_session_template_content(client, ref)
     raw_flows = content.get("device_flows")
     if not isinstance(raw_flows, list) or not raw_flows:
@@ -1092,7 +1008,6 @@ def _guided_create_from_template(
             click.echo(f"using requested hardware ID {requested_hardware_id}")
             entry = _auto_template_flow_entry(
                 flow,
-                template_path=template_path,
                 device_type=device_type,
                 default_nickname=default_nickname,
                 pool_devices=suggestions,
@@ -1109,7 +1024,6 @@ def _guided_create_from_template(
             if mode == "auto":
                 entry = _auto_template_flow_entry(
                     flow,
-                    template_path=template_path,
                     device_type=device_type,
                     default_nickname=default_nickname,
                     pool_devices=suggestions,
@@ -1142,11 +1056,8 @@ def _guided_create_from_template(
                 )
             pool_devices = _remaining_pool_devices(pool_devices, chosen_device)
 
-    resolved_policy = policy or content.get("policy")
-
     return {
         "name": _prompt_session_name(name),
-        "policy": _prompt_policy(resolved_policy),
         "device_flows": device_flows,
     }
 
@@ -1177,46 +1088,6 @@ def _wait_options(command):
     return command
 
 
-@session.command(name="start")
-@click.argument("session_reference")
-@click.option(
-    "--force",
-    is_flag=True,
-    help="Steal already-claimed device configs from their current soft reservation holder.",
-)
-@click.option(
-    "--watch",
-    "watch",
-    type=bool,
-    default=True,
-    show_default=True,
-    help=(
-        "Attach to session watch after the start command (type 'exit' or press "
-        "Ctrl-C to stop watching); pass --watch=false to opt out."
-    ),
-)
-@_wait_options
-def start_command(
-    session_reference: str,
-    force: bool,
-    watch: bool,
-    wait: bool,
-    wait_interval: float,
-    wait_timeout: float,
-) -> None:
-    """Start a session through the daemon."""
-    session_id = _resolve_session_id(DaemonClient(), session_reference)
-    _run_command(
-        session_id,
-        command="start",
-        wait=wait,
-        wait_interval=wait_interval,
-        wait_timeout=wait_timeout,
-        watch=watch,
-        payload={"force": True} if force else None,
-    )
-
-
 @session.command(name="stop")
 @click.argument("session_reference")
 @click.option(
@@ -1240,7 +1111,6 @@ def stop_command(
         wait=wait,
         wait_interval=wait_interval,
         wait_timeout=wait_timeout,
-        watch=False,
         payload={"force": True} if force else None,
     )
 
@@ -1280,39 +1150,8 @@ def recover_command(
         wait=wait,
         wait_interval=wait_interval,
         wait_timeout=wait_timeout,
-        watch=False,
         payload={"device_id": device_id, "action": action},
     )
-
-
-def _start_session_with_sink_retry(
-    client: DaemonClient,
-    session_id: int,
-    payload: dict[str, object],
-) -> dict[str, object]:
-    """POST the start command, looping the sink_location conflict prompt until it lands.
-
-    Unlike session create, a session's device_flows are already persisted by
-    start time — there's no local payload to patch and resend. Instead each
-    operator-confirmed fix is sent as a sink_overrides entry; the daemon
-    writes it onto the session (services.sessions._apply_sink_overrides)
-    before re-resolving the manifest, so a retry (or a later start) doesn't
-    need to re-prompt for the same flow.
-    """
-    request_payload = dict(payload)
-    while True:
-        try:
-            return client.post(
-                f"/api/v1/sessions/{session_id}/commands/start", request_payload
-            )
-        except DaemonError as exc:
-            resolution = _prompt_sink_location_conflict(exc)
-            if resolution is None:
-                raise
-            nickname, chosen = resolution
-            overrides = dict(request_payload.get("sink_overrides") or {})
-            overrides[nickname] = chosen
-            request_payload["sink_overrides"] = overrides
 
 
 def _run_command(
@@ -1322,7 +1161,6 @@ def _run_command(
     wait: bool,
     wait_interval: float,
     wait_timeout: float,
-    watch: bool,
     payload: dict[str, object] | None = None,
 ) -> None:
     try:
@@ -1332,12 +1170,9 @@ def _run_command(
             raise ValueError("--wait-timeout must be greater than or equal to zero")
 
         client = DaemonClient()
-        if command == "start":
-            response = _start_session_with_sink_retry(client, session_id, payload or {})
-        else:
-            response = client.post(
-                f"/api/v1/sessions/{session_id}/commands/{command}", payload or {}
-            )
+        response = client.post(
+            f"/api/v1/sessions/{session_id}/commands/{command}", payload or {}
+        )
         echo_json(response)
 
         if wait:
@@ -1349,8 +1184,6 @@ def _run_command(
                 interval_seconds=wait_interval,
             )
             _report_wait_result(operation)
-        if command == "start" and watch:
-            _watch_session_events(client, session_id)
     except KeyboardInterrupt:
         raise click.exceptions.Exit(130) from None
     except (DaemonUnavailable, DaemonError, ValueError) as exc:
@@ -2148,7 +1981,7 @@ def export_session_template_command(session_reference: str, export_name_or_path:
 
 
 __all__ = [
-    "create_command",
+    "run_command",
     "export_session_template_command",
     "import_session_template_command",
     "list_command",
@@ -2158,7 +1991,6 @@ __all__ = [
     "session",
     "session_template",
     "show_session_template_command",
-    "start_command",
     "status_command",
     "stop_command",
     "validate_command",

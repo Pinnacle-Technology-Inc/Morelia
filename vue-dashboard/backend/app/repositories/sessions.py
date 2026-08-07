@@ -64,17 +64,24 @@ class SessionRepository:
                     suffix += 1
             row = Session(
                 name=session_name,
-                status=SessionStatus.DRAFT,
+                status=data.get("status", SessionStatus.PREPARING),
                 policy=data.get("policy", PolicyMode.RECOMMEND),
                 experiment_id=data.get("experiment_id"),
                 notes=(str(data.get("notes")).strip() or None) if data.get("notes") is not None else None,
                 schedule=data.get("schedule"),
+                scheduled_for=data.get("scheduled_for"),
+                schedule_claim_token=data.get("schedule_claim_token"),
+                schedule_claim_expires_at=data.get("schedule_claim_expires_at"),
+                cancellation_details=data.get("cancellation_details"),
+                cancelled_at=data.get("cancelled_at"),
                 device_flows=data.get("device_flows") or [],
                 source_template_id=source_template_id,
                 source_template_name=source_template_name or None,
                 source_template_ref=data.get("source_template_ref"),
                 source_template_hash=data.get("source_template_hash"),
                 source_template_snapshot=data.get("source_template_snapshot"),
+                creation_request_key=data.get("creation_request_key"),
+                creation_request_fingerprint=data.get("creation_request_fingerprint"),
             )
             db.session.add(row)
             db.session.flush()
@@ -89,6 +96,67 @@ class SessionRepository:
         return db.session.scalars(
             db.select(Session).where(Session.name == name.strip())
         ).first()
+
+    def get_by_creation_request_key(self, request_key: str) -> Session | None:
+        return db.session.scalars(
+            db.select(Session).where(Session.creation_request_key == request_key)
+        ).first()
+
+    def due_scheduled(self, now: datetime) -> list[Session]:
+        """Scheduled rows whose due time arrived and whose lease is available."""
+        return db.session.scalars(
+            db.select(Session)
+            .where(
+                Session.status == SessionStatus.SCHEDULED,
+                Session.scheduled_for.is_not(None),
+                Session.scheduled_for <= now,
+                db.or_(
+                    Session.schedule_claim_token.is_(None),
+                    Session.schedule_claim_expires_at <= now,
+                ),
+            )
+            .order_by(Session.scheduled_for.asc(), Session.id.asc())
+        ).all()
+
+    def try_claim_schedule(
+        self,
+        session_id: int,
+        *,
+        token: str,
+        now: datetime,
+        expires_at: datetime,
+    ) -> bool:
+        with transaction():
+            result = db.session.execute(
+                db.update(Session)
+                .where(
+                    Session.id == session_id,
+                    Session.status == SessionStatus.SCHEDULED,
+                    db.or_(
+                        Session.schedule_claim_token.is_(None),
+                        Session.schedule_claim_expires_at <= now,
+                    ),
+                )
+                .values(
+                    schedule_claim_token=token,
+                    schedule_claim_expires_at=expires_at,
+                )
+            )
+        return result.rowcount == 1
+
+    def release_schedule_claim(self, session_id: int, token: str) -> None:
+        with transaction():
+            db.session.execute(
+                db.update(Session)
+                .where(
+                    Session.id == session_id,
+                    Session.schedule_claim_token == token,
+                )
+                .values(
+                    schedule_claim_token=None,
+                    schedule_claim_expires_at=None,
+                )
+            )
 
     def peek_next_id(self) -> int:
         """Guess the next session id for UI placeholders only — not reserved, can be stale."""

@@ -172,6 +172,7 @@ def run_daemon(*, debug: bool = False, adopt_only: bool = False) -> None:
     parsed_url = urlparse(app.config["CONTROL_PLANE_BASE_URL"])
     _install_termination_signal_handler()
     finalizer = _start_finalizer_process(app)
+    scheduled_runs = _start_scheduled_run_coordinator(app)
     try:
         app.run(
             host=parsed_url.hostname or "127.0.0.1",
@@ -180,6 +181,8 @@ def run_daemon(*, debug: bool = False, adopt_only: bool = False) -> None:
             use_reloader=False,
         )
     finally:
+        if scheduled_runs is not None:
+            scheduled_runs.stop()
         _teardown_runtime_hosts(app)
         if finalizer is not None:
             finalizer.stop()
@@ -195,6 +198,21 @@ def _start_finalizer_process(app):
     driver.start()
     app.extensions["finalizer_process_driver"] = driver
     return driver
+
+
+def _start_scheduled_run_coordinator(app):
+    """Start the single coordinator owned by the Pinnacle daemon process."""
+    if not app.config.get("SESSION_SCHEDULER_ENABLED", False):
+        return None
+    from app.control.scheduled_runs import ScheduledRunCoordinator
+
+    coordinator = ScheduledRunCoordinator(
+        app,
+        interval_seconds=app.config["SESSION_SCHEDULER_INTERVAL_SECONDS"],
+    )
+    coordinator.start()
+    app.extensions["scheduled_run_coordinator"] = coordinator
+    return coordinator
 
 
 def pid_file() -> Path:

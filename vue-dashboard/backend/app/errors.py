@@ -108,19 +108,21 @@ def register_error_handlers(app) -> None:
         RuntimeNotTracked,
         RuntimeStartupFailed,
         SessionNotFound,
+        SessionRunRequestConflict,
         SessionTemplateNameExists,
         SessionTemplateNotFound,
         SessionTemplateReconciliationRetry,
         SinkLocationExists,
         SinkParentUnavailable,
         StopProofMissing,
+        UnresolvableSession,
     )
+    from app.services.experiments import ExperimentArchived, ExperimentNotFound
     from app.watchdog.adapters import (
         WatchdogInvalidResponseError,
         WatchdogTimeoutError,
         WatchdogUnavailableError,
     )
-    from app.services.experiments import ExperimentArchived, ExperimentNotFound
 
     app.register_error_handler(HTTPException, _problem_response)
 
@@ -158,6 +160,14 @@ def register_error_handlers(app) -> None:
         ))
 
     app.register_error_handler(SessionNotFound,             _domain(404, "session_not_found"))
+    app.register_error_handler(
+        SessionRunRequestConflict,
+        _domain(409, "session_run_request_conflict"),
+    )
+    app.register_error_handler(
+        UnresolvableSession,
+        _domain(409, "unresolvable_session"),
+    )
     app.register_error_handler(ExperimentNotFound,          _domain(404, "experiment_not_found"))
     app.register_error_handler(ExperimentArchived,          _domain(409, "experiment_archived"))
     app.register_error_handler(

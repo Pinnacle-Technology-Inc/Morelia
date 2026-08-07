@@ -10,13 +10,14 @@ from enum import StrEnum
 class SessionStatus(StrEnum):
     """Session lifecycle, with restartable stop and explicit completion."""
 
-    DRAFT = "draft"
+    PREPARING = "preparing"
     SCHEDULED = "scheduled"
     STARTING = "starting"
     ACTIVE = "active"
     ENDING = "ending"
     STOPPED = "stopped"
     COMPLETED = "completed"
+    CANCELLED = "cancelled"
 
 
 class HealthStatus(StrEnum):

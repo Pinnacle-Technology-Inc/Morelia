@@ -9,19 +9,15 @@ import app.services.session_status as session_status_service
 import app.services.session_templates as session_template_service
 import app.services.sessions as session_service
 from app.api.schemas import (
-    CreateSessionSchema,
     ExportSessionTemplateSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
     SessionNameSuggestionQuerySchema,
     SessionNameSuggestionSchema,
-    SinkRestartPlanSchema,
     SessionSchema,
     SessionStatusSnapshotSchema,
     SessionTemplateSchema,
-    StartSessionSchema,
     StopSessionSchema,
-    UpdateSinkLocationsSchema,
 )
 
 _log = structlog.get_logger(__name__)
@@ -69,14 +65,6 @@ def _live_health():
     }
 
 
-@blp.route("/", methods=["POST"])
-@blp.arguments(CreateSessionSchema)
-@blp.response(201, SessionSchema)
-def create_session(new_data):
-    """Create a Draft session. Schema-validation failures surface as 422."""
-    return session_service.create(new_data)
-
-
 @blp.route("/", methods=["GET"])
 @blp.response(200, SessionSchema(many=True))
 def list_sessions():
@@ -111,52 +99,6 @@ def get_session(session_id):
 def session_status(session_id):
     """Detail snapshot (6g): aggregate join across sessions/runtime/events/ops/incidents/gaps."""
     return session_status_service.detail(session_id, live_health=_live_health())
-
-
-@blp.route("/<int:session_id>/sink-plan", methods=["GET"])
-@blp.response(200, SinkRestartPlanSchema)
-def session_sink_plan(session_id):
-    """Where this session's file outputs would land if started right now.
-
-    Read-only: lets the UI prompt for output names BEFORE issuing start,
-    instead of discovering a collision as a 409 afterwards.
-    """
-    return session_service.sink_restart_plan(session_id)
-
-
-@blp.route("/<int:session_id>/sink-locations", methods=["PATCH"])
-@blp.arguments(UpdateSinkLocationsSchema)
-@blp.response(200, SessionSchema)
-def update_sink_locations(payload, session_id):
-    """Relocate a never-started Draft's file outputs.
-    """
-    return session_service.update_sink_locations(session_id, payload["locations"])
-
-
-@blp.route("/<int:session_id>", methods=["DELETE"])
-@blp.response(204)
-def delete_session(session_id):
-    session_service.delete(session_id)
-    return ""
-
-
-@blp.route("/<int:session_id>/commands/start", methods=["POST"])
-@blp.arguments(StartSessionSchema)
-@blp.response(202, SessionSchema)
-def start_session(payload, session_id):
-    _require_lifecycle_commands_enabled()
-    if current_app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
-        supervisor = current_app.extensions.get("host_supervisor")
-        if supervisor is not None:
-            return session_service.start_managed(
-                session_id,
-                supervisor,
-                force=bool(payload.get("force", False)),
-            )
-    return session_service.start(
-        session_id,
-        current_app.extensions["watchdog_adapter"],
-    )
 
 
 @blp.route("/<int:session_id>/commands/stop", methods=["POST"])

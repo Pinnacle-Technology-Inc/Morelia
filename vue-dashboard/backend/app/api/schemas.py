@@ -5,9 +5,8 @@ names"), so treat a rename like a breaking change. Enum fields pull their legal
 values from app.domain.enums via ``fields.Enum(..., by_value=True)`` — so the wire
 values are exactly the controlled vocabulary defined once in that module.
 
-Layering reminder: these schemas answer "is this a well-formed Draft?" — they do
-NOT enforce start-time business rules (>=1 flow, writable destinations). Those
-live in the route/service layer, checked when a session is actually started.
+Layering reminder: schemas validate transport shape. Lifecycle and runtime
+business rules live in the service layer.
 """
 
 from datetime import UTC, datetime
@@ -26,6 +25,15 @@ from app.domain.enums import (
     SinkType,
     WatchdogProcessState,
 )
+
+
+class JSONDateTime(fields.DateTime):
+    """DateTime request field that can also dump an ISO string stored in JSON."""
+
+    def _serialize(self, value, attr, obj, **kwargs):
+        if isinstance(value, str):
+            return value
+        return super()._serialize(value, attr, obj, **kwargs)
 
 
 class SinkSchema(Schema):
@@ -72,30 +80,31 @@ class DeviceFlowSchema(Schema):
     )
 
 
+class ScheduledDeviceRequirementSchema(Schema):
+    flow_index = fields.Integer(dump_only=True)
+    preferred_device_config_id = fields.Integer(dump_only=True)
+    required_device_type = fields.String(dump_only=True)
+    preferred_hardware_id = fields.String(dump_only=True, allow_none=True)
+    preferred_parameters = fields.Dict(dump_only=True)
+    selected_device_config_id = fields.Integer(dump_only=True, allow_none=True)
+    match = fields.String(dump_only=True, allow_none=True)
+
+
+class ScheduleCancellationSchema(Schema):
+    code = fields.String(dump_only=True)
+    detail = fields.String(dump_only=True)
+    cancelled_at = fields.DateTime(dump_only=True)
+    unresolved_flows = fields.List(fields.Integer(), dump_only=True)
+
+
 class ScheduleSchema(Schema):
-    """Manual or future-dated schedule. Demonstrates cross-field validation."""
+    """Durable one-shot schedule returned with a session."""
 
-    mode = fields.String(load_default="manual", validate=validate.OneOf(["manual", "daily"]))
-    start_at = fields.DateTime(load_default=None)
-
-    @validates_schema
-    def check_start_at(self, data, **kwargs):
-        # This is the "required-only-when" rule from decision C: a scheduled run
-        # needs a future start_at; a manual one must not carry one at all.
-        mode = data.get("mode", "manual")
-        start_at = data.get("start_at")
-        if mode == "manual":
-            if start_at is not None:
-                raise ValidationError(
-                    "Must be omitted for a manual session.", field_name="start_at"
-                )
-            return
-        if start_at is None:
-            raise ValidationError("Required for a scheduled session.", field_name="start_at")
-        # Treat a naive datetime as UTC so the comparison never raises.
-        aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)
-        if aware <= datetime.now(UTC):
-            raise ValidationError("Must be in the future.", field_name="start_at")
+    mode = fields.String(dump_only=True)
+    start_at = JSONDateTime(dump_only=True)
+    fallback_policy = fields.String(dump_only=True)
+    requirements = fields.List(fields.Nested(ScheduledDeviceRequirementSchema), dump_only=True)
+    cancellation = fields.Nested(ScheduleCancellationSchema, dump_only=True, allow_none=True)
 
 
 class SinkLocationAssignmentSchema(Schema):
@@ -117,9 +126,8 @@ class FlowAssignmentSchema(Schema):
     )
 
 
-class CreateSessionSchema(Schema):
-    """Input for creating a Draft from one registered template revision: device assignment, sink location, notes, schedule.""
-    """
+class SessionRunTemplateInputSchema(Schema):
+    """Template revision, assignments, and metadata shared by both run modes."""
 
     source_template_id = fields.String(required=True, validate=validate.Length(min=1))
     expected_template_hash = fields.String(
@@ -136,25 +144,39 @@ class CreateSessionSchema(Schema):
     name = fields.String(load_default=None, validate=validate.Length(min=1, max=120))
     experiment_id = fields.String(load_default=None)
     notes = fields.String(load_default=None, allow_none=True)
-    schedule = fields.Nested(ScheduleSchema, load_default=None)
 
 
-class SinkLocationUpdateSchema(Schema):
-    """One relocation applied to a never-started Draft."""
-
-    flow_index = fields.Integer(required=True, validate=validate.Range(min=0))
-    sink_index = fields.Integer(required=True, validate=validate.Range(min=0))
-    sink_location = fields.String(required=True, validate=validate.Length(min=1))
-
-
-class UpdateSinkLocationsSchema(Schema):
-    """Update output locations after a start-time collision detected"""
-
-    locations = fields.List(
-        fields.Nested(SinkLocationUpdateSchema),
+class SessionRunExecutionSchema(Schema):
+    mode = fields.String(
         required=True,
-        validate=validate.Length(min=1),
+        validate=validate.OneOf(["immediate", "scheduled"]),
     )
+    start_at = fields.DateTime(load_default=None)
+    @validates_schema
+    def check_execution(self, data, **kwargs):
+        mode = data.get("mode")
+        start_at = data.get("start_at")
+        if mode == "immediate":
+            if start_at is not None:
+                raise ValidationError(
+                    "Must be omitted for an immediate run.", field_name="start_at"
+                )
+            return
+        if start_at is None:
+            raise ValidationError("Required for a scheduled run.", field_name="start_at")
+        aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)
+        if aware <= datetime.now(UTC):
+            raise ValidationError("Must be in the future.", field_name="start_at")
+
+
+class CreateSessionRunSchema(SessionRunTemplateInputSchema):
+    """Atomic immediate run or durable future schedule."""
+
+    idempotency_key = fields.String(
+        required=True,
+        validate=validate.Length(min=8, max=128),
+    )
+    execution = fields.Nested(SessionRunExecutionSchema, required=True)
 
 
 class SessionNameSuggestionQuerySchema(Schema):
@@ -165,35 +187,6 @@ class SessionNameSuggestionSchema(Schema):
     """Template-scoped default name preview computed by the backend."""
 
     name = fields.String(dump_only=True)
-
-
-class SinkRestartPlanEntrySchema(Schema):
-    """One file sink a session would write to on its next start."""
-
-    flow_index = fields.Integer(dump_only=True)
-    sink_index = fields.Integer(dump_only=True)
-    nickname = fields.String(dump_only=True, allow_none=True)
-    sink_name = fields.String(dump_only=True)
-    sink_type = fields.String(dump_only=True)
-    assignment = fields.String(dump_only=True)
-    current_location = fields.String(dump_only=True, allow_none=True)
-    occupied = fields.Boolean(dump_only=True)
-    parent_directory = fields.String(dump_only=True, allow_none=True)
-    parent_issue = fields.String(dump_only=True, allow_none=True)
-    suggested_location = fields.String(dump_only=True, allow_none=True)
-
-
-class SinkRestartPlanSchema(Schema):
-    """Where a session's file outputs would land if started right now.
-
-    Each entry's ``flow_index``/``sink_index`` are the coordinates
-    ``PATCH /sessions/{id}/sink-locations`` takes, so a client can build its fix
-    payload directly from this response. Start itself accepts no locations.
-    """
-
-    session_id = fields.Integer(dump_only=True)
-    status = fields.String(dump_only=True)
-    sinks = fields.List(fields.Nested(SinkRestartPlanEntrySchema), dump_only=True)
 
 
 class SessionSchema(Schema):
@@ -216,6 +209,9 @@ class SessionSchema(Schema):
     source_template_ref = fields.String(dump_only=True, allow_none=True)
     source_template_hash = fields.String(dump_only=True, allow_none=True)
     source_template_snapshot = fields.Raw(dump_only=True, allow_none=True)
+    scheduled_for = fields.DateTime(dump_only=True, allow_none=True)
+    cancellation_details = fields.Raw(dump_only=True, allow_none=True)
+    cancelled_at = fields.DateTime(dump_only=True, allow_none=True)
     created_at = fields.DateTime(dump_only=True)
 
 
@@ -641,13 +637,6 @@ class ExportSessionTemplateSchema(Schema):
         load_default="generic",
         validate=validate.OneOf(["generic", "device-hardcoded"]),
     )
-
-
-class StartSessionSchema(Schema):
-    """Input for starting a session.
-    """
-
-    force = fields.Boolean(load_default=False)
 
 
 class RecoverSessionSchema(Schema):

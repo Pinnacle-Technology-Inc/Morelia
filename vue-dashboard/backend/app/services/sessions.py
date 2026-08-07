@@ -10,22 +10,33 @@ wires this via request_logging middleware. CLI callers must bind it manually:
     bind_contextvars(request_id=uuid4().hex)
 """
 
-from contextlib import suppress
-from pathlib import Path
+import json
+from datetime import UTC, datetime, timedelta
+from hashlib import sha256
 from uuid import uuid4
 
 import structlog
-from structlog.contextvars import get_contextvars
+from sqlalchemy.exc import IntegrityError
+from structlog.contextvars import bound_contextvars, get_contextvars
 
-from app.database import transaction
-from app.domain.enums import OperationState, PolicyMode, SessionStatus, SinkCategory
+from app.database import db, transaction
+from app.domain.enums import OperationState, PolicyMode, SessionStatus
 from app.domain.errors import (
     CommandInFlight,
     EmptySession,
     InvalidSessionEntry,
     InvalidTransition,
+    RuntimeStartupFailed,
     SessionNotFound,
+    SessionRunRequestConflict,
 )
+from app.models.backend_event import BackendEvent
+from app.models.incident import Incident
+from app.models.operation import Operation
+from app.models.output_file import OutputFile
+from app.models.recovery_gap import RecoveryGap
+from app.models.runtime_manifest import RuntimeManifest
+from app.models.runtime_ownership import RuntimeOwnership
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
@@ -34,22 +45,17 @@ from app.services import (
     experiments,
     manifests,
     output_finalization,
-    sink_paths,
+    session_templates,
 )
+from app.services.device_list import build_pool_rows
 from app.services.operations import (
     OperationConflict,
     create_operation,
+    record_operation_failure_event,
     stamp_runtime_id,
     transition_operation,
-    record_operation_failure_event,
 )
-from app.services import session_templates
-from app.services.registry import UnknownConfigType, sink_parameter_schema
-from app.services.session_config import (
-    apply_sink_locations,
-    materialize_template_flows,
-    validate_entries,
-)
+from app.services.session_config import materialize_template_flows
 from app.watchdog.commands import prepare_command
 
 _log = structlog.get_logger(__name__)
@@ -75,10 +81,8 @@ def _active_watchdog_id(dataflow_id: str) -> str | None:
     ownership = _runtimes.active_for_dataflow(dataflow_id)
     return ownership.watchdog_id if ownership is not None else None
 
-# Safe to delete: no live dataflow. STOPPED is here but not in _STARTABLE.
-_PRE_START = {SessionStatus.DRAFT, SessionStatus.SCHEDULED, SessionStatus.STOPPED}
 # Safe to start: never run yet. One session = one run; repeat = new session.
-_STARTABLE = {SessionStatus.DRAFT, SessionStatus.SCHEDULED}
+_STARTABLE = {SessionStatus.PREPARING, SessionStatus.SCHEDULED}
 _STOPPABLE = {SessionStatus.ACTIVE}
 # Recovery only makes sense against a live dataflow.
 _RECOVERABLE = {SessionStatus.ACTIVE}
@@ -86,8 +90,14 @@ _RECOVERABLE = {SessionStatus.ACTIVE}
 RECOVER_ACTIONS = frozenset({"reconnect", "restart", "reset-stream"})
 
 
-def create(data: dict) -> Session:
-    """Create a Draft from exactly one trusted registered template revision.
+def create(
+    data: dict,
+    *,
+    status: SessionStatus = SessionStatus.PREPARING,
+    creation_request_key: str | None = None,
+    creation_request_fingerprint: str | None = None,
+) -> Session:
+    """Create an internal run row from one trusted registered template revision.
 
     Ordering matters and is the whole point of this function. The template is
     resolved and reread first, and its canonical content is frozen into the
@@ -147,25 +157,311 @@ def create(data: dict) -> Session:
         "source_template_ref": template.reference,
         "source_template_hash": template.registered_hash,
         "source_template_snapshot": source_snapshot,
+        "status": status,
+        "creation_request_key": creation_request_key,
+        "creation_request_fingerprint": creation_request_fingerprint,
     })
 
 
-def update_sink_locations(session_id: int, locations: list[dict]) -> Session:
-    """Relocate a never-started Draft's file outputs.
+def _run_request_fingerprint(data: dict) -> str:
+    content = {key: value for key, value in data.items() if key != "idempotency_key"}
+    canonical = json.dumps(content, sort_keys=True, separators=(",", ":"), default=str)
+    return sha256(canonical.encode("utf-8")).hexdigest()
 
-    Gated on ``dataflow_id`` rather than status: "has never started" is the
-    durable fact, and it stays true regardless of how the status vocabulary
-    evolves around it. Once a run has minted a dataflow, its assignments and
-    locations are historical evidence and stop being editable.
+
+def _create_idempotent_run_session(
+    data: dict,
+    *,
+    status: SessionStatus,
+    request_key: str,
+    fingerprint: str,
+) -> tuple[Session, bool]:
+    try:
+        return (
+            create(
+                data,
+                status=status,
+                creation_request_key=request_key,
+                creation_request_fingerprint=fingerprint,
+            ),
+            True,
+        )
+    except IntegrityError:
+        # A concurrent request with the same global key may have won between
+        # the lookup and insert. The transaction helper already rolled back.
+        existing = _repo.get_by_creation_request_key(request_key)
+        if existing is None:
+            raise
+        if existing.creation_request_fingerprint != fingerprint:
+            raise SessionRunRequestConflict(request_key) from None
+        return existing, False
+
+
+def _scheduled_requirements(session: Session) -> list[dict]:
+    requirements: list[dict] = []
+    for flow_index, flow in enumerate(session.device_flows or []):
+        config_id = int(flow["device_config_id"])
+        config = device_configs.get_by_id(config_id)
+        if config is None:
+            # Materialization normally proves this, but keep the snapshot
+            # builder safe when called directly or under a delete race.
+            from app.domain.errors import DeviceConfigNotFound
+
+            raise DeviceConfigNotFound(config_id)
+        requirements.append({
+            "flow_index": flow_index,
+            "preferred_device_config_id": config_id,
+            "required_device_type": str(config.device_type.value)
+            if hasattr(config.device_type, "value")
+            else str(config.device_type),
+            "preferred_hardware_id": config.hardware_id,
+            "preferred_parameters": dict(config.parameters or {}),
+            "selected_device_config_id": None,
+            "match": None,
+        })
+    return requirements
+
+
+def _discard_provisional_session(session_id: int) -> None:
+    """Remove a never-dispatched run and its provisional internal evidence.
+
+    This is deliberately not the ordinary session delete path: it is valid only
+    for the new atomic command before any dispatch attempt. Explicit child
+    deletion keeps the existing non-cascading historical FKs intact elsewhere.
     """
-    session = get(session_id)
-    if session.dataflow_id is not None:
-        raise InvalidTransition(session.status)
+    with transaction():
+        db.session.execute(db.delete(RecoveryGap).where(RecoveryGap.session_id == session_id))
+        db.session.execute(db.delete(BackendEvent).where(BackendEvent.session_id == session_id))
+        db.session.execute(db.delete(OutputFile).where(OutputFile.session_id == session_id))
+        db.session.execute(db.delete(Incident).where(Incident.session_id == session_id))
+        db.session.execute(db.delete(Operation).where(Operation.session_id == session_id))
+        db.session.execute(
+            db.delete(RuntimeOwnership).where(RuntimeOwnership.session_id == session_id)
+        )
+        db.session.execute(
+            db.delete(RuntimeManifest).where(RuntimeManifest.session_id == session_id)
+        )
+        row = db.session.get(Session, session_id)
+        if row is not None:
+            db.session.delete(row)
 
-    flows = apply_sink_locations(session.device_flows or [], locations)
+
+def create_run(data: dict, *, supervisor=None) -> Session:
+    """Create one immediate or scheduled run as a single public command.
+
+    The idempotency key is global to this command. An identical retry returns
+    the original row; reusing the key with different input is a typed conflict.
+    """
+    request_key = str(data["idempotency_key"])
+    fingerprint = _run_request_fingerprint(data)
+    existing = _repo.get_by_creation_request_key(request_key)
+    if existing is not None:
+        if existing.creation_request_fingerprint != fingerprint:
+            raise SessionRunRequestConflict(request_key)
+        return existing
+
+    execution = dict(data["execution"])
+    create_data = {
+        key: value
+        for key, value in data.items()
+        if key not in {"execution", "idempotency_key", "schedule"}
+    }
+    if execution["mode"] == "scheduled":
+        start_at = execution["start_at"]
+        aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)
+        session, created = _create_idempotent_run_session(
+            create_data,
+            status=SessionStatus.SCHEDULED,
+            request_key=request_key,
+            fingerprint=fingerprint,
+        )
+        if not created:
+            return session
+        try:
+            schedule = {
+                "mode": "once",
+                "start_at": aware.isoformat(),
+                "fallback_policy": "closest_compatible",
+                "requirements": _scheduled_requirements(session),
+                "cancellation": None,
+            }
+            with transaction():
+                session.schedule = schedule
+                session.scheduled_for = aware
+            return session
+        except Exception:
+            _repo.delete(session.id)
+            raise
+
+    session, created = _create_idempotent_run_session(
+        create_data,
+        status=SessionStatus.PREPARING,
+        request_key=request_key,
+        fingerprint=fingerprint,
+    )
+    if not created:
+        return session
+    if supervisor is None:
+        _repo.delete(session.id)
+        raise RuntimeStartupFailed(
+            error_type="RuntimeSupervisorUnavailable",
+            message="The managed runtime supervisor is unavailable.",
+        )
+    return start_managed(
+        session.id,
+        supervisor,
+        discard_on_predispatch_failure=True,
+    )
+
+
+def _candidate_rank(row: dict, requirement: dict) -> tuple:
+    config = device_configs.get_by_id(int(row["id"]))
+    preferred = requirement.get("preferred_parameters") or {}
+    parameters = dict(config.parameters or {}) if config is not None else {}
+    equal_parameters = sum(
+        1 for key, value in preferred.items() if parameters.get(key) == value
+    )
+    return (
+        -equal_parameters,
+        str(row.get("hardware_id") or ""),
+        str(row.get("port") or ""),
+        int(row["id"]),
+    )
+
+
+def _resolve_scheduled_assignments(
+    requirements: list[dict],
+    pool: list[dict],
+) -> tuple[list[dict], list[int]]:
+    available = [
+        row
+        for row in pool
+        if isinstance(row.get("id"), int)
+        and row.get("status") == "free"
+        and row.get("availability") == "available"
+    ]
+    used: set[int] = set()
+    selected: list[dict] = []
+    unresolved: list[int] = []
+    for requirement in sorted(requirements, key=lambda item: int(item["flow_index"])):
+        flow_index = int(requirement["flow_index"])
+        required_type = requirement.get("required_device_type")
+        compatible = [
+            row
+            for row in available
+            if int(row["id"]) not in used and row.get("type") == required_type
+        ]
+        preferred_id = int(requirement["preferred_device_config_id"])
+        exact = next((row for row in compatible if int(row["id"]) == preferred_id), None)
+        chosen = exact
+        match = "exact"
+        if chosen is None and compatible:
+            chosen = sorted(compatible, key=lambda row: _candidate_rank(row, requirement))[0]
+            match = "closest_compatible"
+        if chosen is None:
+            unresolved.append(flow_index)
+            continue
+        selected_id = int(chosen["id"])
+        used.add(selected_id)
+        selected.append({
+            "flow_index": flow_index,
+            "device_config_id": selected_id,
+            "match": match,
+        })
+    return selected, unresolved
+
+
+def execute_scheduled(
+    session_id: int,
+    *,
+    supervisor,
+    discovery_service,
+) -> Session:
+    """Resolve current hardware for one leased due schedule and start it."""
+    session = get(session_id)
+    if session.status is not SessionStatus.SCHEDULED:
+        raise InvalidTransition(session.status)
+    schedule = dict(session.schedule or {})
+    requirements = list(schedule.get("requirements") or [])
+    pool = build_pool_rows(discovery_service.scan().devices)
+    selected, unresolved = _resolve_scheduled_assignments(
+        requirements,
+        pool,
+    )
+    if unresolved:
+        now = datetime.now(UTC)
+        details = {
+            "code": "no_compatible_device",
+            "detail": "No compatible free and available device remained at start time.",
+            "unresolved_flows": unresolved,
+            "cancelled_at": now.isoformat(),
+        }
+        schedule["cancellation"] = details
+        with transaction():
+            session.status = SessionStatus.CANCELLED
+            session.cancellation_details = details
+            session.cancelled_at = now
+            session.schedule = schedule
+            session.schedule_claim_token = None
+            session.schedule_claim_expires_at = None
+        return session
+
+    selected_by_flow = {item["flow_index"]: item for item in selected}
+    flows = [dict(flow) for flow in (session.device_flows or [])]
+    resolved_requirements: list[dict] = []
+    for requirement in requirements:
+        result = selected_by_flow[int(requirement["flow_index"])]
+        flows[int(requirement["flow_index"])] = (
+            flows[int(requirement["flow_index"])]
+            | {"device_config_id": result["device_config_id"]}
+        )
+        resolved_requirements.append(
+            requirement
+            | {
+                "selected_device_config_id": result["device_config_id"],
+                "match": result["match"],
+            }
+        )
+    schedule["requirements"] = resolved_requirements
     with transaction():
         session.device_flows = flows
-    return session
+        session.schedule = schedule
+        session.schedule_claim_token = None
+        session.schedule_claim_expires_at = None
+    with bound_contextvars(request_id=f"scheduled-{session_id}-{uuid4().hex}"):
+        return start_managed(session_id, supervisor)
+
+
+def execute_due_scheduled(
+    *,
+    supervisor,
+    discovery_service,
+    now: datetime | None = None,
+) -> list[Session]:
+    """Lease and execute every due schedule once for this coordinator pass."""
+    current = now or datetime.now(UTC)
+    results: list[Session] = []
+    for due in _repo.due_scheduled(current):
+        token = uuid4().hex
+        if not _repo.try_claim_schedule(
+            due.id,
+            token=token,
+            now=current,
+            expires_at=current + timedelta(minutes=2),
+        ):
+            continue
+        try:
+            results.append(
+                execute_scheduled(
+                    due.id,
+                    supervisor=supervisor,
+                    discovery_service=discovery_service,
+                )
+            )
+        except Exception:
+            _repo.release_schedule_claim(due.id, token)
+            _log.exception("scheduled run execution failed", session_id=due.id)
+    return results
 
 
 def get(session_id: int) -> Session:
@@ -193,13 +489,6 @@ def suggest_name(source_template_id: str) -> str:
 
 def list_all() -> list[Session]:
     return _repo.all()
-
-
-def delete(session_id: int) -> None:
-    session = get(session_id)
-    if session.status not in _PRE_START:
-        raise InvalidTransition(session.status)
-    _repo.delete(session_id)
 
 
 def complete(session_id: int) -> Session:
@@ -258,176 +547,12 @@ def complete(session_id: int) -> Session:
     return session
 
 
-def start(
-    session_id: int,
-    watchdog,
-) -> Session:
-    """Mark the session STARTING and dispatch start.
-
-
-    Raises:
-        SessionNotFound     — no session with that id
-        CommandInFlight     — another command is already running (423)
-        InvalidTransition   — session is not in a startable status (409)
-        EmptySession        — session has no device flows (409)
-        WatchdogAdapterError and subclasses propagate from watchdog.dispatch()
-    """
-    session = get(session_id)
-    if session.command_in_flight:
-        raise CommandInFlight(session_id)
-    if session.status not in _STARTABLE:
-        raise InvalidTransition(session.status)
-    if not session.device_flows:
-        raise EmptySession(session_id)
-
-    # One generation per session, minted on first start and never replaced.
-    dataflow_id = session.dataflow_id or uuid4().hex
-    watchdog_id = session.watchdog_id or uuid4().hex
-    request_id = get_contextvars().get("request_id")
-    if not isinstance(request_id, str) or not request_id:
-        raise RuntimeError("request_id must be bound before starting a session")
-
-    try:
-        operation = create_operation(
-            session_id=session_id,
-            dataflow_id=dataflow_id,
-            command="start",
-            request_key=request_id,
-            request_id=request_id,
-            watchdog_id=watchdog_id,
-        )
-    except OperationConflict as exc:
-        raise CommandInFlight(
-            session_id,
-            code=exc.code,
-            details=exc.details,
-        ) from exc
-
-    transition_operation(operation.operation_id, OperationState.CLAIMED)
-
-    envelope = prepare_command(
-        command="start",
-        dataflow_id=dataflow_id,
-        watchdog_id=watchdog_id,
-        command_id=operation.command_id,
-        runtime_id=_active_runtime_id(dataflow_id),
-    )
-
-    try:
-        with transaction():
-            if not _repo.try_acquire_in_flight_lock(session_id):
-                raise CommandInFlight(session_id)
-            session.command_in_flight = True
-            session.command_id = envelope.correlation.command_id
-            session.dataflow_id = dataflow_id
-            session.watchdog_id = watchdog_id
-            session.status = SessionStatus.STARTING
-            watchdog.dispatch(envelope)
-    except Exception as exc:
-        failed_operation = transition_operation(
-            operation.operation_id,
-            OperationState.FAILED,
-            error_code=type(exc).__name__,
-            error_message=str(exc),
-        )
-        try:
-            record_operation_failure_event(
-                failed_operation,
-                error_code=type(exc).__name__,
-                error_message=str(exc),
-                details={"startup_rollback": True},
-            )
-        except Exception as event_exc:
-            _log.error(
-                "start rollback: durable failure event could not be persisted",
-                session_id=session_id,
-                operation_id=operation.operation_id,
-                error=type(event_exc).__name__,
-                message=str(event_exc),
-            )
-        raise
-
-    transition_operation(operation.operation_id, OperationState.DISPATCHED)
-
-    return session
-
-
-def _is_file_sink(sink_type: object) -> bool:
-    """True for csv/edf/pvfs — the only sinks that own a ``sink_location``."""
-    try:
-        schema = sink_parameter_schema(str(sink_type))
-    except UnknownConfigType:
-        return False
-    return schema["category"] == SinkCategory.FILE.value
-
-
-def sink_restart_plan(session_id: int) -> dict:
-    """Preview where this session's file sinks would write on start.
-
-    Read-only: probes paths so a UI can name outputs (or build a
-    ``update_sink_locations`` fix from ``flow_index``/``sink_index``) before starting.
-    Omits non-file sinks; unset paths are ``assignment: "automatic"`` and never block start.
-    """
-    session = get(session_id)
-    entries: list[dict] = []
-    for flow_index, flow in enumerate(session.device_flows or []):
-        nickname = flow.get("nickname")
-        for sink_index, sink in enumerate(flow.get("sinks") or []):
-            sink_name = sink.get("sink_name")
-            if sink_name is None or not _is_file_sink(sink.get("sink_type")):
-                continue
-            entry = {
-                "flow_index": flow_index,
-                "sink_index": sink_index,
-                "nickname": nickname,
-                "sink_name": str(sink_name),
-                "sink_type": str(sink.get("sink_type")),
-            }
-            raw_location = sink.get("sink_location")
-            if not raw_location:
-                entries.append(
-                    entry
-                    | {
-                        "assignment": "automatic",
-                        "current_location": None,
-                        "occupied": False,
-                        "parent_directory": None,
-                        "parent_issue": None,
-                        "suggested_location": None,
-                    }
-                )
-                continue
-
-            resolved = sink_paths.resolve_sink_location(str(raw_location))
-            occupied = sink_paths.path_is_claimed(resolved)
-            parent_problem = sink_paths.sink_parent_issue(resolved)
-            parent_directory, parent_issue = parent_problem or (None, None)
-            entries.append(
-                entry
-                | {
-                    "assignment": "explicit",
-                    "current_location": resolved,
-                    "occupied": occupied,
-                    "parent_directory": parent_directory,
-                    "parent_issue": parent_issue,
-                    "suggested_location": str(
-                        sink_paths.next_available_path(
-                            Path(resolved), session_id=session_id
-                        )
-                    )
-                    if occupied and parent_problem is None
-                    else (resolved if parent_problem is None else None),
-                }
-            )
-
-    return {"session_id": session_id, "status": session.status, "sinks": entries}
-
-
 def start_managed(
     session_id: int,
     supervisor,
     *,
     force: bool = False,
+    discard_on_predispatch_failure: bool = False,
 ) -> Session:
     """Start a session through a per-dataflow runtime host managed by the daemon.
     """
@@ -444,7 +569,12 @@ def start_managed(
     dataflow_id = session.dataflow_id or uuid4().hex
     watchdog_id = session.watchdog_id or uuid4().hex
     request_id = _request_id("starting")
-    manifest = manifests.resolve(session_id, dataflow_id=dataflow_id)
+    try:
+        manifest = manifests.resolve(session_id, dataflow_id=dataflow_id)
+    except Exception:
+        if discard_on_predispatch_failure:
+            _discard_provisional_session(session_id)
+        raise
 
     try:
         operation = create_operation(
@@ -457,6 +587,8 @@ def start_managed(
             manifest_hash=manifest.hash,
         )
     except OperationConflict as exc:
+        if discard_on_predispatch_failure:
+            _discard_provisional_session(session_id)
         raise CommandInFlight(
             session_id,
             code=exc.code,
@@ -466,7 +598,8 @@ def start_managed(
     transition_operation(operation.operation_id, OperationState.CLAIMED)
 
     claimed_config_ids: list[int] = []
-    spawned = False
+    spawn_attempted = False
+    dispatch_attempted = False
     try:
         claimed_config_ids = _claim_device_configs(session, session_id, force=force)
         with transaction():
@@ -478,8 +611,8 @@ def start_managed(
             session.watchdog_id = watchdog_id
             session.status = SessionStatus.STARTING
 
+        spawn_attempted = True
         supervisor.spawn(session, manifest=manifest)
-        spawned = True
         runtime_id = _active_runtime_id(dataflow_id)
         if runtime_id is not None:
             operation = stamp_runtime_id(operation.operation_id, runtime_id)
@@ -495,11 +628,14 @@ def start_managed(
             command_id=operation.command_id,
             runtime_id=runtime_id,
         )
+        dispatch_attempted = True
         supervisor.dispatch(session, envelope)
     except Exception as exc:
-        if spawned:
+        teardown_proven = not spawn_attempted
+        if spawn_attempted:
             try:
                 supervisor.stop(session)
+                teardown_proven = True
             except Exception as stop_exc:
                 _log.warning(
                     "start rollback: stopping the just-spawned host failed — "
@@ -509,15 +645,45 @@ def start_managed(
                     error=type(stop_exc).__name__,
                     message=str(stop_exc),
                 )
-        _release_device_configs(claimed_config_ids)
+                # A spawn that failed before recording any identity has no
+                # child for stop() to find; absence of both durable and local
+                # identity is positive proof that there is nothing to retain.
+                teardown_proven = (
+                    session.runtime_port is None
+                    and _runtimes.active_for_dataflow(dataflow_id) is None
+                )
+        if not dispatch_attempted or teardown_proven:
+            _release_device_configs(claimed_config_ids)
+        if (
+            discard_on_predispatch_failure
+            and not dispatch_attempted
+            and teardown_proven
+        ):
+            _discard_provisional_session(session_id)
+            raise
         with transaction():
             session.command_in_flight = False
-            session.status = original_status
-            session.runtime_port = None
-            session.runtime_token = None
+            if discard_on_predispatch_failure and dispatch_attempted:
+                # Never expose a repairable pre-run record. A dispatch error is ambiguous with
+                # respect to command acceptance; proven teardown makes the run
+                # stopped, while unproven teardown remains a STARTING recovery
+                # case with its claims and runtime identity intact.
+                session.status = (
+                    SessionStatus.STOPPED if teardown_proven else SessionStatus.STARTING
+                )
+            else:
+                session.status = original_status
+            if teardown_proven:
+                session.runtime_port = None
+                session.runtime_token = None
+        terminal_state = (
+            OperationState.UNCERTAIN
+            if discard_on_predispatch_failure and dispatch_attempted
+            else OperationState.FAILED
+        )
         failed_operation = transition_operation(
             operation.operation_id,
-            OperationState.FAILED,
+            terminal_state,
             error_code=type(exc).__name__,
             error_message=str(exc),
         )

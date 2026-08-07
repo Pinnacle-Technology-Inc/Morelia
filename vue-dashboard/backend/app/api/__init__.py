@@ -16,7 +16,7 @@ from app.api.runtimes import blp as runtimes_blp
 from app.api.session_templates import blp as session_templates_blp
 from app.api.session_templates import source_blp as session_template_sources_blp
 from app.api.sessions import blp as sessions_blp
-from app.api.store import InMemorySessionStore
+from app.api.session_runs import blp as session_runs_blp
 from app.control.supervisor import HostSupervisor
 from app.services.discovery import (
     DeviceDiscoveryService,
@@ -33,7 +33,6 @@ def register_routes(api, app):
     Blueprints register on `api` (not `app`) so they appear in the OpenAPI spec.
     The internal ingest blueprint registers on `app` directly to stay off-spec.
     """
-    app.extensions["session_store"] = InMemorySessionStore()
     watchdog_adapter = app.config["WATCHDOG_ADAPTER"]
     if watchdog_adapter is None:
         if app.testing:
@@ -59,6 +58,7 @@ def register_routes(api, app):
         configured_device_types,
     )
     api.register_blueprint(sessions_blp)
+    api.register_blueprint(session_runs_blp)
     api.register_blueprint(operations_blp)
     api.register_blueprint(incidents_blp)
     api.register_blueprint(gaps_blp)
