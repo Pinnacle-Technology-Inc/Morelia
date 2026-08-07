@@ -358,6 +358,10 @@ const ESCALATION_CAUSES = {
 };
 
 function escalationCause(incident) {
+  if (incident.details?.message) {
+    const type = incident.details?.exception_type;
+    return type ? `${type}: ${incident.details.message}` : incident.details.message;
+  }
   const cause = incident.details?.escalation_cause;
   if (!cause) return "—";
   return ESCALATION_CAUSES[cause] ?? formatStatus(cause);
@@ -872,6 +876,9 @@ const tabTones = computed(() => ({
             <div><dt>Session Monitor</dt><dd>{{ flow.watchdog }}</dd></div>
             <div><dt>Sink count</dt><dd>{{ flow.sinks.length }}</dd></div>
           </dl>
+          <div v-if="flow.reason" class="form-notice" role="alert">
+            <strong>Failure:</strong> {{ flow.reason }}
+          </div>
           <div class="sink-list">
             <div v-for="sink in flow.sinks" :key="sink.name">
               <strong>{{ sink.name }}</strong>

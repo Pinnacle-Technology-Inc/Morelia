@@ -160,6 +160,22 @@ def evaluate_report(
             _resolve_if_present(report, session_id=session_id, device_id=device.device_id)
             continue
         diagnostic = diagnostics.get(device.device_id, {})
+        worker = diagnostic.get("worker")
+        worker = worker if isinstance(worker, dict) else {}
+        worker_fault = worker.get("fault")
+        if isinstance(worker_fault, dict):
+            evaluate_worker_startup_failure(
+                session_id=session_id,
+                dataflow_id=report.dataflow_id,
+                device_id=device.device_id,
+                sink_id=_bounded_incident_text(worker_fault.get("sink_id"), 120),
+                error_type=_bounded_incident_text(worker_fault.get("error_type"), 120)
+                or "WorkerStartupError",
+                message=_bounded_incident_text(worker_fault.get("reason"), 500)
+                or "the data worker exited during startup",
+                sequence=report.sequence,
+            )
+            continue
         cause = escalation.stream_escalation(
             stream_status=device.stream_status,
             diagnostic=diagnostic,
@@ -177,6 +193,55 @@ def evaluate_report(
             )
         # No cause: recovery is still working the problem. The episode will be
         # recorded as a gap once it heals — nothing for an operator to do yet.
+
+
+def evaluate_worker_startup_failure(
+    *,
+    session_id: int,
+    dataflow_id: str,
+    device_id: str | None,
+    sink_id: str | None,
+    error_type: str,
+    message: str,
+    sink_type: str | None = None,
+    sequence: int | None = None,
+) -> None:
+    """Open one deduplicated, sink-addressed incident for a fatal worker start."""
+    reason = SINK_FAILED_REASON if sink_id else STREAM_UNHEALTHY_REASON
+    if sink_id:
+        if _find_open_for_sink(
+            session_id, dataflow_id, device_id, sink_id, reason
+        ) is not None:
+            return
+    elif _repo.find_open_for_device(
+        session_id, dataflow_id, device_id, reason=reason
+    ) is not None:
+        return
+    details = {
+        "failure_kind": "sink_startup" if sink_id else "worker_startup",
+        "exception_type": _bounded_incident_text(error_type, 120),
+        "message": _bounded_incident_text(message, 500),
+        "escalation_cause": "worker reported a fatal startup failure",
+    }
+    if sequence is not None:
+        details["report_sequence"] = sequence
+    if sink_type is not None:
+        details["sink_class"] = _bounded_incident_text(sink_type, 120)
+    _repo.create(
+        session_id=session_id,
+        dataflow_id=dataflow_id,
+        device_id=device_id,
+        sink_id=sink_id,
+        reason=reason,
+        details=details,
+    )
+
+
+def _bounded_incident_text(value: object, limit: int) -> str | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text[:limit] if text else None
 
 
 def _open_if_absent(
@@ -297,7 +362,7 @@ def _sink_reason_for_health(health: SinkHealth) -> str | None:
 def _find_open_for_sink(
     session_id: int,
     dataflow_id: str,
-    source_id: str,
+    source_id: str | None,
     sink_id: str,
     reason: str,
 ) -> Incident | None:

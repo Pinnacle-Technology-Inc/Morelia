@@ -560,6 +560,10 @@ class ManagedInfluxSink:
             "observe_on_scheduler": self.observe_on_scheduler,
             "buffer_max_age_seconds": self._buffer_max_age_seconds,
             "buffer_max_bytes": self._buffer_max_bytes,
+            # The descriptor is reconstructed in a spawned DataFlow worker.
+            # Preserve the picklable factory; the live SQLite handle remains
+            # worker-owned and is deliberately never serialized.
+            "outbox_factory": self._outbox_factory,
         }
         return redact_mapping(snapshot)
 

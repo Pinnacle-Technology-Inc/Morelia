@@ -42,7 +42,7 @@ from app.control.event_poller import DataflowTarget, EventPoller
 from app.control.watchdog_recovery import RecoveryAction, WatchdogRecoveryCoordinator
 from app.database import transaction
 from app.domain.enums import RuntimeOwnershipState, SessionStatus, WatchdogProcessState
-from app.domain.errors import RuntimeNotTracked, StopProofMissing
+from app.domain.errors import RuntimeNotTracked, RuntimeStartupFailed, StopProofMissing
 from app.models.runtime_ownership import RuntimeOwnership
 from app.models.session import Session
 from app.repositories.backend_events import BackendEventRepository
@@ -51,7 +51,12 @@ from app.repositories.sessions import SessionRepository
 from app.runtime_child.driver import RuntimePhase
 from app.runtime_host.manifest import MANIFEST_SCHEMA_VERSION, DeviceFlow, Manifest
 from app.runtime_host.watchdog_process_driver import _kill_pid, pid_is_alive
-from app.services import device_configs, manifests, output_finalization
+from app.services import (
+    device_configs,
+    manifests,
+    output_finalization,
+)
+from app.services import incidents as runtime_incidents
 from app.services.event_ingest import ingest_report
 from app.watchdog.adapters import HttpWatchdogAdapter
 from app.watchdog.messages import CommandEnvelope, CorrelationEnvelope
@@ -111,6 +116,16 @@ def _session_device_config_ids(session: Session) -> list[int]:
             seen.add(config_id)
             ids.append(config_id)
     return ids
+
+
+def _manifest_sink_type(manifest: Manifest, sink_id: object) -> str | None:
+    if not isinstance(sink_id, str) or not sink_id:
+        return None
+    for flow in manifest.device_flows:
+        for sink in flow.sinks:
+            if sink.sink_id == sink_id:
+                return sink.type.value
+    return None
 
 
 class HostSupervisor:
@@ -263,9 +278,26 @@ class HostSupervisor:
         )
 
         port: int | None = None
+        startup_error: RuntimeStartupFailed | None = None
         try:
             for line in proc.stdout:
                 line = line.strip()
+                if line.startswith("ERROR:"):
+                    payload = json.loads(line.split(":", 1)[1])
+                    if isinstance(payload, dict):
+                        sink_id = payload.get("sink_id")
+                        startup_error = RuntimeStartupFailed(
+                            error_type=str(
+                                payload.get("error_type") or "RuntimeStartupError"
+                            )[:120],
+                            message=str(
+                                payload.get("message") or "runtime startup failed"
+                            )[:500],
+                            device_id=payload.get("device_id"),
+                            sink_id=sink_id,
+                            sink_type=_manifest_sink_type(manifest, sink_id),
+                        )
+                    break
                 if line.startswith("PORT:"):
                     port = int(line.split(":", 1)[1])
                 elif line == "READY":
@@ -282,6 +314,17 @@ class HostSupervisor:
             proc.wait(timeout=current_app.config["RUNTIME_HOST_PROCESS_WAIT_TIMEOUT_SECONDS"])
             os.unlink(manifest_path)
             self._ownerships.mark_stopped(runtime_id)
+            if startup_error is not None:
+                runtime_incidents.evaluate_worker_startup_failure(
+                    session_id=session.id,
+                    dataflow_id=dataflow_id,
+                    device_id=startup_error.details.get("device_id"),
+                    sink_id=startup_error.details.get("sink_id"),
+                    error_type=startup_error.details["error_type"],
+                    message=str(startup_error),
+                    sink_type=startup_error.details.get("sink_type"),
+                )
+                raise startup_error
             raise RuntimeError(
                 f"runtime host for dataflow {dataflow_id!r} exited before reporting its port "
                 f"(child log: {log_path})"

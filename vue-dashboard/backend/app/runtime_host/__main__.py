@@ -20,6 +20,7 @@ import os
 import signal
 import sys
 import threading
+from contextlib import suppress
 from uuid import uuid4
 
 import structlog
@@ -231,8 +232,20 @@ def main() -> None:
     # Do not announce HTTP readiness until the supervised watchdog has passed
     # its own preflight. A replacement host that adopted a surviving watchdog
     # already has that proof and must not repeat the IDLE-only transition.
-    _prepare_driver_for_host_start(driver)
-    host.start()
+    try:
+        _prepare_driver_for_host_start(driver)
+        host.start()
+    except Exception as exc:
+        payload = {
+            "error_type": str(getattr(exc, "error_type", type(exc).__name__))[:120],
+            "message": str(getattr(exc, "reason", str(exc)))[:500],
+            "device_id": getattr(exc, "device_id", None),
+            "sink_id": getattr(exc, "sink_id", None),
+        }
+        print(f"ERROR:{json.dumps(payload, separators=(',', ':'))}", flush=True)
+        with suppress(Exception):
+            driver.close()
+        sys.exit(1)
 
     # Flush immediately — the parent reads these two lines to learn the port.
     print(f"PORT:{host.port}", flush=True)

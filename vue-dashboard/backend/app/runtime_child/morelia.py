@@ -38,6 +38,25 @@ from app.runtime_host.manifest import Manifest
 _log = structlog.get_logger(__name__)
 
 
+class WorkerStartupError(RuntimeError):
+    """A stream worker failed before every stream produced its first packet."""
+
+    def __init__(
+        self,
+        *,
+        device_id: str | None,
+        sink_id: str | None,
+        error_type: str,
+        reason: str,
+    ) -> None:
+        self.device_id = device_id
+        self.sink_id = sink_id
+        self.error_type = error_type
+        self.reason = reason
+        target = f"sink {sink_id!r}" if sink_id else f"device {device_id!r}"
+        super().__init__(f"startup failed for {target}: {error_type}: {reason}")
+
+
 @contextmanager
 def _database_context():
     """App context for a parent-side ``output_files`` read, reusing any current one.
@@ -288,6 +307,8 @@ class MoreliaRuntime:
         self._flowgraph: Any | None = None
         self._watchdog: Any | None = None
         self._watchdog_thread: threading.Thread | None = None
+        self._startup_event = threading.Event()
+        self._startup_failure: WorkerStartupError | None = None
         self._nonhealthy_streak_by_device = {device_id: 0 for device_id in self._device_ids}
 
         # Latest sink-write failures, kept separate from device/stream health.
@@ -321,7 +342,8 @@ class MoreliaRuntime:
         with self._hardware_boundary("start"):
             self._flowgraph.collect()
         self._phase = RuntimePhase.RUNNING
-        self._emit_all(StreamStatus.HEALTHY, phase=RuntimePhase.RUNNING)
+        self._startup_event.clear()
+        self._startup_failure = None
         self._watchdog_thread = threading.Thread(
             # watchdog.run() blocks; keep it off the command thread so we can still ack.
             target=self._run_watchdog,
@@ -329,6 +351,38 @@ class MoreliaRuntime:
             daemon=True,
         )
         self._watchdog_thread.start()
+        startup_timeout = (
+            self._first_packet_timeout_sec
+            + self._report_interval_sec
+            + self._stream_interval_sec * max(1, self._failure_threshold)
+        )
+        if not self._startup_event.wait(timeout=startup_timeout):
+            self._startup_failure = WorkerStartupError(
+                device_id=None,
+                sink_id=None,
+                error_type="StartupTimeout",
+                reason=(
+                    "not every stream produced a first packet within "
+                    f"{startup_timeout:.1f} seconds"
+                ),
+            )
+        if self._startup_failure is not None:
+            failure = self._startup_failure
+            _log.error(
+                "runtime startup failed",
+                dataflow_id=self._manifest.dataflow_id,
+                device_id=failure.device_id,
+                sink_id=failure.sink_id,
+                error_type=failure.error_type,
+                reason=failure.reason,
+            )
+            self.close()
+            raise failure
+        _log.info(
+            "runtime startup verified",
+            dataflow_id=self._manifest.dataflow_id,
+            device_count=len(self._device_ids),
+        )
 
     def recover(self, recovery_id: str, device_id: str) -> None:
         self._require(RuntimePhase.RUNNING)
@@ -898,6 +952,14 @@ class MoreliaRuntime:
         try:
             self._run_watchdog_loop()
         except Exception as exc:
+            if not self._startup_event.is_set():
+                self._startup_failure = WorkerStartupError(
+                    device_id=None,
+                    sink_id=getattr(exc, "sink_id", None),
+                    error_type=type(exc).__name__,
+                    reason=str(exc),
+                )
+                self._startup_event.set()
             _log.error(
                 "morelia watchdog thread died",
                 dataflow_id=self._manifest.dataflow_id,
@@ -941,6 +1003,48 @@ class MoreliaRuntime:
             recovery_id=recovery_id,
             diagnostics=diagnostics,
         )
+        self._observe_startup(diagnostics)
+
+    def _observe_startup(self, diagnostics: Mapping[str, object]) -> None:
+        """Release start only after every worker is alive and has produced data."""
+        if self._startup_event.is_set():
+            return
+        streams = diagnostics.get("streams")
+        if not isinstance(streams, list) or len(streams) < len(self._device_ids):
+            return
+
+        all_verified = True
+        for stream in streams:
+            if not isinstance(stream, Mapping):
+                all_verified = False
+                continue
+            worker = stream.get("worker")
+            worker = worker if isinstance(worker, Mapping) else {}
+            fault = worker.get("fault")
+            if isinstance(fault, Mapping):
+                self._startup_failure = WorkerStartupError(
+                    device_id=_bounded_text(stream.get("device_id"), 120),
+                    sink_id=_bounded_text(fault.get("sink_id"), 120),
+                    error_type=_bounded_text(fault.get("error_type"), 120)
+                    or "WorkerStartupError",
+                    reason=_bounded_text(fault.get("reason"), 500)
+                    or "the data worker exited during startup",
+                )
+                self._startup_event.set()
+                return
+            heartbeat = stream.get("heartbeat")
+            heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
+            packet_count = heartbeat.get("packet_count")
+            verified = (
+                worker.get("status") == "alive"
+                and heartbeat.get("status") == "fresh"
+                and isinstance(packet_count, int)
+                and not isinstance(packet_count, bool)
+                and packet_count > 0
+            )
+            all_verified = all_verified and verified
+        if all_verified:
+            self._startup_event.set()
 
     def _log_watchdog_status(
         self,
@@ -1365,7 +1469,7 @@ def _worker_fault(value: object) -> dict[str, object] | None:
     if error_type is None and reason is None:
         return None
     exitcode = value.get("worker_exitcode")
-    return {
+    fault = {
         "error_type": error_type,
         "reason": reason,
         "action": _bounded_text(value.get("action"), 120),
@@ -1373,6 +1477,10 @@ def _worker_fault(value: object) -> dict[str, object] | None:
             exitcode if isinstance(exitcode, int) and not isinstance(exitcode, bool) else None
         ),
     }
+    sink_id = _bounded_text(value.get("sink_id"), 120)
+    if sink_id is not None:
+        fault["sink_id"] = sink_id
+    return fault
 
 
 def _required_four(value: object, key: str) -> tuple[object, object, object, object]:

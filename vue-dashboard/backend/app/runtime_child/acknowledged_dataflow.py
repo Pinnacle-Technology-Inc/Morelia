@@ -75,6 +75,7 @@ class ShutdownReporter:
             outcome=ShutdownOutcome.FAILED,
             error_type=type(exc).__name__,
             reason=str(exc),
+            sink_id=getattr(exc, "sink_id", None),
         )
 
 

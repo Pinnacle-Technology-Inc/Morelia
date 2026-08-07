@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import ctypes
 import hashlib
+import json
 import os
 import secrets
 import signal
@@ -30,6 +31,17 @@ _log = structlog.get_logger(__name__)
 PopenFn = Callable[..., subprocess.Popen]
 PidAliveFn = Callable[[int], bool]
 ControlClientFactory = Callable[..., WatchdogControlClient]
+
+
+class WatchdogStartupError(RuntimeError):
+    """Structured failure reported before the watchdog child became ready."""
+
+    def __init__(self, payload: dict[str, object], *, log_path: str) -> None:
+        self.error_type = str(payload.get("error_type") or "WatchdogStartupError")[:120]
+        self.device_id = payload.get("device_id")
+        self.sink_id = payload.get("sink_id")
+        self.reason = str(payload.get("message") or "watchdog startup failed")[:500]
+        super().__init__(f"{self.error_type}: {self.reason} (child log: {log_path})")
 
 
 def pid_is_alive(pid: int) -> bool:
@@ -492,9 +504,15 @@ class WatchdogProcessDriver:
 
         ready = False
         control_port: int | None = None
+        startup_error: WatchdogStartupError | None = None
         try:
             for line in proc.stdout:
                 value = line.strip()
+                if value.startswith("ERROR:"):
+                    payload = json.loads(value.split(":", 1)[1])
+                    if isinstance(payload, dict):
+                        startup_error = WatchdogStartupError(payload, log_path=log_path)
+                    break
                 if value == "READY":
                     ready = True
                     break
@@ -515,6 +533,8 @@ class WatchdogProcessDriver:
             proc.terminate()
             with suppress(Exception):
                 proc.wait(timeout=get_config().WATCHDOG_PROCESS_REAP_TIMEOUT_SECONDS)
+            if startup_error is not None:
+                raise startup_error
             raise RuntimeError(
                 f"watchdog process for runtime {self._runtime_id!r} exited before "
                 f"READY (child log: {log_path})"

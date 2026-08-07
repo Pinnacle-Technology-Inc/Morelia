@@ -149,9 +149,23 @@ def _latest_report_device(
     heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
     recovery = diagnostic.get("recovery")
     recovery = recovery if isinstance(recovery, Mapping) else {}
+    worker = diagnostic.get("worker")
+    worker = worker if isinstance(worker, Mapping) else {}
+    worker_fault_raw = worker.get("fault")
+    worker_fault_raw = worker_fault_raw if isinstance(worker_fault_raw, Mapping) else {}
+    worker_fault = None
+    if worker_fault_raw:
+        worker_fault = {
+            "sink_id": worker_fault_raw.get("sink_id"),
+            "error_type": worker_fault_raw.get("error_type"),
+            "reason": worker_fault_raw.get("reason"),
+            "action": worker_fault_raw.get("action"),
+            "worker_exitcode": worker_fault_raw.get("worker_exitcode"),
+        }
     action = diagnostic.get("action")
     reason = (
-        diagnostic.get("initiating_failure_reason")
+        worker_fault_raw.get("reason")
+        or diagnostic.get("initiating_failure_reason")
         or diagnostic.get("failure_reason")
         or heartbeat.get("reason")
     )
@@ -175,6 +189,7 @@ def _latest_report_device(
         "stream_status": device.get("stream_status"),
         "action": action,
         "reason": reason,
+        "worker_fault": worker_fault,
         "recovery_stage": stage,
         "recovery_attempt": attempt.get("current"),
         "recovery_attempt_max": attempt.get("max"),

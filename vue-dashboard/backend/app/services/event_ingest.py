@@ -139,7 +139,7 @@ def ingest_watchdog_report(raw: Mapping) -> int:
         )
 
     # Step 5: idempotent persist — duplicate report_id returns the existing id
-    return BackendEventRepository().append(
+    event_id = BackendEventRepository().append(
         event_type=envelope.event_type,
         session_id=ownership.session_id,
         dataflow_id=envelope.dataflow_id,
@@ -148,3 +148,37 @@ def ingest_watchdog_report(raw: Mapping) -> int:
         watchdog_id=envelope.watchdog_id,
         report_id=envelope.report_id,
     )
+
+    # Direct watchdog reports remain authoritative even when the runtime host
+    # is unavailable. Feed their runtime-report shape through the same incident
+    # evaluator so fatal worker/sink faults cannot remain telemetry-only.
+    if envelope.event_type == "runtime.report":
+        try:
+            sequence = int(envelope.report_id.rsplit(":", 1)[1])
+            report_values = {
+                "dataflow_id": envelope.dataflow_id,
+                "phase": "running",
+                "comms": "current",
+                "devices": envelope.payload.get("devices", []),
+                "sequence": sequence,
+            }
+            for optional in ("diagnostics", "sinks"):
+                if optional in envelope.payload:
+                    report_values[optional] = envelope.payload[optional]
+            report = RuntimeReport.from_dict(report_values)
+        except (ValueError, TypeError, IndexError):
+            report = None
+        session = SessionRepository().get(ownership.session_id)
+        if report is not None and session is not None:
+            config = get_config()
+            incidents.evaluate_report(
+                report,
+                session_id=session.id,
+                policy=session.policy,
+                port_absent_limit_seconds=config.STREAM_PORT_ABSENT_ESCALATION_SECONDS,
+            )
+            incidents.evaluate_sink_reports(
+                report, session_id=session.id, policy=session.policy
+            )
+
+    return event_id

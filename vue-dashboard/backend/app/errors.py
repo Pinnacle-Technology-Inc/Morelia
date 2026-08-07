@@ -106,6 +106,7 @@ def register_error_handlers(app) -> None:
         OperationNotFound,
         OperationResolutionError,
         RuntimeNotTracked,
+        RuntimeStartupFailed,
         SessionNotFound,
         SessionTemplateNameExists,
         SessionTemplateNotFound,
@@ -215,6 +216,7 @@ def register_error_handlers(app) -> None:
     app.register_error_handler(OperationNotFound,           _domain(404, "operation_not_found"))
     app.register_error_handler(IncidentNotFound,            _domain(404, "incident_not_found"))
     app.register_error_handler(RuntimeNotTracked,           _domain(409, "runtime_not_tracked"))
+    app.register_error_handler(RuntimeStartupFailed,        _domain(503, "runtime_startup_failed"))
     app.register_error_handler(StopProofMissing,            _domain(409, "stop_proof_missing"))
     app.register_error_handler(
         OperationResolutionError,

@@ -231,6 +231,14 @@ function matchConfiguredFlow(deviceId, configuredFlows, index) {
   return byId ?? configuredFlows[index] ?? {};
 }
 
+function workerFaultCopy(fault) {
+  if (!fault) return null;
+  const target = fault.sink_id ? `Sink ${fault.sink_id}` : "Stream worker";
+  const type = fault.error_type ? ` (${fault.error_type})` : "";
+  const reason = fault.reason ? `: ${fault.reason}` : "";
+  return `${target} failed${type}${reason}`;
+}
+
 /**
  * Build one rail row per reported device.
  *
@@ -259,6 +267,7 @@ export function deriveStreamRows({
     // tell the two apart.
     const recoveryCopy =
       RECOVERY_COPY[device?.action] ?? RECOVERY_COPY[device?.recovery_stage] ?? null;
+    const faultCopy = workerFaultCopy(device?.worker_fault);
     const attempt = device?.recovery_attempt;
 
     return {
@@ -271,7 +280,8 @@ export function deriveStreamRows({
       flowing: unproven ? false : rolled.flowing,
       unproven,
       status: STREAM_LABEL[device?.stream_status] ?? "Unknown",
-      reason: recoveryCopy ?? device?.reason ?? null,
+      reason: faultCopy ?? recoveryCopy ?? device?.reason ?? null,
+      workerFault: device?.worker_fault ?? null,
       attempt: recoveryCopy && attempt ? attempt : null,
       pendingRecovery: Boolean(device?.pending_recovery),
       sinkTone: sinkSummary.tone,

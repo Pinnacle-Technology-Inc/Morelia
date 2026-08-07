@@ -1253,12 +1253,16 @@ class StreamWatcher (threading.Thread):
                 # A failure with no attached exception says nothing an exit
                 # code does not; keep looking for one that does.
                 continue
-            self._worker_fault = {
+            fault = {
                 "error_type": error_type,
                 "reason": reason,
                 "action": getattr(record, "action", None),
                 "worker_exitcode": getattr(record, "worker_exitcode", None),
             }
+            sink_id = getattr(record, "sink_id", None)
+            if sink_id is not None:
+                fault["sink_id"] = sink_id
+            self._worker_fault = fault
             break
 
         return self._worker_fault

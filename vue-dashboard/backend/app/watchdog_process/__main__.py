@@ -197,6 +197,7 @@ def main(
 
     stop_event = threading.Event()
     control_server: WatchdogControlServer | None = None
+    ready_announced = False
 
     def _shutdown(signum, frame):  # noqa: ARG001
         stop_event.set()
@@ -231,6 +232,7 @@ def main(
         # Flush immediately — the parent reads this line to learn we are up.
         ready = f"READY:{control_server.port}" if control_server is not None else "READY"
         print(ready, flush=True)
+        ready_announced = True
 
         while not stop_event.wait(timeout=poll_interval_seconds):
             if process.stopped:
@@ -240,6 +242,17 @@ def main(
         # stopped the driver — shutdown() is idempotent, and this is the one
         # path that also runs on a clean SIGINT/SIGTERM.
         process.shutdown()
+    except Exception as exc:
+        if not ready_announced:
+            payload = {
+                "error_type": str(getattr(exc, "error_type", type(exc).__name__))[:120],
+                "message": str(getattr(exc, "reason", str(exc)))[:500],
+                "device_id": getattr(exc, "device_id", None),
+                "sink_id": getattr(exc, "sink_id", None),
+            }
+            print(f"ERROR:{json.dumps(payload, separators=(',', ':'))}", flush=True)
+            return 1
+        raise
     finally:
         try:
             if control_server is not None:

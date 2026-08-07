@@ -37,6 +37,29 @@ class EmptySession(Exception):
         super().__init__(f"Session {session_id!r} has no device flows.")
 
 
+class RuntimeStartupFailed(RuntimeError):
+    """A runtime child reported a typed failure before becoming ready."""
+
+    code = "runtime_startup_failed"
+
+    def __init__(
+        self,
+        *,
+        error_type: str,
+        message: str,
+        device_id=None,
+        sink_id=None,
+        sink_type=None,
+    ):
+        self.details = {
+            "error_type": error_type,
+            "device_id": device_id,
+            "sink_id": sink_id,
+            "sink_type": sink_type,
+        }
+        super().__init__(message)
+
+
 class OperationNotFound(Exception):
     def __init__(self, operation_id: str):
         self.operation_id = operation_id
