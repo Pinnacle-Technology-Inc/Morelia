@@ -1,5 +1,5 @@
 <script setup>
-import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Download, Filter, Plus, Radar, Trash2, Wrench } from "@lucide/vue";
+import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Download, Filter, Play, Plus, Radar, Trash2, Wrench } from "@lucide/vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
@@ -242,9 +242,21 @@ function stateHint(template) {
   return templateStateHint(template);
 }
 
+function formatInformationMessage(value) {
+  const message = String(value).trim();
+  const deviceTemplateChange = message.match(
+    /^flow\s+(\d+):\s+device template changed at\s+(.+?):\s+expected\s+[a-f0-9]{16,},\s+found\s+[a-f0-9]{16,}$/i,
+  );
+  if (!deviceTemplateChange) return message;
+
+  const [, flowNumber, templatePath] = deviceTemplateChange;
+  const templateName = templatePath.split(/[\\/]/).pop() ?? templatePath;
+  return `Flow ${flowNumber}: Device template ${templateName} has changed since this session template was saved.`;
+}
+
 function informationFor(template) {
   const messages = [stateHint(template), ...(template.warnings ?? [])]
-    .map((message) => String(message).trim())
+    .map(formatInformationMessage)
     .filter(Boolean);
   return [...new Set(messages)];
 }
@@ -265,7 +277,7 @@ function flowSummary(template) {
 function latestSessionLabel(template) {
   const latest = template.latestSession;
   if (!latest) return "—";
-  return `${latest.name} · ${sessionLifecycleLabel(latest.status)}`;
+  return `${latest.name}`;
 }
 
 /**
@@ -538,7 +550,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
 
         <!-- Every row's state and non-registration controls come from the
              server. Registration is the one scan-owned transition. -->
-        <table v-else class="data-table">
+        <table v-else class="data-table session-template-table">
           <thead>
             <tr>
               <th :aria-sort="sortAriaFor('name')">
@@ -577,7 +589,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
               <td><strong :title="template.reference">{{ template.name }}</strong></td>
               <td><StatusBadge :value="template.state" compact /></td>
               <td><code>{{ flowSummary(template) }}</code></td>
-              <td>{{ template.content?.policy ?? "Unavailable" }}</td>
+              <td>{{ template.content?.policy ?? "unavailable" }}</td>
               <td>{{ template.runCount ?? "—" }}</td>
               <td>{{ latestSessionLabel(template) }}</td>
               <td class="template-information">
@@ -588,20 +600,26 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
                 <div class="row-actions">
                   <BaseButton
                     v-if="template.state === 'INVALID'"
+                    class="template-row-icon-action"
                     size="small"
                     variant="secondary"
+                    aria-label="Repair template"
+                    title="Repair template"
                     @click="openRepair(template)"
                   >
-                    <Wrench :size="14" /> Repair template
+                    <Wrench :size="15" />
                   </BaseButton>
                   <template v-if="template.state === 'MISSING'">
                     <BaseButton
+                      class="template-row-icon-action"
                       size="small"
                       variant="secondary"
                       :disabled="busyReference === template.reference"
+                      :aria-label="`Archive ${template.name}`"
+                      title="Archive template"
                       @click="archiveMissing(template)"
                     >
-                      <Archive :size="14" /> Archive
+                      <Archive :size="15" />
                     </BaseButton>
                     <BaseButton
                       size="small"
@@ -615,12 +633,16 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
                   <BaseButton
                     v-for="control in controlsFor(template)"
                     :key="control.id"
+                    :class="{ 'template-row-icon-action': ['run', 'archive'].includes(control.id) }"
                     size="small"
                     :variant="variantFor(control)"
-                    :title="control.title"
+                    :aria-label="['run', 'archive'].includes(control.id) ? control.label : undefined"
+                    :title="control.title ?? control.label"
                     @click="activate(template, control)"
                   >
-                    {{ control.label }}
+                    <Play v-if="control.id === 'run'" :size="15" fill="currentColor" />
+                    <Archive v-else-if="control.id === 'archive'" :size="15" />
+                    <template v-else>{{ control.label }}</template>
                   </BaseButton>
                 </div>
               </td>
@@ -659,9 +681,41 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
 </template>
 
 <style scoped>
+.data-table :is(th, td):not(:first-child) {
+  text-align: center;
+}
+
+.data-table th:not(:first-child) .sortable-heading,
+.data-table td:not(:first-child) .row-actions {
+  justify-content: center;
+}
+
+.session-template-table :is(th, td):is(:nth-child(6), :nth-child(7)) {
+  text-align: left;
+}
+
+.session-template-table th:is(:nth-child(6), :nth-child(7)) .sortable-heading {
+  justify-content: flex-start;
+}
+
+.session-template-table :is(th, td):last-child {
+  text-align: right;
+}
+
+.session-template-table td:last-child .row-actions {
+  justify-content: flex-end;
+}
+
 .template-toolbar {
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.template-row-icon-action {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  justify-content: center;
 }
 
 .template-filter {
@@ -673,10 +727,10 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
   width: 40px;
   height: 40px;
   place-items: center;
-  color: var(--text-body);
+  color: var(--white);
   border: 1px solid var(--border-card);
   border-radius: var(--radius-md);
-  background: var(--surface-card);
+  background: var(--green-900);
   box-shadow: var(--shadow-sm);
   cursor: pointer;
   transition:
@@ -688,9 +742,9 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
 
 .template-filter-trigger:hover,
 .template-filter-trigger[aria-expanded="true"] {
-  color: var(--primary);
+  color: var(--green-900);
   border-color: var(--sage-400);
-  background: var(--sage-50);
+  background: var(--sage-400);
 }
 
 .template-filter-trigger:focus-visible {
@@ -773,7 +827,7 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
   flex: 0 0 auto;
   padding: 0;
   place-items: center;
-  color: var(--text-muted);
+  color: var(--sage-50);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;

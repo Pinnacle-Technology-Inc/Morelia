@@ -786,13 +786,19 @@ watch(() => props.templateId, load);
       </div>
 
       <footer>
-        <p class="run-footnote">A new session ID and dataflow ID will be created. The template is not modified.</p>
-        <span v-if="blockedReason" class="validation-copy">{{ blockedReason }}</span>
-        <BaseButton v-if="draft" variant="secondary" @click="emit('created', String(draft.id))">Open Draft {{ draft.id }}</BaseButton>
-        <template v-else>
-          <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
-          <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
-        </template>
+        <div class="run-footer__messages">
+          <div v-if="blockedReason" class="run-footer__warning" role="alert">
+            <AlertTriangle :size="16" />
+            <span>{{ blockedReason }}</span>
+          </div>
+        </div>
+        <div class="run-footer__actions">
+          <BaseButton v-if="draft" variant="secondary" @click="emit('created', String(draft.id))">Open Draft {{ draft.id }}</BaseButton>
+          <template v-else>
+            <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
+            <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
+          </template>
+        </div>
       </footer>
     </section>
   </div>
@@ -1108,12 +1114,37 @@ watch(() => props.templateId, load);
   background: var(--sage-50);
   font-size: var(--fs-sm);
 }
-/* The footnote takes the free space so the buttons stay hard right. */
 .start-run > footer {
+  display: flex;
   align-items: center;
+  gap: var(--space-4);
+}
+.run-footer__messages {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--space-2);
+}
+.run-footer__warning {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  color: #9f5c08;
+  border: 1px solid #e6c27a;
+  border-radius: var(--radius-md);
+  background: #fff9e8;
+  font-size: var(--fs-xs);
+}
+.run-footer__warning svg {
+  flex: 0 0 auto;
+}
+.run-footer__actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-3);
 }
 .run-footnote {
-  flex: 1;
   color: var(--muted);
   font-size: var(--fs-xs);
 }
@@ -1127,6 +1158,9 @@ watch(() => props.templateId, load);
   .start-run > footer {
     align-items: stretch;
     flex-direction: column;
+  }
+  .run-footer__actions {
+    justify-content: flex-end;
   }
 }
 </style>
