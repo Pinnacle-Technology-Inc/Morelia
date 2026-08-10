@@ -77,6 +77,10 @@ function openTemplate(id, view = "detail") {
   syncHash();
 }
 
+function openDeviceTemplate(name) {
+  openTemplate(name, "device");
+}
+
 // Refresh eagerly on any return path from a page that may have mutated a
 // session, so the operator never lands on a list that predates their own
 // change — the background poll would get there too, just a beat later.
@@ -161,6 +165,7 @@ onBeforeUnmount(() => {
         @review-template="openTemplate($event, 'review')"
         @run-template="openTemplate($event, 'run')"
         @new-template="newTemplate"
+        @open-device-template="openDeviceTemplate"
         @back="changeTab('templates')"
       />
       <!-- Routed on the id, NOT on a catalog hit: a session created seconds ago
@@ -195,6 +200,7 @@ onBeforeUnmount(() => {
         @review-template="openTemplate($event, 'review')"
         @run-template="openTemplate($event, 'run')"
         @new-template="newTemplate"
+        @open-device-template="openDeviceTemplate"
       />
       <IncidentsPage v-else-if="activeTab === 'incidents'" />
       <OperationsPage v-else-if="activeTab === 'operations'" />

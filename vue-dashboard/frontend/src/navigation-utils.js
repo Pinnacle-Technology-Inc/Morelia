@@ -10,7 +10,7 @@ const validTabs = new Set([
 ]);
 
 // What a template route is asking for. `null` means the plain Templates list.
-const templateViews = new Set(["new", "detail", "review", "run"]);
+const templateViews = new Set(["new", "detail", "review", "run", "device"]);
 
 // Routes address templates by their internal, server-minted id — never by
 // filename. A file can be renamed on disk without changing the revision it
@@ -63,6 +63,17 @@ export function parseHash(hash = "") {
   if (value.startsWith("template/")) {
     return parseTemplateRoute(value.slice("template/".length));
   }
+  if (value.startsWith("device-template/")) {
+    const encodedName = value.slice("device-template/".length);
+    if (!encodedName) return templatesList();
+    try {
+      const name = decodeURIComponent(encodedName);
+      if (!name || name.includes("/") || name.includes("\\")) return templatesList();
+      return { tab: "templates", sessionId: null, templateId: name, templateView: "device" };
+    } catch {
+      return templatesList();
+    }
+  }
   if (value.startsWith("session/")) {
     return {
       tab: "sessions",
@@ -76,6 +87,11 @@ export function parseHash(hash = "") {
 
 export function toHash({ tab, sessionId, templateId, templateView } = {}) {
   if (templateView === "new") return "#template/new";
+  if (templateView === "device") {
+    return typeof templateId === "string" && templateId
+      ? `#device-template/${encodeURIComponent(templateId)}`
+      : "#templates";
+  }
   if (templateView && templateViews.has(templateView)) {
     // A detail/review/run route without a usable id has nothing to show, so it
     // serializes back to the list — the same place parseHash sends it.

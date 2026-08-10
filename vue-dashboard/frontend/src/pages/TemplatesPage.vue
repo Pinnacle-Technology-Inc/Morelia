@@ -3,18 +3,16 @@ import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Download, Filter, Play, Plus,
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
-import DeviceTemplateInspectorDialog from "../components/DeviceTemplateInspectorDialog.vue";
 import DeviceTemplateStatusIcon from "../components/DeviceTemplateStatusIcon.vue";
 import PageHeader from "../components/PageHeader.vue";
-import RepairDeviceTemplateDialog from "../components/RepairDeviceTemplateDialog.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import RepairTemplateDialog from "../components/RepairTemplateDialog.vue";
 import TemplateDetailPage from "./TemplateDetailPage.vue";
+import DeviceTemplateDetailPage from "./DeviceTemplateDetailPage.vue";
 import { sessionLifecycleLabel } from "../session-api";
 import {
   archiveTemplate,
-  deleteDeviceTemplate,
   deleteSessionTemplate,
   duplicateTemplateFrom,
   importSessionTemplate,
@@ -31,13 +29,10 @@ const props = defineProps({
   // null renders the catalog; "detail"/"review" delegate to the detail page.
   view: { type: String, default: null },
 });
-const emit = defineEmits(["open-template", "review-template", "run-template", "new-template", "back"]);
+const emit = defineEmits(["open-template", "open-device-template", "review-template", "run-template", "new-template", "back"]);
 
 const activeTab = ref("session-templates");
 const deviceTemplates = ref([]);
-const selectedDeviceTemplate = ref(null);
-const repairingDeviceTemplate = ref(null);
-const deviceTemplateActionError = ref("");
 const sessionTemplates = ref([]);
 const state = ref("loading");
 const errors = ref({ device: "", session: "" });
@@ -58,6 +53,7 @@ const tabs = [
 ];
 
 const showingDetail = computed(() => props.view === "detail" || props.view === "review");
+const showingDeviceDetail = computed(() => props.view === "device");
 const scanning = computed(() => state.value === "loading");
 const stateSortOrder = new Map([
   ["ACTIVE", 0],
@@ -304,52 +300,12 @@ function openRepair(template) {
 }
 
 function openDeviceTemplate(template) {
-  deviceTemplateActionError.value = "";
-  selectedDeviceTemplate.value = template;
-}
-
-function updateDeviceTemplate(updated) {
-  const reference = updated.file_path;
-  deviceTemplates.value = deviceTemplates.value.map((template) =>
-    template.file_path === reference ? updated : template,
-  );
-  selectedDeviceTemplate.value = updated;
-}
-
-function openDeviceTemplateRepair(template) {
-  selectedDeviceTemplate.value = null;
-  repairingDeviceTemplate.value = template;
-}
-
-function returnToDeviceTemplateInspector() {
-  selectedDeviceTemplate.value = repairingDeviceTemplate.value;
-  repairingDeviceTemplate.value = null;
-}
-
-async function deviceTemplateRepaired(repairedTemplate) {
-  const reference = repairingDeviceTemplate.value?.file_path ?? repairedTemplate.file_path;
-  repairingDeviceTemplate.value = null;
-  await refresh();
-  selectedDeviceTemplate.value = deviceTemplates.value.find((template) => template.file_path === reference) ?? repairedTemplate;
+  emit("open-device-template", deviceTemplateRouteName(template));
 }
 
 function deviceTemplateRouteName(template) {
   const filename = String(template.file_path ?? "").split("/").pop();
   return filename?.replace(/\.toml$/i, "") || template.name;
-}
-
-async function removeDeviceTemplate(template) {
-  if (!window.confirm(
-    `Permanently delete device template “${template.name}”?\n\nThis action cannot be undone.`,
-  )) return;
-  deviceTemplateActionError.value = "";
-  try {
-    await deleteDeviceTemplate(deviceTemplateRouteName(template));
-    selectedDeviceTemplate.value = null;
-    await refresh();
-  } catch (error) {
-    deviceTemplateActionError.value = error?.problem?.detail ?? error?.message ?? "The device template could not be deleted.";
-  }
 }
 
 function formatDeviceTemplateModified(template) {
@@ -449,8 +405,15 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
 </script>
 
 <template>
+  <DeviceTemplateDetailPage
+    v-if="showingDeviceDetail"
+    :template-name="props.templateId"
+    @back="emit('back')"
+    @changed="refresh"
+  />
+
   <TemplateDetailPage
-    v-if="showingDetail"
+    v-else-if="showingDetail"
     :template-id="props.templateId"
     :view="props.view"
     @back="emit('back')"
@@ -511,7 +474,6 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
       <div v-if="state === 'loading'" class="empty-state" aria-busy="true">Loading templates…</div>
       <div v-else class="table-wrap">
         <p v-if="activeTab === 'device-templates' && errors.device" role="alert">{{ errors.device }}</p>
-        <p v-if="activeTab === 'device-templates' && deviceTemplateActionError" role="alert">{{ deviceTemplateActionError }}</p>
         <p v-if="activeTab === 'session-templates' && errors.session" role="alert">{{ errors.session }}</p>
         <p v-if="activeTab === 'session-templates' && importError" role="alert">{{ importError }}</p>
         <p v-if="activeTab === 'session-templates' && scanError" role="alert">{{ scanError }}</p>
@@ -661,21 +623,6 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
       :issues="informationFor(repairTemplate)"
       @close="repairTemplate = null"
       @repaired="repaired"
-    />
-    <DeviceTemplateInspectorDialog
-      v-if="selectedDeviceTemplate"
-      :template="selectedDeviceTemplate"
-      @close="selectedDeviceTemplate = null"
-      @delete="removeDeviceTemplate"
-      @repair="openDeviceTemplateRepair"
-      @validated="updateDeviceTemplate"
-    />
-    <RepairDeviceTemplateDialog
-      v-if="repairingDeviceTemplate"
-      :template="repairingDeviceTemplate"
-      @back="returnToDeviceTemplateInspector"
-      @close="repairingDeviceTemplate = null"
-      @repaired="deviceTemplateRepaired"
     />
   </div>
 </template>

@@ -12,6 +12,18 @@ export async function loadDeviceTemplateCatalog() {
   return value;
 }
 
+export async function loadDeviceTemplateTypes() {
+  const value = await requestJson("/api/v1/device-templates/supported-types");
+  if (!Array.isArray(value)) throw new TypeError("The device template type API returned an unexpected response shape.");
+  return value;
+}
+
+export async function loadDeviceTemplate(name) {
+  const value = await requestJson(`/api/v1/device-templates/${encodeURIComponent(name)}`);
+  if (!value || typeof value !== "object") throw new TypeError("The device template API returned an unexpected response shape.");
+  return value;
+}
+
 export async function loadSessionTemplates() {
   const value = await requestJson("/api/v1/session-templates");
   if (!Array.isArray(value)) throw new TypeError("The session template API returned an unexpected response shape.");
@@ -36,6 +48,7 @@ async function send(path, method, body) {
 }
 
 export const createDeviceTemplate = (payload) => send("/api/v1/device-templates", "POST", payload);
+export const matchDeviceTemplate = (payload) => send("/api/v1/device-templates/match", "POST", payload);
 export const updateDeviceTemplate = (name, payload) => send(`/api/v1/device-templates/${encodeURIComponent(name)}`, "PUT", payload);
 export const renameDeviceTemplate = (name, newName) => send(`/api/v1/device-templates/${encodeURIComponent(name)}/rename`, "POST", { new_name: newName });
 export const deleteDeviceTemplate = (name) => send(`/api/v1/device-templates/${encodeURIComponent(name)}`, "DELETE");
