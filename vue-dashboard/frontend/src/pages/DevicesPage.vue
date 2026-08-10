@@ -1,14 +1,13 @@
 <script setup>
-import { Check, Clock3, FileInput, Pencil, Radar, X } from "@lucide/vue";
+import { Check, Clock3, Pencil, Radar, X } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
-import DeviceExportDialog from "../components/DeviceExportDialog.vue";
 import DeviceSettingsDialog from "../components/DeviceSettingsDialog.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
-import { loadDevicePool, registerDeviceName } from "../devices-api";
+import { loadDeviceConfigs, loadDevicePool, registerDeviceName } from "../devices-api";
 
 const activeTab = ref("all");
 const devices = ref([]);
@@ -71,8 +70,17 @@ async function refresh() {
   error.value = "";
   devices.value = [];
   try {
-    const pool = await loadDevicePool();
-    devices.value = pool.devices;
+    const [pool, configs] = await Promise.all([loadDevicePool(), loadDeviceConfigs()]);
+    const configById = new Map(configs.map((config) => [config.id, config]));
+    devices.value = pool.devices.map((device) => {
+      const config = configById.get(device.configId);
+      if (!config) return device;
+      return {
+        ...device,
+        configSource: config.source_template ?? null,
+        sourceTemplateHash: config.source_template_hash ?? null,
+      };
+    });
     scanId.value = pool.scanId;
     scannedAt.value = pool.scannedAt;
     state.value = pool.devices.length ? "ready" : "empty";
@@ -198,7 +206,7 @@ async function onSaved() {
               <th>Port</th>
               <th>Availability</th>
               <th>Status</th>
-              <th>Config Source</th>
+              <th>Device Template</th>
               <th>Owning Session</th>
               <th>Last Seen</th>
               <th />

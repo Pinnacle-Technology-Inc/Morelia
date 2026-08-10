@@ -49,6 +49,11 @@ async function mutate(path, options) {
 }
 
 export const loadDeviceConfig = (id) => requestJson(`/api/v1/device-configs/${encodeURIComponent(id)}`);
+export async function loadDeviceConfigs() {
+  const value = await requestJson("/api/v1/device-configs");
+  if (!Array.isArray(value)) throw new TypeError("The device config API returned an unexpected response shape.");
+  return value;
+}
 export const createDeviceConfig = (payload) => mutate("/api/v1/device-configs", { method: "POST", body: JSON.stringify(payload) });
 export const createDeviceConfigFromTemplate = (payload) => mutate("/api/v1/device-configs/from-template", { method: "POST", body: JSON.stringify(payload) });
 export const nameDeviceConfig = (payload) => mutate("/api/v1/device-configs/name", { method: "POST", body: JSON.stringify(payload) });
