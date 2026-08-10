@@ -28,6 +28,7 @@ const props = defineProps({
   // Optional per-row caption — the run dialog uses it to say why the planner
   // suggested a device ("Exact match", "Type match", …).
   annotate: { type: Function, default: null },
+  selectable: { type: Function, default: isDeviceSelectable },
 });
 const emit = defineEmits(["toggle", "configure", "rescan"]);
 
@@ -42,7 +43,7 @@ function isSelected(device) {
 // (and set up) a device that is plugged in but not yet usable. Clicking such a
 // row opens configuration rather than silently doing nothing.
 function onRow(device) {
-  if (!isDeviceSelectable(device)) {
+  if (!props.selectable(device)) {
     if (device.status === "unconfigured") emit("configure", device);
     return;
   }
@@ -82,8 +83,8 @@ function onRow(device) {
             :key="device.hardwareId ?? device.id"
             :class="{
               'row-selected': isSelected(device),
-              'row-selectable': isDeviceSelectable(device),
-              'row-unconfigured': !isDeviceSelectable(device),
+              'row-selectable': selectable(device),
+              'row-unconfigured': !selectable(device),
             }"
             @click="onRow(device)"
           >
@@ -91,7 +92,7 @@ function onRow(device) {
               <!-- @click.stop: the row handler already toggles, so let the
                    control own its own click rather than firing twice. -->
               <input
-                v-if="isDeviceSelectable(device)"
+                v-if="selectable(device)"
                 :type="multiple ? 'checkbox' : 'radio'"
                 :name="multiple ? undefined : group"
                 class="row-checkbox"
@@ -108,7 +109,7 @@ function onRow(device) {
             </td>
             <td>
               <strong>{{ device.name }}</strong>
-              <span v-if="!isDeviceSelectable(device)" class="row-warning-copy">Configure before use</span>
+              <span v-if="!selectable(device)" class="row-warning-copy">Configure before use</span>
               <span v-else-if="annotate && annotate(device)" class="row-annotation">{{ annotate(device) }}</span>
             </td>
             <td>{{ device.type }}</td>
@@ -116,7 +117,7 @@ function onRow(device) {
             <td><code>{{ device.port }}</code></td>
             <td>
               <button
-                v-if="device.status !== 'free'"
+                v-if="device.status === 'unconfigured'"
                 type="button"
                 class="table-action"
                 @click.stop="emit('configure', device)"

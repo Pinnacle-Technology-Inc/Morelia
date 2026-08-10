@@ -68,13 +68,15 @@ describe("sink destination composition", () => {
 });
 
 describe("compact template-run payload", () => {
-  it("validates host output folders before creating the Draft", () => {
+  it("validates host output folders before issuing the atomic command", () => {
     expect(startRunSource).toContain("await validateOutputFolders(");
     expect(startRunSource).toContain("Boolean(folderValidationError.value)");
     expect(startRunSource).toContain("await verifyOutputFolders().catch(() => {})");
     expect(startRunSource.indexOf("await validateOutputFolders(")).toBeLessThan(
-      startRunSource.indexOf("createTemplateRun(payload()"),
+      startRunSource.indexOf("createTemplateRun(requestPayload"),
     );
+    expect(startRunSource).not.toContain("Save as Draft");
+    expect(startRunSource).not.toContain('value="draft"');
   });
 
   it("copies invisible template identity and sends only run-owned fields", () => {
@@ -101,6 +103,7 @@ describe("compact template-run payload", () => {
       name: "Cortical run 019",
       experiment_id: "study-3",
       notes: "second cohort",
+      execution: { mode: "immediate" },
     });
     expect(payload).not.toHaveProperty("content");
     expect(payload).not.toHaveProperty("source_template_snapshot");
@@ -183,7 +186,7 @@ describe("compact template-run payload", () => {
     ).toThrow(/future/i);
   });
 
-  it("serializes a future local schedule for create-only execution", () => {
+  it("serializes a future schedule while fallback remains server-owned", () => {
     const payload = buildTemplateRunPayload({
       template: ACTIVE_TEMPLATE,
       assignments: RESOLVED,
@@ -191,7 +194,10 @@ describe("compact template-run payload", () => {
       now: new Date("2026-08-04T12:00:00Z"),
     });
 
-    expect(payload.schedule).toEqual({ mode: "daily", start_at: "2026-08-05T09:30:00.000Z" });
+    expect(payload.execution).toEqual({
+      mode: "scheduled",
+      start_at: "2026-08-05T09:30:00.000Z",
+    });
   });
 });
 

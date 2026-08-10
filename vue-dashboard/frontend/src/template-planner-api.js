@@ -29,7 +29,7 @@ export function deviceTypeForFlow(plan, flowIndex) {
 // An operator may choose among compatible hardware, but a stream must never
 // show a device type the template cannot configure. Existing selections in the
 // same run are also unavailable to prevent one device being assigned twice.
-export function compatiblePoolDevicesForFlow(devices, { flowIndex, assignments, deviceType }) {
+export function compatiblePoolDevicesForFlow(devices, { flowIndex, assignments, deviceType, scheduled = false }) {
   const takenElsewhere = new Set(
     assignments
       .filter((assignment) => assignment.flowIndex !== flowIndex)
@@ -38,8 +38,8 @@ export function compatiblePoolDevicesForFlow(devices, { flowIndex, assignments, 
   );
   return devices.filter(
     (device) =>
-      device.availability === "available" &&
-      device.status !== "claimed" &&
+      (scheduled || device.availability === "available") &&
+      (scheduled ? device.id != null && device.status !== "unconfigured" : device.status !== "claimed") &&
       !takenElsewhere.has(device.id) &&
       (!deviceType || device.type === deviceType),
   );
