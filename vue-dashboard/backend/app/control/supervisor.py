@@ -128,6 +128,14 @@ def _manifest_sink_type(manifest: Manifest, sink_id: object) -> str | None:
     return None
 
 
+def _log_identity(session: Session, dataflow_id: str) -> dict[str, str]:
+    """Use request correlation until the dataflow crosses its public boundary."""
+    request_id = getattr(session, "_pending_request_id", None)
+    if session.dataflow_id is None and isinstance(request_id, str) and request_id:
+        return {"request_id": request_id}
+    return {"dataflow_id": dataflow_id}
+
+
 class HostSupervisor:
     """Process manager for Dataflow Runtime Host children.
 
@@ -183,7 +191,7 @@ class HostSupervisor:
                                  device_flows cannot form a valid Manifest.
             RuntimeError       — the child process exited before printing READY.
         """
-        dataflow_id = session.dataflow_id
+        dataflow_id = session.dataflow_id or getattr(session, "_pending_dataflow_id", None)
         if not dataflow_id:
             raise ValueError("session has no dataflow_id")
         if dataflow_id in self._children:
@@ -272,7 +280,7 @@ class HostSupervisor:
         log_handle.close()  # child holds its own fd; this process doesn't write to it
         _log.info(
             "runtime host spawned",
-            dataflow_id=dataflow_id,
+            **_log_identity(session, dataflow_id),
             action="spawn",
             reason=f"child stderr log: {log_path}",
         )
@@ -337,7 +345,7 @@ class HostSupervisor:
         except Exception as exc:
             _log.warning(
                 "spawn: post-spawn status probe failed",
-                dataflow_id=dataflow_id,
+                **_log_identity(session, dataflow_id),
                 runtime_id=runtime_id,
                 port=port,
                 error=type(exc).__name__,
@@ -359,7 +367,7 @@ class HostSupervisor:
                     )
                     _log.info(
                         "spawn: surviving watchdog adopted and persisted",
-                        dataflow_id=dataflow_id,
+                        **_log_identity(session, dataflow_id),
                         runtime_id=runtime_id,
                         watchdog_id=adopt_watchdog_id,
                         watchdog_pid=status.get("watchdog_pid"),
@@ -367,7 +375,7 @@ class HostSupervisor:
                 except Exception as exc:
                     _log.warning(
                         "spawn: host adopted watchdog but persisting the claim failed",
-                        dataflow_id=dataflow_id,
+                        **_log_identity(session, dataflow_id),
                         runtime_id=runtime_id,
                         watchdog_id=adopt_watchdog_id,
                         error=type(exc).__name__,
@@ -376,7 +384,7 @@ class HostSupervisor:
             else:
                 _log.warning(
                     "spawn: adoption hints passed but host reports watchdog NOT adopted",
-                    dataflow_id=dataflow_id,
+                    **_log_identity(session, dataflow_id),
                     runtime_id=runtime_id,
                     watchdog_id=adopt_watchdog_id,
                     watchdog_state=status.get("watchdog_state"),
@@ -466,7 +474,7 @@ class HostSupervisor:
                 (the runtime may have died, or the daemon restarted before
                 reconciling it — see ``reconcile()``).
         """
-        dataflow_id = session.dataflow_id
+        dataflow_id = envelope.correlation.dataflow_id
         entry = self._get_child(dataflow_id)
         adapter = HttpWatchdogAdapter(
             base_url=f"http://127.0.0.1:{entry.port}",
@@ -482,7 +490,7 @@ class HostSupervisor:
             StopProofMissing   — the process was torn down but no durable stop
                                   proof was ever observed.
         """
-        dataflow_id = session.dataflow_id
+        dataflow_id = session.dataflow_id or getattr(session, "_pending_dataflow_id", None)
         self._cancel_recovery_retry(dataflow_id)
         entry = self._pop_child(dataflow_id)
         self._ownerships.mark_stopping(entry.runtime_id)
@@ -531,7 +539,7 @@ class HostSupervisor:
             _log.warning(
                 "stop: dispatching stop command to host failed — "
                 "falling through to drain/terminate",
-                dataflow_id=dataflow_id,
+                **_log_identity(session, dataflow_id),
                 runtime_id=entry.runtime_id,
                 port=entry.port,
                 error=type(exc).__name__,
@@ -552,7 +560,7 @@ class HostSupervisor:
             _log.warning(
                 "stop: draining terminal report failed — proceeding to terminate "
                 "without phase evidence",
-                dataflow_id=dataflow_id,
+                **_log_identity(session, dataflow_id),
                 runtime_id=entry.runtime_id,
                 port=entry.port,
                 error=type(exc).__name__,
@@ -600,7 +608,7 @@ class HostSupervisor:
             except Exception as exc:
                 _log.warning(
                     "stop: could not read durable terminal report from backend_events",
-                    dataflow_id=dataflow_id,
+                    **_log_identity(session, dataflow_id),
                     runtime_id=entry.runtime_id,
                     error=type(exc).__name__,
                     message=str(exc),

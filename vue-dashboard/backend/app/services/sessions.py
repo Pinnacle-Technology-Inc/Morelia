@@ -56,7 +56,7 @@ from app.services.operations import (
     transition_operation,
 )
 from app.services.session_config import materialize_template_flows
-from app.watchdog.commands import prepare_command
+from app.watchdog.commands import prepare_command, publish_command
 
 _log = structlog.get_logger(__name__)
 
@@ -569,11 +569,13 @@ def start_managed(
     dataflow_id = session.dataflow_id or uuid4().hex
     watchdog_id = session.watchdog_id or uuid4().hex
     request_id = _request_id("starting")
+    _log.info("session_start_predispatch")
     try:
         manifest = manifests.resolve(session_id, dataflow_id=dataflow_id)
     except Exception:
         if discard_on_predispatch_failure:
             _discard_provisional_session(session_id)
+        _clear_pending_start_identity(session)
         raise
 
     try:
@@ -589,6 +591,7 @@ def start_managed(
     except OperationConflict as exc:
         if discard_on_predispatch_failure:
             _discard_provisional_session(session_id)
+        _clear_pending_start_identity(session)
         raise CommandInFlight(
             session_id,
             code=exc.code,
@@ -600,6 +603,7 @@ def start_managed(
     claimed_config_ids: list[int] = []
     spawn_attempted = False
     dispatch_attempted = False
+    envelope = None
     try:
         claimed_config_ids = _claim_device_configs(session, session_id, force=force)
         with transaction():
@@ -607,10 +611,9 @@ def start_managed(
                 raise CommandInFlight(session_id)
             session.command_in_flight = True
             session.command_id = operation.command_id
-            session.dataflow_id = dataflow_id
-            session.watchdog_id = watchdog_id
-            session.status = SessionStatus.STARTING
 
+        session._pending_dataflow_id = dataflow_id
+        session._pending_request_id = request_id
         spawn_attempted = True
         supervisor.spawn(session, manifest=manifest)
         runtime_id = _active_runtime_id(dataflow_id)
@@ -627,6 +630,7 @@ def start_managed(
             watchdog_id=_active_watchdog_id(dataflow_id) or watchdog_id,
             command_id=operation.command_id,
             runtime_id=runtime_id,
+            publish=False,
         )
         dispatch_attempted = True
         supervisor.dispatch(session, envelope)
@@ -640,8 +644,7 @@ def start_managed(
                 _log.warning(
                     "start rollback: stopping the just-spawned host failed — "
                     "a zombie runtime host may be left running",
-                    dataflow_id=dataflow_id,
-                    session_id=session.id,
+                    request_id=request_id,
                     error=type(stop_exc).__name__,
                     message=str(stop_exc),
                 )
@@ -660,9 +663,16 @@ def start_managed(
             and teardown_proven
         ):
             _discard_provisional_session(session_id)
+            _clear_pending_start_identity(session)
             raise
+        publish_for_reconciliation = dispatch_attempted or (
+            spawn_attempted and not teardown_proven
+        )
         with transaction():
             session.command_in_flight = False
+            if publish_for_reconciliation:
+                session.dataflow_id = dataflow_id
+                session.watchdog_id = watchdog_id
             if discard_on_predispatch_failure and dispatch_attempted:
                 # Never expose a repairable pre-run record. A dispatch error is ambiguous with
                 # respect to command acceptance; proven teardown makes the run
@@ -671,11 +681,16 @@ def start_managed(
                 session.status = (
                     SessionStatus.STOPPED if teardown_proven else SessionStatus.STARTING
                 )
+            elif publish_for_reconciliation and not teardown_proven:
+                session.status = SessionStatus.STARTING
             else:
                 session.status = original_status
             if teardown_proven:
                 session.runtime_port = None
                 session.runtime_token = None
+        if publish_for_reconciliation and envelope is not None:
+            publish_command(envelope)
+        _clear_pending_start_identity(session)
         terminal_state = (
             OperationState.UNCERTAIN
             if discard_on_predispatch_failure and dispatch_attempted
@@ -704,6 +719,12 @@ def start_managed(
             )
         raise
 
+    with transaction():
+        session.dataflow_id = dataflow_id
+        session.watchdog_id = watchdog_id
+        session.status = SessionStatus.STARTING
+    _clear_pending_start_identity(session)
+    publish_command(envelope)
     transition_operation(operation.operation_id, OperationState.DISPATCHED)
     transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
@@ -715,6 +736,12 @@ def start_managed(
         session.status = SessionStatus.ACTIVE
 
     return session
+
+
+def _clear_pending_start_identity(session: Session) -> None:
+    for name in ("_pending_dataflow_id", "_pending_request_id"):
+        if hasattr(session, name):
+            delattr(session, name)
 
 
 def stop(session_id: int, watchdog) -> Session:
