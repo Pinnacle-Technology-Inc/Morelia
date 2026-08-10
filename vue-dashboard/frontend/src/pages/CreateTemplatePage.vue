@@ -1,10 +1,11 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { AlertTriangle, Check, FileCode2 } from "@lucide/vue";
+import { AlertTriangle, Check, Cpu, FileCode2, Workflow } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
 import TemplateTomlEditor from "../components/TemplateTomlEditor.vue";
+import CreateDeviceTemplatePage from "./CreateDeviceTemplatePage.vue";
 import {
   createSessionTemplateFromToml,
   duplicateTemplateFrom,
@@ -12,11 +13,14 @@ import {
   validateSessionTemplateToml,
 } from "../templates-api";
 
-const emit = defineEmits(["cancel", "created", "open-existing-template"]);
+const emit = defineEmits(["cancel", "created", "created-device", "open-existing-template", "open-existing-device"]);
 
 const SNAPSHOT_KEY = "create-template-toml-draft";
 const FALLBACK_DEVICE_TEMPLATE = "device-templates/your-device-template.toml";
 const steps = ["Details", "TOML", "Recovery", "Review"];
+const templateKind = ref(null);
+const deviceTemplatesState = ref("loading");
+const deviceTemplatesError = ref("");
 
 function exampleToml(deviceTemplatePath = FALLBACK_DEVICE_TEMPLATE) {
   return `policy = "recommend"
@@ -124,13 +128,16 @@ watch(toml, () => {
 
 onMounted(async () => {
   const restored = restoreSnapshot();
+  if (restored) templateKind.value = "session";
   try {
     deviceTemplates.value = await loadDeviceTemplates();
+    deviceTemplatesState.value = "ready";
     if (!restored && deviceTemplates.value[0]?.file_path) {
       toml.value = exampleToml(deviceTemplates.value[0].file_path);
     }
-  } catch {
-    // The editor remains usable; validation will report an unavailable reference.
+  } catch (error) {
+    deviceTemplatesState.value = "error";
+    deviceTemplatesError.value = describeError(error, "Device templates are unavailable.");
   }
 });
 
@@ -192,7 +199,7 @@ async function onNext() {
 function onBack() {
   if (step.value === 0) {
     clearSnapshot();
-    emit("cancel");
+    templateKind.value = null;
   } else {
     step.value -= 1;
   }
@@ -200,10 +207,40 @@ function onBack() {
 </script>
 
 <template>
-  <div class="page page--workspace create-template-page">
+  <CreateDeviceTemplatePage
+    v-if="templateKind === 'device'"
+    @cancel="templateKind = null"
+    @created="emit('created-device', $event)"
+    @open-existing="emit('open-existing-device', $event)"
+  />
+
+  <div v-else-if="!templateKind" class="page page--workspace template-kind-page">
+    <PageHeader eyebrow="Reusable configuration" title="Create Template" description="Choose the reusable building block you want to create." />
+    <BaseCard class="template-kind-card">
+      <button type="button" class="template-kind-choice" @click="templateKind = 'device'">
+        <span class="template-kind-icon"><Cpu :size="24" /></span>
+        <span><strong>Device template</strong><small>Define one reusable device type and its canonical parameter values.</small></span>
+      </button>
+      <button
+        type="button"
+        class="template-kind-choice"
+        :disabled="deviceTemplatesState !== 'ready' || !deviceTemplates.length"
+        @click="templateKind = 'session'"
+      >
+        <span class="template-kind-icon"><Workflow :size="24" /></span>
+        <span><strong>Session template</strong><small>Compose device templates into streams, sinks, and recovery behavior.</small></span>
+      </button>
+      <p v-if="deviceTemplatesState === 'loading'" class="template-kind-hint" aria-busy="true">Checking device templates…</p>
+      <p v-else-if="deviceTemplatesState === 'error'" class="template-kind-hint" role="alert">{{ deviceTemplatesError }}</p>
+      <p v-else-if="!deviceTemplates.length" class="template-kind-hint">Create a valid device template before creating a session template.</p>
+      <footer><BaseButton variant="quiet" @click="emit('cancel')">Cancel</BaseButton></footer>
+    </BaseCard>
+  </div>
+
+  <div v-else class="page page--workspace create-template-page">
     <PageHeader
       eyebrow="TOML authoring"
-      title="Create Template"
+      title="Create Session Template"
     />
 
     <BaseCard
@@ -319,6 +356,18 @@ function onBack() {
 </template>
 
 <style scoped>
+.template-kind-page { overflow-y: auto; }
+.template-kind-card { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-4); padding: var(--space-5); }
+.template-kind-choice { min-height: 180px; display: flex; align-items: flex-start; gap: var(--space-4); padding: var(--space-5); border: 1px solid var(--sage-300); border-radius: var(--radius-md); color: var(--text-body); background: var(--surface-card); text-align: left; cursor: pointer; }
+.template-kind-choice:hover:not(:disabled) { border-color: var(--accent); background: var(--sage-50); }
+.template-kind-choice:focus-visible { outline: none; box-shadow: var(--shadow-focus); }
+.template-kind-choice:disabled { cursor: not-allowed; opacity: 0.5; }
+.template-kind-choice > span:last-child { display: grid; gap: var(--space-2); }
+.template-kind-choice strong { color: var(--text-heading); font: var(--fw-bold) var(--fs-h4) var(--font-display); }
+.template-kind-choice small { color: var(--text-muted); line-height: var(--lh-body); }
+.template-kind-icon { width: 46px; height: 46px; display: grid; place-items: center; flex: 0 0 auto; border-radius: var(--radius-pill); color: white; background: var(--accent); }
+.template-kind-hint { grid-column: 1 / -1; margin: 0; color: var(--text-muted); }
+.template-kind-card footer { grid-column: 1 / -1; display: flex; justify-content: flex-start; padding-top: var(--space-3); border-top: 1px solid var(--border-card); }
 .create-template-page { overflow-y: auto; scrollbar-gutter: stable; }
 .create-template-page :deep(.page-header h1) { margin-top: 0; font-size: var(--fs-h2); }
 .create-template-page,
@@ -358,6 +407,7 @@ function onBack() {
 .recovery-confirmation span { display: block; color: var(--text-muted); font-size: var(--fs-xs); }
 .recovery-confirmation strong { display: block; margin-top: var(--space-1); color: var(--text-heading); font-size: var(--fs-h4); text-transform: capitalize; }
 .recovery-confirmation p { color: var(--text-body); font-size: var(--fs-sm); }
+@media (max-width: 700px) { .template-kind-card { grid-template-columns: 1fr; } }
 .template-review-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid var(--border-card); border-radius: var(--radius-md); overflow: hidden; }
 .template-review-list div { padding: var(--space-4); border-top: 1px solid var(--border-card); }
 .template-review-list div:nth-child(-n + 2) { border-top: 0; }

@@ -45,28 +45,17 @@ function changeTab(tab) {
   syncHash();
 }
 
-// A session the run dialog just created in "Start now" mode, handed to its
-// detail page to issue the start command. One-shot and never in the URL: a
-// reload, a back button, or any ordinary navigation to the same session must
-// not re-command a run, so every other path through openSession() clears it.
-const autoStartSessionId = ref(null);
-
 function openSession(id) {
-  autoStartSessionId.value = null;
   selectedSessionId.value = id;
   selectedTemplateId.value = null;
   templateView.value = null;
   syncHash();
 }
 
-// The dialog creates the Draft and hands the start over rather than running it
-// itself, so the operator lands on the session as it comes up — the detail page
-// already owns the lifecycle badge, the live event stream and the poll that
-// carries Draft → Starting → Active.
-function openCreatedSession(id, { autoStart = false } = {}) {
+// The atomic command has already started or scheduled the returned session.
+function openCreatedSession(id) {
   refreshSessionCatalog({ silent: true });
   openSession(id);
-  if (autoStart) autoStartSessionId.value = id;
 }
 
 function openTemplate(id, view = "detail") {
@@ -151,6 +140,8 @@ onBeforeUnmount(() => {
         @cancel="changeTab('templates')"
         @created="openTemplate($event, 'detail')"
         @open-existing-template="openTemplate($event, 'detail')"
+        @created-device="openDeviceTemplate"
+        @open-existing-device="openDeviceTemplate"
       />
 
       <!-- `run` is not a page of its own: starting a session is a modal over
@@ -178,7 +169,6 @@ onBeforeUnmount(() => {
         :key="selectedSessionId"
         :session="selectedSession ?? null"
         :session-id="selectedSessionId"
-        :auto-start="autoStartSessionId === selectedSessionId"
         @back="returnToSessions"
         @start-another-run="openTemplate($event, 'run')"
         @state-changed="refreshSessionCatalog({ silent: true })"
@@ -189,7 +179,7 @@ onBeforeUnmount(() => {
         :catalog-state="sessionCatalogState"
         :load-error="sessionCatalogError"
         @open-session="openSession"
-        @new-session="newTemplate"
+        @open-templates="changeTab('templates')"
         @retry="refreshSessionCatalog"
       />
       <ExperimentsPage v-else-if="activeTab === 'experiments'" />
