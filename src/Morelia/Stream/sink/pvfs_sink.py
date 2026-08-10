@@ -14,6 +14,10 @@ import os
 import sys
 import time
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+from collections.abc import Callable, Mapping
+from functools import partial
+
 _log = logging.getLogger(__name__)
 
 
@@ -410,3 +414,17 @@ class PvfsSink(SinkInterface):
             "use_writer_process": self._use_writer_process,
             "device_preferences": self._device_preferences,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset(
+                {"file_path", "observe_on_scheduler", "use_writer_process", "device_preferences"}
+            ),
+            validators={
+                "observe_on_scheduler": self._check_observe_on_scheduler,
+                "use_writer_process": partial(self._check_bool, key="use_writer_process"),
+                "device_preferences": self._check_device_preferences,
+            },
+        )

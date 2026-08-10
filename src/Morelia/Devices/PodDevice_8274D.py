@@ -10,6 +10,8 @@ import Morelia.packet.conversion as conv
 
 from functools import partial
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 # authorship
 __author__      = "Sree Kondi"
 __maintainer__  = "Thresa Kelly"
@@ -414,12 +416,14 @@ class Pod8274D(AcquisitionDevice) :
             self._sample_rate = self._SAMPLE_RATE_INDEX[sample_rate_index]
         return self._sample_rate
         # return r
+
+    def get_sample_rate_index(self, rate: int) -> int:
+        return next((k for k, v in self._SAMPLE_RATE_INDEX.items() if v == rate), None)
     
     @sample_rate.setter
     def sample_rate(self, rate: int) -> None:
-        key = next((k for k, v in self._SAMPLE_RATE_INDEX.items() if v == rate), None)
-        if key is None:
-            raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(self._SAMPLE_RATE_INDEX.values())}')
+        key = self.get_sample_rate_index(rate)
+        self._check_sample_rate(rate)
         r = self.write_read('SET SAMPLE RATE', key)
         if r.command_number != 211: # Successfully set sample rate
             raise RuntimeWarning(f"WARNING: Sample rate may not have been set. Current sample rate: {self.sample_rate}")
@@ -436,3 +440,18 @@ class Pod8274D(AcquisitionDevice) :
         if self._device_serial_number is not None:
             d['device_serial_number'] = self._device_serial_number
         return d
+
+    def _check_sample_rate(self, value: object) -> None:
+        key = self.get_sample_rate_index(value)
+        if key is None:
+            raise ValueError(f'Sample rate {value} not valid. Please use one of the following valid sample rates: {list(self._SAMPLE_RATE_INDEX.values())}')
+
+    @property
+    def param_schema(self):
+        return ParamSchema(
+            required=frozenset({"device_serial_number"}),
+            optional=frozenset({"sample_rate"}),
+            validators={
+                "sample_rate": self._check_sample_rate,
+            },
+        )

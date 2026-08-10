@@ -18,6 +18,9 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import AcquisitionDevice, Pod8206HR, Pod8401HR, Pod8274D
 from Morelia.packet.data import DataPacket
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+from functools import partial
+
 class OSCSink(SinkInterface):    
     """
     Streams acquisition data as Open Sound Control (OSC) messages over UDP.
@@ -151,3 +154,15 @@ class OSCSink(SinkInterface):
             'address': self._address,
             'observe_on_scheduler': self.observe_on_scheduler,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset("host", "port", "address"),
+            optional=frozenset({"observe_on_scheduler"}),
+            validators={
+                "host": partial(self._check_nonempty_string, key="host"),
+                "port": self._check_port,
+                "observe_on_scheduler": self._check_observe_on_scheduler,
+                },
+        )

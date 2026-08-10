@@ -20,6 +20,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.packet.data import DataPacket
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 class EDFSink(SinkInterface):
     """Stream data to an EDF file.
 
@@ -249,3 +251,11 @@ class EDFSink(SinkInterface):
             'file_path': self.file_path,
             'observe_on_scheduler': self.observe_on_scheduler,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset({"file_path", "observe_on_scheduler"}),
+            validators={"observe_on_scheduler": self._check_observe_on_scheduler},
+        )
