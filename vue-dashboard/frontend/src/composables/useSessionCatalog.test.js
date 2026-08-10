@@ -26,8 +26,8 @@ afterEach(() => {
 
 it("re-reads the catalog on a timer without an explicit refresh", async () => {
   const load = vi.fn()
-    .mockResolvedValueOnce(live(rows("draft")))
-    .mockResolvedValue(live(rows("draft", "started")));
+    .mockResolvedValueOnce(live(rows("preparing")))
+    .mockResolvedValue(live(rows("preparing", "started")));
   const catalog = useSessionCatalog({ load, visibility: fakeVisibility() });
 
   catalog.start();

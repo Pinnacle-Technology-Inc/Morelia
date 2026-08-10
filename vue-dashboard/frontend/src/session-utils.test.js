@@ -69,7 +69,7 @@ describe("session filtering", () => {
 
 describe("session health resolution", () => {
   it("reports a resting state rather than Unknown when nothing is running", () => {
-    for (const lifecycle of ["Draft", "Scheduled", "Stopped", "Completed"]) {
+    for (const lifecycle of ["Preparing", "Scheduled", "Stopped", "Completed"]) {
       // Health is absent for these because there is nothing to measure, not
       // because we lost track of the session.
       expect(resolveSessionHealth(null, lifecycle)).toBe("Not running");

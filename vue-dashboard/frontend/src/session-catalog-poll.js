@@ -35,7 +35,7 @@ export function hasLifecycle(sessions, lifecycles) {
  * you whether anything is mid-transition or otherwise server-driven.
  *
  * Baseline below is deliberately dumb: one fixed interval, no backoff, no
- * hidden-tab handling. It works, but it polls a room full of Draft rows just
+ * hidden-tab handling. It works, but it polls a room full of resting rows just
  * as hard as a rack mid-start.
  */
 export function nextPollDelay({ sessions = [], hidden = false, consecutiveFailures = 0 } = {}) {

@@ -1,13 +1,9 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
   completeSession,
-  createSessionDraft,
   createTemplateRun,
   loadSessionNameSuggestion,
-  loadSinkPlan,
-  startSession,
   stopSession,
-  updateSinkLocations,
 } from "./session-api";
 
 afterEach(() => vi.restoreAllMocks());
@@ -27,52 +23,12 @@ it("requests a name suggestion for the selected template", async () => {
   );
 });
 
-it("posts a canonical draft exactly once", async () => {
-  const fetchMock = vi.fn(async (_url, options) => ({ ok: true, json: async () => JSON.parse(options.body) }));
-  vi.stubGlobal("fetch", fetchMock);
-  await createSessionDraft({ name: "Draft", policy: "recommend", device_flows: [] });
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(fetchMock.mock.calls[0][1].body).toContain('"device_flows":[]');
-});
-
-it("starts a persisted draft without forcing claims", async () => {
-  const fetchMock = vi.fn(async (_url, options) => ({ ok: true, json: async () => JSON.parse(options.body) }));
-  vi.stubGlobal("fetch", fetchMock);
-  await startSession(7);
-  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/7/commands/start");
-  expect(fetchMock.mock.calls[0][1].body).toContain('"force":false');
-});
-
 it("stops through the guarded route without force", async () => {
   const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ status: "stopped" }) }));
   vi.stubGlobal("fetch", fetchMock);
   await stopSession(7);
   expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/7/commands/stop");
   expect(fetchMock.mock.calls[0][1].body).toBe('{"force":false}');
-});
-
-it("reads the sink plan without mutating anything", async () => {
-  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ sinks: [] }) }));
-  vi.stubGlobal("fetch", fetchMock);
-  await loadSinkPlan(19);
-  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/19/sink-plan");
-  expect(fetchMock.mock.calls[0][1]?.method ?? "GET").toBe("GET");
-});
-
-it("patches operator-chosen output names onto the Draft before start", async () => {
-  const fetchMock = vi.fn(async (_url, options) => ({ ok: true, json: async () => JSON.parse(options.body) }));
-  vi.stubGlobal("fetch", fetchMock);
-
-  await updateSinkLocations(19, [
-    { flow_index: 0, sink_index: 1, sink_location: "C:/out/run-2.edf" },
-  ]);
-
-  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/19/sink-locations");
-  expect(fetchMock.mock.calls[0][1].method).toBe("PATCH");
-  const body = JSON.parse(fetchMock.mock.calls[0][1].body);
-  expect(body).toEqual({
-    locations: [{ flow_index: 0, sink_index: 1, sink_location: "C:/out/run-2.edf" }],
-  });
 });
 
 it("completes through its distinct terminal route", async () => {
@@ -86,37 +42,44 @@ const TEMPLATE_RUN_PAYLOAD = {
   source_template_id: "tmpl-14",
   expected_template_hash: "a".repeat(64),
   assignments: [{ flow_index: 0, device_config_id: 17, sink_locations: [] }],
+  execution: { mode: "immediate" },
 };
 
-it("creates a Draft without starting when immediate start was not chosen", async () => {
-  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 41, status: "draft" }) }));
-  vi.stubGlobal("fetch", fetchMock);
-
-  await expect(createTemplateRun(TEMPLATE_RUN_PAYLOAD)).resolves.toMatchObject({
-    draft: { id: 41, status: "draft" },
-    started: null,
-  });
-
-  expect(fetchMock).toHaveBeenCalledTimes(1);
-  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/sessions/");
-});
-
-it("creates once and then starts that persisted Draft for immediate start", async () => {
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 42, status: "draft" }) })
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 42, status: "starting" }) });
+it("creates and starts through one idempotent command", async () => {
+  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 41, status: "active" }) }));
   vi.stubGlobal("fetch", fetchMock);
 
   await expect(
-    createTemplateRun(TEMPLATE_RUN_PAYLOAD, { startImmediately: true }),
-  ).resolves.toMatchObject({ draft: { id: 42 }, started: { id: 42, status: "starting" } });
+    createTemplateRun(TEMPLATE_RUN_PAYLOAD, { idempotencyKey: "request-key-41" }),
+  ).resolves.toMatchObject({ id: 41, status: "active" });
 
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
-    "/api/v1/sessions/",
-    "/api/v1/sessions/42/commands/start",
-  ]);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/session-runs");
+  expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+    execution: { mode: "immediate" },
+    idempotency_key: "request-key-41",
+  });
+});
+
+it("schedules through the same single command", async () => {
+  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ id: 42, status: "scheduled" }) }));
+  vi.stubGlobal("fetch", fetchMock);
+
+  await expect(
+    createTemplateRun(
+      {
+        ...TEMPLATE_RUN_PAYLOAD,
+        execution: {
+          mode: "scheduled",
+          start_at: "2026-08-08T12:00:00.000Z",
+        },
+      },
+      { idempotencyKey: "request-key-42" },
+    ),
+  ).resolves.toMatchObject({ id: 42, status: "scheduled" });
+
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  expect(fetchMock.mock.calls[0][0]).toBe("/api/v1/session-runs");
 });
 
 it("validates before create and makes no request for an invalid run", async () => {
@@ -129,23 +92,19 @@ it("validates before create and makes no request for an invalid run", async () =
   expect(fetchMock).not.toHaveBeenCalled();
 });
 
-it("preserves the Draft identity when start fails and never retries create", async () => {
-  const fetchMock = vi
-    .fn()
-    .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 43, status: "draft" }) })
-    .mockResolvedValueOnce({
-      ok: false,
-      status: 409,
-      json: async () => ({ code: "device_claim_conflict", detail: "The selected device is busy." }),
-    });
+it("surfaces a definite rejection without exposing a session", async () => {
+  const fetchMock = vi.fn(async () => ({
+    ok: false,
+    status: 409,
+    json: async () => ({ code: "device_claim_conflict", detail: "The selected device is busy." }),
+  }));
   vi.stubGlobal("fetch", fetchMock);
 
-  const error = await createTemplateRun(TEMPLATE_RUN_PAYLOAD, { startImmediately: true }).catch(
+  const error = await createTemplateRun(TEMPLATE_RUN_PAYLOAD, { idempotencyKey: "request-key-43" }).catch(
     (reason) => reason,
   );
 
-  expect(error.draft).toEqual({ id: 43, status: "draft" });
-  expect(error.message).toMatch(/Draft 43 was created/i);
-  expect(fetchMock).toHaveBeenCalledTimes(2);
-  expect(fetchMock.mock.calls.filter(([url]) => url === "/api/v1/sessions/")).toHaveLength(1);
+  expect(error.session).toBeUndefined();
+  expect(error.problem.code).toBe("device_claim_conflict");
+  expect(fetchMock).toHaveBeenCalledTimes(1);
 });

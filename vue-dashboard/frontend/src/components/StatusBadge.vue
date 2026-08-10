@@ -33,13 +33,14 @@ const props = defineProps({
 });
 
 const config = {
-  Draft: { icon: FileText, tone: "neutral" },
+  Preparing: { icon: LoaderCircle, tone: "amber" },
   Stored: { icon: CheckCircle2, tone: "green" },
   Scheduled: { icon: Clock3, tone: "blue" },
   Starting: { icon: LoaderCircle, tone: "amber" },
   Active: { icon: Play, tone: "green" },
   Ending: { icon: StopCircle, tone: "orange" },
   Completed: { icon: CheckCircle2, tone: "green" },
+  Cancelled: { icon: XCircle, tone: "neutral" },
   Healthy: { icon: CheckCircle2, tone: "green" },
   Suspect: { icon: AlertTriangle, tone: "amber" },
   Unhealthy: { icon: XCircle, tone: "red" },
@@ -54,7 +55,7 @@ const config = {
   "Needs action": { icon: AlertTriangle, tone: "orange" },
   Unknown: { icon: CircleHelp, tone: "neutral" },
   // Session-health resting/visibility states (see session-utils.SessionHealth).
-  // `Not running` is neutral on purpose — a Draft session is not broken, it just
+  // `Not running` is neutral on purpose — a resting session is not broken; it
   // has nothing to measure. `Not reporting` is amber because a session we are
   // supposed to be watching has gone dark, which is not the same as fine.
   "Not running": { icon: CircleDashed, tone: "neutral" },

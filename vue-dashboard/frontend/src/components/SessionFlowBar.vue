@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import { deriveFlowStatus, formatReportAge, toFlowLogLines } from "../session-flow-status";
 
 const props = defineProps({
-  lifecycle: { type: String, default: "Draft" },
+  lifecycle: { type: String, default: "Unknown" },
   health: { type: String, default: "Unknown" },
   phase: { type: String, default: null },
   activityState: { type: String, default: "idle" },

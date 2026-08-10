@@ -3,7 +3,6 @@ export const sessionTabs = [
   { id: "needs-attention", label: "Needs Attention" },
   { id: "active", label: "Active" },
   { id: "scheduled", label: "Scheduled" },
-  { id: "drafts", label: "Drafts" },
   { id: "completed", label: "Completed" },
   { id: "archived", label: "Archived" },
 ];
@@ -62,10 +61,11 @@ const LIVE_HEALTH_LABELS = {
 // handoff — the main alternative is "Not monitored", which describes the health
 // axis itself ("we are not measuring") rather than restating the lifecycle.
 const RESTING_HEALTH = {
-  Draft: SessionHealth.NOT_RUNNING,
+  Preparing: SessionHealth.NOT_RUNNING,
   Scheduled: SessionHealth.NOT_RUNNING,
   Stopped: SessionHealth.NOT_RUNNING,
   Completed: SessionHealth.NOT_RUNNING,
+  Cancelled: SessionHealth.NOT_RUNNING,
 };
 
 // Health labels that mean "an operator should look at this". `Not reporting` is
@@ -86,7 +86,7 @@ export const ATTENTION_HEALTH = Object.freeze([
  *
  * @param {string|null|undefined} rawHealth  backend HealthState, or null when
  *   the poller has no live snapshot for this session's dataflow.
- * @param {string} lifecycle  the normalized lifecycle label (Draft..Completed).
+ * @param {string} lifecycle  the normalized lifecycle label (Preparing..Completed).
  */
 export function resolveSessionHealth(rawHealth, lifecycle) {
   if (!isRunningLifecycle(lifecycle)) {
@@ -104,8 +104,7 @@ export function sessionMatchesTab(session, tab) {
   if (tab === "needs-attention") return needsAttention(session);
   if (tab === "active") return ["Active", "Starting", "Ending"].includes(session.lifecycle);
   if (tab === "scheduled") return session.lifecycle === "Scheduled";
-  if (tab === "drafts") return session.lifecycle === "Draft";
-  if (tab === "completed") return session.lifecycle === "Completed" && !session.archived;
+  if (tab === "completed") return ["Completed", "Cancelled"].includes(session.lifecycle) && !session.archived;
   if (tab === "archived") return session.archived === true;
   return false;
 }

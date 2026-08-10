@@ -3,7 +3,7 @@
 // worry? The inputs disagree often enough that the merge rule has to be explicit
 // rather than incidental:
 //
-//   lifecycle       — what the control plane intends (Draft..Completed)
+//   lifecycle       — what the control plane intends (Preparing..Completed)
 //   health          — the backend's session-level rollup over the streams
 //   streams         — the RAW per-device stream states from the newest report
 //   outboxHealth    — whether the runtime is still reporting at all
@@ -38,17 +38,18 @@ export function worstTone(a, b) {
 }
 
 // Lifecycles where nothing is expected to move. These never animate and never
-// go red — a Draft session isn't broken, it just hasn't run. "Unknown" is the
+// go red — a Preparing run isn't broken; dispatch just has not completed. "Unknown" is the
 // deep-link case: the page mounted from a URL and /status has not answered yet,
 // so we say so rather than guessing a lifecycle.
 const RESTING_HEADLINE = { Unknown: "Loading status…" };
 
 const RESTING_REASON = {
   Unknown: "Fetching this session's current status…",
-  Draft: "Not started. This session has never run.",
+  Preparing: "Preparing this run for dispatch.",
   Scheduled: "Scheduled. Waiting for its start time.",
   Stopped: "Stopped. This run is closed; start another run from its source template.",
   Completed: "Completed. This session is archived and read-only.",
+  Cancelled: "Cancelled before dispatch. No compatible device was available at start time.",
 };
 
 // `health` values are the operator labels, not the raw enum — keep these in
@@ -327,7 +328,7 @@ export function formatReportAge(lastReportAt, now = Date.now()) {
  *   the rail is stricter — see `rollRow`.
  */
 export function deriveFlowStatus({
-  lifecycle = "Draft",
+  lifecycle = "Unknown",
   health = "Unknown",
   phase = null,
   activityState = "idle",

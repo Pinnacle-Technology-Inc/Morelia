@@ -21,7 +21,7 @@ describe("worstTone", () => {
 
 describe("deriveFlowStatus — resting lifecycles", () => {
   it("never animates or alarms for a session that is not running", () => {
-    for (const lifecycle of ["Draft", "Scheduled", "Stopped", "Completed"]) {
+    for (const lifecycle of ["Preparing", "Scheduled", "Stopped", "Completed"]) {
       const status = deriveFlowStatus({ lifecycle, health: "Unknown" });
       expect(status.tone).toBe(FlowTone.IDLE);
       expect(status.flowing).toBe(false);
@@ -34,8 +34,8 @@ describe("deriveFlowStatus — resting lifecycles", () => {
     expect(status.headline).toBe("Loading status…");
   });
 
-  it("ignores a bad health value while resting — a Draft session is not broken", () => {
-    const status = deriveFlowStatus({ lifecycle: "Draft", health: "Needs action" });
+  it("ignores a bad health value while a run is preparing", () => {
+    const status = deriveFlowStatus({ lifecycle: "Preparing", health: "Needs action" });
     expect(status.tone).toBe(FlowTone.IDLE);
   });
 });
