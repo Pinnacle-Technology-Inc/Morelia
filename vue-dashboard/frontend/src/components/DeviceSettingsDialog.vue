@@ -4,14 +4,12 @@ import { X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import StatusBadge from "./StatusBadge.vue";
 import {
-  createDeviceConfig,
   createDeviceConfigFromTemplate,
   editDeviceConfig,
   loadDeviceConfig,
-  matchDeviceTemplate,
   registerDeviceName,
 } from "../devices-api";
-import { createDeviceTemplate, loadDeviceTemplates } from "../templates-api";
+import { createDeviceTemplate, loadDeviceTemplates, matchDeviceTemplate } from "../templates-api";
 
 const props = defineProps({
   // A device-pool row (from loadDevicePool). `configId` is set for configured
@@ -36,11 +34,9 @@ const port = ref(props.device.port ?? "");
 const config = ref(null);
 const paramRows = ref([]);
 
-// Create mode: pick an existing template or author raw parameters.
-const createSource = ref("template"); // template | custom
+// Every dashboard-managed config starts from, and finishes linked to, a template.
 const templates = ref([]);
-const selectedTemplateName = ref("");
-const rawParameters = ref("{}");
+const selectedTemplateReference = ref("");
 
 // Decision step (shown after Save on edit / custom-create).
 const step = ref("form"); // form | decision
@@ -59,7 +55,7 @@ const templatesForType = computed(() =>
 );
 
 const selectedTemplate = computed(() =>
-  templatesForType.value.find((template) => template.name === selectedTemplateName.value) ?? null,
+  templatesForType.value.find((template) => normalizePath(template.file_path) === normalizePath(selectedTemplateReference.value)) ?? null,
 );
 
 function normalizePath(value) {
@@ -67,18 +63,24 @@ function normalizePath(value) {
   return String(value).replace(/\\/g, "/").replace(/^device-templates\//, "").replace(/\.toml$/i, "");
 }
 
+function templateReference(template) {
+  return template?.file_path?.split(/[\\/]/).pop()?.replace(/\.toml$/i, "") ?? template?.name ?? "";
+}
+
 // Split matches into "the template this config already points at" vs. others.
-const otherMatches = computed(() => {
-  const current = normalizePath(currentSourceTemplate.value);
-  return (matchResult.value?.matches ?? []).filter(
-    (template) => normalizePath(template.file_path) !== current,
-  );
-});
+const matchingTemplates = computed(() => matchResult.value?.matches ?? []);
 
 const decisionKind = computed(() => {
   if (matchError.value) return "error";
-  if (otherMatches.value.length) return "match";
+  if (matchingTemplates.value.length) return "match";
   return "unique";
+});
+
+const canApplyDecision = computed(() => {
+  if (busy.value || decisionKind.value === "error") return false;
+  if (decisionChoice.value === "switch") return Boolean(switchTargetPath.value);
+  if (decisionChoice.value === "new") return Boolean(newTemplateName.value.trim());
+  return false;
 });
 
 function classifyRow(key, value) {
@@ -112,6 +114,18 @@ function buildParametersFromRows() {
   return out;
 }
 
+function useTemplateParameters(template) {
+  const parameters = template?.content?.parameters ?? {};
+  paramRows.value = Object.keys(parameters)
+    .sort()
+    .map((key) => classifyRow(key, parameters[key]));
+}
+
+function selectTemplate() {
+  useTemplateParameters(selectedTemplate.value);
+  errorMsg.value = "";
+}
+
 onMounted(async () => {
   try {
     const [templateList, loadedConfig] = await Promise.all([
@@ -129,6 +143,12 @@ onMounted(async () => {
       name.value = loadedConfig?.nickname ?? name.value;
       port.value = loadedConfig?.port ?? port.value;
       hardwareId.value = loadedConfig?.hardware_id ?? hardwareId.value;
+      selectedTemplateReference.value = templatesForType.value.find(
+        (template) => normalizePath(template.file_path) === normalizePath(currentSourceTemplate.value),
+      )?.file_path ?? templatesForType.value[0]?.file_path ?? "";
+    } else {
+      selectedTemplateReference.value = templatesForType.value[0]?.file_path ?? "";
+      useTemplateParameters(selectedTemplate.value);
     }
     loadState.value = "ready";
   } catch (reason) {
@@ -165,43 +185,14 @@ async function onSave() {
 async function onCreate() {
   if (!hardwareId.value.trim()) throw new Error("Hardware ID is required to create a config.");
   if (!port.value.trim()) throw new Error("Port is required to create a config.");
-  const nickname = name.value.trim() || null;
-
-  if (createSource.value === "template") {
-    if (!selectedTemplateName.value) throw new Error("Pick a device template first.");
-    await createDeviceConfigFromTemplate({
-      template_name: selectedTemplateName.value,
-      hardware_id: hardwareId.value.trim(),
-      port: port.value.trim(),
-      nickname,
-    });
-    emit("saved");
-    return;
-  }
-
-  // Custom create: persist the config, then offer to capture it as a template.
-  let parameters;
-  try {
-    parameters = JSON.parse(rawParameters.value || "{}");
-  } catch {
-    throw new Error("Parameters must be valid JSON.");
-  }
-  const created = await createDeviceConfig({
-    type: deviceType.value,
-    hardware_id: hardwareId.value.trim(),
-    port: port.value.trim(),
-    parameters,
-    nickname,
-  });
-  currentSourceTemplate.value = null;
-  await beginDecision(created.id, parameters, { skipRename: true });
+  if (!selectedTemplateReference.value) throw new Error("Pick a device template first.");
+  await beginDecision(null, buildParametersFromRows());
 }
 
 // Ask the backend which templates (if any) the parameters already match, then
 // move to the decision step. On a "no change" result we save straight through.
-async function beginDecision(configId, parameters, { skipRename = false } = {}) {
+async function beginDecision(configId, parameters) {
   targetConfigId.value = configId;
-  if (!skipRename) await renameIfChanged();
 
   try {
     matchResult.value = await matchDeviceTemplate({ type: deviceType.value, parameters });
@@ -213,19 +204,8 @@ async function beginDecision(configId, parameters, { skipRename = false } = {}) 
     return;
   }
 
-  const matches = matchResult.value?.matches ?? [];
-  const current = normalizePath(currentSourceTemplate.value);
-  const onlyCurrent = matches.length > 0 && matches.every((t) => normalizePath(t.file_path) === current);
-  if (onlyCurrent) {
-    // Parameters still equal the linked template — nothing to decide. Keep the
-    // link via the existing `update_source_template` contract (a no-op rewrite of
-    // the identical template), so this path does not depend on the D-04 relink.
-    await commit({ parameters, update_source_template: true });
-    return;
-  }
-
-  switchTargetPath.value = otherMatches.value[0]?.file_path ?? "";
-  decisionChoice.value = otherMatches.value.length ? "switch" : "new";
+  switchTargetPath.value = matchingTemplates.value[0]?.file_path ?? "";
+  decisionChoice.value = matchingTemplates.value.length ? "switch" : "new";
   step.value = "decision";
 }
 
@@ -240,38 +220,33 @@ async function onDecide() {
   errorMsg.value = "";
   busy.value = true;
   try {
-    const parameters =
-      mode === "create" ? JSON.parse(rawParameters.value || "{}") : buildParametersFromRows();
+    const parameters = buildParametersFromRows();
+    let targetTemplate = null;
 
     if (decisionChoice.value === "switch") {
       if (!switchTargetPath.value) throw new Error("Pick a template to switch to.");
-      await commit({ parameters, source_template: switchTargetPath.value });
+      targetTemplate = matchingTemplates.value.find((template) => template.file_path === switchTargetPath.value) ?? null;
     } else if (decisionChoice.value === "new") {
       const templateName = newTemplateName.value.trim();
       if (!templateName) throw new Error("Enter a name for the new template.");
-      const created = await createDeviceTemplate({ name: templateName, type: deviceType.value, parameters });
-      await commit({ parameters, source_template: created.file_path ?? created.name });
+      targetTemplate = await createDeviceTemplate({ name: templateName, type: deviceType.value, parameters });
+    }
+    if (!targetTemplate) throw new Error("Choose a matching template or create a new one.");
+
+    if (mode === "create") {
+      await createDeviceConfigFromTemplate({
+        template_name: templateReference(targetTemplate),
+        hardware_id: hardwareId.value.trim(),
+        port: port.value.trim(),
+        nickname: name.value.trim() || null,
+      });
+      emit("saved");
     } else {
-      // Keep as a custom config with no template link.
-      await commit({ parameters, update_source_template: false });
+      await renameIfChanged();
+      await commit({ parameters, source_template: targetTemplate.file_path ?? targetTemplate.name });
     }
   } catch (reason) {
     errorMsg.value = reason instanceof Error ? reason.message : "Could not apply the change.";
-  } finally {
-    busy.value = false;
-  }
-}
-
-// Fallback when the match endpoint is unavailable: save params, drop the link.
-async function onSaveWithoutMatching() {
-  errorMsg.value = "";
-  busy.value = true;
-  try {
-    const parameters =
-      mode === "create" ? JSON.parse(rawParameters.value || "{}") : buildParametersFromRows();
-    await commit({ parameters, update_source_template: false });
-  } catch (reason) {
-    errorMsg.value = reason instanceof Error ? reason.message : "Save failed.";
   } finally {
     busy.value = false;
   }
@@ -326,50 +301,25 @@ function displayLabel(value) {
             </label>
           </div>
 
-          <!-- Edit: typed parameter rows -->
-          <template v-if="mode === 'edit'">
-            <div class="field field--wide">
-              <span>Source template</span>
-              <p class="device-dialog__source"><code>{{ currentSourceTemplate ?? "Custom (no template)" }}</code></p>
-            </div>
-            <p v-if="!paramRows.length" class="empty-state">This config has no editable parameters.</p>
-            <div v-else class="form-grid">
-              <label v-for="row in paramRows" :key="row.key" class="field" :class="{ 'field--wide': row.type === 'json' }">
-                <span>{{ row.key }}</span>
-                <select v-if="row.type === 'boolean'" v-model="row.value">
-                  <option value="true">true</option>
-                  <option value="false">false</option>
-                </select>
-                <input v-else-if="row.type === 'number'" v-model="row.value" type="number" step="any" />
-                <textarea v-else-if="row.type === 'json'" v-model="row.value" spellcheck="false" />
-                <input v-else v-model="row.value" type="text" />
-              </label>
-            </div>
-          </template>
-
-          <!-- Create: template picker or raw JSON -->
-          <template v-else>
-            <div class="field field--wide">
-              <span>Configure from</span>
-              <div class="device-dialog__toggle">
-                <label><input v-model="createSource" type="radio" value="template" /> Existing template</label>
-                <label><input v-model="createSource" type="radio" value="custom" /> Custom parameters</label>
-              </div>
-            </div>
-            <label v-if="createSource === 'template'" class="field field--wide">
-              <span>Device template</span>
-              <select v-model="selectedTemplateName">
-                <option value="" disabled>Select a {{ device.type }} template…</option>
-                <option v-for="template in templatesForType" :key="template.name" :value="template.name">{{ template.name }}</option>
-              </select>
-              <small v-if="!templatesForType.length">No templates exist for this device type yet.</small>
-              <pre v-if="selectedTemplate" class="device-dialog__preview">{{ JSON.stringify(selectedTemplate.content?.parameters ?? {}, null, 2) }}</pre>
+          <label class="field field--wide">
+            <span>{{ mode === "edit" ? "Current template" : "Start from template" }}</span>
+            <select v-model="selectedTemplateReference" @change="selectTemplate">
+              <option value="" disabled>Select a {{ device.type }} template…</option>
+              <option v-for="template in templatesForType" :key="template.file_path" :value="template.file_path">{{ template.name }} — {{ template.file_path }}</option>
+            </select>
+            <small v-if="mode === 'edit'">Currently linked to <code>{{ currentSourceTemplate ?? "no template" }}</code>. Choosing another template loads its canonical values below.</small>
+            <small v-if="!templatesForType.length">No templates exist for this device type. Create one from Templates before configuring this device.</small>
+          </label>
+          <p v-if="selectedTemplateReference && !paramRows.length" class="empty-state">This template has no editable parameters.</p>
+          <div v-else-if="selectedTemplateReference" class="form-grid">
+            <label v-for="row in paramRows" :key="row.key" class="field" :class="{ 'field--wide': row.type === 'json' }">
+              <span>{{ row.key }}</span>
+              <select v-if="row.type === 'boolean'" v-model="row.value"><option value="true">true</option><option value="false">false</option></select>
+              <input v-else-if="row.type === 'number'" v-model="row.value" type="number" step="any" />
+              <textarea v-else-if="row.type === 'json'" v-model="row.value" spellcheck="false" />
+              <input v-else v-model="row.value" type="text" />
             </label>
-            <label v-else class="field field--wide">
-              <span>Parameters (JSON)</span>
-              <textarea v-model="rawParameters" spellcheck="false" rows="6" />
-            </label>
-          </template>
+          </div>
         </div>
 
         <!-- Decision step -->
@@ -377,22 +327,22 @@ function displayLabel(value) {
           <div v-if="decisionKind === 'error'" class="dialog-notice">
             <strong>Couldn't check templates.</strong>
             <p>{{ matchError }}</p>
-            <p>Save the parameters anyway? The device will keep no template link.</p>
+            <p>The settings were not saved because dashboard-managed devices must remain linked to a template.</p>
           </div>
           <div v-else-if="decisionKind === 'match'" class="dialog-notice">
             <strong>These settings match an existing device template.</strong>
-            <p>Switch this device to that template, or capture the settings as a new one.</p>
+            <p>The canonical hash matches an existing template. Link the device to that template.</p>
           </div>
           <div v-else class="dialog-notice">
             <strong>These settings are unique.</strong>
-            <p>They don't match any existing device template. Save them as a new template, or keep this device as a custom config.</p>
+            <p>They don't match any existing device template. Name a new template to save and link these values.</p>
           </div>
 
           <template v-if="decisionKind !== 'error'">
             <label v-if="decisionKind === 'match'" class="field field--wide">
-              <span><input v-model="decisionChoice" type="radio" value="switch" /> Switch to existing template</span>
+              <span><input v-model="decisionChoice" type="radio" value="switch" /> Link to matching template</span>
               <select v-model="switchTargetPath" :disabled="decisionChoice !== 'switch'">
-                <option v-for="template in otherMatches" :key="template.file_path" :value="template.file_path">{{ template.name }} — {{ template.file_path }}</option>
+                <option v-for="template in matchingTemplates" :key="template.file_path" :value="template.file_path">{{ template.name }} — {{ template.file_path }}</option>
               </select>
             </label>
 
@@ -401,9 +351,6 @@ function displayLabel(value) {
               <input v-model="newTemplateName" type="text" placeholder="New template name" :disabled="decisionChoice !== 'new'" />
             </label>
 
-            <label class="field field--wide">
-              <span><input v-model="decisionChoice" type="radio" value="custom" /> Keep as a custom config (no template link)</span>
-            </label>
           </template>
         </div>
 
@@ -414,11 +361,10 @@ function displayLabel(value) {
         <BaseButton variant="secondary" :disabled="busy" @click="step === 'decision' && mode !== 'create' ? (step = 'form') : $emit('close')">
           {{ step === "decision" && mode !== "create" ? "Back" : "Cancel" }}
         </BaseButton>
-        <BaseButton v-if="loadState === 'ready' && step === 'form'" :disabled="busy" @click="onSave">
+        <BaseButton v-if="loadState === 'ready' && step === 'form'" :disabled="busy || !selectedTemplateReference" @click="onSave">
           {{ mode === "create" ? "Create config" : "Save" }}
         </BaseButton>
-        <BaseButton v-else-if="step === 'decision' && decisionKind === 'error'" :disabled="busy" @click="onSaveWithoutMatching">Save parameters</BaseButton>
-        <BaseButton v-else-if="step === 'decision'" :disabled="busy" @click="onDecide">Apply</BaseButton>
+        <BaseButton v-else-if="step === 'decision' && decisionKind !== 'error'" :disabled="!canApplyDecision" @click="onDecide">Apply</BaseButton>
       </footer>
     </section>
   </div>
@@ -427,10 +373,6 @@ function displayLabel(value) {
 <style scoped>
 .device-dialog { width: min(720px, 100%); }
 .device-dialog__badges { display: flex; gap: var(--space-2); margin-top: var(--space);}
-.device-dialog__toggle { display: flex; gap: 1.2rem; font-size: 0.8rem; }
-.device-dialog__toggle label { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; }
-.device-dialog__source { margin: 0; }
-.device-dialog__source code, .device-dialog__preview { overflow-wrap: anywhere; }
-.device-dialog__preview { max-height: 180px; overflow: auto; margin: 0; padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-muted); font: 0.72rem var(--font-mono); }
 .device-dialog .field span { display: flex; align-items: center; gap: 0.4rem; }
+.device-dialog input[type="radio"] { width: auto; min-height: auto; }
 </style>
