@@ -310,8 +310,8 @@ class Pod8206HR(AcquisitionDevice) :
             raise ValueError("preamp_gain must be 10 or 100")
 
     def _check_sample_rate(self, value: object) -> None:
-        if value <= 0 or value > 2_000:
-            raise ValueError("sample_rate must be > 0 and <= 2,000")
+        if value < 100 or value > 2_000:
+            raise ValueError("sample_rate must be >= 100 and <= 2,000")
 
     @property
     def param_schema(self):
