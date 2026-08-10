@@ -11,7 +11,7 @@
 // free). The planner's suggestion arrives pre-selected, so the common case is a
 // glance rather than a decision.
 import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
-import { AlertTriangle, CheckCircle2, FolderPen, RefreshCw, X } from "@lucide/vue";
+import { AlertTriangle, FolderPen, RefreshCw, X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import DeviceScanTable from "./DeviceScanTable.vue";
 import FolderPickerDialog from "./FolderPickerDialog.vue";
@@ -50,7 +50,6 @@ const loadError = ref("");
 const submitError = ref("");
 const folderValidationError = ref("");
 const nameSuggestion = ref("");
-const draft = ref(null);
 const stale = ref(false);
 
 const name = ref("");
@@ -58,6 +57,7 @@ const experimentId = ref("");
 const notes = ref("");
 const runMode = ref("start");
 const scheduleAt = ref("");
+const requestIdentity = ref({ fingerprint: "", key: "" });
 
 // Device discovery is a live serial scan, so the assignment step gets an
 // explicit rescan for hardware plugged in after the dialog opened.
@@ -145,14 +145,20 @@ function candidateDevices(flowIndex) {
   // device, then present-but-unconfigured hardware. sort() is stable, so the
   // pool's own ordering survives within each band.
   const rank = (device) => {
-    if (!isDeviceSelectable(device)) return 0;
+    if (!isPreferenceSelectable(device)) return 0;
     return matchesFlowTemplate(device, flowIndex) ? 2 : 1;
   };
   return compatiblePoolDevicesForFlow(devices.value, {
     flowIndex,
     assignments: assignments.value,
     deviceType: requiredDeviceType(flowIndex),
+    scheduled: runMode.value === "schedule",
   }).sort((a, b) => rank(b) - rank(a));
+}
+
+function isPreferenceSelectable(device) {
+  if (runMode.value !== "schedule") return isDeviceSelectable(device);
+  return device?.id != null && device.status !== "unconfigured";
 }
 
 function annotateFor(flowIndex) {
@@ -343,7 +349,6 @@ const submitDisabled = computed(
     loadState.value !== "ready" ||
     submitting.value ||
     stale.value ||
-    Boolean(draft.value) ||
     !assignments.value.length ||
     unassignedCount.value > 0 ||
     unresolvedSinkCount.value > 0 ||
@@ -354,7 +359,7 @@ const submitDisabled = computed(
 // Why Start is disabled, in the operator's terms, ordered by what they should
 // deal with first rather than by how the checks happen to be written.
 const blockedReason = computed(() => {
-  if (!submitDisabled.value || loadState.value !== "ready" || submitting.value || draft.value) return "";
+  if (!submitDisabled.value || loadState.value !== "ready" || submitting.value) return "";
   if (stale.value) return "";
   if (unassignedCount.value) {
     return `Assign a device to ${unassignedCount.value} more stream${unassignedCount.value === 1 ? "" : "s"}.`;
@@ -367,7 +372,6 @@ const blockedReason = computed(() => {
 
 const submitLabel = computed(() => {
   if (submitState.value === "creating") return "Creating session…";
-  if (runMode.value === "draft") return "Create Draft";
   if (runMode.value === "schedule") return "Schedule session";
   return "Start session";
 });
@@ -391,7 +395,6 @@ function resetAssignments(plan) {
 function returnToCurrentTemplate(guidance = "") {
   stale.value = true;
   submitError.value = guidance || templateStateHint(template.value) || "This template revision can no longer start a run.";
-  emit("template-stale", props.templateId);
 }
 
 async function rescanDevices() {
@@ -415,7 +418,6 @@ async function load() {
   submitError.value = "";
   folderValidationError.value = "";
   stale.value = false;
-  draft.value = null;
   collision.value = null;
   try {
     const selected = await loadSessionTemplate(props.templateId);
@@ -554,27 +556,33 @@ async function submit() {
     // Template defaults can name a drive or folder that disappeared after the
     // template was authored. The picker validates operator choices, but seeded
     // values need the same host-side check. This gate deliberately precedes
-    // Draft creation so an unusable destination cannot strand a session.
+    // run creation so an unusable destination cannot reach the atomic command.
     await verifyOutputFolders();
-    // Create only — the start command is NOT issued from here even in "Start
-    // now" mode. Once the Draft exists there is a real session to look at, and
-    // its own page already owns the lifecycle animation, the live event stream
-    // and the error surface for a start that fails. Handing the start over
-    // there puts the operator in front of the run as it comes up, instead of
-    // holding them on a modal spinner until the runtime has finished starting.
-    const result = await createTemplateRun(payload(), { startImmediately: false });
-    draft.value = result.draft;
+    // One command either starts now or stores the future schedule. A definite
+    // pre-dispatch failure returns here without creating a session.
+    const requestPayload = payload();
+    const fingerprint = JSON.stringify(requestPayload);
+    if (requestIdentity.value.fingerprint !== fingerprint) {
+      requestIdentity.value = {
+        fingerprint,
+        key: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+      };
+    }
+    const result = await createTemplateRun(requestPayload, {
+      idempotencyKey: requestIdentity.value.key,
+    });
     submitState.value = "complete";
-    emit("created", String(result.draft.id), { autoStart: runMode.value === "start" });
+    emit("created", String(result.id));
   } catch (error) {
     if (/template/i.test(error?.problem?.code ?? "")) {
       submitState.value = "stale";
-      returnToCurrentTemplate(describeError(error, "The template changed before the Draft was created."));
+      stale.value = true;
+      submitError.value = describeError(error, "The template changed before this run could be created.");
       return;
     }
     submitState.value = "error";
     collision.value = readCollision(error?.problem);
-    submitError.value = describeError(error, "The session Draft could not be created.");
+    submitError.value = describeError(error, "The run could not be created.");
   } finally {
     if (submitState.value === "creating") submitState.value = "idle";
   }
@@ -636,15 +644,15 @@ watch(() => props.templateId, load);
             <div class="form-grid metadata-grid">
               <label class="field">
                 <span>Session label (optional)</span>
-                <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" :disabled="Boolean(draft)" />
+                <input v-model="name" :placeholder="nameSuggestion || 'Generated after create'" />
               </label>
               <label class="field">
                 <span>Experiment ID (optional)</span>
-                <input v-model="experimentId" placeholder="No experiment" :disabled="Boolean(draft)" />
+                <input v-model="experimentId" placeholder="No experiment" />
               </label>
               <label class="field field--wide">
                 <span>Notes (optional)</span>
-                <textarea v-model="notes" placeholder="Add a note for this run…" :disabled="Boolean(draft)" />
+                <textarea v-model="notes" placeholder="Add a note for this run…" />
               </label>
             </div>
           </section>
@@ -692,6 +700,7 @@ watch(() => props.templateId, load);
                   :devices="candidateDevices(assignment.flowIndex)"
                   :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
                   :annotate="annotateFor(assignment.flowIndex)"
+                  :selectable="isPreferenceSelectable"
                   :scanning="scanState === 'scanning'"
                   :scan-error="scanState === 'error' ? scanError : ''"
                   empty-message="No free device is available for this stream."
@@ -725,7 +734,6 @@ watch(() => props.templateId, load);
                               aria-label="Sink filename"
                               :placeholder="defaultSinkName(assignment.flowIndex, sinkIndex) || 'Assign a device first'"
                               :title="sinkName(assignment.flowIndex, sinkIndex)"
-                              :disabled="Boolean(draft)"
                               @input="setSinkName(assignment.flowIndex, sinkIndex, $event.target.value)"
                             />
                             <span class="sink-extension">.{{ sink.sink_type }}</span>
@@ -740,7 +748,6 @@ watch(() => props.templateId, load);
                             :class="{ 'sink-folder-tile--empty': !sinkEdit(assignment.flowIndex, sinkIndex)?.folder }"
                             :aria-label="`Change folder for ${sink.sink_type} sink`"
                             :title="sinkLocation(assignment.flowIndex, sinkIndex) || 'Choose a folder for this sink'"
-                            :disabled="Boolean(draft)"
                             @click="openFolderPicker(assignment.flowIndex, sinkIndex)"
                           >
                             <span class="sink-folder-path">{{ shortFolder(sinkEdit(assignment.flowIndex, sinkIndex)?.folder) || "Choose a folder…" }}</span>
@@ -758,29 +765,29 @@ watch(() => props.templateId, load);
 
           <section class="run-section">
             <div class="section-heading"><div><span class="section-kicker">Timing</span><h3>Create and start</h3></div></div>
-            <fieldset class="run-mode" :disabled="Boolean(draft)">
-              <label><input v-model="runMode" type="radio" value="start" /><span><strong>Start now</strong><small>Create the Draft, then start that same session.</small></span></label>
-              <label><input v-model="runMode" type="radio" value="draft" /><span><strong>Save as Draft</strong><small>Create it without claiming hardware.</small></span></label>
-              <label><input v-model="runMode" type="radio" value="schedule" /><span><strong>Schedule for later</strong><small>Create a scheduled session without issuing start now.</small></span></label>
+            <fieldset class="run-mode">
+              <label><input v-model="runMode" type="radio" value="start" /><span><strong>Start now</strong><small>Validate and start this run in one request.</small></span></label>
+              <label><input v-model="runMode" type="radio" value="schedule" /><span><strong>Schedule for later</strong><small>Save one future run without claiming hardware now.</small></span></label>
             </fieldset>
             <label v-if="runMode === 'schedule'" class="field schedule-field">
               <span>Scheduled start</span>
-              <input v-model="scheduleAt" type="datetime-local" :disabled="Boolean(draft)" />
+              <input v-model="scheduleAt" type="datetime-local" />
             </label>
+            <fieldset v-if="runMode === 'schedule'" class="run-mode">
+              <legend>Device availability at start time</legend>
+              <p>The preferred device will be used when available. Otherwise, the scheduler selects the closest free compatible device; if none exists, it cancels the run.</p>
+            </fieldset>
           </section>
 
           <div v-if="submitError" class="form-notice" role="alert">
             <AlertTriangle :size="18" />
             <span>
-              <strong>{{ draft ? `Draft ${draft.id} is safe` : "Run not created" }}</strong>
+              <strong>Run not created</strong>
               <span class="notice-detail">{{ submitError }}</span>
             </span>
             <button v-if="collision" type="button" class="table-action" @click="applySuggestedLocation">
               Use {{ collision.suggested }}
             </button>
-          </div>
-          <div v-else-if="draft" class="run-result" role="status">
-            <CheckCircle2 :size="18" /> Draft {{ draft.id }} was created.
           </div>
         </template>
       </div>
@@ -793,11 +800,8 @@ watch(() => props.templateId, load);
           </div>
         </div>
         <div class="run-footer__actions">
-          <BaseButton v-if="draft" variant="secondary" @click="emit('created', String(draft.id))">Open Draft {{ draft.id }}</BaseButton>
-          <template v-else>
-            <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
-            <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
-          </template>
+          <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
+          <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
         </div>
       </footer>
     </section>
