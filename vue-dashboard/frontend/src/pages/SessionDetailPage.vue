@@ -14,19 +14,12 @@ import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import CollapsibleSection from "../components/CollapsibleSection.vue";
 import CommandErrorDialog from "../components/CommandErrorDialog.vue";
-import EditSinkLocationsDialog from "../components/EditSinkLocationsDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import {
-  loadSinkPlan,
-  normalizeSession,
-  startSession,
-  stopSession,
-  updateSinkLocations,
-} from "../session-api";
+import { normalizeSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import {
@@ -36,7 +29,6 @@ import {
   isOutboxUnproven,
 } from "../session-flow-status";
 import { isRunningLifecycle } from "../session-utils";
-import { hasOccupiedSink, hasUnreadySink, isRecoverableSinkProblem } from "../sink-location-recovery";
 import { canRunTemplate, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator
@@ -47,10 +39,6 @@ import { canRunTemplate, loadSessionTemplate, templateStateHint } from "../templ
 const props = defineProps({
   session: { type: Object, default: null },
   sessionId: { type: [String, Number], required: true },
-  // Set once, by App, for a session the start-run dialog just created in "Start
-  // now" mode: issue the start command on arrival so the operator watches the
-  // run come up here rather than in the modal that created it.
-  autoStart: { type: Boolean, default: false },
 });
 const emit = defineEmits(["back", "start-another-run", "state-changed"]);
 
@@ -60,13 +48,8 @@ const detail = ref(null);
 const detailState = ref("loading");
 const detailError = ref("");
 const commandError = ref("");
+const commandProblem = ref(null);
 const commandBusy = ref(false);
-const sinkPlan = ref(null);
-const sinkPlanState = ref("idle");
-const sinkPlanError = ref("");
-const sinkRepairReason = ref("");
-const sinkRepairAvailable = ref(false);
-const sinkSaveBusy = ref(false);
 const sourceTemplate = ref(null);
 const sourceTemplateState = ref("idle");
 const sourceTemplateError = ref("");
@@ -461,33 +444,16 @@ function onActivitySnapshot(snapshot) {
 }
 
 onMounted(() => {
-  // Gated on the fetched lifecycle rather than fired blind: the flag says the
-  // operator asked for "Start now", the server says whether there is still a
-  // Draft to start. A session that already moved on is never re-commanded.
-  refreshDetail().then(() => {
-    if (!props.autoStart) return;
-    if (lifecycle.value === "Draft") {
-      startDraft();
-      return;
-    }
-    // The operator asked for "Start now" and we are not going to issue it —
-    // because the detail fetch failed, or the session already moved on. Say so.
-    // Silently skipping is what strands someone on a Draft that looks like
-    // nothing happened, with no clue whether to wait or to act.
-    commandError.value =
-      lifecycle.value === "Unknown"
-        ? "Created, but this session's state could not be read, so it was not started. Use Start below."
-        : `Created, but not started automatically — this session is ${lifecycle.value}.`;
-  });
+  refreshDetail();
   eventStream = createSessionEventStream({
     sessionId: props.sessionId,
     onChange: onActivitySnapshot,
   });
   eventStream.start();
-  // Resting sessions (Draft/Completed) only change through this page's
+  // Completed sessions only change through this page's
   // own commands, which refetch directly — no need to poll those.
   pollTimer = setInterval(() => {
-    if (isRunningLifecycle(lifecycle.value) || lifecycle.value === "Unknown") {
+    if (isRunningLifecycle(lifecycle.value) || ["Scheduled", "Unknown"].includes(lifecycle.value)) {
       refreshDetail({ silent: true });
     }
   }, DETAIL_POLL_MS);
@@ -498,108 +464,24 @@ onUnmounted(() => {
 });
 
 function applyCommandResult(result) {
-  const labels = { draft: "Draft", scheduled: "Scheduled", starting: "Starting", active: "Active", ending: "Ending", stopped: "Completed", completed: "Completed" };
+  const labels = { preparing: "Preparing", scheduled: "Scheduled", starting: "Starting", active: "Active", ending: "Ending", stopped: "Completed", completed: "Completed", cancelled: "Cancelled" };
   if (result?.status && labels[result.status]) pendingLifecycle.value = labels[result.status];
   emit("state-changed", result);
 }
-
-const sinkLocationsEditable = computed(() =>
-  lifecycle.value === "Draft" || lifecycle.value === "Scheduled",
-);
 
 function problemMessage(error, fallback) {
   return error?.problem?.detail ?? (error instanceof Error ? error.message : fallback);
 }
 
-function sinkPlanBlockReason(plan) {
-  if (hasOccupiedSink(plan)) {
-    return "An output file already exists at this run's destination. Choose another path before starting.";
-  }
-  if (!hasUnreadySink(plan)) return "";
-  const blocked = plan.sinks.find((sink) => sink?.parent_issue);
-  const folder = blocked.parent_directory ? ` “${blocked.parent_directory}”` : "";
-  const issue = blocked.parent_issue === "missing"
-    ? "does not exist"
-    : blocked.parent_issue === "not_directory"
-      ? "is not a folder"
-      : "is not writable";
-  return `The output folder${folder} ${issue} on the session host. Choose another folder before starting.`;
-}
-
 function dismissCommandError() {
   commandError.value = "";
-  sinkRepairAvailable.value = false;
-}
-
-async function openSinkLocationEditor({ reason = "", plan = null } = {}) {
-  sinkRepairReason.value = reason;
-  sinkPlanError.value = "";
-  dialog.value = "sink-locations";
-  if (plan) {
-    sinkPlan.value = plan;
-    sinkPlanState.value = "ready";
-    return;
-  }
-
-  sinkPlanState.value = "loading";
-  try {
-    sinkPlan.value = await loadSinkPlan(props.sessionId);
-    sinkPlanState.value = "ready";
-  } catch (error) {
-    sinkPlan.value = null;
-    sinkPlanState.value = "error";
-    sinkPlanError.value = problemMessage(error, "Output paths could not be loaded.");
-  }
-}
-
-async function saveSinkLocations(locations) {
-  if (sinkSaveBusy.value) return;
-  sinkSaveBusy.value = true;
-  sinkPlanError.value = "";
-  try {
-    const updated = await updateSinkLocations(props.sessionId, locations);
-    emit("state-changed", updated);
-    await refreshDetail();
-
-    // PATCH stores the operator's choice; this second read catches choosing a
-    // different path that is already occupied without making them press Start
-    // just to discover it. Start still validates again for filesystem races.
-    try {
-      const plan = await loadSinkPlan(props.sessionId);
-      sinkPlan.value = plan;
-      sinkPlanState.value = "ready";
-      const blockedReason = sinkPlanBlockReason(plan);
-      if (blockedReason) {
-        sinkPlanError.value = blockedReason;
-        return;
-      }
-    } catch {
-      // The PATCH succeeded. A failed confirmation read must not claim the save
-      // failed; the authoritative Start request will validate the path again.
-    }
-
-    dialog.value = null;
-    commandError.value = "";
-    sinkRepairAvailable.value = false;
-    sinkRepairReason.value = "";
-  } catch (error) {
-    sinkPlanError.value = problemMessage(error, "The output paths could not be saved.");
-    if (error?.problem?.code === "invalid_transition") {
-      await refreshDetail({ silent: true });
-      if (!sinkLocationsEditable.value) {
-        dialog.value = null;
-        sinkRepairAvailable.value = false;
-        commandError.value = sinkPlanError.value;
-      }
-    }
-  } finally {
-    sinkSaveBusy.value = false;
-  }
+  commandProblem.value = null;
 }
 
 async function runLifecycleCommand(command) {
   commandBusy.value = true;
   commandError.value = "";
+  commandProblem.value = null;
   try {
     const result = await command();
     applyCommandResult(result);
@@ -607,56 +489,8 @@ async function runLifecycleCommand(command) {
     await refreshDetail();
   } catch (error) {
     dialog.value = null;
-    commandError.value = error instanceof Error ? error.message : "The lifecycle command failed.";
-  } finally {
-    commandBusy.value = false;
-  }
-}
-
-// A Draft has never run, so its sink locations are still unused. Starting it is
-// a plain command; once it reaches Completed, this session can never start again.
-//
-// Without this the detail page offered Start only for a terminal session, which
-// left every Draft a dead end: a session saved from the run dialog, or one
-// whose automatic start did not fire, could not be started from the UI at all.
-async function startDraft() {
-  if (commandBusy.value) return;
-  commandBusy.value = true;
-  commandError.value = "";
-  sinkRepairAvailable.value = false;
-  try {
-    // Preflight prevents a known collision from becoming a failed command. It
-    // is advisory only: if the read fails we still let Start perform the
-    // authoritative validation rather than inventing a new dead end.
-    let plan = null;
-    try {
-      plan = await loadSinkPlan(props.sessionId);
-    } catch {
-      // Start below will return the real lifecycle/path error, if any.
-    }
-    const preflightReason = sinkPlanBlockReason(plan);
-    if (preflightReason) {
-      const reason = preflightReason;
-      commandError.value = reason;
-      sinkRepairAvailable.value = true;
-      await openSinkLocationEditor({ reason, plan });
-      return;
-    }
-
-    const result = await startSession(props.sessionId);
-    applyCommandResult(result);
-    dialog.value = null;
-    sinkRepairAvailable.value = false;
-    await refreshDetail();
-  } catch (error) {
-    if (isRecoverableSinkProblem(error)) {
-      const reason = problemMessage(error, "The output destination must be changed before this run can start.");
-      commandError.value = reason;
-      sinkRepairAvailable.value = true;
-      await openSinkLocationEditor({ reason });
-    } else {
-      commandError.value = problemMessage(error, "The lifecycle command failed.");
-    }
+    commandProblem.value = error?.problem ?? null;
+    commandError.value = problemMessage(error, "The lifecycle command failed.");
   } finally {
     commandBusy.value = false;
   }
@@ -664,6 +498,15 @@ async function startDraft() {
 
 function confirmStop() {
   return runLifecycleCommand(() => stopSession(props.sessionId));
+}
+
+function openForceStopDialog() {
+  dismissCommandError();
+  dialog.value = "force-stop";
+}
+
+function confirmForceStop() {
+  return runLifecycleCommand(() => stopSession(props.sessionId, { force: true }));
 }
 
 function sinkIsPlot(sink) {
@@ -761,7 +604,6 @@ const tabTones = computed(() => ({
       </div>
       <div class="detail-actions">
         <BaseButton v-if="lifecycle !== 'Completed'" variant="secondary"><FilePlus2 :size="16" /> Add Note</BaseButton>
-        <BaseButton v-if="lifecycle === 'Draft' || lifecycle === 'Scheduled'" variant="primary" :disabled="commandBusy" @click="startDraft"><Play :size="16" /> Start</BaseButton>
         <BaseButton
           v-if="sourceTemplateRunnable"
           variant="primary"
@@ -795,6 +637,9 @@ const tabTones = computed(() => ({
           <dl class="detail-list">
             <div><dt>Ownership</dt><dd>{{ view.isOwner ? "Owner session" : "Monitoring only" }}</dd></div>
             <div><dt>Experiment</dt><dd>{{ view.experiment ?? "Ungrouped" }}</dd></div>
+            <div v-if="view.scheduledTime"><dt>Scheduled start</dt><dd>{{ formatTimestamp(view.scheduledTime) }}</dd></div>
+            <div v-if="view.fallbackPolicy"><dt>Device policy</dt><dd>{{ formatStatus(view.fallbackPolicy) }}</dd></div>
+            <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
           </dl>
         </BaseCard>
         <!-- Stream Health IS the flow bar. These were two renderings of the same
@@ -1084,11 +929,10 @@ const tabTones = computed(() => ({
 
       <div v-else class="configuration-grid">
         <BaseCard class="detail-panel"><h3>Metadata</h3><dl class="detail-list"><div><dt>Name</dt><dd>{{ view.name }}</dd></div><div><dt>Experiment</dt><dd>{{ view.experiment ?? "None" }}</dd></div><div><dt>Schedule</dt><dd>{{ view.scheduledTime ? "One-time" : "Manual" }}</dd></div><div><dt>Recovery Policy</dt><dd>{{ view.policy ?? "Recommend" }}</dd></div></dl></BaseCard>
-        <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>{{ sinkLocationsEditable ? "Output locations are editable before start." : "Stream and sink configuration is read-only after start." }}</p></BaseCard>
+        <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>Stream and sink configuration is immutable run history.</p></BaseCard>
         <BaseCard class="detail-panel">
           <h3>Output Locations</h3>
-          <p>{{ sinkLocationsEditable ? "Review or relocate file outputs before this run starts." : "Output locations are frozen as run history." }}</p>
-          <BaseButton v-if="sinkLocationsEditable" variant="secondary" @click="openSinkLocationEditor()">Edit output paths</BaseButton>
+          <p>Output locations are frozen as run history.</p>
         </BaseCard>
       </div>
     </BaseCard>
@@ -1096,26 +940,29 @@ const tabTones = computed(() => ({
     <GuardedDialog v-if="dialog === 'stop'" title="Stop Session" description="This concludes the current dataflow and marks the run Completed. This run cannot be restarted; another run must come from its source template." confirm-label="Stop Session" danger @close="dialog = null" @confirm="confirmStop">
       <div class="dialog-notice"><strong>Streams affected</strong><code v-for="flow in sessionDeviceFlows" :key="flow.id">{{ flow.device }}</code></div>
     </GuardedDialog>
+    <GuardedDialog
+      v-if="dialog === 'force-stop'"
+      title="Force stop this session?"
+      description="A clean shutdown could not be proven. Force stopping ends the session and releases its device claims, but its final output may be incomplete."
+      confirm-label="Force Stop"
+      danger
+      @close="dialog = null"
+      @confirm="confirmForceStop"
+    >
+      <div class="dialog-notice">
+        <strong>Use only after the normal stop failed</strong>
+        <span>The session cannot be restarted; start another run from its source template if needed.</span>
+      </div>
+    </GuardedDialog>
     <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
       <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>
     </GuardedDialog>
-    <EditSinkLocationsDialog
-      v-if="dialog === 'sink-locations'"
-      :sinks="sinkPlan?.sinks ?? []"
-      :loading="sinkPlanState === 'loading'"
-      :busy="sinkSaveBusy"
-      :error="sinkPlanError"
-      :reason="sinkRepairReason"
-      @close="dialog = null"
-      @retry="openSinkLocationEditor({ reason: sinkRepairReason })"
-      @save="saveSinkLocations"
-    />
     <CommandErrorDialog
-      v-if="commandError && dialog !== 'sink-locations'"
+      v-if="commandError"
       :message="commandError"
-      :action-label="sinkRepairAvailable && sinkLocationsEditable ? 'Edit output paths' : ''"
+      :action-label="commandProblem?.code === 'stop_proof_missing' ? 'Force Stop' : ''"
       @close="dismissCommandError"
-      @action="openSinkLocationEditor({ reason: commandError })"
+      @action="openForceStopDialog"
     />
   </div>
 </template>

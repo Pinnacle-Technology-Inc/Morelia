@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { deriveFlowStatus } from "../session-flow-status";
 
 const sessionDetailSource = readFileSync(new URL("./SessionDetailPage.vue", import.meta.url), "utf8");
-const sinkRecoverySource = readFileSync(new URL("../sink-location-recovery.js", import.meta.url), "utf8");
 const sessionsPageSource = readFileSync(new URL("./SessionsPage.vue", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../App.vue", import.meta.url), "utf8");
 
@@ -24,14 +23,12 @@ describe("template-centric session closure", () => {
     expect(sessionDetailSource).toContain("start-another-run");
   });
 
-  it("keeps a refused Draft actionable through output repair and retry", () => {
-    expect(sessionDetailSource).toContain("loadSinkPlan");
-    expect(sessionDetailSource).toContain("updateSinkLocations");
-    expect(sinkRecoverySource).toContain("sink_location_exists");
-    expect(sinkRecoverySource).toContain("sink_parent_unavailable");
-    expect(sessionDetailSource).toContain("Edit output paths");
-    expect(sessionDetailSource).not.toContain("Retry Start");
-    expect(sessionDetailSource.match(/@click="startDraft"/g)).toHaveLength(1);
+  it("does not expose Draft repair or delayed-start controls", () => {
+    expect(sessionDetailSource).not.toContain("loadSinkPlan");
+    expect(sessionDetailSource).not.toContain("updateSinkLocations");
+    expect(sessionDetailSource).not.toContain("Edit output paths");
+    expect(sessionDetailSource).not.toContain("startDraft");
+    expect(sessionDetailSource).toContain("immutable run history");
   });
 
   it("shows command failures in a dismissible dialog instead of inline page chrome", () => {
