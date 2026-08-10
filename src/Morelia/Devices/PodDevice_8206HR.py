@@ -309,13 +309,21 @@ class Pod8206HR(AcquisitionDevice) :
         if value not in (10, 100):
             raise ValueError("preamp_gain must be 10 or 100")
 
+    def _check_sample_rate(self, value: object) -> None:
+        if value <= 0 or value > 2_000:
+            raise ValueError("sample_rate must be > 0 and <= 2,000")
+
     @property
     def param_schema(self):
         return ParamSchema(
-            required=frozenset({"preamp_gain"}),
+            required=frozenset(
+                {
+                    "preamp_gain",
+                    "sample_rate",
+                    }
+                ),
             optional=frozenset(
                 {
-                    "sample_rate",
                     "lowpass_ch0",
                     "lowpass_ch1",
                     "lowpass_ch2",
@@ -325,5 +333,8 @@ class Pod8206HR(AcquisitionDevice) :
                     "ttl_pin3",
                 }
             ),
-            validators={"preamp_gain": self._check_preamp_gain},
+            validators={
+                "preamp_gain": self._check_preamp_gain,
+                'sample_rate': self._check_sample_rate,
+                },
         )
