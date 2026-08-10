@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { AlertTriangle, ArrowLeft, ExternalLink } from "@lucide/vue";
+import { AlertTriangle, ArrowLeft, Check, Copy, ExternalLink } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
@@ -10,6 +10,7 @@ import {
   archiveTemplate,
   canRunTemplate,
   loadSessionTemplate,
+  loadSessionTemplateSource,
   registerDiscoveredTemplate,
   resolveTemplateRename,
   templateControls,
@@ -27,6 +28,7 @@ const emit = defineEmits(["back", "run-template", "open-template", "changed"]);
 const TABS = [
   { id: "configuration", label: "Configuration" },
   { id: "revision", label: "File & revision" },
+  { id: "usage", label: "Use in code" },
 ];
 
 const template = ref(null);
@@ -35,6 +37,9 @@ const loadError = ref("");
 const actionError = ref("");
 const busy = ref("");
 const selectedRenamePath = ref("");
+const templateToml = ref("");
+const sourceError = ref("");
+const copied = ref("");
 // `review` opens on the tab that carries the hashes, which is what a change
 // review is: comparing the trusted revision against what is on disk now.
 const activeTab = ref(props.view === "review" ? "revision" : "configuration");
@@ -113,6 +118,12 @@ const policyLabel = computed(() => {
   const policy = template.value?.content?.policy;
   return policy ? policy.charAt(0).toUpperCase() + policy.slice(1) : null;
 });
+const cliCommand = computed(() => `pinnacle session run --template ${JSON.stringify(template.value?.name ?? "")}`);
+const apiIdentity = computed(() => JSON.stringify({
+  source_template_id: template.value?.templateId ?? null,
+  expected_template_hash: template.value?.registeredHash ?? null,
+}, null, 2));
+const canonicalJson = computed(() => JSON.stringify(template.value?.content ?? {}, null, 2));
 
 // Enough of a digest to compare two revisions by eye without the row becoming a
 // 64-character wall. The full value is in the title attribute for copying.
@@ -148,11 +159,30 @@ async function refresh() {
   loadError.value = "";
   try {
     template.value = await loadSessionTemplate(props.templateId);
+    sourceError.value = "";
+    templateToml.value = "";
+    if (template.value?.reference) {
+      try {
+        templateToml.value = (await loadSessionTemplateSource(template.value.reference)).toml;
+      } catch (error) {
+        sourceError.value = error?.message ?? "The TOML source is unavailable.";
+      }
+    }
     state.value = "ready";
   } catch (error) {
     template.value = null;
     loadError.value = error?.message ?? "This template could not be loaded.";
     state.value = "ready";
+  }
+}
+
+async function copyValue(value, label) {
+  try {
+    await navigator.clipboard.writeText(value);
+    copied.value = label;
+    window.setTimeout(() => { if (copied.value === label) copied.value = ""; }, 1600);
+  } catch {
+    actionError.value = "Clipboard access is unavailable. Select the value and copy it manually.";
   }
 }
 
@@ -395,6 +425,31 @@ watch(() => props.templateId, refresh);
             </dl>
           </BaseCard>
         </div>
+
+        <div v-else class="usage-panel" role="tabpanel" aria-label="Use in code">
+          <p class="usage-intro">Copy the stable reference for commands, or inspect the exact canonical configuration your code will receive.</p>
+          <BaseCard class="usage-card">
+            <div class="usage-card__heading"><div><h3>Template reference</h3><p>Use the human-readable name with the Pinnacle CLI.</p></div><BaseButton size="small" variant="quiet" @click="copyValue(template.name, 'reference')"><Check v-if="copied === 'reference'" :size="14" /><Copy v-else :size="14" /> {{ copied === 'reference' ? 'Copied' : 'Copy' }}</BaseButton></div>
+            <pre><code>{{ template.name }}</code></pre>
+          </BaseCard>
+          <BaseCard class="usage-card">
+            <div class="usage-card__heading"><div><h3>CLI</h3><p>Starts the registered template through the normal assignment flow.</p></div><BaseButton size="small" variant="quiet" @click="copyValue(cliCommand, 'cli')"><Check v-if="copied === 'cli'" :size="14" /><Copy v-else :size="14" /> {{ copied === 'cli' ? 'Copied' : 'Copy' }}</BaseButton></div>
+            <pre><code>{{ cliCommand }}</code></pre>
+          </BaseCard>
+          <BaseCard class="usage-card">
+            <div class="usage-card__heading"><div><h3>API identity</h3><p>The hash is the expected revision token. A run request also needs assignments and an idempotency key.</p></div><BaseButton size="small" variant="quiet" @click="copyValue(apiIdentity, 'api')"><Check v-if="copied === 'api'" :size="14" /><Copy v-else :size="14" /> {{ copied === 'api' ? 'Copied' : 'Copy' }}</BaseButton></div>
+            <pre><code>{{ apiIdentity }}</code></pre>
+          </BaseCard>
+          <BaseCard class="usage-card">
+            <div class="usage-card__heading"><div><h3>Canonical JSON</h3><p>The normalized value represented by this registered template revision.</p></div><BaseButton size="small" variant="quiet" @click="copyValue(canonicalJson, 'json')"><Check v-if="copied === 'json'" :size="14" /><Copy v-else :size="14" /> {{ copied === 'json' ? 'Copied' : 'Copy' }}</BaseButton></div>
+            <pre><code>{{ canonicalJson }}</code></pre>
+          </BaseCard>
+          <BaseCard class="usage-card">
+            <div class="usage-card__heading"><div><h3>TOML source</h3><p>The portable source stored in the session-template library.</p></div><BaseButton v-if="templateToml" size="small" variant="quiet" @click="copyValue(templateToml, 'toml')"><Check v-if="copied === 'toml'" :size="14" /><Copy v-else :size="14" /> {{ copied === 'toml' ? 'Copied' : 'Copy' }}</BaseButton></div>
+            <p v-if="sourceError" class="validation-copy" role="status">{{ sourceError }}</p>
+            <pre v-else><code>{{ templateToml }}</code></pre>
+          </BaseCard>
+        </div>
       </BaseCard>
     </template>
   </div>
@@ -460,6 +515,13 @@ watch(() => props.templateId, refresh);
 .flow-list > .helper-copy {
   margin-top: 0;
 }
+.usage-panel { display: grid; gap: var(--space-4); padding: var(--space-5); }
+.usage-intro { color: var(--text-muted); }
+.usage-card { min-width: 0; display: grid; gap: var(--space-3); padding: var(--space-4); box-shadow: none; }
+.usage-card__heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.usage-card__heading h3 { font-size: var(--fs-sm); }
+.usage-card__heading p { margin-top: var(--space-1); color: var(--text-muted); font-size: var(--fs-xs); }
+.usage-card pre { max-height: 320px; margin: 0; padding: var(--space-4); overflow: auto; border-radius: var(--radius-sm); color: #edf6f0; background: #10271a; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 760px) {
   /* .flow-metrics is a fixed 4-up; below this the four values crush to two
      characters each. */
@@ -469,5 +531,6 @@ watch(() => props.templateId, refresh);
   .flow-metrics > div:nth-child(odd) {
     border-left: 0;
   }
+  .usage-card__heading { flex-direction: column; }
 }
 </style>

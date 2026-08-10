@@ -22,15 +22,8 @@ const renameValue = ref("");
 const renameInput = ref(null);
 const renameError = ref("");
 
-// Delayed hover tooltip for the export icon.
-const exportTipId = ref(null);
-let exportTimer = null;
-
 // Settings / create dialog target.
 const activeDevice = ref(null);
-// Export-as-template dialog target.
-const exportDevice = ref(null);
-const notice = ref("");
 
 const tabs = [
   { id: "all", label: "All Devices" },
@@ -140,33 +133,6 @@ async function confirmRename(device) {
   }
 }
 
-// --- Export -----------------------------------------------------------------
-
-function onExportEnter(device) {
-  clearTimeout(exportTimer);
-  exportTimer = setTimeout(() => {
-    exportTipId.value = device.id;
-  }, 2000);
-}
-
-function onExportLeave() {
-  clearTimeout(exportTimer);
-  exportTipId.value = null;
-}
-
-// Open the export-as-template flow (duplicate check → filename → create .toml).
-function onExport(device) {
-  onExportLeave();
-  if (device.configId == null) return;
-  notice.value = "";
-  exportDevice.value = device;
-}
-
-function onExported(name) {
-  exportDevice.value = null;
-  notice.value = `Saved settings to device template “${name}”.`;
-}
-
 // --- Settings dialog --------------------------------------------------------
 
 function openSettings(device) {
@@ -195,7 +161,6 @@ async function onSaved() {
       <p v-else-if="state === 'unavailable'" class="empty-state" role="alert">{{ error }}</p>
       <p v-else-if="state === 'empty'" class="empty-state">No devices found in scan {{ scanId ?? "-" }}.</p>
       <div v-else class="table-wrap">
-        <p v-if="notice" class="device-notice" role="status">{{ notice }}</p>
         <p v-if="error" class="validation-copy" role="alert">{{ error }}</p>
         <table class="data-table data-table--clickable">
           <thead>
@@ -254,27 +219,10 @@ async function onSaved() {
               <td><code>{{ device.port }}</code><small v-if="device.portMismatch">Configured port differs from latest scan</small></td>
               <td><StatusBadge compact :value="displayLabel(device.availability)" /></td>
               <td><StatusBadge compact :value="displayLabel(device.status)" /></td>
-              <td>{{ device.configSource ?? "—" }}<small v-if="device.templateDrift">Template drift</small></td>
+              <td><code>{{ device.configSource ?? (device.status === "unconfigured" ? "Not configured" : "No template") }}</code><small v-if="device.templateDrift">Template drift</small></td>
               <td>{{ device.owningSession ?? "—" }}</td>
               <td><code>{{ device.lastSeen ?? "—" }}</code></td>
-              <td @click.stop>
-                <div class="row-actions">
-                  <button
-                    v-if="device.status !== 'unconfigured'"
-                    class="icon-button icon-button--sm device-export"
-                    type="button"
-                    aria-label="Export template"
-                    @click="onExport(device)"
-                    @mouseenter="onExportEnter(device)"
-                    @mouseleave="onExportLeave"
-                    @focus="onExportEnter(device)"
-                    @blur="onExportLeave"
-                  >
-                    <FileInput :size="15" />
-                    <span v-if="exportTipId === device.id" class="device-export__tip" role="tooltip">Export</span>
-                  </button>
-                </div>
-              </td>
+              <td />
             </tr>
           </tbody>
         </table>
@@ -291,13 +239,6 @@ async function onSaved() {
       @close="activeDevice = null"
       @saved="onSaved"
     />
-
-    <DeviceExportDialog
-      v-if="exportDevice"
-      :device="exportDevice"
-      @close="exportDevice = null"
-      @exported="onExported"
-    />
   </div>
 </template>
 
@@ -311,9 +252,6 @@ async function onSaved() {
 .device-name__display .icon-button--sm { opacity: 0; transition: opacity 120ms; }
 .device-name:hover .icon-button--sm { opacity: 1; }
 .icon-button--sm { width: 26px; height: 26px; }
-.device-export { position: relative; overflow: visible; }
-.device-export__tip { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); padding: 0.2rem 0.5rem; color: #fff; border-radius: var(--radius); background: var(--ink, #1a2b20); font-size: 0.68rem; font-weight: 700; white-space: nowrap; pointer-events: none; z-index: 10; }
-.device-notice { color: var(--green); font-size: 0.78rem; font-weight: 700; }
 /* Footer band welded to the bottom edge of the workspace card. `flex: 0 0 auto`
    keeps it out of the internal table scroll, so it stays put as the list scrolls. */
 .workspace-card > .scan-meta {
