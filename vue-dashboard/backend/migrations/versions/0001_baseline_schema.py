@@ -21,11 +21,16 @@ def upgrade() -> None:
         "sessions",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("name", sa.String(120), nullable=False),
-        sa.Column("status", sa.String(20), nullable=False, server_default="draft"),
+        sa.Column("status", sa.String(20), nullable=False, server_default="preparing"),
         sa.Column("policy", sa.String(20), nullable=False, server_default="recommend"),
         sa.Column("experiment_id", sa.String(255), nullable=True),
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column("schedule", sa.JSON(), nullable=True),
+        sa.Column("scheduled_for", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("schedule_claim_token", sa.String(64), nullable=True),
+        sa.Column("schedule_claim_expires_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("cancellation_details", sa.JSON(), nullable=True),
+        sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("device_flows", sa.JSON(), nullable=False, server_default="[]"),
         sa.Column("command_in_flight", sa.Boolean(), nullable=False, server_default="0"),
         sa.Column("command_id", sa.String(64), nullable=True),
@@ -38,12 +43,31 @@ def upgrade() -> None:
         sa.Column("source_template_ref", sa.String(1024), nullable=True),
         sa.Column("source_template_hash", sa.String(64), nullable=True),
         sa.Column("source_template_snapshot", sa.JSON(), nullable=True),
+        sa.Column("creation_request_key", sa.String(128), nullable=True),
+        sa.Column("creation_request_fingerprint", sa.String(64), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
     )
     op.create_index(
         "ix_sessions_source_template_history",
         "sessions",
         ["source_template_id", "created_at", "id"],
+    )
+    op.create_index("ix_sessions_scheduled_for", "sessions", ["scheduled_for"])
+    op.create_index(
+        "ix_sessions_schedule_claim_expires_at",
+        "sessions",
+        ["schedule_claim_expires_at"],
+    )
+    op.create_index(
+        "ix_sessions_status_scheduled_for",
+        "sessions",
+        ["status", "scheduled_for"],
+    )
+    op.create_index(
+        "ix_sessions_creation_request_key",
+        "sessions",
+        ["creation_request_key"],
+        unique=True,
     )
 
     op.create_table(
