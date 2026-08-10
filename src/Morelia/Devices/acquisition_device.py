@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import Union
 
 from Morelia.ParamSchema.ParamSchema import ParamSchema
-from Morelia.Devices.preamp import Preamp
 
 from Morelia.Devices import Pod
 
@@ -175,12 +174,6 @@ class AcquisitionDevice(Pod, metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def param_schema(self) -> ParamSchema:
         pass
-
-    def _check_preamp(self, value: object) -> None:
-        if value not in Preamp.__members__:
-            raise ValueError(
-                f"preamp must be one of {sorted(Preamp.__members__)}; got {value!r}"
-            )
 
     def __enter__(self) -> Self:
         # Open port on first use when using D2XX (port is deferred in __init__ to avoid

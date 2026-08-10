@@ -1285,6 +1285,12 @@ class Pod8401HR(AcquisitionDevice) :
                     "preamp_gain must be 10 or 100; for biosensors, preamp_gain is None"
                 )
 
+    def _check_preamp(self, value: object) -> None:
+        if value not in Preamp.__members__:
+            raise ValueError(
+                f"preamp must be one of {sorted(Preamp.__members__)}; got {value!r}"
+            )
+
     @property
     def param_schema(self):
         return ParamSchema(
