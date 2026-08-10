@@ -203,6 +203,7 @@ onBeforeUnmount(() => {
       :template-id="selectedTemplateId"
       @cancel="openTemplate(selectedTemplateId, 'detail')"
       @created="openCreatedSession"
+      @open-session="openSession"
       @template-stale="openTemplate($event, 'detail')"
     />
   </div>

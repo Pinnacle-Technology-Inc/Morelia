@@ -177,6 +177,15 @@ class CreateSessionRunSchema(SessionRunTemplateInputSchema):
         validate=validate.Length(min=8, max=128),
     )
     execution = fields.Nested(SessionRunExecutionSchema, required=True)
+    force = fields.Boolean(load_default=False)
+
+    @validates_schema
+    def check_force(self, data, **kwargs):
+        if data.get("force") and data.get("execution", {}).get("mode") != "immediate":
+            raise ValidationError(
+                "Force is available only when starting an immediate run.",
+                field_name="force",
+            )
 
 
 class SessionNameSuggestionQuerySchema(Schema):

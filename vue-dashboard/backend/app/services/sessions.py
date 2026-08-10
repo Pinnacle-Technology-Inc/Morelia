@@ -264,7 +264,7 @@ def create_run(data: dict, *, supervisor=None) -> Session:
     create_data = {
         key: value
         for key, value in data.items()
-        if key not in {"execution", "idempotency_key", "schedule"}
+        if key not in {"execution", "force", "idempotency_key", "schedule"}
     }
     if execution["mode"] == "scheduled":
         start_at = execution["start_at"]
@@ -310,6 +310,7 @@ def create_run(data: dict, *, supervisor=None) -> Session:
     return start_managed(
         session.id,
         supervisor,
+        force=bool(data.get("force", False)),
         discard_on_predispatch_failure=True,
     )
 

@@ -15,6 +15,7 @@ import { AlertTriangle, FolderPen, RefreshCw, X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import DeviceScanTable from "./DeviceScanTable.vue";
 import FolderPickerDialog from "./FolderPickerDialog.vue";
+import GuardedDialog from "./GuardedDialog.vue";
 import StatusBadge from "./StatusBadge.vue";
 import {
   buildTemplateRunPayload,
@@ -38,7 +39,7 @@ import {
 const props = defineProps({
   templateId: { type: String, required: true },
 });
-const emit = defineEmits(["cancel", "created", "template-stale"]);
+const emit = defineEmits(["cancel", "created", "open-session", "template-stale"]);
 
 const template = ref(null);
 const loadedRevision = ref(null);
@@ -73,9 +74,19 @@ const configuringHardware = new Set();
 // A rejected create carrying the backend's proposed alternative path, so a
 // collision is one click to resolve rather than a path to retype.
 const collision = ref(null);
+const claimConflict = ref(null);
+const forceClaimDialog = ref(false);
 
 const flows = computed(() => template.value?.content?.device_flows ?? []);
 const submitting = computed(() => submitState.value === "creating");
+const currentClaimConflict = computed(() => {
+  if (!claimConflict.value) return null;
+  try {
+    return claimConflict.value.fingerprint === JSON.stringify(payload()) ? claimConflict.value : null;
+  } catch {
+    return null;
+  }
+});
 
 // The template's sinks per flow, in the shape this form edits around them.
 //
@@ -544,10 +555,27 @@ function readCollision(problem) {
   };
 }
 
-async function submit() {
+function readClaimConflict(problem, fingerprint) {
+  if (problem?.code !== "device_claim_conflict") return null;
+  const claimedSessionId = Number(problem.claimed_session_id);
+  if (!Number.isSafeInteger(claimedSessionId) || claimedSessionId <= 0) return null;
+  return { claimedSessionId: String(claimedSessionId), fingerprint };
+}
+
+function openBlockingSession() {
+  if (currentClaimConflict.value) emit("open-session", currentClaimConflict.value.claimedSessionId);
+}
+
+function confirmOwnershipSwitch() {
+  forceClaimDialog.value = false;
+  submit({ force: true });
+}
+
+async function submit({ force = false } = {}) {
   if (submitDisabled.value) return;
   submitError.value = "";
   collision.value = null;
+  claimConflict.value = null;
   submitState.value = "creating";
   try {
     // The template may have drifted after this form loaded. Check immediately
@@ -570,6 +598,7 @@ async function submit() {
     }
     const result = await createTemplateRun(requestPayload, {
       idempotencyKey: requestIdentity.value.key,
+      force,
     });
     submitState.value = "complete";
     emit("created", String(result.id));
@@ -582,6 +611,7 @@ async function submit() {
     }
     submitState.value = "error";
     collision.value = readCollision(error?.problem);
+    claimConflict.value = readClaimConflict(error?.problem, requestIdentity.value.fingerprint);
     submitError.value = describeError(error, "The run could not be created.");
   } finally {
     if (submitState.value === "creating") submitState.value = "idle";
@@ -785,9 +815,15 @@ watch(() => props.templateId, load);
               <strong>Run not created</strong>
               <span class="notice-detail">{{ submitError }}</span>
             </span>
-            <button v-if="collision" type="button" class="table-action" @click="applySuggestedLocation">
-              Use {{ collision.suggested }}
-            </button>
+            <div v-if="collision || currentClaimConflict" class="notice-actions">
+              <button v-if="collision" type="button" class="table-action" @click="applySuggestedLocation">
+                Use {{ collision.suggested }}
+              </button>
+              <template v-if="currentClaimConflict">
+                <BaseButton variant="secondary" @click="openBlockingSession">Open blocking session</BaseButton>
+                <BaseButton variant="danger" @click="forceClaimDialog = true">Switch ownership</BaseButton>
+              </template>
+            </div>
           </div>
         </template>
       </div>
@@ -801,7 +837,7 @@ watch(() => props.templateId, load);
         </div>
         <div class="run-footer__actions">
           <BaseButton variant="secondary" @click="emit('cancel')">Cancel</BaseButton>
-          <BaseButton :disabled="submitDisabled" @click="submit">{{ submitLabel }}</BaseButton>
+          <BaseButton :disabled="submitDisabled" @click="submit()">{{ submitLabel }}</BaseButton>
         </div>
       </footer>
     </section>
@@ -816,6 +852,20 @@ watch(() => props.templateId, load);
     @select="chooseFolder"
     @close="folderPickerTarget = null"
   />
+  <GuardedDialog
+    v-if="forceClaimDialog && currentClaimConflict"
+    title="Switch device ownership?"
+    description="The device is legitimately owned by another session. Continue only if this run should take control."
+    confirm-label="Switch ownership and start"
+    danger
+    @close="forceClaimDialog = false"
+    @confirm="confirmOwnershipSwitch"
+  >
+    <dl class="ownership-warning">
+      <div><dt>Current owner</dt><dd>Session {{ currentClaimConflict.claimedSessionId }}</dd></div>
+      <div><dt>Impact</dt><dd>The blocking session will lose its device claim and may no longer operate safely.</dd></div>
+    </dl>
+  </GuardedDialog>
 </template>
 
 <style scoped>
@@ -834,6 +884,28 @@ watch(() => props.templateId, load);
 }
 .start-run > header {
   align-items: center;
+}
+.notice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+.ownership-warning {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+.ownership-warning div {
+  display: grid;
+  gap: var(--space-1);
+}
+.ownership-warning dt {
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.ownership-warning dd {
+  margin: 0;
 }
 .section-kicker {
   color: var(--primary);

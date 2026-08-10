@@ -2,13 +2,14 @@ import { requestJson } from "./api-client";
 import { resolveSessionHealth } from "./session-utils";
 
 const lifecycleLabels = {
-  draft: "Draft",
+  preparing: "Preparing",
   scheduled: "Scheduled",
   starting: "Starting",
   active: "Active",
   ending: "Ending",
   stopped: "Stopped",
   completed: "Completed",
+  cancelled: "Cancelled",
 };
 
 /**
@@ -17,7 +18,7 @@ const lifecycleLabels = {
  * the same words the sessions table does, from one mapping rather than a copy.
  */
 export function sessionLifecycleLabel(status) {
-  return lifecycleLabels[status] ?? "Draft";
+  return lifecycleLabels[status] ?? "Unknown";
 }
 
 export async function loadSessionCatalog() {
@@ -59,14 +60,6 @@ export async function loadSessionNameSuggestion(sourceTemplateId) {
   const query = new URLSearchParams({ source_template_id: sourceTemplateId });
   const response = await requestJson(`/api/v1/sessions/name-suggestion?${query}`);
   return typeof response?.name === "string" ? response.name : "";
-}
-
-export async function createSessionDraft(payload) {
-  return requestJson("/api/v1/sessions/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
 }
 
 const FILE_SINK_TYPES = new Set(["csv", "edf", "pvfs"]);
@@ -168,12 +161,16 @@ export function buildTemplateRunPayload({
   if (cleanName) payload.name = cleanName;
   if (cleanExperimentId) payload.experiment_id = cleanExperimentId;
   if (cleanNotes) payload.notes = cleanNotes;
+  payload.execution = { mode: "immediate" };
   if (scheduleAt) {
     const scheduled = new Date(scheduleAt);
     if (Number.isNaN(scheduled.getTime()) || scheduled <= now) {
       throw new TypeError("Scheduled start must be a valid future time.");
     }
-    payload.schedule = { mode: "daily", start_at: scheduled.toISOString() };
+    payload.execution = {
+      mode: "scheduled",
+      start_at: scheduled.toISOString(),
+    };
   }
   return payload;
 }
@@ -201,54 +198,28 @@ export function validateTemplateRunPayload(payload) {
       throw new TypeError("Every template flow needs a valid device assignment.");
     }
   }
-}
-
-/** Create once, then optionally start that exact Draft. */
-export async function createTemplateRun(payload, { startImmediately = false } = {}) {
-  validateTemplateRunPayload(payload);
-  const draft = await createSessionDraft(payload);
-  if (!startImmediately) return { draft, started: null };
-  try {
-    return { draft, started: await startSession(draft.id) };
-  } catch (cause) {
-    const error = new Error(
-      `Draft ${draft.id} was created, but it could not be started. ${cause?.message ?? "Start failed."}`,
-      { cause },
-    );
-    error.name = "TemplateRunStartError";
-    error.draft = draft;
-    error.problem = cause?.problem;
-    throw error;
+  if (!payload.execution || !["immediate", "scheduled"].includes(payload.execution.mode)) {
+    throw new TypeError("An immediate or scheduled execution mode is required.");
   }
 }
 
-/** Where this session's file outputs would land if started right now. */
-export async function loadSinkPlan(sessionId) {
-  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/sink-plan`);
-}
-
-/** Relocate file outputs while the session has never started. */
-export async function updateSinkLocations(sessionId, locations) {
-  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/sink-locations`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ locations }),
-  });
-}
-
-export async function startSession(sessionId) {
-  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commands/start`, {
+/** Create and start now, or create one durable schedule, through one command. */
+export async function createTemplateRun(payload, { idempotencyKey, force = false } = {}) {
+  validateTemplateRunPayload(payload);
+  const key = idempotencyKey || globalThis.crypto?.randomUUID?.();
+  if (!key) throw new TypeError("An idempotency key is required to create a run.");
+  return requestJson("/api/v1/session-runs", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ force: false }),
+    body: JSON.stringify({ ...payload, idempotency_key: key, force: Boolean(force) }),
   });
 }
 
-export async function stopSession(sessionId) {
+export async function stopSession(sessionId, { force = false } = {}) {
   return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commands/stop`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ force: false }),
+    body: JSON.stringify({ force: Boolean(force) }),
   });
 }
 
@@ -276,6 +247,8 @@ export function normalizeSession(session, fleetSession = {}) {
     health,
     experiment: session.experiment_id ? String(session.experiment_id) : null,
     scheduledTime: session.schedule?.start_at ?? null,
+    fallbackPolicy: session.schedule?.fallback_policy ?? null,
+    cancellation: session.cancellation_details ?? session.schedule?.cancellation ?? null,
     deviceCount: flows.length,
     streamCount: flows.length,
     sinkCount,
