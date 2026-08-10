@@ -12,7 +12,9 @@ from app.database import db, transaction
 from app.domain.enums import OperationScope, OperationState
 from app.domain.errors import OperationNotFound, OperationResolutionError
 from app.models.operation import Operation
+from app.models.session import Session
 from app.repositories.backend_events import BackendEventRepository
+from app.repositories.sessions import published_session_clause
 from app.services import incidents
 
 DATAFLOW_COMMANDS = frozenset({"start", "stop", "complete", "restart-all-streams"})
@@ -312,7 +314,12 @@ def list_operations(
     dataflow_id: str | None = None,
 ) -> list[Operation]:
     """Return operation ledger rows, newest first, optionally filtered."""
-    query = db.select(Operation).order_by(Operation.created_at.desc(), Operation.id.desc())
+    query = (
+        db.select(Operation)
+        .join(Session, Session.id == Operation.session_id)
+        .where(published_session_clause())
+        .order_by(Operation.created_at.desc(), Operation.id.desc())
+    )
     if state is not None:
         query = query.where(Operation.state == state)
     if session_id is not None:

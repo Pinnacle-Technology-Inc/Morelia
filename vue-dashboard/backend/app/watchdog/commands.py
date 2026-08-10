@@ -19,8 +19,9 @@ def prepare_command(
     recovery_id: str | None = None,
     target_device_id: str | None = None,
     runtime_id: str | None = None,
+    publish: bool = True,
 ) -> CommandEnvelope:
-    """Create, bind, and log a command before transport to a watchdog.
+    """Create a command, optionally publishing its correlation to control-plane logs.
 
     ``target_device_id`` names the one device→sink stream a recovery command
     acts on (reconnect/restart/reset-stream); leave it None for whole-dataflow
@@ -36,6 +37,10 @@ def prepare_command(
     ``CorrelationEnvelope``). Control-plane logs still carry ``session_id`` —
     bound from the request route by ``app.request_logging`` — so dropping it
     here loses no observability on this side of the wire.
+
+    Immediate create-and-start uses ``publish=False`` until dispatch returns,
+    so a definitely rejected attempt is correlated only by ``request_id`` and
+    never publishes a dataflow identity.
     """
     request_id = get_contextvars().get("request_id")
     if not isinstance(request_id, str) or not request_id:
@@ -50,16 +55,22 @@ def prepare_command(
         runtime_id=runtime_id,
     )
 
-    if recovery_id is None:
-        unbind_contextvars("recovery_id")
-    if runtime_id is None:
-        unbind_contextvars("runtime_id")
-    bind_contextvars(**correlation.to_dict())
-
-    log.info("command_started", command=command)
-
-    return CommandEnvelope(
+    envelope = CommandEnvelope(
         command=command,
         correlation=correlation,
         target_device_id=target_device_id,
     )
+    if publish:
+        publish_command(envelope)
+    return envelope
+
+
+def publish_command(envelope: CommandEnvelope) -> None:
+    """Publish command identity to logs after its durable visibility boundary."""
+    correlation = envelope.correlation
+    if correlation.recovery_id is None:
+        unbind_contextvars("recovery_id")
+    if correlation.runtime_id is None:
+        unbind_contextvars("runtime_id")
+    bind_contextvars(**correlation.to_dict())
+    log.info("command_started", command=envelope.command)
