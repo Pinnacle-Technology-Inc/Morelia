@@ -322,7 +322,13 @@ def rename(old_name: str, new_name: str) -> tuple[DeviceTemplate, list[Any]]:
 
 
 def delete(name: str) -> list[Any]:
-    template = get_by_name(name)
+    # Detail pages route by filename stem so duplicate display names still target
+    # the exact file the operator opened.
+    try:
+        template = get_by_path(name)
+    except ValueError:
+        template = None
+    template = template or get_by_name(name)
     if template is not None:
         path = _path_for_reference(template.file_path)
         file_path = template.file_path
@@ -405,6 +411,11 @@ def export_artifact(raw_content: Mapping[str, Any], *, format: str = "json") -> 
 
 def content_hash(raw_content: Mapping[str, Any]) -> str:
     return _content_hash(_canonicalize(raw_content))
+
+
+def canonical_content(raw_content: Mapping[str, Any]) -> dict[str, Any]:
+    """Expose canonical device-template content for API match previews."""
+    return _canonicalize(raw_content)
 
 
 def clone(source: DeviceTemplate, *, name: str | None = None) -> DeviceTemplate:

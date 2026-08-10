@@ -7,14 +7,17 @@ from app.api.schemas import (
     CreateDeviceTemplateSchema,
     DeviceTemplateContentSchema,
     DeviceTemplateDeleteResponseSchema,
+    DeviceTemplateMatchSchema,
     DeviceTemplateRenameResponseSchema,
     DeviceTemplateSchema,
     DeviceTemplateSourceSchema,
     DeviceTemplateTomlSchema,
     DeviceTemplateTomlValidationSchema,
+    DeviceTemplateTypeSchema,
     RenameDeviceTemplateSchema,
 )
-from app.domain.errors import DeviceTemplateNotFound, UnknownConfigType
+from app.domain.errors import DeviceTemplateNameExists, DeviceTemplateNotFound, UnknownConfigType
+from app.services.registry import supported_device_types
 
 blp = Blueprint(
     "device_templates",
@@ -45,6 +48,8 @@ def _reference_warning_payload(referencing_sessions):
 @blp.arguments(CreateDeviceTemplateSchema)
 @blp.response(201, DeviceTemplateSchema)
 def create_device_template(payload):
+    if device_template_service.get_by_name(payload["name"]) is not None:
+        raise DeviceTemplateNameExists(payload["name"])
     try:
         return device_template_service.import_config(payload)
     except (UnknownConfigType, ValueError) as exc:
@@ -63,6 +68,28 @@ def list_device_template_catalog():
     return device_template_service.catalog()
 
 
+@blp.route("/supported-types", methods=["GET"])
+@blp.response(200, DeviceTemplateTypeSchema(many=True))
+def list_device_template_types():
+    return supported_device_types()
+
+
+@blp.route("/match", methods=["POST"])
+@blp.arguments(DeviceTemplateContentSchema)
+@blp.response(200, DeviceTemplateMatchSchema)
+def match_device_template(payload):
+    try:
+        content = device_template_service.canonical_content(payload)
+    except (UnknownConfigType, ValueError) as exc:
+        _invalid_template(exc)
+    content_hash = device_template_service.content_hash(content)
+    return {
+        "content": content,
+        "content_hash": content_hash,
+        "matches": device_template_service.find_by_content_hash(content_hash),
+    }
+
+
 @blp.route("/validations", methods=["POST"])
 @blp.arguments(DeviceTemplateTomlSchema)
 @blp.response(200, DeviceTemplateTomlValidationSchema)
@@ -71,9 +98,12 @@ def validate_device_template_toml(payload):
         content = device_template_service.validate_toml(payload["toml"])
     except (UnknownConfigType, ValueError) as exc:
         _invalid_template(exc)
+    content_hash = device_template_service.content_hash(content)
     return {
         "content": content,
         "parameter_count": len(content.get("parameters", {})),
+        "content_hash": content_hash,
+        "matches": device_template_service.find_by_content_hash(content_hash),
     }
 
 
@@ -99,7 +129,11 @@ def repair_device_template_source(payload, reference):
 @blp.route("/<string:name>", methods=["GET"])
 @blp.response(200, DeviceTemplateSchema)
 def get_device_template(name):
-    template = device_template_service.get_by_name(name)
+    try:
+        template = device_template_service.get_by_path(name)
+    except ValueError:
+        template = None
+    template = template or device_template_service.get_by_name(name)
     if template is None:
         raise DeviceTemplateNotFound(name)
     return template

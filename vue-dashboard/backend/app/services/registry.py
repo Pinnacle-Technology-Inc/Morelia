@@ -533,6 +533,18 @@ def device_parameter_schema(type_key: str) -> dict[str, list[str]]:
     }
 
 
+def supported_device_types() -> list[dict[str, object]]:
+    """Return the device-template types that have a pinned parameter schema."""
+    return [
+        {
+            "type": device_type.value,
+            "required_parameters": sorted(schema.required),
+            "optional_parameters": sorted(schema.optional),
+        }
+        for device_type, schema in sorted(_DEVICE_SCHEMA.items(), key=lambda item: item[0].value)
+    ]
+
+
 def sink_parameter_schema(type_key: str) -> dict[str, object]:
     """Return the category and promptable parameter keys for a supported sink type."""
     try:

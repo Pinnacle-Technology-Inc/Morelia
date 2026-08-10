@@ -386,6 +386,20 @@ class DeviceTemplateSourceSchema(DeviceTemplateTomlSchema):
 class DeviceTemplateTomlValidationSchema(Schema):
     content = fields.Raw(dump_only=True)
     parameter_count = fields.Integer(dump_only=True)
+    content_hash = fields.String(dump_only=True)
+    matches = fields.List(fields.Nested("DeviceTemplateSchema"), dump_only=True)
+
+
+class DeviceTemplateMatchSchema(Schema):
+    content = fields.Raw(dump_only=True)
+    content_hash = fields.String(dump_only=True)
+    matches = fields.List(fields.Nested("DeviceTemplateSchema"), dump_only=True)
+
+
+class DeviceTemplateTypeSchema(Schema):
+    type = fields.String(dump_only=True)
+    required_parameters = fields.List(fields.String(), dump_only=True)
+    optional_parameters = fields.List(fields.String(), dump_only=True)
 
 
 class RenameDeviceTemplateSchema(Schema):
