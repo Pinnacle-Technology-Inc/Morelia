@@ -459,7 +459,7 @@ def fleet_overview(
     live_health: Mapping[str, HealthState] | None = None,
 ) -> dict[str, object]:
     """Fleet-wide overview: running tally + per-session lifecycle/health/phase (6f)."""
-    sessions = _sessions.all()
+    sessions = _sessions.public_all()
     rows: list[dict[str, object]] = []
     running = 0
     for session in sessions:

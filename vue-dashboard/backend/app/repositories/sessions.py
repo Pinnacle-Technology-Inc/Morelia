@@ -17,6 +17,15 @@ def template_session_name(template_name: str, requested_name: str | None, run_nu
     return f"{template_name.strip()} • {label} {run_number}"
 
 
+def published_session_clause():
+    """SQL predicate for sessions that may appear on public read surfaces."""
+    return db.or_(
+        Session.creation_request_key.is_(None),
+        Session.status != SessionStatus.PREPARING,
+        Session.dataflow_id.isnot(None),
+    )
+
+
 @dataclass(frozen=True)
 class SessionRunRef:
     """Enough of a session to name it, without loading the run itself."""
@@ -190,6 +199,12 @@ class SessionRepository:
     def all(self) -> list[Session]:
         return db.session.scalars(db.select(Session)).all()
 
+    def public_all(self) -> list[Session]:
+        """Sessions that have crossed their public lifecycle boundary."""
+        return db.session.scalars(
+            db.select(Session).where(published_session_clause())
+        ).all()
+
     def list_by_source_template_id(self, template_id: str) -> list[Session]:
         return db.session.scalars(
             db.select(Session)
@@ -214,7 +229,10 @@ class SessionRepository:
                 Session.status,
                 Session.created_at,
             )
-            .where(Session.source_template_id.isnot(None))
+            .where(
+                Session.source_template_id.isnot(None),
+                published_session_clause(),
+            )
             .order_by(Session.created_at.desc(), Session.id.desc())
         ).all()
 

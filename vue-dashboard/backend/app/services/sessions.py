@@ -488,7 +488,7 @@ def suggest_name(source_template_id: str) -> str:
 
 
 def list_all() -> list[Session]:
-    return _repo.all()
+    return _repo.public_all()
 
 
 def complete(session_id: int) -> Session:
