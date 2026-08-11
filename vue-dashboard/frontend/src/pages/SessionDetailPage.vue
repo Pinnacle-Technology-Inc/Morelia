@@ -181,7 +181,7 @@ const sessionDeviceFlows = computed(() => {
       .map((sink) => ({
         name: sink.sink_id,
         sink_id: sink.sink_id,
-        path: sink.output?.path,
+        path: sink.output?.canonical_path ?? sink.output?.base_path,
         // A null `health` means the newest report did not carry this sink, and
         // the runtime only reports sinks that have errored — so this is the
         // no-news case, not an unknown one. formatStatus() alone turned it into
@@ -227,6 +227,27 @@ const controlPlaneIncidents = computed(() =>
 const detailGaps = computed(() => detail.value?.gaps ?? []);
 // Already fetched on every poll and, until now, dropped on the floor.
 const detailOperations = computed(() => detail.value?.operations ?? []);
+const recoveryOutputs = computed(() =>
+  (detail.value?.sinks ?? [])
+    .filter((sink) => sink.output?.component_count > 1)
+    .map((sink) => ({ sinkId: sink.sink_id, ...sink.output })),
+);
+// Once clean-shutdown proof is missing, later retries commonly fail with
+// RuntimeNotTracked because the ambiguous stop already tore down the host.
+// Those retries must not hide the force-stop escape hatch while the session is
+// still Active; the lifecycle removes the action after a successful stop.
+const forceStopRequired = computed(() =>
+  detailOperations.value.some((operation) => {
+    const errorCode = String(operation?.error_code ?? "")
+      .replace(/[^a-z0-9]/gi, "")
+      .toLowerCase();
+    return (
+      String(operation?.command).toLowerCase() === "stop" &&
+      String(operation?.state).toLowerCase() === "failed" &&
+      errorCode === "stopproofmissing"
+    );
+  }),
+);
 
 /** Unresolved — `ack` is an annotation, not a resolution. */
 function isOpenIncident(incident) {
@@ -479,21 +500,29 @@ function dismissCommandError() {
 }
 
 async function runLifecycleCommand(command) {
+  if (commandBusy.value) return;
   commandBusy.value = true;
+  dialog.value = null;
   commandError.value = "";
   commandProblem.value = null;
   try {
     const result = await command();
     applyCommandResult(result);
-    dialog.value = null;
     await refreshDetail();
   } catch (error) {
-    dialog.value = null;
     commandProblem.value = error?.problem ?? null;
     commandError.value = problemMessage(error, "The lifecycle command failed.");
+    // Pull the persisted operation outcome immediately so a failed normal Stop
+    // can turn the action into Force Stop without waiting for the next poll.
+    await refreshDetail({ silent: true });
   } finally {
     commandBusy.value = false;
   }
+}
+
+function openStopDialog() {
+  dismissCommandError();
+  dialog.value = forceStopRequired.value ? "force-stop" : "stop";
 }
 
 function confirmStop() {
@@ -612,7 +641,15 @@ const tabTones = computed(() => ({
         >
           <Play :size="16" /> Run source template
         </BaseButton>
-        <BaseButton v-if="isRunningLifecycle(lifecycle)" variant="danger" :disabled="commandBusy" @click="dialog = 'stop'"><StopCircle :size="16" /> Stop</BaseButton>
+        <BaseButton
+          v-if="isRunningLifecycle(lifecycle)"
+          variant="danger"
+          :disabled="commandBusy"
+          :title="forceStopRequired ? 'The previous Stop could not prove a clean shutdown' : 'Stop this session cleanly'"
+          @click="openStopDialog"
+        >
+          <StopCircle :size="16" /> {{ forceStopRequired ? "Force Stop" : "Stop" }}
+        </BaseButton>
       </div>
     </header>
 
@@ -766,6 +803,65 @@ const tabTones = computed(() => ({
             <BaseButton variant="secondary">Retry Recovery</BaseButton>
             <BaseButton variant="secondary">Mark Resolved</BaseButton>
           </div>
+        </BaseCard>
+        <BaseCard class="detail-panel detail-panel--wide recovery-story" aria-live="polite">
+          <header class="recovery-story__heading">
+            <div>
+              <h3>Verified Recovery Story</h3>
+              <p>Canonical output and retained source components for this run.</p>
+            </div>
+            <StatusBadge
+              v-if="recoveryOutputs.length === 1"
+              :value="artifactLabel(recoveryOutputs[0].artifact_state)"
+            />
+          </header>
+          <p v-if="detailUnavailable" class="detail-alert">Output verification is unavailable.</p>
+          <p v-else-if="!recoveryOutputs.length" class="records-empty">
+            This run has no segmented file output requiring a merge.
+          </p>
+          <template v-else>
+            <article
+              v-for="output in recoveryOutputs"
+              :key="output.logical_sink_id"
+              class="recovery-output"
+            >
+              <div class="recovery-output__summary">
+                <div>
+                  <strong>{{ output.sinkId }}</strong>
+                  <span>{{ artifactLabel(output.artifact_state) }}</span>
+                </div>
+                <dl class="recovery-output__metrics">
+                  <div><dt>Recoveries</dt><dd>{{ formatCount(output.recovery_count) }}</dd></div>
+                  <div><dt>Components</dt><dd>{{ formatCount(output.component_count) }}</dd></div>
+                  <div><dt>Captured samples</dt><dd>{{ formatCount(output.captured_samples) }}</dd></div>
+                  <div><dt>Known sample loss</dt><dd>{{ formatCount(output.sample_loss) }}</dd></div>
+                </dl>
+              </div>
+              <div v-if="output.canonical_path" class="canonical-output">
+                <span>Canonical {{ output.verified ? "verified" : "recorded" }} file</span>
+                <code>{{ output.canonical_path }}</code>
+                <small v-if="output.sink_type === 'pvfs' && output.verified">
+                  Original timestamps and real recovery gaps are preserved in the PVFS timeline.
+                </small>
+              </div>
+              <div v-else class="detail-alert">
+                No canonical merged file has been published. The retained components remain available.
+              </div>
+              <details class="recovery-components">
+                <summary>Retained recovery components ({{ output.component_count }})</summary>
+                <ol>
+                  <li v-for="component in output.components" :key="component.output_id">
+                    <code>{{ component.path }}</code>
+                    <span>
+                      Segment {{ component.segment_index + 1 }} ·
+                      {{ formatCount(component.captured_samples) }} samples ·
+                      {{ component.termination_reason ?? component.acquisition_state }}
+                    </span>
+                  </li>
+                </ol>
+              </details>
+            </article>
+          </template>
         </BaseCard>
       </div>
 
@@ -960,7 +1056,7 @@ const tabTones = computed(() => ({
     <CommandErrorDialog
       v-if="commandError"
       :message="commandError"
-      :action-label="commandProblem?.code === 'stop_proof_missing' ? 'Force Stop' : ''"
+      :action-label="forceStopRequired || commandProblem?.code === 'stop_proof_missing' ? 'Force Stop' : ''"
       @close="dismissCommandError"
       @action="openForceStopDialog"
     />
@@ -973,6 +1069,21 @@ const tabTones = computed(() => ({
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
+}
+
+function artifactLabel(state) {
+  return {
+    merge_pending: "Waiting to finalize",
+    merging: "Building verified output",
+    merged: "Verified and ready",
+    merge_failed: "Finalization will retry",
+    merge_blocked: "Finalization needs attention",
+    not_required: "No merge required",
+  }[state] ?? "Finalization state unavailable";
+}
+
+function formatCount(value) {
+  return Number(value ?? 0).toLocaleString();
 }
 
 .source-template-heading h3,
@@ -997,6 +1108,90 @@ const tabTones = computed(() => ({
   background: var(--surface-sage);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.recovery-story__heading,
+.recovery-output__summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.recovery-story__heading h3,
+.recovery-story__heading p,
+.recovery-output__summary strong,
+.recovery-output__summary span {
+  display: block;
+  margin: 0;
+}
+
+.recovery-output {
+  display: grid;
+  gap: var(--space-4);
+  padding-block: var(--space-4);
+  border-top: 1px solid var(--border-card);
+}
+
+.recovery-output__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.recovery-output__metrics div,
+.canonical-output,
+.recovery-components li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.recovery-output__metrics dt,
+.canonical-output span,
+.recovery-components span {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+
+.recovery-output__metrics dd {
+  margin: 0;
+  color: var(--text-heading);
+  font-weight: var(--fw-bold);
+}
+
+.canonical-output {
+  padding: var(--space-3);
+  border-left: var(--border-accent) solid var(--accent);
+  background: var(--sage-50);
+}
+
+.canonical-output code,
+.recovery-components code {
+  overflow-wrap: anywhere;
+}
+
+.recovery-components summary {
+  cursor: pointer;
+  font-weight: var(--fw-bold);
+}
+
+.recovery-components ol {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: 0;
+  padding-left: var(--space-5);
+}
+
+@media (max-width: 760px) {
+  .recovery-story__heading,
+  .recovery-output__summary {
+    display: grid;
+  }
+
+  .recovery-output__metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 </style>
