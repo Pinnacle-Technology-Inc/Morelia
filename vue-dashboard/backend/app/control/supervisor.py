@@ -821,17 +821,25 @@ class HostSupervisor:
         return {"tracked_runtime_count": len(self._children)}
 
     def _schedule_session_finalization(
-        self, session: Session, *, completion_cause: str
+        self,
+        session: Session,
+        *,
+        completion_cause: str,
+        termination_reason: str = output_finalization.TERMINATION_CLEAN,
     ) -> list:
-        """Complete + enqueue finalization for a cleanly-stopped session's outputs.
+        """Complete + enqueue finalization for a terminalized session's outputs.
 
         Best-effort: a scheduling failure must never abort daemon shutdown or
-        trap the hardware. The outputs stay completed and schedulable on a later
-        finalizer/reconciler pass. Returns the per-output completion outcomes.
+        recovery abandonment or trap the hardware. ``termination_reason`` keeps
+        clean shutdown evidence distinct from an unclean watchdog crash. The
+        outputs stay completed and schedulable on a later finalizer/reconciler
+        pass. Returns the per-output completion outcomes.
         """
         try:
             return output_finalization.complete_session_acquisitions(
-                session.id, completion_cause=completion_cause
+                session.id,
+                completion_cause=completion_cause,
+                termination_reason=termination_reason,
             )
         except Exception as exc:  # noqa: BLE001 - must not abort teardown
             _log.warning(
@@ -859,6 +867,9 @@ class HostSupervisor:
         """
         with transaction():
             session.status = SessionStatus.COMPLETED
+            session.command_in_flight = False
+            session.runtime_port = None
+            session.runtime_token = None
         for config_id in _session_device_config_ids(session):
             try:
                 device_configs.release(config_id)
@@ -897,7 +908,10 @@ class HostSupervisor:
 
             port = session.runtime_port
             token = session.runtime_token
-            ownership = self._ownerships.active_for_dataflow(dataflow_id)
+            # UNCERTAIN is not operational, but it is still authoritative
+            # recovery evidence. Dropping it here bypasses the recovery
+            # coordinator and turns a bounded restart into an unguarded spawn.
+            ownership = self._ownerships.unresolved_for_dataflow(dataflow_id)
 
             if port is None:
                 _log.info(
@@ -1056,7 +1070,23 @@ class HostSupervisor:
                     }
                 )
                 continue
-            self.spawn(session, manifest=replacement_manifest)
+            try:
+                self.spawn(session, manifest=replacement_manifest)
+            except Exception as exc:  # noqa: BLE001 - keep the control plane available
+                _log.error(
+                    "reconcile: replacement start failed without recoverable ownership",
+                    dataflow_id=dataflow_id,
+                    error=type(exc).__name__,
+                    message=str(exc),
+                )
+                report["uncertain"].append(
+                    {
+                        "dataflow_id": dataflow_id,
+                        "runtime_id": None,
+                        "reason": "replacement_start_failed",
+                        "error": type(exc).__name__,
+                    }
+                )
         return report
 
     def poll_targets(self) -> list[DataflowTarget]:
@@ -1313,11 +1343,12 @@ class HostSupervisor:
             )
             ownership = self._ownerships.get(ownership.runtime_id) or ownership
 
+        attempt = self._recovery_attempt(ownership)
         self._ownerships.mark_recovering(
             ownership.runtime_id,
             phase="adopting" if assessment.action is RecoveryAction.ADOPT else "starting_fresh",
             reason=assessment.reason,
-            attempt=self._recovery_attempt(ownership),
+            attempt=attempt,
             next_retry_at=None,
             evidence=assessment.evidence,
         )
@@ -1331,6 +1362,7 @@ class HostSupervisor:
                     ownership,
                     reason="fresh_watchdog_start_failed",
                     evidence={**assessment.evidence, "error": type(exc).__name__},
+                    attempt=attempt,
                 )
                 return
             self._ownerships.mark_stopped(ownership.runtime_id)
@@ -1351,7 +1383,7 @@ class HostSupervisor:
                 ownership.runtime_id,
                 phase="stopping_orphan",
                 reason="watchdog_adoption_failed",
-                attempt=self._recovery_attempt(ownership),
+                attempt=attempt,
                 next_retry_at=None,
                 evidence={
                     **assessment.evidence,
@@ -1369,6 +1401,7 @@ class HostSupervisor:
                     ownership,
                     reason="watchdog_stop_or_hardware_release_unverified",
                     evidence=assessment.evidence,
+                    attempt=attempt,
                 )
                 return
             try:
@@ -1382,6 +1415,7 @@ class HostSupervisor:
                         **assessment.evidence,
                         "error": type(fresh_exc).__name__,
                     },
+                    attempt=attempt,
                 )
                 return
         self._ownerships.mark_stopped(ownership.runtime_id)
@@ -1401,8 +1435,9 @@ class HostSupervisor:
         *,
         reason: str,
         evidence: dict[str, object],
+        attempt: int | None = None,
     ) -> None:
-        attempt = self._recovery_attempt(ownership)
+        attempt = self._recovery_attempt(ownership) if attempt is None else attempt
         max_attempts = current_app.config["WATCHDOG_RECOVERY_MAX_ATTEMPTS"]
         if max_attempts and attempt > max_attempts:
             self._abandon_recovery(
@@ -1465,6 +1500,11 @@ class HostSupervisor:
         )
         self._ownerships.mark_stopped(ownership.runtime_id)
         self._complete_shutdown_session(session)
+        self._schedule_session_finalization(
+            session,
+            completion_cause=output_finalization.COMPLETION_RECONCILIATION,
+            termination_reason="watchdog_crash",
+        )
         _log.error(
             "runtime recovery abandoned after exhausting retry budget — marked stopped",
             dataflow_id=ownership.dataflow_id,

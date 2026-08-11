@@ -13,6 +13,16 @@ ACTIVE_RUNTIME_STATES = (
     RuntimeOwnershipState.STOPPING,
 )
 
+# UNCERTAIN is deliberately excluded from ``list_active``: callers using that
+# method want processes the control plane still considers operational. Startup
+# reconciliation has a different responsibility. It must retain the last
+# unresolved identity long enough to prove the watchdog alive, prove it dead,
+# or exhaust the bounded recovery policy.
+UNRESOLVED_RUNTIME_STATES = (
+    *ACTIVE_RUNTIME_STATES,
+    RuntimeOwnershipState.UNCERTAIN,
+)
+
 
 class RuntimeOwnershipRepository:
     """Persistence operations for runtime host ownership records."""
@@ -74,6 +84,17 @@ class RuntimeOwnershipRepository:
                 RuntimeOwnership.state.in_(ACTIVE_RUNTIME_STATES),
             )
             .order_by(RuntimeOwnership.started_at.desc())
+        ).first()
+
+    def unresolved_for_dataflow(self, dataflow_id: str) -> RuntimeOwnership | None:
+        """Newest ownership that still requires an evidence-driven decision."""
+        return db.session.scalars(
+            db.select(RuntimeOwnership)
+            .where(
+                RuntimeOwnership.dataflow_id == dataflow_id,
+                RuntimeOwnership.state.in_(UNRESOLVED_RUNTIME_STATES),
+            )
+            .order_by(RuntimeOwnership.started_at.desc(), RuntimeOwnership.id.desc())
         ).first()
 
     def mark_running(self, runtime_id: str, *, pid: int, port: int) -> RuntimeOwnership:

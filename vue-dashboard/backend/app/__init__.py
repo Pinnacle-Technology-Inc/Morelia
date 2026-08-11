@@ -137,6 +137,25 @@ def create_app(
             # `_children` empty for that dataflow forever, and stop()/dispatch()
             # fail every retry until this runs.
             if summary is not None and host_supervisor is not None:
-                host_supervisor.reconcile(SessionRepository().with_runtime_host_identity())
+                try:
+                    report = host_supervisor.reconcile(
+                        SessionRepository().with_runtime_host_identity()
+                    )
+                except Exception as exc:  # Exception is raised if the runtime host is not running
+                    app.logger.exception(
+                        "startup runtime reconciliation failed; control plane will continue"
+                    )
+                    report = {
+                        "adopted": [],
+                        "uncertain": [
+                            {
+                                "dataflow_id": None,
+                                "runtime_id": None,
+                                "reason": "startup_reconciliation_failed",
+                                "error": type(exc).__name__,
+                            }
+                        ],
+                    }
+                app.extensions["startup_reconciliation_report"] = report
 
     return app
