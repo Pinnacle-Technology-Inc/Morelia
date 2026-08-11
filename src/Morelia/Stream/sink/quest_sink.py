@@ -19,6 +19,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, AcquisitionDevice
 from Morelia.packet.data import DataPacket
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+from functools import partial
 
 class QuestSink(SinkInterface):
     """Stream data to QuestDB for real-time monitoring.
@@ -108,4 +110,27 @@ class QuestSink(SinkInterface):
             'measurement': self.measurement,
             'observe_on_scheduler': self.observe_on_scheduler,
         }
-      
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset(
+                {
+                    "host",
+                    "port",
+                    "measurement",
+                    "observe_on_scheduler",
+                    "buffer_max_age_seconds",
+                    "buffer_max_bytes",
+                }
+            ),
+            validators={
+                "host": partial(self._check_nonempty_string, key="host"),
+                "port": self._check_port,
+                "measurement": partial(self._check_nonempty_string, key="measurement"),
+                "observe_on_scheduler": self._check_observe_on_scheduler,
+                "buffer_max_age_seconds": partial(self._check_positive_number, key="buffer_max_age_seconds"),
+                "buffer_max_bytes": partial(self._check_positive_int, key="buffer_max_bytes"),
+            },
+        )

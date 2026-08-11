@@ -20,6 +20,8 @@ from Morelia.Stream.sink import SinkInterface
 from Morelia.Devices import Pod8206HR, Pod8401HR, Pod8274D, AcquisitionDevice
 from Morelia.packet.data import DataPacket
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+from functools import partial
 
 class InfluxSink(SinkInterface):
     """Stream data to InfluxDB for real-time monitoring.
@@ -183,3 +185,30 @@ class InfluxSink(SinkInterface):
             'measurement': self.measurement,
             'observe_on_scheduler': self.observe_on_scheduler,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        return ParamSchema(
+            required=frozenset({"api_token_env"}),
+            optional=frozenset(
+                {
+                    "url",
+                    "org",
+                    "bucket",
+                    "measurement",
+                    "observe_on_scheduler",
+                    "buffer_max_age_seconds",
+                    "buffer_max_bytes",
+                }
+            ),
+            validators={
+                "api_token_env": partial(self._check_nonempty_string, key="api_token_env"),
+                "url": partial(self._check_nonempty_string, key="url"),
+                "org": partial(self._check_nonempty_string, key="org"),
+                "bucket": partial(self._check_nonempty_string, key="bucket"),
+                "measurement": partial(self._check_nonempty_string, key="measurement"),
+                "observe_on_scheduler": self._check_observe_on_scheduler,
+                "buffer_max_age_seconds": partial(self._check_positive_number, key="buffer_max_age_seconds"),
+                "buffer_max_bytes": partial(self._check_positive_int, key="buffer_max_bytes"),
+            },
+        )
