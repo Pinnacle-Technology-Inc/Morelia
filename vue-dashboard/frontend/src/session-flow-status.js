@@ -232,8 +232,13 @@ function matchConfiguredFlow(deviceId, configuredFlows, index) {
   return byId ?? configuredFlows[index] ?? {};
 }
 
-function workerFaultCopy(fault) {
+function workerFaultCopy(fault, { recovered = false } = {}) {
   if (!fault) return null;
+  if (fault.reason === "protocol_violation") {
+    return recovered
+      ? "Recovered after interrupted shutdown"
+      : "Shutdown interrupted during recovery";
+  }
   const target = fault.sink_id ? `Sink ${fault.sink_id}` : "Stream worker";
   const type = fault.error_type ? ` (${fault.error_type})` : "";
   const reason = fault.reason ? `: ${fault.reason}` : "";
@@ -268,7 +273,9 @@ export function deriveStreamRows({
     // tell the two apart.
     const recoveryCopy =
       RECOVERY_COPY[device?.action] ?? RECOVERY_COPY[device?.recovery_stage] ?? null;
-    const faultCopy = workerFaultCopy(device?.worker_fault);
+    const faultCopy = workerFaultCopy(device?.worker_fault, {
+      recovered: device?.stream_status === "healthy" && !device?.pending_recovery,
+    });
     const attempt = device?.recovery_attempt;
 
     return {

@@ -1340,6 +1340,10 @@ class StreamWatcher (threading.Thread):
     def _finish_recovery_success(self, restart_result, verify_result, heartbeat_verify=None):
         self._disconnected = False
         self._failure_count = 0
+        # A worker fault describes the worker that was replaced. Once recovery
+        # is verified, carrying it into every healthy report makes a resolved
+        # shutdown problem look like a current stream failure.
+        self._worker_fault = None
         recovery_attempt = self._recovery_attempt()
         self._recovery_attempt_count = 0
         self._response_grace = None
