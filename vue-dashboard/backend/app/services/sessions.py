@@ -96,6 +96,7 @@ def create(
     status: SessionStatus = SessionStatus.PREPARING,
     creation_request_key: str | None = None,
     creation_request_fingerprint: str | None = None,
+    require_device_template_match: bool = False,
 ) -> Session:
     """Create an internal run row from one trusted registered template revision.
 
@@ -143,6 +144,7 @@ def create(
     device_flows = materialize_template_flows(
         resolution.content,
         data.get("assignments") or [],
+        require_device_template_match=require_device_template_match,
     )
 
     return _repo.create({
@@ -175,6 +177,7 @@ def _create_idempotent_run_session(
     status: SessionStatus,
     request_key: str,
     fingerprint: str,
+    require_device_template_match: bool = False,
 ) -> tuple[Session, bool]:
     try:
         return (
@@ -183,6 +186,7 @@ def _create_idempotent_run_session(
                 status=status,
                 creation_request_key=request_key,
                 creation_request_fingerprint=fingerprint,
+                require_device_template_match=require_device_template_match,
             ),
             True,
         )
@@ -298,6 +302,7 @@ def create_run(data: dict, *, supervisor=None) -> Session:
         status=SessionStatus.PREPARING,
         request_key=request_key,
         fingerprint=fingerprint,
+        require_device_template_match=True,
     )
     if not created:
         return session

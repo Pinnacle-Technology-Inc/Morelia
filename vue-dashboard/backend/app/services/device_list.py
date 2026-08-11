@@ -7,7 +7,7 @@ from dataclasses import asdict, dataclass
 from app.discovery.pod_scan import DiscoveredDevice
 from app.domain.enums import DeviceClaimState, DeviceType
 from app.models.device_config import DeviceConfig
-from app.services import device_configs, device_registrations
+from app.services import device_configs, device_registrations, device_templates
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +22,9 @@ class DevicePoolRow:
     owner: int | None
     nickname: str | None
     label: str | None
+    source_template: str | None
+    source_template_hash: str | None
+    configuration_hash: str | None
 
     def as_dict(self) -> dict[str, object | None]:
         return asdict(self)
@@ -79,6 +82,14 @@ def _configured_row(
         owner=config.claimed_session_id,
         nickname=config.nickname,
         label=seen.label if seen is not None else config.nickname,
+        source_template=config.source_template,
+        source_template_hash=config.source_template_hash,
+        configuration_hash=device_templates.content_hash(
+            {
+                "type": DeviceType(config.device_type).value,
+                "parameters": dict(config.parameters or {}),
+            }
+        ),
     )
 
 
@@ -98,6 +109,9 @@ def _unconfigured_row(
         owner=None,
         nickname=nickname,
         label=nickname or device.label,
+        source_template=None,
+        source_template_hash=None,
+        configuration_hash=None,
     )
 
 

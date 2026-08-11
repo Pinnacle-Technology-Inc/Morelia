@@ -68,6 +68,16 @@ describe("sink destination composition", () => {
 });
 
 describe("compact template-run payload", () => {
+  it("only enables an exact device-template match for immediate runs", () => {
+    expect(startRunSource).toContain("matchesFlowTemplate(device, flowIndex)");
+    expect(startRunSource).toContain(
+      ':selectable="(device) => isPreferenceSelectable(device, assignment.flowIndex)"',
+    );
+    expect(startRunSource).toContain(
+      "assignments.value.filter((assignment) => !assignmentReadyForMode(assignment)).length",
+    );
+  });
+
   it("validates host output folders before issuing the atomic command", () => {
     expect(startRunSource).toContain("await validateOutputFolders(");
     expect(startRunSource).toContain("Boolean(folderValidationError.value)");

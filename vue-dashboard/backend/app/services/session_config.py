@@ -616,6 +616,8 @@ def _locations_by_index(
 def materialize_template_flows(
     snapshot_content: Mapping[str, Any],
     assignments: list[Mapping[str, Any]],
+    *,
+    require_device_template_match: bool = False,
 ) -> list[dict[str, Any]]:
     """Turn a frozen template snapshot plus accepted assignments into run flows.
 
@@ -677,6 +679,22 @@ def materialize_template_flows(
                 f"assignments[{flow_index}].device_config_id",
                 f"device {config_id} is a {actual_type}, but this flow needs a {required_type}",
             )
+        if require_device_template_match:
+            required_hash = snapshot_flow.get("device_template_content_hash")
+            actual_hash = device_templates.content_hash(
+                {
+                    "type": actual_type,
+                    "parameters": dict(config.parameters or {}),
+                }
+            )
+            if not isinstance(required_hash, str) or actual_hash != required_hash:
+                required_path = snapshot_flow.get("device_template_path")
+                raise InvalidSessionEntry(
+                    f"assignments[{flow_index}].device_config_id",
+                    f"device {config_id} configuration does not match required device "
+                    f"template {required_path!r}; reconfigure the device from that "
+                    "template before starting",
+                )
 
         locations = _locations_by_index(
             assignment, flow_index=flow_index, sinks=snapshot_sinks

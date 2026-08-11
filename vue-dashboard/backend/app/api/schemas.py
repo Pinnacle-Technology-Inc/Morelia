@@ -908,6 +908,9 @@ class DevicePoolRowSchema(Schema):
     owner = fields.Integer(allow_none=True)
     nickname = fields.String(allow_none=True)
     label = fields.String(allow_none=True)
+    source_template = fields.String(allow_none=True)
+    source_template_hash = fields.String(allow_none=True)
+    configuration_hash = fields.String(allow_none=True)
 
 
 class DevicePoolSchema(Schema):

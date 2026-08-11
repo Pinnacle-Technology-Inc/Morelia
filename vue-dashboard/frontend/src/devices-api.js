@@ -26,6 +26,7 @@ export async function loadDevicePool() {
       // columns light up automatically once the backend emits them.
       configSource: device.source_template ?? null,
       sourceTemplateHash: device.source_template_hash ?? null,
+      configurationHash: device.configuration_hash ?? null,
       lastSeen: device.last_seen ?? null,
       owningSession: device.owner ?? null,
     })),

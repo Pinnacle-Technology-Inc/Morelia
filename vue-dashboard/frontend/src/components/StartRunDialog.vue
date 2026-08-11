@@ -130,12 +130,8 @@ function plannerAssignment(flowIndex) {
 // --- Device candidates per flow --------------------------------------------
 
 function matchesFlowTemplate(device, flowIndex) {
-  const required = normalizeTemplateRef(flows.value[flowIndex]?.device_template_path);
-  // A pool row may not report its source template at all (see gap register
-  // D-01/D-02). Unknown is not "wrong": it must not rank a device below one we
-  // positively know is a mismatch, and it must never hide it from the list.
-  const source = normalizeTemplateRef(device.configSource);
-  return Boolean(required) && Boolean(source) && required === source;
+  const requiredHash = flows.value[flowIndex]?.device_template_content_hash;
+  return Boolean(requiredHash) && requiredHash === device.configurationHash;
 }
 
 function deviceTemplateForFlow(flowIndex) {
@@ -156,7 +152,7 @@ function candidateDevices(flowIndex) {
   // device, then present-but-unconfigured hardware. sort() is stable, so the
   // pool's own ordering survives within each band.
   const rank = (device) => {
-    if (!isPreferenceSelectable(device)) return 0;
+    if (!isPreferenceSelectable(device, flowIndex)) return 0;
     return matchesFlowTemplate(device, flowIndex) ? 2 : 1;
   };
   return compatiblePoolDevicesForFlow(devices.value, {
@@ -167,13 +163,22 @@ function candidateDevices(flowIndex) {
   }).sort((a, b) => rank(b) - rank(a));
 }
 
-function isPreferenceSelectable(device) {
-  if (runMode.value !== "schedule") return isDeviceSelectable(device);
+function isPreferenceSelectable(device, flowIndex) {
+  if (runMode.value !== "schedule") {
+    return (
+      isDeviceSelectable(device) &&
+      device.availability === "available" &&
+      matchesFlowTemplate(device, flowIndex)
+    );
+  }
   return device?.id != null && device.status !== "unconfigured";
 }
 
 function annotateFor(flowIndex) {
   return (device) => {
+    if (runMode.value !== "schedule" && !matchesFlowTemplate(device, flowIndex)) {
+      return "Configuration does not match the required device template";
+    }
     const planned = plannerAssignment(flowIndex);
     if (planned && planned.device_config_id === device.id) {
       return planned.match ? `Planner: ${planned.match} match` : "Planner suggestion";
@@ -185,7 +190,7 @@ function annotateFor(flowIndex) {
 
 function assignDevice(flowIndex, device) {
   const assignment = assignments.value[flowIndex];
-  if (!assignment) return;
+  if (!assignment || !isPreferenceSelectable(device, flowIndex)) return;
   // Radio semantics: re-clicking the assigned device clears it, which is the
   // only way to undo an assignment without picking a different one.
   assignment.deviceConfigId = assignment.deviceConfigId === device.id ? null : device.id;
@@ -269,7 +274,7 @@ function flowSinksResolved(flowIndex) {
 
 function flowReady(flowIndex) {
   const assignment = assignments.value[flowIndex];
-  return Boolean(assignment?.deviceConfigId) && flowSinksResolved(flowIndex);
+  return assignmentReadyForMode(assignment) && flowSinksResolved(flowIndex);
 }
 
 // A folder column is never wide enough for an absolute path, and plain ellipsis
@@ -347,8 +352,15 @@ function applySuggestedLocation() {
 
 // --- Gating -----------------------------------------------------------------
 
+function assignmentReadyForMode(assignment) {
+  if (!assignment?.deviceConfigId) return false;
+  if (runMode.value === "schedule") return true;
+  const device = deviceFor(assignment.deviceConfigId);
+  return Boolean(device) && isPreferenceSelectable(device, assignment.flowIndex);
+}
+
 const unassignedCount = computed(
-  () => assignments.value.filter((assignment) => !assignment.deviceConfigId).length,
+  () => assignments.value.filter((assignment) => !assignmentReadyForMode(assignment)).length,
 );
 const unresolvedSinkCount = computed(
   () => assignments.value.filter((assignment) => !flowSinksResolved(assignment.flowIndex)).length,
@@ -496,7 +508,7 @@ async function configureDevice(flowIndex, device) {
       (candidate) =>
         candidate.hardwareId === hardwareId &&
         candidate.type === requiredDeviceType(flowIndex) &&
-        isDeviceSelectable(candidate),
+        isPreferenceSelectable(candidate, flowIndex),
     );
     if (configured) {
       const assignment = assignments.value[flowIndex];
@@ -730,7 +742,7 @@ watch(() => props.templateId, load);
                   :devices="candidateDevices(assignment.flowIndex)"
                   :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
                   :annotate="annotateFor(assignment.flowIndex)"
-                  :selectable="isPreferenceSelectable"
+                  :selectable="(device) => isPreferenceSelectable(device, assignment.flowIndex)"
                   :scanning="scanState === 'scanning'"
                   :scan-error="scanState === 'error' ? scanError : ''"
                   empty-message="No free device is available for this stream."
