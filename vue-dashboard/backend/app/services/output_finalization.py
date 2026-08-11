@@ -31,9 +31,11 @@ A merger is ``Callable[[MergeRequest], MergeResult]``. It must:
    fresh ``final_output_id``, and (optionally) ``sample_count``.
 
 On any failure it returns ``ok=False`` with a ``reason`` and leaves the
-components untouched; it should retain ``temp_path`` for diagnosis rather than
-delete it. The coordinator re-verifies the published artifact exists before it
-commits, so a merger that reports success without a real file is downgraded to
+components untouched. Managed EDF/PVFS staging artifacts are disposable: the
+coordinator removes the attempt's ``*.partial`` file after success, failure, or
+fencing, while durable state and logs retain the diagnostic evidence. The
+coordinator re-verifies the published artifact exists before it commits, so a
+merger that reports success without a real file is downgraded to
 ``merge_failed`` rather than publishing a false artifact.
 
 Cleanup eligibility (the boundary for packet 29)
@@ -108,7 +110,7 @@ class MergeResult:
 
     ``ok`` means the merger wrote, verified, and atomically published a merged
     artifact at ``published_path`` under identity ``final_output_id``.
-    ``temp_path`` is the (retained-on-failure) diagnostic temporary artifact.
+    ``temp_path`` is the disposable staging artifact for this attempt.
     """
 
     ok: bool
@@ -227,6 +229,10 @@ class FinalizationCoordinator:
     def _run_attempt(
         self, merger: Merger, claim: FinalizationClaim
     ) -> FinalizationOutcome:
+        # A claimed attempt is the sole live owner for this logical output.
+        # Remove superseded managed staging files before creating the next one;
+        # recovery components never match this deliberately narrow pattern.
+        self._discard_managed_partials(claim.base_path)
         request = MergeRequest(
             logical_sink_id=claim.logical_sink_id,
             finalization_id=claim.finalization_id,
@@ -271,8 +277,9 @@ class FinalizationCoordinator:
             )
         except StaleFinalizerClaim:
             # A stale-lease takeover fenced us out between merge and commit.
-            # Do NOT retry the publish — the live owner will finalize. Our temp
-            # artifact is retained for the reconciler/diagnosis.
+            # Do NOT retry the publish — the live owner will finalize. Remove
+            # only this fenced-out attempt's disposable staging artifact.
+            self._discard_attempt_partial(claim, result.temp_path)
             return FinalizationOutcome(
                 logical_sink_id=claim.logical_sink_id,
                 action="skipped",
@@ -351,18 +358,94 @@ class FinalizationCoordinator:
                     now=self._now_fn(),
                 )
         except StaleFinalizerClaim:
+            self._discard_attempt_partial(claim, temp_path)
             return FinalizationOutcome(
                 logical_sink_id=claim.logical_sink_id,
                 action="skipped",
                 temp_path=temp_path,
                 reason="fenced out by a newer finalization attempt",
             )
+        self._discard_attempt_partial(claim, temp_path)
         return FinalizationOutcome(
             logical_sink_id=claim.logical_sink_id,
             action="blocked" if blocked else "failed",
             temp_path=temp_path,
             reason=reason,
         )
+
+    def cleanup_inactive_partials(self) -> int:
+        """Delete managed staging artifacts that have no active merge owner.
+
+        This startup/cycle sweep handles artifacts left by older application
+        versions and process crashes. A head in ``merging`` is skipped because
+        another fenced finalizer may still own its staging file.
+        """
+        heads = db.session.scalars(
+            db.select(OutputFile).where(
+                OutputFile.segment_index == 0,
+                OutputFile.sink_type.in_(("edf", "pvfs")),
+                OutputFile.artifact_state != ARTIFACT_MERGING,
+            )
+        ).all()
+        return sum(self._discard_managed_partials(head.path) for head in heads)
+
+    @staticmethod
+    def _discard_managed_partials(base_path: str) -> int:
+        """Remove only merger-owned partials adjacent to one component chain."""
+        base = Path(base_path)
+        prefix = f"{base.stem}.merged."
+        suffix = f".partial{base.suffix}"
+        removed = 0
+        try:
+            candidates = tuple(base.parent.iterdir())
+        except OSError as exc:
+            _log.warning(
+                "output_partial_cleanup_scan_failed",
+                base_path=str(base),
+                reason=repr(exc),
+            )
+            return 0
+
+        for candidate in candidates:
+            if not candidate.name.startswith(prefix) or not candidate.name.endswith(suffix):
+                continue
+            if candidate.is_dir():
+                continue
+            try:
+                candidate.unlink(missing_ok=True)
+                removed += 1
+            except OSError as exc:
+                _log.warning(
+                    "output_partial_cleanup_failed",
+                    partial_path=str(candidate),
+                    reason=repr(exc),
+                )
+        return removed
+
+    @classmethod
+    def _discard_attempt_partial(
+        cls, claim: FinalizationClaim, reported_temp_path: str | None
+    ) -> None:
+        """Discard this attempt's managed temp without trusting an arbitrary path."""
+        base = Path(claim.base_path)
+        expected = base.with_name(
+            f"{base.stem}.merged.{claim.finalization_id}.partial{base.suffix}"
+        )
+        if reported_temp_path is not None and Path(reported_temp_path) != expected:
+            _log.warning(
+                "output_partial_cleanup_refused",
+                reported_temp_path=reported_temp_path,
+                expected_path=str(expected),
+            )
+            return
+        try:
+            expected.unlink(missing_ok=True)
+        except OSError as exc:
+            _log.warning(
+                "output_partial_cleanup_failed",
+                partial_path=str(expected),
+                reason=repr(exc),
+            )
 
     # -- cleanup gate (boundary for packet 29) ------------------------------
 

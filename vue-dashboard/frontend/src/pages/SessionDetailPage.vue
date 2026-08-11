@@ -547,6 +547,21 @@ function sinkIsPlot(sink) {
   );
 }
 
+function artifactLabel(state) {
+  return {
+    merge_pending: "Waiting to finalize",
+    merging: "Building verified output",
+    merged: "Verified and ready",
+    merge_failed: "Finalization will retry",
+    merge_blocked: "Finalization needs attention",
+    not_required: "No merge required",
+  }[state] ?? "Finalization state unavailable";
+}
+
+function formatCount(value) {
+  return Number(value ?? 0).toLocaleString();
+}
+
 function normalizeSessionId(id) {
   if (typeof id === "number") return id;
   const digits = String(id ?? "").replace(/\D/g, "");
@@ -1069,21 +1084,6 @@ const tabTones = computed(() => ({
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-}
-
-function artifactLabel(state) {
-  return {
-    merge_pending: "Waiting to finalize",
-    merging: "Building verified output",
-    merged: "Verified and ready",
-    merge_failed: "Finalization will retry",
-    merge_blocked: "Finalization needs attention",
-    not_required: "No merge required",
-  }[state] ?? "Finalization state unavailable";
-}
-
-function formatCount(value) {
-  return Number(value ?? 0).toLocaleString();
 }
 
 .source-template-heading h3,

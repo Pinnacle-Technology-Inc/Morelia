@@ -810,14 +810,38 @@ class GapPageSchema(Schema):
     has_more = fields.Boolean()
 
 
+class SinkOutputComponentSchema(Schema):
+    """One retained physical component in a recoverable file output."""
+
+    output_id = fields.String()
+    segment_index = fields.Integer()
+    path = fields.String()
+    acquisition_state = fields.String()
+    termination_reason = fields.String(allow_none=True)
+    captured_samples = fields.Integer()
+    captured_bytes = fields.Integer()
+
+
 class SinkOutputStateSchema(Schema):
     """Persisted merge/delivery facts for a sink's output (not the live status snapshot)."""
 
     logical_sink_id = fields.String(allow_none=True)
+    sink_type = fields.String(allow_none=True)
     artifact_state = fields.String(allow_none=True)
     delivery_state = fields.String(allow_none=True)
+    base_path = fields.String(allow_none=True)
+    canonical_path = fields.String(allow_none=True)
+    final_output_id = fields.String(allow_none=True)
+    finalized_at = fields.DateTime(allow_none=True)
+    finalization_attempts = fields.Integer()
+    verified = fields.Boolean()
+    component_count = fields.Integer()
+    recovery_count = fields.Integer()
+    captured_samples = fields.Integer()
+    captured_bytes = fields.Integer()
     sample_loss = fields.Integer(allow_none=True)
     byte_loss = fields.Integer(allow_none=True)
+    components = fields.List(fields.Nested(SinkOutputComponentSchema))
 
 
 class SinkStatusSchema(Schema):

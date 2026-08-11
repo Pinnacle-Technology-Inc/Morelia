@@ -30,6 +30,8 @@ import sys
 import threading
 from collections.abc import Callable
 
+import structlog
+
 from app.config import get_config
 from app.database import create_database_app
 from app.logging_config import configure_logging
@@ -41,6 +43,8 @@ from app.services.output_finalization import (
     reconcile_stopped_session_acquisitions,
     resolve_merger,
 )
+
+_log = structlog.get_logger(__name__)
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
@@ -94,6 +98,15 @@ def run_cycle(
         if outcome is None:
             break
         outcomes.append(outcome)
+        log_method = _log.warning if outcome.action in {"failed", "blocked"} else _log.info
+        log_method(
+            "output_finalization_attempt",
+            logical_sink_id=outcome.logical_sink_id,
+            action=outcome.action,
+            final_output_id=outcome.final_output_id,
+            published_path=outcome.published_path,
+            reason=outcome.reason,
+        )
     return outcomes
 
 
@@ -123,6 +136,7 @@ def main(
     app = create_database_app(args.config)
 
     stop_event = threading.Event()
+    partials_cleaned = False
 
     def _shutdown(signum, frame):  # noqa: ARG001
         stop_event.set()
@@ -134,9 +148,16 @@ def main(
     print("READY", flush=True)
 
     def _cycle() -> None:
+        nonlocal partials_cleaned
         with app.app_context():
             coordinator = coordinator_factory(config)
             reconcile_stopped_session_acquisitions()
+            cleanup_partials = getattr(coordinator, "cleanup_inactive_partials", None)
+            if not partials_cleaned and cleanup_partials is not None:
+                removed = cleanup_partials()
+                partials_cleaned = True
+                if removed:
+                    _log.info("output_partial_cleanup_completed", removed=removed)
             run_cycle(coordinator, worker_id=args.worker_id, registry=registry)
 
     if args.once:

@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 
 from app.config import get_config
 from app.control.event_poller import telemetry_freshness
@@ -330,12 +331,48 @@ def _sink_outputs(session_id: int) -> dict[tuple[object, object], dict[str, obje
             ),
             newest,
         )
+        components = sorted(
+            (row for row in sink_rows if row.logical_sink_id == head.logical_sink_id),
+            key=lambda row: row.segment_index,
+        )
+        head_path = Path(head.path)
+        merged_path = head_path.with_name(
+            f"{head_path.stem}.merged{head_path.suffix}"
+        )
+        canonical_path = None
+        if head.artifact_state == "merged" and head.final_output_id:
+            canonical_path = str(merged_path)
+        elif len(components) == 1 and head.artifact_state == "not_required":
+            canonical_path = head.path
         outputs[identity] = {
             "logical_sink_id": head.logical_sink_id,
+            "sink_type": head.sink_type,
             "artifact_state": head.artifact_state,
             "delivery_state": newest.delivery_state,
-            "sample_loss": max((r.sample_loss or 0) for r in sink_rows),
-            "byte_loss": max((r.byte_loss or 0) for r in sink_rows),
+            "base_path": head.path,
+            "canonical_path": canonical_path,
+            "final_output_id": head.final_output_id,
+            "finalized_at": head.finalized_at,
+            "finalization_attempts": head.finalizer_fence_token or 0,
+            "verified": bool(canonical_path and head.final_output_id),
+            "component_count": len(components),
+            "recovery_count": max(len(components) - 1, 0),
+            "captured_samples": sum(row.row_offset or 0 for row in components),
+            "captured_bytes": sum(row.byte_offset or 0 for row in components),
+            "sample_loss": max((r.sample_loss or 0) for r in components),
+            "byte_loss": max((r.byte_loss or 0) for r in components),
+            "components": [
+                {
+                    "output_id": row.output_id,
+                    "segment_index": row.segment_index,
+                    "path": row.path,
+                    "acquisition_state": row.acquisition_state,
+                    "termination_reason": row.termination_reason,
+                    "captured_samples": row.row_offset or 0,
+                    "captured_bytes": row.byte_offset or 0,
+                }
+                for row in components
+            ],
         }
     return outputs
 
