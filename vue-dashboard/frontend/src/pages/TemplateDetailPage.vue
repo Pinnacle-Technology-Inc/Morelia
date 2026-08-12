@@ -9,6 +9,7 @@ import {
   acceptTemplateChange,
   archiveTemplate,
   canRunTemplate,
+  loadDeviceTemplates,
   loadSessionTemplate,
   loadSessionTemplateSource,
   registerDiscoveredTemplate,
@@ -39,6 +40,8 @@ const busy = ref("");
 const selectedRenamePath = ref("");
 const templateToml = ref("");
 const sourceError = ref("");
+const deviceTemplates = ref([]);
+const deviceTemplatesError = ref("");
 const copied = ref("");
 // `review` opens on the tab that carries the hashes, which is what a change
 // review is: comparing the trusted revision against what is on disk now.
@@ -82,19 +85,61 @@ const warnings = computed(() => {
  * device-template revision pin, and each sink's name, destination and
  * parameters — that is, most of what distinguishes one template from another.
  */
+function normalizeTemplatePath(value) {
+  return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "").toLowerCase();
+}
+
+function statLabel(key) {
+  return String(key)
+    .replaceAll("_", " ")
+    .split(" ")
+    .map((word) => ({ id: "ID", ss: "SS" })[word.toLowerCase()] ?? `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function statValue(value) {
+  if (Array.isArray(value)) {
+    const groups = [];
+    for (const item of value) {
+      const display = statValue(item);
+      const last = groups.at(-1);
+      if (last?.value === display) last.count += 1;
+      else groups.push({ value: display, count: 1 });
+    }
+    return groups.map((group) => `${group.value}${group.count > 1 ? ` x${group.count}` : ""}`).join(", ");
+  }
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+const deviceTemplatesByPath = computed(() => new Map(
+  deviceTemplates.value.map((item) => [normalizeTemplatePath(item?.file_path), item]),
+));
+
 const flows = computed(() =>
   (template.value?.content?.device_flows ?? []).map((flow, index) => {
     const path = typeof flow?.device_template_path === "string" ? flow.device_template_path : "";
     const sinks = Array.isArray(flow?.sinks) ? flow.sinks : [];
+    const linkedTemplate = deviceTemplatesByPath.value.get(normalizeTemplatePath(path));
+    const parameters = linkedTemplate?.content?.parameters;
+    const stats = [];
+    const deviceType = linkedTemplate?.type ?? linkedTemplate?.content?.type;
+    if (deviceType != null) stats.push({ label: "Device type", value: statValue(deviceType) });
+    if (parameters && typeof parameters === "object") {
+      for (const [key, value] of Object.entries(parameters)) {
+        if (value != null) stats.push({ label: statLabel(key), value: statValue(value) });
+      }
+    }
+    if (flow?.hardware_id != null) stats.push({ label: "Hardware ID", value: statValue(flow.hardware_id) });
+    if (flow?.port != null) stats.push({ label: "Port", value: statValue(flow.port) });
     return {
       index,
       // The nickname is the operator's own word for this stream. Without one,
       // the device template's filename is the only other thing naming it.
       title: flow?.nickname || path.split("/").pop()?.replace(/\.toml$/i, "") || `Stream ${index + 1}`,
       devicePath: path,
-      hardwareId: flow?.hardware_id ?? null,
-      port: flow?.port ?? null,
-      pinnedRevision: flow?.device_template_content_hash ?? null,
+      stats,
+      statsUnavailable: linkedTemplate ? "" : deviceTemplatesError.value || "Linked device template not found.",
       sinks: sinks.map((sink, sinkIndex) => ({
         key: `${index}-${sinkIndex}`,
         // sink_name defaults to the sink type on the backend, so the two are
@@ -125,12 +170,6 @@ const apiIdentity = computed(() => JSON.stringify({
 }, null, 2));
 const canonicalJson = computed(() => JSON.stringify(template.value?.content ?? {}, null, 2));
 
-// Enough of a digest to compare two revisions by eye without the row becoming a
-// 64-character wall. The full value is in the title attribute for copying.
-function shortHash(value) {
-  return value ? `${value.slice(0, 12)}…` : null;
-}
-
 function countLabel(count, noun) {
   return `${count} ${count === 1 ? noun : `${noun}s`}`;
 }
@@ -160,13 +199,24 @@ async function refresh() {
   try {
     template.value = await loadSessionTemplate(props.templateId);
     sourceError.value = "";
+    deviceTemplatesError.value = "";
     templateToml.value = "";
-    if (template.value?.reference) {
-      try {
-        templateToml.value = (await loadSessionTemplateSource(template.value.reference)).toml;
-      } catch (error) {
-        sourceError.value = error?.message ?? "The TOML source is unavailable.";
-      }
+    deviceTemplates.value = [];
+    const [sourceResult, deviceTemplatesResult] = await Promise.allSettled([
+      template.value?.reference
+        ? loadSessionTemplateSource(template.value.reference)
+        : Promise.resolve({ toml: "" }),
+      loadDeviceTemplates(),
+    ]);
+    if (sourceResult.status === "fulfilled") {
+      templateToml.value = sourceResult.value.toml;
+    } else {
+      sourceError.value = sourceResult.reason?.message ?? "The TOML source is unavailable.";
+    }
+    if (deviceTemplatesResult.status === "fulfilled") {
+      deviceTemplates.value = deviceTemplatesResult.value;
+    } else {
+      deviceTemplatesError.value = deviceTemplatesResult.reason?.message ?? "Device template stats are unavailable.";
     }
     state.value = "ready";
   } catch (error) {
@@ -323,44 +373,48 @@ watch(() => props.templateId, refresh);
           @change="activeTab = $event"
         />
 
-        <!-- One card per device flow, using the same flow-card shell the session
-             detail page draws a RUNNING flow with. A template is the blueprint
-             for exactly that object, so it reads as the same thing twice. -->
+        <!-- A template source is intentionally more compact than a live-session
+             flow. It describes the reusable device template and preference; the
+             concrete device config is selected only when a run starts. -->
         <div v-if="activeTab === 'configuration'" class="flow-list" role="tabpanel" aria-label="Configuration">
           <div v-if="!flows.length" class="records-empty">
             This template has no readable device flows. Repair the TOML file on disk.
           </div>
-          <BaseCard v-for="flow in flows" :key="flow.index" class="flow-card">
-            <header>
-              <div>
+          <BaseCard v-for="flow in flows" :key="flow.index" class="flow-card template-flow-card">
+            <header class="source-header">
+              <div class="source-identity">
+                <span class="eyebrow">Source {{ flow.index + 1 }}</span>
                 <h3>{{ flow.title }}</h3>
                 <code>{{ flow.devicePath || "No device template recorded" }}</code>
               </div>
-              <span class="eyebrow">Stream {{ flow.index + 1 }}</span>
-            </header>
-            <dl class="flow-metrics">
-              <div><dt>Sinks</dt><dd>{{ flow.sinks.length }}</dd></div>
-              <div><dt>Hardware ID</dt><dd>{{ flow.hardwareId ?? "Any device" }}</dd></div>
-              <div><dt>Port</dt><dd>{{ flow.port ?? "Auto" }}</dd></div>
-              <div>
-                <dt>Device revision</dt>
-                <dd :title="flow.pinnedRevision ?? undefined">{{ shortHash(flow.pinnedRevision) ?? "Not pinned" }}</dd>
-              </div>
-            </dl>
-            <div class="sink-list">
-              <div v-for="sink in flow.sinks" :key="sink.key">
-                <strong>{{ sink.name }}</strong>
-                <!-- What this sink actually does with the data: a folder for file
-                     sinks, its connection parameters for service sinks. The old
-                     table showed only the type, which answered neither. -->
-                <div class="sink-target">
-                  <code v-if="sink.location">{{ sink.location }}</code>
-                  <template v-else-if="sink.parameters.length">
-                    <code v-for="[key, value] in sink.parameters" :key="key">{{ key }} = {{ value }}</code>
-                  </template>
-                  <span v-else class="sink-target__empty">Destination chosen at start</span>
+              <dl v-if="flow.stats.length" class="source-facts" aria-label="Device template stats">
+                <div v-for="stat in flow.stats" :key="stat.label">
+                  <dt>{{ stat.label }}</dt>
+                  <dd><code :title="stat.value">{{ stat.value }}</code></dd>
                 </div>
-                <code class="sink-type">{{ sink.type }}</code>
+              </dl>
+              <span v-else class="source-stats-unavailable" :title="flow.statsUnavailable">
+                Stats unavailable
+              </span>
+            </header>
+            <div class="sink-section">
+              <div class="sink-section__heading">
+                <h4>Sinks</h4>
+                <span>{{ flow.sinks.length }}</span>
+              </div>
+              <div class="sink-list">
+                <div v-for="sink in flow.sinks" :key="sink.key">
+                  <strong>{{ sink.name }}</strong>
+                  <!-- What this sink actually does with the data: a folder for file
+                       sinks, its connection parameters for service sinks. -->
+                  <div class="sink-target">
+                    <code v-if="sink.location">{{ sink.location }}</code>
+                    <template v-else-if="sink.parameters.length">
+                      <code v-for="[key, value] in sink.parameters" :key="key">{{ key }} = {{ value }}</code>
+                    </template>
+                  </div>
+                  <code class="sink-type">{{ sink.type }}</code>
+                </div>
               </div>
             </div>
           </BaseCard>
@@ -487,9 +541,103 @@ watch(() => props.templateId, refresh);
   align-items: center;
   gap: var(--space-2);
 }
-/* .sink-list's middle column is one line by default. A service sink can carry
-   several parameters, and a file sink an absolute path, so the column stacks
-   and wraps rather than propping the grid open. */
+/* Template sources use a compact, borderless facts row populated from the
+   linked device template's actual parameters. */
+.template-flow-card {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  box-shadow: none;
+}
+.template-flow-card .source-header {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+}
+.source-identity {
+  min-width: 0;
+}
+.source-identity .eyebrow {
+  display: block;
+  margin-bottom: var(--space-1);
+}
+.source-identity h3 {
+  margin-bottom: var(--space-1);
+}
+.source-identity > code {
+  display: block;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.source-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2) var(--space-4);
+}
+.source-facts > div {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 6rem;
+}
+.source-facts dt {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+.source-facts dd {
+  max-width: 16rem;
+  font: var(--fs-xs) var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.source-stats-unavailable {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+.sink-section {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-3);
+}
+.sink-section__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 4.5rem;
+  padding: var(--space-2) 0;
+}
+.sink-section__heading h4 {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+}
+.sink-section__heading span {
+  display: inline-grid;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  place-items: center;
+  color: var(--text-accent);
+  border-radius: var(--radius-pill);
+  background: var(--surface-sage);
+  font: var(--fs-xs) var(--font-mono);
+}
+.template-flow-card .sink-list {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.template-flow-card .sink-list > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sage);
+}
+/* A service sink can carry several parameters, and a file sink an absolute
+   path, so the middle column stacks and wraps rather than widening the card. */
 .sink-target {
   display: grid;
   gap: 0.2rem;
@@ -497,10 +645,6 @@ watch(() => props.templateId, refresh);
 }
 .sink-target code {
   overflow-wrap: anywhere;
-}
-.sink-target__empty {
-  color: var(--text-muted);
-  font-size: var(--fs-xs);
 }
 /* The type is the controlled vocabulary token that appears in the TOML file,
    pinned to the right of every row so the sinks stay scannable by kind. */
@@ -523,13 +667,26 @@ watch(() => props.templateId, refresh);
 .usage-card__heading p { margin-top: var(--space-1); color: var(--text-muted); font-size: var(--fs-xs); }
 .usage-card pre { max-height: 320px; margin: 0; padding: var(--space-4); overflow: auto; border-radius: var(--radius-sm); color: #edf6f0; background: #10271a; white-space: pre-wrap; overflow-wrap: anywhere; }
 @media (max-width: 760px) {
-  /* .flow-metrics is a fixed 4-up; below this the four values crush to two
-     characters each. */
-  .flow-metrics {
-    grid-template-columns: repeat(2, 1fr);
+  .template-flow-card .source-header {
+    grid-template-columns: 1fr;
   }
-  .flow-metrics > div:nth-child(odd) {
-    border-left: 0;
+  .source-facts {
+    justify-content: flex-start;
+  }
+  .sink-section {
+    grid-template-columns: 1fr;
+    gap: var(--space-1);
+  }
+  .template-flow-card .sink-list > div {
+    grid-template-columns: 1fr auto;
+  }
+  .template-flow-card .sink-target {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .template-flow-card .sink-type {
+    grid-column: 2;
+    grid-row: 1;
   }
   .usage-card__heading { flex-direction: column; }
 }
