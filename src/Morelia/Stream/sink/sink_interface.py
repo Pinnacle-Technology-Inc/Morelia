@@ -88,7 +88,7 @@ class SinkInterface(metaclass=abc.ABCMeta):
         if isinstance(value, bool) or not isinstance(value, int) or not (1 <= value <= 65535):
             raise ValueError("port must be an integer in 1..65535")
 
-    def _check_channel_names(value: object) -> None:
+    def _check_channel_names(self, value: object) -> None:
         if not isinstance(value, tuple) or not value:
             raise ValueError("channel_names must be a non-empty list of non-empty strings")
         for name in value:
