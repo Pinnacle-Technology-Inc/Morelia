@@ -10,23 +10,38 @@ class ExperimentRepository:
         return db.session.get(Experiment, experiment_id)
 
     def get_by_name(self, name: str) -> Experiment | None:
-        return db.session.scalars(db.select(Experiment).where(db.func.lower(Experiment.name) == name.lower())).first()
+        query = db.select(Experiment).where(
+            db.func.lower(Experiment.name) == name.lower()
+        )
+        return db.session.scalars(query).first()
 
     def list(self, *, include_archived: bool = False) -> list[Experiment]:
         query = db.select(Experiment)
         if not include_archived:
             query = query.where(Experiment.archived_at.is_(None))
-        return db.session.scalars(query.order_by(Experiment.updated_at.desc(), Experiment.id.desc())).all()
+        query = query.order_by(Experiment.updated_at.desc(), Experiment.id.desc())
+        return db.session.scalars(query).all()
 
     def create(self, *, name: str, description: str | None) -> Experiment:
         with transaction():
-            row = Experiment(name=name, description=description, created_at=datetime.now(UTC), updated_at=datetime.now(UTC))
+            now = datetime.now(UTC)
+            row = Experiment(
+                name=name,
+                description=description,
+                created_at=now,
+                updated_at=now,
+            )
             db.session.add(row)
             db.session.flush()
         return row
 
     def references(self, experiment_id: str) -> int:
-        return int(db.session.scalar(db.select(db.func.count()).select_from(Session).where(Session.experiment_id == experiment_id)) or 0)
+        query = (
+            db.select(db.func.count())
+            .select_from(Session)
+            .where(Session.experiment_id == experiment_id)
+        )
+        return int(db.session.scalar(query) or 0)
 
     def update(self, row: Experiment, *, name: str, description: str | None) -> Experiment:
         with transaction():

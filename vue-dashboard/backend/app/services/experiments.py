@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 from app.models.experiment import Experiment
 from app.repositories.experiments import ExperimentRepository
 
 _repo = ExperimentRepository()
+_UNSET = object()
 
 
 class ExperimentError(Exception):
@@ -57,15 +56,22 @@ def create(*, name: str, description: str | None) -> Experiment:
     return _repo.create(name=normalized, description=description)
 
 
-def update(experiment_id: str, *, name: str, description: str | None) -> Experiment:
+def update(
+    experiment_id: str,
+    *,
+    name: str | None = None,
+    description: str | None | object = _UNSET,
+) -> Experiment:
     row = _get(experiment_id)
     if row.archived_at is not None:
         raise ExperimentArchived(experiment_id)
-    normalized = _normalize_name(name)
-    other = _repo.get_by_name(normalized)
-    if other is not None and other.id != row.id:
-        raise ExperimentNameConflict(normalized)
-    return _repo.update(row, name=normalized, description=description)
+    normalized = row.name if name is None else _normalize_name(name)
+    if name is not None:
+        other = _repo.get_by_name(normalized)
+        if other is not None and other.id != row.id:
+            raise ExperimentNameConflict(normalized)
+    next_description = row.description if description is _UNSET else description
+    return _repo.update(row, name=normalized, description=next_description)
 
 
 def archive(experiment_id: str) -> Experiment:

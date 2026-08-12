@@ -1,7 +1,8 @@
+from flask import request
 from flask_smorest import Blueprint, abort
 
 import app.services.experiments as service
-from app.api.schemas import ExperimentSchema, ExperimentUpdateSchema
+from app.api.schemas import ExperimentCreateSchema, ExperimentSchema, ExperimentUpdateSchema
 
 blp = Blueprint("experiments", __name__, url_prefix="/api/v1/experiments")
 
@@ -13,12 +14,14 @@ def _handle(exc):
 @blp.route("", methods=["GET"])
 @blp.response(200, ExperimentSchema(many=True))
 def list_experiments():
-    include_archived = str(__import__("flask").request.args.get("include_archived", "false")).lower() == "true"
+    include_archived = (
+        str(request.args.get("include_archived", "false")).lower() == "true"
+    )
     return service.list_all(include_archived=include_archived)
 
 
 @blp.route("", methods=["POST"])
-@blp.arguments(ExperimentUpdateSchema)
+@blp.arguments(ExperimentCreateSchema)
 @blp.response(201, ExperimentSchema)
 def create_experiment(payload):
     try:
@@ -33,7 +36,7 @@ def get_experiment(experiment_id):
     return service.get(experiment_id)
 
 
-@blp.route("/<string:experiment_id>", methods=["PUT"])
+@blp.route("/<string:experiment_id>", methods=["PUT", "PATCH"])
 @blp.arguments(ExperimentUpdateSchema)
 @blp.response(200, ExperimentSchema)
 def update_experiment(payload, experiment_id):

@@ -647,15 +647,33 @@ class ResolveSessionTemplateRenameSchema(Schema):
 class ExperimentSchema(Schema):
     id = fields.String(dump_only=True)
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    description = fields.String(allow_none=True, load_default=None, validate=validate.Length(max=4000))
+    description = fields.String(
+        allow_none=True,
+        load_default=None,
+        validate=validate.Length(max=4000),
+    )
     archived_at = fields.DateTime(allow_none=True, dump_only=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
 
 
-class ExperimentUpdateSchema(Schema):
+class ExperimentCreateSchema(Schema):
     name = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    description = fields.String(allow_none=True, load_default=None, validate=validate.Length(max=4000))
+    description = fields.String(
+        allow_none=True,
+        load_default=None,
+        validate=validate.Length(max=4000),
+    )
+
+
+class ExperimentUpdateSchema(Schema):
+    name = fields.String(validate=validate.Length(min=1, max=255))
+    description = fields.String(allow_none=True, validate=validate.Length(max=4000))
+
+    @validates_schema
+    def validate_update(self, data, **kwargs):
+        if not data:
+            raise ValidationError("Provide name or description.")
 
 
 class AssignmentCandidateSchema(Schema):

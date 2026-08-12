@@ -412,6 +412,7 @@ __all__ = [
     "OperationResolutionError",
     "RuntimeNotTracked",
     "SessionNotFound",
+    "SessionNoteNotFound",
     "SessionTemplateNameExists",
     "SessionTemplateNotFound",
     "SessionTemplateDuplicate",
