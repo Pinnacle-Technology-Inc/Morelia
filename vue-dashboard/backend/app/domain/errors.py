@@ -11,6 +11,13 @@ class SessionNotFound(Exception):
         super().__init__(f"No session with id {session_id!r}.")
 
 
+class SessionNoteNotFound(Exception):
+    def __init__(self, session_id: int, note_id: int):
+        self.session_id = session_id
+        self.note_id = note_id
+        super().__init__(f"No note with id {note_id!r} exists on session {session_id!r}.")
+
+
 class SessionRunRequestConflict(Exception):
     """An idempotency key was reused for a different run request."""
 

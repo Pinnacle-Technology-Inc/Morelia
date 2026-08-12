@@ -31,6 +31,7 @@ MODEL_MODULES = (
     "app.models.runtime_manifest",
     "app.models.runtime_ownership",
     "app.models.session",
+    "app.models.session_note",
     "app.models.session_template",
 )
 

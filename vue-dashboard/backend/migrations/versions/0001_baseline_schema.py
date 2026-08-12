@@ -553,6 +553,7 @@ def downgrade() -> None:
         ("ix_incidents_dataflow_id", "incidents"),
         ("ix_incidents_session_id", "incidents"),
         ("ix_incidents_incident_id", "incidents"),
+        ("ix_session_notes_session_created", "session_notes"),
     ):
         op.drop_index(index, table_name=table)
 
@@ -569,6 +570,10 @@ def downgrade() -> None:
         "runtime_manifests",
         "recovery_gaps",
         "incidents",
+        "session_notes",
         "sessions",
     ):
         op.drop_table(table)
+
+    op.drop_index("ix_experiments_name", table_name="experiments")
+    op.drop_table("experiments")

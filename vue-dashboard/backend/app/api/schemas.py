@@ -224,6 +224,48 @@ class SessionSchema(Schema):
     created_at = fields.DateTime(dump_only=True)
 
 
+class SessionNoteSchema(Schema):
+    id = fields.Integer(dump_only=True)
+    session_id = fields.Integer(dump_only=True)
+    body = fields.String(dump_only=True)
+    show_timestamp = fields.Boolean(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
+    updated_at = fields.DateTime(dump_only=True)
+
+
+class SessionNoteListQuerySchema(Schema):
+    limit = fields.Integer(load_default=100, validate=validate.Range(min=1, max=100))
+    before_id = fields.Integer(load_default=None, allow_none=True, validate=validate.Range(min=1))
+
+
+class SessionNotePageSchema(Schema):
+    items = fields.List(fields.Nested(SessionNoteSchema), dump_only=True)
+    has_more = fields.Boolean(dump_only=True)
+    next_before_id = fields.Integer(dump_only=True, allow_none=True)
+
+
+class CreateSessionNoteSchema(Schema):
+    body = fields.String(required=True, validate=validate.Length(min=1, max=4000))
+    show_timestamp = fields.Boolean(load_default=False)
+
+    @validates_schema
+    def validate_body(self, data, **kwargs):
+        if not data["body"].strip():
+            raise ValidationError("Must not be blank.", field_name="body")
+
+
+class UpdateSessionNoteSchema(Schema):
+    body = fields.String(validate=validate.Length(min=1, max=4000))
+    show_timestamp = fields.Boolean()
+
+    @validates_schema
+    def validate_update(self, data, **kwargs):
+        if not data:
+            raise ValidationError("Provide body or show_timestamp.")
+        if "body" in data and not data["body"].strip():
+            raise ValidationError("Must not be blank.", field_name="body")
+
+
 class FleetSessionRowSchema(Schema):
     """One row of the fleet overview (6f): lifecycle + live health + phase."""
 

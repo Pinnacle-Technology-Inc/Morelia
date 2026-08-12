@@ -12,7 +12,11 @@ class Session(db.Model):
     name = db.Column(db.String(255), nullable=False)
     status          = db.Column(db.Enum(SessionStatus), nullable=False, default=SessionStatus.PREPARING)
     policy          = db.Column(db.Enum(PolicyMode))
-    experiment_id   = db.Column(db.String(255))
+    experiment_id   = db.Column(
+        db.String(64),
+        db.ForeignKey("experiments.id", ondelete="RESTRICT"),
+        nullable=True,
+    )
     notes             = db.Column(db.Text, nullable=True)
     schedule          = db.Column(db.JSON, nullable=True)
     scheduled_for     = db.Column(db.DateTime(timezone=True), nullable=True, index=True)

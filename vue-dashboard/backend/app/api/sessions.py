@@ -5,19 +5,25 @@ import structlog
 from flask import current_app
 from flask_smorest import Blueprint, abort
 
+import app.services.session_notes as session_note_service
 import app.services.session_status as session_status_service
 import app.services.session_templates as session_template_service
 import app.services.sessions as session_service
 from app.api.schemas import (
+    CreateSessionNoteSchema,
     ExportSessionTemplateSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
     SessionNameSuggestionQuerySchema,
     SessionNameSuggestionSchema,
+    SessionNoteListQuerySchema,
+    SessionNotePageSchema,
+    SessionNoteSchema,
     SessionSchema,
     SessionStatusSnapshotSchema,
     SessionTemplateSchema,
     StopSessionSchema,
+    UpdateSessionNoteSchema,
 )
 
 _log = structlog.get_logger(__name__)
@@ -101,6 +107,40 @@ def session_status(session_id):
     return session_status_service.detail(session_id, live_health=_live_health())
 
 
+@blp.route("/<int:session_id>/notes", methods=["GET"])
+@blp.arguments(SessionNoteListQuerySchema, location="query")
+@blp.response(200, SessionNotePageSchema)
+def list_session_notes(query, session_id):
+    return session_note_service.list_page(
+        session_id,
+        limit=query["limit"],
+        before_id=query.get("before_id"),
+    )
+
+
+@blp.route("/<int:session_id>/notes", methods=["POST"])
+@blp.arguments(CreateSessionNoteSchema)
+@blp.response(201, SessionNoteSchema)
+def create_session_note(payload, session_id):
+    return session_note_service.create(
+        session_id,
+        body=payload["body"],
+        show_timestamp=payload["show_timestamp"],
+    )
+
+
+@blp.route("/<int:session_id>/notes/<int:note_id>", methods=["PATCH"])
+@blp.arguments(UpdateSessionNoteSchema)
+@blp.response(200, SessionNoteSchema)
+def update_session_note(payload, session_id, note_id):
+    return session_note_service.update(
+        session_id,
+        note_id,
+        body=payload.get("body"),
+        show_timestamp=payload.get("show_timestamp"),
+    )
+
+
 @blp.route("/<int:session_id>/commands/stop", methods=["POST"])
 @blp.arguments(StopSessionSchema)
 @blp.response(202, SessionSchema)
@@ -108,7 +148,7 @@ def stop_session(payload, session_id):
     _require_lifecycle_commands_enabled()
     force = bool(payload.get("force", False))
     if current_app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
-        supervisor = current_app.extensions.get("host_supervisor")
+        supervisor = current_app.extensions.get("host_supervisor") #Check if  the runtime host is running, else use the watchdog adapter to shutdown
         if supervisor is not None:
             return session_service.stop_managed(session_id, supervisor, force=force)
     return session_service.stop(session_id, current_app.extensions["watchdog_adapter"])

@@ -107,6 +107,7 @@ def register_error_handlers(app) -> None:
         OperationResolutionError,
         RuntimeNotTracked,
         RuntimeStartupFailed,
+        SessionNoteNotFound,
         SessionNotFound,
         SessionRunRequestConflict,
         SessionTemplateNameExists,
@@ -160,6 +161,7 @@ def register_error_handlers(app) -> None:
         ))
 
     app.register_error_handler(SessionNotFound,             _domain(404, "session_not_found"))
+    app.register_error_handler(SessionNoteNotFound,         _domain(404, "session_note_not_found"))
     app.register_error_handler(
         SessionRunRequestConflict,
         _domain(409, "session_run_request_conflict"),

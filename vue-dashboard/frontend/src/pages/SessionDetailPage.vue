@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   ArrowLeft,
   ExternalLink,
-  FilePlus2,
   FlaskConical,
   Play,
   Shield,
@@ -16,12 +15,14 @@ import CollapsibleSection from "../components/CollapsibleSection.vue";
 import CommandErrorDialog from "../components/CommandErrorDialog.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
+import SessionNotesList from "../components/SessionNotesList.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { normalizeSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
+import { createSessionNote, loadSessionNotes, updateSessionNote } from "../session-notes-api";
 import {
   deriveFlowStatus,
   deriveRatState,
@@ -53,6 +54,14 @@ const commandBusy = ref(false);
 const sourceTemplate = ref(null);
 const sourceTemplateState = ref("idle");
 const sourceTemplateError = ref("");
+const notes = ref([]);
+const notesState = ref("idle");
+const notesError = ref("");
+const noteEditor = ref(null);
+const noteBody = ref("");
+const noteShowTimestamp = ref(false);
+const noteBusy = ref(false);
+const noteSaveError = ref("");
 const activity = ref({ state: SessionEventState.IDLE, events: [], error: null });
 // Optimistic lifecycle from a just-issued command, shown until the refetch that
 // follows it lands. Cleared by refreshDetail() so the server always wins.
@@ -464,8 +473,70 @@ function onActivitySnapshot(snapshot) {
   }
 }
 
+async function refreshNotes() {
+  notesState.value = "loading";
+  notesError.value = "";
+  try {
+    const page = await loadSessionNotes(props.sessionId);
+    notes.value = page.items ?? [];
+    notesState.value = "live";
+  } catch (error) {
+    notesState.value = "unavailable";
+    notesError.value = error instanceof Error ? error.message : "Notes are unavailable.";
+  }
+}
+
+function openNewNote() {
+  noteEditor.value = { noteId: null };
+  noteBody.value = "";
+  noteShowTimestamp.value = false;
+  noteSaveError.value = "";
+}
+
+function openEditNote(note) {
+  noteEditor.value = { noteId: note.id };
+  noteBody.value = note.body;
+  noteShowTimestamp.value = Boolean(note.show_timestamp);
+  noteSaveError.value = "";
+}
+
+function closeNoteEditor() {
+  if (!noteBusy.value) noteEditor.value = null;
+}
+
+const noteCanSave = computed(() => {
+  const length = noteBody.value.trim().length;
+  return length > 0 && length <= 4000 && !noteBusy.value;
+});
+
+async function saveNote() {
+  if (!noteCanSave.value || !noteEditor.value) return;
+  noteBusy.value = true;
+  noteSaveError.value = "";
+  const payload = {
+    body: noteBody.value.trim(),
+    showTimestamp: noteShowTimestamp.value,
+  };
+  try {
+    if (noteEditor.value.noteId === null) {
+      const created = await createSessionNote(props.sessionId, payload);
+      notes.value = [created, ...notes.value];
+    } else {
+      const updated = await updateSessionNote(props.sessionId, noteEditor.value.noteId, payload);
+      notes.value = notes.value.map((note) => note.id === updated.id ? updated : note);
+    }
+    notesState.value = "live";
+    noteEditor.value = null;
+  } catch (error) {
+    noteSaveError.value = error instanceof Error ? error.message : "The note could not be saved.";
+  } finally {
+    noteBusy.value = false;
+  }
+}
+
 onMounted(() => {
   refreshDetail();
+  refreshNotes();
   eventStream = createSessionEventStream({
     sessionId: props.sessionId,
     onChange: onActivitySnapshot,
@@ -680,19 +751,26 @@ const tabTones = computed(() => ({
       <div v-if="activeTab === 'overview'" class="detail-grid">
         <BaseCard class="detail-panel">
           <h3>Session Summary</h3>
-          <!-- The session verdict leads the card so an operator can scan its
-               current state before reading the supporting configuration. -->
-          <div class="session-rat">
-            <RatRunIndicator :state="ratState" size="lg" />
-            <p :class="`session-rat__caption session-rat__caption--${ratState}`">{{ ratCaption }}</p>
-          </div>
-          <dl class="detail-list">
+          <div class="session-summary__overview">
+            <dl class="detail-list session-summary__details">
             <div><dt>Ownership</dt><dd>{{ view.isOwner ? "Owner session" : "Monitoring only" }}</dd></div>
             <div><dt>Experiment</dt><dd>{{ view.experiment ?? "Ungrouped" }}</dd></div>
             <div v-if="view.scheduledTime"><dt>Scheduled start</dt><dd>{{ formatTimestamp(view.scheduledTime) }}</dd></div>
             <div v-if="view.fallbackPolicy"><dt>Device policy</dt><dd>{{ formatStatus(view.fallbackPolicy) }}</dd></div>
             <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
           </dl>
+            <div class="session-rat">
+              <RatRunIndicator :state="ratState" size="lg" />
+              <p :class="`session-rat__caption session-rat__caption--${ratState}`">{{ ratCaption }}</p>
+            </div>
+          </div>
+          <SessionNotesList
+            :notes="notes"
+            :state="notesState"
+            :error="notesError"
+            @add="openNewNote"
+            @edit="openEditNote"
+          />
         </BaseCard>
         <!-- Stream Health IS the flow bar. These were two renderings of the same
              per-device facts sitting on one screen — the rail carried label,
@@ -1032,7 +1110,14 @@ const tabTones = computed(() => ({
       </div>
 
       <div v-else-if="activeTab === 'activity'">
-        <div class="detail-tab-actions"><BaseButton variant="secondary"><FilePlus2 :size="16" /> Add Note</BaseButton><BaseButton variant="secondary">Filter</BaseButton></div>
+        <div class="detail-tab-actions"><BaseButton variant="secondary">Filter</BaseButton></div>
+        <SessionNotesList
+          :notes="notes"
+          :state="notesState"
+          :error="notesError"
+          @add="openNewNote"
+          @edit="openEditNote"
+        />
         <p v-if="activity.state === 'unavailable' || activity.state === 'stale'" class="detail-alert">Activity is {{ activity.state }}. Showing only the last proven events.</p>
         <p v-else-if="!activity.events.length">No activity events have been received yet.</p>
         <div v-else class="phase-list"><div v-for="event in activity.events" :key="event.id ?? `${event.type}-${event.data.sequence}`"><code>#{{ event.id ?? "—" }}</code><strong>{{ event.type }}</strong><span>{{ event.data.phase ?? event.data.message ?? "Event received" }}</span></div></div>
@@ -1065,8 +1150,30 @@ const tabTones = computed(() => ({
         <span>The session cannot be restarted; start another run from its source template if needed.</span>
       </div>
     </GuardedDialog>
-    <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" description="Policy: Recommend" confirm-label="Approve Recovery" @close="dialog = null" @confirm="dialog = null">
-      <dl class="detail-list"><div><dt>Detected problem</dt><dd>Heartbeat timeout - 15 s silence</dd></div><div><dt>Proposed action</dt><dd>Reconnect through guarded session monitor</dd></div><div><dt>Expected interruption</dt><dd>About 8 s data gap</dd></div><div><dt>Required verification</dt><dd>Device health, sink access, data rate</dd></div></dl>
+    <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" :description="recovery?.operator_message ?? 'Recovery details are unavailable.'" :confirm-label="recovery ? 'Approve Recovery' : 'Close'" @close="dialog = null" @confirm="dialog = null">
+      <dl class="detail-list"><div><dt>Policy</dt><dd>{{ recoveryPolicy }}</dd></div><div><dt>Reason</dt><dd>{{ recovery?.reason ? formatStatus(recovery.reason) : "Unavailable" }}</dd></div><div><dt>Phase</dt><dd>{{ recovery?.phase ? formatStatus(recovery.phase) : "Unavailable" }}</dd></div><div><dt>Attempt</dt><dd>{{ recovery?.attempt ?? "Unavailable" }}</dd></div><div><dt>Next retry</dt><dd>{{ recovery?.next_retry_at ? formatTimestamp(recovery.next_retry_at) : "Unavailable" }}</dd></div><div><dt>Hardware access</dt><dd>{{ recovery?.hardware_access ? formatStatus(recovery.hardware_access) : "Unavailable" }}</dd></div><div><dt>Evidence</dt><dd><code>{{ formatRecoveryEvidence(recovery?.evidence) }}</code></dd></div></dl>
+    </GuardedDialog>
+    <GuardedDialog
+      v-if="noteEditor"
+      :title="noteEditor.noteId === null ? 'Add note' : 'Edit note'"
+      description="Notes are retained with this session. The timestamp is always stored; choose whether it is shown on the card."
+      :confirm-label="noteBusy ? 'Saving…' : 'Save note'"
+      :confirm-disabled="!noteCanSave"
+      @close="closeNoteEditor"
+      @confirm="saveNote"
+    >
+      <div class="dialog-form">
+        <label class="field">
+          <span>Note</span>
+          <textarea v-model="noteBody" rows="6" maxlength="4000" placeholder="Add operator context…"></textarea>
+        </label>
+        <label class="note-timestamp-option">
+          <input v-model="noteShowTimestamp" type="checkbox" />
+          <span>Show timestamp with this note</span>
+        </label>
+        <p class="note-character-count">{{ noteBody.length }} / 4000</p>
+        <p v-if="noteSaveError" class="form-notice" role="alert">{{ noteSaveError }}</p>
+      </div>
     </GuardedDialog>
     <CommandErrorDialog
       v-if="commandError"
@@ -1089,6 +1196,40 @@ const tabTones = computed(() => ({
 .source-template-heading h3,
 .source-template-heading p {
   margin: 0;
+}
+
+.session-summary__overview {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.session-summary__details,
+.session-summary__overview .session-rat {
+  margin: 0;
+}
+
+.session-summary__overview .session-rat {
+  min-width: 10rem;
+}
+
+.note-timestamp-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.note-timestamp-option input {
+  width: auto;
+}
+
+.note-character-count {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  text-align: right;
 }
 
 .source-snapshot {
