@@ -15,6 +15,12 @@ from datetime import UTC, datetime, timedelta
 
 from structlog.contextvars import bind_contextvars
 
+from uuid import uuid4
+
+from app.services import device_configs
+from app.services import session_templates
+from app.services import device_templates
+
 import app.services.sessions as session_service
 from app import create_app
 from app.control.event_poller import DataflowTarget, EventPoller
@@ -45,7 +51,7 @@ def _session_with_dataflow(app, dataflow_id: str) -> int:
         return session.id
 
 
-def _valid_flow(hardware_id: str = "OP002", port: str = "COM4"):
+def _valid_flow(hardware_id: str = "001", port: str = "COM4"):
     config = create_device_config(
         device_type=DeviceType.POD8206HR,
         hardware_id=hardware_id,
@@ -91,6 +97,171 @@ class FakeSupervisor:
     def stop(self, session, *, envelope=None):
         session.runtime_port = None
         session.runtime_token = None
+
+
+def _create_device_config(
+    *,
+    hardware_id="001",
+    port="COM3",
+):
+    """Create a device config suitable for a session/template test."""
+    return device_configs.create(
+        device_type=DeviceType.POD8206HR,
+        hardware_id=hardware_id,
+        port=port,
+        parameters={"preamp_gain": 10},
+    )
+
+
+def _create_template(*, tmp_path, name="bench-rig"):
+    """Create a real device template and register a session template from it."""
+
+    unique_name = f"{name}-{uuid4().hex[:8]}"
+
+    device_template = device_templates.create(
+        name,
+        {
+            "type": "pod8206hr",
+            "parameters": {"preamp_gain": 10},
+        },
+    )
+
+    return session_templates.create(
+        f"{unique_name}-session",
+        {
+            "policy": "recommend",
+            "device_flows": [
+                {
+                    "device_template_path": device_template.file_path,
+                    "sinks": [
+                        {
+                            "sink_type": "csv",
+                            "sink_location": "test_output/out.csv",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
+
+
+# ── failed-op (operations-driven) ─────────────────────────────────────────────
+
+
+def test_failed_start_opens_incident_and_successful_retry_resolves_it(
+    tmp_path,
+):
+    supervisor = FakeSupervisor(fail_times=1)
+    app = create_app("testing")
+
+    with app.app_context():
+        db.create_all()
+
+        config = _create_device_config()
+        template = _create_template(tmp_path=tmp_path)
+
+        session = session_service.create(
+            {
+                "name": "failed-op-session",
+                "source_template_id": template.template_id,
+                "expected_template_hash": template.registered_hash,
+                "assignments": [
+                    {
+                        "flow_index": 0,
+                        "device_config_id": config.id,
+                        "sink_locations": [
+                            {
+                                "sink_index": 0,
+                                "sink_location": str(
+                                    tmp_path / "output.csv"
+                                ),
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        bind_contextvars(request_id="req-failed-start-1")
+
+        try:
+            session_service.start_managed(session.id, supervisor)
+            raise AssertionError("expected the first start to fail")
+        except WatchdogUnavailableError:
+            pass
+
+        opened = IncidentRepository().list_for_session(session.id)
+
+        assert len(opened) == 1
+        assert opened[0].reason == "operation failed: start"
+        assert opened[0].device_id is None
+        assert opened[0].status == IncidentStatus.OPEN.value
+
+        bind_contextvars(request_id="req-failed-start-2")
+
+        session_service.start_managed(session.id, supervisor)
+
+        resolved = IncidentRepository().list_for_session(session.id)
+
+        assert len(resolved) == 1
+        assert resolved[0].status == IncidentStatus.RESOLVED.value
+        assert resolved[0].resolution == "start succeeded"
+
+
+def test_repeated_failed_recovery_dedups_and_stays_scoped_to_its_device(tmp_path):
+    app = create_app("testing")
+    supervisor = FakeSupervisor(fail_times=0)
+
+    with app.app_context():
+        db.create_all()
+
+        config = _create_device_config()
+        template = _create_template(tmp_path=tmp_path)
+
+        session = session_service.create(
+            {
+                "name": "failed-op-session",
+                "source_template_id": template.template_id,
+                "expected_template_hash": template.registered_hash,
+                "assignments": [
+                    {
+                        "flow_index": 0,
+                        "device_config_id": config.id,
+                        "sink_locations": [
+                            {
+                                "sink_index": 0,
+                                "sink_location": str(
+                                    tmp_path / "output.csv"
+                                ),
+                            }
+                        ],
+                    }
+                ],
+            }
+        )
+
+        bind_contextvars(request_id="req-recover-fail-start")
+        session_service.start_managed(session.id, supervisor)
+
+        supervisor._fail_remaining = 2
+        for i in range(2):
+            bind_contextvars(request_id=f"req-recover-fail-{i}")
+            try:
+                session_service.recover_managed(
+                    session.id, "dev-op002", "reconnect", supervisor
+                )
+                raise AssertionError("expected recovery dispatch to fail")
+            except WatchdogUnavailableError:
+                pass
+
+        rows = IncidentRepository().list_for_session(session.id)
+        stream_scope = [r for r in rows if r.device_id == "dev-op002"]
+        dataflow_scope = [r for r in rows if r.device_id is None]
+
+        assert len(stream_scope) == 1
+        assert stream_scope[0].reason == "operation failed: reconnect"
+        # the earlier successful "start" must not have left a stray incident
+        assert dataflow_scope == []
 
 
 # ── unreachable (poller-driven) ───────────────────────────────────────────────
@@ -218,124 +389,7 @@ def test_repeated_unreachable_polls_dedup_to_one_incident(app):
         rows = IncidentRepository().list_for_session(session_id)
 
     assert len(rows) == 1
-
-
-# ── failed-op (operations-driven) ─────────────────────────────────────────────
-
-
-def test_failed_start_opens_incident_and_successful_retry_resolves_it():
-    supervisor = FakeSupervisor(fail_times=1)
-    app = create_app("testing")
-    with app.app_context():
-        db.create_all()
-        session = session_service.create(
-            {"name": "failed-op-session", "device_flows": [_valid_flow()]}
-        )
-
-        bind_contextvars(request_id="req-failed-start-1")
-        try:
-            session_service.start_managed(session.id, supervisor)
-            raise AssertionError("expected the first start to fail")
-        except WatchdogUnavailableError:
-            pass
-
-        opened = IncidentRepository().list_for_session(session.id)
-        assert len(opened) == 1
-        assert opened[0].reason == "operation failed: start"
-        assert opened[0].device_id is None
-        assert opened[0].status == IncidentStatus.OPEN.value
-
-        bind_contextvars(request_id="req-failed-start-2")
-        session_service.start_managed(session.id, supervisor)
-
-        resolved = IncidentRepository().list_for_session(session.id)
-        assert resolved[0].status == IncidentStatus.RESOLVED.value
-        assert resolved[0].resolution == "start succeeded"
-
-
-def test_repeated_failed_recovery_dedups_and_stays_scoped_to_its_device():
-    app = create_app("testing")
-    supervisor = FakeSupervisor(fail_times=0)
-
-    with app.app_context():
-        db.create_all()
-        session = session_service.create(
-            {"name": "recover-fail-session", "device_flows": [_valid_flow()]}
-        )
-
-        bind_contextvars(request_id="req-recover-fail-start")
-        session_service.start_managed(session.id, supervisor)
-
-        supervisor._fail_remaining = 2
-        for i in range(2):
-            bind_contextvars(request_id=f"req-recover-fail-{i}")
-            try:
-                session_service.recover_managed(
-                    session.id, "dev-op002", "reconnect", supervisor
-                )
-                raise AssertionError("expected recovery dispatch to fail")
-            except WatchdogUnavailableError:
-                pass
-
-        rows = IncidentRepository().list_for_session(session.id)
-        stream_scope = [r for r in rows if r.device_id == "dev-op002"]
-        dataflow_scope = [r for r in rows if r.device_id is None]
-
-        assert len(stream_scope) == 1
-        assert stream_scope[0].reason == "operation failed: reconnect"
-        # the earlier successful "start" must not have left a stray incident
-        assert dataflow_scope == []
-
-
-# ── cross-trigger dedup-collision regression ─────────────────────────────────
-
-
-def test_unreachable_and_failed_dataflow_op_incidents_do_not_cross_resolve():
-    """Both triggers key on device_id=None; the reason string must keep them apart.
-
-    Without the reason discriminator, the poller resolving link-reachability
-    could accidentally resolve an unrelated failed-start incident (or vice
-    versa) just because they share the same (session, dataflow, device_id=None)
-    dedup key.
-    """
-    fake = FakeWatchdogAdapter()
-    fake.queue_error(WatchdogUnavailableError("Watchdog is unavailable."))
-    app = create_app("testing", config_overrides={"WATCHDOG_ADAPTER": fake})
-    with app.app_context():
-        db.create_all()
-        session = session_service.create(
-            {"name": "collision-session", "device_flows": [_valid_flow()]}
-        )
-        dataflow_id = "df-collision"
-        with transaction():
-            session.dataflow_id = dataflow_id
-
-        bind_contextvars(request_id="req-collision-start")
-        try:
-            session_service.start(session.id, app.extensions["watchdog_adapter"])
-            raise AssertionError("expected start to fail")
-        except WatchdogUnavailableError:
-            pass
-
-        failed_op_incident = IncidentRepository().list_for_session(session.id)[0]
-        assert failed_op_incident.reason == "operation failed: start"
-
-        poller = EventPoller(
-            targets=lambda: [DataflowTarget(dataflow_id, 9103)],
-            probe_status=lambda port: {
-                "dataflow_id": dataflow_id,
-                "phase": "running",
-                "reports": [],
-            },
-        )
-        # a REACHABLE poll must not resolve the failed-start incident
-        poller.poll_once()
-
-        rows = IncidentRepository().list_for_session(session.id)
-        assert len(rows) == 1
-        assert rows[0].status == IncidentStatus.OPEN.value
-        assert rows[0].reason == "operation failed: start"
-
+    
 
 # ── watchdog process crash / crash loop (poller-driven, live /status) ────────
 

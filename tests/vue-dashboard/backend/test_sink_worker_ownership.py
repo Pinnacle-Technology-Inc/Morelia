@@ -43,14 +43,14 @@ _FIELDS_8206 = ["time", "EEG1", "EEG2", "EEG3/EMG", "TTL1", "TTL2", "TTL3", "TTL
 
 
 def _manifest(csv_path: str) -> Manifest:
-    device_id = "pod8206hr:hw1"
+    device_id = "pod8206hr:001"
     flow = DeviceFlow(
         device_id=device_id,
         name="pod8206hr",
         nickname=None,
-        hardware_id="hw1",
+        hardware_id="001",
         port="COM3",
-        parameters={},
+        parameters={"sample_rate": 2_000},
         sinks=(
             SinkConfig(
                 sink_id=f"{device_id}:main",
@@ -117,10 +117,10 @@ def test_build_csv_sink_uses_sinkconfig_identity_and_path(tmp_path, app):
     runtime = _runtime(_manifest(str(csv_path)))
     sink_config = SimpleNamespace(
         type=SinkType.CSV,
-        sink_id="pod8206hr:hw1:extra",
+        sink_id="pod8206hr:001:extra",
         parameters={"file_path": str(csv_path)},
     )
-    device_flow = SimpleNamespace(device_id="pod8206hr:hw1")
+    device_flow = SimpleNamespace(device_id="pod8206hr:001")
 
     sink = runtime._build_csv_sink(
         ManagedCsvSink, device_flow, sink_config, DeviceType.POD8206HR, pod=object()
@@ -128,7 +128,7 @@ def test_build_csv_sink_uses_sinkconfig_identity_and_path(tmp_path, app):
 
     d = sink.get_dict()
     assert d["path"] == str(csv_path)
-    assert d["sink_id"] == "pod8206hr:hw1:extra"
+    assert d["sink_id"] == "pod8206hr:001:extra"
     assert sink.opened is False
 
 
@@ -136,10 +136,10 @@ def test_build_csv_sink_rejects_non_csv_sink_type(tmp_path):
     runtime = _runtime(_manifest(str(tmp_path / "x.csv")))
     non_csv = SimpleNamespace(
         type=SinkType.EDF,
-        sink_id="pod8206hr:hw1:edf",
+        sink_id="pod8206hr:001:edf",
         parameters={"file_path": str(tmp_path / "y.edf")},
     )
-    device_flow = SimpleNamespace(device_id="pod8206hr:hw1")
+    device_flow = SimpleNamespace(device_id="pod8206hr:001")
 
     with pytest.raises(ValueError, match="unsupported Morelia sink type"):
         runtime._build_csv_sink(

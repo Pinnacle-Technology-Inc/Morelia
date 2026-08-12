@@ -119,7 +119,7 @@ def test_device_config_records_source_template_hash(tmp_path):
         )
         config = device_configs.create_from_template(
             template,
-            hardware_id="A1B2C",
+            hardware_id="001",
             port="COM1",
         )
 
@@ -135,7 +135,7 @@ def test_session_template_api_object_exposes_reference_warning_state(tmp_path):
             {"type": "pod8206hr", "parameters": {"preamp_gain": 10, "sample_rate": 2000}},
         )
         row = session_templates.create(
-            "session",
+            "reference-warning-session",
             {
                 "device_flows": [
                     {

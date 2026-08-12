@@ -184,16 +184,33 @@ def test_quiescing_control_plane_rejects_new_session_lifecycle_commands(
             return {"tracked_runtime_count": 0}
 
     app.extensions["host_supervisor"] = StubSupervisor()
-    monkeypatch.setattr(runtimes_api, "_schedule_process_shutdown", lambda: None)
+    monkeypatch.setattr(
+        runtimes_api, "_schedule_process_shutdown", lambda: None
+    )
 
     restart = client.post("/api/v1/runtimes/control-plane-restart")
+
     response = client.post(
-        "/api/v1/sessions/1/commands/start",
-        json={"force": False, "sink_overrides": {}},
+        "/api/v1/session-runs",
+        json={
+            "idempotency_key": "quiescing-test-1",
+            "source_template_id": "test-template",
+            "expected_template_hash": "0" * 64,
+            "assignments": [
+                {
+                    "flow_index": 0,
+                    "device_config_id": 1,
+                    "sink_locations": [],
+                }
+            ],
+            "execution": {
+                "mode": "immediate",
+            },
+        },
     )
 
     assert restart.status_code == 202
-    assert response.status_code == 503
+    assert response.status_code == 503, response.get_json()
     assert response.get_json()["code"] == "control_plane_quiescing"
 
 

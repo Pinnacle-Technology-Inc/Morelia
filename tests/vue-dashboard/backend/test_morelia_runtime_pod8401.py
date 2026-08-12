@@ -3,6 +3,8 @@ from types import SimpleNamespace
 
 import pytest
 
+from tests.mocks.device.pod_8401HR.MockPodDevice_8401HR import MockPod8401HR
+
 from app.runtime_child.morelia import MoreliaRuntime
 
 
@@ -18,31 +20,6 @@ class _PrimaryChannelMode(Enum):
 class _SecondaryChannelMode(Enum):
     ANALOG = auto()
     DIGITAL = auto()
-
-
-class _Pod8401HR:
-    def __init__(
-        self,
-        port,
-        preamp,
-        primary_channel_modes,
-        secondary_channel_modes,
-        *,
-        ss_gain,
-        preamp_gain,
-        baudrate,
-        device_name,
-        use_d2xx,
-    ):
-        self.port = port
-        self.preamp = preamp
-        self.primary_channel_modes = primary_channel_modes
-        self.secondary_channel_modes = secondary_channel_modes
-        self.ss_gain = ss_gain
-        self.preamp_gain = preamp_gain
-        self.baudrate = baudrate
-        self.device_name = device_name
-        self.use_d2xx = use_d2xx
 
 
 def test_build_pod8401hr_passes_six_secondary_modes_to_morelia():
@@ -66,7 +43,7 @@ def test_build_pod8401hr_passes_six_secondary_modes_to_morelia():
     )
 
     pod = MoreliaRuntime._build_pod8401hr(
-        _Pod8401HR,
+        MockPod8401HR,
         _Preamp,
         _PrimaryChannelMode,
         _SecondaryChannelMode,
@@ -103,7 +80,7 @@ def test_build_pod8401hr_rejects_four_secondary_modes():
 
     with pytest.raises(ValueError, match="secondary_channel_modes must be a 6-tuple"):
         MoreliaRuntime._build_pod8401hr(
-            _Pod8401HR,
+            MockPod8401HR,
             _Preamp,
             _PrimaryChannelMode,
             _SecondaryChannelMode,

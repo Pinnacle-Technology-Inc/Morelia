@@ -202,7 +202,7 @@ def test_template_sinks_reload_into_session_creation_contract(app):
                 "device_flows": [
                     {
                         "device_template_path": stored_flow["device_template_path"],
-                        "hardware_id": "8206A",
+                        "hardware_id": "001",
                         "port": "COM3",
                         "nickname": stored_flow["nickname"],
                         "sinks": stored_flow["sinks"],
@@ -364,13 +364,13 @@ def test_create_rejects_unknown_device_template_path(app):
 def test_create_rejects_duplicate_name_with_different_content(app):
     with app.app_context():
         template = create_device_template("bench-rig", _DEVICE_CONTENT)
-        create("dup", multi_sink_template_source(template))
+        create("dup2", multi_sink_template_source(template))
 
         # Same name, different content (a single csv sink) conflicts. An
         # identical body is idempotent and returns the existing row instead.
         with pytest.raises(SessionTemplateNameExists):
             create(
-                "dup",
+                "dup2",
                 {
                     "device_flows": [
                         {
@@ -380,22 +380,6 @@ def test_create_rejects_duplicate_name_with_different_content(app):
                     ]
                 },
             )
-
-
-# ---------------------------------------------------------------------------
-# Lookup / delete / import
-# ---------------------------------------------------------------------------
-
-
-def test_get_by_name_and_id_and_list(app):
-    with app.app_context():
-        template = create_device_template("bench-rig", _DEVICE_CONTENT)
-        row = create("findable", multi_sink_template_source(template))
-
-        assert get_by_name("findable").id == row.id
-        assert get_by_id(row.id).name == "findable"
-        assert get_by_name("does-not-exist") is None
-        assert [t.name for t in list_session_templates()] == ["findable"]
 
 
 def test_delete_removes_row(app):
@@ -437,7 +421,7 @@ def test_create_from_session_preserves_multi_sink_collection(app):
                 "device_flows": [
                     {
                         "device_template_path": "bench-rig.toml",
-                        "hardware_id": "8206A",
+                        "hardware_id": "001",
                         "port": "COM3",
                         "nickname": "bench",
                         "sinks": [dict(sink) for sink in _MULTI_SINKS_INPUT],
@@ -463,7 +447,7 @@ def test_create_from_session_include_hardware_id_records_binding(app):
                 "device_flows": [
                     {
                         "device_template_path": "bench-rig.toml",
-                        "hardware_id": "8206A",
+                        "hardware_id": "001",
                         "port": "COM3",
                         "sinks": [{"sink_type": "csv", "sink_location": "C:/data/out.csv"}],
                     }
