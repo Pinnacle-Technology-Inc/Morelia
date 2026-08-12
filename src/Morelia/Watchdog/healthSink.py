@@ -1,7 +1,9 @@
 """Sink that reports a rich data-health status from the worker to the main process."""
 
 import time
+from functools import partial
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
 from Morelia.Stream.sink import SinkInterface
 
 
@@ -84,3 +86,29 @@ class HealthSink(SinkInterface):
             "rate_window_sec": self._rate_window_sec,
             "samples_per_packet": self._samples_per_packet,
         }
+
+    @property
+    def param_schema(self) -> ParamSchema:
+        """Describe the operator-tunable health sampling parameters.
+        """
+
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset(
+                {"min_interval_sec", "rate_window_sec", "samples_per_packet"}
+            ),
+            validators={
+                "min_interval_sec": partial(
+                    self._check_positive_number,
+                    key="min_interval_sec",
+                ),
+                "rate_window_sec": partial(
+                    self._check_positive_number,
+                    key="rate_window_sec",
+                ),
+                "samples_per_packet": partial(
+                    self._check_positive_int,
+                    key="samples_per_packet",
+                ),
+            },
+        )

@@ -1304,18 +1304,23 @@ class Pod8401HR(AcquisitionDevice) :
                 f"preamp must be one of {sorted(Preamp.__members__)}; got {value!r}"
             )
 
+    def _check_sample_rate(self, value: object) -> None:
+        if not isinstance(value, int) or isinstance(value, bool) or not 2000 <= value <= 20_000:
+            raise ValueError("sample_rate must be an integer >= 2000 and <= 10,000")
+
     @property
     def param_schema(self):
         return ParamSchema(
             required=frozenset(
                 {"preamp", "primary_channel_modes", "secondary_channel_modes"}
             ),
-            optional=frozenset({"ss_gain", "preamp_gain"}),
+            optional=frozenset({"ss_gain", "preamp_gain", "sample_rate"}),
             validators={
                 "preamp": self._check_preamp,
                 "primary_channel_modes": self._check_primary_channel_modes,
                 "secondary_channel_modes": self._check_secondary_channel_modes,
                 "ss_gain": self._check_ss_gain,
                 "preamp_gain": self._check_preamp_gain_tuple,
+                "sample_rate": self._check_sample_rate,
             },
         )
