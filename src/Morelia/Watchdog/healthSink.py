@@ -4,6 +4,8 @@ import time
 
 from Morelia.Stream.sink import SinkInterface
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 
 class HealthSink(SinkInterface):
     """Pass-through sink that stamps shared status when data flows.
@@ -84,3 +86,17 @@ class HealthSink(SinkInterface):
             "rate_window_sec": self._rate_window_sec,
             "samples_per_packet": self._samples_per_packet,
         }
+
+    @property
+    def param_schema(self):
+        return ParamSchema(
+            required=frozenset(),
+            optional=frozenset({
+                "shared_status",
+                "stream_name",
+                "min_interval_sec",
+                "rate_window_sec",
+                "samples_per_packet",
+            }),
+            validators={},
+        ),

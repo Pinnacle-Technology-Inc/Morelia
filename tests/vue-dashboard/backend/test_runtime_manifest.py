@@ -22,7 +22,7 @@ def _make_manifest() -> Manifest:
                 device_id="dev-1",
                 name="device-1",
                 nickname=None,
-                hardware_id="hw-1",
+                hardware_id="001",
                 port="usb-1",
                 parameters={"sample_rate": 250},
                 sink_type=SinkType.CSV,
@@ -94,7 +94,7 @@ _DEVICE_CONTENT = {
 }
 
 _DEVICE_FLOW_ENTRY = {
-    "hardware_id": "HW001",
+    "hardware_id": "002",
     "port": "/dev/ttyUSB0",
     "sink_type": "csv",
     "sink_location": "/data/out.csv",
@@ -221,7 +221,7 @@ def test_resolve_reproducible_hash(app):
 # (preflight/factory/integration): one source fanning out to a file sink, a
 # service sink, and a plot sink, in order.
 _MULTI_SINK_ENTRY = {
-    "hardware_id": "HW002",
+    "hardware_id": "004",
     "port": "/dev/ttyUSB1",
     "sinks": [
         {"sink_name": "raw-csv", "sink_type": "csv", "sink_location": "/data/multi.csv"},
@@ -255,7 +255,7 @@ def test_resolve_multi_sink_source_to_ordered_v2_descriptors(app):
         assert len(manifest.device_flows) == 1
         df = manifest.device_flows[0]
         device_id = df.device_id
-        assert device_id == "pod8206hr:HW002"
+        assert device_id == "pod8206hr:004"
 
         # Order preserved; each sink keeps its source-local identity.
         assert [s.name for s in df.sinks] == ["raw-csv", "live", "scope"]

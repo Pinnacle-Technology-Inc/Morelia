@@ -62,7 +62,7 @@ def _create_session(app, *, name: str, sink_location: str | None = None):
             sink["sink_location"] = sink_location
         flow = {
             "device_template_path": template.file_path,
-            "hardware_id": "HW001",
+            "hardware_id": "001",
             "port": "COM3",
             "nickname": "bench",
             "sinks": [sink],
@@ -135,7 +135,7 @@ def test_export_to_path_mints_a_new_device_template_for_a_drifted_config(app, mo
                 "device_flows": [
                     {
                         "device_template_path": template.file_path,
-                        "hardware_id": "HW001",
+                        "hardware_id": "001",
                         "port": "COM3",
                         "sinks": [{"sink_name": "csv", "sink_type": "csv"}],
                     }

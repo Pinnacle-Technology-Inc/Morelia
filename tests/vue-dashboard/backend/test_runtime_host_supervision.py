@@ -99,7 +99,7 @@ def session_id(sup_app):
                     "device_id": "dev-sup-1",
                     "name": "device-sup-1",
                     "nickname": None,
-                    "hardware_id": "hw-sup-1",
+                    "hardware_id": "001",
                     "port": "usb-1",
                     "parameters": {},
                     "sink_type": "csv",
@@ -308,7 +308,7 @@ class TestShutdownFinalization:
             session = _create_session_config_shape_session(
                 name="shutdown-finalize",
                 dataflow_id="df-shutdown-final",
-                hardware_id="SF001",
+                hardware_id="001",
             )
 
             head = create(
@@ -351,7 +351,7 @@ class TestReconcile:
             session = _create_session_config_shape_session(
                 name="raw-no-port",
                 dataflow_id="df-raw-no-port",
-                hardware_id="RT001",
+                hardware_id="002",
             )
 
             fresh_sup = HostSupervisor()
@@ -505,7 +505,7 @@ def _wpd_manifest(dataflow_id: str = "df-wpd-1") -> Manifest:
                 device_id="dev-a",
                 name="device-a",
                 nickname=None,
-                hardware_id="hw-a",
+                hardware_id="003",
                 port="usb-1",
                 parameters={},
                 sink_type=SinkType.CSV,
