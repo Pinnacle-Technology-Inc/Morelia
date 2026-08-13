@@ -12,7 +12,6 @@ import signal
 import sys
 import traceback
 import logging
-from dataclasses import dataclass
 from multiprocessing import Event
 import threading
 import time
@@ -30,63 +29,24 @@ from reactivex.operators import do_action
 
 _log = logging.getLogger(__name__)
 
-# failure_kind vocabulary
-SINK_FAILURE_WRITE = "sink_write"
-SOURCE_FAILURE_READ = "source_read"
-# state vocabulary
-SINK_STATE_TERMINAL = "terminal"
-SINK_STATE_DEGRADED = "degraded"
-SOURCE_STATE_DEGRADED = "degraded"
-SOURCE_STATE_RECOVERED = "recovered"
-# Bound so a hostile/huge exception message cannot blow up durable telemetry.
-_MAX_SINK_ERROR_MESSAGE = 500
-_MAX_SOURCE_ERROR_MESSAGE = 500
-_SOURCE_ERROR_EMIT_INTERVAL_SEC = 1.0
 
-
-@dataclass(frozen=True)
-class SinkError:
-    """One attributable sink-write failure event.
-
-    :param source_id: Stable identity of the source feeding the sink.
-    :param sink_id: Stable identity of the failing sink 
-    :param sink_class: Concrete sink class name.
-    :param failure_kind: One of the ``SINK_FAILURE_*`` vocabulary.
-    :param exception_type: ``type(exc).__name__`` of the raised exception.
-    :param message: Bounded/redacted ``str(exc)``.
-    :param state: One of the ``SINK_STATE_*`` vocabulary.
-    :param last_success_seq: Count of successful ``flush`` calls before this
-        failure (the last successful delivery/write), or ``None`` if unknown.
-    :param timestamp_ns: ``time.time_ns()`` when the event was created.
+class MissingSample:
+    """Insert fill-in blank sample during source disconnect
     """
 
-    source_id: str
-    sink_id: str
-    sink_class: str
-    failure_kind: str
-    exception_type: str
-    message: str
-    state: str
-    last_success_seq: int | None
-    timestamp_ns: int
+    is_missing_sample = True
 
-
-@dataclass(frozen=True)
-class SourceReadStatus:
-    """One bounded source-read state transition or periodic failure update."""
-
-    source_id: str
-    source_port: str | None
-    failure_kind: str
-    exception_type: str | None
-    message: str | None
-    state: str
-    consecutive_failures: int
-    timestamp_ns: int
+    def __getattr__(self, name):
+        # Legacy 8274 sinks iterate these packet fields; the other POD sinks
+        # read scalar channel attributes. One marker always represents one
+        # sample, regardless of device packet shape.
+        if name in {"ch5", "ch6", "ch7"}:
+            return (float("nan"),)
+        return float("nan")
 
 
 def _source_identity(pod) -> str:
-    """Return a stable source identity string for telemetry."""
+    """Return the configured device name, or its class name when none is set."""
     name = getattr(pod, "device_name", None)
     if isinstance(name, str) and name:
         return name
@@ -94,7 +54,7 @@ def _source_identity(pod) -> str:
 
 
 def _source_port(pod) -> str | None:
-    """Return the configured source port without exposing a live handle."""
+    """Return the configured port name without probing hardware."""
     for attr in ("port", "_port_name", "_name"):
         value = getattr(pod, attr, None)
         if isinstance(value, str) and value:
@@ -102,62 +62,89 @@ def _source_port(pod) -> str | None:
     return None
 
 
+def _source_port_is_present(pod, source_port: str | None) -> bool | None:
+    """Check whether the configured port appears in the operating system.
+
+    Returns ``True`` when present, ``False`` when absent, and ``None`` when the
+    port list cannot be read.
+    """
+    if source_port is None:
+        return False
+    expected = source_port.lower()
+    try:
+        if getattr(pod, "_use_d2xx", False):
+            from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+
+            for device in list_d2xx_devices():
+                identifiers = {
+                    str(device.get(key, "")).lower()
+                    for key in ("index", "serial", "description")
+                }
+                if expected in identifiers:
+                    return True
+            return False
+
+        import serial.tools.list_ports
+
+        return any(
+            str(port_info.device).lower() == expected
+            for port_info in serial.tools.list_ports.comports()
+        )
+    except Exception:
+        return None
+
+
 def _sink_identity(sink) -> str:
-    """Prefer an explicit ``sink_id`` (set by managed backend sinks); else the class name."""
+    """Return a sink's configured ID, or its class name when no ID is set."""
     sink_id = getattr(sink, "sink_id", None)
     if isinstance(sink_id, str) and sink_id:
         return sink_id
     return type(sink).__name__
 
 
-def _redact_sink_message(exc: BaseException) -> str:
-    """Bound the exception message so a single event stays small and safe to persist."""
+def _bounded_error_message(exc: BaseException, max_chars: int) -> str:
+    """Convert an exception to text and truncate it to ``max_chars`` characters."""
     text = str(exc)
-    if len(text) > _MAX_SINK_ERROR_MESSAGE:
-        return text[:_MAX_SINK_ERROR_MESSAGE] + "...[truncated]"
+    if len(text) > max_chars:
+        return text[:max_chars] + "...[truncated]"
     return text
 
 
-def _redact_source_message(exc: BaseException) -> str:
-    """Bound source exception text before it crosses the worker boundary."""
-    text = str(exc)
-    if len(text) > _MAX_SOURCE_ERROR_MESSAGE:
-        return text[:_MAX_SOURCE_ERROR_MESSAGE] + "...[truncated]"
-    return text
+def _build_sink_error(
+    dispatch: "_SinkDispatch",
+    exc: BaseException,
+    state: str,
+) -> dict[str, object]:
+    """Describe one sink write failure using plain, process-safe values."""
+    return {
+        "source_id": dispatch.source_id,
+        "sink_id": _sink_identity(dispatch.sink),
+        "sink_class": type(dispatch.sink).__name__,
+        "failure_kind": "sink_write",
+        "exception_type": type(exc).__name__,
+        "message": _bounded_error_message(exc, dispatch.max_error_message_chars),
+        "state": state,
+        "last_success_seq": dispatch.success_count,
+        "timestamp_ns": time.time_ns(),
+    }
 
 
-def _build_sink_error(dispatch: "_SinkDispatch", exc: BaseException, state: str) -> SinkError:
-    """Construct the structured event for a sink dispatch that just failed."""
-    return SinkError(
-        source_id=dispatch.source_id,
-        sink_id=_sink_identity(dispatch.sink),
-        sink_class=type(dispatch.sink).__name__,
-        failure_kind=SINK_FAILURE_WRITE,
-        exception_type=type(exc).__name__,
-        message=_redact_sink_message(exc),
-        state=state,
-        last_success_seq=dispatch.success_count,
-        timestamp_ns=time.time_ns(),
-    )
+def _emit_sink_error(on_sink_error, event: dict[str, object]) -> None:
+    """Send a sink failure to its callback, or write it to the application log.
 
-
-def _emit_sink_error(on_sink_error, event: SinkError) -> None:
-    """Deliver ``event`` without ever letting reporting crash acquisition.
-
-    With no callback configured, the failure is logged so tests do not depend on stdout text. 
-    If the callback itself raises, the exception is swallowed and logged: acquisition and healthy 
-    sibling sinks keep running.
+    Reporting errors are logged and swallowed so they cannot stop acquisition
+    or interrupt healthy sinks.
     """
     if on_sink_error is None:
         _log.error(
             "sink write failed source=%s sink=%s (%s) %s: %s [state=%s last_success_seq=%s]",
-            event.source_id,
-            event.sink_id,
-            event.sink_class,
-            event.exception_type,
-            event.message,
-            event.state,
-            event.last_success_seq,
+            event["source_id"],
+            event["sink_id"],
+            event["sink_class"],
+            event["exception_type"],
+            event["message"],
+            event["state"],
+            event["last_success_seq"],
         )
         return
     try:
@@ -165,23 +152,23 @@ def _emit_sink_error(on_sink_error, event: SinkError) -> None:
     except Exception:
         _log.error(
             "on_sink_error callback raised for sink=%s; acquisition continues",
-            event.sink_id,
+            event["sink_id"],
             exc_info=True,
         )
 
 
-def _emit_source_status(on_source_error, event: SourceReadStatus) -> None:
-    """Deliver source-read telemetry without allowing reporting to stop acquisition."""
+def _emit_source_status(on_source_error, event: dict[str, object]) -> None:
+    """Send a source status update without intefering acquisition."""
     if on_source_error is None:
-        log = _log.info if event.state == SOURCE_STATE_RECOVERED else _log.warning
+        log = _log.info if event["state"] == "recovered" else _log.warning
         log(
             "source read status source=%s port=%s state=%s error=%s failures=%s message=%s",
-            event.source_id,
-            event.source_port,
-            event.state,
-            event.exception_type,
-            event.consecutive_failures,
-            event.message,
+            event["source_id"],
+            event["source_port"],
+            event["state"],
+            event["exception_type"],
+            event["consecutive_failures"],
+            event["message"],
         )
         return
     try:
@@ -189,29 +176,46 @@ def _emit_source_status(on_source_error, event: SourceReadStatus) -> None:
     except Exception:
         _log.error(
             "on_source_error callback raised for source=%s; acquisition continues",
-            event.source_id,
+            event["source_id"],
             exc_info=True,
         )
 
 
 class _SinkDispatch:
-    """Deliver source data to one sink and turn write failures into one event.
-    
-    This process is indendpent per source to sink pair, so sibling sink will not be
-    interrupted
+    """Deliver samples to one sink and isolate that sink if a write fails.
+
+    Each source-to-sink pair has its own dispatch, so one failed sink does not
+    interrupt the other sinks receiving data from the same source.
     """
 
-    __slots__ = ("sink", "source_id", "_on_sink_error", "success_count", "failed")
+    __slots__ = (
+        "sink",
+        "source_id",
+        "max_error_message_chars",
+        "_on_sink_error",
+        "success_count",
+        "failed",
+    )
 
-    def __init__(self, sink, source_id: str, on_sink_error) -> None:
+    def __init__(
+        self,
+        sink,
+        source_id: str,
+        on_sink_error,
+        max_error_message_chars: int = 500,
+    ) -> None:
         self.sink = sink
         self.source_id = source_id
+        self.max_error_message_chars = max_error_message_chars
         self._on_sink_error = on_sink_error
         self.success_count = 0
         self.failed = False
 
     def send(self, args) -> None:
+        """Write one timestamped sample unless this sink has already failed."""
         if self.failed:
+            return
+        if self._skip_missing_sample(args):
             return
         try:
             self.sink.flush(*args)
@@ -221,9 +225,12 @@ class _SinkDispatch:
             self.success_count += 1
 
     def send_batch(self, batch) -> None:
+        """Write a batch in order, stopping at the first sink failure."""
         if self.failed:
             return
         for args in batch:
+            if self._skip_missing_sample(args):
+                continue
             try:
                 self.sink.flush(*args)
             except Exception as exc:
@@ -231,29 +238,46 @@ class _SinkDispatch:
                 return
             self.success_count += 1
 
+    def _skip_missing_sample(self, args) -> bool:
+        """Return whether this sink cannot represent the missing-sample marker."""
+        if not isinstance(args, (tuple, list)) or len(args) < 2:
+            return False
+        packet = args[1]
+        return bool(
+            getattr(packet, "is_missing_sample", False)
+            and not getattr(self.sink, "supports_missing_samples", False)
+        )
+
     def _handle_write_error(self, exc: BaseException) -> None:
+        """Disable this sink and report its first write failure."""
         self.failed = True
-        _emit_sink_error(self._on_sink_error, _build_sink_error(self, exc, SINK_STATE_TERMINAL))
+        _emit_sink_error(
+            self._on_sink_error,
+            _build_sink_error(self, exc, "terminal"),
+        )
 
     def on_stream_error(self, exc: BaseException) -> None:
-        """Handle a source/upstream stream error routed to this subscription.
-
-        """
+        """Log an upstream source error without misreporting it as a sink failure."""
         _log.error(
             "source stream error delivered to sink=%s source=%s: %s: %s",
             _sink_identity(self.sink),
             self.source_id,
             type(exc).__name__,
-            _redact_sink_message(exc),
+            _bounded_error_message(exc, self.max_error_message_chars),
         )
 
 
-def _subscribe_sink(stream, sink, source_id: str, on_sink_error, batch_size: int) -> "_SinkDispatch":
-    """Subscribe one sink to ``stream`` with structured error reporting based on the old report code.
-
-    Returns the dispatch so callers/tests can inspect delivery state.
+def _subscribe_sink(
+    stream,
+    sink,
+    source_id: str,
+    on_sink_error,
+    batch_size: int,
+    max_error_message_chars: int = 500,
+) -> "_SinkDispatch":
+    """Connect one sink to a stream with isolated write-failure reporting.
     """
-    dispatch = _SinkDispatch(sink, source_id, on_sink_error)
+    dispatch = _SinkDispatch(sink, source_id, on_sink_error, max_error_message_chars)
     s = stream
     scheduler_spec = getattr(sink, "observe_on_scheduler", None)
     if scheduler_spec is not None:
@@ -309,6 +333,12 @@ def _timestamp_via_adjusted_sample_rate(starting_sample_rate: int):
             observer.packet_count = 0
             
             def on_next(value):
+                if getattr(value, "is_missing_sample", False):
+                    observer.last_timestamp = int(
+                        observer.last_timestamp + (10**9 / observer.sample_rate)
+                    )
+                    observer.on_next((observer.last_timestamp, value))
+                    return
                 now_real_time_ns = time.time_ns()
                 # Guard against division by zero if sample_rate is invalid
                 if observer.sample_rate <= 0:
@@ -370,11 +400,14 @@ def _stream_from_pod_device(
     duration: float,
     manual_stop_event: Event,
     on_source_error=None,
+    max_error_message_chars: int = 500,
+    source_error_emit_interval_sec: float = 1.0,
 ):
-    # Use fixed-size streaming read when available (1-2 read() per packet instead of many) for higher throughput
+    # Prefer the whole-packet reader because it needs fewer serial reads per packet.
     read_fn = getattr(pod, "read_pod_packet_streaming", None)
     use_streaming = callable(read_fn)
-    stream_timeout_sec = 0.2  # allow time for partial reads (e.g. 8206) and USB scheduling; still detects stall
+    # Allow partial packets and normal USB delays while still noticing a stalled stream quickly.
+    stream_timeout_sec = 0.2
 
     def _stream_from_pod_device_observable(observer, scheduler) -> None:
         source_id = _source_identity(pod)
@@ -382,55 +415,140 @@ def _stream_from_pod_device(
         consecutive_failures = 0
         last_error_emitted_at = 0.0
         last_read_error = None
-        with pod:
-            stream_start_time : float = time.perf_counter()
-            while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
+        failure_started_at = None
+        missing_samples_emitted = 0
+        last_reopen_attempt_at = 0.0
+        recovery_window_expired = False
+        recovery_window_sec = getattr(pod, "_source_recovery_window_sec", None)
+        recovery_enabled = (
+            isinstance(recovery_window_sec, (int, float))
+            and recovery_window_sec > 0
+        )
+        sample_rate = float(getattr(pod, "sample_rate", 0) or 0)
+        last_real_sample_at = time.monotonic()
 
-                try:
-                    if use_streaming:
-                        packet = read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False)
-                    else:
-                        packet = pod.read_pod_packet()
-                except Exception as e:
-                    consecutive_failures += 1
-                    last_read_error = e
-                    now = time.monotonic()
-                    if (
-                        consecutive_failures == 1
-                        or now - last_error_emitted_at >= _SOURCE_ERROR_EMIT_INTERVAL_SEC
-                    ):
+        def emit_missing_samples(now: float) -> None:
+            """Emit placeholders for samples expected since the disconnect began."""
+            nonlocal missing_samples_emitted
+            if failure_started_at is None or sample_rate <= 0:
+                return
+            elapsed = min(now - failure_started_at, recovery_window_sec)
+            expected = max(0, int(elapsed * sample_rate))
+            for _ in range(expected - missing_samples_emitted):
+                observer.on_next(MissingSample())
+            missing_samples_emitted = expected
+
+        try:
+            with pod:
+                stream_start_time : float = time.perf_counter()
+                while time.perf_counter()-stream_start_time < duration and not manual_stop_event.is_set():
+
+                    try:
+                        if use_streaming:
+                            packet = read_fn(timeout_sec=stream_timeout_sec, validate_checksum=False)
+                        else:
+                            packet = pod.read_pod_packet()
+                    except Exception as e:
+                        consecutive_failures += 1
+                        last_read_error = e
+                        now = time.monotonic()
+                        # A positive recovery window enables reconnect handling.
+                        # Without one, read failures continue through the normal retry loop.
+                        port_present = (
+                            _source_port_is_present(pod, source_port)
+                            if recovery_enabled
+                            else None
+                        )
+                        if (
+                            recovery_enabled
+                            and failure_started_at is None
+                            and port_present is False
+                        ):
+                            failure_started_at = now - stream_timeout_sec
+                            missing_samples_emitted = 0
+                        if failure_started_at is not None:
+                            emit_missing_samples(now)
+                        if (
+                            failure_started_at is not None
+                            and now - last_reopen_attempt_at >= 0.5
+                            and port_present is True
+                        ):
+                            last_reopen_attempt_at = now
+                            try:
+                                pod.close_port()
+                                pod.open_port()
+                                pod.write_packet("STREAM", 1)
+                            except Exception:
+                                # A reconnected port may be listed before the OS
+                                # allows it to open. Keep filling the gap and retry.
+                                pass
+                        if (
+                            consecutive_failures == 1
+                            or now - last_error_emitted_at
+                            >= source_error_emit_interval_sec
+                        ):
+                            _emit_source_status(
+                                on_source_error,
+                                {
+                                    "source_id": source_id,
+                                    "source_port": source_port,
+                                    "failure_kind": "source_read",
+                                    "exception_type": type(e).__name__,
+                                    "message": _bounded_error_message(e, max_error_message_chars),
+                                    "state": "degraded",
+                                    "consecutive_failures": consecutive_failures,
+                                    "timestamp_ns": time.time_ns(),
+                                },
+                            )
+                            last_error_emitted_at = now
+                        if (
+                            failure_started_at is not None
+                            and now - last_real_sample_at >= recovery_window_sec
+                        ):
+                            _emit_source_status(
+                                on_source_error,
+                                {
+                                    "source_id": source_id,
+                                    "source_port": source_port,
+                                    "failure_kind": "source_read",
+                                    "exception_type": type(e).__name__,
+                                    "message": _bounded_error_message(e, max_error_message_chars),
+                                    "state": "recovery_window_expired",
+                                    "consecutive_failures": consecutive_failures,
+                                    "timestamp_ns": time.time_ns(),
+                                },
+                            )
+                            recovery_window_expired = True
+                            break
+                        continue
+                    if consecutive_failures:
                         _emit_source_status(
                             on_source_error,
-                            SourceReadStatus(
-                                source_id=source_id,
-                                source_port=source_port,
-                                failure_kind=SOURCE_FAILURE_READ,
-                                exception_type=type(e).__name__,
-                                message=_redact_source_message(e),
-                                state=SOURCE_STATE_DEGRADED,
-                                consecutive_failures=consecutive_failures,
-                                timestamp_ns=time.time_ns(),
-                            ),
+                            {
+                                "source_id": source_id,
+                                "source_port": source_port,
+                                "failure_kind": "source_read",
+                                "exception_type": type(last_read_error).__name__,
+                                "message": _bounded_error_message(
+                                    last_read_error,
+                                    max_error_message_chars,
+                                ),
+                                "state": "recovered",
+                                "consecutive_failures": consecutive_failures,
+                                "timestamp_ns": time.time_ns(),
+                            },
                         )
-                        last_error_emitted_at = now
-                    continue
-                if consecutive_failures:
-                    _emit_source_status(
-                        on_source_error,
-                        SourceReadStatus(
-                            source_id=source_id,
-                            source_port=source_port,
-                            failure_kind=SOURCE_FAILURE_READ,
-                            exception_type=type(last_read_error).__name__,
-                            message=_redact_source_message(last_read_error),
-                            state=SOURCE_STATE_RECOVERED,
-                            consecutive_failures=consecutive_failures,
-                            timestamp_ns=time.time_ns(),
-                        ),
-                    )
-                    consecutive_failures = 0
-                    last_read_error = None
-                observer.on_next(packet)
+                        consecutive_failures = 0
+                        last_read_error = None
+                        failure_started_at = None
+                        missing_samples_emitted = 0
+                    last_real_sample_at = time.monotonic()
+                    observer.on_next(packet)
+        except Exception:
+            # An expired recovery window is a controlled stop. Unexpected errors
+            # still propagate to the caller.
+            if not recovery_window_expired:
+                raise
         # After exiting "with pod": __exit__ has run (STREAM 0 sent, read buffer drained).
         # Now close the port so the USB/D2XX handle is released cleanly.
         pod.close_port()
@@ -441,7 +559,9 @@ def _stream_from_pod_device(
 
 #function used by reactivex to place raw packets (binary) into the read queue
 def make_packet_putter(read_queue):
+    """Create a callback that copies control-packet bytes into ``read_queue``."""
     def put_read_packet(item):
+        """Queue one control packet without blocking the acquisition thread."""
         if isinstance(item, ControlPacket):
             try:
                 read_queue.put_nowait(item._raw_packet)
@@ -456,6 +576,8 @@ def get_data(
     sinks,
     on_sink_error=None,
     on_source_error=None,
+    max_error_message_chars: int = 500,
+    source_error_emit_interval_sec: float = 1.0,
 ) -> None:
     """Streams data from the POD device. The data drops about every 1 second.
     Streaming will continue until a "stop streaming" packet is recieved.
@@ -485,12 +607,18 @@ def get_data(
             duration,
             manual_stop_event,
             on_source_error=on_source_error,
+            max_error_message_chars=max_error_message_chars,
+            source_error_emit_interval_sec=source_error_emit_interval_sec,
         )
     )
 
     # create background queue 
     def background_writer(pod: AcquisitionDevice):
+        """Process queued device commands while the main loop reads samples."""
         while True:
+            if getattr(pod, "_port", None) is None:
+                time.sleep(0.005)
+                continue
             try:
                 pod.check_write_queue()
             except Exception as e:
@@ -529,7 +657,14 @@ def get_data(
 
         for sink in sinks:
             context_manager_stack.enter_context(sink)
-            _subscribe_sink(stream, sink, source_id, on_sink_error, _OBSERVE_ON_BATCH_SIZE) # Sink write failures are reported through ``on_sink_error``instead of being printed. 
+            _subscribe_sink(
+                stream,
+                sink,
+                source_id,
+                on_sink_error,
+                _OBSERVE_ON_BATCH_SIZE,
+                max_error_message_chars,
+            )  # Sink write failures are reported through ``on_sink_error`` instead of being printed.
 
         # start streaming data from the observable!
         stream.connect()
@@ -544,6 +679,8 @@ def get_data_wrapper(
     sinks_list,
     on_sink_error=None,
     on_source_error=None,
+    max_error_message_chars: int = 500,
+    source_error_emit_interval_sec: float = 1.0,
 ):
     # Ignore SIGINT (Ctrl+C) in the worker so only the main process handles it. The main process
     # sets manual_stop_event and joins; the worker then exits the loop and runs sink __exit__.
@@ -570,6 +707,8 @@ def get_data_wrapper(
             sinks,
             on_sink_error=on_sink_error,
             on_source_error=on_source_error,
+            max_error_message_chars=max_error_message_chars,
+            source_error_emit_interval_sec=source_error_emit_interval_sec,
         )
     except (KeyboardInterrupt, OSError, BrokenPipeError):
         if manual_stop_event.is_set():
@@ -582,11 +721,10 @@ def get_data_wrapper(
 
 
 def _bind_sink_error_callbacks(sinks, on_sink_error) -> None:
-    """Bind the worker-local reporter to sinks that expose the optional hook.
+    """Give supported sinks the error callback created for this worker.
 
-    Binding happens only after multiprocessing reconstruction, so callbacks do
-    not need to be serialized inside sink dictionaries. Legacy sinks without
-    the hook retain their existing behavior.
+    Binding after worker reconstruction avoids storing the callback in each
+    sink's serialized settings. Sinks without the optional hook are unchanged.
     """
     for sink in sinks:
         bind = getattr(sink, "bind_error_callback", None)

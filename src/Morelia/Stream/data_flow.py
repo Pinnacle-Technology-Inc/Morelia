@@ -34,7 +34,7 @@ class DataFlow:
     
     :param fail_tolerance: How many times in a row to fail reading before giving up on reading a "chunk" of data ("chunk" here is approximately 1 second of samples). Defaults to 3.
 
-    :param on_sink_error: Optional callback for handling sink failures. It receives one structured `SinkError` per failing sink, defaults to logging, and is picklable when used with multiprocessing.
+    :param on_sink_error: Optional callback for handling sink failures. It receives one structured mapping per failing sink, defaults to logging, and is picklable when used with multiprocessing.
     :param on_source_error: Optional callback for bounded source-read status events.
     """
 

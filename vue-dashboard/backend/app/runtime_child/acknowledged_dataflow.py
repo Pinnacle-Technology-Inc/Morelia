@@ -156,6 +156,9 @@ def acknowledged_get_data_wrapper(
     shutdown_queue=None,
     shutdown_id=None,
     stream_index=0,
+    source_recovery_window_sec=None,
+    max_error_message_chars=500,
+    source_error_emit_interval_sec=1.0,
 ):
     """Spawn target that instruments unchanged legacy ``get_data`` teardown."""
     try:
@@ -168,6 +171,10 @@ def acknowledged_get_data_wrapper(
         reporter = ShutdownReporter(shutdown_queue, shutdown_id, stream_index)
 
     source = source_class(**source_dict)
+    # This dashboard-only opt-in keeps heartbeat policy out of the legacy
+    # DataFlow API while allowing its source loop to preserve the same sinks.
+    if source_recovery_window_sec is not None:
+        source._source_recovery_window_sec = source_recovery_window_sec
     sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
     _bind_sink_callbacks(sinks, on_sink_error, reporter)
     instrumented_source = _SourceLifecycleProxy(source, manual_stop_event, reporter)
@@ -182,13 +189,18 @@ def acknowledged_get_data_wrapper(
         ]
 
     try:
+        get_data_kwargs = {
+            "on_sink_error": on_sink_error,
+            "on_source_error": on_source_error,
+            "max_error_message_chars": max_error_message_chars,
+            "source_error_emit_interval_sec": source_error_emit_interval_sec,
+        }
         legacy_source.get_data(
             duration_sec,
             manual_stop_event,
             instrumented_source,
             instrumented_sinks,
-            on_sink_error=on_sink_error,
-            on_source_error=on_source_error,
+            **get_data_kwargs,
         )
         if reporter is not None:
             reporter.emit(ShutdownPhase.WORKER_EXITING, "worker_exit_started")
@@ -221,8 +233,28 @@ def _close_queue(status_queue) -> None:
 class AcknowledgedDataFlow(LegacyDataFlow):
     """Dashboard-only DataFlow subclass with worker evidence and strict stop results."""
 
-    def __init__(self, *args, **kwargs) -> None:
+    supports_source_recovery_window = True
+
+    def __init__(
+        self,
+        *args,
+        source_recovery_window_sec=None,
+        max_error_message_chars=500,
+        source_error_emit_interval_sec=1.0,
+        **kwargs,
+    ) -> None:
         super().__init__(*args, **kwargs)
+        if source_recovery_window_sec is not None:
+            source_recovery_window_sec = float(source_recovery_window_sec)
+            if source_recovery_window_sec <= 0:
+                raise ValueError("source_recovery_window_sec must be greater than zero")
+        self._source_recovery_window_sec = source_recovery_window_sec
+        self._max_error_message_chars = int(max_error_message_chars)
+        self._source_error_emit_interval_sec = float(source_error_emit_interval_sec)
+        if self._max_error_message_chars <= 0:
+            raise ValueError("max_error_message_chars must be greater than zero")
+        if self._source_error_emit_interval_sec <= 0:
+            raise ValueError("source_error_emit_interval_sec must be greater than zero")
         self._shutdown_status_queues: list[object | None] = []
         self._shutdown_ids: list[str | None] = []
 
@@ -248,6 +280,9 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             status_queue,
             shutdown_id,
             stream_index,
+            self._source_recovery_window_sec,
+            self._max_error_message_chars,
+            self._source_error_emit_interval_sec,
         )
         return _create_worker(args=args)
 

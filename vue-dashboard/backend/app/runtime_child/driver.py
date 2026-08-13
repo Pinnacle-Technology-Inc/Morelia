@@ -166,7 +166,7 @@ class SinkReport:
     ``sequence`` and ``state_timestamp_ns`` are per-sink monotonic ordering
     markers, independent of the enclosing ``RuntimeReport.sequence``. Diagnostics
     are bounded and redacted: ``message`` <= 500 chars, no secrets, no raw
-    samples. Every field is expressible from a Morelia ``SinkError`` event
+    samples. Every field is expressible from a Morelia sink-error event
     (packet 23): ``source_id`` / ``sink_id`` / ``sink_class`` / ``failure_kind``
     (vocab ``sink_write``) / ``exception_type`` / ``message`` / ``last_success_seq``,
     with the Morelia ``state`` (terminal/degraded) mapping onto ``health``.

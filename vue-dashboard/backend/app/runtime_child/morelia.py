@@ -107,7 +107,7 @@ def open_sink_delivery_outbox(path: str) -> Any:
 
 
 def _normalize_sink_error(event: object) -> dict[str, Any]:
-    """Convert a Morelia ``SinkError`` (object or dict) into a plain dict."""
+    """Normalize a stream sink-error event into the dashboard contract."""
     if isinstance(event, Mapping):
         get = event.get  # type: ignore[assignment]
     else:
@@ -631,11 +631,13 @@ class MoreliaRuntime:
             self._source_error_queue = self._source_error_queue_factory()
             source_error_sender = _SourceErrorSender(self._source_error_queue)
 
-            self._flowgraph = DataFlow(
-                network,
-                on_sink_error=sink_error_sender,
-                on_source_error=source_error_sender,
-            )
+            flowgraph_kwargs = {
+                "on_sink_error": sink_error_sender,
+                "on_source_error": source_error_sender,
+            }
+            if getattr(DataFlow, "supports_source_recovery_window", False):
+                flowgraph_kwargs["source_recovery_window_sec"] = self._max_heartbeat_age_sec
+            self._flowgraph = DataFlow(network, **flowgraph_kwargs)
             self._watchdog = Watchdog(
                 flowgraph=self._flowgraph,
                 failure_threshold=self._failure_threshold,
@@ -1081,6 +1083,8 @@ class MoreliaRuntime:
             source_read = source_read if isinstance(source_read, dict) else {}
             startup = stream.get("startup")
             startup = startup if isinstance(startup, dict) else {}
+            disconnect = stream.get("disconnect")
+            disconnect = disconnect if isinstance(disconnect, dict) else {}
 
             log = _log.info if health == StreamStatus.HEALTHY.value else _log.warning
             log(
@@ -1113,6 +1117,10 @@ class MoreliaRuntime:
                 source_read_consecutive_failures=source_read.get("consecutive_failures"),
                 first_packet_timeout_seconds=startup.get("timeout_sec"),
                 first_packet_remaining_seconds=startup.get("remaining_sec"),
+                disconnect_state=disconnect.get("state"),
+                disconnect_elapsed_seconds=disconnect.get("elapsed_sec"),
+                max_heartbeat_age_seconds=disconnect.get("max_heartbeat_age_sec"),
+                disconnect_recording_continued=disconnect.get("recording_continued"),
             )
 
     def _watchdog_diagnostics(self, stream_reports: list[object]) -> dict[str, object]:
@@ -1137,10 +1145,22 @@ class MoreliaRuntime:
             failure = failure if isinstance(failure, dict) else {}
             action = stream.get("action")
             action = action if isinstance(action, dict) else {}
+            action_detail = action.get("detail")
+            action_detail = action_detail if isinstance(action_detail, dict) else {}
+            disconnect = action_detail.get("disconnect")
+            disconnect = disconnect if isinstance(disconnect, dict) else None
             recovery_event = stream.get("recovery_event")
             recovery_event = recovery_event if isinstance(recovery_event, dict) else {}
             startup = signals.get("startup")
             startup = startup if isinstance(startup, dict) else {}
+            source_read = self._current_source_read(device_id)
+            if (
+                health is StreamStatus.HEALTHY
+                and isinstance(source_read, dict)
+                and source_read.get("state") == "recovery_window_expired"
+            ):
+                self._source_status_by_device.pop(device_id, None)
+                source_read = None
             streams.append(
                 {
                     "device_id": device_id,
@@ -1174,7 +1194,8 @@ class MoreliaRuntime:
                         # worker reads identically to a device that unplugged.
                         "fault": _worker_fault(worker.get("fault")),
                     },
-                    "source_read": self._current_source_read(device_id),
+                    "source_read": source_read,
+                    "disconnect": disconnect,
                     "startup": {
                         "elapsed_sec": startup.get("elapsed_sec"),
                         "timeout_sec": startup.get("timeout_sec"),
