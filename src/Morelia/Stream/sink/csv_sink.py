@@ -27,6 +27,8 @@ class CSVSink(SinkInterface):
     :param observe_on_scheduler: If set (e.g. "thread_pool"), run flush() on that scheduler so the stream is not blocked by CSV I/O. Optional; queue is unbounded.
     """
 
+    supports_missing_samples = True
+
     def __init__(self, file_path: str, pod: AcquisitionDevice, observe_on_scheduler: str | None = None) -> None:
         """Class constructor."""
         self._file_path = file_path
@@ -67,17 +69,29 @@ class CSVSink(SinkInterface):
         """
         :meta private:
         """
+        missing = getattr(packet, "is_missing_sample", False)
 
         if isinstance(self._pod, Pod8206HR):
-            self._csv_writer.writerow((timestamp,) + (packet.ch0, packet.ch1, packet.ch2, packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4))
+            values = (None,) * 7 if missing else (
+                packet.ch0, packet.ch1, packet.ch2,
+                packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4,
+            )
+            self._csv_writer.writerow((timestamp,) + values)
 
         elif isinstance(self._pod, Pod8401HR):
-            channel_data = (packet.ch0, packet.ch1, packet.ch2, packet.ch3)
-            aext_data = (packet.ext0, packet.ext1)
-            attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
+            channel_data = (None,) * 4 if missing else (
+                packet.ch0, packet.ch1, packet.ch2, packet.ch3,
+            )
+            aext_data = (None,) * 2 if missing else (packet.ext0, packet.ext1)
+            attl_data = (None,) * 4 if missing else (
+                packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4,
+            )
             self._csv_writer.writerow((timestamp,) + channel_data + aext_data + attl_data)
         
         elif isinstance(self._pod, Pod8274D):
+            if missing:
+                self._csv_writer.writerow((timestamp, None, None, None))
+                return
             # Calculate time interval
             sample_period_ns = int(1e9 / self._pod.sample_rate)
 

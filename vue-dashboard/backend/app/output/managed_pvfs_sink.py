@@ -210,6 +210,8 @@ class ManagedPvfsSink:
       units, and the sample rate are derived from it when not given explicitly.
     """
 
+    supports_missing_samples = True
+
     def __init__(
         self,
         *,
@@ -850,6 +852,8 @@ class ManagedPvfsSink:
             self._record.row_offset = self._samples_written
 
     def _frame_from_packet(self, packet: object) -> list[float]:
+        if getattr(packet, "is_missing_sample", False):
+            return [float("nan")] * len(self._channels)
         frame = []
         for label in self._channels:
             attr = _PACKET_FIELD_FOR_LABEL.get(label, label)

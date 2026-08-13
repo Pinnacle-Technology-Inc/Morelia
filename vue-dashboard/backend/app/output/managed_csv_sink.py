@@ -52,6 +52,8 @@ class ManagedCsvSink:
     - The ``pod`` kwarg injected by Morelia reconstruction is accepted and ignored.
     """
 
+    supports_missing_samples = True
+
     def __init__(
         self,
         *,
@@ -266,6 +268,11 @@ class ManagedCsvSink:
         return buf.getvalue().encode("utf-8")
 
     def _packet_row(self, timestamp: object, packet: object) -> dict[str, object]:
+        if getattr(packet, "is_missing_sample", False):
+            return {
+                field: timestamp if field in {"time", "timestamp", "ts"} else None
+                for field in self._fieldnames
+            }
         values = {
             "time": timestamp,
             "timestamp": timestamp,

@@ -154,6 +154,8 @@ class PvfsSink(SinkInterface):
     :param use_writer_process: If True, all PVFS I/O runs in a dedicated child process, fully eliminating GIL contention with the emission thread. Recommended at sample rates >= 5000 sps when used alongside PlotSink.
     """
 
+    supports_missing_samples = True
+
     def __init__(
         self,
         file_path: str,
@@ -309,10 +311,13 @@ class PvfsSink(SinkInterface):
 
     def flush(self, timestamp: int, packet: DataPacket) -> None:
         """Append one sample per channel to the buffer; write blocks when buffer reaches 1 second."""
+        missing = getattr(packet, "is_missing_sample", False)
         if self._use_writer_process:
             if self._writer_queue is None:
                 return
-            if isinstance(self._pod, Pod8206HR):
+            if missing:
+                vals = (float("nan"),) * len(self._channels)
+            elif isinstance(self._pod, Pod8206HR):
                 ch0 = float(packet.ch0)
                 ch1 = float(packet.ch1)
                 ch2 = float(packet.ch2)
@@ -340,7 +345,10 @@ class PvfsSink(SinkInterface):
 
         sample_rate = float(self._pod.sample_rate) if self._pod.sample_rate else 400.0
 
-        if isinstance(self._pod, Pod8206HR):
+        if missing:
+            for channel_buffer in self._buffer:
+                channel_buffer.append(float("nan"))
+        elif isinstance(self._pod, Pod8206HR):
             ch0_val = float(packet.ch0)
             ch1_val = float(packet.ch1)
             ch2_val = float(packet.ch2)

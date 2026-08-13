@@ -47,6 +47,8 @@ class HealthSink(SinkInterface):
         return False
 
     def flush(self, timestamp: int, packet) -> None:
+        if getattr(packet, "is_missing_sample", False):
+            return
         # timestamp is the stream's nanosecond sample clock; last_data_time
         # uses wall time instead so the monitor can compare against now.
         self._packet_count += 1

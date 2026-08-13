@@ -2,7 +2,7 @@
 """
 
 import structlog
-from flask import current_app
+from flask import Response, current_app
 from flask_smorest import Blueprint, abort
 
 import app.services.session_activity as session_activity_service
@@ -14,12 +14,12 @@ import app.services.sessions as session_service
 from app.api.schemas import (
     CreateSessionNoteSchema,
     ExportSessionTemplateSchema,
+    FleetOverviewSchema,
+    RecoverSessionSchema,
     SessionActivityListQuerySchema,
     SessionActivityPageSchema,
     SessionDiagnosticListQuerySchema,
     SessionDiagnosticPageSchema,
-    FleetOverviewSchema,
-    RecoverSessionSchema,
     SessionNameSuggestionQuerySchema,
     SessionNameSuggestionSchema,
     SessionNoteListQuerySchema,
