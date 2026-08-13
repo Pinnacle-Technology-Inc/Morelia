@@ -1,5 +1,10 @@
+import json
 import logging
+import os
+import re
 import sys
+from collections.abc import Mapping
+from pathlib import Path
 from typing import Any
 
 import structlog
@@ -18,6 +23,10 @@ SAFE_LOG_FIELDS = frozenset(
         "command_id",
         "recovery_id",
         "watchdog_id",
+        "operation_id",
+        "incident_id",
+        "gap_id",
+        "shutdown_id",
         # HTTP summaries. Never add headers, query strings, or request bodies.
         "http_method",
         "http_route",
@@ -79,8 +88,78 @@ SAFE_LOG_FIELDS = frozenset(
         "failure_count",
         "failure_threshold",
         "recovery_attempt",
+        # Cross-layer confirmation and bounded timing fields. These make one
+        # operation traceable from the control plane through runtime host and
+        # watchdog without admitting payloads, samples, secrets, or headers.
+        "layer",
+        "actor",
+        "actor_pid",
+        "emitted_at_ns",
+        "elapsed_ms",
+        "elapsed_seconds",
+        "timeout_seconds",
+        "terminal_phase",
+        "forced_termination",
+        "worker_exitcode",
+        "action_count",
+        "action_seq",
+        "missing_phases",
+        "device_count",
+        "sink_id",
+        "output_id",
+        "disconnect_elapsed_seconds",
+        "disconnect_recording_continued",
+        "max_heartbeat_age_seconds",
     }
 )
+
+_LAYER_PATTERN = re.compile(r"[^a-zA-Z0-9_.-]+")
+
+
+class SessionDiagnosticJsonlHandler(logging.Handler):
+    """Append already-redacted records to a session/layer JSONL file."""
+
+    def __init__(
+        self,
+        root: str | os.PathLike[str],
+        *,
+        layer: str,
+        default_context: Mapping[str, Any] | None = None,
+    ) -> None:
+        super().__init__()
+        self._root = Path(root)
+        self._layer = _LAYER_PATTERN.sub("-", layer).strip("-.") or "unknown"
+        self._default_context = {
+            key: value
+            for key, value in dict(default_context or {}).items()
+            if key in SAFE_LOG_FIELDS and value is not None
+        }
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            payload = json.loads(self.format(record))
+            for key, value in self._default_context.items():
+                payload.setdefault(key, value)
+            session_id = payload.get("session_id")
+            if session_id is None or isinstance(session_id, bool):
+                return
+            try:
+                session_id = int(session_id)
+            except (TypeError, ValueError):
+                return
+            if session_id <= 0:
+                return
+            payload["session_id"] = session_id
+            payload["layer"] = self._layer
+            payload.setdefault("pid", os.getpid())
+            folder = self._root / f"session-{session_id}"
+            folder.mkdir(parents=True, exist_ok=True)
+            line = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+            with (folder / f"{self._layer}.jsonl").open("a", encoding="utf-8") as fh:
+                fh.write(line + "\n")
+                fh.flush()
+        except (OSError, TypeError, ValueError, json.JSONDecodeError):
+            self.handleError(record)
 
 
 def retain_safe_log_fields(
@@ -92,7 +171,13 @@ def retain_safe_log_fields(
     return {key: value for key, value in event_dict.items() if key in SAFE_LOG_FIELDS}
 
 
-def configure_logging(config: type[Any], *, stream: Any = None) -> None:
+def configure_logging(
+    config: type[Any],
+    *,
+    stream: Any = None,
+    diagnostic_layer: str = "control-plane",
+    diagnostic_context: Mapping[str, Any] | None = None,
+) -> None:
     """Configure structlog and standard logging before Flask is created.
 
     ``stream`` defaults to stdout for the Flask app. Pass ``sys.stderr``
@@ -135,6 +220,24 @@ def configure_logging(config: type[Any], *, stream: Any = None) -> None:
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
+    diagnostic_root = getattr(config, "DIAGNOSTIC_LOG_DIR", None)
+    if diagnostic_root:
+        diagnostic_formatter = structlog.stdlib.ProcessorFormatter(
+            foreign_pre_chain=shared_processors,
+            processors=[
+                structlog.stdlib.ExtraAdder(allow=SAFE_LOG_FIELDS),
+                structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+                retain_safe_log_fields,
+                structlog.processors.JSONRenderer(),
+            ],
+        )
+        diagnostic_handler = SessionDiagnosticJsonlHandler(
+            diagnostic_root,
+            layer=diagnostic_layer,
+            default_context=diagnostic_context,
+        )
+        diagnostic_handler.setFormatter(diagnostic_formatter)
+        root_logger.addHandler(diagnostic_handler)
     root_logger.setLevel(level)
 
     # Ensure Werkzeug uses the root handler instead of adding its own.

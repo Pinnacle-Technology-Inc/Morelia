@@ -25,6 +25,11 @@ class Config:
     TESTING = False
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
     LOG_FORMAT = "console"
+    # Redacted JSONL is split by session and emitting process layer. These files
+    # are the source behind the Session Detail diagnostic viewer and TXT export.
+    DIAGNOSTIC_LOG_DIR = os.environ.get(
+        "DIAGNOSTIC_LOG_DIR", str(_INSTANCE_DIR / "diagnostics")
+    )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     WATCHDOG_ADAPTER = None
     WATCHDOG_BASE_URL = os.environ.get("WATCHDOG_BASE_URL", "http://127.0.0.1:8765")
@@ -83,13 +88,10 @@ class Config:
     WATCHDOG_OPERATION_TIMEOUT_SECONDS = float(
         os.environ.get("WATCHDOG_OPERATION_TIMEOUT_SECONDS", "5.0")
     )
-    # How long a stream may sit with its serial port absent before it stops
-    # counting as "recovering" and becomes an operator's problem. Under AUTOMATE
-    # the watchdog polls for the replug indefinitely rather than holding
-    # ``needs_action`` (Watchdog._maybe_rearm_from_needs_action), so without this
-    # limit a device unplugged overnight surfaces nowhere at all — no incident,
-    # and no gap either, since a gap needs a healed episode. See
-    # app.services.escalation.
+    # Secondary fallback for legacy/incomplete telemetry that reports only an
+    # unbounded port wait. Current runtimes open an incident when
+    # WATCHDOG_MAX_HEARTBEAT_AGE_SECONDS is crossed; this longer limit ensures a
+    # missed boundary report cannot leave an unplugged device invisible.
     STREAM_PORT_ABSENT_ESCALATION_SECONDS = float(
         os.environ.get("STREAM_PORT_ABSENT_ESCALATION_SECONDS", "30.0")
     )
@@ -355,6 +357,7 @@ class TestingConfig(Config):
     SESSION_RUNTIME_HOST_ENABLED = False
     SESSION_SCHEDULER_ENABLED = False
     FINALIZER_PROCESS_ENABLED = False
+    DIAGNOSTIC_LOG_DIR = None
     INGEST_BASE_URL = ""
     # No sleep between polls so SSE generator tests are instant.
     SSE_POLL_INTERVAL = 0.0
