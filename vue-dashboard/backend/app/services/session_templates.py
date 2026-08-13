@@ -61,7 +61,7 @@ _FLOW_FIELDS = {
 }
 _CONTENT_FIELDS = {"policy", "device_flows"}
 _HASH_PATTERN = re.compile(r"^[0-9a-f]{64}$")
-_HARDWARE_ID_PATTERN = re.compile(r"^[0-9]{1,8}$")
+_HARDWARE_ID_PATTERN = re.compile(r"^[0-9a-zA-Z]{1,8}$")
 
 
 def _normalize_name(name: str) -> str:
@@ -178,7 +178,9 @@ def _canonical_flow(raw_flow: Any, *, resolve_reference: bool) -> dict[str, Any]
     if raw_flow.get("hardware_id") is not None:
         hardware_id = raw_flow["hardware_id"]
         if not isinstance(hardware_id, str) or not _HARDWARE_ID_PATTERN.fullmatch(hardware_id.strip()):
-            raise InvalidSessionEntry("hardware_id", "must be 1-8 digits")
+            raise InvalidSessionEntry(
+                "hardware_id", "must be 1-8 ASCII letters or digits"
+            )
         canonical["hardware_id"] = hardware_id.strip()
     if raw_flow.get("nickname") is not None:
         nickname = raw_flow["nickname"]
