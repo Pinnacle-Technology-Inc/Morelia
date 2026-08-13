@@ -21,6 +21,42 @@ const tabs = [
   { id: "history", label: "Recovery History" },
 ];
 
+function formatGapBoundary(value) {
+  if (value === null || value === undefined) return "—";
+  if (typeof value === "string" || typeof value === "number") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "Unavailable";
+  }
+}
+
+function gapBoundaryTime(value) {
+  const timestamp = value && typeof value === "object" ? value.ts : value;
+  if (typeof timestamp !== "string" && typeof timestamp !== "number") return null;
+  const parsed = new Date(timestamp).getTime();
+  return Number.isNaN(parsed) ? null : parsed;
+}
+
+function formatGapDuration(gap) {
+  // Boundaries can also be sample/row evidence, where subtraction would invent
+  // a time unit. Only calculate a duration when the API gave two timestamps.
+  const start = gapBoundaryTime(gap.gap_start);
+  const end = gapBoundaryTime(gap.gap_end);
+  if (start === null || end === null || end < start) return "—";
+  const durationMs = end - start;
+  const seconds = Math.floor(durationMs / 1000);
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = seconds % 60;
+  return hours ? `${hours}h ${minutes}m ${remainingSeconds}s` : `${minutes}m ${remainingSeconds}s`;
+}
+
+function incidentOutcome(incident) {
+  if (incident.resolution) return incident.resolution;
+  return incident.status === "resolved" ? "Unavailable" : "Pending";
+}
+
 async function loadPage(cursor = null) {
   if (activeTab.value === "history") return;
   pageState.value = "loading";
@@ -76,14 +112,14 @@ onMounted(() => loadPage());
             <tr v-for="incident in rows" :key="incident.incident_id">
               <td><code>{{ incident.opened_at ?? "—" }}</code></td><td><strong>Session {{ incident.session_id }}</strong></td>
               <td><code>{{ incident.device_id ?? "—" }}</code></td><td>{{ incident.reason }}</td><td>{{ incident.policy ?? "—" }}</td>
-              <td><StatusBadge compact :value="incident.status" /></td><td>{{ incident.status }}</td>
+              <td>{{ incidentOutcome(incident) }}</td><td><StatusBadge compact :value="incident.status" /></td>
               <td><button v-if="incident.status === 'open'" class="table-action" type="button" @click="acknowledge(incident)">Acknowledge</button></td>
             </tr>
           </tbody>
         </table>
         <table v-else-if="activeTab === 'gaps'" class="data-table">
-          <thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Session</th><th>Stream</th><th>Cause</th><th>Incident</th><th>Outcome</th><th /></tr></thead>
-          <tbody><tr v-for="gap in rows" :key="gap.gap_id"><td><code>{{ gap.created_at ?? "—" }}</code></td><td>Session {{ gap.session_id }}</td><td><code>{{ gap.device_id ?? "—" }}</code></td><td>—</td><td>{{ gap.reason }}</td><td>{{ gap.incident_id ?? "—" }}</td><td>{{ gap.confidence }}</td><td /></tr></tbody>
+          <thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Session</th><th>Stream</th><th>Cause</th><th>Incident</th><th>Confidence</th></tr></thead>
+          <tbody><tr v-for="gap in rows" :key="gap.gap_id"><td><code>{{ formatGapBoundary(gap.gap_start) }}</code></td><td><code>{{ formatGapBoundary(gap.gap_end) }}</code></td><td>{{ formatGapDuration(gap) }}</td><td><strong>Session {{ gap.session_id }}</strong></td><td><code>{{ gap.sink_id ?? gap.device_id ?? "—" }}</code></td><td>{{ gap.reason ?? "—" }}</td><td><code>{{ gap.incident_id ?? "—" }}</code></td><td>{{ gap.confidence ?? "—" }}</td></tr></tbody>
         </table>
         <div v-if="activeTab !== 'history' && pageState === 'live' && hasMore"><button type="button" class="table-action" @click="loadPage(nextCursor)">Next page</button></div>
       </div>

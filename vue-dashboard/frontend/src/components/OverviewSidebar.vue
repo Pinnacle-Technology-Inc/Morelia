@@ -44,6 +44,19 @@ function openSection(section) {
     props.collapsedSections.filter((item) => item !== section),
   );
 }
+
+function formatScheduledTime(value) {
+  if (!value) return "—";
+  const scheduled = new Date(value);
+  if (Number.isNaN(scheduled.getTime())) return "Unavailable";
+  return scheduled.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
 </script>
 
 <template>
@@ -161,7 +174,7 @@ function openSection(section) {
               <h3>{{ session.name }}</h3>
               <p>{{ session.experiment }}</p>
               <div>
-                <span><small>Scheduled</small><code>Jun 20, 08:00</code></span>
+                <span><small>Scheduled</small><code>{{ formatScheduledTime(session.scheduledTime) }}</code></span>
                 <StatusBadge :value="session.health" />
               </div>
             </div>

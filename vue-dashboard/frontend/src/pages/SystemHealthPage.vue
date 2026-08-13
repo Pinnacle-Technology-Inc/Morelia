@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { Power, RefreshCw, ShieldAlert } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
@@ -24,6 +24,14 @@ const action = ref(null);
 const actionBusy = ref(false);
 const actionError = ref("");
 const cascade = ref(false);
+
+const backendProcessStatus = computed(() => {
+  if (!ready.value) return "Unavailable";
+  if (ready.value.ready !== true) return "Attention";
+  const runtimeStates = runtimes.value.map((runtime) => String(runtime.state ?? "").toLowerCase());
+  if (runtimeStates.some((state) => ["failed", "uncertain"].includes(state))) return "Attention";
+  return "Ready";
+});
 
 onMounted(async () => {
   try {
@@ -69,7 +77,7 @@ async function runAction(fn) {
         <p class="helper-copy">Runtime agents self-terminate after about 30 minutes without daemon contact.</p>
       </BaseCard>
       <BaseCard class="detail-panel">
-        <div class="title-row"><h2>Backend Processes</h2><StatusBadge value="Attention" /></div>
+        <div class="title-row"><h2>Backend Processes</h2><StatusBadge :value="backendProcessStatus" /></div>
         <div class="table-wrap">
           <table class="data-table process-table">
             <thead><tr><th>Process</th><th>Session</th><th>State</th><th>Last Contact</th></tr></thead>

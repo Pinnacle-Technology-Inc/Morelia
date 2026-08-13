@@ -19,7 +19,9 @@ const emit = defineEmits(["drag-start", "drag-end", "move", "open", "toggle"]);
 const detail = ref(null);
 const detailState = ref("loading");
 const detailError = ref("");
+const now = ref(Date.now());
 let detailPollTimer = null;
+let durationTimer = null;
 
 const displaySession = computed(() => {
   if (!detail.value?.session) return props.session;
@@ -43,6 +45,19 @@ const activityState = computed(() => {
   if (detailState.value === "unavailable") return "unavailable";
   if (detailState.value === "loading") return "connecting";
   return "live";
+});
+
+const actualDuration = computed(() => {
+  const startTimes = (detail.value?.runtimes ?? [])
+    .map((runtime) => Date.parse(runtime.started_at ?? ""))
+    .filter(Number.isFinite);
+  if (!startTimes.length) return "—";
+
+  const elapsedSeconds = Math.max(0, Math.floor((now.value - Math.min(...startTimes)) / 1000));
+  const hours = Math.floor(elapsedSeconds / 3600);
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const seconds = elapsedSeconds % 60;
+  return `${hours}h ${String(minutes).padStart(2, "0")}m ${String(seconds).padStart(2, "0")}s`;
 });
 
 async function refreshDetail() {
@@ -70,10 +85,14 @@ function moveWithKeyboard(sessionId, event) {
 onMounted(() => {
   refreshDetail();
   detailPollTimer = setInterval(refreshDetail, 5000);
+  durationTimer = setInterval(() => {
+    now.value = Date.now();
+  }, 1000);
 });
 
 onUnmounted(() => {
   if (detailPollTimer) clearInterval(detailPollTimer);
+  if (durationTimer) clearInterval(durationTimer);
 });
 </script>
 
@@ -117,7 +136,7 @@ onUnmounted(() => {
       </div>
 
       <dl class="session-stats">
-        <div><dt>Duration</dt><dd>{{ displaySession.duration }}</dd></div>
+        <div><dt>Duration</dt><dd>{{ actualDuration }}</dd></div>
         <div><dt>Streams / Sinks</dt><dd>{{ displaySession.streamCount ?? displaySession.deviceCount }} / {{ displaySession.sinkCount }}</dd></div>
      
       </dl>
