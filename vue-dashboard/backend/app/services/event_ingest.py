@@ -171,12 +171,18 @@ def ingest_watchdog_report(raw: Mapping) -> int:
         session = SessionRepository().get(ownership.session_id)
         if report is not None and session is not None:
             config = get_config()
+            # The direct watchdog path is the real-time authority while the
+            # runtime-host report stream is quiet. Project the same healed gap
+            # facts here, in the same gap-before-incident order as ingest_report.
+            # Episode/source identities make replay across both paths idempotent.
+            gaps.evaluate_report(report, session_id=session.id)
             incidents.evaluate_report(
                 report,
                 session_id=session.id,
                 policy=session.policy,
                 port_absent_limit_seconds=config.STREAM_PORT_ABSENT_ESCALATION_SECONDS,
             )
+            gaps.evaluate_sink_reports(report, session_id=session.id)
             incidents.evaluate_sink_reports(
                 report, session_id=session.id, policy=session.policy
             )

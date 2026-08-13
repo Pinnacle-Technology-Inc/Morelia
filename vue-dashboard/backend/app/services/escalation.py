@@ -38,7 +38,10 @@ back up. An incident is opened only when one of these holds:
      supervised at all, and belongs on the control plane.
   2. **The policy is RECOMMEND.** Nothing will act without an operator, so a
      stream that is down is by definition waiting on one.
-  3. **The port has been absent too long.** Under AUTOMATE the watchdog
+  3. **The real-data heartbeat maximum was crossed.** The watchdog publishes
+     ``heartbeat_age_exceeded`` at that boundary. This opens an incident
+     immediately while automatic recovery continues trying to preserve data.
+  4. **A legacy/incomplete report shows the port absent too long.** Under AUTOMATE the watchdog
      deliberately re-arms out of ``needs_action`` and polls for the replug
      forever rather than holding a terminal state
      (``Watchdog._maybe_rearm_from_needs_action``: "Port absent -> a physical
@@ -47,7 +50,7 @@ back up. An incident is opened only when one of these holds:
      back — which would otherwise surface NOWHERE: never escalated, and never a
      gap either, because a gap needs a healed episode.
 
-Duration in (3) is derived, never stored. The watchdog publishes a per-device
+Duration in (4) is derived, never stored. The watchdog publishes a per-device
 ``consecutive_nonhealthy_ticks`` streak and its own ``report_interval_seconds``
 in the same diagnostics blob, so elapsed time is their product — no new wire
 field, no control-plane bookkeeping, and nothing to reconcile after a restart.
@@ -65,10 +68,13 @@ from app.runtime_child.driver import RuntimeReport, SinkHealth, SinkReport
 # The watchdog's terminal signal — restarts spent against a live, openable port.
 NEEDS_ACTION = "needs_action"
 
-# What the watchdog reports while polling for a port that is not there. Under
-# AUTOMATE this loop is unbounded by design, which is why elapsed time and not
-# attempt count is the only thing that can escalate out of it.
-PORT_ABSENT_ACTIONS = frozenset({"waiting_for_port", "waiting_for_port_release"})
+# Legacy/fallback actions used when an explicit heartbeat-boundary report was
+# missed or came from an older runtime. Elapsed time prevents an unbounded wait
+# from remaining invisible.
+PORT_ABSENT_ACTIONS = frozenset(
+    {"waiting_for_port", "waiting_for_port_release"}
+)
+HEARTBEAT_AGE_EXCEEDED = "heartbeat_age_exceeded"
 
 # Fallback when a report omits the watchdog block. Mirrors both
 # ``Config.WATCHDOG_REPORT_INTERVAL_SECONDS`` and ``MoreliaDriver``'s own
@@ -76,9 +82,8 @@ PORT_ABSENT_ACTIONS = frozenset({"waiting_for_port", "waiting_for_port_release"}
 # than to zero (which would make every streak look instantaneous).
 DEFAULT_REPORT_INTERVAL_SECONDS = 3.0
 
-# Fallback for the port-absence limit when a caller does not supply one, mirroring
-# ``Config.STREAM_PORT_ABSENT_ESCALATION_SECONDS``. Callers on the ingest path pass
-# the configured value; this keeps the pure functions usable without a Flask app.
+# Secondary port-absence fallback when no heartbeat-boundary action is available,
+# mirroring ``Config.STREAM_PORT_ABSENT_ESCALATION_SECONDS``.
 DEFAULT_PORT_ABSENT_LIMIT_SECONDS = 30.0
 
 # Why this became an operator's problem. Recorded in incident ``details`` so the
@@ -191,6 +196,11 @@ def stream_escalation(
     #     failure is already waiting on one.
     if policy is PolicyMode.RECOMMEND and stream_status is StreamStatus.UNHEALTHY:
         return CAUSE_RECOMMEND_POLICY
+
+    # Crossing the configured real-data freshness boundary is immediately an
+    # operator-visible incident even though automatic recovery keeps trying.
+    if diagnostic.get("action") == HEARTBEAT_AGE_EXCEEDED:
+        return CAUSE_PORT_ABSENT
 
     # (3) An unbounded wait for a port that never comes back.
     if diagnostic.get("action") in PORT_ABSENT_ACTIONS:
