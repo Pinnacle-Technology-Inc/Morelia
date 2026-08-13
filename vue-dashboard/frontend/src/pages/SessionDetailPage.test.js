@@ -63,13 +63,21 @@ describe("template-centric session closure", () => {
 });
 
 describe("session timeline placement", () => {
-  it("keeps notes in the overview summary and gives activity a dedicated timeline", () => {
-    expect(sessionDetailSource).toContain('{ id: "timeline", label: "Timeline" }');
+  it("keeps exactly the three observability surfaces: Activity, Issues & Data Gaps, and Diagnostic Logs", () => {
+    expect(sessionDetailSource).toContain('{ id: "activity", label: "Activity" }');
+    expect(sessionDetailSource).toContain('{ id: "incidents", label: "Issues & Data Gaps" }');
+    expect(sessionDetailSource).toContain('{ id: "diagnostics", label: "Diagnostic Logs" }');
+    expect(sessionDetailSource).not.toContain('{ id: "operations", label: "Operations" }');
     expect(sessionDetailSource).not.toContain("Activity & Notes");
     expect(sessionDetailSource.match(/<SessionNotesList/g)).toHaveLength(1);
     expect(sessionDetailSource).toContain("<SessionTimeline");
     expect(sessionDetailSource).toContain('variant="preview"');
-    expect(sessionDetailSource).toContain("activeTab === 'timeline'");
+    expect(sessionDetailSource).toContain("activeTab === 'activity'");
+    expect(sessionDetailSource).toContain("loadSessionActivity");
+    expect(sessionDetailSource).toContain("isSessionActivityEvent(latestEvent)");
+    expect(sessionDetailSource).toContain("scheduleActivityRefresh()");
+    expect(sessionDetailSource).not.toContain("if (grew) refreshActivity()");
+    expect(sessionDetailSource).toContain("SessionDiagnosticLog");
   });
 
   it("does not duplicate raw activity inside Stream Health", () => {

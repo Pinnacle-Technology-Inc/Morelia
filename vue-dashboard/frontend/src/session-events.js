@@ -1,9 +1,19 @@
 export const MAX_SESSION_EVENTS = 500;
 export const MAX_EVENT_RECONNECTS = 5;
+export const SESSION_ACTIVITY_EVENT_TYPES = Object.freeze([
+  "activity.recorded",
+  "gap.recorded",
+]);
+
+const SESSION_ACTIVITY_EVENT_TYPE_SET = new Set(SESSION_ACTIVITY_EVENT_TYPES);
 
 export const SessionEventState = Object.freeze({
   IDLE: "idle", CONNECTING: "connecting", LIVE: "live", RECONNECTING: "reconnecting", STALE: "stale", UNAVAILABLE: "unavailable", STOPPED: "stopped",
 });
+
+export function isSessionActivityEvent(event) {
+  return SESSION_ACTIVITY_EVENT_TYPE_SET.has(event?.type) && Boolean(event?.data?.activity);
+}
 
 export function buildSessionEventsUrl({ apiBase = "", sessionId, after = null } = {}) {
   if (sessionId == null) throw new Error("sessionId is required");
@@ -56,7 +66,13 @@ export function createSessionEventStream({ sessionId, apiBase = "", EventSourceI
     catch (error) { setState(SessionEventState.UNAVAILABLE, error?.message ?? "Could not open activity stream"); return; }
     source.onopen = () => { if (mine === generation && !closed) setState(SessionEventState.LIVE); };
     source.onmessage = (event) => handle(event, mine);
-    for (const type of ["runtime.report", "runtime.command_failed"]) source.addEventListener?.(type, (event) => handle(event, mine));
+    for (const type of [
+      "runtime.report",
+      "runtime.command_failed",
+      ...SESSION_ACTIVITY_EVENT_TYPES,
+    ]) {
+      source.addEventListener?.(type, (event) => handle(event, mine));
+    }
     source.onerror = () => { if (mine !== generation || closed) return; closeSource(); schedule(); };
   }
   function stop() { closed = true; generation += 1; if (timer) clearTimeout(timer); closeSource(); setState(SessionEventState.STOPPED); }

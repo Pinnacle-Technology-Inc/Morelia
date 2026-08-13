@@ -6,6 +6,7 @@ defineProps({
   title: { type: String, required: true },
   description: String,
   confirmLabel: { type: String, default: "Confirm" },
+  confirmDisabled: Boolean,
   danger: Boolean,
 });
 defineEmits(["close", "confirm"]);
@@ -21,9 +22,12 @@ defineEmits(["close", "confirm"]);
       <div class="dialog__content"><slot /></div>
       <footer>
         <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
-        <BaseButton :variant="danger ? 'danger' : 'primary'" @click="$emit('confirm')">{{ confirmLabel }}</BaseButton>
+        <BaseButton
+          :variant="danger ? 'danger' : 'primary'"
+          :disabled="confirmDisabled"
+          @click="$emit('confirm')"
+        >{{ confirmLabel }}</BaseButton>
       </footer>
     </section>
   </div>
 </template>
-

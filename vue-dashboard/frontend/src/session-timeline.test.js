@@ -1,9 +1,47 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildActivityTimeline,
   buildSessionTimeline,
+  formatGapWindow,
   recentTimelineEntries,
   TimelineCategory,
 } from "./session-timeline";
+
+describe("buildActivityTimeline", () => {
+  it("renders durable Activity records directly without reconstructing raw telemetry", () => {
+    const entries = buildActivityTimeline([
+      {
+        activity_id: "activity-1",
+        occurred_at: "2026-08-12T12:00:00Z",
+        category: "issues",
+        severity: "error",
+        title: "Issue opened",
+        summary: "Runtime heartbeat stale",
+        details: { incident_id: "incident-1" },
+      },
+    ]);
+
+    expect(entries).toEqual([{
+      key: "activity:activity-1",
+      at: "2026-08-12T12:00:00Z",
+      category: TimelineCategory.SUPERVISION,
+      tone: "bad",
+      title: "Issue opened",
+      summary: "Runtime heartbeat stale",
+      details: { incident_id: "incident-1" },
+    }]);
+  });
+});
+
+describe("formatGapWindow", () => {
+  it("formats timestamp boundaries instead of stringifying objects", () => {
+    expect(formatGapWindow({
+      gap_start: { timestamp: 1_700_000_000 },
+      gap_end: { timestamp: 1_700_000_004.5 },
+    })).toContain("4.5 seconds");
+    expect(formatGapWindow({ gap_start: null, gap_end: null })).toBe("Boundaries not reported");
+  });
+});
 
 describe("buildSessionTimeline", () => {
   it("turns repeated runtime reports into meaningful dataflow transitions", () => {

@@ -17,14 +17,20 @@ import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionNotesList from "../components/SessionNotesList.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
+import SessionDiagnosticLog from "../components/SessionDiagnosticLog.vue";
 import SessionTimeline from "../components/SessionTimeline.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { normalizeSession, stopSession } from "../session-api";
+import { loadSessionActivity } from "../session-activity-api";
 import { loadSessionDetail } from "../session-detail-api";
-import { createSessionEventStream, SessionEventState } from "../session-events";
+import {
+  createSessionEventStream,
+  isSessionActivityEvent,
+  SessionEventState,
+} from "../session-events";
 import { createSessionNote, loadSessionNotes, updateSessionNote } from "../session-notes-api";
-import { buildSessionTimeline } from "../session-timeline";
+import { buildActivityTimeline, buildSessionTimeline, formatGapWindow as displayGapWindow } from "../session-timeline";
 import {
   deriveFlowStatus,
   deriveRatState,
@@ -65,11 +71,16 @@ const noteShowTimestamp = ref(false);
 const noteBusy = ref(false);
 const noteSaveError = ref("");
 const activity = ref({ state: SessionEventState.IDLE, events: [], error: null });
+const activityRecords = ref([]);
+const activityRecordsState = ref("loading");
+const activityRecordsError = ref("");
 // Optimistic lifecycle from a just-issued command, shown until the refetch that
 // follows it lands. Cleared by refreshDetail() so the server always wins.
 const pendingLifecycle = ref(null);
 let eventStream;
 let pollTimer = null;
+let activityRefreshTimer = null;
+let detailRefreshTimer = null;
 let sourceTemplateRequest = 0;
 let resolvedSourceTemplateId = null;
 
@@ -239,23 +250,21 @@ const sessionDeviceFlows = computed(() => {
 const OPEN_INCIDENT_STATUSES = new Set(["open", "acknowledged"]);
 
 const detailIncidents = computed(() => detail.value?.incidents ?? []);
-const dataPathIncidents = computed(() =>
-  detailIncidents.value.filter((incident) => incident.axis !== "control_plane"),
-);
-const controlPlaneIncidents = computed(() =>
-  detailIncidents.value.filter((incident) => incident.axis === "control_plane"),
-);
 const detailGaps = computed(() => detail.value?.gaps ?? []);
 const recovery = computed(() => detail.value?.recovery ?? null);
 const recoveryPolicy = computed(() => view.value.policy ? formatStatus(view.value.policy) : "Unavailable");
 // Already fetched on every poll and, until now, dropped on the floor.
 const detailOperations = computed(() => detail.value?.operations ?? []);
-const timelineEntries = computed(() => buildSessionTimeline({
-  events: activity.value.events,
-  incidents: detailIncidents.value,
-  gaps: detailGaps.value,
-  operations: detailOperations.value,
-}));
+const timelineEntries = computed(() => (
+  activityRecords.value.length
+    ? buildActivityTimeline(activityRecords.value)
+    : buildSessionTimeline({
+        events: activity.value.events,
+        incidents: detailIncidents.value,
+        gaps: detailGaps.value,
+        operations: detailOperations.value,
+      })
+));
 const recoveryOutputs = computed(() =>
   (detail.value?.sinks ?? [])
     .filter((sink) => sink.output?.component_count > 1)
@@ -294,18 +303,10 @@ function isWaitingOnOperator(incident) {
   return isOpenIncident(incident) && incident.needs_action !== false;
 }
 
-const openDataPathIncidents = computed(() => dataPathIncidents.value.filter(isOpenIncident));
-const openControlPlaneIncidents = computed(() =>
-  controlPlaneIncidents.value.filter(isOpenIncident),
-);
+const openIssues = computed(() => detailIncidents.value.filter(isOpenIncident));
 // Badge inputs — a strict subset of the tables above, which still show
 // everything unresolved so a self-healing condition stays visible while it heals.
-const actionableDataPathIncidents = computed(() =>
-  dataPathIncidents.value.filter(isWaitingOnOperator),
-);
-const actionableControlPlaneIncidents = computed(() =>
-  controlPlaneIncidents.value.filter(isWaitingOnOperator),
-);
+const actionableIssues = computed(() => detailIncidents.value.filter(isWaitingOnOperator));
 
 // Which record sections on the Incidents and Operations tabs start expanded.
 //
@@ -321,15 +322,11 @@ const actionableControlPlaneIncidents = computed(() =>
 // These are DEFAULTS, not locks: CollapsibleSection owns the open state after
 // first render, so an operator's own toggle stands until the flag flips again.
 const openSections = computed(() => {
-  const incidents = openDataPathIncidents.value.length > 0;
+  const incidents = openIssues.value.length > 0;
   const gaps = detailGaps.value.length > 0;
-  const controlPlane = openControlPlaneIncidents.value.length > 0;
-  const commands = detailOperations.value.length > 0;
   return {
     incidents: incidents || !gaps,
     gaps: gaps && !incidents,
-    controlPlane: controlPlane || !commands,
-    commands: commands && !controlPlane,
   };
 });
 
@@ -421,8 +418,7 @@ function formatTimestamp(value) {
 // state change by up to its interval; the event trigger alone would go blind if
 // the SSE connection dropped. Together the bar stays honest under both failures.
 const DETAIL_POLL_MS = 5000;
-const EVENT_REFRESH_THROTTLE_MS = 2000;
-let lastDetailFetch = 0;
+const EVENT_REFRESH_DEBOUNCE_MS = 100;
 
 async function resolveSourceTemplate({ force = false } = {}) {
   const templateId = sourceTemplateId.value;
@@ -478,7 +474,6 @@ async function startAnotherRun() {
 /** `silent` keeps a background refresh from flashing the page back to loading. */
 async function refreshDetail({ silent = false } = {}) {
   if (!silent) detailState.value = "loading";
-  lastDetailFetch = Date.now();
   try {
     detail.value = await loadSessionDetail(props.sessionId);
     detailState.value = "live";
@@ -495,12 +490,50 @@ async function refreshDetail({ silent = false } = {}) {
   }
 }
 
-function onActivitySnapshot(snapshot) {
-  const grew = snapshot.events.length > activity.value.events.length;
-  activity.value = snapshot;
-  if (grew && Date.now() - lastDetailFetch >= EVENT_REFRESH_THROTTLE_MS) {
-    refreshDetail({ silent: true });
+async function refreshActivity() {
+  try {
+    const page = await loadSessionActivity(props.sessionId);
+    activityRecords.value = page.items ?? [];
+    activityRecordsState.value = "live";
+    activityRecordsError.value = "";
+  } catch (error) {
+    activityRecordsState.value = "unavailable";
+    activityRecordsError.value = error instanceof Error ? error.message : "Activity is unavailable.";
   }
+}
+
+function scheduleActivityRefresh() {
+  if (activityRefreshTimer !== null) clearTimeout(activityRefreshTimer);
+  activityRefreshTimer = setTimeout(() => {
+    activityRefreshTimer = null;
+    refreshActivity();
+  }, EVENT_REFRESH_DEBOUNCE_MS);
+}
+
+function scheduleDetailRefresh() {
+  if (detailRefreshTimer !== null) clearTimeout(detailRefreshTimer);
+  detailRefreshTimer = setTimeout(() => {
+    detailRefreshTimer = null;
+    refreshDetail({ silent: true });
+  }, EVENT_REFRESH_DEBOUNCE_MS);
+}
+
+function onActivitySnapshot(snapshot) {
+  const previousEventId = activity.value.events.at(-1)?.id;
+  const latestEventId = snapshot.events.at(-1)?.id;
+  const latestEvent = latestEventId != null && latestEventId !== previousEventId
+    ? snapshot.events.at(-1)
+    : null;
+  activity.value = snapshot;
+  if (!latestEvent) return;
+
+  // Replayed runtime reports update status only. Activity is reloaded from the
+  // durable ledger after its named notification, which is committed after the
+  // source fact and therefore cannot race ahead of the gap/issue write.
+  if (isSessionActivityEvent(latestEvent)) scheduleActivityRefresh();
+  // A trailing debounce collapses the initial SSE replay into one status read
+  // and lets a following gap/activity notification win the race to the timer.
+  scheduleDetailRefresh();
 }
 
 async function refreshNotes() {
@@ -566,6 +599,7 @@ async function saveNote() {
 
 onMounted(() => {
   refreshDetail();
+  refreshActivity();
   refreshNotes();
   eventStream = createSessionEventStream({
     sessionId: props.sessionId,
@@ -583,6 +617,8 @@ onMounted(() => {
 onUnmounted(() => {
   eventStream?.stop();
   if (pollTimer) clearInterval(pollTimer);
+  if (activityRefreshTimer !== null) clearTimeout(activityRefreshTimer);
+  if (detailRefreshTimer !== null) clearTimeout(detailRefreshTimer);
 });
 
 function applyCommandResult(result) {
@@ -610,12 +646,14 @@ async function runLifecycleCommand(command) {
     const result = await command();
     applyCommandResult(result);
     await refreshDetail();
+    await refreshActivity();
   } catch (error) {
     commandProblem.value = error?.problem ?? null;
     commandError.value = problemMessage(error, "The lifecycle command failed.");
     // Pull the persisted operation outcome immediately so a failed normal Stop
     // can turn the action into Force Stop without waiting for the next poll.
     await refreshDetail({ silent: true });
+    await refreshActivity();
   } finally {
     commandBusy.value = false;
   }
@@ -679,9 +717,9 @@ const visibleTabs = computed(() => [
   { id: "streams", label: "Streams" },
   ...(plotTargets.value.length ? [{ id: "plot", label: "Live Plot" }] : []),
   { id: "recovery", label: "Recovery" },
-  { id: "incidents", label: "Incidents & Gaps" },
-  { id: "operations", label: "Operations" },
-  { id: "timeline", label: "Timeline" },
+  { id: "incidents", label: "Issues & Data Gaps" },
+  { id: "activity", label: "Activity" },
+  { id: "diagnostics", label: "Diagnostic Logs" },
   { id: "configuration", label: "Configuration" },
 ]);
 
@@ -697,23 +735,14 @@ const tabCounts = computed(() => {
   // them makes the badge climb forever on a long, healthy run — and resolved
   // incidents are excluded for the same reason. The badge answers "is anything
   // waiting on me right now", which is the only question that earns a red dot.
-  if (actionableDataPathIncidents.value.length) {
-    counts.incidents = actionableDataPathIncidents.value.length;
-  }
-  // Only self-healing FAILURES badge here: a watchdog that crashed and respawned
-  // is history, not a task. Crash loop (respawn budget spent) and outbox overflow
-  // (telemetry not draining) are the cases the system could not fix itself.
-  if (actionableControlPlaneIncidents.value.length) {
-    counts.operations = actionableControlPlaneIncidents.value.length;
-  }
+  if (actionableIssues.value.length) counts.incidents = actionableIssues.value.length;
   if (detail.value?.recovery) counts.recovery = 1;
   return counts;
 });
 
 const tabTones = computed(() => ({
   streams: streamRows.value.some((row) => row.tone === "bad") ? "bad" : "warn",
-  incidents: actionableDataPathIncidents.value.length ? "bad" : "warn",
-  operations: actionableControlPlaneIncidents.value.length ? "bad" : "warn",
+  incidents: actionableIssues.value.length ? "bad" : "warn",
   recovery: "warn",
 }));
 
@@ -823,7 +852,7 @@ const tabTones = computed(() => ({
             :entries="timelineEntries"
             :state="activity.state"
             :error="activity.error"
-            @view-all="activeTab = 'timeline'"
+            @view-all="activeTab = 'activity'"
           />
         </BaseCard>
         <BaseCard
@@ -1002,28 +1031,28 @@ const tabTones = computed(() => ({
            key. Each table now keys on its own identifier. -->
       <div v-else-if="activeTab === 'incidents'" class="records-layout">
         <BaseCard v-if="detailUnavailable" class="detail-panel">
-          <p class="records-empty">Incidents and gaps are unavailable.</p>
+          <p class="records-empty">Issues and data gaps are unavailable.</p>
         </BaseCard>
         <template v-else>
           <BaseCard class="detail-panel detail-panel--records">
             <CollapsibleSection
-              title="Needs action"
-              hint="Unresolved incidents on the data path"
-              :count="openDataPathIncidents.length"
-              :tone="actionableDataPathIncidents.length ? 'bad' : 'neutral'"
+              title="Open issues"
+              hint="Unresolved data-path and system problems"
+              :count="openIssues.length"
+              :tone="actionableIssues.length ? 'bad' : 'neutral'"
               :default-open="openSections.incidents"
             >
-              <p v-if="!openDataPathIncidents.length" class="records-empty">
+              <p v-if="!openIssues.length" class="records-empty">
                 Nothing is waiting on you. Streams recovering on their own are not listed here —
                 they appear in the gap log once the episode closes.
               </p>
               <div v-else class="table-wrap">
                 <table class="data-table records-table">
                   <thead>
-                    <tr><th>Incident</th><th>Device</th><th>Sink</th><th>Reason</th><th>Why now</th><th>State</th></tr>
+                    <tr><th>Issue</th><th>Device</th><th>Sink</th><th>Reason</th><th>Why now</th><th>State</th></tr>
                   </thead>
                   <tbody>
-                    <tr v-for="incident in openDataPathIncidents" :key="incident.incident_id">
+                    <tr v-for="incident in openIssues" :key="incident.incident_id">
                       <td><code>{{ incident.incident_id }}</code></td>
                       <td><code>{{ incident.device_id ?? "—" }}</code></td>
                       <td><code>{{ incident.sink_id ?? "—" }}</code></td>
@@ -1041,7 +1070,7 @@ const tabTones = computed(() => ({
                count is a fact about the run's length, not a queue of problems. -->
           <BaseCard class="detail-panel detail-panel--records">
             <CollapsibleSection
-              title="Recovery gaps"
+              title="Data gaps"
               hint="Permanent record of missing data — nothing to action"
               :count="detailGaps.length"
               :default-open="openSections.gaps"
@@ -1060,7 +1089,7 @@ const tabTones = computed(() => ({
                       <td><code>{{ gap.device_id ?? "—" }}</code></td>
                       <td><code>{{ gap.sink_id ?? "—" }}</code></td>
                       <td>{{ gap.reason }}</td>
-                      <td>{{ gapWindow(gap) }}</td>
+                      <td>{{ displayGapWindow(gap) }}</td>
                       <td>{{ formatStatus(gap.confidence) }}</td>
                       <td>{{ formatTimestamp(gap.created_at) }}</td>
                     </tr>
@@ -1072,88 +1101,19 @@ const tabTones = computed(() => ({
         </template>
       </div>
 
-      <!-- The control-plane surface: what the machinery did, as opposed to what
-           happened to the data. The operations payload has been arriving on
-           every poll since this page was written and was never rendered. -->
-      <div v-else-if="activeTab === 'operations'" class="records-layout">
-        <BaseCard v-if="detailUnavailable" class="detail-panel">
-          <p class="records-empty">Operations are unavailable.</p>
-        </BaseCard>
-        <template v-else>
-          <BaseCard class="detail-panel detail-panel--records">
-            <CollapsibleSection
-              title="Control-plane incidents"
-              hint="Processes, telemetry and failed commands"
-              :count="openControlPlaneIncidents.length"
-              :tone="actionableControlPlaneIncidents.length ? 'bad' : 'neutral'"
-              :default-open="openSections.controlPlane"
-            >
-              <p v-if="!openControlPlaneIncidents.length" class="records-empty">
-                No open control-plane incidents.
-              </p>
-              <div v-else class="table-wrap">
-                <table class="data-table records-table">
-                  <thead>
-                    <tr><th>Incident</th><th>Reason</th><th>Opened</th><th>Waiting on</th><th>State</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="incident in openControlPlaneIncidents" :key="incident.incident_id">
-                      <td><code>{{ incident.incident_id }}</code></td>
-                      <td>{{ incident.reason }}</td>
-                      <td>{{ formatTimestamp(incident.opened_at) }}</td>
-                      <!-- Named explicitly rather than implied by a badge: a crashed
-                           watchdog respawning itself and a spent respawn budget look
-                           identical in a status column, and only one wants you. -->
-                      <td>{{ incident.needs_action === false ? "System — recovering itself" : "You" }}</td>
-                      <td><StatusBadge compact :value="formatStatus(incident.status)" /></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </CollapsibleSection>
-          </BaseCard>
-
-          <BaseCard class="detail-panel detail-panel--records">
-            <CollapsibleSection
-              title="Commands"
-              hint="Durable log of every command issued against this session"
-              :count="detailOperations.length"
-              :default-open="openSections.commands"
-            >
-              <p v-if="!detailOperations.length" class="records-empty">
-                No operations have been recorded for this session.
-              </p>
-              <div v-else class="table-wrap">
-                <table class="operations-table data-table records-table">
-                  <thead>
-                    <tr><th>Operation</th><th>Command</th><th>Target</th><th>State</th><th>Finished</th><th>Error</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="operation in detailOperations" :key="operation.operation_id">
-                      <td><code>{{ operation.operation_id }}</code></td>
-                      <td>{{ operation.command }}</td>
-                      <td><code>{{ operation.target_device_id ?? operation.scope }}</code></td>
-                      <td><StatusBadge compact :value="formatStatus(operation.state)" /></td>
-                      <td>{{ formatTimestamp(operation.finished_at) }}</td>
-                      <td>{{ operation.error_message ?? "—" }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </CollapsibleSection>
-          </BaseCard>
-        </template>
-      </div>
-
-      <div v-else-if="activeTab === 'timeline'">
+      <div v-else-if="activeTab === 'activity'">
         <SessionTimeline
           :entries="timelineEntries"
-          :state="activity.state"
-          :error="activity.error"
+          :state="activityRecordsState === 'unavailable' ? 'unavailable' : activity.state"
+          :error="activityRecordsError || activity.error"
         />
       </div>
 
-      <div v-else class="configuration-grid">
+      <div v-else-if="activeTab === 'diagnostics'">
+        <SessionDiagnosticLog :session-id="props.sessionId" />
+      </div>
+
+      <div v-else-if="activeTab === 'configuration'" class="configuration-grid">
         <BaseCard class="detail-panel"><h3>Metadata</h3><dl class="detail-list"><div><dt>Name</dt><dd>{{ view.name }}</dd></div><div><dt>Experiment</dt><dd>{{ view.experiment ?? "None" }}</dd></div><div><dt>Schedule</dt><dd>{{ view.scheduledTime ? "One-time" : "Manual" }}</dd></div><div><dt>Recovery Policy</dt><dd>{{ recoveryPolicy }}</dd></div></dl></BaseCard>
         <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>Stream and sink configuration is immutable run history.</p></BaseCard>
         <BaseCard class="detail-panel">

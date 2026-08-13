@@ -5,7 +5,44 @@ export const TimelineCategory = Object.freeze({
   OPERATIONS: "operations",
 });
 
+const ACTIVITY_CATEGORY = Object.freeze({
+  dataflow: TimelineCategory.DATAFLOW,
+  gaps: TimelineCategory.DATAFLOW,
+  recovery: TimelineCategory.RECOVERY,
+  issues: TimelineCategory.SUPERVISION,
+  supervision: TimelineCategory.SUPERVISION,
+  session: TimelineCategory.OPERATIONS,
+});
+
+const ACTIVITY_TONE = Object.freeze({
+  success: "good",
+  warning: "warn",
+  error: "bad",
+  info: "neutral",
+});
+
 const HEALTHY = "healthy";
+
+export function buildActivityTimeline(activity = []) {
+  return asArray(activity).map((entry, index) => ({
+    key: `activity:${entry?.activity_id ?? index}`,
+    at: entry?.occurred_at ?? entry?.created_at ?? null,
+    category: ACTIVITY_CATEGORY[normalize(entry?.category)] ?? TimelineCategory.OPERATIONS,
+    tone: ACTIVITY_TONE[normalize(entry?.severity)] ?? "neutral",
+    title: entry?.title || "Activity recorded",
+    summary: entry?.summary || "A session event was recorded.",
+    details: entry?.details ?? entry,
+  }));
+}
+
+export function formatGapWindow(gap = {}) {
+  const start = boundaryTimestamp(gap.gap_start);
+  const end = boundaryTimestamp(gap.gap_end);
+  if (start == null && end == null) return "Boundaries not reported";
+  const window = `${formatBoundary(start)} → ${formatBoundary(end)}`;
+  if (start == null || end == null || end < start) return window;
+  return `${window} (${formatDuration(end - start)})`;
+}
 
 export function buildSessionTimeline({ events = [], incidents = [], gaps = [], operations = [] } = {}) {
   const entries = [];
@@ -56,6 +93,31 @@ function addRuntimeEntries(events, operationIds, add) {
 
     if (event?.type !== "runtime.report") continue;
 
+    const streamActions = new Map();
+    for (const stream of asArray(object(data.diagnostics).streams)) {
+      const deviceId = stream?.device_id;
+      const action = normalize(stream?.action);
+      if (!deviceId || !["unplug_detected", "connection_restored"].includes(action)) continue;
+      streamActions.set(deviceId, action);
+      const restored = action === "connection_restored";
+      const disconnect = object(stream?.disconnect);
+      add({
+        key: `event:${event?.id ?? data.sequence ?? orderKey(data)}:port:${deviceId}:${action}`,
+        at,
+        category: TimelineCategory.DATAFLOW,
+        tone: restored ? "good" : "warn",
+        title: restored ? "Connection restored" : "Unplug detected",
+        summary: restored
+          ? `${deviceId} resumed recording real samples.`
+          : `${deviceId} is recording missing values during the grace period.`,
+        details: eventDetails(event, {
+          device_id: deviceId,
+          action,
+          disconnect,
+        }),
+      });
+    }
+
     if (data.recovery_id && !recoveryIds.has(data.recovery_id)) {
       recoveryIds.add(data.recovery_id);
       add({
@@ -75,6 +137,7 @@ function addRuntimeEntries(events, operationIds, add) {
       if (!current) continue;
       const previous = deviceStates.get(deviceId);
       deviceStates.set(deviceId, current);
+      if (streamActions.has(deviceId)) continue;
       addHealthTransition({
         add,
         key: `event:${event?.id ?? data.sequence ?? orderKey(data)}:device:${deviceId}`,
@@ -231,6 +294,24 @@ function eventTimestamp(event) {
 function timestamp(value) {
   const parsed = Date.parse(value || "");
   return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+}
+
+function boundaryTimestamp(boundary) {
+  if (typeof boundary === "number" && Number.isFinite(boundary)) return boundary;
+  if (!boundary || typeof boundary !== "object") return null;
+  const value = Number(boundary.timestamp);
+  return Number.isFinite(value) ? value : null;
+}
+
+function formatBoundary(seconds) {
+  if (seconds == null) return "?";
+  const parsed = new Date(seconds * 1000);
+  return Number.isNaN(parsed.getTime()) ? String(seconds) : parsed.toLocaleString();
+}
+
+function formatDuration(seconds) {
+  const rounded = Math.round(seconds * 10) / 10;
+  return `${rounded.toLocaleString()} second${rounded === 1 ? "" : "s"}`;
 }
 
 function label(value) {
