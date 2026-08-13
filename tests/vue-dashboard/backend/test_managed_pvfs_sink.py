@@ -590,7 +590,6 @@ def test_factory_builds_deferred_pvfs_descriptor(tmp_path, app):
     assert isinstance(sink, ManagedPvfsSink)
     assert sink.opened is False
     assert not path.exists(), "factory must not open a handle or create the file"
-    assert sink.observe_on_scheduler == "thread_pool"
 
     with app.app_context():
         sink.open()

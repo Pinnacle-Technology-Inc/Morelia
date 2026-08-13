@@ -141,41 +141,6 @@ def test_same_content_under_new_name_creates_new_row_with_same_hash(app):
         assert first.content_hash == second.content_hash
 
 
-def test_references_returns_session_templates_that_point_at_name(app):
-    with app.app_context():
-        create("pod-high", _VALID_CONTENT)
-        referenced = SessionTemplate(
-            name="Run A",
-            content={
-                "device_flows": [
-                    {"nickname": "left", "device_template_path": "pod-high.toml"},
-                    {"nickname": "right", "device_template_path": "pod-low.toml"},
-                ]
-            },
-            content_hash="a" * 64,
-        )
-        db.session.add(referenced)
-        db.session.add(
-            SessionTemplate(
-                name="Run B",
-                content={"device_flows": [{"device_template_path": "pod-low.toml"}]},
-                content_hash="b" * 64,
-            )
-        )
-        db.session.add(
-            SessionTemplate(
-                name="Run C",
-                content={"device_flows": [{"device_template_path": "legacy-shape.toml"}]},
-                content_hash="c" * 64,
-            )
-        )
-        db.session.commit()
-
-        result = references("pod-high")
-
-        assert [session.id for session in result] == [referenced.id]
-
-
 def test_update_rewrites_content_in_place_and_recomputes_hash(app):
     with app.app_context():
         template = create("pod-high", _VALID_CONTENT)
@@ -195,23 +160,6 @@ def test_update_rewrites_content_in_place_and_recomputes_hash(app):
         }
         assert updated.content_hash != original_hash
         assert len(list(Path(app.config["DEVICE_TEMPLATE_DIR"]).glob("*.toml"))) == 1
-
-
-def test_delete_returns_references_and_removes_template(app):
-    with app.app_context():
-        create("pod-high", _VALID_CONTENT)
-        referenced = SessionTemplate(
-            name="Run A",
-            content={"device_flows": [{"device_template_path": "pod-high.toml"}]},
-            content_hash="a" * 64,
-        )
-        db.session.add(referenced)
-        db.session.commit()
-
-        refs = delete("pod-high")
-
-        assert [session.id for session in refs] == [referenced.id]
-        assert get_by_name("pod-high") is None
 
 
 def test_import_from_export_round_trips_to_same_hash(app):

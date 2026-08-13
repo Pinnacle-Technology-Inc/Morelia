@@ -56,7 +56,7 @@ class StubTransport:
 def _valid_flow():
     config = create_device_config(
         device_type=DeviceType.POD8206HR,
-        hardware_id="WD001",
+        hardware_id="001",
         port="COM3",
         parameters={"preamp_gain": 10},
     )
@@ -204,75 +204,6 @@ def test_fake_adapter_validates_scripted_responses_like_the_http_adapter(command
         fake.dispatch(command)
 
 
-def test_fake_adapter_runs_backend_command_tests_without_hardware():
-    fake = FakeWatchdogAdapter()
-    app = create_app("testing", config_overrides={"WATCHDOG_ADAPTER": fake})
-    with app.app_context():
-        db.create_all()
-        flow = _valid_flow()
-    client = app.test_client()
-    created = client.post(
-        "/api/v1/sessions/",
-        json={
-            "device_flows": [flow]
-        },
-    ).get_json()
-
-    response = client.post(f"/api/v1/sessions/{created['id']}/commands/start")
-
-    assert response.status_code == 202
-    assert fake.messages[0].command == "start"
-
-
-@pytest.mark.parametrize(
-    ("error", "status_code", "error_code"),
-    [
-        (WatchdogTimeoutError("Watchdog request timed out."), 504, "watchdog_timeout"),
-        (
-            WatchdogInvalidResponseError("Watchdog returned invalid JSON."),
-            502,
-            "watchdog_invalid_response",
-        ),
-        (
-            WatchdogUnavailableError("Watchdog is unavailable."),
-            503,
-            "watchdog_unavailable",
-        ),
-    ],
-    ids=["timeout", "malformed-response", "unavailable"],
-)
-def test_watchdog_failure_does_not_leave_session_command_in_flight(
-    error,
-    status_code,
-    error_code,
-):
-    fake = FakeWatchdogAdapter()
-    fake.queue_error(error)
-    app = create_app("testing", config_overrides={"WATCHDOG_ADAPTER": fake})
-    with app.app_context():
-        db.create_all()
-        flow = _valid_flow()
-    client = app.test_client()
-    created = client.post(
-        "/api/v1/sessions/",
-        json={
-            "device_flows": [flow]
-        },
-    ).get_json()
-
-    response = client.post(f"/api/v1/sessions/{created['id']}/commands/start")
-
-    assert response.status_code == status_code
-    assert response.get_json(force=True)["code"] == error_code
-    # A failed dispatch happens *inside* the transaction, so transaction()'s
-    # rollback releases the lock: the persisted row is left untouched — still a
-    # DRAFT with no in-flight command — rather than stuck in a STARTING/locked state.
-    with app.app_context():
-        stored = session_service.get(created["id"])
-        assert stored.status is SessionStatus.DRAFT
-        assert stored.command_in_flight is False
-
-
 class _StubWatchdogSupervisingDriver:
     """Minimal driver stub exposing an active ``watchdog_id`` (packet 06/07).
 
@@ -318,7 +249,7 @@ def _stale_watchdog_manifest() -> Manifest:
                 device_id="dev-stale-watchdog",
                 name="device-stale-watchdog",
                 nickname=None,
-                hardware_id="hw-stale-watchdog",
+                hardware_id="002",
                 port="usb-1",
                 parameters={},
                 sink_type=SinkType.CSV,

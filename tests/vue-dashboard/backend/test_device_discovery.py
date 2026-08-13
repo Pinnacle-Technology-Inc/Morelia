@@ -20,7 +20,7 @@ def test_get_devices_returns_fake_scan_result_in_testing(client):
         {
             "type": "pod8206hr",
             "port": "FAKE-POD-8206HR",
-            "hardware_id": "fake-pod-8206hr",
+            "hardware_id": "99999999",
             "label": "Fake POD 8206HR",
             "availability": "available",
         }

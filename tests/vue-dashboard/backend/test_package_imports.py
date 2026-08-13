@@ -61,7 +61,7 @@ def _locked_versions() -> dict[str, Version]:
 def test_package_clarity_import_surfaces_reexport_existing_types():
     assert RuntimeHostClient is HttpWatchdogAdapter
     assert FakeRuntimeHostClient is FakeWatchdogAdapter
-    assert SessionStatus.DRAFT.value == "draft"
+    assert SessionStatus.PREPARING.value == "preparing"
     assert UnknownConfigType.__name__ == "UnknownConfigType"
     assert CommandEnvelope.__name__ == "CommandEnvelope"
     assert Manifest.__name__ == "Manifest"

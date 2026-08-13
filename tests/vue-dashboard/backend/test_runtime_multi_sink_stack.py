@@ -69,9 +69,9 @@ def _manifest(*, sinks, session_id: int | None = 77) -> Manifest:
         device_id="pod8206hr:1",
         name="pod8206hr",
         nickname="bench-a",
-        hardware_id="1",
+        hardware_id="001",
         port="COM3",
-        parameters={},
+        parameters={"sample_rate": 2_000},
         sinks=tuple(sinks),
     )
     return Manifest(
@@ -411,7 +411,7 @@ def test_second_source_construction_failure_rolls_back_first_source(tmp_path, mo
     second = dataclasses.replace(
         original.device_flows[0],
         device_id="pod8206hr:2",
-        hardware_id="2",
+        hardware_id="002",
         port="COM4",
         sinks=(
             _sink(

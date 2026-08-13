@@ -13,7 +13,7 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
         API,
         json={
             "type": "pod8206hr",
-            "hardware_id": "A1B2C",
+            "hardware_id": "001",
             "port": "COM3",
             "parameters": {"preamp_gain": "10"},
             "nickname": "Left POD",
@@ -24,7 +24,7 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
     body = created.get_json()
     assert body["id"]
     assert body["type"] == "pod8206hr"
-    assert body["hardware_id"] == "A1B2C"
+    assert body["hardware_id"] == "001"
     assert body["parameters"] == {"preamp_gain": 10}
     assert len(body["color"]) == 7
     assert body["color"].startswith("#")
@@ -33,7 +33,7 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
 
     shown = client.get(f"{API}/{body['id']}")
     assert shown.status_code == 200
-    assert shown.get_json()["hardware_id"] == "A1B2C"
+    assert shown.get_json()["hardware_id"] == "001"
 
     listed = client.get(API)
     assert listed.status_code == 200
@@ -66,7 +66,7 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
         f"{API}/from-template",
         json={
             "template_name": "pod-high",
-            "hardware_id": "B2C3D",
+            "hardware_id": "002",
             "port": "COM4",
         },
     ).get_json()
@@ -94,7 +94,7 @@ def test_name_device_config_updates_alias_by_hardware_identity(client):
         API,
         json={
             "type": "pod8206hr",
-            "hardware_id": "NAM01",
+            "hardware_id": "003",
             "port": "COM4",
             "parameters": {"preamp_gain": 10},
         },
@@ -102,7 +102,7 @@ def test_name_device_config_updates_alias_by_hardware_identity(client):
 
     renamed = client.post(
         f"{API}/name",
-        json={"type": "pod8206hr", "hardware_id": "NAM01", "nickname": "Tom"},
+        json={"type": "pod8206hr", "hardware_id": "003", "nickname": "Tom"},
     )
 
     assert renamed.status_code == 200
@@ -113,19 +113,19 @@ def test_name_device_config_updates_alias_by_hardware_identity(client):
 def test_device_name_can_be_registered_before_configuration(client):
     registered = client.post(
         "/api/v1/device-registrations",
-        json={"type": "pod8206hr", "hardware_id": "PRE01", "nickname": "pre-pod"},
+        json={"type": "pod8206hr", "hardware_id": "004", "nickname": "pre-pod"},
     )
 
     assert registered.status_code == 200
     body = registered.get_json()
     assert body["type"] == "pod8206hr"
-    assert body["hardware_id"] == "PRE01"
+    assert body["hardware_id"] == "004"
     assert body["nickname"] == "pre-pod"
     assert body["device_config_id"] is None
 
     duplicate_name = client.post(
         "/api/v1/device-registrations",
-        json={"type": "pod8206hr", "hardware_id": "PRE02", "nickname": "pre-pod"},
+        json={"type": "pod8206hr", "hardware_id": "005", "nickname": "pre-pod"},
     )
     assert duplicate_name.status_code == 409
     assert duplicate_name.get_json()["code"] == "device_nickname_exists"
@@ -134,14 +134,14 @@ def test_device_name_can_be_registered_before_configuration(client):
 def test_config_creation_binds_pre_registered_name_to_device_config(client):
     registered = client.post(
         "/api/v1/device-registrations",
-        json={"type": "pod8206hr", "hardware_id": "PRE03", "nickname": "bound-pod"},
+        json={"type": "pod8206hr", "hardware_id": "006", "nickname": "bound-pod"},
     ).get_json()
 
     created = client.post(
         API,
         json={
             "type": "pod8206hr",
-            "hardware_id": "PRE03",
+            "hardware_id": "006",
             "port": "COM3",
             "parameters": {"preamp_gain": 10},
         },
@@ -169,7 +169,7 @@ def test_edit_with_writeback_updates_linked_template_and_keeps_provenance(client
         f"{API}/from-template",
         json={
             "template_name": "pod-high",
-            "hardware_id": "C3D4E",
+            "hardware_id": "007",
             "port": "COM5",
         },
     ).get_json()
@@ -196,7 +196,7 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
             API,
             json={
                 "type": "pod8206hr",
-                "hardware_id": "D4E5F",
+                "hardware_id": "008",
                 "port": "COM6",
                 "parameters": {"preamp_gain": 10},
             },
@@ -213,14 +213,14 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
                 DiscoveredDevice(
                     type=DeviceType.POD8206HR,
                     port="COM6",
-                    hardware_id="D4E5F",
+                    hardware_id="008",
                     label="Configured POD",
                     availability="available",
                 ),
                 DiscoveredDevice(
                     type=DeviceType.POD8206HR,
                     port="COM7",
-                    hardware_id="E5F6G",
+                    hardware_id="009",
                     label="Fresh POD",
                     availability="available",
                 ),
@@ -236,7 +236,7 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
             "id": config["id"],
             "type": "pod8206hr",
             "port": "COM6",
-                "hardware_id": "D4E5F",
+                "hardware_id": "008",
                 "color": config["color"],
                 "availability": "available",
             "status": "claimed",
@@ -248,7 +248,7 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
             "id": None,
             "type": "pod8206hr",
             "port": "COM7",
-                "hardware_id": "E5F6G",
+                "hardware_id": "009",
                 "color": None,
                 "availability": "available",
             "status": "unconfigured",

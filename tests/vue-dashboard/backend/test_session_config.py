@@ -64,7 +64,7 @@ def test_import_session_template_resolves_device_template_path_to_device_config(
                 "device_flows": [
                     {
                         "device_template_path": template.file_path,
-                        "hardware_id": "8206A",
+                        "hardware_id": "001",
                         "port": "COM3",
                         "sink_type": "csv",
                         "sink_location": "C:/data/high.csv",
@@ -88,7 +88,7 @@ def test_import_session_template_resolves_device_template_path_to_device_config(
         ]
         config = get_device_config_by_id(session.device_flows[0]["device_config_id"])
         assert config is not None
-        assert config.hardware_id == "8206A"
+        assert config.hardware_id == "001"
         assert config.port == "COM3"
         assert config.source_template == template.file_path
 
@@ -104,7 +104,7 @@ def test_import_session_template_resolves_device_template_content_hash(app):
                     {
                         "device_template_path": template.file_path,
                         "device_template_content_hash": template.content_hash,
-                        "hardware_id": "8206B",
+                        "hardware_id": "002",
                         "port": "COM4",
                         "sink_type": "csv",
                     }
@@ -128,7 +128,7 @@ def test_validate_entry_seeds_nickname_and_validates_sink(app):
 
         entry = validate_entry(
             {
-                "hardware_id": "8206A",
+                "hardware_id": "001",
                 "port": "COM3",
                 "device_template_path": "pod-high.toml",
                 "sink_type": "csv",
@@ -137,7 +137,7 @@ def test_validate_entry_seeds_nickname_and_validates_sink(app):
 
         config = get_device_config_by_id(entry["device_config_id"])
         assert config is not None
-        assert config.hardware_id == "8206A"
+        assert config.hardware_id == "001"
         assert entry == {
             "device_config_id": config.id,
             "nickname": "device-templates/pod-high.toml",
@@ -156,7 +156,7 @@ def test_legacy_flattened_normalizes_to_single_named_sink(app):
 
         entry = validate_entry(
             {
-                "hardware_id": "8206A",
+                "hardware_id": "001",
                 "port": "COM3",
                 "device_template_path": "pod-high.toml",
                 "sink_type": "csv",
@@ -180,7 +180,7 @@ name = "Calibration run"
 policy = "automate"
 
 [[device_flows]]
-hardware_id = "8206A"
+hardware_id = "001"
 port = "COM3"
 device_template_path = "pod-high.toml"
 sink_type = "csv"
@@ -188,7 +188,7 @@ sink_location = "C:/data/high.csv"
 
 [[device_flows]]
 nickname = "left pod"
-hardware_id = "8206B"
+hardware_id = "002"
 port = "COM4"
 device_template_path = "pod-low.toml"
 sink_type = "csv"
@@ -217,9 +217,9 @@ sink_type = "csv"
         second = get_device_config_by_id(session.device_flows[1]["device_config_id"])
         assert first is not None
         assert second is not None
-        assert first.hardware_id == "8206A"
+        assert first.hardware_id == "001"
         assert first.port == "COM3"
-        assert second.hardware_id == "8206B"
+        assert second.hardware_id == "002"
         assert second.port == "COM4"
 
 
@@ -230,7 +230,7 @@ def test_mixing_flattened_and_sinks_list_rejected(app):
         with pytest.raises(InvalidSessionEntry) as exc_info:
             validate_entry(
                 {
-                    "hardware_id": "8206A",
+                    "hardware_id": "001",
                     "port": "COM3",
                     "device_template_path": "pod-high.toml",
                     "sink_type": "csv",
@@ -252,7 +252,7 @@ def _multi_sink_source() -> dict:
         "name": "Multi",
         "device_flows": [
             {
-                "hardware_id": "8206A",
+                "hardware_id": "001",
                 "port": "COM3",
                 "device_template_path": "pod-high.toml",
                 "sinks": [
@@ -370,7 +370,7 @@ def test_export_toml_multi_sink_round_trips(app):
 def _flow_with_sinks(app, sinks: list[dict]):
     return validate_entry(
         {
-            "hardware_id": "8206A",
+            "hardware_id": "001",
             "port": "COM3",
             "device_template_path": "pod-high.toml",
             "sinks": sinks,
@@ -505,7 +505,7 @@ def test_import_unknown_device_template_writes_no_session(app):
                     "name": "bad reference",
                     "device_flows": [
                         {
-                            "hardware_id": "8206A",
+                            "hardware_id": "001",
                             "port": "COM3",
                             "device_template_path": "missing",
                             "sink_type": "csv",
@@ -529,7 +529,7 @@ def test_import_old_device_config_key_fails_clear_hard_rename(app):
                     "name": "old key",
                     "device_flows": [
                         {
-                            "hardware_id": "8206A",
+                            "hardware_id": "001",
                             "port": "COM3",
                             "device_config": "pod-high",
                             "sink_type": "csv",
@@ -552,7 +552,7 @@ def test_import_bad_sink_type_writes_no_session(app):
                     "name": "bad sink",
                     "device_flows": [
                         {
-                            "hardware_id": "8206A",
+                            "hardware_id": "001",
                             "port": "COM3",
                             "device_template_path": "pod-high.toml",
                             "sink_type": "parquet",
@@ -569,7 +569,7 @@ def test_export_creates_default_named_template_for_custom_device_config(app):
     with app.app_context():
         config = create_device_config(
             device_type=DeviceType.POD8206HR,
-            hardware_id="CUST1",
+            hardware_id="003",
             port="COM9",
             parameters={"preamp_gain": 10, "sample_rate": "2000"},
         )
@@ -610,7 +610,7 @@ def test_export_reuses_matching_stored_template_for_unlinked_device_config(app):
         stored = create_device_template("pod-high", _DEVICE_CONTENT)
         config = create_device_config(
             device_type=DeviceType.POD8206HR,
-            hardware_id="CUST1",
+            hardware_id="003",
             port="COM9",
             parameters=_DEVICE_CONTENT["parameters"],
         )
@@ -638,7 +638,7 @@ def test_export_reuses_device_template_by_canonical_content_hash(app):
         stored = create_device_template("pod-high", _DEVICE_CONTENT)
         config = create_device_config(
             device_type=DeviceType.POD8206HR,
-            hardware_id="CUST2",
+            hardware_id="004",
             port="COM10",
             parameters={"preamp_gain": 10, "sample_rate": 2000},
         )
@@ -673,7 +673,7 @@ def test_import_and_export_json(app):
                     "name": "JSON run",
                     "device_flows": [
                         {
-                            "hardware_id": "8206A",
+                            "hardware_id": "001",
                             "port": "COM3",
                             "device_template_path": template.file_path,
                             "sink_type": "csv",

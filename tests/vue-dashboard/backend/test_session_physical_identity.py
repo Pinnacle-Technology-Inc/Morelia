@@ -9,7 +9,7 @@ def test_session_config_rejects_same_physical_device_twice(app):
     with app.app_context():
         config = device_configs.create(
             device_type=DeviceType.POD8206HR,
-            hardware_id="A1B2C",
+            hardware_id="001",
             port="COM1",
             parameters={"preamp_gain": 10},
         )

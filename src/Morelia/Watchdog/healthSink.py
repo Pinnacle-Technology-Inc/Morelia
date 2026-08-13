@@ -6,6 +6,8 @@ from functools import partial
 from Morelia.ParamSchema.ParamSchema import ParamSchema
 from Morelia.Stream.sink import SinkInterface
 
+from Morelia.ParamSchema.ParamSchema import ParamSchema
+
 
 class HealthSink(SinkInterface):
     """Pass-through sink that stamps shared status when data flows.
@@ -90,27 +92,15 @@ class HealthSink(SinkInterface):
         }
 
     @property
-    def param_schema(self) -> ParamSchema:
-        """Describe the operator-tunable health sampling parameters.
-        """
-
+    def param_schema(self):
         return ParamSchema(
             required=frozenset(),
-            optional=frozenset(
-                {"min_interval_sec", "rate_window_sec", "samples_per_packet"}
-            ),
-            validators={
-                "min_interval_sec": partial(
-                    self._check_positive_number,
-                    key="min_interval_sec",
-                ),
-                "rate_window_sec": partial(
-                    self._check_positive_number,
-                    key="rate_window_sec",
-                ),
-                "samples_per_packet": partial(
-                    self._check_positive_int,
-                    key="samples_per_packet",
-                ),
-            },
-        )
+            optional=frozenset({
+                "shared_status",
+                "stream_name",
+                "min_interval_sec",
+                "rate_window_sec",
+                "samples_per_packet",
+            }),
+            validators={},
+        ),

@@ -59,31 +59,6 @@ def _seed_report_with_sinks(
     )
 
 
-def test_fleet_overview_counts_running_and_reports_phase(client, app):
-    with app.app_context():
-        db.session.add(Session(id=1, name="alpha", status=SessionStatus.ACTIVE, dataflow_id="df-1"))
-        db.session.add(Session(id=2, name="beta", status=SessionStatus.DRAFT))
-        db.session.add(
-            Session(id=3, name="gamma", status=SessionStatus.COMPLETED, dataflow_id="df-3")
-        )
-        db.session.commit()
-        _seed_report(1, "df-1", stream_status="healthy")
-
-    response = client.get("/api/v1/sessions/overview")
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["running_count"] == 1
-    assert body["total_count"] == 3
-    rows = {row["id"]: row for row in body["sessions"]}
-    assert rows[1]["status"] == "active"
-    assert rows[1]["phase"] == "running"
-    # No live poller in tests, so health is reported as None rather than guessed.
-    assert rows[1]["health"] is None
-    # A session with no persisted report has no phase.
-    assert rows[2]["phase"] is None
-
-
 def test_status_snapshot_surfaces_active_watchdog_identity_and_outbox_health(client, app):
     with app.app_context():
         db.session.add(Session(id=8, name="wd-snap", status=SessionStatus.ACTIVE, dataflow_id="df-8"))

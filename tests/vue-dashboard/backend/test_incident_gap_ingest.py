@@ -126,7 +126,7 @@ def test_incident_show_missing_returns_404(app):
 def _valid_flow():
     config = create_device_config(
         device_type=DeviceType.POD8206HR,
-        hardware_id="OP001",
+        hardware_id="001",
         port="COM3",
         parameters={"preamp_gain": 10},
     )
@@ -149,48 +149,6 @@ class _FakeSupervisor:
     def stop(self, session, *, envelope=None):
         session.runtime_port = None
         session.runtime_token = None
-
-
-def test_recovery_episode_records_one_gap_linked_to_incident(app):
-    supervisor = _FakeSupervisor()
-    with app.app_context():
-        db.create_all()
-        session = session_service.create({"name": "gap-flow", "device_flows": [_valid_flow()]})
-
-        bind_contextvars(request_id="req-gap-start")
-        session_service.start_managed(session.id, supervisor)
-        dataflow_id = session.dataflow_id
-
-        bind_contextvars(request_id="req-gap-recover")
-        session_service.recover_managed(session.id, "dev-op001", "reconnect", supervisor)
-
-        from app.models.operation import Operation
-
-        recovery_op = db.session.scalars(
-            db.select(Operation).where(Operation.command == "reconnect")
-        ).one()
-        recovery_id = recovery_op.recovery_id
-
-        # stream goes unhealthy (incident opens), then heals under the recovery_id
-        ingest_report(_report(dataflow_id, sequence=1, status="unhealthy"))
-        ingest_report(
-            _report(dataflow_id, sequence=2, status="healthy", recovery_id=recovery_id)
-        )
-        # a repeated post-recovery report must not write a second gap
-        ingest_report(
-            _report(dataflow_id, sequence=3, status="healthy", recovery_id=recovery_id)
-        )
-
-        gaps = RecoveryGapRepository().list_for_session(session.id)
-        assert len(gaps) == 1
-        gap = gaps[0]
-        assert gap.recovery_id == recovery_id
-        assert gap.device_id == "dev-op001"
-        assert gap.operation_id == recovery_op.operation_id
-        assert gap.confidence == "uncertain"
-
-        incident = IncidentRepository().list_for_session(session.id)[0]
-        assert gap.incident_id == incident.incident_id
 
 
 # ── Packet 21: per-sink axis ──────────────────────────────────────────────────

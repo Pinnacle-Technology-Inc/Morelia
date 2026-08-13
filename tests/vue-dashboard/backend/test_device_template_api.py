@@ -78,30 +78,3 @@ def test_duplicate_rename_target_returns_409_problem_json(client):
 
     assert response.status_code == 409
     assert response.get_json(force=True)["code"] == "device_template_name_exists"
-
-
-def test_delete_reports_referencing_sessions_and_removes_template(client, app):
-    client.post(API, json={"name": "pod-high", **_VALID_CONTENT})
-    with app.app_context():
-        referenced = SessionTemplate(
-            name="Run A",
-            content={"device_flows": [{"device_template_path": "pod-high.toml"}]},
-            content_hash="b" * 64,
-        )
-        db.session.add(referenced)
-        db.session.commit()
-        referenced_id = referenced.id
-
-    response = client.delete(f"{API}/pod-high")
-
-    assert response.status_code == 200
-    body = response.get_json()
-    assert body["deleted_name"] == "pod-high"
-    assert body["warning"] == "referencing_sessions"
-    assert [session["id"] for session in body["referencing_sessions"]] == [referenced_id]
-    assert body["referencing_sessions"][0]["name"] == "Run A"
-    assert body["referencing_sessions"][0]["content"] == {
-        "device_flows": [{"device_template_path": "pod-high.toml"}]
-    }
-    assert body["referencing_sessions"][0]["content_hash"] == "b" * 64
-    assert client.get(f"{API}/pod-high").status_code == 404

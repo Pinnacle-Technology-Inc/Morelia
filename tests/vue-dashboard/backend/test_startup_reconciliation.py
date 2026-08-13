@@ -42,7 +42,7 @@ def _session(
                 "device_id": "dev-a",
                 "name": "device-a",
                 "nickname": None,
-                "hardware_id": "hw-a",
+                "hardware_id": "002",
                 "port": "usb-a",
                 "parameters": {},
                 "sink_type": "csv",
@@ -414,7 +414,7 @@ def _claimed_config_session(*, status: SessionStatus, runtime_port: int | None):
 
     config = create_device_config(
         device_type=DeviceType.POD8206HR,
-        hardware_id="RC001",
+        hardware_id="001",
         port="COM3",
         parameters={"preamp_gain": 10},
     )

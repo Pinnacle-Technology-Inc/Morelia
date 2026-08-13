@@ -8,18 +8,11 @@ ROOT = Path(__file__).resolve().parents[3]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-import pytest
-import logging
-import structlog
 import queue
 
 from pyedflib import EdfReader
 from structlog.contextvars import bind_contextvars
 
-from app import create_app
-from app.config import TestingConfig
-from app.database import db
-from app.logging_config import configure_logging
 from app.api.plot_stream import (
     PLOT_SCHEMA_VERSION,
     InProcessPlotTransport,
@@ -48,8 +41,15 @@ from app.runtime_host.manifest import (
     SinkConfig,
 )
 from app.services import sessions as session_service
-from app.services.device_configs import create as create_device_config
 from app.services.output_finalization import MergeRequest
+
+from uuid import uuid4
+
+from app.domain.enums import DeviceType, SessionStatus
+from app.services import device_configs
+from app.services import session_templates
+from app.services.sessions import create as create_session
+from app.services import device_templates
 
 
 class _FakeSupervisor:
@@ -105,9 +105,9 @@ def _manifest(*, sinks, session_id: int | None = 30) -> Manifest:
         device_id="pod8206hr:1",
         name="pod8206hr",
         nickname="gate-a",
-        hardware_id="1",
+        hardware_id="002",
         port="COM3",
-        parameters={},
+        parameters={"sample_rate": 2_000},
         sinks=tuple(sinks),
     )
     return Manifest(
@@ -128,18 +128,50 @@ def _runtime(manifest, **kwargs) -> MoreliaRuntime:
     )
 
 
-def _session_flow(tmp_path):
-    config = create_device_config(
+def _create_device_config(
+    *,
+    hardware_id="001",
+    port="COM3",
+):
+    """Create a device config suitable for a session/template test."""
+    return device_configs.create(
         device_type=DeviceType.POD8206HR,
-        hardware_id="GAT01",
-        port="COM9",
+        hardware_id=hardware_id,
+        port=port,
         parameters={"preamp_gain": 10},
     )
-    return {
-        "device_config_id": config.id,
-        "sink_type": "csv",
-        "sink_location": str(tmp_path / "gate-out.csv"),
-    }
+
+
+def _create_template(*, tmp_path, name="bench-rig"):
+    """Create a real device template and register a session template from it."""
+
+    unique_name = f"{name}-{uuid4().hex[:8]}"
+
+    device_template = device_templates.create(
+        name,
+        {
+            "type": "pod8206hr",
+            "parameters": {"preamp_gain": 10},
+        },
+    )
+
+    return session_templates.create(
+        f"{unique_name}-session",
+        {
+            "policy": "recommend",
+            "device_flows": [
+                {
+                    "device_template_path": device_template.file_path,
+                    "sinks": [
+                        {
+                            "sink_type": "csv",
+                            "sink_location": "test_output/out.csv",
+                        }
+                    ],
+                }
+            ],
+        },
+    )
 
 # ── Scenario 2: sink-isolated failure while siblings continue ────────────────
 
@@ -281,9 +313,30 @@ def test_scenario_edf_fallback_merge_preserves_components_and_order(tmp_path, ap
 def test_scenario_stop_then_restart_allocates_new_output_identity(tmp_path, app):
     with app.app_context():
         supervisor = _FakeSupervisor()
-        session = session_service.create(
-            {"name": "gate-stop-restart", "device_flows": [_session_flow(tmp_path)]}
+
+        config = _create_device_config()
+        template = _create_template(tmp_path=tmp_path)
+
+        session = create_session(
+            {
+                "source_template_id": template.template_id,
+                "expected_template_hash": template.registered_hash,
+                "assignments": [
+                    {
+                        "flow_index": 0,
+                        "device_config_id": config.id,
+                        "sink_locations": [
+                            {
+                                "sink_index": 0,
+                                "sink_location": str(tmp_path / "output.csv"),
+                            }
+                        ],
+                    }
+                ],
+            }
         )
+        session_id = session.id
+        
         bind_contextvars(request_id="gate-start-1")
         started = session_service.start_managed(session.id, supervisor)
 
