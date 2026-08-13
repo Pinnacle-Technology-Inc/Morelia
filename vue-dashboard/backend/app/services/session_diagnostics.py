@@ -142,7 +142,7 @@ def _database_records(session_id: int) -> list[dict[str, Any]]:
             RecoveryGap.created_at,
             (
                 "gap_id", "dataflow_id", "device_id", "sink_id", "output_id",
-                "runtime_id", "operation_id", "incident_id", "recovery_id", "reason",
+                "operation_id", "incident_id", "recovery_id", "reason",
                 "gap_start", "gap_end", "boundary_kind", "confidence", "created_at",
             ),
         ),
