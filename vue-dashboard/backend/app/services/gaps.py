@@ -19,7 +19,8 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime
+from collections.abc import Mapping
+from datetime import UTC, datetime
 
 from app.database import db, transaction
 from app.domain.enums import GapConfidence, IncidentStatus, StreamStatus
@@ -31,6 +32,7 @@ from app.output import boundaries
 from app.repositories.incidents import IncidentRepository
 from app.repositories.recovery_gaps import RecoveryGapRepository
 from app.runtime_child.driver import DeviceReport, RuntimeReport, SinkHealth
+from app.services import session_activity
 from app.services.incidents import (
     SINK_DEGRADED_REASON,
     SINK_FAILED_REASON,
@@ -47,6 +49,13 @@ def evaluate_report(report: RuntimeReport, *, session_id: int) -> None:
     Runs BEFORE ``incidents.evaluate_report`` in the ingest path so the incident
     opened for the recovered stream is still unresolved and can be linked here.
     """
+    disconnect_gap = _record_disconnect_gap(report, session_id=session_id)
+    if disconnect_gap is not None:
+        # The physical episode is the more precise source-level account. A
+        # control-plane recovery_id may be present on the same healed report;
+        # do not create a second generic "stream recovered" gap for it.
+        return
+
     recovery_id = report.recovery_id
     if recovery_id is None:
         return  # not part of a recovery episode
@@ -68,20 +77,137 @@ def evaluate_report(report: RuntimeReport, *, session_id: int) -> None:
     incident = _incidents.find_open_for_device(
         session_id, report.dataflow_id, device_id, reason=STREAM_UNHEALTHY_REASON
     )
-    _gaps.create(
-        session_id=session_id,
-        dataflow_id=report.dataflow_id,
-        device_id=device_id,
-        operation_id=operation.operation_id,
-        recovery_id=recovery_id,
-        incident_id=incident.incident_id if incident is not None else None,
-        reason="stream recovered",
-        confidence=GapConfidence.UNCERTAIN,
-        details={
-            "note": "continuity cannot be proven from the report stream",
-            "sequence": report.sequence,
-        },
-    )
+    details = {
+        "note": "continuity cannot be proven from the report stream",
+        "sequence": report.sequence,
+    }
+    with transaction():
+        gap = _gaps.create(
+            session_id=session_id,
+            dataflow_id=report.dataflow_id,
+            device_id=device_id,
+            operation_id=operation.operation_id,
+            recovery_id=recovery_id,
+            incident_id=incident.incident_id if incident is not None else None,
+            reason="stream recovered",
+            confidence=GapConfidence.UNCERTAIN,
+            details=details,
+            commit=False,
+        )
+        _record_gap_activity(
+            gap,
+            summary=(
+                f"{device_id} recovered; output continuity could not be proven "
+                "from the runtime report."
+            ),
+            details=details,
+        )
+
+
+def _record_disconnect_gap(
+    report: RuntimeReport, *, session_id: int
+) -> RecoveryGap | None:
+    """Persist a healed physical-disconnect episode without requiring an operation."""
+    diagnostics = report.diagnostics
+    if not isinstance(diagnostics, Mapping):
+        return None
+    streams = diagnostics.get("streams")
+    if not isinstance(streams, (list, tuple)):
+        return None
+
+    for stream in streams:
+        if not isinstance(stream, Mapping) or stream.get("action") != "connection_restored":
+            continue
+        disconnect = stream.get("disconnect")
+        if not isinstance(disconnect, Mapping):
+            continue
+        episode_id = disconnect.get("episode_id")
+        started_at = disconnect.get("started_at")
+        ended_at = disconnect.get("ended_at")
+        if not isinstance(episode_id, str) or not episode_id or len(episode_id) > 64:
+            continue
+        existing = _gaps.get(episode_id)
+        if existing is not None:
+            return existing
+        if not isinstance(started_at, (int, float)) or isinstance(started_at, bool):
+            continue
+        if not isinstance(ended_at, (int, float)) or isinstance(ended_at, bool):
+            continue
+        if ended_at < started_at:
+            continue
+
+        device_id = stream.get("device_id")
+        incident = (
+            _incidents.find_open_for_device(
+                session_id,
+                report.dataflow_id,
+                device_id,
+                reason=STREAM_UNHEALTHY_REASON,
+            )
+            if isinstance(device_id, str) and device_id
+            else None
+        )
+        recording_continued = disconnect.get("recording_continued") is True
+        duration = float(ended_at - started_at)
+        operation = _recovery_operation(report.recovery_id) if report.recovery_id else None
+        details = {
+            "episode_id": episode_id,
+            "duration_seconds": duration,
+            "recording_continued": recording_continued,
+            "missing_value": "NaN",
+            "report_sequence": report.sequence,
+        }
+        device_label = device_id if isinstance(device_id, str) and device_id else "The stream"
+        duration_label = f"{duration:g} second" + ("" if duration == 1 else "s")
+        continuity = (
+            "recording continued with NaN placeholders"
+            if recording_continued
+            else "the stream restarted and output continuity must be verified per sink"
+        )
+        with transaction():
+            gap = _gaps.create(
+                gap_id=episode_id,
+                session_id=session_id,
+                dataflow_id=report.dataflow_id,
+                device_id=device_id if isinstance(device_id, str) else None,
+                incident_id=incident.incident_id if incident is not None else None,
+                operation_id=operation.operation_id if operation is not None else None,
+                recovery_id=report.recovery_id,
+                # This row proves a source-level time window only. File/segment
+                # boundary kinds require sink output ids and offsets, which are
+                # recorded separately when that evidence exists.
+                boundary_kind=None,
+                boundary_version=None,
+                reason="physical disconnect",
+                confidence=GapConfidence.UNCERTAIN,
+                gap_start={"timestamp": float(started_at)},
+                gap_end={"timestamp": float(ended_at)},
+                details=details,
+                commit=False,
+            )
+            session_activity.record(
+                session_id=session_id,
+                dataflow_id=report.dataflow_id,
+                kind="gap.recorded",
+                category="dataflow",
+                severity="warning",
+                title="Data gap recorded",
+                summary=f"{device_label} was disconnected for {duration_label}; {continuity}.",
+                source_type="gap",
+                source_id=gap.gap_id,
+                event_type="gap.recorded",
+                event_payload={"gap_id": gap.gap_id},
+                operation_id=gap.operation_id,
+                incident_id=gap.incident_id,
+                gap_id=gap.gap_id,
+                recovery_id=gap.recovery_id,
+                details=details,
+                occurred_at=datetime.fromtimestamp(float(ended_at), tz=UTC),
+                commit=False,
+            )
+        return gap
+
+    return None
 
 
 def _recovery_healed(device: DeviceReport | None) -> bool:
@@ -167,31 +293,69 @@ def _record_sink_boundaries(report: RuntimeReport, *, session_id: int) -> None:
         incident = _open_sink_incident(
             session_id, report.dataflow_id, sink.source_id, sink.sink_id
         )
-        _gaps.create(
-            session_id=session_id,
-            dataflow_id=report.dataflow_id,
-            device_id=sink.source_id,
-            sink_id=sink.sink_id,
-            operation_id=operation.operation_id,
-            recovery_id=recovery_id,
-            incident_id=incident.incident_id if incident is not None else None,
-            output_id=row.output_id if row is not None else None,
-            boundary_kind=(boundaries.SEGMENTED if row is not None else boundaries.REMOTE),
-            boundary_version=boundaries.BOUNDARY_VERSION,
-            reason="sink recovered",
-            confidence=GapConfidence.UNCERTAIN,
-            details={
-                "note": "continuity cannot be proven from the report stream",
-                "sink_class": sink.sink_class,
-                "sample_loss": sink.sample_loss,
-                "byte_loss": sink.byte_loss,
-                "sink_sequence": sink.sequence,
-                "report_sequence": report.sequence,
-            },
-        )
+        boundary_kind = boundaries.SEGMENTED if row is not None else boundaries.REMOTE
+        details = {
+            "note": "continuity cannot be proven from the report stream",
+            "sink_class": sink.sink_class,
+            "sample_loss": sink.sample_loss,
+            "byte_loss": sink.byte_loss,
+            "sink_sequence": sink.sequence,
+            "report_sequence": report.sequence,
+        }
+        with transaction():
+            gap = _gaps.create(
+                session_id=session_id,
+                dataflow_id=report.dataflow_id,
+                device_id=sink.source_id,
+                sink_id=sink.sink_id,
+                operation_id=operation.operation_id,
+                recovery_id=recovery_id,
+                incident_id=incident.incident_id if incident is not None else None,
+                output_id=row.output_id if row is not None else None,
+                boundary_kind=boundary_kind,
+                boundary_version=boundaries.BOUNDARY_VERSION,
+                reason="sink recovered",
+                confidence=GapConfidence.UNCERTAIN,
+                details=details,
+                commit=False,
+            )
+            _record_gap_activity(
+                gap,
+                summary=(
+                    f"{sink.sink_id} recovered for {sink.source_id}; a "
+                    f"{boundary_kind} boundary was recorded with "
+                    f"{sink.sample_loss} reported lost samples."
+                ),
+                details=details,
+            )
 
 
 # -- helpers -----------------------------------------------------------------
+
+
+def _record_gap_activity(
+    gap: RecoveryGap, *, summary: str, details: Mapping[str, object]
+) -> None:
+    """Project a gap and its live notification inside the caller's transaction."""
+    session_activity.record(
+        session_id=gap.session_id,
+        dataflow_id=gap.dataflow_id,
+        kind="gap.recorded",
+        category="dataflow",
+        severity="warning",
+        title="Data gap recorded",
+        summary=summary,
+        source_type="gap",
+        source_id=gap.gap_id,
+        event_type="gap.recorded",
+        event_payload={"gap_id": gap.gap_id},
+        operation_id=gap.operation_id,
+        incident_id=gap.incident_id,
+        gap_id=gap.gap_id,
+        recovery_id=gap.recovery_id,
+        details=details,
+        commit=False,
+    )
 
 
 def _latest_output_file(dataflow_id: str, sink_id: str) -> OutputFile | None:
@@ -258,8 +422,16 @@ def list_for_session(session_id: int) -> list[RecoveryGap]:
 
 
 def _encode_cursor(*, session_id, confidence, row: RecoveryGap) -> str:
-    payload = {"v": 1, "k": "gaps", "t": row.created_at.isoformat() if row.created_at else None, "id": row.id, "session": session_id, "confidence": confidence}
-    return base64.urlsafe_b64encode(json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()).decode().rstrip("=")
+    payload = {
+        "v": 1,
+        "k": "gaps",
+        "t": row.created_at.isoformat() if row.created_at else None,
+        "id": row.id,
+        "session": session_id,
+        "confidence": confidence,
+    }
+    encoded = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
+    return base64.urlsafe_b64encode(encoded).decode().rstrip("=")
 
 
 def _decode_cursor(cursor: str, *, session_id, confidence) -> tuple[datetime | None, int]:
@@ -277,7 +449,32 @@ def _decode_cursor(cursor: str, *, session_id, confidence) -> tuple[datetime | N
         raise ValueError("invalid gap cursor") from exc
 
 
-def list_page(*, session_id: int | None, confidence: str | None, page_size: int, cursor: str | None) -> dict:
-    after = _decode_cursor(cursor, session_id=session_id, confidence=confidence) if cursor else None
-    rows, has_more = _gaps.list_page(session_id=session_id, confidence=confidence, page_size=page_size, after=after)
-    return {"items": rows, "has_more": has_more, "next_cursor": _encode_cursor(session_id=session_id, confidence=confidence, row=rows[-1]) if has_more and rows else None}
+def list_page(
+    *,
+    session_id: int | None,
+    confidence: str | None,
+    page_size: int,
+    cursor: str | None,
+) -> dict:
+    after = (
+        _decode_cursor(cursor, session_id=session_id, confidence=confidence)
+        if cursor
+        else None
+    )
+    rows, has_more = _gaps.list_page(
+        session_id=session_id,
+        confidence=confidence,
+        page_size=page_size,
+        after=after,
+    )
+    return {
+        "items": rows,
+        "has_more": has_more,
+        "next_cursor": (
+            _encode_cursor(
+                session_id=session_id, confidence=confidence, row=rows[-1]
+            )
+            if has_more and rows
+            else None
+        ),
+    }

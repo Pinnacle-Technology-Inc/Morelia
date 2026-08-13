@@ -15,7 +15,7 @@ from app.models.operation import Operation
 from app.models.session import Session
 from app.repositories.backend_events import BackendEventRepository
 from app.repositories.sessions import published_session_clause
-from app.services import incidents
+from app.services import incidents, session_activity
 
 DATAFLOW_COMMANDS = frozenset({"start", "stop", "complete", "restart-all-streams"})
 STREAM_COMMANDS = frozenset({"reconnect", "restart", "reset-stream"})
@@ -200,6 +200,23 @@ def create_operation(
             )
             db.session.add(row)
             db.session.flush()
+            session_activity.record(
+                session_id=row.session_id,
+                dataflow_id=row.dataflow_id,
+                kind="operation.requested",
+                category="recovery" if row.recovery_id else "session",
+                severity="info",
+                title=f"{_command_label(row.command)} requested",
+                summary=_operation_summary(row, "requested"),
+                source_type="operation",
+                source_id=row.operation_id,
+                operation_id=row.operation_id,
+                command_id=row.command_id,
+                recovery_id=row.recovery_id,
+                details=_activity_details(row),
+                occurred_at=row.queued_at,
+                commit=False,
+            )
             return row
     except IntegrityError as exc:
         raise OperationConflict("operation conflicts with active operation") from exc
@@ -268,6 +285,8 @@ def transition_operation(
         if details is not None:
             operation.details = dict(details)
         db.session.flush()
+        if next_state in TERMINAL_STATES:
+            _record_terminal_activity(operation, next_state)
 
     if next_state is OperationState.FAILED:
         incidents.evaluate_operation_failure(operation)
@@ -371,10 +390,15 @@ def resolve_uncertain_operation(
         ).first()
         if operation is None:
             raise OperationNotFound(operation_id)
-        if operation.state in {OperationState.SUCCEEDED, OperationState.FAILED} and operation.resolved_at:
+        if (
+            operation.state in {OperationState.SUCCEEDED, OperationState.FAILED}
+            and operation.resolved_at
+        ):
             if operation.state is next_state:
                 return operation
-            raise OperationResolutionError(operation_id, "a different terminal outcome was already recorded")
+            raise OperationResolutionError(
+                operation_id, "a different terminal outcome was already recorded"
+            )
         if operation.state != OperationState.UNCERTAIN or operation.resolved_at is not None:
             raise OperationResolutionError(operation_id, "operation is not unresolved uncertain")
 
@@ -384,6 +408,7 @@ def resolve_uncertain_operation(
         _stamp_transition(operation, next_state)
         operation.state = next_state
         db.session.flush()
+        _record_terminal_activity(operation, next_state, summary=resolution_note)
     if next_state is OperationState.FAILED:
         incidents.evaluate_operation_failure(operation)
     else:
@@ -403,6 +428,67 @@ def _stamp_transition(operation: Operation, state: OperationState) -> None:
         operation.verifying_at = now
     elif state in TERMINAL_STATES:
         operation.finished_at = now
+
+
+def _command_label(command: str) -> str:
+    return command.replace("-", " ").capitalize()
+
+
+def _record_terminal_activity(
+    operation: Operation,
+    state: OperationState,
+    *,
+    summary: str | None = None,
+) -> None:
+    session_activity.record(
+        session_id=operation.session_id,
+        dataflow_id=operation.dataflow_id,
+        kind=f"operation.{state.value}",
+        category="recovery" if operation.recovery_id else "session",
+        severity={
+            OperationState.SUCCEEDED: "success",
+            OperationState.FAILED: "error",
+            OperationState.UNCERTAIN: "warning",
+        }[state],
+        title=(
+            f"{_command_label(operation.command)} completed"
+            if state is OperationState.SUCCEEDED
+            else f"{_command_label(operation.command)} {state.value}"
+        ),
+        summary=(
+            summary
+            or operation.error_message
+            or _operation_summary(operation, state.value)
+        ),
+        source_type="operation",
+        source_id=operation.operation_id,
+        operation_id=operation.operation_id,
+        command_id=operation.command_id,
+        recovery_id=operation.recovery_id,
+        details=_activity_details(operation),
+        occurred_at=operation.finished_at,
+        commit=False,
+    )
+
+
+def _operation_summary(operation: Operation, outcome: str) -> str:
+    target = (
+        f" for device {operation.target_device_id}"
+        if operation.target_device_id
+        else ""
+    )
+    return f"{_command_label(operation.command)} was {outcome}{target}."
+
+
+def _activity_details(operation: Operation) -> dict[str, object | None]:
+    return {
+        "command": operation.command,
+        "scope": operation.scope.value,
+        "target_device_id": operation.target_device_id,
+        "runtime_id": operation.runtime_id,
+        "watchdog_id": operation.watchdog_id,
+        "error_code": operation.error_code,
+    }
 
 
 def _find_by_request_key(dataflow_id: str, request_key: str) -> Operation | None:

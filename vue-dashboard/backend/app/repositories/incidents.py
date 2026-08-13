@@ -12,6 +12,7 @@ from sqlalchemy import and_, or_
 from app.database import db, transaction
 from app.domain.enums import IncidentStatus
 from app.models.incident import Incident
+from app.services import session_activity
 
 
 def _status_value(status: IncidentStatus | str) -> str:
@@ -54,6 +55,27 @@ class IncidentRepository:
             )
             db.session.add(row)
             db.session.flush()
+            session_activity.record(
+                session_id=row.session_id,
+                dataflow_id=row.dataflow_id,
+                kind="issue.opened",
+                category="issues",
+                severity="error",
+                title="Issue opened",
+                summary=row.reason,
+                source_type="incident",
+                source_id=row.incident_id,
+                incident_id=row.incident_id,
+                operation_id=row.operation_id,
+                recovery_id=row.recovery_id,
+                details={
+                    "device_id": row.device_id,
+                    "sink_id": row.sink_id,
+                    "policy": row.policy,
+                },
+                occurred_at=row.opened_at,
+                commit=False,
+            )
         return row
 
     def get(self, incident_id: str) -> Incident | None:
@@ -151,6 +173,23 @@ class IncidentRepository:
             row.acknowledged_at = datetime.now(UTC)
             row.acknowledged_by = acknowledged_by
             row.acknowledgement_note = note
+            db.session.flush()
+            session_activity.record(
+                session_id=row.session_id,
+                dataflow_id=row.dataflow_id,
+                kind="issue.acknowledged",
+                category="issues",
+                severity="info",
+                title="Issue acknowledged",
+                summary=note or f"Acknowledged by {acknowledged_by or 'operator'}.",
+                source_type="incident",
+                source_id=row.incident_id,
+                incident_id=row.incident_id,
+                operation_id=row.operation_id,
+                recovery_id=row.recovery_id,
+                occurred_at=row.acknowledged_at,
+                commit=False,
+            )
         return row
 
     def resolve(self, incident_id: str, *, resolution: str) -> Incident:
@@ -161,4 +200,21 @@ class IncidentRepository:
             row.status = IncidentStatus.RESOLVED.value
             row.resolved_at = datetime.now(UTC)
             row.resolution = resolution
+            db.session.flush()
+            session_activity.record(
+                session_id=row.session_id,
+                dataflow_id=row.dataflow_id,
+                kind="issue.resolved",
+                category="issues",
+                severity="success",
+                title="Issue resolved",
+                summary=resolution,
+                source_type="incident",
+                source_id=row.incident_id,
+                incident_id=row.incident_id,
+                operation_id=row.operation_id,
+                recovery_id=row.recovery_id,
+                occurred_at=row.resolved_at,
+                commit=False,
+            )
         return row

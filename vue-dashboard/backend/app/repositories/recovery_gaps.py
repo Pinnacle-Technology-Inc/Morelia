@@ -48,8 +48,9 @@ class RecoveryGapRepository:
         gap_start: Mapping[str, Any] | None = None,
         gap_end: Mapping[str, Any] | None = None,
         details: Mapping[str, Any] | None = None,
+        commit: bool = True,
     ) -> RecoveryGap:
-        with transaction():
+        def insert() -> RecoveryGap:
             row = RecoveryGap(
                 gap_id=gap_id or uuid4().hex,
                 incident_id=incident_id,
@@ -80,7 +81,12 @@ class RecoveryGapRepository:
             )
             db.session.add(row)
             db.session.flush()
-        return row
+            return row
+
+        if commit:
+            with transaction():
+                return insert()
+        return insert()
 
     def get(self, gap_id: str) -> RecoveryGap | None:
         return db.session.scalars(
