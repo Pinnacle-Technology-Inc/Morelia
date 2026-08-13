@@ -870,6 +870,55 @@ class GapPageSchema(Schema):
     has_more = fields.Boolean()
 
 
+class SessionActivityListQuerySchema(Schema):
+    page_size = fields.Integer(
+        load_default=100, validate=validate.Range(min=1, max=200)
+    )
+    cursor = fields.String(allow_none=True, load_default=None)
+
+
+class SessionActivityEntrySchema(Schema):
+    activity_id = fields.String()
+    session_id = fields.Integer()
+    dataflow_id = fields.String(allow_none=True)
+    kind = fields.String()
+    category = fields.String()
+    severity = fields.String()
+    title = fields.String()
+    summary = fields.String()
+    source_type = fields.String()
+    source_id = fields.String()
+    operation_id = fields.String(allow_none=True)
+    incident_id = fields.String(allow_none=True)
+    gap_id = fields.String(allow_none=True)
+    command_id = fields.String(allow_none=True)
+    recovery_id = fields.String(allow_none=True)
+    details = fields.Raw(allow_none=True)
+    occurred_at = fields.DateTime()
+    created_at = fields.DateTime()
+
+
+class SessionActivityPageSchema(Schema):
+    items = fields.List(fields.Nested(SessionActivityEntrySchema))
+    next_cursor = fields.String(allow_none=True)
+    has_more = fields.Boolean()
+
+
+class SessionDiagnosticListQuerySchema(Schema):
+    page_size = fields.Integer(
+        load_default=500, validate=validate.Range(min=1, max=2000)
+    )
+    cursor = fields.String(load_default=None, allow_none=True)
+
+
+class SessionDiagnosticPageSchema(Schema):
+    items = fields.List(
+        fields.Dict(keys=fields.String(), values=fields.Raw()), required=True
+    )
+    has_more = fields.Boolean(required=True)
+    next_cursor = fields.String(allow_none=True)
+
+
 class SinkOutputComponentSchema(Schema):
     """One retained physical component in a recoverable file output."""
 

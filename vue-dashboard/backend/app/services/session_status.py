@@ -92,8 +92,12 @@ def _phase_value(latest: BackendEvent | None) -> str | None:
     return latest.phase if latest is not None else None
 
 
-def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
-    """Shape the newest persisted report for the snapshot."""
+def _latest_report(
+    latest: BackendEvent | None,
+    *,
+    phase_report: BackendEvent | None = None,
+) -> dict[str, object] | None:
+    """Shape live payload state while retaining host-owned phase metadata."""
     if latest is None:
         return None
     payload = latest.payload or {}
@@ -130,9 +134,11 @@ def _latest_report(latest: BackendEvent | None) -> dict[str, object] | None:
     return {
         "event_id": latest.id,
         "sequence": latest.sequence,
-        "phase": latest.phase,
-        "comms": latest.comms,
-        "recovery_id": latest.recovery_id,
+        "phase": latest.phase or (phase_report.phase if phase_report is not None else None),
+        "comms": latest.comms or (phase_report.comms if phase_report is not None else None),
+        "recovery_id": latest.recovery_id or (
+            phase_report.recovery_id if phase_report is not None else None
+        ),
         "received_at": latest.received_at,
         "devices": devices,
         "diagnostics": diagnostics,
@@ -502,7 +508,7 @@ def fleet_overview(
     for session in sessions:
         if session.status in _RUNNING_STATUSES:
             running += 1
-        latest = _events.latest_for_session(session.id)
+        latest = _events.latest_report_for_session(session.id)
         rows.append(
             {
                 "id": session.id,
@@ -536,7 +542,8 @@ def detail(
     if session is None:
         raise SessionNotFound(session_id)
 
-    latest = _events.latest_for_session(session_id)
+    phase_report = _events.latest_report_for_session(session_id)
+    latest = _events.latest_runtime_report_for_session(session_id)
     runtimes = _runtimes.list_for_session(session_id)
     incidents = _incidents.list_for_session(session_id)
     try:
@@ -548,8 +555,8 @@ def detail(
     return {
         "session": session,
         "health": _health_value(session, live_health),
-        "phase": _phase_value(latest),
-        "latest_report": _latest_report(latest),
+        "phase": _phase_value(phase_report),
+        "latest_report": _latest_report(latest, phase_report=phase_report),
         "runtimes": runtimes,
         "operations": operations.list_for_session(session_id, limit=_OPERATIONS_LIMIT),
         "incidents": incidents,

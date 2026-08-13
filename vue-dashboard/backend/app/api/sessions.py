@@ -5,6 +5,8 @@ import structlog
 from flask import current_app
 from flask_smorest import Blueprint, abort
 
+import app.services.session_activity as session_activity_service
+import app.services.session_diagnostics as session_diagnostic_service
 import app.services.session_notes as session_note_service
 import app.services.session_status as session_status_service
 import app.services.session_templates as session_template_service
@@ -12,6 +14,10 @@ import app.services.sessions as session_service
 from app.api.schemas import (
     CreateSessionNoteSchema,
     ExportSessionTemplateSchema,
+    SessionActivityListQuerySchema,
+    SessionActivityPageSchema,
+    SessionDiagnosticListQuerySchema,
+    SessionDiagnosticPageSchema,
     FleetOverviewSchema,
     RecoverSessionSchema,
     SessionNameSuggestionQuerySchema,
@@ -107,6 +113,54 @@ def session_status(session_id):
     return session_status_service.detail(session_id, live_health=_live_health())
 
 
+@blp.route("/<int:session_id>/activity", methods=["GET"])
+@blp.arguments(SessionActivityListQuerySchema, location="query")
+@blp.response(200, SessionActivityPageSchema)
+def session_activity(query, session_id):
+    """Return the durable, user-readable history for one session."""
+    try:
+        return session_activity_service.list_page(
+            session_id,
+            page_size=query["page_size"],
+            cursor=query.get("cursor"),
+        )
+    except ValueError as exc:
+        abort(400, message=str(exc), code="invalid_activity_cursor")
+
+
+@blp.route("/<int:session_id>/diagnostics", methods=["GET"])
+@blp.arguments(SessionDiagnosticListQuerySchema, location="query")
+@blp.response(200, SessionDiagnosticPageSchema)
+def session_diagnostics(query, session_id):
+    """Return redacted process logs across all layers for one session."""
+    try:
+        return session_diagnostic_service.list_page(
+            session_id,
+            root=current_app.config.get("DIAGNOSTIC_LOG_DIR"),
+            page_size=query["page_size"],
+            cursor=query.get("cursor"),
+        )
+    except ValueError as exc:
+        abort(400, message=str(exc), code="invalid_diagnostic_cursor")
+
+
+@blp.route("/<int:session_id>/diagnostics.txt", methods=["GET"])
+def export_session_diagnostics(session_id):
+    """Download a complete redacted troubleshooting bundle as plain text."""
+    body = session_diagnostic_service.export_text(
+        session_id, root=current_app.config.get("DIAGNOSTIC_LOG_DIR")
+    )
+    return Response(
+        body,
+        mimetype="text/plain",
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="morelia-session-{session_id}-diagnostics.txt"'
+            )
+        },
+    )
+
+
 @blp.route("/<int:session_id>/notes", methods=["GET"])
 @blp.arguments(SessionNoteListQuerySchema, location="query")
 @blp.response(200, SessionNotePageSchema)
@@ -148,7 +202,9 @@ def stop_session(payload, session_id):
     _require_lifecycle_commands_enabled()
     force = bool(payload.get("force", False))
     if current_app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
-        supervisor = current_app.extensions.get("host_supervisor") #Check if  the runtime host is running, else use the watchdog adapter to shutdown
+        # Prefer the managed host when it is enabled; otherwise retain the
+        # legacy watchdog-adapter shutdown path.
+        supervisor = current_app.extensions.get("host_supervisor")
         if supervisor is not None:
             return session_service.stop_managed(session_id, supervisor, force=force)
     return session_service.stop(session_id, current_app.extensions["watchdog_adapter"])

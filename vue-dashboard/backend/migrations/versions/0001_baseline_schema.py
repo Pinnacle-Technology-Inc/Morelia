@@ -18,12 +18,29 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
+        "experiments",
+        sa.Column("id", sa.String(64), primary_key=True),
+        sa.Column("name", sa.String(255, collation="NOCASE"), nullable=False),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
+        sa.UniqueConstraint("name", name="uq_experiments_name"),
+    )
+    op.create_index("ix_experiments_name", "experiments", ["name"], unique=False)
+
+    op.create_table(
         "sessions",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("name", sa.String(120), nullable=False),
         sa.Column("status", sa.String(20), nullable=False, server_default="preparing"),
         sa.Column("policy", sa.String(20), nullable=False, server_default="recommend"),
-        sa.Column("experiment_id", sa.String(255), nullable=True),
+        sa.Column(
+            "experiment_id",
+            sa.String(64),
+            sa.ForeignKey("experiments.id", ondelete="RESTRICT"),
+            nullable=True,
+        ),
         sa.Column("notes", sa.Text(), nullable=True),
         sa.Column("schedule", sa.JSON(), nullable=True),
         sa.Column("scheduled_for", sa.DateTime(timezone=True), nullable=True),
@@ -69,6 +86,95 @@ def upgrade() -> None:
         ["creation_request_key"],
         unique=True,
     )
+
+    op.create_table(
+        "session_notes",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column(
+            "session_id",
+            sa.Integer(),
+            sa.ForeignKey("sessions.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("body", sa.Text(), nullable=False),
+        sa.Column("show_timestamp", sa.Boolean(), nullable=False, server_default="0"),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
+        ),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
+        ),
+    )
+    op.create_index(
+        "ix_session_notes_session_created",
+        "session_notes",
+        ["session_id", "created_at", "id"],
+    )
+
+    op.create_table(
+        "session_activity_entries",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("activity_id", sa.String(64), nullable=False),
+        sa.Column(
+            "session_id",
+            sa.Integer(),
+            sa.ForeignKey("sessions.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
+        sa.Column("dataflow_id", sa.String(64), nullable=True),
+        sa.Column("kind", sa.String(64), nullable=False),
+        sa.Column("category", sa.String(32), nullable=False),
+        sa.Column("severity", sa.String(16), nullable=False),
+        sa.Column("title", sa.String(160), nullable=False),
+        sa.Column("summary", sa.String(1024), nullable=False),
+        sa.Column("source_type", sa.String(64), nullable=False),
+        sa.Column("source_id", sa.String(128), nullable=False),
+        sa.Column("operation_id", sa.String(64), nullable=True),
+        sa.Column("incident_id", sa.String(64), nullable=True),
+        sa.Column("gap_id", sa.String(64), nullable=True),
+        sa.Column("command_id", sa.String(64), nullable=True),
+        sa.Column("recovery_id", sa.String(64), nullable=True),
+        sa.Column("details", sa.JSON(), nullable=True),
+        sa.Column("occurred_at", sa.DateTime(timezone=True), nullable=False),
+        sa.Column(
+            "created_at",
+            sa.DateTime(timezone=True),
+            nullable=False,
+            server_default=sa.func.now(),
+        ),
+        sa.UniqueConstraint("activity_id", name="uq_session_activity_activity_id"),
+        sa.UniqueConstraint(
+            "session_id",
+            "source_type",
+            "source_id",
+            "kind",
+            name="uq_session_activity_session_source_kind",
+        ),
+    )
+    for name, columns in (
+        ("ix_session_activity_activity_id", ["activity_id"]),
+        ("ix_session_activity_session_id", ["session_id"]),
+        ("ix_session_activity_dataflow_id", ["dataflow_id"]),
+        ("ix_session_activity_kind", ["kind"]),
+        ("ix_session_activity_category", ["category"]),
+        ("ix_session_activity_severity", ["severity"]),
+        ("ix_session_activity_operation_id", ["operation_id"]),
+        ("ix_session_activity_incident_id", ["incident_id"]),
+        ("ix_session_activity_gap_id", ["gap_id"]),
+        ("ix_session_activity_command_id", ["command_id"]),
+        ("ix_session_activity_recovery_id", ["recovery_id"]),
+        (
+            "ix_session_activity_session_occurred",
+            ["session_id", "occurred_at", "id"],
+        ),
+    ):
+        op.create_index(name, "session_activity_entries", columns)
 
     op.create_table(
         "incidents",
@@ -397,19 +503,6 @@ def upgrade() -> None:
     op.create_index("ix_device_registrations_nickname", "device_registrations", ["nickname"])
     op.create_index("ix_device_registrations_device_config_id", "device_registrations", ["device_config_id"])
 
-    op.create_table(
-        "experiments",
-        sa.Column("id", sa.String(64), primary_key=True),
-        sa.Column("name", sa.String(255, collation="NOCASE"), nullable=False),
-        sa.Column("description", sa.Text(), nullable=True),
-        sa.Column("archived_at", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint("name", name="uq_experiments_name"),
-    )
-    op.create_index("ix_experiments_name", "experiments", ["name"], unique=False)
-
-
 def _create_incident_indexes() -> None:
     op.create_index("ix_incidents_incident_id", "incidents", ["incident_id"], unique=True)
     op.create_index("ix_incidents_session_id", "incidents", ["session_id"])
@@ -480,9 +573,6 @@ def _create_runtime_ownership_indexes() -> None:
 
 
 def downgrade() -> None:
-    op.drop_index("ix_experiments_name", table_name="experiments")
-    op.drop_table("experiments")
-
     for index, table in (
         ("ix_device_registrations_device_config_id", "device_registrations"),
         ("ix_device_registrations_nickname", "device_registrations"),
@@ -570,6 +660,7 @@ def downgrade() -> None:
         "runtime_manifests",
         "recovery_gaps",
         "incidents",
+        "session_activity_entries",
         "session_notes",
         "sessions",
     ):

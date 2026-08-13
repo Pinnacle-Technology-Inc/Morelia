@@ -28,6 +28,7 @@ class BackendEventRepository:
         recovery_id: str | None = None,
         phase: str | None = None,
         comms: str | None = None,
+        commit: bool = True,
     ) -> int:
         """Insert one event row; return its id.
 
@@ -53,7 +54,7 @@ class BackendEventRepository:
             )
             missing_row_key = f"(dataflow_id={dataflow_id!r}, sequence={sequence!r})"
 
-        with transaction():
+        def insert() -> None:
             stmt = (
                 sqlite_insert(BackendEvent)
                 .values(
@@ -72,6 +73,13 @@ class BackendEventRepository:
                 .on_conflict_do_nothing(index_elements=conflict_index)
             )
             db.session.execute(stmt)
+            db.session.flush()
+
+        if commit:
+            with transaction():
+                insert()
+        else:
+            insert()
 
         row = db.session.scalars(db.select(BackendEvent).where(*lookup)).first()
         if row is None:
@@ -94,13 +102,31 @@ class BackendEventRepository:
         ).first()
 
     def latest_report_for_session(self, session_id: int) -> BackendEvent | None:
-        """Return the newest *phase-bearing* event row for a session.
+        """Return the newest phase-bearing runtime report for a session.
 
-        This skips rows whose ``phase`` column is NULL. 
+        Activity notifications share this table for SSE replay, so report reads
+        must name the runtime-report contract explicitly rather than relying on
+        incidental columns alone.
         """
         return db.session.scalars(
             db.select(BackendEvent)
-            .where(BackendEvent.session_id == session_id, BackendEvent.phase.is_not(None))
+            .where(
+                BackendEvent.session_id == session_id,
+                BackendEvent.event_type == "runtime.report",
+                BackendEvent.phase.is_not(None),
+            )
+            .order_by(BackendEvent.id.desc())
+            .limit(1)
+        ).first()
+
+    def latest_runtime_report_for_session(self, session_id: int) -> BackendEvent | None:
+        """Return the newest runtime report, including direct watchdog telemetry."""
+        return db.session.scalars(
+            db.select(BackendEvent)
+            .where(
+                BackendEvent.session_id == session_id,
+                BackendEvent.event_type == "runtime.report",
+            )
             .order_by(BackendEvent.id.desc())
             .limit(1)
         ).first()
@@ -113,7 +139,11 @@ class BackendEventRepository:
         """
         return db.session.scalars(
             db.select(BackendEvent)
-            .where(BackendEvent.session_id == session_id, BackendEvent.report_id.is_not(None))
+            .where(
+                BackendEvent.session_id == session_id,
+                BackendEvent.event_type == "runtime.report",
+                BackendEvent.report_id.is_not(None),
+            )
             .order_by(BackendEvent.id.desc())
             .limit(1)
         ).first()
