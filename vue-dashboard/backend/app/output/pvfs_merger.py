@@ -216,9 +216,20 @@ def _run_merge_worker(paths: list[str], temp_path: Path) -> dict:
 
     proc.join(_WORKER_TERMINATE_TIMEOUT)
     if proc.is_alive():
+        # The native PVFS runtime can keep its process alive after _merge_worker
+        # has closed every file and returned a verified result.  Terminating at
+        # that point is the handle-release boundary this child exists to provide;
+        # it must not turn an already completed merge into a false timeout.
+        result_received = result is not None
         proc.terminate()
         proc.join(_WORKER_TERMINATE_TIMEOUT)
-        result = {"ok": False, "reason": "pvfs merge worker timed out"}
+        if proc.is_alive():
+            result = {
+                "ok": False,
+                "reason": "pvfs merge worker could not be stopped after completion",
+            }
+        elif not result_received:
+            result = {"ok": False, "reason": "pvfs merge worker timed out"}
 
     try:
         queue.close()
