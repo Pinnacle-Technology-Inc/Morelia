@@ -1,9 +1,19 @@
 from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
 from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
+from Morelia.Watchdog.reporting import (
+    HARDWARE_HEALTH as _HARDWARE_HEALTH,
+    assess_stream,
+    build_action_signal,
+    build_compact_stream_report,
+    build_recovery_event,
+    extract_action_error,
+    summarize_watchdog_health,
+)
 from Morelia.Stream.data_flow import DataFlow
 import time
 import multiprocessing as mp
 import threading
+import uuid
 
 # Wall-clock epoch captured when this module is first imported (≈ program start)
 _PROGRAM_START = time.time()
@@ -36,44 +46,6 @@ def _resolve_interval(spec, key, default):
     if isinstance(spec, dict):
         return spec.get(key, default)
     return spec   # scalar -> shared
-
-# Short compact-report phrasings per assessment rule. Rules not listed here
-# fall back to the full assessment reason.
-_COMPACT_REASONS = {
-    "worker_alive_heartbeat_fresh": "ok",
-    "worker_not_alive": "worker not alive",
-    "worker_alive_heartbeat_stale_below_threshold": "heartbeat stale, below threshold",
-    "worker_alive_heartbeat_stale_threshold_reached": "heartbeat stale, threshold reached",
-    "heartbeat_missing": "heartbeat missing",
-    "no_data_below_threshold": "no data yet, below threshold",
-    "no_data_threshold_reached": "no data, threshold reached",
-    "first_packet_startup_grace": "waiting for first packet",
-    "waiting_for_port": "port not connected",
-    "stream_reconnecting": "reconnecting",
-    "needs_action": "needs action",
-    "manual_stop": "stopped by command",
-}
-
-# Failure reasons emitted by the reconnect path while a stream is actively
-# recovering. These are retry-in-progress states, not terminal errors, so they
-# assess as "suspect" even though the worker is (intentionally) not alive.
-_RECONNECT_FAILURE_REASONS = {
-    "port_check_failed",
-    "waiting_for_port",
-    "waiting_for_port_release",
-    "worker_cold_open_failed",
-    "restart_failed",
-    "restart_completed_worker_not_response",
-    "waiting_for_heartbeat",
-    "lifecycle_busy",
-}
-
-_HARDWARE_HEALTH = {
-    "connected":"healthy",
-    "reconnected":"healthy", 
-    "ping_failed":"suspect",
-    "disconnected":"unhealthy"
-}
 
 def _normalize_recovery_policy(policy):
     if policy is None:
@@ -115,7 +87,7 @@ class Watchdog:
     - Assess stream health.
     - Return compact or verbose watchdog dictionaries.
     """
-    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None, sample_rates=None ):
+    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None, sample_rates=None):
         """
         Initialize stream and standalone-device monitoring state.
 
@@ -176,6 +148,7 @@ class Watchdog:
         self._device_results = {}
         self._results_lock = threading.Lock()
         self._stop_event = threading.Event()
+        self._urgent_report_event = threading.Event()
         self._on_stream_result = None
         self._on_device_result = None
 
@@ -287,6 +260,7 @@ class Watchdog:
         close() for full cleanup.
         """
         self._stop_event.set()
+        self._urgent_report_event.set()
         watchers = (*self._stream_watchers.values(), *self._device_watchers.values())
         for w in watchers:
             w.stop()
@@ -337,7 +311,7 @@ class Watchdog:
           - action: str or None
             (none | check_failed | stopped_stream_waiting_for_reconnect |
             port_check_failed | waiting_for_port | waiting_for_port_release |
-            restart_failed | waiting_for_heartbeat | reconnected |
+            restart_failed | waiting_for_heartbeat | connection_restored |
             reconnect_failed_stop_stream_failed |
             reconnect_failed_stop_stream_completed | None).
             - none: the check required no recovery action.
@@ -350,7 +324,7 @@ class Watchdog:
             - restart_failed: rebuilding or starting the stream failed.
             - waiting_for_heartbeat: PING failed after restart and the worker
               is being verified through fresh sample data.
-            - reconnected: restart succeeded and was verified by PING or a
+            - connection_restored: restart succeeded and was verified by PING or a
               fresh replacement-worker heartbeat.
             - reconnect_failed_stop_stream_failed: PING failed after restart,
               and stopping that failed restart also raised.
@@ -404,7 +378,7 @@ class Watchdog:
               (none | check_failed | stopped_stream_waiting_for_reconnect |
               port_check_failed | waiting_for_port |
               waiting_for_port_release | restart_failed | waiting_for_heartbeat |
-              reconnected |
+              connection_restored |
               reconnect_failed_stop_stream_failed |
               reconnect_failed_stop_stream_completed).
               Uses the same meanings as the compact action field above.
@@ -465,14 +439,8 @@ class Watchdog:
         health = [s.get("stream_health") for s in streams]
         health += [_HARDWARE_HEALTH.get(d.get("status"), "suspect")
                    for d in devices.values()]
-        recovery_events = [
-            s["recovery_event"]
-            for s in streams
-            if isinstance(s, dict) and s.get("recovery_event") is not None
-        ]
         return {"watchdog_status": self._summarize_watchdog_health(health),
-                "checked_at": _now_rel(), "streams": streams, "devices": devices,
-                "recovery_events": recovery_events}
+                "checked_at": _now_rel(), "streams": streams, "devices": devices}
 
     def run(self, *, report_interval_sec=30.0, stream_interval=30.0, device_interval=30.0, timeout_sec=10.0, on_result=None, on_stream_result=None, on_device_result=None, verbose=False):
         """
@@ -489,7 +457,8 @@ class Watchdog:
         while not self._stop_event.is_set():
             if on_result is not None:
                 on_result(self.get_report(verbose=verbose))
-            self._stop_event.wait(report_interval_sec)
+            self._urgent_report_event.wait(report_interval_sec)
+            self._urgent_report_event.clear()
 
     def close(self):
         """
@@ -640,95 +609,10 @@ class Watchdog:
             standalone.append(device)
         return standalone
     
-    def _summarize_watchdog_health(self, health_values: list):
-        """
-        Reduce stream and device health values to one watchdog status.
-
-        Output: str (unknown | ok | failed | degraded).
-        - unknown: no health values were supplied.
-        - ok: every value is healthy.
-        - failed: every value is unhealthy.
-        - degraded: values are mixed, suspect, unknown, or unrecognized.
-        """
-        if not health_values:
-            return "unknown"
-        if all(h == "healthy" for h in health_values):
-            return "ok"
-        if all(h == "unhealthy" for h in health_values):
-            return "failed"
-        return "degraded"
-
-    @staticmethod
-    def build_compact_stream_report(verbose_stream):
-        """
-        Reduce one verbose stream report to its compact public shape.
-
-        Output: dict.
-        - stream_index: int or None.
-        - port: str or None.
-        - port_owner: str or None (main | worker | none | None).
-          - main: the main-process source object has the port open.
-          - worker: the live stream worker owns the port.
-          - none: neither the main process nor a worker owns the port.
-          - None: ownership could not be determined.
-        - stream_health: str or None
-          (healthy | suspect | unhealthy | unknown | None).
-          - healthy: worker and heartbeat signals are normal.
-          - suspect: a transient failure or reconnect retry is in progress.
-          - unhealthy: a definite failure or threshold was reached.
-          - unknown: the first stream check has not completed.
-          - None: the field is absent from the input report.
-        - worker_status: str or None
-          (alive | dead | missing | unknown | None).
-          - alive: the worker process exists and is running.
-          - dead: the worker process exists but has exited.
-          - missing: no worker process object exists.
-          - unknown: reading worker status failed.
-          - None: no worker signal is available yet.
-        - heartbeat: str or None (fresh | stale | missing | None).
-          - fresh: data arrived within the allowed heartbeat age.
-          - stale: data exists but is older than the allowed age.
-          - missing: no heartbeat data is available or the read failed.
-          - None: no heartbeat signal is available yet.
-        - failure_count: int or None.
-        - action: str or None
-          (none | check_failed | stopped_stream_waiting_for_reconnect |
-          port_check_failed | waiting_for_port | waiting_for_port_release |
-          restart_failed | waiting_for_heartbeat | reconnected |
-          reconnect_failed_stop_stream_failed |
-          reconnect_failed_stop_stream_completed | None).
-          - none: the check required no recovery action.
-          - check_failed: the watcher caught an unexpected check error.
-          - stopped_stream_waiting_for_reconnect: the worker was stopped after
-            a failure escalated.
-          - port_check_failed: checking whether the port exists raised.
-          - waiting_for_port: the expected port is absent from the OS list.
-          - waiting_for_port_release: the port exists but cannot be opened.
-          - restart_failed: rebuilding or starting the stream failed.
-          - waiting_for_heartbeat: PING failed after restart and the worker
-            is awaiting fresh sample data.
-          - reconnected: restart succeeded and was verified by PING or a
-            fresh replacement-worker heartbeat.
-          - reconnect_failed_stop_stream_failed: post-restart PING failed and
-            stopping the failed restart also raised.
-          - reconnect_failed_stop_stream_completed: post-restart PING failed
-            and the restarted worker was stopped successfully.
-          - None: no action field is available.
-        - reason: str or None. Compact rule text or the verbose summary.
-        """
-        signals = verbose_stream["signals"]
-        return {
-            "stream_index": verbose_stream.get("stream_index"),
-            "port": verbose_stream.get("port"),
-            "port_owner": verbose_stream.get("port_owner"),
-            "stream_health": verbose_stream.get("stream_health"),
-            "worker_status": signals.get("worker", {}).get("status"),
-            "heartbeat": signals.get("heartbeat", {}).get("status"),
-            "failure_count": signals.get("failure", {}).get("count"),
-            "action": verbose_stream.get("action", {}).get("taken"),
-            "reason": _COMPACT_REASONS.get(verbose_stream.get("rule"), verbose_stream.get("summary")),
-            "recovery_event": verbose_stream.get("recovery_event"),
-        }
+    # Compatibility aliases keep existing callers working while the report
+    # formatting itself lives in reporting.py.
+    _summarize_watchdog_health = staticmethod(summarize_watchdog_health)
+    build_compact_stream_report = staticmethod(build_compact_stream_report)
         
     def _publish_stream(self, stream_index, report):
         """
@@ -738,6 +622,9 @@ class Watchdog:
         """
         with self._results_lock:
             self._stream_results[stream_index] = report
+        action = report.get("action", {}).get("taken") if isinstance(report, dict) else None
+        if action in {"unplug_detected", "connection_restored", "heartbeat_age_exceeded"}:
+            self._urgent_report_event.set()
         if self._on_stream_result is not None:
             try:
                 self._on_stream_result(stream_index, report)
@@ -814,6 +701,11 @@ class StreamWatcher (threading.Thread):
         self._disconnected = False
         self._recovery_attempt_count = 0
         self._response_grace = None
+        self._port_absent_since = None
+        self._port_absent_packet_count = None
+        self._physical_disconnect = False
+        self._disconnect_episode_id = None
+        self._disconnect_started_at_epoch = None
         self._first_packet_started_at = time.monotonic()
         self._first_packet_seen = False
         # Cool-down ticks after a worker crashes on its cold open, so recovery
@@ -870,6 +762,11 @@ class StreamWatcher (threading.Thread):
         self._failure_count = 0
         self._recovery_attempt_count = 0
         self._response_grace = None
+        self._port_absent_since = None
+        self._port_absent_packet_count = None
+        self._physical_disconnect = False
+        self._disconnect_episode_id = None
+        self._disconnect_started_at_epoch = None
         self._cold_open_backoff_remaining = 0
         self._first_packet_started_at = time.monotonic()
         self._first_packet_seen = False
@@ -906,16 +803,9 @@ class StreamWatcher (threading.Thread):
         if port_present:
             return False
 
-        self._rearm_recovery()
-        return True
-
-    def _rearm_recovery(self):
-        """
-        Reset recovery state so the waiting_for_port loop can self-recover.
-
-        Output: None.
-        """
-        self._recovery_attempt_count = 0     # a disconnect starts a fresh episode
+        # A physical disconnect begins a new recovery episode. Return control
+        # to the existing port-wait loop with a fresh restart budget.
+        self._recovery_attempt_count = 0
         self._response_grace = None
         self._disconnected = True
         self._monitor.set_lifecycle_state(
@@ -925,6 +815,7 @@ class StreamWatcher (threading.Thread):
             requested_by="watchdog",
             command="auto_rearm",
         )
+        return True
 
     @staticmethod
     def _is_port_lock_error(error_text):
@@ -968,7 +859,7 @@ class StreamWatcher (threading.Thread):
         - action: str
           (none | stopped_stream_waiting_for_reconnect | port_check_failed |
           waiting_for_port | waiting_for_port_release | restart_failed |
-          waiting_for_heartbeat | reconnected |
+          waiting_for_heartbeat | connection_restored |
           reconnect_failed_stop_stream_failed |
           reconnect_failed_stop_stream_completed | check_failed).
           - none: no recovery action was required this pass.
@@ -980,7 +871,7 @@ class StreamWatcher (threading.Thread):
           - restart_failed: rebuilding or starting the stream failed.
           - waiting_for_heartbeat: PING failed after restart and the worker
             is awaiting fresh sample data.
-          - reconnected: restart succeeded and was verified by PING or a
+          - connection_restored: restart succeeded and was verified by PING or a
             fresh replacement-worker heartbeat.
           - reconnect_failed_stop_stream_failed: post-restart PING failed and
             stopping that failed restart also raised.
@@ -1129,6 +1020,10 @@ class StreamWatcher (threading.Thread):
         heartbeat= self._get_heartbeat()
         base = {"stream_index":self.stream_index, "stream_status": stream_status, "heartbeat":heartbeat}
 
+        port_result = self._observe_physical_port(base)
+        if port_result is not None:
+            return port_result
+
         if heartbeat.get("status") in {"fresh", "stale"} or heartbeat.get("packet_count", 0):
             self._first_packet_seen = True
         
@@ -1194,7 +1089,7 @@ class StreamWatcher (threading.Thread):
                 }
             self._capture_worker_fault(m.stop_stream(self.stream_index))
 
-        if self._recovery_policy == "recommend":
+        if self._recovery_policy == "recommend" and not self._physical_disconnect:
             lifecycle_state = m.set_lifecycle_state(
                 self.stream_index,
                 "needs_action",
@@ -1222,6 +1117,209 @@ class StreamWatcher (threading.Thread):
             "action": "stopped_stream_waiting_for_reconnect",
             "failure_reason": failure_reason,
             "failure_count": self._failure_count,
+            "recovery_policy": self._recovery_policy,
+        }
+
+    def _observe_physical_port(self, base):
+        """Return an immediate port-edge result using heartbeat age as the deadline."""
+        try:
+            port_present = self._monitor.is_stream_port_present(self.stream_index)
+        except Exception:
+            # Worker/heartbeat supervision remains authoritative when the OS
+            # port inventory itself cannot be read.
+            return None
+
+        now = time.monotonic()
+        heartbeat = base.get("heartbeat", {})
+        heartbeat_age = heartbeat.get("age_sec")
+        if not isinstance(heartbeat_age, (int, float)) or isinstance(heartbeat_age, bool):
+            heartbeat_age = None
+        worker_alive = base.get("stream_status", {}).get("worker_status") == "alive"
+
+        if port_present:
+            if self._port_absent_since is None:
+                return None
+            elapsed = max(
+                0.0,
+                heartbeat_age if heartbeat_age is not None else now - self._port_absent_since,
+            )
+            if not worker_alive:
+                # The heartbeat window already ended and the worker closed its
+                # sinks. Continue through the normal restart path, but treat a
+                # physical reconnect as automatic even in recommend mode.
+                self._physical_disconnect = True
+                if elapsed >= self._max_heartbeat_age_sec:
+                    self._disconnected = True
+                    self._failure_count += 1
+                    self._monitor.set_lifecycle_state(
+                        self.stream_index,
+                        "running",
+                        reason="heartbeat_age_exceeded",
+                        requested_by="watchdog",
+                        command="heartbeat_age_exceeded",
+                    )
+                    return {
+                        **base,
+                        "ok": False,
+                        "action": "heartbeat_age_exceeded",
+                        "failure_reason": "waiting_for_port",
+                        "initiating_failure_reason": "heartbeat_age_exceeded",
+                        "failure_count": self._failure_count,
+                        "disconnect": {
+                            "elapsed_sec": elapsed,
+                            "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                            "recording_continued": False,
+                            "episode_id": self._disconnect_episode_id,
+                            "started_at": self._disconnect_started_at_epoch,
+                            "exceeded_at": time.time(),
+                        },
+                        "recovery_policy": self._recovery_policy,
+                    }
+                self._port_absent_since = None
+                self._port_absent_packet_count = None
+                return None
+            packet_count = heartbeat.get("packet_count")
+            real_data_resumed = (
+                isinstance(packet_count, int)
+                and not isinstance(packet_count, bool)
+                and isinstance(self._port_absent_packet_count, int)
+                and packet_count > self._port_absent_packet_count
+            )
+            if not real_data_resumed and elapsed < self._max_heartbeat_age_sec:
+                return {
+                    **base,
+                    "ok": False,
+                    "action": "filling_missing_samples",
+                    "failure_reason": "port_absent_heartbeat_window",
+                    "failure_count": self._failure_count,
+                    "disconnect": {
+                        "elapsed_sec": elapsed,
+                        "remaining_sec": max(0.0, self._max_heartbeat_age_sec - elapsed),
+                        "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                        "fill_value": "NaN",
+                        "episode_id": self._disconnect_episode_id,
+                        "started_at": self._disconnect_started_at_epoch,
+                    },
+                    "recovery_policy": self._recovery_policy,
+                }
+            if not real_data_resumed:
+                # The identifier returned but the data path did not. Fall
+                # through to the same heartbeat-expiry shutdown used while absent.
+                port_present = False
+            else:
+                episode_id = self._disconnect_episode_id
+                started_at = self._disconnect_started_at_epoch
+                ended_at = time.time()
+                self._port_absent_since = None
+                self._port_absent_packet_count = None
+                self._failure_count = 0
+                self._physical_disconnect = False
+                self._disconnect_episode_id = None
+                self._disconnect_started_at_epoch = None
+                return {
+                    **base,
+                    "ok": True,
+                    "action": "connection_restored",
+                    "failure_reason": None,
+                    "failure_count": 0,
+                    "disconnect": {
+                        "elapsed_sec": elapsed,
+                        "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                        "recording_continued": True,
+                        "episode_id": episode_id,
+                        "started_at": started_at,
+                        "ended_at": ended_at,
+                    },
+                    "recovery_policy": self._recovery_policy,
+                }
+
+        first_observation = self._port_absent_since is None
+        if first_observation:
+            self._port_absent_since = now
+            packet_count = heartbeat.get("packet_count")
+            self._port_absent_packet_count = (
+                packet_count
+                if isinstance(packet_count, int) and not isinstance(packet_count, bool)
+                else 0
+            )
+            self._physical_disconnect = True
+            self._disconnect_episode_id = uuid.uuid4().hex
+            self._disconnect_started_at_epoch = time.time() - max(0.0, heartbeat_age or 0.0)
+        elapsed = max(
+            0.0,
+            heartbeat_age if heartbeat_age is not None else now - self._port_absent_since,
+        )
+        remaining = max(0.0, self._max_heartbeat_age_sec - elapsed)
+        self._failure_count += 1
+
+        if elapsed < self._max_heartbeat_age_sec:
+            return {
+                **base,
+                "ok": False,
+                "action": "unplug_detected" if first_observation else "filling_missing_samples",
+                "failure_reason": "port_absent_heartbeat_window",
+                "failure_count": self._failure_count,
+                "disconnect": {
+                    "elapsed_sec": elapsed,
+                    "remaining_sec": remaining,
+                    "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                    "fill_value": "NaN",
+                    "episode_id": self._disconnect_episode_id,
+                    "started_at": self._disconnect_started_at_epoch,
+                },
+                "recovery_policy": self._recovery_policy,
+            }
+
+        with self._monitor.stream_lifecycle_guard(
+            self.stream_index,
+            command="heartbeat_age_exceeded",
+            requested_by="watchdog",
+            blocking=False,
+        ) as busy:
+            if busy is not None:
+                return {
+                    **base,
+                    "ok": False,
+                    "action": "heartbeat_age_exceeded",
+                    "failure_reason": "waiting_for_port",
+                    "initiating_failure_reason": "heartbeat_age_exceeded",
+                    "failure_count": self._failure_count,
+                    "busy": busy,
+                    "disconnect": {
+                        "elapsed_sec": elapsed,
+                        "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                        "recording_continued": False,
+                        "episode_id": self._disconnect_episode_id,
+                        "started_at": self._disconnect_started_at_epoch,
+                        "exceeded_at": time.time(),
+                    },
+                    "recovery_policy": self._recovery_policy,
+                }
+            self._capture_worker_fault(self._monitor.stop_stream(self.stream_index))
+
+        self._disconnected = True
+        self._monitor.set_lifecycle_state(
+            self.stream_index,
+            "running",
+            reason="heartbeat_age_exceeded",
+            requested_by="watchdog",
+            command="heartbeat_age_exceeded",
+        )
+        return {
+            **base,
+            "ok": False,
+            "action": "heartbeat_age_exceeded",
+            "failure_reason": "waiting_for_port",
+            "initiating_failure_reason": "heartbeat_age_exceeded",
+            "failure_count": self._failure_count,
+            "disconnect": {
+                "elapsed_sec": elapsed,
+                "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                "recording_continued": False,
+                "episode_id": self._disconnect_episode_id,
+                "started_at": self._disconnect_started_at_epoch,
+                "exceeded_at": time.time(),
+            },
             "recovery_policy": self._recovery_policy,
         }
     
@@ -1338,7 +1436,16 @@ class StreamWatcher (threading.Thread):
         }
 
     def _finish_recovery_success(self, restart_result, verify_result, heartbeat_verify=None):
+        physical_disconnect = self._physical_disconnect
+        disconnect_episode_id = self._disconnect_episode_id
+        disconnect_started_at = self._disconnect_started_at_epoch
+        disconnect_ended_at = time.time() if physical_disconnect else None
         self._disconnected = False
+        self._physical_disconnect = False
+        self._port_absent_since = None
+        self._port_absent_packet_count = None
+        self._disconnect_episode_id = None
+        self._disconnect_started_at_epoch = None
         self._failure_count = 0
         # A worker fault describes the worker that was replaced. Once recovery
         # is verified, carrying it into every healthy report makes a resolved
@@ -1373,7 +1480,7 @@ class StreamWatcher (threading.Thread):
         result = {
             "stream_index": self.stream_index,
             "ok": True,
-            "action": "reconnected",
+            "action": "connection_restored",
             "failure_reason": None,
             "failure_count": 0,
             "stream_status": self._safe_get_stream_status(),
@@ -1384,6 +1491,14 @@ class StreamWatcher (threading.Thread):
         }
         if heartbeat_verify is not None:
             result["heartbeat_verify"] = heartbeat_verify
+        if physical_disconnect:
+            result["disconnect"] = {
+                "recording_continued": False,
+                "episode_id": disconnect_episode_id,
+                "started_at": disconnect_started_at,
+                "ended_at": disconnect_ended_at,
+                "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+            }
         return result
 
     def _transition_to_needs_action(self, base, *, reason, restart_result=None,
@@ -1531,7 +1646,7 @@ class StreamWatcher (threading.Thread):
           - False: reconnect failed or is waiting for the port.
         - action: str
           (port_check_failed | waiting_for_port | waiting_for_port_release |
-          restart_failed | waiting_for_heartbeat | reconnected |
+          restart_failed | waiting_for_heartbeat | connection_restored |
           reconnect_failed_stop_stream_failed |
           reconnect_failed_stop_stream_completed).
           - port_check_failed: checking port presence raised.
@@ -1540,7 +1655,7 @@ class StreamWatcher (threading.Thread):
           - restart_failed: rebuilding or starting the stream failed.
           - waiting_for_heartbeat: PING failed after restart and the worker
             is awaiting fresh sample data.
-          - reconnected: restart succeeded and was verified by PING or a
+          - connection_restored: restart succeeded and was verified by PING or a
             fresh replacement-worker heartbeat.
           - reconnect_failed_stop_stream_failed: post-restart PING failed and
             stopping that failed restart also raised.
@@ -1625,7 +1740,10 @@ class StreamWatcher (threading.Thread):
         }
 
         lifecycle_state = m.get_lifecycle_state(self.stream_index)
-        if self._recovery_policy == "recommend" or lifecycle_state.get("state") == "needs_action":
+        if (
+            (self._recovery_policy == "recommend" and not self._physical_disconnect)
+            or lifecycle_state.get("state") == "needs_action"
+        ):
             initiating_failure_reason = (
                 lifecycle_state.get("reason") or "waiting_for_explicit_command"
             )
@@ -1911,28 +2029,6 @@ class StreamWatcher (threading.Thread):
         except Exception:
             return None  
  
-    def _extract_stream_status_for_report(self, action_result):
-        """
-        Reuse status from an action result or perform a safe status read.
-
-        Output: dict.
-        - stream_index: int.
-        - source_class: str or None.
-        - sink_classes: list[str].
-        - worker_status: str (alive | dead | missing | unknown).
-          - alive: the worker process exists and is running.
-          - dead: the worker process exists but has exited.
-          - missing: no worker process object exists.
-          - unknown: the fallback status read raised.
-        - worker_pid: int or None.
-        - worker_exitcode: int or None.
-        - error: str, present only when the fallback status read raises.
-        """
-        stream_status = action_result.get("stream_status")
-        if isinstance(stream_status, dict) and "worker_status" in stream_status:
-            return stream_status          # reuse what the action already read
-        return self._safe_get_stream_status()  # fall back to a fresh, safe read
-    
     # ------------------------------------------------------------------ #
     # Verdict + report building                                          #
     # ------------------------------------------------------------------ #    
@@ -2009,7 +2105,7 @@ class StreamWatcher (threading.Thread):
           - taken: str
             (none | check_failed | stopped_stream_waiting_for_reconnect |
             port_check_failed | waiting_for_port | waiting_for_port_release |
-            restart_failed | waiting_for_heartbeat | reconnected |
+            restart_failed | waiting_for_heartbeat | connection_restored |
             reconnect_failed_stop_stream_failed |
             reconnect_failed_stop_stream_completed).
             - none: the check required no recovery action.
@@ -2022,7 +2118,7 @@ class StreamWatcher (threading.Thread):
             - restart_failed: rebuilding or starting the stream failed.
             - waiting_for_heartbeat: PING failed after restart and the worker
               is awaiting fresh sample data.
-            - reconnected: restart succeeded and was verified by PING or a
+            - connection_restored: restart succeeded and was verified by PING or a
               fresh replacement-worker heartbeat.
             - reconnect_failed_stop_stream_failed: post-restart PING failed
               and stopping that failed restart also raised.
@@ -2069,8 +2165,10 @@ class StreamWatcher (threading.Thread):
             - last_error: str or None.
             - last_error_at: float or None.
         """
-        #Setup information
-        stream_status = self._extract_stream_status_for_report(action_result)
+        # Reuse the status already gathered by the recovery step when possible.
+        stream_status = action_result.get("stream_status")
+        if not isinstance(stream_status, dict) or "worker_status" not in stream_status:
+            stream_status = self._safe_get_stream_status()
         worker = {
             "status": stream_status.get("worker_status"),
             "pid": stream_status.get("worker_pid"),
@@ -2086,7 +2184,7 @@ class StreamWatcher (threading.Thread):
         initiating_failure_reason = action_result.get("initiating_failure_reason")
         startup = action_result.get("startup")
         failure_count = action_result.get("failure_count", 0)
-        error = self._extract_action_error(action_result)
+        error = extract_action_error(action_result)
 
         signals = {
             "worker": worker,
@@ -2101,7 +2199,7 @@ class StreamWatcher (threading.Thread):
         if isinstance(startup, dict):
             signals["startup"] = startup
 
-        assessment = self._assess_stream(
+        assessment = assess_stream(
             worker=worker,
             heartbeat=heartbeat,
             failure_reason=failure_reason,
@@ -2109,7 +2207,14 @@ class StreamWatcher (threading.Thread):
             startup=startup,
             count=failure_count,
             threshold=self._failure_threshold,
+            max_heartbeat_age_sec=self._max_heartbeat_age_sec,
         )
+        if action_result.get("action") == "connection_restored":
+            assessment = {
+                "stream_health": "healthy",
+                "rule": "connection_restored",
+                "summary": "Connection restored; recording real samples again.",
+            }
 
         report = {
             "stream_index": self.stream_index,
@@ -2123,272 +2228,11 @@ class StreamWatcher (threading.Thread):
             "rule": assessment["rule"],
             "failure_reason": failure_reason,
             "initiating_failure_reason": initiating_failure_reason,
-            "action": self._build_action_signal(action_result),
+            "action": build_action_signal(action_result),
             "signals": signals,
         }
-        report["recovery_event"] = self._build_recovery_event(report, action_result)
+        report["recovery_event"] = build_recovery_event(report, action_result)
         return report
-    
-    def _assess_stream(
-        self,
-        worker,
-        heartbeat,
-        failure_reason,
-        initiating_failure_reason,
-        startup,
-        count,
-        threshold,
-    ):
-        """
-        Convert this pass's signals and failure count into a health verdict.
-
-        Output: dict.
-        - stream_health: str (healthy | suspect | unhealthy).
-          - healthy: worker and heartbeat signals are normal.
-          - suspect: a transient failure or reconnect retry is in progress.
-          - unhealthy: a definite failure or failure threshold was reached.
-        - rule: str
-          (worker_alive_heartbeat_fresh | stream_reconnecting |
-          worker_not_alive |
-          worker_alive_heartbeat_stale_below_threshold |
-          worker_alive_heartbeat_stale_threshold_reached |
-          no_data_below_threshold | no_data_threshold_reached |
-          heartbeat_missing | action_failure).
-          - worker_alive_heartbeat_fresh: worker and heartbeat are healthy.
-          - stream_reconnecting: a reconnect retry is in progress.
-          - worker_not_alive: the worker is dead, missing, or unknown outside
-            an expected reconnect state.
-          - worker_alive_heartbeat_stale_below_threshold: heartbeat is stale,
-            but the consecutive-failure threshold has not been reached.
-          - worker_alive_heartbeat_stale_threshold_reached: heartbeat is stale
-            and the failure threshold has been reached.
-          - no_data_below_threshold: no packet has ever arrived, but the
-            failure threshold has not been reached.
-          - no_data_threshold_reached: no packet has ever arrived and the
-            failure threshold has been reached.
-          - heartbeat_missing: heartbeat data is unavailable for a reason
-            other than data never starting.
-          - action_failure: fallback for a failure not matched above.
-        - summary: str. Human-readable explanation of the selected rule.
-        """
-        worker_status = worker["status"]
-        hb_status = heartbeat.get("status")
-
-        if failure_reason is None:
-            return {
-                "stream_health": "healthy",
-                "rule": "worker_alive_heartbeat_fresh",
-                "summary": "Worker is alive and heartbeat is fresh.",
-            }
-
-        # An absent serial port is a distinct, human-meaningful condition: the
-        # hardware is physically not connected. Surface it as its own rule (not
-        # the generic "reconnecting") so the report can tell an operator the
-        # port is unplugged. It stays "suspect" because automate keeps polling
-        # for the port to return; recommend never reaches here (it pauses in
-        # needs_action instead).
-        if failure_reason == "waiting_for_port":
-            return {
-                "stream_health": "suspect",
-                "rule": "waiting_for_port",
-                "summary": (
-                    "Serial port is not connected; waiting for it to return. "
-                    f"Failure count is {count}/{threshold}."
-                ),
-            }
-
-        # Recovery states come before the worker-not-alive check: the worker is
-        # intentionally stopped while reconnecting, so it's "suspect" (retrying),
-        # not "unhealthy".
-        if failure_reason in _RECONNECT_FAILURE_REASONS:
-            return {
-                "stream_health": "suspect",
-                "rule": "stream_reconnecting",
-                "summary": (
-                    f"Stream is recovering ({failure_reason}). "
-                    f"Failure count is {count}/{threshold}."
-                ),
-            }
-
-        if failure_reason == "first_packet_pending":
-            remaining = startup.get("remaining_sec") if isinstance(startup, dict) else None
-            remaining_text = f"{remaining:.1f}s" if isinstance(remaining, (int, float)) else "unknown"
-            return {
-                "stream_health": "suspect",
-                "rule": "first_packet_startup_grace",
-                "summary": f"Waiting for the first data packet; startup grace has {remaining_text} remaining.",
-            }
-
-        if failure_reason == "needs_action":
-            return {
-                "stream_health": "unhealthy",
-                "rule": "needs_action",
-                "summary": (
-                    "Automatic recovery is paused"
-                    + (
-                        f" after {initiating_failure_reason}"
-                        if initiating_failure_reason
-                        else ""
-                    )
-                    + "; stream is stopped and waiting for an explicit "
-                    "control-plane command."
-                ),
-            }
-
-        if failure_reason == "manual_stop":
-            return {
-                "stream_health": "suspect",
-                "rule": "manual_stop",
-                "summary": "Stream is stopped by command.",
-            }
-
-        if worker_status != "alive":
-            return {
-                "stream_health": "unhealthy",
-                "rule": "worker_not_alive",
-                "summary": f"Worker is {worker_status}. Failure count is {count}/{threshold}.",
-            }
-
-        if hb_status == "stale":
-            age_sec = heartbeat.get("age_sec")
-            age_text = f"{age_sec:.1f}s" if age_sec is not None else "unknown"
-            if count < threshold:
-                return {
-                    "stream_health": "suspect",
-                    "rule": "worker_alive_heartbeat_stale_below_threshold",
-                    "summary": (
-                        f"Worker is alive, but heartbeat is stale for {age_text}. "
-                        f"Failure count is {count}/{threshold}."
-                    ),
-                }
-            return {
-                "stream_health": "unhealthy",
-                "rule": "worker_alive_heartbeat_stale_threshold_reached",
-                "summary": (
-                    f"Worker is alive, but heartbeat is stale for {age_text}. "
-                    f"Failure threshold reached at {count}/{threshold}."
-                ),
-            }
-
-        if hb_status == "missing":
-            if failure_reason == "data_never_started":
-                if count < threshold:
-                    return {"stream_health": "suspect",
-                            "rule": "no_data_below_threshold",
-                            "summary": f"HealthSink attached but no packet seen yet. "
-                                    f"Failure count is {count}/{threshold}."}
-                return {"stream_health": "unhealthy",
-                        "rule": "no_data_threshold_reached",
-                        "summary": f"HealthSink attached but no packet ever arrived. "
-                                f"Failure threshold reached at {count}/{threshold}."}
-            return {"stream_health": "suspect",
-                    "rule": "heartbeat_missing",
-                    "summary": f"Heartbeat is missing ({heartbeat.get('reason')}). "
-                            f"Failure count is {count}/{threshold}."}
-
-        return {
-            "stream_health": "suspect",
-            "rule": "action_failure",
-            "summary": f"{failure_reason}. Failure count is {count}/{threshold}.",
-        }
-    
-    @staticmethod
-    def _extract_action_error(action_result):
-        """
-        Extract the most relevant direct, verify, or restart error.
-
-        Output: str or None. Error text, or None when no error is present.
-        """
-        if action_result.get("error"):
-            return action_result["error"]
-        for key in ("verify_result", "restart_result"):
-            result = action_result.get(key)
-            if isinstance(result, dict) and result.get("error"):
-                return result["error"]
-        return None 
-    
-    @staticmethod
-    def _build_action_signal(action_result):
-        """
-        Convert an internal action result to the public action shape.
-
-        Output: dict.
-        - taken: str
-          (none | check_failed | stopped_stream_waiting_for_reconnect |
-          port_check_failed | waiting_for_port | waiting_for_port_release |
-          restart_failed | waiting_for_heartbeat | reconnected |
-          reconnect_failed_stop_stream_failed | reconnect_failed_stop_stream_completed).
-          - none: the check required no recovery action.
-          - check_failed: the watcher caught an unexpected check error.
-          - stopped_stream_waiting_for_reconnect: a failure escalated and the
-            worker was stopped before reconnecting.
-          - port_check_failed: checking port presence raised.
-          - waiting_for_port: the expected port is absent from the OS list.
-          - waiting_for_port_release: the port exists but cannot be opened.
-          - restart_failed: rebuilding or starting the stream failed.
-          - waiting_for_heartbeat: PING failed after restart and the worker
-            is awaiting fresh sample data.
-          - reconnected: restart succeeded and was verified by PING or a
-            fresh replacement-worker heartbeat.
-          - reconnect_failed_stop_stream_failed: post-restart PING failed and
-            stopping that failed restart also raised.
-          - reconnect_failed_stop_stream_completed: post-restart PING failed
-            and the restarted worker was stopped successfully.
-        - detail: dict or None. All action-result fields except action,
-          stream_index, stream_status, and heartbeat; None for no action.
-        """
-        action_taken = action_result.get("action", "none")
-        if action_taken == "none":
-            return {"taken": "none", "detail": None}
-        # stream_status and heartbeat are surfaced under signals already, so
-        # keep them out of detail to avoid duplicating raw copies.
-        detail = {k: v for k, v in action_result.items()
-                  if k not in {"action", "stream_index", "stream_status", "heartbeat"}}
-        return {"taken": action_taken, "detail": detail or None}
-
-    @staticmethod
-    def _build_recovery_event(report, action_result):
-        action = report.get("action", {}).get("taken")
-        if action in (None, "none"):
-            return None
-
-        if action == "reconnected":
-            status = "succeeded"
-        elif action in {"needs_action", "manual_stop"}:
-            status = "needs_action"
-        elif action in {
-            "stopped_stream_waiting_for_reconnect",
-            "waiting_for_port",
-            "waiting_for_port_release",
-            "waiting_for_heartbeat",
-            "lifecycle_busy",
-            "reconnect_failed_stop_stream_completed",
-        }:
-            status = "pending"
-        else:
-            status = "failed"
-
-        detail = report.get("action", {}).get("detail") or {}
-        return {
-            "event_type": "stream_recovery",
-            "stream_index": report.get("stream_index"),
-            "checked_at": report.get("checked_at"),
-            "port": report.get("port"),
-            "action": action,
-            "status": status,
-            "stream_health": report.get("stream_health"),
-            "failure_reason": action_result.get("failure_reason"),
-            "initiating_failure_reason": action_result.get("initiating_failure_reason"),
-            "failure_count": report.get("signals", {}).get("failure", {}).get("count"),
-            "recovery_policy": action_result.get("recovery_policy", "recommend"),
-            # {"current": n, "max": max_auto_restart_attempts}. The control plane
-            # cannot re-derive this — only this watcher knows how much of the
-            # restart budget an episode has actually spent — and without it an
-            # operator cannot tell "retrying, 1 of 3" from "retrying, 3 of 3".
-            "recovery_attempt": action_result.get("recovery_attempt"),
-            "requested_by": detail.get("requested_by"),
-            "summary": report.get("summary"),
-        }
     
 class DeviceWatcher(threading.Thread):
     """Independent watchdog thread for one standalone (non-DataFlow) device."""

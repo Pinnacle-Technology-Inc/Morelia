@@ -1117,7 +1117,6 @@ class MoreliaRuntime:
                 source_read_consecutive_failures=source_read.get("consecutive_failures"),
                 first_packet_timeout_seconds=startup.get("timeout_sec"),
                 first_packet_remaining_seconds=startup.get("remaining_sec"),
-                disconnect_state=disconnect.get("state"),
                 disconnect_elapsed_seconds=disconnect.get("elapsed_sec"),
                 max_heartbeat_age_seconds=disconnect.get("max_heartbeat_age_sec"),
                 disconnect_recording_continued=disconnect.get("recording_continued"),

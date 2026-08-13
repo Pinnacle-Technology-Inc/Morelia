@@ -549,6 +549,19 @@ class DataFlowMonitor:
         with self._stream_lock(stream_index):
             expected_port = self._get_stream_port_unlocked(stream_index).lower()
 
+            source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
+            if source_dict.get("use_d2xx"):
+                from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+
+                for device in list_d2xx_devices():
+                    identifiers = {
+                        str(device.get(key, "")).lower()
+                        for key in ("index", "serial", "description")
+                    }
+                    if expected_port in identifiers:
+                        return True
+                return False
+
             for port_info in serial.tools.list_ports.comports():
                 if str(port_info.device).lower() == expected_port:
                     return True
@@ -574,15 +587,25 @@ class DataFlowMonitor:
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
             port_name = self._get_stream_port_unlocked(stream_index)
+            source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
 
             for attempt in range(attempts):
                 try:
-                    ser = serial.Serial(
-                        port=port_name,
-                        timeout=timeout_sec,
-                        write_timeout=timeout_sec,
-                    )
-                    ser.close()
+                    if source_dict.get("use_d2xx"):
+                        from Morelia.Devices.SerialPorts.D2XXComm import D2XXPortIO
+
+                        ser = D2XXPortIO(
+                            port=port_name,
+                            baudrate=int(source_dict.get("baudrate", 9600)),
+                        )
+                        ser.close_serial_port()
+                    else:
+                        ser = serial.Serial(
+                            port=port_name,
+                            timeout=timeout_sec,
+                            write_timeout=timeout_sec,
+                        )
+                        ser.close()
                     return True
 
                 except Exception:
@@ -914,11 +937,15 @@ class DataFlowMonitor:
                     mapping.append((source, sinks))
 
                 flowgraph_type = type(self.flowgraph)
-                new_flowgraph = flowgraph_type(
-                    mapping,
-                    on_sink_error=getattr(self.flowgraph, "_on_sink_error", None),
-                    on_source_error=getattr(self.flowgraph, "_on_source_error", None),
-                )
+                flowgraph_kwargs = {
+                    "on_sink_error": getattr(self.flowgraph, "_on_sink_error", None),
+                    "on_source_error": getattr(self.flowgraph, "_on_source_error", None),
+                }
+                if getattr(flowgraph_type, "supports_source_recovery_window", False):
+                    flowgraph_kwargs["source_recovery_window_sec"] = getattr(
+                        self.flowgraph, "_source_recovery_window_sec", None
+                    )
+                new_flowgraph = flowgraph_type(mapping, **flowgraph_kwargs)
                 new_flowgraph.collect()
 
                 self.flowgraph = new_flowgraph
@@ -1471,9 +1498,9 @@ class DataFlowMonitor:
         ]
         # Forward on_sink_error (mirrors DataFlow.collect) so a sink that fails
         # after an auto-restart still reports instead of dropping data silently.
-        # on_source_error is intentionally left at its default (None): its read
-        # status is redundant telemetry the watchdog already infers from the
-        # heartbeat, so it is not threaded through the restart path.
+        # The remaining optional worker arguments keep their defaults on this
+        # legacy fallback path; dashboard-owned DataFlow implementations expose
+        # make_worker() and carry the configured grace window themselves.
         args = (
             duration_sec,
             manual_stop_event,
@@ -1481,10 +1508,6 @@ class DataFlowMonitor:
             source_dict,
             sinks_list,
             self._on_sink_error,
-            None,
-            status_queue,
-            shutdown_id,
-            stream_index,
         )
         if sys.platform != "win32":
             try:
