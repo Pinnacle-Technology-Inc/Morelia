@@ -17,12 +17,14 @@ import GuardedDialog from "../components/GuardedDialog.vue";
 import RatRunIndicator from "../components/RatRunIndicator.vue";
 import SessionNotesList from "../components/SessionNotesList.vue";
 import SessionFlowBar from "../components/SessionFlowBar.vue";
+import SessionTimeline from "../components/SessionTimeline.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { normalizeSession, stopSession } from "../session-api";
 import { loadSessionDetail } from "../session-detail-api";
 import { createSessionEventStream, SessionEventState } from "../session-events";
 import { createSessionNote, loadSessionNotes, updateSessionNote } from "../session-notes-api";
+import { buildSessionTimeline } from "../session-timeline";
 import {
   deriveFlowStatus,
   deriveRatState,
@@ -138,6 +140,13 @@ const sourceSnapshotSinkCount = computed(() =>
   ),
 );
 const sourceSnapshotJson = computed(() => JSON.stringify(sourceTemplateSnapshot.value, null, 2));
+const hasSourceProvenance = computed(() => Boolean(
+  sourceTemplateId.value ||
+  sourceTemplateSnapshot.value ||
+  detail.value?.session?.source_template_name ||
+  detail.value?.session?.source_template_ref ||
+  detail.value?.session?.source_template_hash
+));
 const sourceTemplateRunnable = computed(() =>
   lifecycle.value === "Completed" &&
   sourceTemplateState.value === "live" &&
@@ -156,6 +165,9 @@ const sourceTemplateGuidance = computed(() => {
   }
   if (sourceTemplateState.value === "live") {
     if (canRunTemplate(sourceTemplate.value)) {
+      if (lifecycle.value !== "Completed") {
+        return "This session uses the frozen revision below. The current source revision is ACTIVE; another run becomes available after this session completes.";
+      }
       return "The source revision is currently ACTIVE. Starting again creates a new child run and leaves this run unchanged.";
     }
     return templateStateHint(sourceTemplate.value) || "The source revision is not runnable in its current state.";
@@ -234,8 +246,16 @@ const controlPlaneIncidents = computed(() =>
   detailIncidents.value.filter((incident) => incident.axis === "control_plane"),
 );
 const detailGaps = computed(() => detail.value?.gaps ?? []);
+const recovery = computed(() => detail.value?.recovery ?? null);
+const recoveryPolicy = computed(() => view.value.policy ? formatStatus(view.value.policy) : "Unavailable");
 // Already fetched on every poll and, until now, dropped on the floor.
 const detailOperations = computed(() => detail.value?.operations ?? []);
+const timelineEntries = computed(() => buildSessionTimeline({
+  events: activity.value.events,
+  incidents: detailIncidents.value,
+  gaps: detailGaps.value,
+  operations: detailOperations.value,
+}));
 const recoveryOutputs = computed(() =>
   (detail.value?.sinks ?? [])
     .filter((sink) => sink.output?.component_count > 1)
@@ -435,6 +455,16 @@ async function resolveSourceTemplate({ force = false } = {}) {
   }
 }
 
+function formatRecoveryEvidence(value) {
+  if (value === null || value === undefined) return "Unavailable";
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return "Unavailable";
+  }
+}
+
 async function startAnotherRun() {
   // Revalidate at the click boundary as well as on page load. Unit 14 repeats
   // this check before create, but a stale button must not navigate there after
@@ -455,7 +485,7 @@ async function refreshDetail({ silent = false } = {}) {
     detailError.value = "";
     // The server has now spoken; drop any optimistic post-command lifecycle.
     pendingLifecycle.value = null;
-    if (lifecycle.value === "Completed") await resolveSourceTemplate();
+    await resolveSourceTemplate();
   } catch (error) {
     // A failed *background* refresh keeps the last good snapshot on screen —
     // blanking a live view because one poll missed is worse than mild staleness.
@@ -651,7 +681,7 @@ const visibleTabs = computed(() => [
   { id: "recovery", label: "Recovery" },
   { id: "incidents", label: "Incidents & Gaps" },
   { id: "operations", label: "Operations" },
-  { id: "activity", label: "Activity & Notes" },
+  { id: "timeline", label: "Timeline" },
   { id: "configuration", label: "Configuration" },
 ]);
 
@@ -718,7 +748,6 @@ const tabTones = computed(() => ({
         </div>
       </div>
       <div class="detail-actions">
-        <BaseButton v-if="lifecycle !== 'Completed'" variant="secondary"><FilePlus2 :size="16" /> Add Note</BaseButton>
         <BaseButton
           v-if="sourceTemplateRunnable"
           variant="primary"
@@ -753,12 +782,12 @@ const tabTones = computed(() => ({
           <h3>Session Summary</h3>
           <div class="session-summary__overview">
             <dl class="detail-list session-summary__details">
-            <div><dt>Ownership</dt><dd>{{ view.isOwner ? "Owner session" : "Monitoring only" }}</dd></div>
-            <div><dt>Experiment</dt><dd>{{ view.experiment ?? "Ungrouped" }}</dd></div>
-            <div v-if="view.scheduledTime"><dt>Scheduled start</dt><dd>{{ formatTimestamp(view.scheduledTime) }}</dd></div>
-            <div v-if="view.fallbackPolicy"><dt>Device policy</dt><dd>{{ formatStatus(view.fallbackPolicy) }}</dd></div>
-            <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
-          </dl>
+              <div><dt>Ownership</dt><dd>{{ view.isOwner ? "Owner session" : "Monitoring only" }}</dd></div>
+              <div><dt>Experiment</dt><dd>{{ view.experiment ?? "Ungrouped" }}</dd></div>
+              <div v-if="view.scheduledTime"><dt>Scheduled start</dt><dd>{{ formatTimestamp(view.scheduledTime) }}</dd></div>
+              <div v-if="view.fallbackPolicy"><dt>Device policy</dt><dd>{{ formatStatus(view.fallbackPolicy) }}</dd></div>
+              <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
+            </dl>
             <div class="session-rat">
               <RatRunIndicator :state="ratState" size="lg" />
               <p :class="`session-rat__caption session-rat__caption--${ratState}`">{{ ratCaption }}</p>
@@ -785,13 +814,20 @@ const tabTones = computed(() => ({
           <h3>Stream Health</h3>
           <SessionFlowBar
             v-bind="flowInputs"
-            :events="activity.events"
-            :detail-error="detailError"
             :last-report-at="detail?.latest_report?.received_at ?? null"
           />
         </BaseCard>
+        <BaseCard class="detail-panel detail-panel--wide">
+          <SessionTimeline
+            variant="preview"
+            :entries="timelineEntries"
+            :state="activity.state"
+            :error="activity.error"
+            @view-all="activeTab = 'timeline'"
+          />
+        </BaseCard>
         <BaseCard
-          v-if="lifecycle === 'Completed'"
+          v-if="hasSourceProvenance"
           class="detail-panel detail-panel--wide source-template-card"
         >
           <header class="source-template-heading">
@@ -822,7 +858,7 @@ const tabTones = computed(() => ({
           </details>
           <p v-else class="form-notice">No frozen source snapshot was stored for this legacy run.</p>
           <BaseButton
-            v-if="lifecycle === 'Completed' && sourceTemplateState === 'unavailable' && sourceTemplateId"
+            v-if="sourceTemplateState === 'unavailable' && sourceTemplateId"
             variant="secondary"
             @click="resolveSourceTemplate({ force: true })"
           >
@@ -885,7 +921,7 @@ const tabTones = computed(() => ({
       </div>
 
       <div v-else-if="activeTab === 'recovery'" class="recovery-layout">
-        <BaseCard class="detail-panel"><h3>Assigned Policy</h3><dl class="detail-list"><div><dt>Policy</dt><dd>Recommend</dd></div><div><dt>Verification</dt><dd>Device, sink, data rate</dd></div></dl></BaseCard>
+        <BaseCard class="detail-panel"><h3>Assigned Policy</h3><dl class="detail-list"><div><dt>Policy</dt><dd>{{ recoveryPolicy }}</dd></div><div><dt>Verification</dt><dd>Device, sink, data rate</dd></div></dl></BaseCard>
         <BaseCard class="detail-panel">
           <h3>Recovery Activity</h3>
           <div v-if="detailUnavailable" class="detail-alert">Recovery data unavailable.</div>
@@ -1109,22 +1145,16 @@ const tabTones = computed(() => ({
         </template>
       </div>
 
-      <div v-else-if="activeTab === 'activity'">
-        <div class="detail-tab-actions"><BaseButton variant="secondary">Filter</BaseButton></div>
-        <SessionNotesList
-          :notes="notes"
-          :state="notesState"
-          :error="notesError"
-          @add="openNewNote"
-          @edit="openEditNote"
+      <div v-else-if="activeTab === 'timeline'">
+        <SessionTimeline
+          :entries="timelineEntries"
+          :state="activity.state"
+          :error="activity.error"
         />
-        <p v-if="activity.state === 'unavailable' || activity.state === 'stale'" class="detail-alert">Activity is {{ activity.state }}. Showing only the last proven events.</p>
-        <p v-else-if="!activity.events.length">No activity events have been received yet.</p>
-        <div v-else class="phase-list"><div v-for="event in activity.events" :key="event.id ?? `${event.type}-${event.data.sequence}`"><code>#{{ event.id ?? "—" }}</code><strong>{{ event.type }}</strong><span>{{ event.data.phase ?? event.data.message ?? "Event received" }}</span></div></div>
       </div>
 
       <div v-else class="configuration-grid">
-        <BaseCard class="detail-panel"><h3>Metadata</h3><dl class="detail-list"><div><dt>Name</dt><dd>{{ view.name }}</dd></div><div><dt>Experiment</dt><dd>{{ view.experiment ?? "None" }}</dd></div><div><dt>Schedule</dt><dd>{{ view.scheduledTime ? "One-time" : "Manual" }}</dd></div><div><dt>Recovery Policy</dt><dd>{{ view.policy ?? "Recommend" }}</dd></div></dl></BaseCard>
+        <BaseCard class="detail-panel"><h3>Metadata</h3><dl class="detail-list"><div><dt>Name</dt><dd>{{ view.name }}</dd></div><div><dt>Experiment</dt><dd>{{ view.experiment ?? "None" }}</dd></div><div><dt>Schedule</dt><dd>{{ view.scheduledTime ? "One-time" : "Manual" }}</dd></div><div><dt>Recovery Policy</dt><dd>{{ recoveryPolicy }}</dd></div></dl></BaseCard>
         <BaseCard class="detail-panel"><h3>Runtime Lock</h3><p>Stream and sink configuration is immutable run history.</p></BaseCard>
         <BaseCard class="detail-panel">
           <h3>Output Locations</h3>
@@ -1325,6 +1355,14 @@ const tabTones = computed(() => ({
 }
 
 @media (max-width: 760px) {
+  .session-summary__overview {
+    grid-template-columns: 1fr;
+  }
+
+  .session-summary__overview .session-rat {
+    min-width: 0;
+  }
+
   .recovery-story__heading,
   .recovery-output__summary {
     display: grid;

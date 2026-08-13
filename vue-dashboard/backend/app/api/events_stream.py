@@ -103,6 +103,8 @@ def _sse_generator(
 def _event_payload(row) -> dict:
     """Return the JSON body clients see for one backend event row."""
     payload = dict(row.payload or {})
+    payload["dataflow_id"] = row.dataflow_id
+    payload["received_at"] = row.received_at.isoformat() if row.received_at else None
     payload["sequence"] = row.sequence
     if row.phase is not None:
         payload["phase"] = row.phase
@@ -112,6 +114,10 @@ def _event_payload(row) -> dict:
         payload["recovery_id"] = row.recovery_id
     if row.runtime_id is not None:
         payload["runtime_id"] = row.runtime_id
+    if row.watchdog_id is not None:
+        payload["watchdog_id"] = row.watchdog_id
+    if row.report_id is not None:
+        payload["report_id"] = row.report_id
     return payload
 
 

@@ -1,15 +1,13 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import { deriveFlowStatus, formatReportAge, toFlowLogLines } from "../session-flow-status";
+import { deriveFlowStatus, formatReportAge } from "../session-flow-status";
 
 const props = defineProps({
   lifecycle: { type: String, default: "Unknown" },
   health: { type: String, default: "Unknown" },
   phase: { type: String, default: null },
   activityState: { type: String, default: "idle" },
-  events: { type: Array, default: () => [] },
   detailAvailable: { type: Boolean, default: true },
-  detailError: { type: String, default: "" },
   // One row per reported device, from deriveStreamRows(). Empty until the
   // runtime has reported at least once.
   streams: { type: Array, default: () => [] },
@@ -45,7 +43,6 @@ onMounted(() => {
 onUnmounted(() => clock && clearInterval(clock));
 
 const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value));
-const logLines = computed(() => toFlowLogLines(props.events));
 </script>
 
 <template>
@@ -115,23 +112,6 @@ const logLines = computed(() => toFlowLogLines(props.events));
 
     <p class="flow-bar__reason">{{ status.reason }}</p>
 
-    <!-- Collapsed by default: the rail above is what an operator scans, and the
-         log used to push it below the fold. -->
-    <details class="flow-bar__log-wrap">
-      <summary>Activity<template v-if="logLines.length"> ({{ logLines.length }})</template></summary>
-      <div class="flow-bar__log" tabindex="0" aria-label="Live session activity">
-        <p v-if="detailError" class="flow-bar__log-error">{{ detailError }}</p>
-        <p v-if="!logLines.length" class="flow-bar__log-empty">
-          No activity events received yet. Events appear here as the runtime reports them.
-        </p>
-        <div v-for="line in logLines" :key="line.key" class="flow-bar__log-line">
-          <code class="flow-bar__log-seq">{{ line.seq != null ? `#${line.seq}` : "—" }}</code>
-          <span class="flow-bar__log-type">{{ line.type }}</span>
-          <code v-if="line.device" class="flow-bar__log-device">{{ line.device }}</code>
-          <span class="flow-bar__log-text">{{ line.text }}</span>
-        </div>
-      </div>
-    </details>
   </section>
 </template>
 
@@ -386,52 +366,4 @@ const logLines = computed(() => toFlowLogLines(props.events));
   font-size: var(--fs-sm);
 }
 
-.flow-bar__log-wrap > summary {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: var(--fs-xs);
-}
-.flow-bar__log {
-  max-height: 11rem;
-  margin-top: var(--space-2);
-  overflow-y: auto;
-  padding: var(--space-3);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-md);
-  background: var(--surface-sage);
-  font-size: var(--fs-xs);
-}
-.flow-bar__log-empty,
-.flow-bar__log-error {
-  margin: 0;
-  color: var(--text-muted);
-}
-.flow-bar__log-error {
-  color: var(--error);
-}
-.flow-bar__log-line {
-  display: flex;
-  align-items: baseline;
-  gap: var(--space-2);
-  padding: 2px 0;
-}
-.flow-bar__log-line + .flow-bar__log-line {
-  border-top: 1px solid var(--border-card);
-}
-.flow-bar__log-seq {
-  color: var(--text-muted);
-  flex: none;
-}
-.flow-bar__log-type {
-  color: var(--tone);
-  font-weight: 600;
-  flex: none;
-}
-.flow-bar__log-device {
-  color: var(--text-muted);
-  flex: none;
-}
-.flow-bar__log-text {
-  color: var(--text-body);
-}
 </style>

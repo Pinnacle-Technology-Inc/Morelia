@@ -5,6 +5,7 @@ import { deriveFlowStatus } from "../session-flow-status";
 const sessionDetailSource = readFileSync(new URL("./SessionDetailPage.vue", import.meta.url), "utf8");
 const sessionsPageSource = readFileSync(new URL("./SessionsPage.vue", import.meta.url), "utf8");
 const appSource = readFileSync(new URL("../App.vue", import.meta.url), "utf8");
+const flowBarSource = readFileSync(new URL("../components/SessionFlowBar.vue", import.meta.url), "utf8");
 
 describe("template-centric session closure", () => {
   it("routes session creation through templates instead of a blank session action", () => {
@@ -58,5 +59,22 @@ describe("template-centric session closure", () => {
 
     expect(status.reason).toContain("source template");
     expect(status.reason).not.toContain("restart");
+  });
+});
+
+describe("session timeline placement", () => {
+  it("keeps notes in the overview summary and gives activity a dedicated timeline", () => {
+    expect(sessionDetailSource).toContain('{ id: "timeline", label: "Timeline" }');
+    expect(sessionDetailSource).not.toContain("Activity & Notes");
+    expect(sessionDetailSource.match(/<SessionNotesList/g)).toHaveLength(1);
+    expect(sessionDetailSource).toContain("<SessionTimeline");
+    expect(sessionDetailSource).toContain('variant="preview"');
+    expect(sessionDetailSource).toContain("activeTab === 'timeline'");
+  });
+
+  it("does not duplicate raw activity inside Stream Health", () => {
+    expect(flowBarSource).not.toContain("toFlowLogLines");
+    expect(flowBarSource).not.toContain("flow-bar__log");
+    expect(flowBarSource).not.toContain("Live session activity");
   });
 });

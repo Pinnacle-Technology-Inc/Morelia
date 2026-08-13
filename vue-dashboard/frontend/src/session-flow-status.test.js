@@ -6,7 +6,6 @@ import {
   FlowTone,
   formatReportAge,
   isOutboxUnproven,
-  toFlowLogLines,
   worstTone,
 } from "./session-flow-status";
 
@@ -460,43 +459,5 @@ describe("report freshness", () => {
   it("returns null rather than a fake age when nothing has been reported", () => {
     expect(formatReportAge(null)).toBeNull();
     expect(formatReportAge("not-a-date")).toBeNull();
-  });
-});
-
-describe("toFlowLogLines", () => {
-  it("returns newest events first", () => {
-    const lines = toFlowLogLines([
-      { id: "1", type: "runtime.report", data: { sequence: 1, message: "first" } },
-      { id: "2", type: "runtime.report", data: { sequence: 2, message: "second" } },
-    ]);
-    expect(lines.map((line) => line.text)).toEqual(["second", "first"]);
-  });
-
-  it("falls through payload keys to find operator-readable text", () => {
-    const lines = toFlowLogLines([
-      { id: "a", type: "x", data: { sequence: 1, reason: "device silent" } },
-      { id: "b", type: "y", data: { sequence: 2, phase: "recovering" } },
-      { id: "c", type: "z", data: { sequence: 3 } },
-    ]);
-    expect(lines.map((line) => line.text)).toEqual([
-      "Event received",
-      "recovering",
-      "device silent",
-    ]);
-  });
-
-  it("caps the rendered window and stays keyed when ids are absent", () => {
-    const events = Array.from({ length: 40 }, (_, index) => ({
-      type: "runtime.report",
-      data: { sequence: index },
-    }));
-    const lines = toFlowLogLines(events, 5);
-    expect(lines).toHaveLength(5);
-    expect(lines[0].seq).toBe(39);
-    expect(new Set(lines.map((line) => line.key)).size).toBe(5);
-  });
-
-  it("tolerates an empty stream", () => {
-    expect(toFlowLogLines()).toEqual([]);
   });
 });

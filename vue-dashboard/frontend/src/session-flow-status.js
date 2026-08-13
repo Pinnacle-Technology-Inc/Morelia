@@ -231,7 +231,6 @@ function matchConfiguredFlow(deviceId, configuredFlows, index) {
   );
   return byId ?? configuredFlows[index] ?? {};
 }
-
 function workerFaultCopy(fault, { recovered = false } = {}) {
   if (!fault) return null;
   if (fault.reason === "protocol_violation") {
@@ -440,32 +439,4 @@ function streamHeadline({ lifecycle, tone, streams, unproven }) {
   if (tone === FlowTone.GOOD) return "Streaming";
   if (tone === FlowTone.BAD) return "Stalled — needs action";
   return "Streaming — degraded";
-}
-
-/**
- * Flatten raw SSE events into printable log lines, newest first.
- *
- * Backend payloads are open-ended (`_event_payload` in events_stream.py spreads
- * the row's own payload), so the message is resolved by falling through the keys
- * that actually carry operator-readable text before giving up on the event type.
- */
-export function toFlowLogLines(events = [], limit = 30) {
-  return events
-    .slice(-limit)
-    .reverse()
-    .map((event, index) => {
-      const data = event?.data ?? {};
-      return {
-        key: event?.id ?? `${event?.type ?? "event"}-${data.sequence ?? index}`,
-        seq: data.sequence ?? null,
-        type: event?.type ?? "message",
-        device: data.device_id ?? null,
-        text:
-          data.message ??
-          data.reason ??
-          data.operator_message ??
-          data.phase ??
-          "Event received",
-      };
-    });
 }
