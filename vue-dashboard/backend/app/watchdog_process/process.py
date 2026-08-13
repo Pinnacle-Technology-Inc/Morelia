@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from time import monotonic
 
 import structlog
 
@@ -234,6 +235,12 @@ class WatchdogProcess:
         from a phase that supports it, and the driver's own ``close()`` is
         documented as idempotent.
         """
+        started_at = monotonic()
+        _log.info(
+            "watchdog_shutdown_started",
+            terminal_phase=self.driver.phase.value,
+            outcome="started",
+        )
         if self.driver.phase in _STOPPABLE_PHASES:
             try:
                 self.driver.stop()
@@ -243,6 +250,12 @@ class WatchdogProcess:
             self.driver.close()
         except Exception:
             _log.error("driver close failed during shutdown", exc_info=True)
+        _log.info(
+            "watchdog_shutdown_confirmed",
+            terminal_phase=self.driver.phase.value,
+            outcome="completed",
+            elapsed_ms=round((monotonic() - started_at) * 1000, 2),
+        )
 
 
 __all__ = ["WatchdogIdentity", "WatchdogProcess"]

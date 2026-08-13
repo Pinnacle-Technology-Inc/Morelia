@@ -15,7 +15,11 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Protocol
 
+import structlog
+
 from app.config import get_config
+
+_log = structlog.get_logger(__name__)
 
 _TOKEN_HEADER = "X-Watchdog-Control-Token"
 _MAX_BODY_BYTES = 16 * 1024
@@ -64,6 +68,7 @@ class _Server(ThreadingHTTPServer):
         self.hardware_lease_keys = hardware_lease_keys
         self.request_stop = request_stop
         self.process_started_at = datetime.now(UTC).isoformat()
+        self.stop_context: dict[str, str] = {}
 
 
 class _Handler(BaseHTTPRequestHandler):
@@ -119,6 +124,15 @@ class _Handler(BaseHTTPRequestHandler):
             return value
         return None
 
+    @staticmethod
+    def _optional_id(payload: dict[str, object], key: str) -> str | None:
+        value = payload.get(key)
+        if value is None:
+            return None
+        if isinstance(value, str) and 0 < len(value) <= 128:
+            return value
+        return None
+
     def do_GET(self) -> None:
         if self.path != "/probe":
             self._send(HTTPStatus.NOT_FOUND, {"error": "not found"})
@@ -153,14 +167,58 @@ class _Handler(BaseHTTPRequestHandler):
         if recovery_id is None:
             self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid recovery_id"})
             return
+        allowed = (
+            {"recovery_id", "runtime_id"}
+            if self.path == "/adopt"
+            else {"recovery_id", "command_id", "request_id"}
+        )
+        if set(payload) - allowed:
+            self._send(HTTPStatus.BAD_REQUEST, {"error": "unknown correlation field"})
+            return
+        command_id = self._optional_id(payload, "command_id")
+        request_id = self._optional_id(payload, "request_id")
+        if ("command_id" in payload and command_id is None) or (
+            "request_id" in payload and request_id is None
+        ):
+            self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid correlation id"})
+            return
         if self.path == "/adopt":
             runtime_id = self._required_id(payload, "runtime_id")
             if runtime_id is None:
                 self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid runtime_id"})
                 return
             self.server.process.rebind_runtime(runtime_id)
+            _log.info(
+                "watchdog_adoption_confirmed",
+                recovery_id=recovery_id,
+                runtime_id=runtime_id,
+                watchdog_id=self.server.process.identity.watchdog_id,
+                dataflow_id=self.server.process.manifest.dataflow_id,
+                outcome="adopted",
+            )
             self._send(HTTPStatus.OK, {"status": "adopted", "recovery_id": recovery_id})
             return
+        _log.info(
+            "watchdog_stop_accepted",
+            recovery_id=recovery_id,
+            shutdown_id=recovery_id,
+            command_id=command_id,
+            request_id=request_id,
+            watchdog_id=self.server.process.identity.watchdog_id,
+            runtime_id=self.server.process.identity.runtime_id,
+            dataflow_id=self.server.process.manifest.dataflow_id,
+            outcome="accepted",
+        )
+        self.server.stop_context = {
+            key: value
+            for key, value in {
+                "recovery_id": recovery_id,
+                "shutdown_id": recovery_id,
+                "command_id": command_id,
+                "request_id": request_id,
+            }.items()
+            if value is not None
+        }
         self._send(HTTPStatus.ACCEPTED, {"status": "stopping", "recovery_id": recovery_id})
         self.server.request_stop()
 
@@ -189,6 +247,10 @@ class WatchdogControlServer:
     @property
     def port(self) -> int:
         return int(self._server.server_address[1])
+
+    @property
+    def stop_context(self) -> dict[str, str]:
+        return dict(self._server.stop_context)
 
     def start(self) -> None:
         if self._thread is not None:
@@ -233,8 +295,19 @@ class WatchdogControlClient:
             {"runtime_id": new_runtime_id, "recovery_id": recovery_id},
         )
 
-    def stop_watchdog(self, *, recovery_id: str) -> dict[str, object]:
-        return self._request("POST", "/stop", {"recovery_id": recovery_id})
+    def stop_watchdog(
+        self,
+        *,
+        recovery_id: str,
+        command_id: str | None = None,
+        request_id: str | None = None,
+    ) -> dict[str, object]:
+        payload = {"recovery_id": recovery_id}
+        if command_id:
+            payload["command_id"] = command_id
+        if request_id:
+            payload["request_id"] = request_id
+        return self._request("POST", "/stop", payload)
 
     def _request(
         self, method: str, path: str, payload: dict[str, object] | None = None

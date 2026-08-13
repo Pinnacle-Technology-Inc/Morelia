@@ -179,15 +179,23 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    # stderr, not stdout: stdout is the PORT:/READY handshake the parent parses
-    # line-by-line (see module docstring) — log lines there would corrupt it.
-    configure_logging(get_config(), stream=sys.stderr)
-
     # Read the manifest once at startup; never re-read from user paths at runtime.
     with open(args.manifest, encoding="utf-8") as fh:
         manifest = Manifest.from_dict(json.load(fh))
 
     runtime_id = args.runtime_id or uuid4().hex
+    # The immutable manifest supplies a default session identity for log calls
+    # made by worker threads that do not inherit structlog contextvars.
+    configure_logging(
+        get_config(),
+        stream=sys.stderr,
+        diagnostic_layer="runtime-host",
+        diagnostic_context={
+            "session_id": manifest.session_id,
+            "dataflow_id": manifest.dataflow_id,
+            "runtime_id": runtime_id,
+        },
+    )
 
     # Build driver with a placeholder callback, then patch it once the host
     # exists so reports flow into the ring buffer.
@@ -235,6 +243,15 @@ def main() -> None:
     try:
         _prepare_driver_for_host_start(driver)
         host.start()
+        _log.info(
+            "runtime_host_ready",
+            session_id=manifest.session_id,
+            dataflow_id=manifest.dataflow_id,
+            runtime_id=runtime_id,
+            pid=os.getpid(),
+            terminal_phase=driver.phase.value,
+            outcome="ready",
+        )
     except Exception as exc:
         payload = {
             "error_type": str(getattr(exc, "error_type", type(exc).__name__))[:120],

@@ -148,6 +148,19 @@ class _RequestHandler(BaseHTTPRequestHandler):
             self._send_error(HTTPStatus.BAD_REQUEST, str(exc))
             return
 
+        correlation = envelope.correlation
+        _log.info(
+            "runtime_command_accepted",
+            command=envelope.command,
+            command_id=correlation.command_id,
+            request_id=correlation.request_id,
+            recovery_id=correlation.recovery_id,
+            runtime_id=correlation.runtime_id,
+            watchdog_id=correlation.watchdog_id,
+            dataflow_id=correlation.dataflow_id,
+            device_id=envelope.target_device_id,
+            outcome="accepted",
+        )
         self.execute(envelope, run)
         self._send_json(HTTPStatus.ACCEPTED, self.gate.acknowledgement(envelope).to_dict())
 
@@ -327,12 +340,23 @@ class DataflowRuntimeHost:
         """
 
         def _worker() -> None:
+            started_at = monotonic()
+            envelope.correlation.bind()
             try:
                 run()
             except Exception as exc:  # noqa: BLE001 - surfaced via /status + log
                 self._record_command_error(envelope, exc)
             else:
                 self._clear_command_error()
+                _log.info(
+                    "runtime_command_confirmed",
+                    command=envelope.command,
+                    command_id=envelope.correlation.command_id,
+                    recovery_id=envelope.correlation.recovery_id,
+                    outcome="succeeded",
+                    terminal_phase=self._driver.phase.value,
+                    elapsed_ms=round((monotonic() - started_at) * 1000, 2),
+                )
 
         thread = threading.Thread(
             target=_worker,

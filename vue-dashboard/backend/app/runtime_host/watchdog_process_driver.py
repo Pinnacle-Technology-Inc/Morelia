@@ -19,6 +19,7 @@ from contextlib import suppress
 from uuid import uuid4
 
 import structlog
+from structlog.contextvars import get_contextvars
 
 from app.config import get_config
 from app.domain.enums import CommsStatus, WatchdogProcessState
@@ -604,8 +605,18 @@ class WatchdogProcessDriver:
                 port=self._watchdog_control_port,
                 token=self._watchdog_control_token,
             )
+            correlation = get_contextvars()
+            shutdown_id = str(
+                correlation.get("recovery_id")
+                or correlation.get("command_id")
+                or uuid4().hex
+            )
             with suppress(WatchdogControlError):
-                client.stop_watchdog(recovery_id=uuid4().hex)
+                client.stop_watchdog(
+                    recovery_id=shutdown_id,
+                    command_id=correlation.get("command_id"),
+                    request_id=correlation.get("request_id"),
+                )
             config = get_config()
             deadline = time.monotonic() + config.WATCHDOG_PROCESS_STOP_TIMEOUT_SECONDS
             while self._pid_alive(self._watchdog_pid) and time.monotonic() < deadline:

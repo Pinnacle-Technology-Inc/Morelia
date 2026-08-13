@@ -29,6 +29,8 @@ import sys
 import threading
 from collections.abc import Callable
 
+import structlog
+
 from app.config import get_config
 from app.logging_config import configure_logging
 from app.runtime_child.driver import RuntimeControlDriver
@@ -39,6 +41,8 @@ from app.watchdog_process.outbox import WatchdogOutbox, default_outbox_path
 from app.watchdog_process.process import WatchdogIdentity, WatchdogProcess
 from app.watchdog_process.process_tree import install_process_tree_guard
 from app.watchdog_process.telemetry_client import TelemetryClient
+
+_log = structlog.get_logger(__name__)
 
 
 def _build_driver(
@@ -181,15 +185,22 @@ def main(
         else poll_interval_seconds
     )
 
-    # stderr, not stdout: stdout carries the READY handshake (see module
-    # docstring) — log lines there would corrupt it.
-    configure_logging(get_config(), stream=sys.stderr)
-
     # Install containment before Morelia constructs any stream workers or
     # queue servers. This reference keeps the Job Object handle open until the
     # watchdog process itself exits.
     _process_tree_guard = process_tree_guard_factory()
     process = process_factory(args)
+    configure_logging(
+        get_config(),
+        stream=sys.stderr,
+        diagnostic_layer="watchdog-driver",
+        diagnostic_context={
+            "session_id": process.manifest.session_id,
+            "dataflow_id": process.manifest.dataflow_id,
+            "runtime_id": process.identity.runtime_id,
+            "watchdog_id": process.identity.watchdog_id,
+        },
+    )
     hardware_leases = HardwareLeaseSet(
         process.manifest,
         directory=args.hardware_lock_dir or get_config().WATCHDOG_HARDWARE_LOCK_DIR,
@@ -218,7 +229,17 @@ def main(
         preflight_sink_dependencies(process.manifest)
         hardware_leases.acquire()
         process.driver.preflight()
+        _log.info(
+            "watchdog_preflight_confirmed",
+            terminal_phase=process.driver.phase.value,
+            outcome="succeeded",
+        )
         process.driver.start()
+        _log.info(
+            "watchdog_start_confirmed",
+            terminal_phase=process.driver.phase.value,
+            outcome="succeeded",
+        )
 
         if args.control_token:
             control_server = WatchdogControlServer(
@@ -242,6 +263,12 @@ def main(
         # stopped the driver — shutdown() is idempotent, and this is the one
         # path that also runs on a clean SIGINT/SIGTERM.
         process.shutdown()
+        _log.info(
+            "watchdog_stop_confirmed",
+            **(control_server.stop_context if control_server is not None else {}),
+            terminal_phase=process.driver.phase.value,
+            outcome="succeeded",
+        )
     except Exception as exc:
         if not ready_announced:
             payload = {
