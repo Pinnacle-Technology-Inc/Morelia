@@ -123,7 +123,7 @@ def _fake_pod() -> DiscoveredDevice:
     return DiscoveredDevice(
         type=DeviceType.POD8206HR,
         port="FAKE-POD-8206HR",
-        # Must satisfy the hardware_id contract (1-8 digits) or the fake pod
+        # Must satisfy the hardware_id contract (1-8 ASCII alphanumerics) or the fake pod
         # cannot be registered from the Device List like a real one.
         hardware_id="99999999",
         label="Fake POD 8206HR",

@@ -46,19 +46,9 @@ STARTING_CLAIM_LEASE_SECONDS = 120
 # exactly (no case-folding).
 #
 # Packet 10 ("hardware-id validation contract", resolved 2026-07-30): the legal
-# value is 1-8 digits. Discovery strips the Windows FTDI channel letter before
-# reporting (``pod_scan._normalize_ftdi_serial``), so the stored value is the
-# EEPROM serial itself — ``17200``, not ``17200A``. The old 4-character floor and
-# the letters in the character class both only ever existed to accommodate that
-# suffix.
-#
-# This is the same predicate as the normalizer's "remainder must be all digits"
-# guard, deliberately: anything the normalizer declines to strip is also
-# something this declines to store, so a letter surviving to here is a real
-# signal (non-POD FTDI part, or a hand-typed id) rather than a normalization
-# miss. Leading zeros are significant — ``0002`` is a real serial — so the value
-# stays a string and is never coerced to int.
-_HARDWARE_ID_PATTERN = re.compile(r"^[0-9]{1,8}$")
+# value is 1-8 ASCII alphanumeric characters. Leading zeros and letter case are
+# significant, so the value stays a string and is never normalized or coerced.
+_HARDWARE_ID_PATTERN = re.compile(r"^[0-9a-zA-Z]{1,8}$")
 
 
 def _canonical_parameters(device_type: DeviceType, raw: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -84,9 +74,8 @@ def create(
     Identity is ``device_type + hardware_id`` and must be unique; a duplicate
     raises ``DeviceConfigExists`` rather than surfacing a raw IntegrityError.
 
-    ``hardware_id`` must be 1-8 digits (the FTDI EEPROM serial, with the
-    Windows channel letter already stripped by discovery); anything else raises
-    ``InvalidHardwareId`` before the duplicate-identity check runs.
+    ``hardware_id`` must be 1-8 ASCII alphanumeric characters; anything else
+    raises ``InvalidHardwareId`` before the duplicate-identity check runs.
     """
     if not _HARDWARE_ID_PATTERN.fullmatch(hardware_id):
         raise InvalidHardwareId(hardware_id)

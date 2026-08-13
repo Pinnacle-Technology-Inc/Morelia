@@ -111,7 +111,7 @@ def config_command(
             _normalize_device_type(device_type) if device_type is not None else None
         )
         # Resolve an exact nickname first. A nickname can itself satisfy the
-        # five-character hardware-ID syntax (for example, ``A1B2C``).
+        # 1-8 character hardware-ID syntax (for example, ``A1B2C``).
         registration = _find_device_registration(client, device_reference)
         if registration is None and not _looks_like_hardware_id(device_reference):
             raise ValueError(
@@ -919,7 +919,7 @@ def _required_string(row: Mapping[str, object], field: str) -> str:
 
 
 def _looks_like_hardware_id(value: str) -> bool:
-    return len(value) == 5 and value.isalnum()
+    return 1 <= len(value) <= 8 and value.isascii() and value.isalnum()
 
 
 def _emit_or_save_config_template_export(
