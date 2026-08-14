@@ -134,7 +134,7 @@ If you want to create your own dashboard, there is a folder where template JSON 
 Customizing Dashboards for Your Needs 🎉
 ----------------------------------------
 
-Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the "edit" mode. To enter edit mode, just press the button in the top right corner.
+Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashboard in the "edit" mode. To enter edit mode, just press the button in the top right corner.
 
 .. add image of the edit button in the top right 
 .. image:: images/edit_dashboard.png
@@ -156,7 +156,7 @@ In your dashboard, you can edit panels by clicking the top right menu button on 
 .. image:: images/edit_panel.png
    :scale: 75%
 
-Each panel queries information out of a database and can present it in variousways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which databse you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports. 
+Each panel queries information out of a database and can present it in various ways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which database you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports. 
 
 .. add image of query area in the panel
 .. image:: images/query.png
@@ -181,7 +181,7 @@ Remember, after you edit the panels, if you want to save the dashboard, that you
 JSON Specifics 📁
 ------------------
 
-In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard. 
+In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, what you can see below is the beginning and end of a single panel in the dashboard. 
 
 .. add image of a panel in the JSON
 .. image:: images/panel_begin.png
@@ -192,7 +192,7 @@ In the case you want to directly edit the dashboard from the JSON file, there ar
 
 .. Specifically talk about parts of the JSON file which are editable
 
-At the bottom of the file, you will find a "title" line, which stores a string. Changing this string will update the title fo your dashboard.
+At the bottom of the file, you will find a "title" line, which stores a string. Changing this string will update the title for your dashboard.
 
 .. image:: images/json_title.png
    :scale: 75%
