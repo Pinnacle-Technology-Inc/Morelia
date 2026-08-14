@@ -24,7 +24,6 @@ from app.services.discovery import (
     SerialPodProvider,
     configured_device_types_from_db,
 )
-from app.watchdog.adapters import FakeWatchdogAdapter, HttpWatchdogAdapter
 
 
 def register_routes(api, app):
@@ -33,21 +32,8 @@ def register_routes(api, app):
     Blueprints register on `api` (not `app`) so they appear in the OpenAPI spec.
     The internal ingest blueprint registers on `app` directly to stay off-spec.
     """
-    watchdog_adapter = app.config["WATCHDOG_ADAPTER"]
-    if watchdog_adapter is None:
-        if app.testing:
-            watchdog_adapter = FakeWatchdogAdapter()
-        else:
-            watchdog_adapter = HttpWatchdogAdapter(
-                base_url=app.config["WATCHDOG_BASE_URL"],
-                timeout_seconds=app.config["WATCHDOG_TIMEOUT_SECONDS"],
-                max_response_bytes=app.config["WATCHDOG_MAX_RESPONSE_BYTES"],
-            )
-    app.extensions["watchdog_adapter"] = watchdog_adapter
-    # Compatibility alias for the existing command-correlation tests.
-    app.extensions["watchdog_dispatcher"] = watchdog_adapter
     host_supervisor = app.config.get("HOST_SUPERVISOR")
-    if host_supervisor is None and app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
+    if host_supervisor is None:
         host_supervisor = HostSupervisor()
     app.extensions["host_supervisor"] = host_supervisor
     discovery_provider = FakeDiscoveryProvider() if app.testing else SerialPodProvider()

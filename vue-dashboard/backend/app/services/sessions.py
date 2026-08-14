@@ -750,74 +750,6 @@ def _clear_pending_start_identity(session: Session) -> None:
             delattr(session, name)
 
 
-def stop(session_id: int, watchdog) -> Session:
-    """Transition an active session to ENDING and dispatch the stop command.
-
-    Guard ordering intentionally mirrors start(): an in-flight command is
-    reported before lifecycle precondition failures.
-    """
-    session = get(session_id)
-    if session.command_in_flight:
-        raise CommandInFlight(session_id)
-    if session.status not in _STOPPABLE:
-        raise InvalidTransition(session.status)
-
-    dataflow_id = session.dataflow_id or uuid4().hex
-    watchdog_id = session.watchdog_id or uuid4().hex
-    request_id = get_contextvars().get("request_id")
-    if not isinstance(request_id, str) or not request_id:
-        raise RuntimeError("request_id must be bound before stopping a session")
-
-    try:
-        operation = create_operation(
-            session_id=session_id,
-            dataflow_id=dataflow_id,
-            command="stop",
-            request_key=request_id,
-            request_id=request_id,
-            watchdog_id=watchdog_id,
-        )
-    except OperationConflict as exc:
-        raise CommandInFlight(
-            session_id,
-            code=exc.code,
-            details=exc.details,
-        ) from exc
-
-    transition_operation(operation.operation_id, OperationState.CLAIMED)
-
-    envelope = prepare_command(
-        command="stop",
-        dataflow_id=dataflow_id,
-        watchdog_id=watchdog_id,
-        command_id=operation.command_id,
-        runtime_id=_active_runtime_id(dataflow_id),
-    )
-
-    try:
-        with transaction():
-            if not _repo.try_acquire_in_flight_lock(session_id):
-                raise CommandInFlight(session_id)
-            session.command_in_flight = True
-            session.command_id = envelope.correlation.command_id
-            session.dataflow_id = dataflow_id
-            session.watchdog_id = watchdog_id
-            session.status = SessionStatus.ENDING
-            watchdog.dispatch(envelope)
-    except Exception as exc:
-        transition_operation(
-            operation.operation_id,
-            OperationState.FAILED,
-            error_code=type(exc).__name__,
-            error_message=str(exc),
-        )
-        raise
-
-    transition_operation(operation.operation_id, OperationState.DISPATCHED)
-
-    return session
-
-
 def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session:
     """Stop a managed runtime host and release the session's claimed configs."""
     session = get(session_id)
@@ -957,16 +889,6 @@ def _schedule_stop_finalization(session: Session) -> None:
         )
 
 
-def recover(session_id: int, device_id: str, action: str, watchdog) -> Session:
-    """Command a targeted per-stream recovery through the single watchdog adapter."""
-    return _recover(
-        session_id,
-        device_id,
-        action,
-        dispatch=lambda session, envelope: watchdog.dispatch(envelope),
-    )
-
-
 def recover_managed(session_id: int, device_id: str, action: str, supervisor) -> Session:
     """Command a targeted per-stream recovery through the per-dataflow runtime host."""
     return _recover(
@@ -984,7 +906,7 @@ def _recover(
     action: str,
     *,
     dispatch,
-    resolve_runtime_id=lambda dataflow_id: None,
+    resolve_runtime_id,
 ) -> Session:
     """Create a stream-scope recovery operation and dispatch its targeted command.
 

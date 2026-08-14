@@ -25,7 +25,7 @@ def create_session_run(payload):
             message="The control plane is quiescing; new runs are disabled.",
             code="control_plane_quiescing",
         )
-    supervisor = current_app.extensions.get("host_supervisor")
+    supervisor = current_app.extensions["host_supervisor"]
     return session_service.create_run(
         payload,
         supervisor=supervisor,

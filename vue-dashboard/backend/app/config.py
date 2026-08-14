@@ -31,8 +31,6 @@ class Config:
         "DIAGNOSTIC_LOG_DIR", str(_INSTANCE_DIR / "diagnostics")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    WATCHDOG_ADAPTER = None
-    WATCHDOG_BASE_URL = os.environ.get("WATCHDOG_BASE_URL", "http://127.0.0.1:8765")
     CONTROL_PLANE_BASE_URL = os.environ.get("PINNACLE_DAEMON_URL", "http://127.0.0.1:5000")
     # "morelia" is the real hardware+sink driver and the only supported driver.
     # A session either writes real data or fails loudly at spawn time (see
@@ -52,10 +50,6 @@ class Config:
     # same reason: exports should be discoverable and reusable without relying
     # on whichever directory the operator happened to be in.
     DEVICE_TEMPLATE_DIR = os.environ.get("DEVICE_TEMPLATE_DIR", "device-templates")
-    SESSION_RUNTIME_HOST_ENABLED = (
-        os.environ.get("SESSION_RUNTIME_HOST_ENABLED", "1").strip().lower()
-        not in {"0", "false", "no", "off"}
-    )
     SESSION_SCHEDULER_ENABLED = (
         os.environ.get("SESSION_SCHEDULER_ENABLED", "1").strip().lower()
         not in {"0", "false", "no", "off"}
@@ -354,7 +348,6 @@ class TestingConfig(Config):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     STARTUP_RECONCILIATION_ENABLED = False
-    SESSION_RUNTIME_HOST_ENABLED = False
     SESSION_SCHEDULER_ENABLED = False
     FINALIZER_PROCESS_ENABLED = False
     DIAGNOSTIC_LOG_DIR = None

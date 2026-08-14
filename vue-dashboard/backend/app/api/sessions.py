@@ -201,13 +201,8 @@ def update_session_note(payload, session_id, note_id):
 def stop_session(payload, session_id):
     _require_lifecycle_commands_enabled()
     force = bool(payload.get("force", False))
-    if current_app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
-        # Prefer the managed host when it is enabled; otherwise retain the
-        # legacy watchdog-adapter shutdown path.
-        supervisor = current_app.extensions.get("host_supervisor")
-        if supervisor is not None:
-            return session_service.stop_managed(session_id, supervisor, force=force)
-    return session_service.stop(session_id, current_app.extensions["watchdog_adapter"])
+    supervisor = current_app.extensions["host_supervisor"]
+    return session_service.stop_managed(session_id, supervisor, force=force)
 
 
 @blp.route("/<int:session_id>/commands/recover", methods=["POST"])
@@ -215,17 +210,9 @@ def stop_session(payload, session_id):
 @blp.response(202, SessionSchema)
 def recover_session(payload, session_id):
     _require_lifecycle_commands_enabled()
-    if current_app.config.get("SESSION_RUNTIME_HOST_ENABLED"):
-        supervisor = current_app.extensions.get("host_supervisor")
-        if supervisor is not None:
-            return session_service.recover_managed(
-                session_id, payload["device_id"], payload["action"], supervisor
-            )
-    return session_service.recover(
-        session_id,
-        payload["device_id"],
-        payload["action"],
-        current_app.extensions["watchdog_adapter"],
+    supervisor = current_app.extensions["host_supervisor"]
+    return session_service.recover_managed(
+        session_id, payload["device_id"], payload["action"], supervisor
     )
 
 
