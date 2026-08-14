@@ -3,7 +3,7 @@ The Hitchhiker's Guide to Morelia 🐍
 ####################################
 
 Welcome to the getting started guide for Pinnacle Technology's Python API: Morelia. This tutorial is meant for complete beginners,
-and only assumes basic Python programming skills. If you have not used Python before, or simply need to refresher, `the official
+and only assumes basic Python programming skills. If you have not used Python before, or simply need a refresher, `the official
 Python tutorial <https://docs.python.org/3/tutorial/index.html>`_ is a good place to start. In terms of content, this guide contains:
 
 .. contents:: 
@@ -154,7 +154,7 @@ As an example, let's connect to an 8206HR that is connected on
   # Connect to an 8206HR on /dev/ttyUSB0 and set the preamplifer gain to 10.
   pod = Pod8206HR('/dev/ttyUSB0', 10)
 
-It's really as simple as that! Granted, some devices are much more complex that other due to vast number of configuration options (e.g. the 8401HR), but overall
+It's really as simple as that! Granted, some devices are much more complex than that other due to vast number of configuration options (e.g. the 8401HR), but overall
 connecting to most devices will look similar to the above example.
 
 ========================
