@@ -38,9 +38,9 @@ downloads and sets up all the dependencies for Morelia.
 --------------------------------------
 Installing Morelia for Development 🚜
 --------------------------------------
-After you have cloned the source code (and hopefully set up and Anaconda environment, but again, that step is not strictly required),
-the last step is to install Morelia itself for development! Currently, the way to do this is using ``pip`` to creat an **editable install**.
-This allows us to Morelia as if it is a package installed in our environment, but the package will automatically update as we make
+After you have cloned the source code (and hopefully set up an Anaconda environment, but again, that step is not strictly required),
+the last step is to install Morelia itself for development! Currently, the way to do this is using ``pip`` to create an **editable install**.
+This allows us to treat Morelia as if it is a package installed in our environment, but the package will automatically update as we make
 changes to the source code. Therefore, **there is no need to reinstall Morelia each time**.
 
 To create this editable install, run the following in the top level of your repository:
@@ -61,7 +61,7 @@ of your repository
 
    pytest
 
-It is worth noting there is also an ``old_tests`` folder. These scripts from a deprecated testing framework that require physical devices to 
+It is worth noting that there is also an ``old_tests`` folder. These scripts are from a deprecated testing framework that require physical devices to 
 be plugged into your computer. Currently, these are still in the repository as they can be useful for in-house testing of devices or testing
 some older functionality that do not yet have pytest tests written. The future of these files is uncertain, but for now they are there so
 it's probably useful to know what they are.
