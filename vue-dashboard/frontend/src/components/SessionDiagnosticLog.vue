@@ -1,9 +1,9 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Download, RefreshCw } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import {
-  loadSessionDiagnostics,
+  loadSessionDiagnosticsText,
   sessionDiagnosticsExportUrl,
 } from "../session-diagnostics-api";
 
@@ -11,46 +11,32 @@ const props = defineProps({
   sessionId: { type: [String, Number], required: true },
 });
 
-const records = ref([]);
+const content = ref("");
 const state = ref("loading");
 const error = ref("");
-const layer = ref("all");
-const query = ref("");
+const view = ref("human");
+let requestSequence = 0;
 
-const layers = computed(() => [...new Set(records.value.map((row) => row.layer).filter(Boolean))].sort());
-const visible = computed(() => {
-  const needle = query.value.trim().toLowerCase();
-  return records.value.filter((record) => {
-    if (layer.value !== "all" && record.layer !== layer.value) return false;
-    return !needle || JSON.stringify(record).toLowerCase().includes(needle);
-  });
-});
-const exportUrl = computed(() => sessionDiagnosticsExportUrl(props.sessionId));
+const exportUrl = computed(() => sessionDiagnosticsExportUrl(props.sessionId, view.value));
 
 async function refresh() {
+  const sequence = ++requestSequence;
   state.value = "loading";
   error.value = "";
   try {
-    const page = await loadSessionDiagnostics(props.sessionId);
-    records.value = page.items ?? [];
+    const text = await loadSessionDiagnosticsText(props.sessionId, view.value);
+    if (sequence !== requestSequence) return;
+    content.value = text;
     state.value = "live";
   } catch (failure) {
+    if (sequence !== requestSequence) return;
     state.value = "unavailable";
     error.value = failure instanceof Error ? failure.message : "Diagnostic logs are unavailable.";
   }
 }
 
-function formatRecord(record) {
-  return JSON.stringify(record, null, 2);
-}
-
-function formatTimestamp(value) {
-  if (!value) return "Time unavailable";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
-}
-
 onMounted(refresh);
+watch(view, refresh);
 </script>
 
 <template>
@@ -58,7 +44,7 @@ onMounted(refresh);
     <header class="diagnostics__header">
       <div>
         <h2 id="diagnostic-log-title">Diagnostic logs</h2>
-        <p>Redacted, session-scoped confirmations from the control plane, runtime host, and watchdog driver.</p>
+        <p>Session-scoped telemetry rendered for reading or complete raw inspection.</p>
       </div>
       <div class="diagnostics__actions">
         <BaseButton variant="secondary" size="small" :disabled="state === 'loading'" @click="refresh">
@@ -70,60 +56,56 @@ onMounted(refresh);
       </div>
     </header>
 
-    <div class="diagnostics__filters">
-      <label>
-        <span>Layer</span>
-        <select v-model="layer">
-          <option value="all">All layers</option>
-          <option v-for="value in layers" :key="value" :value="value">{{ value }}</option>
-        </select>
-      </label>
-      <label class="diagnostics__search">
-        <span>Find in loaded logs</span>
-        <input v-model="query" type="search" placeholder="operation id, error, event…" />
-      </label>
-    </div>
+    <fieldset class="diagnostics__view-selector">
+      <legend>View</legend>
+      <div class="diagnostics__view-options">
+        <label :class="{ 'is-selected': view === 'human' }">
+          <input v-model="view" type="radio" name="diagnostics-view" value="human" />
+          <span>
+            <strong>Human</strong>
+            Readable diagnostics with repetitive telemetry and identifier noise removed.
+          </span>
+        </label>
+        <label :class="{ 'is-selected': view === 'verbose' }">
+          <input v-model="view" type="radio" name="diagnostics-view" value="verbose" />
+          <span>
+            <strong>Verbose</strong>
+            Complete raw telemetry including IDs, polling, heartbeats, database records, and full tracebacks.
+          </span>
+        </label>
+      </div>
+    </fieldset>
 
-    <p v-if="state === 'loading'" class="diagnostics__notice">Loading diagnostic logs…</p>
-    <p v-else-if="state === 'unavailable'" class="diagnostics__notice is-error" role="alert">{{ error }}</p>
-    <p v-else-if="!visible.length" class="diagnostics__notice">
-      {{ records.length ? "No loaded records match these filters." : "No diagnostic records have been written for this session yet." }}
+    <p v-if="state === 'loading'" class="diagnostics__notice" aria-live="polite">
+      Loading {{ view }} diagnostics…
     </p>
-    <ol v-else class="diagnostics__list">
-      <li v-for="(record, index) in visible" :key="`${record.layer}:${record.timestamp}:${index}`">
-        <div class="diagnostics__line">
-          <span class="diagnostics__layer">{{ record.layer ?? "unknown" }}</span>
-          <time>{{ formatTimestamp(record.timestamp) }}</time>
-          <strong>{{ record.event ?? "diagnostic_record" }}</strong>
-          <span :class="`is-${record.level ?? 'info'}`">{{ record.level ?? "info" }}</span>
-        </div>
-        <pre>{{ formatRecord(record) }}</pre>
-      </li>
-    </ol>
+    <p v-else-if="state === 'unavailable'" class="diagnostics__notice is-error" role="alert">
+      {{ error }}
+    </p>
+    <p v-else-if="!content" class="diagnostics__notice">
+      No diagnostic records have been written for this session yet.
+    </p>
+    <pre v-else class="diagnostics__output" tabindex="0">{{ content }}</pre>
   </section>
 </template>
 
 <style scoped>
 .diagnostics { display: grid; gap: var(--space-4); padding: var(--space-4); background: var(--surface-sage); }
-.diagnostics__header, .diagnostics__actions, .diagnostics__filters, .diagnostics__line { display: flex; align-items: center; gap: var(--space-3); }
+.diagnostics__header, .diagnostics__actions { display: flex; align-items: center; gap: var(--space-3); }
 .diagnostics__header { justify-content: space-between; align-items: flex-start; }
 .diagnostics__header h2, .diagnostics__header p { margin: 0; }
 .diagnostics__header p { margin-top: var(--space-1); color: var(--text-muted); }
 .diagnostics__download { display: inline-flex; align-items: center; gap: var(--space-2); min-height: 2rem; padding: 0 var(--space-3); color: var(--text-heading); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); font-size: var(--fs-sm); font-weight: var(--fw-bold); text-decoration: none; }
-.diagnostics__filters label { display: grid; gap: var(--space-1); color: var(--text-muted); font-size: var(--fs-xs); }
-.diagnostics__filters select, .diagnostics__filters input { min-height: 2.25rem; padding: 0 var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); }
-.diagnostics__search { flex: 1; }
-.diagnostics__search input { width: min(36rem, 100%); }
+.diagnostics__view-selector { min-width: 0; margin: 0; padding: 0; border: 0; }
+.diagnostics__view-selector legend { margin-bottom: var(--space-2); color: var(--text-muted); font-size: var(--fs-xs); font-weight: var(--fw-bold); }
+.diagnostics__view-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); }
+.diagnostics__view-options label { display: flex; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); color: var(--text-muted); cursor: pointer; }
+.diagnostics__view-options label.is-selected { border-color: var(--text-heading); color: var(--text-body); }
+.diagnostics__view-options input { margin-top: 0.2rem; accent-color: var(--text-heading); }
+.diagnostics__view-options span { display: grid; gap: var(--space-1); font-size: var(--fs-xs); line-height: 1.4; }
+.diagnostics__view-options strong { color: var(--text-heading); font-size: var(--fs-sm); }
 .diagnostics__notice { margin: 0; padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); color: var(--text-muted); }
 .diagnostics__notice.is-error { color: var(--error); }
-.diagnostics__list { display: grid; gap: var(--space-3); margin: 0; padding: 0; list-style: none; }
-.diagnostics__list li { min-width: 0; padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); }
-.diagnostics__line { flex-wrap: wrap; font: var(--fw-regular) var(--fs-xs)/1.4 var(--font-mono); }
-.diagnostics__line time { color: var(--text-muted); }
-.diagnostics__layer { padding: 0.15rem var(--space-2); border-radius: var(--radius-pill); background: var(--surface-sage); font-weight: var(--fw-bold); }
-.diagnostics__line strong { color: var(--text-heading); }
-.diagnostics__line .is-error, .diagnostics__line .is-critical { color: var(--error); }
-.diagnostics__line .is-warning { color: var(--warning); }
-.diagnostics__list pre { max-height: 22rem; overflow: auto; margin: var(--space-3) 0 0; padding: var(--space-3); color: var(--text-body); border-radius: var(--radius-sm); background: var(--surface-sage); font: var(--fw-regular) var(--fs-xs)/1.5 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
-@media (max-width: 760px) { .diagnostics__header, .diagnostics__filters { display: grid; } .diagnostics__actions { flex-wrap: wrap; } }
+.diagnostics__output { max-height: 42rem; overflow: auto; margin: 0; padding: var(--space-4); color: var(--text-body); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); font: var(--fw-regular) var(--fs-xs)/1.55 var(--font-mono); white-space: pre-wrap; overflow-wrap: anywhere; }
+@media (max-width: 760px) { .diagnostics__header, .diagnostics__view-options { display: grid; grid-template-columns: 1fr; } .diagnostics__actions { flex-wrap: wrap; } }
 </style>

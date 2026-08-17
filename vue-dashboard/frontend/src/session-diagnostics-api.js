@@ -1,5 +1,7 @@
 import { apiUrl, requestJson } from "./api-client";
 
+export const DIAGNOSTICS_VIEWS = Object.freeze(["human", "verbose"]);
+
 export function loadSessionDiagnostics(sessionId, { pageSize = 500, cursor = null } = {}) {
   const query = new URLSearchParams({ page_size: String(pageSize) });
   if (cursor) query.set("cursor", cursor);
@@ -8,8 +10,23 @@ export function loadSessionDiagnostics(sessionId, { pageSize = 500, cursor = nul
   );
 }
 
-export function sessionDiagnosticsExportUrl(sessionId) {
+export function sessionDiagnosticsExportUrl(sessionId, view = "human") {
+  if (!DIAGNOSTICS_VIEWS.includes(view)) {
+    throw new TypeError(`Unsupported diagnostics view: ${view}`);
+  }
+  const query = new URLSearchParams({ view });
   return apiUrl(
-    `/api/v1/sessions/${encodeURIComponent(String(sessionId))}/diagnostics.txt`,
+    `/api/v1/sessions/${encodeURIComponent(String(sessionId))}/diagnostics.txt?${query}`,
   );
+}
+
+export async function loadSessionDiagnosticsText(sessionId, view = "human") {
+  const response = await fetch(sessionDiagnosticsExportUrl(sessionId, view), {
+    headers: { Accept: "text/plain" },
+  });
+  const body = await response.text();
+  if (!response.ok) {
+    throw new Error(body || `Diagnostics request failed (${response.status})`);
+  }
+  return body;
 }

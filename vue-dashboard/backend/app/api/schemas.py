@@ -929,6 +929,12 @@ class SessionDiagnosticListQuerySchema(Schema):
     cursor = fields.String(load_default=None, allow_none=True)
 
 
+class SessionDiagnosticExportQuerySchema(Schema):
+    view = fields.String(
+        load_default="default", validate=validate.OneOf(["default", "verbose"])
+    )
+
+
 class SessionDiagnosticPageSchema(Schema):
     items = fields.List(
         fields.Dict(keys=fields.String(), values=fields.Raw()), required=True

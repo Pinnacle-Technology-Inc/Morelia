@@ -18,6 +18,7 @@ from app.api.schemas import (
     RecoverSessionSchema,
     SessionActivityListQuerySchema,
     SessionActivityPageSchema,
+    SessionDiagnosticExportQuerySchema,
     SessionDiagnosticListQuerySchema,
     SessionDiagnosticPageSchema,
     SessionNameSuggestionQuerySchema,
@@ -145,10 +146,13 @@ def session_diagnostics(query, session_id):
 
 
 @blp.route("/<int:session_id>/diagnostics.txt", methods=["GET"])
-def export_session_diagnostics(session_id):
+@blp.arguments(SessionDiagnosticExportQuerySchema, location="query")
+def export_session_diagnostics(query, session_id):
     """Download a complete redacted troubleshooting bundle as plain text."""
     body = session_diagnostic_service.export_text(
-        session_id, root=current_app.config.get("DIAGNOSTIC_LOG_DIR")
+        session_id,
+        root=current_app.config.get("DIAGNOSTIC_LOG_DIR"),
+        view=query["view"],
     )
     return Response(
         body,
