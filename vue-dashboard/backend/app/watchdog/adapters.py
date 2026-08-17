@@ -1,9 +1,8 @@
-"""Runtime and test adapters for the versioned localhost Watchdog API."""
+"""HTTP command transport for the versioned localhost Watchdog API."""
 
 from __future__ import annotations
 
 import json
-from collections import deque
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Protocol
@@ -175,8 +174,8 @@ class UrllibWatchdogTransport:
         )
 
 
-class HttpWatchdogAdapter:
-    """Send commands to one fixed, local Watchdog HTTP endpoint."""
+class ControlPlaneCommandSender:
+    """Send control-plane commands to one fixed local runtime-host endpoint."""
 
     def __init__(
         self,
@@ -192,7 +191,7 @@ class HttpWatchdogAdapter:
             port = parsed.port
         except ValueError as exc:
             raise ValueError(
-                "Watchdog base URL must be a valid HTTP localhost origin."
+                "Runtime-host base URL must be a valid HTTP localhost origin."
             ) from exc
         if (
             parsed.scheme != "http"
@@ -204,81 +203,56 @@ class HttpWatchdogAdapter:
             or parsed.query
             or parsed.fragment
         ):
-            raise ValueError("Watchdog base URL must be a valid HTTP localhost origin.")
+            raise ValueError(
+                "Runtime-host base URL must be a valid HTTP localhost origin."
+            )
         if timeout_seconds <= 0:
-            raise ValueError("Watchdog timeout must be greater than zero.")
+            raise ValueError("Runtime-host timeout must be greater than zero.")
         if max_response_bytes <= 0:
-            raise ValueError("Watchdog response size limit must be greater than zero.")
+            raise ValueError(
+                "Runtime-host response size limit must be greater than zero."
+            )
 
-        self.command_url = f"{base_url.rstrip('/')}{WATCHDOG_COMMAND_PATH}"
-        self.timeout_seconds = timeout_seconds
-        self.max_response_bytes = max_response_bytes
-        self.transport = transport or UrllibWatchdogTransport(token=token)
+        self._command_url = f"{base_url.rstrip('/')}{WATCHDOG_COMMAND_PATH}"
+        self._timeout_seconds = timeout_seconds
+        self._max_response_bytes = max_response_bytes
+        self._transport = transport or UrllibWatchdogTransport(token=token)
 
     def dispatch(self, envelope: CommandEnvelope) -> CommandAcknowledgement:
         try:
-            response = self.transport.post_json(
-                url=self.command_url,
+            response = self._transport.post_json(
+                url=self._command_url,
                 payload=envelope.to_dict(),
-                timeout_seconds=self.timeout_seconds,
-                max_response_bytes=self.max_response_bytes,
+                timeout_seconds=self._timeout_seconds,
+                max_response_bytes=self._max_response_bytes,
             )
         except WatchdogAdapterError:
             raise
         except TimeoutError as exc:
-            raise WatchdogTimeoutError("Watchdog request timed out.") from exc
+            raise WatchdogTimeoutError("Runtime-host request timed out.") from exc
         except (OSError, URLError) as exc:
-            raise WatchdogUnavailableError("Watchdog is unavailable.") from exc
+            raise WatchdogUnavailableError("Runtime host is unavailable.") from exc
 
         if response.status_code != 202:
-            raise WatchdogUnavailableError("Watchdog did not accept the command.")
+            raise WatchdogUnavailableError("Runtime host did not accept the command.")
         if response.content_type != "application/json":
-            raise WatchdogInvalidResponseError("Watchdog response must be application/json.")
+            raise WatchdogInvalidResponseError(
+                "Runtime-host response must be application/json."
+            )
 
         try:
             values = json.loads(response.body)
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise WatchdogInvalidResponseError("Watchdog returned invalid JSON.") from exc
+            raise WatchdogInvalidResponseError(
+                "Runtime host returned invalid JSON."
+            ) from exc
         if not isinstance(values, Mapping):
-            raise WatchdogInvalidResponseError("Watchdog response must be a JSON object.")
+            raise WatchdogInvalidResponseError(
+                "Runtime-host response must be a JSON object."
+            )
 
         acknowledgement = CommandAcknowledgement.from_dict(values)
         _validate_acknowledgement(acknowledgement, envelope)
-        return acknowledgement
-
-
-class FakeWatchdogAdapter:
-    """Deterministic in-memory adapter for backend tests without hardware."""
-
-    def __init__(self) -> None:
-        self.messages: list[CommandEnvelope] = []
-        self._outcomes: deque[CommandAcknowledgement | WatchdogAdapterError] = deque()
-
-    def queue_response(self, acknowledgement: CommandAcknowledgement) -> None:
-        self._outcomes.append(acknowledgement)
-
-    def queue_error(self, error: WatchdogAdapterError) -> None:
-        self._outcomes.append(error)
-
-    def dispatch(self, envelope: CommandEnvelope) -> CommandAcknowledgement:
-        serialized = envelope.to_dict()
-        received = CommandEnvelope.from_dict(serialized)
-        self.messages.append(received)
-
-        if self._outcomes:
-            outcome = self._outcomes.popleft()
-            if isinstance(outcome, WatchdogAdapterError):
-                raise outcome
-            acknowledgement = outcome
-        else:
-            acknowledgement = CommandAcknowledgement(
-                status="accepted",
-                command_id=received.correlation.command_id,
-                watchdog_id=received.correlation.watchdog_id,
-            )
-
-        acknowledgement = CommandAcknowledgement.from_dict(acknowledgement.to_dict())
-        _validate_acknowledgement(acknowledgement, received)
         return acknowledgement
 
 

@@ -1,16 +1,10 @@
-"""South-bound client adapter for Runtime Host commands.
-
-The original implementation still lives under ``app.watchdog``. This module
-adds a clearer package entry point for new control-plane code while keeping the
-existing Watchdog names and behavior intact.
-"""
+"""South-bound command sender for Runtime Host commands."""
 
 from app.watchdog.adapters import (
     DEFAULT_MAX_RESPONSE_BYTES,
     DEFAULT_TIMEOUT_SECONDS,
     CommandAcknowledgement,
-    FakeWatchdogAdapter,
-    HttpWatchdogAdapter,
+    ControlPlaneCommandSender,
     UrllibWatchdogTransport,
     WatchdogAdapterError,
     WatchdogHttpResponse,
@@ -21,17 +15,11 @@ from app.watchdog.adapters import (
     WatchdogUnsupportedProtocolError,
 )
 
-RuntimeHostClient = HttpWatchdogAdapter
-FakeRuntimeHostClient = FakeWatchdogAdapter
-
 __all__ = [
     "CommandAcknowledgement",
+    "ControlPlaneCommandSender",
     "DEFAULT_MAX_RESPONSE_BYTES",
     "DEFAULT_TIMEOUT_SECONDS",
-    "FakeRuntimeHostClient",
-    "FakeWatchdogAdapter",
-    "HttpWatchdogAdapter",
-    "RuntimeHostClient",
     "UrllibWatchdogTransport",
     "WatchdogAdapterError",
     "WatchdogHttpResponse",

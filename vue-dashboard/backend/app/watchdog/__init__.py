@@ -2,8 +2,7 @@
 
 from app.watchdog.adapters import (
     CommandAcknowledgement,
-    FakeWatchdogAdapter,
-    HttpWatchdogAdapter,
+    ControlPlaneCommandSender,
     WatchdogAdapterError,
     WatchdogInvalidResponseError,
     WatchdogTimeoutError,
@@ -11,7 +10,6 @@ from app.watchdog.adapters import (
     WatchdogUnsupportedProtocolError,
 )
 from app.watchdog.commands import prepare_command
-from app.watchdog.dispatcher import InMemoryWatchdogDispatcher
 from app.watchdog.messages import (
     WATCHDOG_COMMAND_PATH,
     WATCHDOG_PROTOCOL_VERSION,
@@ -25,10 +23,8 @@ __all__ = [
     "WATCHDOG_PROTOCOL_VERSION",
     "CommandAcknowledgement",
     "CommandEnvelope",
+    "ControlPlaneCommandSender",
     "CorrelationEnvelope",
-    "FakeWatchdogAdapter",
-    "HttpWatchdogAdapter",
-    "InMemoryWatchdogDispatcher",
     "WatchdogAdapterError",
     "WatchdogInvalidResponseError",
     "WatchdogTimeoutError",

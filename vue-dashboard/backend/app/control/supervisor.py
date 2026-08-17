@@ -58,7 +58,7 @@ from app.services import (
 )
 from app.services import incidents as runtime_incidents
 from app.services.event_ingest import ingest_report
-from app.watchdog.adapters import HttpWatchdogAdapter
+from app.watchdog.adapters import ControlPlaneCommandSender
 from app.watchdog.messages import CommandEnvelope, CorrelationEnvelope
 
 # ``RUNTIME_HOST_STOP_DRAIN_TIMEOUT_SECONDS`` is the upper bound on how long
@@ -476,11 +476,11 @@ class HostSupervisor:
         """
         dataflow_id = envelope.correlation.dataflow_id
         entry = self._get_child(dataflow_id)
-        adapter = HttpWatchdogAdapter(
+        sender = ControlPlaneCommandSender(
             base_url=f"http://127.0.0.1:{entry.port}",
             token=entry.token,
         )
-        adapter.dispatch(envelope)
+        sender.dispatch(envelope)
 
     def stop(self, session: Session, *, envelope: CommandEnvelope | None = None) -> None:
         """Send stop command, terminate the process, and clear the DB columns.
@@ -504,10 +504,10 @@ class HostSupervisor:
         # reporting live health for a dataflow that's mid-teardown or gone.
         self._event_poller.discard(dataflow_id)
 
-        # Best-effort HTTP stop — the adapter speaks the wire protocol including
+        # Best-effort HTTP stop — the sender speaks the wire protocol including
         # the per-host token.  If the process is already dead we just terminate.
         try:
-            adapter = HttpWatchdogAdapter(
+            sender = ControlPlaneCommandSender(
                 base_url=f"http://127.0.0.1:{entry.port}",
                 token=entry.token,
             )
@@ -534,7 +534,7 @@ class HostSupervisor:
                     ),
                     target_device_id=None,
                 )
-            adapter.dispatch(stop_envelope)
+            sender.dispatch(stop_envelope)
         except Exception as exc:
             _log.warning(
                 "stop: dispatching stop command to host failed — "
