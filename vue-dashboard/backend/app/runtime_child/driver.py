@@ -23,12 +23,13 @@ from app.domain.enums import CommsStatus, StreamStatus
 
 class RuntimePhase(StrEnum):
     """Where a Dataflow is in its lifecycle 
-    (idle -> preflight -> running -> stopped -> closed).
+    (idle -> preflight -> running -> stopping -> stopped -> closed).
     """
 
     IDLE = "idle"  # constructed, nothing started yet
     PREFLIGHT = "preflight"  # devices/sinks validated, not yet collecting
     RUNNING = "running"  # collecting
+    STOPPING = "stopping"  # graceful shutdown requested, teardown in progress
     STOPPED = "stopped"  # collection halted cleanly, resources still open
     CLOSED = "closed"  # resources released; terminal
 

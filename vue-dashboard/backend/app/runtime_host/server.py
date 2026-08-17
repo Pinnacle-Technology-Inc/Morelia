@@ -178,11 +178,8 @@ class _RequestHandler(BaseHTTPRequestHandler):
         if self.lease is not None:
             self.lease.renew()
 
-        # a WatchdogProcessDriver checks its child's liveness here
-        poll_health = getattr(self.driver, "poll_health", None)
-        if poll_health is not None:
-            poll_health()
-
+        status_snapshot = getattr(self.driver, "status_snapshot", None)
+        driver_status = status_snapshot() if callable(status_snapshot) else None
         watchdog_state = getattr(self.driver, "watchdog_state", None)
         payload = {
             "runtime_id": self.runtime_id,
@@ -206,6 +203,8 @@ class _RequestHandler(BaseHTTPRequestHandler):
             "watchdog_exit_details": getattr(self.driver, "watchdog_exit_details", None),
             "reports": list(self.report_ring),
         }
+        if driver_status is not None:
+            payload.update(driver_status)
         last_error = self.last_command_error()
         if last_error is not None:
             payload["last_command_error"] = last_error

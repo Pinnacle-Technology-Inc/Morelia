@@ -80,6 +80,11 @@ from app.watchdog.messages import CommandEnvelope, CorrelationEnvelope
 # RuntimePhase values that count as durable proof a driver cleanly stopped.
 _TERMINAL_PHASES = {RuntimePhase.STOPPED.value, RuntimePhase.CLOSED.value}
 
+
+def _status_confirms_terminal(status: dict) -> bool:
+    """Return true only for an explicit terminal runtime-host phase."""
+    return bool(status) and status.get("phase") in _TERMINAL_PHASES
+
 _log = structlog.get_logger(__name__)
 
 
@@ -571,15 +576,10 @@ class HostSupervisor:
             last_status.get("watchdog_state") == WatchdogProcessState.STOPPED.value
         )
 
-        # Proof tier 3: the host's own last-observed phase, from BEFORE we
-        # tore anything down, was never one where a stream could have been
-        # actively in flight. Captured before terminate()/kill() below, since
-        # those don't (and on some platforms can't) get an updated /status
-        # read out of the child on the way down.
-        active_phases = {RuntimePhase.PREFLIGHT.value, RuntimePhase.RUNNING.value}
-        host_confirms_nothing_live = (
-            bool(last_status) and last_status.get("phase") not in active_phases
-        )
+        # Proof tier 3: the host's own last-observed phase, captured before
+        # terminate()/kill(), was explicitly terminal. In-progress and unknown
+        # phases (including STOPPING) are not evidence that streams are gone.
+        host_confirms_terminal = _status_confirms_terminal(last_status)
 
         if entry.proc is not None:
             entry.proc.terminate()
@@ -618,7 +618,7 @@ class HostSupervisor:
             terminal_report_seen
             or durable_terminal_report
             or watchdog_clean_exit
-            or host_confirms_nothing_live
+            or host_confirms_terminal
         )
 
         if not self._children:

@@ -24,6 +24,7 @@ from app.config import get_config
 from app.domain.enums import CommsStatus, WatchdogProcessState
 from app.runtime_child.driver import ReportCallback, RuntimePhase, RuntimeReport
 from app.runtime_host.manifest import Manifest
+from app.runtime_host.process_exit import wait_for_process_exit
 from app.watchdog_process.control import WatchdogControlClient, WatchdogControlError
 
 _log = structlog.get_logger(__name__)
@@ -31,6 +32,7 @@ _log = structlog.get_logger(__name__)
 PopenFn = Callable[..., subprocess.Popen]
 PidAliveFn = Callable[[int], bool]
 ControlClientFactory = Callable[..., WatchdogControlClient]
+ProcessExitWaiter = Callable[..., int | None]
 
 
 class WatchdogStartupError(RuntimeError):
@@ -117,9 +119,11 @@ class WatchdogProcessDriver:
         adopt_watchdog_pid: int | None = None,
         adopt_watchdog_control_port: int | None = None,
         respawn_max_attempts: int | None = None,
+        respawn_retry_seconds: float | None = None,
         popen: PopenFn = subprocess.Popen,
         pid_alive: PidAliveFn = pid_is_alive,
         control_client_factory: ControlClientFactory = WatchdogControlClient,
+        process_exit_waiter: ProcessExitWaiter = wait_for_process_exit,
     ) -> None:
         self._manifest = manifest
         self._manifest_path = manifest_path
@@ -134,12 +138,22 @@ class WatchdogProcessDriver:
         self._popen = popen
         self._pid_alive = pid_alive
         self._control_client_factory = control_client_factory
+        self._process_exit_waiter = process_exit_waiter
         # reads WATCHDOG_OUTBOX_DIR directly.
         self._respawn_max_attempts = (
             respawn_max_attempts
             if respawn_max_attempts is not None
             else get_config().WATCHDOG_RESPAWN_MAX_ATTEMPTS
         )
+        self._respawn_retry_seconds = (
+            respawn_retry_seconds
+            if respawn_retry_seconds is not None
+            else get_config().WATCHDOG_RESPAWN_RETRY_DELAY_SECONDS
+        )
+        if self._respawn_max_attempts < 0:
+            raise ValueError("respawn_max_attempts must be non-negative")
+        if self._respawn_retry_seconds < 0:
+            raise ValueError("respawn_retry_seconds must be non-negative")
 
         self._phase = RuntimePhase.IDLE
         self._sequence = 0
@@ -156,11 +170,12 @@ class WatchdogProcessDriver:
         self._adoption_authenticated = False
         self._respawn_count = 0
         self._respawn_exhausted = False
-        # Serializes crash handling + respawn across /status handler threads:
-        # a Morelia spawn blocks for its whole cold-init (~10s+) and the poller
-        # probes every second, so without this every tick during one respawn
-        # would start another concurrent spawn fighting for the same COM ports.
-        self._respawn_lock = threading.Lock()
+        # Crash retirement and replacement publication are one fenced state
+        # transition. Holding this lock through spawn prevents stop() from
+        # crossing an unpublished child and leaving that child orphaned.
+        self._state_lock = threading.RLock()
+        self._supervision_stop = threading.Event()
+        self._supervision_thread: threading.Thread | None = None
 
         if adopt_watchdog_id is not None and adopt_watchdog_pid is not None:
             self._try_adopt(
@@ -168,8 +183,10 @@ class WatchdogProcessDriver:
                 adopt_watchdog_pid,
                 adopt_watchdog_control_port,
             )
+            if self._watchdog_id is not None:
+                self._ensure_supervision_started()
 
-    # -- RuntimeControlDriver protocol ---------------------------------------
+    # -- lifecycle -----------------------------------------------------------
 
     @property
     def phase(self) -> RuntimePhase:
@@ -186,11 +203,13 @@ class WatchdogProcessDriver:
             raise RuntimeError("watchdog preflight readiness requires PREFLIGHT phase")
         if self._proc is None and self._watchdog_id is None:
             self._spawn_watchdog_process()
+        self._ensure_supervision_started()
 
     def start(self) -> None:
         self._require(RuntimePhase.PREFLIGHT)
         if self._proc is None and self._watchdog_id is None:
             self._spawn_watchdog_process()
+        self._ensure_supervision_started()
         self._phase = RuntimePhase.RUNNING
         self._emit_all(phase=RuntimePhase.RUNNING)
 
@@ -203,8 +222,22 @@ class WatchdogProcessDriver:
 
     def stop(self) -> None:
         self._require(RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING, RuntimePhase.STOPPED)
-        self._terminate_watchdog_process()
-        self._phase = RuntimePhase.STOPPED
+        if self._phase is RuntimePhase.STOPPED:
+            return
+        with self._state_lock:
+            self._phase = RuntimePhase.STOPPING
+            if self._watchdog_id is not None:
+                self._watchdog_state = WatchdogProcessState.STOPPING
+            self._supervision_stop.set()
+        self._emit_all(phase=RuntimePhase.STOPPING)
+        try:
+            self._terminate_watchdog_process()
+        finally:
+            self._join_supervision_thread()
+        with self._state_lock:
+            self._phase = RuntimePhase.STOPPED
+            if self._watchdog_id is not None:
+                self._watchdog_state = WatchdogProcessState.STOPPED
         self._emit_all(phase=RuntimePhase.STOPPED, comms=CommsStatus.STOPPED)
 
     def close(self) -> None:
@@ -218,6 +251,8 @@ class WatchdogProcessDriver:
                     phase=self._phase.value,
                     exc_info=True,
                 )
+        self._supervision_stop.set()
+        self._join_supervision_thread()
         self._phase = RuntimePhase.CLOSED
 
     def recover(self, recovery_id: str, device_id: str) -> None:
@@ -278,43 +313,115 @@ class WatchdogProcessDriver:
         """
         return self._respawn_exhausted
 
+    def status_snapshot(self) -> dict[str, object]:
+        """Return one generation-consistent, serializable supervision snapshot."""
+        with self._state_lock:
+            return {
+                "phase": self._phase.value,
+                "watchdog_id": self._watchdog_id,
+                "watchdog_pid": self._watchdog_pid,
+                "watchdog_token_hash": self._watchdog_token_hash,
+                "watchdog_control_port": self._watchdog_control_port,
+                "watchdog_state": (
+                    self._watchdog_state.value if self._watchdog_state is not None else None
+                ),
+                "watchdog_preflight_ready": self.watchdog_preflight_ready,
+                "watchdog_respawn_count": self._respawn_count,
+                "watchdog_respawn_exhausted": self._respawn_exhausted,
+                "watchdog_exit_details": (
+                    dict(self._watchdog_exit_details)
+                    if self._watchdog_exit_details is not None
+                    else None
+                ),
+            }
+
     # -- crash detection + respawn --------------------------------------------
 
-    def poll_health(self) -> None:
-        """Detect an unexpected watchdog-process exit and respawn under it.
-
-        Called on the runtime_host ``/status`` polling to see watchdog's
-        real status (found exit code if crash)
-        """
-        if self._phase is not RuntimePhase.RUNNING:
-            return
-        if not self._respawn_lock.acquire(blocking=False):
-            return  # a crash is being handled / respawn is spawning right now
-        try:
-            if self._watchdog_id is None:
-                # A crash was already retired but its replacement never reached
-                # READY (the spawn attempt itself failed). Keep retrying on the
-                # poll cadence until the budget exhausts — otherwise one transient
-                # spawn failure would silently end supervision with attempts left.
-                if (
-                    self._watchdog_state is WatchdogProcessState.CRASHED
-                    and not self._respawn_exhausted
-                ):
-                    self._attempt_respawn()
+    def _ensure_supervision_started(self) -> None:
+        """Start one daemon thread that blocks until the owned process exits."""
+        with self._state_lock:
+            if self._supervision_stop.is_set():
                 return
-            if self._proc is not None:
-                exit_code = self._proc.poll()
-                if exit_code is None:
-                    return  # still alive
-            else:
-                # Adopted process (packet 06): no Popen handle, so liveness can
-                # only be checked by PID — the same seam adoption itself uses.
-                if self._pid_alive(self._watchdog_pid):
+            if self._supervision_thread is not None and self._supervision_thread.is_alive():
+                return
+            thread = threading.Thread(
+                target=self._supervise_watchdog_process,
+                name=f"watchdog-supervisor-{self._runtime_id}",
+                daemon=True,
+            )
+            self._supervision_thread = thread
+            thread.start()
+
+    def _supervise_watchdog_process(self) -> None:
+        """Wait for child exits and perform bounded local respawn without HTTP polling."""
+        while not self._supervision_stop.is_set():
+            with self._state_lock:
+                process = self._proc
+                process_id = self._watchdog_pid
+                watchdog_id = self._watchdog_id
+                retry_needed = (
+                    process_id is None
+                    and self._watchdog_state is WatchdogProcessState.CRASHED
+                    and not self._respawn_exhausted
+                    and self._phase in (RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING)
+                )
+
+            if process_id is None:
+                if not retry_needed:
                     return
-                exit_code = None  # exit code is unknowable for a process we never spawned
-            self._handle_crash(exit_code)
-        finally:
-            self._respawn_lock.release()
+                if self._supervision_stop.wait(self._respawn_retry_seconds):
+                    return
+                with self._state_lock:
+                    if (
+                        not self._supervision_stop.is_set()
+                        and self._watchdog_id is None
+                        and not self._respawn_exhausted
+                    ):
+                        self._attempt_respawn()
+                continue
+
+            try:
+                exit_code = self._process_exit_waiter(process, process_id=process_id)
+            except Exception as exc:
+                _log.error(
+                    "watchdog process exit wait failed",
+                    runtime_id=self._runtime_id,
+                    watchdog_id=watchdog_id,
+                    pid=process_id,
+                    error=type(exc).__name__,
+                    exc_info=True,
+                )
+                if self._supervision_stop.wait(self._respawn_retry_seconds):
+                    return
+                continue
+
+            if self._supervision_stop.is_set():
+                return
+            with self._state_lock:
+                if (
+                    self._watchdog_id != watchdog_id
+                    or self._watchdog_pid != process_id
+                    or self._phase not in (RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING)
+                ):
+                    continue
+                self._handle_crash(exit_code)
+
+    def _join_supervision_thread(self) -> None:
+        with self._state_lock:
+            thread = self._supervision_thread
+        if thread is None or thread is threading.current_thread():
+            return
+        thread.join(timeout=get_config().WATCHDOG_PROCESS_REAP_TIMEOUT_SECONDS)
+        if thread.is_alive():
+            _log.warning(
+                "watchdog supervision thread did not exit before deadline",
+                runtime_id=self._runtime_id,
+                thread=thread.name,
+            )
+            return
+        with self._state_lock:
+            if self._supervision_thread is thread:
+                self._supervision_thread = None
 
     def _handle_crash(self, exit_code: int | None) -> None:
         """Retire the dead identity, then respawn a replacement if budget allows.
@@ -350,10 +457,9 @@ class WatchdogProcessDriver:
     def _attempt_respawn(self) -> None:
         """Spawn a replacement watchdog if the budget allows.
 
-        Called both from ``_handle_crash`` (a running watchdog died) and from
-        ``poll_health`` (a previous attempt failed before READY). Each failed
-        attempt consumes budget — an ingest URL that is permanently
-        misconfigured must not be retried on every poll tick forever.
+        Called after an observed crash and by the supervisor loop when a previous
+        attempt failed before READY. Each failed attempt consumes budget so a
+        permanent startup failure cannot create an infinite process loop.
         """
         if self._respawn_count >= self._respawn_max_attempts:
             self._respawn_exhausted = True
@@ -365,6 +471,7 @@ class WatchdogProcessDriver:
             return
 
         self._respawn_count += 1
+        self._watchdog_state = WatchdogProcessState.STARTING
         try:
             self._spawn_watchdog_process()
         except Exception:

@@ -86,7 +86,7 @@ def derive(
     5. confirmed-unhealthy stream                -> FAILED
     6. delayed link                              -> DELAYED
     7. reachable + running + healthy/suspect     -> HEALTHY
-    8. anything else (idle/preflight, no signal) -> UNKNOWN
+    8. anything else (idle/preflight/stopping)   -> UNKNOWN
 
     ``op_state == uncertain`` deliberately does NOT drive the badge: it is an
     operation-resolution concern (surfaced via the operations API; blocks risky
