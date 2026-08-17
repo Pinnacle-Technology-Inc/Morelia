@@ -1164,6 +1164,12 @@ class HostSupervisor:
     def _ensure_event_poller_running(self) -> None:
         if current_app.testing or self._quiesced:
             return
+        if (
+            current_app.debug
+            and os.environ.get("FLASK_RUN_FROM_CLI") == "true"
+            and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
+        ):
+            return
         self.start_event_poller()
 
     @staticmethod

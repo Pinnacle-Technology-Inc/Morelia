@@ -5,6 +5,7 @@ one. Callers (the Flask dev server, pytest, a production WSGI server) each call
 ``create_app(...)`` to get an instance wired for their environment.
 """
 
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -103,7 +104,12 @@ def create_app(
 
     register_cli(app)
 
-    if app.config["STARTUP_RECONCILIATION_ENABLED"]:
+    reloader_parent = (
+        app.debug
+        and os.environ.get("FLASK_RUN_FROM_CLI") == "true"
+        and os.environ.get("WERKZEUG_RUN_MAIN") != "true"
+    )
+    if app.config["STARTUP_RECONCILIATION_ENABLED"] and not reloader_parent:
         from app.repositories.sessions import SessionRepository
         from app.services.reconciliation import (
             reconcile_startup_if_tables_exist,
