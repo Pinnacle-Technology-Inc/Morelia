@@ -100,7 +100,10 @@ def init_database(app: Flask) -> None:
     )
 
 
-def create_database_app(config_name: str | None = None) -> Flask:
+def create_database_app(
+    config_name: str | None = None,
+    config_overrides: dict | None = None,
+) -> Flask:
     """Create the minimal Flask app needed by worker-side DB access.
 
     This deliberately does not call ``app.create_app``to avoid startup reconcilation that
@@ -110,6 +113,8 @@ def create_database_app(config_name: str | None = None) -> Flask:
 
     app = Flask("app.database")
     app.config.from_object(get_config(config_name))
+    if config_overrides:
+        app.config.update(config_overrides)
     init_database(app)
     return app
 

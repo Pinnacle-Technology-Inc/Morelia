@@ -14,10 +14,7 @@ import signal
 import sys
 import time
 import uuid
-from queue import Empty
 
-from Morelia.Stream.data_flow import DataFlow as LegacyDataFlow
-from Morelia.Stream import source as legacy_source
 from Morelia.shutdown import (
     ShutdownAction,
     ShutdownActor,
@@ -25,6 +22,8 @@ from Morelia.shutdown import (
     ShutdownPhase,
     coordinate_shutdown,
 )
+from Morelia.Stream import source as legacy_source
+from Morelia.Stream.data_flow import DataFlow as LegacyDataFlow
 
 
 class ShutdownReporter:
@@ -145,6 +144,21 @@ def _bind_sink_callbacks(sinks, on_sink_error, reporter: ShutdownReporter | None
             bind_shutdown(reporter)
 
 
+def _database_config_for_worker() -> dict | None:
+    """Snapshot the parent app's database settings for the spawn boundary."""
+    from flask import current_app, has_app_context
+
+    if not has_app_context():
+        return None
+    database_uri = current_app.config.get("SQLALCHEMY_DATABASE_URI")
+    if not database_uri:
+        return None
+    return {
+        "SQLALCHEMY_DATABASE_URI": database_uri,
+        "SQLITE_BUSY_TIMEOUT_MS": current_app.config.get("SQLITE_BUSY_TIMEOUT_MS", 5_000),
+    }
+
+
 def acknowledged_get_data_wrapper(
     duration_sec,
     manual_stop_event,
@@ -159,6 +173,7 @@ def acknowledged_get_data_wrapper(
     source_recovery_window_sec=None,
     max_error_message_chars=500,
     source_error_emit_interval_sec=1.0,
+    database_config=None,
 ):
     """Spawn target that instruments unchanged legacy ``get_data`` teardown."""
     try:
@@ -170,25 +185,36 @@ def acknowledged_get_data_wrapper(
     if shutdown_queue is not None and shutdown_id is not None:
         reporter = ShutdownReporter(shutdown_queue, shutdown_id, stream_index)
 
-    source = source_class(**source_dict)
-    # This dashboard-only opt-in keeps heartbeat policy out of the legacy
-    # DataFlow API while allowing its source loop to preserve the same sinks.
-    if source_recovery_window_sec is not None:
-        source._source_recovery_window_sec = source_recovery_window_sec
-    sinks = [sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list]
-    _bind_sink_callbacks(sinks, on_sink_error, reporter)
-    instrumented_source = _SourceLifecycleProxy(source, manual_stop_event, reporter)
-    instrumented_sinks = sinks
-    if reporter is not None:
-        # ExitStack exits in reverse: the finalization sentinel exits first and
-        # the completion sentinel exits only after every real sink has closed.
-        instrumented_sinks = [
-            _LifecycleSentinel(reporter, starts_finalization=False),
-            *sinks,
-            _LifecycleSentinel(reporter, starts_finalization=True),
-        ]
-
+    database_context = None
     try:
+        if database_config is not None:
+            from app.database import create_database_app
+
+            database_context = create_database_app(
+                config_overrides=database_config
+            ).app_context()
+            database_context.push()
+
+        source = source_class(**source_dict)
+        # This dashboard-only opt-in keeps heartbeat policy out of the legacy
+        # DataFlow API while allowing its source loop to preserve the same sinks.
+        if source_recovery_window_sec is not None:
+            source._source_recovery_window_sec = source_recovery_window_sec
+        sinks = [
+            sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list
+        ]
+        _bind_sink_callbacks(sinks, on_sink_error, reporter)
+        instrumented_source = _SourceLifecycleProxy(source, manual_stop_event, reporter)
+        instrumented_sinks = sinks
+        if reporter is not None:
+            # ExitStack exits in reverse: the finalization sentinel exits first and
+            # the completion sentinel exits only after every real sink has closed.
+            instrumented_sinks = [
+                _LifecycleSentinel(reporter, starts_finalization=False),
+                *sinks,
+                _LifecycleSentinel(reporter, starts_finalization=True),
+            ]
+
         get_data_kwargs = {
             "on_sink_error": on_sink_error,
             "on_source_error": on_source_error,
@@ -208,6 +234,9 @@ def acknowledged_get_data_wrapper(
         if reporter is not None:
             reporter.failed("worker_shutdown_failed", exc)
         raise
+    finally:
+        if database_context is not None:
+            database_context.pop()
 
 
 def _create_worker(*, args):
@@ -283,6 +312,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             self._source_recovery_window_sec,
             self._max_error_message_chars,
             self._source_error_emit_interval_sec,
+            _database_config_for_worker(),
         )
         return _create_worker(args=args)
 
