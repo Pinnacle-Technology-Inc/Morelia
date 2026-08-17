@@ -13,9 +13,7 @@ from app.runtime_host.lifecycle import LifecycleSafetyGate
 from app.runtime_host.manifest import MANIFEST_SCHEMA_VERSION, DeviceFlow, Manifest
 from app.services.device_configs import create as create_device_config
 from app.watchdog.adapters import (
-    CommandAcknowledgement,
-    FakeWatchdogAdapter,
-    HttpWatchdogAdapter,
+    ControlPlaneCommandSender,
     WatchdogHttpResponse,
     WatchdogInvalidResponseError,
     WatchdogTimeoutError,
@@ -92,13 +90,13 @@ def test_success_uses_versioned_request_and_validates_correlated_acknowledgement
             },
         )
     )
-    adapter = HttpWatchdogAdapter(
+    sender = ControlPlaneCommandSender(
         base_url="http://127.0.0.1:8765",
         timeout_seconds=1.5,
         transport=transport,
     )
 
-    acknowledgement = adapter.dispatch(command)
+    acknowledgement = sender.dispatch(command)
 
     assert acknowledgement.status == "accepted"
     assert transport.requests == [
@@ -121,17 +119,17 @@ def test_success_uses_versioned_request_and_validates_correlated_acknowledgement
 
 
 def test_timeout_is_reported_as_a_safe_typed_failure(command):
-    adapter = HttpWatchdogAdapter(
+    sender = ControlPlaneCommandSender(
         base_url="http://127.0.0.1:8765",
         transport=StubTransport(error=TimeoutError()),
     )
 
     with pytest.raises(WatchdogTimeoutError, match="timed out"):
-        adapter.dispatch(command)
+        sender.dispatch(command)
 
 
 def test_malformed_response_is_rejected_before_backend_uses_it(command):
-    adapter = HttpWatchdogAdapter(
+    sender = ControlPlaneCommandSender(
         base_url="http://127.0.0.1:8765",
         transport=StubTransport(
             response=WatchdogHttpResponse(
@@ -143,11 +141,11 @@ def test_malformed_response_is_rejected_before_backend_uses_it(command):
     )
 
     with pytest.raises(WatchdogInvalidResponseError, match="invalid JSON"):
-        adapter.dispatch(command)
+        sender.dispatch(command)
 
 
 def test_unsupported_response_version_is_rejected(command):
-    adapter = HttpWatchdogAdapter(
+    sender = ControlPlaneCommandSender(
         base_url="http://127.0.0.1:8765",
         transport=StubTransport(
             response=WatchdogHttpResponse.json(
@@ -163,17 +161,17 @@ def test_unsupported_response_version_is_rejected(command):
     )
 
     with pytest.raises(WatchdogUnsupportedProtocolError, match="unsupported"):
-        adapter.dispatch(command)
+        sender.dispatch(command)
 
 
 def test_unavailable_watchdog_is_reported_as_a_safe_typed_failure(command):
-    adapter = HttpWatchdogAdapter(
+    sender = ControlPlaneCommandSender(
         base_url="http://127.0.0.1:8765",
         transport=StubTransport(error=ConnectionRefusedError()),
     )
 
     with pytest.raises(WatchdogUnavailableError, match="unavailable"):
-        adapter.dispatch(command)
+        sender.dispatch(command)
 
 
 @pytest.mark.parametrize(
@@ -185,23 +183,9 @@ def test_unavailable_watchdog_is_reported_as_a_safe_typed_failure(command):
         "http://127.0.0.1:8765/prefix",
     ],
 )
-def test_http_adapter_rejects_urls_outside_the_local_v1_contract(base_url):
+def test_command_sender_rejects_urls_outside_the_local_v1_contract(base_url):
     with pytest.raises(ValueError, match="localhost"):
-        HttpWatchdogAdapter(base_url=base_url)
-
-
-def test_fake_adapter_validates_scripted_responses_like_the_http_adapter(command):
-    fake = FakeWatchdogAdapter()
-    fake.queue_response(
-        CommandAcknowledgement(
-            status="completed",
-            command_id="command-1",
-            watchdog_id="watchdog-1",
-        )
-    )
-
-    with pytest.raises(WatchdogInvalidResponseError, match="status"):
-        fake.dispatch(command)
+        ControlPlaneCommandSender(base_url=base_url)
 
 
 class _StubWatchdogSupervisingDriver:

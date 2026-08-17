@@ -40,7 +40,7 @@ from app.services.incidents import (
     STALE_TELEMETRY_REASON,
     WATCHDOG_CRASH_REASON,
 )
-from app.watchdog.adapters import FakeWatchdogAdapter, WatchdogUnavailableError
+from app.watchdog.adapters import WatchdogUnavailableError
 
 
 def _session_with_dataflow(app, dataflow_id: str) -> int:

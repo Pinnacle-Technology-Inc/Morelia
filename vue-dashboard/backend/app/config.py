@@ -58,7 +58,6 @@ class Config:
         os.environ.get("SESSION_SCHEDULER_INTERVAL_SECONDS", "1.0")
     )
     HOST_SUPERVISOR = None
-    WATCHDOG_TIMEOUT_SECONDS = float(os.environ.get("WATCHDOG_TIMEOUT_SECONDS", "2.0"))
     # ---- Watchdog / runtime-host timing -----------------------------------
     # Keep every watchdog-control timing knob here so operators can inspect
     # and tune the actual limits through settings.toml (or .env) without
@@ -194,7 +193,6 @@ class Config:
     WATCHDOG_RECOVERY_MAX_ATTEMPTS = int(
         os.environ.get("WATCHDOG_RECOVERY_MAX_ATTEMPTS", "10")
     )
-    WATCHDOG_MAX_RESPONSE_BYTES = int(os.environ.get("WATCHDOG_MAX_RESPONSE_BYTES", "65536"))
     STARTUP_RECONCILIATION_ENABLED = (
         os.environ.get("STARTUP_RECONCILIATION_ENABLED", "1").strip().lower()
         not in {"0", "false", "no", "off"}
@@ -251,6 +249,9 @@ class Config:
         "WATCHDOG_HARDWARE_LOCK_DIR", str(_INSTANCE_DIR / "watchdog-hardware-locks")
     )
     WATCHDOG_RESPAWN_MAX_ATTEMPTS = int(os.environ.get("WATCHDOG_RESPAWN_MAX_ATTEMPTS", "3"))
+    WATCHDOG_RESPAWN_RETRY_DELAY_SECONDS = float(
+        os.environ.get("WATCHDOG_RESPAWN_RETRY_DELAY_SECONDS", "1.0")
+    )
     WATCHDOG_STALE_GRACE_ATTEMPTS = int(
         os.environ.get("WATCHDOG_STALE_GRACE_ATTEMPTS", "20")
     )

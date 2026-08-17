@@ -7,14 +7,11 @@ from packaging.requirements import Requirement
 from packaging.utils import canonicalize_name
 from packaging.version import Version
 
-from app.adapters.runtime_client import (
-    FakeRuntimeHostClient,
-    RuntimeHostClient,
-)
+from app.adapters.runtime_client import ControlPlaneCommandSender
 from app.contracts.runtime_protocol import CommandEnvelope, Manifest, RuntimeReport
 from app.domain.enums import SessionStatus
 from app.domain.errors import UnknownConfigType
-from app.watchdog.adapters import FakeWatchdogAdapter, HttpWatchdogAdapter
+from app.watchdog.adapters import ControlPlaneCommandSender as WatchdogCommandSender
 
 BACKEND_ROOT = Path(__file__).resolve().parents[3]
 PYPROJECT = BACKEND_ROOT / "vue-dashboard/backend/pyproject.toml"
@@ -59,8 +56,7 @@ def _locked_versions() -> dict[str, Version]:
 
 
 def test_package_clarity_import_surfaces_reexport_existing_types():
-    assert RuntimeHostClient is HttpWatchdogAdapter
-    assert FakeRuntimeHostClient is FakeWatchdogAdapter
+    assert ControlPlaneCommandSender is WatchdogCommandSender
     assert SessionStatus.PREPARING.value == "preparing"
     assert UnknownConfigType.__name__ == "UnknownConfigType"
     assert CommandEnvelope.__name__ == "CommandEnvelope"
