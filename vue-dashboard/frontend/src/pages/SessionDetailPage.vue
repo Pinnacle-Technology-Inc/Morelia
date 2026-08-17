@@ -338,15 +338,19 @@ const detailUnavailable = computed(() => detailState.value === "unavailable");
 // inputs: this object is bound onto SessionFlowBar and fed to deriveFlowStatus
 // for the rat. Restating the argument list at either call site is what would let
 // a running rat end up beside a red rail.
-const flowInputs = computed(() => ({
+const flowInputs = computed(() => {
+  const resolvedFlows = detail.value?.session?.device_flows ?? [];
+  return {
   lifecycle: lifecycle.value,
   health: view.value.health,
   phase: view.value.phase,
   activityState: activity.value.state,
   detailAvailable: !detailUnavailable.value,
   streams: streamRows.value,
+    configuredFlows: resolvedFlows.length ? resolvedFlows : sourceInformationFlows.value,
   outboxHealth: detail.value?.outbox_health ?? null,
-}));
+  };
+});
 
 const ratState = computed(() =>
   deriveRatState(deriveFlowStatus(flowInputs.value), streamRows.value),

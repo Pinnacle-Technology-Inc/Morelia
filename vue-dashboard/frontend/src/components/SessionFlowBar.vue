@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { deriveFlowStatus, formatReportAge } from "../session-flow-status";
+import { isRunningLifecycle } from "../session-utils";
 
 const props = defineProps({
   lifecycle: { type: String, default: "Unknown" },
@@ -11,6 +12,10 @@ const props = defineProps({
   // One row per reported device, from deriveStreamRows(). Empty until the
   // runtime has reported at least once.
   streams: { type: Array, default: () => [] },
+  // Frozen session configuration used when the runtime has no current rows
+  // (completed, scheduled, or not yet reported). This keeps one visible rail
+  // per configured source-to-sink path instead of collapsing to one generic bar.
+  configuredFlows: { type: Array, default: () => [] },
   lastReportAt: { type: String, default: null },
   outboxHealth: { type: String, default: null },
 });
@@ -43,6 +48,72 @@ onMounted(() => {
 onUnmounted(() => clock && clearInterval(clock));
 
 const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value));
+
+function configuredSourceLabel(flow, index) {
+  const nickname = String(flow?.nickname ?? "").trim();
+  if (nickname) return nickname;
+  return flow?.device_type ?? flow?.deviceType ?? flow?.type ?? `Source ${index + 1}`;
+}
+
+function configuredSinkLabel(sink, index) {
+  return sink?.sink_name ?? sink?.name ?? sink?.sink_type ?? sink?.type ?? `Sink ${index + 1}`;
+}
+
+const fallbackRows = computed(() => {
+  const flows = props.configuredFlows.length ? props.configuredFlows : [null];
+  return flows.flatMap((flow, sourceIndex) => {
+    const sinks = Array.isArray(flow?.sinks) && flow.sinks.length ? flow.sinks : [null];
+    return sinks.map((sink, sinkIndex) => ({
+      id: `configured-${sourceIndex}-${sinkIndex}`,
+      sourceIndex,
+      label: flow ? configuredSourceLabel(flow, sourceIndex) : "Data flow",
+      hardwareId: flow && !String(flow?.nickname ?? "").trim()
+        ? flow?.hardware_id ?? flow?.hardwareId ?? null
+        : null,
+      tone: status.value.tone,
+      flowing: status.value.flowing,
+      status: flow
+        ? sink
+          ? `→ ${configuredSinkLabel(sink, sinkIndex)}`
+          : "No sink configured"
+        : "Source-to-sink map unavailable",
+      reason: null,
+      sinkCount: 0,
+      fallback: true,
+    }));
+  });
+});
+
+// Configured paths determine the rail count in every lifecycle, while a running
+// session layers the source's current runtime status onto each of its sink paths.
+// This keeps the footprint stable and preserves useful live health information.
+const displayedRows = computed(() => {
+  if (!isRunningLifecycle(props.lifecycle) || !props.streams.length) return fallbackRows.value;
+  if (!props.configuredFlows.length) return props.streams;
+
+  return fallbackRows.value.map((path) => {
+    const stream = props.streams[path.sourceIndex];
+    if (!stream) return path;
+    return {
+      ...path,
+      tone: stream.tone,
+      flowing: stream.flowing,
+      status: `${stream.status} · ${path.status}`,
+      reason: stream.reason,
+      attempt: stream.attempt,
+      fallback: false,
+    };
+  });
+});
+const displayedReason = computed(() => {
+  const reason = String(status.value.reason ?? "").trim();
+  const headline = String(status.value.headline ?? "").trim();
+  if (!reason || !headline) return reason;
+  const prefix = `${headline}.`;
+  return reason.toLowerCase().startsWith(prefix.toLowerCase())
+    ? reason.slice(prefix.length).trim()
+    : reason;
+});
 </script>
 
 <template>
@@ -67,8 +138,13 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
     <!-- The rail gets the full width now that the rat has moved out to Session
          Summary. -->
     <div class="flow-bar__body">
-      <ul v-if="streams.length" class="flow-rail">
-        <li v-for="row in streams" :key="row.id" class="flow-rail__row" :class="`is-${row.tone}`">
+      <ul class="flow-rail">
+        <li
+          v-for="row in displayedRows"
+          :key="row.id"
+          class="flow-rail__row"
+          :class="[`is-${row.tone}`, { 'flow-rail__row--fallback': row.fallback }]"
+        >
           <!-- The hardware id used to be a `title` tooltip only. It is shown
                inline now because this rail replaced the Overview "Stream Health"
                tiles, which printed it — folding those tiles in here must not
@@ -86,31 +162,19 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
             <span class="flow-rail__fill" />
           </span>
           <span class="flow-rail__note">
+            <span class="flow-rail__status">{{ row.status }}</span>
             <span v-if="row.reason" class="flow-rail__reason">
               {{ row.reason }}<template v-if="row.attempt"> · attempt {{ row.attempt }}</template>
             </span>
-            <span v-else class="flow-rail__status">{{ row.status }}</span>
             <span v-if="row.sinkCount" class="flow-rail__sink" :class="`is-${row.sinkTone}`">
               {{ row.sinkNote }}
             </span>
           </span>
         </li>
       </ul>
-
-      <!-- Fallback for a session that has never reported: nothing to enumerate, so
-           show the single indeterminate channel rather than an empty rail. -->
-      <div
-        v-else
-        class="flow-bar__track"
-        :class="{ 'is-flowing': status.flowing }"
-        role="img"
-        :aria-label="`Data flow: ${status.flowing ? 'transferring' : 'not transferring'}. ${status.headline}.`"
-      >
-        <div class="flow-bar__fill" />
-      </div>
     </div>
 
-    <p class="flow-bar__reason">{{ status.reason }}</p>
+    <p class="flow-bar__reason" :title="status.reason">{{ displayedReason }}</p>
 
   </section>
 </template>
@@ -126,7 +190,8 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
   --tone: var(--text-muted);
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-1);
+  width: 100%;
   padding-left: var(--space-4);
   border-left: 3px solid var(--tone);
   /* The rail relayouts off THIS element's width, not the viewport's: the bar
@@ -148,6 +213,7 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
   flex-wrap: wrap;
 }
 .flow-bar__dot {
@@ -183,11 +249,10 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
 .flow-bar__body {
   display: flex;
   align-items: stretch;
-  gap: var(--space-4);
+  width: 100%;
   min-height: 1.5rem;
 }
-.flow-bar__body > .flow-rail,
-.flow-bar__body > .flow-bar__track {
+.flow-bar__body > .flow-rail {
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -197,6 +262,7 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
 .flow-rail {
   display: flex;
   flex-direction: column;
+  width: 100%;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -204,9 +270,11 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
 .flow-rail__row {
   --row-tone: var(--text-muted);
   display: grid;
-  grid-template-columns: minmax(5rem, 8rem) minmax(4rem, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(7rem, 1fr) minmax(10rem, 3fr) minmax(8rem, 1.5fr);
   align-items: center;
   gap: var(--space-3);
+  width: 100%;
+  min-height: calc(var(--space-5) * 2);
   padding: var(--space-2) 0;
 }
 .flow-rail__row + .flow-rail__row {
@@ -220,6 +288,9 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
 }
 .flow-rail__row.is-bad {
   --row-tone: var(--error);
+}
+.flow-rail__row--fallback {
+  --row-tone: var(--tone);
 }
 
 .flow-rail__name {
@@ -313,32 +384,6 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
   }
 }
 
-/* --- fallback single track --------------------------------------------- */
-
-.flow-bar__track {
-  position: relative;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--surface-sage);
-  overflow: hidden;
-}
-.flow-bar__fill {
-  position: absolute;
-  inset: 0;
-  background: var(--tone);
-  opacity: 0.2;
-}
-.flow-bar__track.is-flowing .flow-bar__fill {
-  opacity: 0.85;
-  background-image: repeating-linear-gradient(
-    115deg,
-    transparent 0 10px,
-    rgba(255, 255, 255, 0.5) 10px 20px
-  );
-  background-size: 28px 100%;
-  animation: flow-march 900ms linear infinite;
-}
-
 @keyframes flow-march {
   to {
     background-position: 28px 0;
@@ -353,7 +398,6 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
    exactly the case vestibular-sensitivity settings exist for. Colour and text
    still carry the full signal without it. */
 @media (prefers-reduced-motion: reduce) {
-  .flow-bar__track.is-flowing .flow-bar__fill,
   .flow-rail__track.is-flowing .flow-rail__fill,
   .flow-bar__dot {
     animation: none;
@@ -361,9 +405,16 @@ const reportAge = computed(() => formatReportAge(props.lastReportAt, now.value))
 }
 
 .flow-bar__reason {
+  display: -webkit-box;
+  width: 100%;
+  height: calc(var(--space-5) * 2);
+  overflow: hidden;
   margin: 0;
   color: var(--text-muted);
   font-size: var(--fs-sm);
+  line-height: var(--lh-body);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 </style>

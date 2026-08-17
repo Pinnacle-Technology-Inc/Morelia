@@ -24,6 +24,13 @@ const now = ref(Date.now());
 let detailPollTimer = null;
 let durationTimer = null;
 
+const DEVICE_STATUS_RANK = Object.freeze({ healthy: 0, suspect: 1, unhealthy: 2 });
+const DEVICE_STATUS_LABEL = Object.freeze({
+  healthy: "Healthy",
+  suspect: "Suspect",
+  unhealthy: "Unhealthy",
+});
+
 const displaySession = computed(() => {
   if (!detail.value?.session) return props.session;
   return normalizeSession(detail.value.session, {
@@ -40,6 +47,18 @@ const streamRows = computed(() =>
     unproven: isOutboxUnproven(detail.value?.outbox_health),
   }),
 );
+
+const deviceSessionStatus = computed(() => {
+  const statuses = (detail.value?.latest_report?.devices ?? [])
+    .map((device) => String(device?.stream_status ?? "").toLowerCase())
+    .filter((status) => Object.hasOwn(DEVICE_STATUS_RANK, status));
+  if (!statuses.length) return displaySession.value.health;
+
+  const worstStatus = statuses.reduce((worst, status) =>
+    DEVICE_STATUS_RANK[status] > DEVICE_STATUS_RANK[worst] ? status : worst,
+  );
+  return DEVICE_STATUS_LABEL[worstStatus];
+});
 
 const detailAvailable = computed(() => detailState.value !== "unavailable");
 const activityState = computed(() => {
@@ -133,7 +152,7 @@ onUnmounted(() => {
 
       <div class="badge-row">
         <StatusBadge :value="displaySession.lifecycle" />
-        <StatusBadge :value="displaySession.health" />
+        <StatusBadge :value="deviceSessionStatus" />
       </div>
 
       <dl class="session-stats">
@@ -158,6 +177,7 @@ onUnmounted(() => {
           :phase="displaySession.phase"
           :activity-state="activityState"
           :streams="streamRows"
+          :configured-flows="detail?.session?.device_flows ?? displaySession.deviceFlows ?? []"
           :detail-available="detailAvailable"
           :detail-error="detailError"
           :outbox-health="detail?.outbox_health ?? null"
