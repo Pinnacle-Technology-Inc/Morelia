@@ -27,15 +27,19 @@ from collections.abc import Callable
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from time import monotonic
+from typing import TYPE_CHECKING
 
 import structlog
 
 from app.config import get_config
-from app.runtime_child.driver import RuntimeControlDriver, RuntimeReport
+from app.runtime_child.driver import RuntimeReport
 from app.runtime_host.lifecycle import CommandInFlight, LifecycleSafetyGate
 from app.runtime_host.manifest import Manifest
 from app.watchdog.messages import WATCHDOG_COMMAND_PATH, CommandEnvelope
 from app.watchdog_process.telemetry_client import DIRECT_INGEST_PATH
+
+if TYPE_CHECKING:
+    from app.runtime_host.watchdog_process_driver import WatchdogProcessDriver
 
 _log = structlog.get_logger(__name__)
 
@@ -91,7 +95,7 @@ class _RequestHandler(BaseHTTPRequestHandler):
 
     gate: LifecycleSafetyGate
     manifest: Manifest
-    driver: RuntimeControlDriver
+    driver: WatchdogProcessDriver
     report_ring: deque[dict]
     lease: RuntimeHostLease | None
     token: str | None
@@ -270,7 +274,7 @@ class DataflowRuntimeHost:
         *,
         gate: LifecycleSafetyGate,
         manifest: Manifest,
-        driver: RuntimeControlDriver,
+        driver: WatchdogProcessDriver,
         port: int = 0,
         token: str | None = None,
         runtime_id: str = "in-process",

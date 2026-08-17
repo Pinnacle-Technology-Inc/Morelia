@@ -8,7 +8,6 @@ to import the runtime command, manifest, acknowledgement, and report shapes.
 from app.runtime_child.driver import (
     DeviceReport,
     ReportCallback,
-    RuntimeControlDriver,
     RuntimePhase,
     RuntimeReport,
 )
@@ -31,7 +30,6 @@ __all__ = [
     "MANIFEST_SCHEMA_VERSION",
     "Manifest",
     "ReportCallback",
-    "RuntimeControlDriver",
     "RuntimePhase",
     "RuntimeReport",
     "WATCHDOG_COMMAND_PATH",

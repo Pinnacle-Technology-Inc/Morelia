@@ -1,13 +1,8 @@
-"""The runtime boundary: one interface, many drivers.
+"""Shared lifecycle phases and report types for runtime processes.
 
-A *driver* is the thing that actually runs one owned dataflow. The concrete
-implementation is ``MoreliaRuntime`` (app/runtime_child/morelia.py), which wraps
-the real Watchdog.
-
-The Dataflow Runtime Host (Stage 2.2) holds a ``RuntimeControlDriver`` and never
-imports the concrete class directly. That is the whole point of an interface:
-the host's lifecycle code (preflight -> start -> stop -> close) is identical
-regardless of the driver behind it. Swap the driver, keep the host.
+The runtime host uses ``WatchdogProcessDriver`` to supervise its watchdog child.
+Inside that child, ``MoreliaRuntime`` owns the actual Morelia DataFlow. Both use
+the lifecycle phases and report values defined here.
 
 Reports flow the *other* way. A driver does not return its observations from
 ``start()``; collection is long-lived, so there is nothing to return yet. Instead
@@ -21,7 +16,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import ClassVar, Protocol
+from typing import ClassVar
 
 from app.domain.enums import CommsStatus, StreamStatus
 
@@ -420,35 +415,3 @@ class RuntimeReport:
 # A driver pushes each observation here. The host supplies the callback at
 # construction so reports can be forwarded to the control plane.
 ReportCallback = Callable[[RuntimeReport], None]
-
-
-class RuntimeControlDriver(Protocol):
-    """The lifecycle every driver must honor: four phase calls + one recovery call.
-
-    Ordering mirrors the real Morelia sequence (architecture doc, lines 70-76):
-    preflight validates devices/sinks, start begins collection, stop halts it,
-    close releases resources. ``close`` must be safe to call in cleanup even if
-    an earlier step failed — it is the host's guaranteed teardown hook.
-
-    ``recover`` is the report-and-wait recovery hook (spec line 122). In the
-    target design the watchdog does NOT self-heal: it detects, reports
-    suspect/unhealthy, and waits. The control plane then *commands* recovery,
-    which lands here. Recovery is per-stream — it names ONE ``device_id`` (one
-    StreamWatcher), not the whole dataflow — and carries the ``recovery_id`` that
-    rides every report in the episode (spec line 128). The three wire commands
-    reconnect / restart / reset-stream are escalating intensities of this one
-    verb; the Morelia driver distinguishes them.
-    """
-
-    @property
-    def phase(self) -> RuntimePhase: ...
-
-    def preflight(self) -> None: ...
-
-    def start(self) -> None: ...
-
-    def stop(self) -> None: ...
-
-    def close(self) -> None: ...
-
-    def recover(self, recovery_id: str, device_id: str) -> None: ...

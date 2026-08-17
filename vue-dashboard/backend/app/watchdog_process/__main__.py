@@ -28,12 +28,12 @@ import signal
 import sys
 import threading
 from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import structlog
 
 from app.config import get_config
 from app.logging_config import configure_logging
-from app.runtime_child.driver import RuntimeControlDriver
 from app.runtime_host.manifest import Manifest
 from app.watchdog_process.control import WatchdogControlServer
 from app.watchdog_process.hardware_lease import HardwareLeaseSet
@@ -41,6 +41,9 @@ from app.watchdog_process.outbox import WatchdogOutbox, default_outbox_path
 from app.watchdog_process.process import WatchdogIdentity, WatchdogProcess
 from app.watchdog_process.process_tree import install_process_tree_guard
 from app.watchdog_process.telemetry_client import TelemetryClient
+
+if TYPE_CHECKING:
+    from app.runtime_child.morelia import MoreliaRuntime
 
 _log = structlog.get_logger(__name__)
 
@@ -51,7 +54,7 @@ def _build_driver(
     driver_name: str,
     on_report,
     sink_delivery_outbox_factory=None,
-) -> RuntimeControlDriver:
+) -> MoreliaRuntime:
     if driver_name == "morelia":
         from app.runtime_child.morelia import MoreliaRuntime
 

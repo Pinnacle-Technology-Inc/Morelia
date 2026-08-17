@@ -1,7 +1,7 @@
 """Tests for the watchdog-process entrypoint, orchestration, and telemetry client.
 
 Per the packet's scope boundary, no real Morelia hardware is used: driver
-tests use a local stub implementing the ``RuntimeControlDriver`` protocol.
+tests use a local stub with the same lifecycle methods as ``MoreliaRuntime``.
 The ``--driver morelia`` wiring itself is exercised only up to *constructing*
 ``MoreliaRuntime`` (which is lazy and does not import Morelia — see
 ``app.runtime_child.morelia``), never ``preflight()``/``start()``.
@@ -123,7 +123,7 @@ def _report_with_sinks(manifest: Manifest, *, sequence: int = 0, sinks=()) -> Ru
 
 
 class StubDriver:
-    """Minimal ``RuntimeControlDriver`` stub — no hardware, no threads.
+    """Minimal ``MoreliaRuntime`` stand-in — no hardware, no threads.
 
     ``emit`` lets a test manually trigger a report through the same
     ``on_report`` callback a real driver would use, without any of

@@ -37,8 +37,8 @@ DEFAULT_LEASE_TIMEOUT_SECONDS = 30 * 60
 
 _log = structlog.get_logger(__name__)
 
-# Phases from which the driver's own `stop()` guard (RuntimeControlDriver.stop,
-# via _require) accepts being called. IDLE (never preflighted/started) and
+# Phases from which WatchdogProcessDriver.stop() accepts being called. IDLE
+# (never preflighted/started) and
 # CLOSED (already torn down) are not in this set, so calling stop() from
 # those phases would raise — nothing to gracefully stop in either case.
 _STOPPABLE_PHASES = (RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING)

@@ -1,15 +1,19 @@
-"""Lifecycle safety gate: maps inbound commands to one RuntimeControlDriver."""
+"""Lifecycle safety gate for commands handled by ``WatchdogProcessDriver``."""
 
 from __future__ import annotations
 
 import threading
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
+from typing import TYPE_CHECKING
 
-from app.runtime_child.driver import RuntimeControlDriver, RuntimePhase
+from app.runtime_child.driver import RuntimePhase
 from app.runtime_host.manifest import Manifest
 from app.watchdog.adapters import CommandAcknowledgement
 from app.watchdog.messages import CommandEnvelope
+
+if TYPE_CHECKING:
+    from app.runtime_host.watchdog_process_driver import WatchdogProcessDriver
 
 
 class CommandInFlight(Exception):
@@ -89,9 +93,9 @@ class ScopedLifecycleLocks:
 
 
 class LifecycleSafetyGate:
-    """Dispatches validated watchdog commands to one owned RuntimeControlDriver."""
+    """Dispatch validated commands to the runtime host's watchdog supervisor."""
 
-    def __init__(self, manifest: Manifest, driver: RuntimeControlDriver) -> None:
+    def __init__(self, manifest: Manifest, driver: WatchdogProcessDriver) -> None:
         self._manifest = manifest
         self._driver = driver
         self._lock = ScopedLifecycleLocks()

@@ -1,5 +1,4 @@
-"""RuntimeControlDriver that supervises a watchdog child process.
-"""
+"""Runtime-host driver that supervises a watchdog child process."""
 
 from __future__ import annotations
 
@@ -99,7 +98,7 @@ def _kill_pid(pid: int) -> None:
 
 
 class WatchdogProcessDriver:
-    """runtime_host's ``RuntimeControlDriver``: supervises one watchdog process."""
+    """Supervise one watchdog process on behalf of a runtime host."""
 
     def __init__(
         self,
