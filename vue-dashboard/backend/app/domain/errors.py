@@ -394,6 +394,22 @@ class SessionTemplateStateConflict(SessionTemplateNameExists):
         ValueError.__init__(self, message)
 
 
+class SessionTemplateRunBlocked(SessionTemplateStateConflict):
+    """A template exists, but its current revision cannot safely produce a run."""
+
+    code = "session_template_run_blocked"
+
+    def __init__(
+        self,
+        message: str,
+        current_state: str,
+        allowed_actions: list[str],
+        run_blockers: list[dict],
+    ):
+        super().__init__(message, current_state, allowed_actions)
+        self.details["run_blockers"] = run_blockers
+
+
 __all__ = [
     "CommandInFlight",
     "DeviceClaimConflict",

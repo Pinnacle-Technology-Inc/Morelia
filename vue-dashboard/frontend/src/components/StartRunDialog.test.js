@@ -68,6 +68,23 @@ describe("sink destination composition", () => {
 });
 
 describe("compact template-run payload", () => {
+  it("stops a direct launch whenever the backend marks the template non-runnable", () => {
+    expect(startRunSource).toContain("!canRunTemplate(selected)");
+    expect(startRunSource.indexOf("!canRunTemplate(selected)")).toBeLessThan(
+      startRunSource.indexOf("loadAssignmentPlan(selected.reference || selected.templateId)"),
+    );
+  });
+
+  it("rechecks run eligibility before configuring hardware in an open dialog", () => {
+    const configureStart = startRunSource.indexOf("async function configureDevice");
+    const configureEnd = startRunSource.indexOf("// --- Submit", configureStart);
+    const configureSource = startRunSource.slice(configureStart, configureEnd);
+    expect(configureSource.indexOf("await revisionIsCurrent()")).toBeGreaterThan(-1);
+    expect(configureSource.indexOf("await revisionIsCurrent()")).toBeLessThan(
+      configureSource.indexOf("createDeviceConfigFromTemplate"),
+    );
+  });
+
   it("only enables an exact device-template match for immediate runs", () => {
     expect(startRunSource).toContain("matchesFlowTemplate(device, flowIndex)");
     expect(startRunSource).toContain(

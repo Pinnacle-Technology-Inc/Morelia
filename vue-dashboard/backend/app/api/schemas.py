@@ -609,6 +609,18 @@ class SessionTemplateRunSchema(Schema):
     created_at = fields.DateTime(dump_only=True, allow_none=True)
 
 
+class SessionTemplateRunBlockerSchema(Schema):
+    """A server-owned reason a template cannot enter assignment or run creation."""
+
+    code = fields.String(dump_only=True)
+    message = fields.String(dump_only=True)
+    flow_index = fields.Integer(dump_only=True, allow_none=True)
+    device_template_path = fields.String(dump_only=True, allow_none=True)
+    expected_hash = fields.String(dump_only=True, allow_none=True)
+    actual_hash = fields.String(dump_only=True, allow_none=True)
+    recovery_action = fields.String(dump_only=True)
+
+
 class SessionTemplateSchema(Schema):
     """A flat-file template definition joined with its registry state."""
 
@@ -624,6 +636,12 @@ class SessionTemplateSchema(Schema):
     duplicate_of_template_id = fields.String(dump_only=True, allow_none=True)
     content = fields.Raw(dump_only=True, allow_none=True)
     warnings = fields.List(fields.String(), dump_only=True, dump_default=list)
+    runnable = fields.Boolean(dump_only=True)
+    run_blockers = fields.List(
+        fields.Nested(SessionTemplateRunBlockerSchema),
+        dump_only=True,
+        dump_default=list,
+    )
     allowed_actions = fields.List(fields.String(), dump_only=True, dump_default=list)
     # Run history is joined by /catalog only. `null` therefore means "this route
     # did not count runs", which is not the same as zero — a registered template

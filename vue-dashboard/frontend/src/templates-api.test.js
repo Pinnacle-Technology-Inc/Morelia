@@ -1,10 +1,14 @@
 import { afterEach, expect, it, vi } from "vitest";
 import {
+  canRunTemplate,
   createSessionTemplate,
   deleteDeviceTemplate,
+  hasDeviceTemplateDrift,
   loadDeviceTemplates,
   loadSessionTemplateCatalog,
   loadSessionTemplates,
+  templateControls,
+  templateStateHint,
 } from "./templates-api";
 
 afterEach(() => vi.restoreAllMocks());
@@ -19,6 +23,8 @@ const REGISTRY_ROW = {
   registered_hash: "a".repeat(64),
   observed_hash: "a".repeat(64),
   state: "ACTIVE",
+  runnable: true,
+  run_blockers: [],
   allowed_actions: ["archive"],
   warnings: [],
   content: { policy: "recommend" },
@@ -43,6 +49,45 @@ it("loads the folder-authoritative session template catalog", async () => {
 it("refuses a session template row with no reconciled state instead of rendering a guess", async () => {
   vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [{ name: "legacy" }] })));
   await expect(loadSessionTemplates()).rejects.toThrow(/unknown state/);
+});
+
+it("does not offer Start run when the backend reports a run blocker", () => {
+  const drifted = {
+    ...REGISTRY_ROW,
+    runnable: false,
+    run_blockers: [{
+      code: "device_template_changed",
+      message: "Flow 1's device template changed after this session revision was accepted.",
+      recovery_action: "refresh_dependency_revision",
+    }],
+    warnings: [
+      `flow 1: device template changed at device-templates/df8401.toml: expected ${"a".repeat(64)}, found ${"b".repeat(64)}`,
+    ],
+  };
+  const normalized = {
+    ...drifted,
+    runnable: drifted.runnable,
+    runBlockers: drifted.run_blockers,
+  };
+
+  expect(hasDeviceTemplateDrift(drifted)).toBe(true);
+  expect(canRunTemplate(normalized)).toBe(false);
+  expect(templateControls(normalized).map((control) => control.id)).not.toContain("run");
+  expect(templateStateHint(normalized)).toMatch(/device template changed/i);
+});
+
+it("normalizes the backend run-gate contract", async () => {
+  const blocked = {
+    ...REGISTRY_ROW,
+    runnable: false,
+    run_blockers: [{ code: "device_template_missing", message: "Flow 1's device template is missing." }],
+  };
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, json: async () => [blocked] })));
+
+  await expect(loadSessionTemplates()).resolves.toMatchObject([{
+    runnable: false,
+    runBlockers: [{ code: "device_template_missing" }],
+  }]);
 });
 
 it("uses the destructive device-template route without inventing export", async () => {

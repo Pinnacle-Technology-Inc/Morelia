@@ -29,6 +29,7 @@ from app.domain.errors import (
     SessionTemplateNameExists,
     SessionTemplateNotFound,
     SessionTemplateReconciliationRetry,
+    SessionTemplateRunBlocked,
     SessionTemplateStateConflict,
 )
 from app.models.session import Session

@@ -158,6 +158,8 @@ export function normalizeTemplate(raw) {
     duplicateOfTemplateId: raw.duplicate_of_template_id ?? null,
     content: raw.content ?? null,
     warnings: asList(raw.warnings),
+    runnable: typeof raw.runnable === "boolean" ? raw.runnable : undefined,
+    runBlockers: asList(raw.run_blockers),
     allowedActions: asList(raw.allowed_actions).filter((action) => action in SERVER_ACTIONS),
     // Only the catalog route counts runs. `null` means "not counted here", which
     // the catalog renders as an em dash rather than as a confident zero.
@@ -183,9 +185,23 @@ export function templateFlowSummary(template) {
   };
 }
 
-/** Only an ACTIVE revision can produce a run. Every other state is terminal for launching. */
+const DEVICE_TEMPLATE_DRIFT_PATTERN =
+  /^flow\s+\d+:\s+device template changed at\s+.+?:\s+expected\s+[a-f0-9]{64},\s+found\s+[a-f0-9]{64}$/i;
+
+/** A pinned device-template revision changed, so this session revision cannot be reproduced. */
+export function hasDeviceTemplateDrift(template) {
+  return asList(template?.warnings).some((warning) =>
+    DEVICE_TEMPLATE_DRIFT_PATTERN.test(String(warning).trim()),
+  );
+}
+
+/** Only a reproducible ACTIVE revision can produce a run. */
 export function canRunTemplate(template) {
-  return template?.state === "ACTIVE";
+  if (template?.state !== "ACTIVE") return false;
+  if (typeof template.runnable === "boolean") return template.runnable;
+  // Compatibility for an older backend during a rolling deployment. Once the
+  // typed contract is present, it is the only authority for run eligibility.
+  return !hasDeviceTemplateDrift(template);
 }
 
 /** A template can be opened only once it has a durable identity to open by. */
@@ -220,6 +236,13 @@ export function templateControls(template) {
 
 /** Operator-facing explanation of why a state cannot run. Never a transition. */
 export function templateStateHint(template) {
+  const blockerMessage = (template?.state === "ACTIVE" ? asList(template?.runBlockers) : [])
+    .map((blocker) => blocker?.message)
+    .find((message) => typeof message === "string" && message.trim());
+  if (blockerMessage) return blockerMessage;
+  if (template?.state === "ACTIVE" && hasDeviceTemplateDrift(template)) {
+    return "A linked device template changed after this session template was saved. Refresh the pinned device-template revision before starting a run.";
+  }
   return {
     DISCOVERED: "This file has no registry identity yet. Register it to make it runnable.",
     PENDING: "A previous write did not finish. Reconciliation repairs this automatically.",

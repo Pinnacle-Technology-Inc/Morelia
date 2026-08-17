@@ -29,7 +29,12 @@ import { createDeviceConfigFromTemplate, isDeviceSelectable, loadDevicePool } fr
 import { browseDirectories } from "../filesystem-api";
 import { outputFolder, validateOutputFolders } from "../sink-location-recovery";
 import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
-import { loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
+import {
+  canRunTemplate,
+  loadDeviceTemplates,
+  loadSessionTemplate,
+  templateStateHint,
+} from "../templates-api";
 import {
   defaultRunFileStem,
   normalizeTemplateRef,
@@ -446,7 +451,7 @@ async function load() {
     const selected = await loadSessionTemplate(props.templateId);
     template.value = selected;
     loadedRevision.value = selected;
-    if (selected.state !== "ACTIVE") {
+    if (!canRunTemplate(selected)) {
       loadState.value = "ready";
       returnToCurrentTemplate(templateStateHint(selected));
       return;
@@ -497,6 +502,7 @@ async function configureDevice(flowIndex, device) {
   configuringHardware.add(key);
   scanError.value = "";
   try {
+    if (!(await revisionIsCurrent())) return;
     await createDeviceConfigFromTemplate({
       template_name: template.name,
       hardware_id: hardwareId,
@@ -528,6 +534,10 @@ async function configureDevice(flowIndex, device) {
 async function revisionIsCurrent() {
   const current = await loadSessionTemplate(props.templateId);
   template.value = current;
+  if (!canRunTemplate(current)) {
+    returnToCurrentTemplate(templateStateHint(current));
+    return false;
+  }
   if (!templateRevisionChanged(loadedRevision.value, current)) return true;
   returnToCurrentTemplate(templateStateHint(current));
   return false;
