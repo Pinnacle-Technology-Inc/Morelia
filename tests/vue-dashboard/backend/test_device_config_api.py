@@ -229,31 +229,37 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
     )
 
     response = client.get("/api/v1/devices/pool")
-
+    
     assert response.status_code == 200
     assert response.get_json()["devices"] == [
         {
             "id": config["id"],
             "type": "pod8206hr",
             "port": "COM6",
-                "hardware_id": "008",
-                "color": config["color"],
-                "availability": "available",
+            "hardware_id": "008",
+            "color": config["color"],
+            "availability": "available",
             "status": "claimed",
             "owner": session_id,
             "nickname": None,
             "label": "Configured POD",
+            "configuration_hash": "235c4b32023094a2dc0a60413074f0021e29f78e1340458a6768f1f7a43ab8f4",
+            "source_template": None,
+            "source_template_hash": None,
         },
         {
             "id": None,
             "type": "pod8206hr",
             "port": "COM7",
-                "hardware_id": "009",
-                "color": None,
-                "availability": "available",
+            "hardware_id": "009",
+            "color": None,
+            "availability": "available",
             "status": "unconfigured",
             "owner": None,
             "nickname": None,
             "label": "Fresh POD",
+            "configuration_hash": None,
+            "source_template": None,
+            "source_template_hash": None,
         },
     ]

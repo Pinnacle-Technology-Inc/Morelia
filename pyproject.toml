@@ -21,6 +21,7 @@ dependencies = [
   "toml",
   "pypvfs>=0.1.0,<2",
   "typing_extensions>=4.0; python_version < '3.11'",
+  "python-osc",
 ]
 
 [project.optional-dependencies]
