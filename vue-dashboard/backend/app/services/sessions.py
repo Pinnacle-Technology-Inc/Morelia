@@ -43,6 +43,7 @@ from app.repositories.sessions import SessionRepository
 from app.services import (
     device_configs,
     experiments,
+    incidents,
     manifests,
     output_finalization,
     session_templates,
@@ -825,6 +826,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
                 session.status = SessionStatus.STOPPED
                 session.runtime_port = None
                 session.runtime_token = None
+            _resolve_stop_supervision_incidents(session, dataflow_id)
             transition_operation(
                 operation.operation_id,
                 OperationState.UNCERTAIN,
@@ -844,6 +846,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
         )
         raise
 
+    _resolve_stop_supervision_incidents(session, dataflow_id)
     transition_operation(operation.operation_id, OperationState.DISPATCHED)
     transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
@@ -863,6 +866,20 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
         session.runtime_token = None
 
     return session
+
+
+def _resolve_stop_supervision_incidents(session: Session, dataflow_id: str) -> None:
+    """Best-effort retirement of incidents made irrelevant by an intentional stop."""
+    try:
+        incidents.resolve_terminal_supervision_incidents(session.id, dataflow_id)
+    except Exception as exc:  # noqa: BLE001 - incident cleanup must not fail a stop
+        _log.warning(
+            "stop: resolving terminal supervision incidents failed",
+            session_id=session.id,
+            dataflow_id=dataflow_id,
+            error=type(exc).__name__,
+            message=str(exc),
+        )
 
 
 def _schedule_stop_finalization(session: Session) -> None:

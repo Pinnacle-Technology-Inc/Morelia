@@ -137,6 +137,8 @@ class RuntimeOwnershipRepository:
             row = self._required(runtime_id)
             row.state = RuntimeOwnershipState.STOPPED
             row.stopped_at = datetime.now(UTC)
+            if row.watchdog_id is not None:
+                row.watchdog_state = WatchdogProcessState.STOPPED
             db.session.flush()
         return row
 

@@ -119,6 +119,15 @@ _SELF_HEALING_REASONS = frozenset(
     }
 )
 
+_SUPERVISION_REASONS = (
+    HOST_UNREACHABLE_REASON,
+    WATCHDOG_CRASH_REASON,
+    CRASH_LOOP_REASON,
+    STALE_PROCESS_REASON,
+    STALE_TELEMETRY_REASON,
+    OUTBOX_OVERFLOW_REASON,
+)
+
 
 def requires_action_for_reason(reason: str | None) -> bool:
     """Whether an incident of this reason is waiting on a person.
@@ -130,6 +139,19 @@ def requires_action_for_reason(reason: str | None) -> bool:
     ``app.services.escalation`` they only exist BECAUSE something escalated.
     """
     return reason not in _SELF_HEALING_REASONS
+
+
+def resolve_terminal_supervision_incidents(session_id: int, dataflow_id: str) -> None:
+    """Retire process/link incidents once their session no longer needs supervision."""
+    for reason in _SUPERVISION_REASONS:
+        existing = _repo.find_open_for_device(
+            session_id,
+            dataflow_id,
+            None,
+            reason=reason,
+        )
+        if existing is not None:
+            _repo.resolve(existing.incident_id, resolution="session supervision ended")
 
 
 # -- trigger 1: per-device stream health (ingest path) -----------------------

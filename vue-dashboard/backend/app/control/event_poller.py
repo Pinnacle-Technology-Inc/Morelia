@@ -23,6 +23,7 @@ from app.domain.enums import (
     CommsStatus,
     HealthState,
     LinkStatus,
+    SessionStatus,
     StreamStatus,
     WatchdogProcessState,
 )
@@ -351,6 +352,15 @@ class EventPoller:
         """
         session = SessionRepository().get_by_dataflow_id(dataflow_id)
         if session is None:
+            return
+        if session.status is SessionStatus.ENDING:
+            return
+        if session.status in {
+            SessionStatus.STOPPED,
+            SessionStatus.COMPLETED,
+            SessionStatus.CANCELLED,
+        }:
+            incidents.resolve_terminal_supervision_incidents(session.id, dataflow_id)
             return
 
         incidents.evaluate_link_status(session.id, dataflow_id, link_status)
