@@ -39,7 +39,7 @@ import {
   isOutboxUnproven,
 } from "../session-flow-status";
 import { isRunningLifecycle } from "../session-utils";
-import { canRunTemplate, loadSessionTemplate, templateStateHint } from "../templates-api";
+import { canRunTemplate, loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator
 // arrived from the sessions list. This page resolves everything it needs from
@@ -63,6 +63,9 @@ const commandBusy = ref(false);
 const sourceTemplate = ref(null);
 const sourceTemplateState = ref("idle");
 const sourceTemplateError = ref("");
+const sourceDeviceTemplates = ref([]);
+const sourceDeviceTemplatesState = ref("idle");
+const sourceDeviceTemplatesError = ref("");
 const notes = ref([]);
 const notesState = ref("idle");
 const notesError = ref("");
@@ -142,15 +145,58 @@ const lifecycle = computed(() => {
 const sourceTemplateId = computed(() => detail.value?.session?.source_template_id ?? null);
 const sourceTemplateSnapshot = computed(() => detail.value?.session?.source_template_snapshot ?? null);
 const sourceSnapshotContent = computed(() => sourceTemplateSnapshot.value?.content ?? null);
-const sourceSnapshotFlows = computed(() =>
-  Array.isArray(sourceSnapshotContent.value?.device_flows) ? sourceSnapshotContent.value.device_flows : [],
+const sourceInformationContent = computed(() => sourceSnapshotContent.value ?? sourceTemplate.value?.content ?? null);
+const sourceInformationFlows = computed(() =>
+  Array.isArray(sourceInformationContent.value?.device_flows) ? sourceInformationContent.value.device_flows : [],
 );
-const sourceSnapshotSinkCount = computed(() =>
-  sourceSnapshotFlows.value.reduce(
+const sourceInformationSinkCount = computed(() =>
+  sourceInformationFlows.value.reduce(
     (total, flow) => total + (Array.isArray(flow?.sinks) ? flow.sinks.length : 0),
     0,
   ),
 );
+const sourceDeviceTemplatesByPath = computed(() => new Map(
+  sourceDeviceTemplates.value.map((item) => [normalizeTemplatePath(item?.file_path), item]),
+));
+const sourceFlowDetails = computed(() => sourceInformationFlows.value.map((flow, index) => {
+  const path = typeof flow?.device_template_path === "string" ? flow.device_template_path : "";
+  const linkedTemplate = sourceDeviceTemplatesByPath.value.get(normalizeTemplatePath(path));
+  const parameters = linkedTemplate?.content?.parameters;
+  const stats = [];
+  const deviceType = linkedTemplate?.type ?? linkedTemplate?.content?.type;
+  if (deviceType != null) stats.push({ label: "Device type", value: formatTemplateStatValue(deviceType) });
+  if (parameters && typeof parameters === "object") {
+    for (const [key, value] of Object.entries(parameters)) {
+      if (value != null) stats.push({ label: formatTemplateStatLabel(key), value: formatTemplateStatValue(value) });
+    }
+  }
+  if (flow?.hardware_id != null) stats.push({ label: "Hardware ID", value: formatTemplateStatValue(flow.hardware_id) });
+  if (flow?.port != null) stats.push({ label: "Port", value: formatTemplateStatValue(flow.port) });
+
+  const expectedHash = flow?.device_template_content_hash ?? null;
+  const observedHash = linkedTemplate?.content_hash ?? null;
+  return {
+    key: `${path || "stream"}-${index}`,
+    title: flow?.nickname || path.split("/").pop()?.replace(/\.toml$/i, "") || `Stream ${index + 1}`,
+    path,
+    expectedHash,
+    revisionMatches: Boolean(expectedHash && observedHash && expectedHash === observedHash),
+    revisionDiffers: Boolean(expectedHash && observedHash && expectedHash !== observedHash),
+    stats,
+    statsUnavailable: linkedTemplate
+      ? ""
+      : sourceDeviceTemplatesState.value === "loading"
+        ? "Loading device-template stats…"
+        : sourceDeviceTemplatesError.value || "Linked device template was not found in the current catalog.",
+    sinks: (Array.isArray(flow?.sinks) ? flow.sinks : []).map((sink, sinkIndex) => ({
+      key: `${index}-${sinkIndex}`,
+      name: sink?.sink_name || sink?.sink_type || `Sink ${sinkIndex + 1}`,
+      type: sink?.sink_type ?? "Unavailable",
+      location: sink?.sink_location ?? null,
+      parameters: Object.entries(sink?.sink_parameters ?? {}),
+    })),
+  };
+}));
 const sourceSnapshotJson = computed(() => JSON.stringify(sourceTemplateSnapshot.value, null, 2));
 const hasSourceProvenance = computed(() => Boolean(
   sourceTemplateId.value ||
@@ -341,14 +387,14 @@ const detailUnavailable = computed(() => detailState.value === "unavailable");
 const flowInputs = computed(() => {
   const resolvedFlows = detail.value?.session?.device_flows ?? [];
   return {
-  lifecycle: lifecycle.value,
-  health: view.value.health,
-  phase: view.value.phase,
-  activityState: activity.value.state,
-  detailAvailable: !detailUnavailable.value,
-  streams: streamRows.value,
+    lifecycle: lifecycle.value,
+    health: view.value.health,
+    phase: view.value.phase,
+    activityState: activity.value.state,
+    detailAvailable: !detailUnavailable.value,
+    streams: streamRows.value,
     configuredFlows: resolvedFlows.length ? resolvedFlows : sourceInformationFlows.value,
-  outboxHealth: detail.value?.outbox_health ?? null,
+    outboxHealth: detail.value?.outbox_health ?? null,
   };
 });
 
@@ -481,6 +527,22 @@ async function resolveSourceTemplate({ force = false } = {}) {
   }
 }
 
+async function resolveSourceDeviceTemplates({ force = false } = {}) {
+  if (!sourceInformationFlows.value.length) return;
+  if (!force && ["loading", "live"].includes(sourceDeviceTemplatesState.value)) return;
+  sourceDeviceTemplatesState.value = "loading";
+  sourceDeviceTemplatesError.value = "";
+  try {
+    sourceDeviceTemplates.value = await loadDeviceTemplates();
+    sourceDeviceTemplatesState.value = "live";
+  } catch (error) {
+    sourceDeviceTemplatesState.value = "unavailable";
+    sourceDeviceTemplatesError.value = error instanceof Error
+      ? error.message
+      : "Device-template stats are unavailable.";
+  }
+}
+
 function formatRecoveryEvidence(value) {
   if (value === null || value === undefined) return "Unavailable";
   if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
@@ -511,6 +573,7 @@ async function refreshDetail({ silent = false } = {}) {
     // The server has now spoken; drop any optimistic post-command lifecycle.
     pendingLifecycle.value = null;
     await resolveSourceTemplate();
+    await resolveSourceDeviceTemplates();
   } catch (error) {
     // A failed *background* refresh keeps the last good snapshot on screen —
     // blanking a live view because one poll missed is worse than mild staleness.
@@ -829,6 +892,7 @@ const tabTones = computed(() => ({
 
     <BaseCard class="detail-content">
       <TabBar
+        class="detail-tabs"
         :tabs="visibleTabs"
         :active="activeTab"
         :counts="tabCounts"
@@ -875,15 +939,15 @@ const tabTones = computed(() => ({
             v-bind="flowInputs"
             :last-report-at="detail?.latest_report?.received_at ?? null"
           />
-        </BaseCard>
-        <BaseCard class="detail-panel detail-panel--wide">
-          <SessionTimeline
-            variant="preview"
-            :entries="timelineEntries"
-            :state="activity.state"
-            :error="activity.error"
-            @view-all="activeTab = 'activity'"
-          />
+          <div class="stream-health-activity">
+            <SessionTimeline
+              variant="preview"
+              :entries="timelineEntries"
+              :state="activity.state"
+              :error="activity.error"
+              @view-all="activeTab = 'activity'"
+            />
+          </div>
         </BaseCard>
         <BaseCard
           v-if="hasSourceProvenance"
@@ -899,20 +963,70 @@ const tabTones = computed(() => ({
           <p :class="{ 'form-notice': sourceTemplateState === 'unavailable' || (sourceTemplateState === 'live' && !canRunTemplate(sourceTemplate)) }">
             {{ sourceTemplateGuidance }}
           </p>
-          <dl class="detail-list">
+          <dl class="source-template-summary">
+            <div><dt>Recovery policy</dt><dd>{{ formatStatus(sourceInformationContent?.policy) }}</dd></div>
+            <div><dt>Streams</dt><dd>{{ sourceInformationFlows.length }}</dd></div>
+            <div><dt>Sinks</dt><dd>{{ sourceInformationSinkCount }}</dd></div>
+          </dl>
+          <dl class="detail-list source-template-identity">
             <div><dt>Stored name</dt><dd>{{ detail?.session?.source_template_name ?? "Unavailable" }}</dd></div>
             <div><dt>Stored reference</dt><dd><code>{{ detail?.session?.source_template_ref ?? "Unavailable" }}</code></dd></div>
             <div><dt>Template revision ID</dt><dd><code>{{ sourceTemplateId ?? "Unavailable" }}</code></dd></div>
             <div><dt>Accepted hash</dt><dd><code>{{ detail?.session?.source_template_hash ?? "Unavailable" }}</code></dd></div>
           </dl>
+
+          <section v-if="sourceFlowDetails.length" class="source-flow-list" aria-label="Source template stream configuration">
+            <article v-for="(flow, flowIndex) in sourceFlowDetails" :key="flow.key" class="source-flow">
+              <header class="source-flow__heading">
+                <div>
+                  <span>Stream {{ flowIndex + 1 }}</span>
+                  <h4>{{ flow.title }}</h4>
+                  <code>{{ flow.path || "Device template unavailable" }}</code>
+                </div>
+                <span v-if="flow.revisionMatches" class="source-flow__revision source-flow__revision--matched">
+                  Accepted device revision
+                </span>
+                <span v-else-if="flow.revisionDiffers" class="source-flow__revision source-flow__revision--changed">
+                  Current TOML differs from this run
+                </span>
+              </header>
+
+              <p v-if="flow.revisionDiffers" class="source-flow__notice">
+                The values below come from the current device-template TOML. The run retained a different accepted hash.
+              </p>
+              <dl v-if="flow.stats.length" class="source-flow__stats">
+                <div v-for="stat in flow.stats" :key="stat.label">
+                  <dt>{{ stat.label }}</dt>
+                  <dd>{{ stat.value }}</dd>
+                </div>
+              </dl>
+              <p v-else class="source-flow__notice">{{ flow.statsUnavailable }}</p>
+
+              <div class="source-flow__sinks">
+                <h5>Sinks</h5>
+                <p v-if="!flow.sinks.length">No sinks configured.</p>
+                <ul v-else>
+                  <li v-for="sink in flow.sinks" :key="sink.key">
+                    <strong>{{ sink.name }}</strong>
+                    <span>{{ formatStatus(sink.type) }}</span>
+                    <code v-if="sink.location">{{ sink.location }}</code>
+                    <span v-for="[key, value] in sink.parameters" :key="key">
+                      {{ formatTemplateStatLabel(key) }}: {{ formatTemplateStatValue(value) }}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+              <details v-if="flow.expectedHash" class="source-flow__revision-details">
+                <summary>Device-template revision</summary>
+                <code>{{ flow.expectedHash }}</code>
+              </details>
+            </article>
+          </section>
+          <p v-else class="form-notice">No stream configuration was stored with this source template.</p>
+
           <details v-if="sourceTemplateSnapshot" class="source-snapshot">
             <summary>Frozen source snapshot</summary>
-            <dl class="detail-list">
-              <div><dt>Hash version</dt><dd><code>{{ sourceTemplateSnapshot.canonical_hash_version }}</code></dd></div>
-              <div><dt>Policy</dt><dd>{{ sourceSnapshotContent?.policy ?? "Unavailable" }}</dd></div>
-              <div><dt>Streams</dt><dd>{{ sourceSnapshotFlows.length }}</dd></div>
-              <div><dt>Sinks</dt><dd>{{ sourceSnapshotSinkCount }}</dd></div>
-            </dl>
+            <p>Canonical hash version <code>{{ sourceTemplateSnapshot.canonical_hash_version }}</code></p>
             <pre>{{ sourceSnapshotJson }}</pre>
           </details>
           <p v-else class="form-notice">No frozen source snapshot was stored for this legacy run.</p>
@@ -922,6 +1036,13 @@ const tabTones = computed(() => ({
             @click="resolveSourceTemplate({ force: true })"
           >
             Retry source lookup
+          </BaseButton>
+          <BaseButton
+            v-if="sourceDeviceTemplatesState === 'unavailable'"
+            variant="secondary"
+            @click="resolveSourceDeviceTemplates({ force: true })"
+          >
+            Retry device-template stats
           </BaseButton>
         </BaseCard>
         <!-- Only rendered when there IS a recovery. Its entire content was
@@ -1206,6 +1327,25 @@ const tabTones = computed(() => ({
 </template>
 
 <style scoped>
+.detail-content {
+  overflow: visible;
+}
+
+.detail-tabs {
+  position: sticky;
+  top: calc(-1 * var(--space-6));
+  z-index: 10;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--sage-50);
+  box-shadow: 0 1px 0 var(--border-card), 0 8px 16px rgb(5 48 25 / 8%);
+}
+
+.stream-health-activity {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-card);
+}
+
 .source-template-heading {
   display: flex;
   align-items: center;
@@ -1216,6 +1356,165 @@ const tabTones = computed(() => ({
 .source-template-heading h3,
 .source-template-heading p {
   margin: 0;
+}
+
+.source-template-heading p {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+
+.source-template-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+
+.source-template-summary div {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sage);
+}
+
+.source-template-summary dt,
+.source-flow__heading span,
+.source-flow__stats dt,
+.source-flow__sinks h5 {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+
+.source-template-summary dd,
+.source-flow__stats dd {
+  margin: 0;
+  color: var(--text-heading);
+  font-weight: var(--fw-bold);
+}
+
+.source-template-identity {
+  margin-bottom: var(--space-4);
+}
+
+.source-flow-list {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.source-flow {
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-sage);
+}
+
+.source-flow__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.source-flow__heading h4 {
+  margin: var(--space-1) 0;
+  color: var(--text-heading);
+  font-size: var(--fs-base);
+}
+
+.source-flow__heading code,
+.source-flow__revision-details code {
+  overflow-wrap: anywhere;
+}
+
+.source-flow__revision {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid currentColor;
+  border-radius: var(--radius-pill);
+  font-weight: var(--fw-bold);
+}
+
+.source-flow__revision--matched {
+  color: var(--success) !important;
+  background: #e4f1ea;
+}
+
+.source-flow__revision--changed {
+  color: var(--warning) !important;
+  background: #fbf1de;
+}
+
+.source-flow__notice {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+}
+
+.source-flow__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.source-flow__stats div {
+  display: grid;
+  align-content: start;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-3);
+  border-left: var(--border-accent) solid var(--accent);
+  background: var(--surface-card);
+}
+
+.source-flow__stats dd {
+  overflow-wrap: anywhere;
+}
+
+.source-flow__sinks {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.source-flow__sinks h5,
+.source-flow__sinks p {
+  margin: 0;
+}
+
+.source-flow__sinks ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.source-flow__sinks li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2) var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-sm);
+  background: var(--surface-card);
+  font-size: var(--fs-xs);
+}
+
+.source-flow__sinks li span,
+.source-flow__sinks li code {
+  color: var(--text-muted);
+}
+
+.source-flow__revision-details summary,
+.source-snapshot summary {
+  cursor: pointer;
+  font-weight: var(--fw-bold);
 }
 
 .session-summary__overview {
@@ -1257,8 +1556,13 @@ const tabTones = computed(() => ({
 }
 
 .source-snapshot summary {
-  cursor: pointer;
-  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.source-snapshot p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
 }
 
 .source-snapshot pre {
@@ -1345,6 +1649,10 @@ const tabTones = computed(() => ({
 }
 
 @media (max-width: 760px) {
+  .detail-tabs {
+    top: -1rem;
+  }
+
   .session-summary__overview {
     grid-template-columns: 1fr;
   }
@@ -1360,6 +1668,19 @@ const tabTones = computed(() => ({
 
   .recovery-output__metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .source-template-summary,
+  .source-flow__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .source-flow__heading {
+    display: grid;
+  }
+
+  .source-flow__revision {
+    width: fit-content;
   }
 }
 
