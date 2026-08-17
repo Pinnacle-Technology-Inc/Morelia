@@ -369,7 +369,7 @@ class DataflowRuntimeHost:
         )
         with self._command_thread_lock:
             self._command_thread = thread
-        thread.start()
+            thread.start()
 
     def wait_for_idle(self, timeout: float = 5.0) -> bool:
         """Block until the most-recent command's driver work finishes.
