@@ -505,6 +505,127 @@ class SessionTemplateFile:
     def warnings(self) -> list[str]:
         return self.reference_warnings
 
+    @property
+    def run_blockers(self) -> list[dict[str, Any]]:
+        return _run_blockers_for(self)
+
+    @property
+    def runnable(self) -> bool:
+        return not self.run_blockers
+
+
+_STATE_RECOVERY_ACTIONS = {
+    "DISCOVERED": "register_template",
+    "PENDING": "retry_reconciliation",
+    "CHANGED": "accept_session_template_revision",
+    "MISSING": "restore_or_resolve_session_template",
+    "INVALID": "repair_session_template",
+    "DUPLICATE": "open_registered_original",
+    "AMBIGUOUS_RENAME": "resolve_session_template_rename",
+    "ARCHIVED": "create_new_session_template_revision",
+}
+
+
+def _state_run_blocker(template: SessionTemplateFile) -> dict[str, Any] | None:
+    if template.state == "ACTIVE" and template.content is not None:
+        return None
+    return {
+        "code": "session_template_state",
+        "message": f"Session template {template.name!r} is not runnable from state {template.state}.",
+        "flow_index": None,
+        "device_template_path": None,
+        "expected_hash": None,
+        "actual_hash": None,
+        "recovery_action": _STATE_RECOVERY_ACTIONS.get(template.state, "review_session_template"),
+    }
+
+
+def _dependency_run_blockers(content: Mapping[str, Any]) -> list[dict[str, Any]]:
+    blockers: list[dict[str, Any]] = []
+    for flow_index, flow in enumerate(content.get("device_flows", [])):
+        if not isinstance(flow, Mapping):
+            continue
+        path = flow.get("device_template_path")
+        expected_hash = flow.get("device_template_content_hash")
+        base = {
+            "flow_index": flow_index,
+            "device_template_path": path if isinstance(path, str) else None,
+            "expected_hash": expected_hash if isinstance(expected_hash, str) else None,
+        }
+        try:
+            current = device_templates.get_by_path(path) if isinstance(path, str) else None
+        except (DeviceTemplateNotFound, ValueError):
+            blockers.append({
+                **base,
+                "code": "device_template_invalid",
+                "message": f"Flow {flow_index + 1}'s device template is invalid. Repair it before starting a session.",
+                "actual_hash": None,
+                "recovery_action": "repair_device_template",
+            })
+            continue
+
+        if current is not None:
+            if expected_hash == current.content_hash:
+                continue
+            blockers.append({
+                **base,
+                "code": "device_template_changed",
+                "message": f"Flow {flow_index + 1}'s device template changed after this session template was saved. Review and accept the current dependency revision before starting.",
+                "actual_hash": current.content_hash,
+                "recovery_action": "refresh_dependency_revision",
+            })
+            continue
+
+        matches = (
+            device_templates.find_by_content_hash(expected_hash)
+            if isinstance(expected_hash, str) and expected_hash
+            else []
+        )
+        if len(matches) == 1:
+            blocker = {
+                **base,
+                "code": "device_template_moved",
+                "message": f"Flow {flow_index + 1} references an old device-template path. Update the session template to the new path before starting.",
+                "actual_hash": matches[0].content_hash,
+                "recovery_action": "refresh_dependency_path",
+            }
+        elif len(matches) > 1:
+            blocker = {
+                **base,
+                "code": "device_template_ambiguous",
+                "message": f"Flow {flow_index + 1} matches multiple device templates. Select one exact dependency before starting.",
+                "actual_hash": expected_hash,
+                "recovery_action": "resolve_device_template_ambiguity",
+            }
+        else:
+            blocker = {
+                **base,
+                "code": "device_template_missing",
+                "message": f"Flow {flow_index + 1}'s device template cannot be found. Restore it or update the session template before starting.",
+                "actual_hash": None,
+                "recovery_action": "restore_device_template",
+            }
+        blockers.append(blocker)
+    return blockers
+
+
+def _run_blockers_for(template: SessionTemplateFile) -> list[dict[str, Any]]:
+    state_blocker = _state_run_blocker(template)
+    if state_blocker is not None:
+        return [state_blocker]
+    return _dependency_run_blockers(template.content or {})
+
+
+def _require_runnable(template: SessionTemplateFile) -> None:
+    blockers = template.run_blockers
+    if blockers:
+        raise SessionTemplateRunBlocked(
+            f"Session template {template.name!r} is blocked and cannot start a run.",
+            template.state,
+            template.allowed_actions,
+            blockers,
+        )
+
 
 def _attach_reference_warnings(template: SessionTemplateFile) -> SessionTemplateFile:
     """Add non-fatal warnings for missing or changed device-template dependencies."""
@@ -936,12 +1057,7 @@ def resolve_for_run(template_id: str) -> RunTemplateResolution:
     if template is None:
         raise SessionTemplateNotFound(template_id)
 
-    if template.lifecycle_state != "ACTIVE" or template.integrity_state != "MATCHED":
-        raise SessionTemplateStateConflict(
-            f"Session template {template.name!r} is not runnable from state {template.state}.",
-            template.state,
-            template.allowed_actions,
-        )
+    _require_runnable(template)
 
     with _reconciliation_lock:
         path = _direct_file(_library_dir() / template.relative_path)
@@ -1236,8 +1352,9 @@ def resolve_for_plan(reference: str) -> "_PlanTemplate":
     if not isinstance(reference, str) or not reference.strip():
         raise SessionTemplateNotFound(reference if isinstance(reference, str) else "")
     template = get_by_reference(reference) if _looks_like_library_reference(reference) else get_by_name(reference)
-    if template is None or template.state != "ACTIVE" or template.content is None:
+    if template is None:
         raise SessionTemplateNotFound(reference)
+    _require_runnable(template)
     return _PlanTemplate(name=template.name, content=template.content, reference=template.reference)
 
 

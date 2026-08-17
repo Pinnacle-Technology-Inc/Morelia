@@ -433,6 +433,7 @@ __all__ = [
     "SessionTemplateNotFound",
     "SessionTemplateDuplicate",
     "SessionTemplateReconciliationRetry",
+    "SessionTemplateRunBlocked",
     "SessionTemplateStateConflict",
     "SinkLocationExists",
     "StaleWatchdogReport",
