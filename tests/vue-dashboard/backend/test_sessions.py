@@ -4,6 +4,8 @@ import pytest
 
 from uuid import uuid4
 
+from datetime import datetime, timedelta, timezone
+
 from app.domain.enums import DeviceType, SessionStatus
 from app.models.device_config import DeviceConfig
 from app.services import device_configs
@@ -84,7 +86,13 @@ def _valid_run_payload(
     template_hash,
     device_config_id,
     tmp_path,
+    start_at=None,
 ):
+    if start_at is None:
+        start_at = (
+            datetime.now(timezone.utc) + timedelta(minutes=5)
+        ).isoformat().replace("+00:00", "Z")
+    
     return {
         "idempotency_key": "test-idempotency-key",
         "source_template_id": template_id,
@@ -103,7 +111,7 @@ def _valid_run_payload(
         ],
         "execution": {
             "mode": "scheduled",
-            "start_at": "2026-08-13T10:00:00Z",
+            "start_at": start_at,
         },
     }
 
