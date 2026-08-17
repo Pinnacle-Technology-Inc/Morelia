@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import pinnacleLogo from "../assets/pinnacle-technology-logo.png";
+import { formatCentralTime } from "../datetime";
 
 const now = ref(new Date());
 let timer;
@@ -14,7 +15,7 @@ onMounted(() => {
 onBeforeUnmount(() => window.clearInterval(timer));
 
 const timeLabel = computed(() =>
-  now.value.toLocaleTimeString("en-US", { hour12: false, timeZone: "America/Chicago" }),
+  formatCentralTime(now.value, { hour12: false }),
 );
 </script>
 
@@ -23,7 +24,7 @@ const timeLabel = computed(() =>
     <div class="header-intro">
      
       <div class="header-intro__copy">
-        <span class="header-eyebrow">{{ timeLabel }} America/Chicago</span>
+        <span class="header-eyebrow">{{ timeLabel }}</span>
         <strong class="header-title">Acquisition control center</strong>
         <span class="header-description">
           Monitor active sessions, review recovery decisions, and confirm system readiness from one workspace.

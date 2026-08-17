@@ -9,6 +9,7 @@ import {
 import BaseCard from "./BaseCard.vue";
 import SectionTitle from "./SectionTitle.vue";
 import StatusBadge from "./StatusBadge.vue";
+import { formatCentralTimestamp } from "../datetime";
 
 const props = defineProps({
   attention: { type: Object, required: true },
@@ -46,14 +47,14 @@ function openSection(section) {
 }
 
 function formatScheduledTime(value) {
-  if (!value) return "—";
-  const scheduled = new Date(value);
-  if (Number.isNaN(scheduled.getTime())) return "Unavailable";
-  return scheduled.toLocaleString("en-US", {
+  return formatCentralTimestamp(value, {
+    fallback: value ? "Unavailable" : "—",
+    year: undefined,
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    second: undefined,
     hourCycle: "h23",
   });
 }

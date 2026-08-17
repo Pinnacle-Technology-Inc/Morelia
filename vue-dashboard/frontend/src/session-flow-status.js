@@ -22,6 +22,7 @@
 // folded into it, so the rail can show which stream and why.
 
 import { isRunningLifecycle } from "./session-utils";
+import { timestampMs } from "./datetime";
 
 export const FlowTone = Object.freeze({
   IDLE: "idle",
@@ -310,8 +311,8 @@ export function isOutboxUnproven(outboxHealth) {
 /** "2s ago" / "4m ago", or null when the runtime has never reported. */
 export function formatReportAge(lastReportAt, now = Date.now()) {
   if (!lastReportAt) return null;
-  const then = new Date(lastReportAt).getTime();
-  if (Number.isNaN(then)) return null;
+  const then = timestampMs(lastReportAt);
+  if (then === null) return null;
   const seconds = Math.max(0, Math.round((now - then) / 1000));
   if (seconds < 60) return `${seconds}s ago`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;

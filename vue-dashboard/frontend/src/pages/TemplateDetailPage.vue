@@ -5,6 +5,7 @@ import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
+import { formatCentralTimestamp } from "../datetime";
 import {
   acceptTemplateChange,
   archiveTemplate,
@@ -175,9 +176,7 @@ function countLabel(count, noun) {
 }
 
 function formatTimestamp(value) {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+  return formatCentralTimestamp(value, { fallback: value ? String(value) : "—" });
 }
 
 function variantFor(control) {

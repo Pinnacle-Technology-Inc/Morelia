@@ -1,3 +1,5 @@
+import { formatCentralTimestamp, timestampMs } from "./datetime";
+
 export const TimelineCategory = Object.freeze({
   DATAFLOW: "dataflow",
   RECOVERY: "recovery",
@@ -292,8 +294,7 @@ function eventTimestamp(event) {
 }
 
 function timestamp(value) {
-  const parsed = Date.parse(value || "");
-  return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+  return timestampMs(value) ?? Number.NEGATIVE_INFINITY;
 }
 
 function boundaryTimestamp(boundary) {
@@ -305,8 +306,7 @@ function boundaryTimestamp(boundary) {
 
 function formatBoundary(seconds) {
   if (seconds == null) return "?";
-  const parsed = new Date(seconds * 1000);
-  return Number.isNaN(parsed.getTime()) ? String(seconds) : parsed.toLocaleString();
+  return formatCentralTimestamp(seconds * 1000, { fallback: String(seconds) });
 }
 
 function formatDuration(seconds) {

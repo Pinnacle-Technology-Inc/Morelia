@@ -8,6 +8,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { computed, nextTick, onMounted, ref } from "vue";
 import { loadDeviceConfigs, loadDevicePool, registerDeviceName } from "../devices-api";
+import { formatCentralTimestamp } from "../datetime";
 
 const activeTab = ref("all");
 const devices = ref([]);
@@ -50,12 +51,9 @@ const visibleDevices = computed(() => {
   return devices.value;
 });
 
-// Render the scan timestamp as a readable local date/time, falling back to the
-// raw value if it is not a parseable date.
 const scannedAtLabel = computed(() => {
   if (!scannedAt.value) return "—";
-  const date = new Date(scannedAt.value);
-  return Number.isNaN(date.getTime()) ? scannedAt.value : date.toLocaleString();
+  return formatCentralTimestamp(scannedAt.value, { fallback: scannedAt.value });
 });
 
 async function refresh() {
@@ -221,7 +219,7 @@ async function onSaved() {
               <td><StatusBadge compact :value="displayLabel(device.status)" /></td>
               <td><code>{{ device.configSource ?? (device.status === "unconfigured" ? "Not configured" : "No template") }}</code><small v-if="device.templateDrift">Template drift</small></td>
               <td>{{ device.owningSession ?? "—" }}</td>
-              <td><code>{{ device.lastSeen ?? "—" }}</code></td>
+              <td><code>{{ formatCentralTimestamp(device.lastSeen) }}</code></td>
               <td />
             </tr>
           </tbody>

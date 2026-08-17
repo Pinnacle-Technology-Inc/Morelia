@@ -7,6 +7,7 @@ import StatusBadge from "./StatusBadge.vue";
 import { loadSessionDetail } from "../session-detail-api";
 import { normalizeSession } from "../session-api";
 import { deriveStreamRows, isOutboxUnproven } from "../session-flow-status";
+import { timestampMs } from "../datetime";
 
 const props = defineProps({
   session: { type: Object, required: true },
@@ -49,8 +50,8 @@ const activityState = computed(() => {
 
 const actualDuration = computed(() => {
   const startTimes = (detail.value?.runtimes ?? [])
-    .map((runtime) => Date.parse(runtime.started_at ?? ""))
-    .filter(Number.isFinite);
+    .map((runtime) => timestampMs(runtime.started_at))
+    .filter((timestamp) => timestamp !== null);
   if (!startTimes.length) return "—";
 
   const elapsedSeconds = Math.max(0, Math.floor((now.value - Math.min(...startTimes)) / 1000));

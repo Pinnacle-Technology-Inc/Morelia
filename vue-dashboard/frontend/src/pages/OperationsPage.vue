@@ -6,6 +6,7 @@ import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import { canSubmitResolution, listOperations, resolveOperation } from "../operations-api";
+import { formatCentralTimestamp } from "../datetime";
 
 const operations = ref([]);
 const isLoading = ref(false);
@@ -62,8 +63,7 @@ function stateLabel(value) {
 }
 
 function formatTimestamp(value) {
-  if (!value) return "-";
-  return new Date(value).toLocaleString();
+  return formatCentralTimestamp(value, { fallback: "-" });
 }
 
 function operationSession(operation) {

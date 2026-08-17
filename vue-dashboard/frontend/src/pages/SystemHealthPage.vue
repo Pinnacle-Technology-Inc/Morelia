@@ -8,6 +8,7 @@ import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import GuardedDialog from "../components/GuardedDialog.vue";
 import { loadSystemHealth, reconcileRuntimes, restartControlPlane, shutdownControlPlane } from "../system-health-api";
+import { formatCentralTimestamp } from "../datetime";
 
 const activeTab = ref("session-monitors");
 const tabs = [
@@ -81,7 +82,7 @@ async function runAction(fn) {
         <div class="table-wrap">
           <table class="data-table process-table">
             <thead><tr><th>Process</th><th>Session</th><th>State</th><th>Last Contact</th></tr></thead>
-            <tbody><tr v-for="runtime in runtimes" :key="runtime.runtime_id"><td>Runtime host</td><td>Session {{ runtime.session_id }}</td><td>{{ runtime.state }}</td><td><code>{{ runtime.last_seen_at ?? "—" }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="4">No runtime ownership rows reported.</td></tr></tbody>
+            <tbody><tr v-for="runtime in runtimes" :key="runtime.runtime_id"><td>Runtime host</td><td>Session {{ runtime.session_id }}</td><td>{{ runtime.state }}</td><td><code>{{ formatCentralTimestamp(runtime.last_seen_at) }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="4">No runtime ownership rows reported.</td></tr></tbody>
           </table>
         </div>
       </BaseCard>
@@ -91,7 +92,7 @@ async function runAction(fn) {
       <div v-if="activeTab === 'session-monitors'" class="table-wrap">
         <table class="data-table">
           <thead><tr><th>Monitor ID</th><th>Session</th><th>Process</th><th>Comms</th><th>Last Report</th><th>Reconciliation</th><th>Diagnostic ID</th></tr></thead>
-          <tbody><tr v-for="item in runtimes" :key="item.runtime_id"><td><code>{{ item.runtime_id }}</code></td><td>Session {{ item.session_id }}</td><td>{{ item.state }}</td><td><StatusBadge compact :value="item.state" /></td><td><code>{{ item.last_seen_at ?? "—" }}</code></td><td>{{ item.details?.reconciliation ?? "Unknown" }}</td><td><code>{{ item.watchdog_id ?? "—" }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="7">No runtime ownership rows reported.</td></tr></tbody>
+          <tbody><tr v-for="item in runtimes" :key="item.runtime_id"><td><code>{{ item.runtime_id }}</code></td><td>Session {{ item.session_id }}</td><td>{{ item.state }}</td><td><StatusBadge compact :value="item.state" /></td><td><code>{{ formatCentralTimestamp(item.last_seen_at) }}</code></td><td>{{ item.details?.reconciliation ?? "Unknown" }}</td><td><code>{{ item.watchdog_id ?? "—" }}</code></td></tr><tr v-if="!runtimes.length"><td colspan="7">No runtime ownership rows reported.</td></tr></tbody>
         </table>
       </div>
       <div v-else-if="activeTab === 'streams'" class="table-wrap">

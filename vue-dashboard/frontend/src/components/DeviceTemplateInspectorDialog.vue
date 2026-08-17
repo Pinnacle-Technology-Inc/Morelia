@@ -4,6 +4,7 @@ import { AlertTriangle, X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import DeviceTemplateStatusIcon from "./DeviceTemplateStatusIcon.vue";
 import { loadDeviceTemplateSource, validateDeviceTemplateToml } from "../templates-api";
+import { formatCentralTimestamp } from "../datetime";
 
 const props = defineProps({ template: { type: Object, required: true } });
 const emit = defineEmits(["close", "delete", "repair", "validated"]);
@@ -30,12 +31,7 @@ function formatValue(value) {
 }
 
 function formatModified(value) {
-  if (!value) return "Unavailable";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Unavailable";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-  }).format(date);
+  return formatCentralTimestamp(value, { fallback: "Unavailable", second: undefined });
 }
 
 function describeError(error, fallback) {

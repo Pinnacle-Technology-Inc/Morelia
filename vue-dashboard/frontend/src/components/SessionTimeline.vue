@@ -1,7 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
-import BaseButton from "./BaseButton.vue";
+import { ArrowUpRight } from "@lucide/vue";
 import { recentTimelineEntries, TimelineCategory } from "../session-timeline";
+import { formatCentralDate, formatCentralTime, timestampMs } from "../datetime";
 
 const props = defineProps({
   entries: { type: Array, default: () => [] },
@@ -36,24 +37,14 @@ const emptyMessage = computed(() => {
   return "No activity has been recorded yet.";
 });
 
-function parsedTimestamp(value) {
-  if (!value) return null;
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
 function formatDate(value) {
-  const parsed = parsedTimestamp(value);
-  return parsed
-    ? parsed.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })
-    : String(value || "Time unavailable");
+  if (timestampMs(value) === null) return String(value || "Time unavailable");
+  return formatCentralDate(value);
 }
 
 function formatTime(value) {
-  const parsed = parsedTimestamp(value);
-  return parsed
-    ? parsed.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" })
-    : "";
+  if (timestampMs(value) === null) return "";
+  return formatCentralTime(value);
 }
 
 function technicalDetails(details) {
@@ -72,10 +63,10 @@ function technicalDetails(details) {
         <h3 v-if="preview" id="session-timeline-title">Recent activity</h3>
         <h2 v-else id="session-timeline-title">Activity</h2>
       </div>
-      <BaseButton v-if="preview" variant="quiet" size="small" @click="$emit('view-all')">
-        View all activity
-      </BaseButton>
-      <label v-else class="timeline__filter">
+      <button v-if="preview" class="session-open-action" type="button" @click="$emit('view-all')">
+        View all <ArrowUpRight :size="15" />
+      </button>
+      <label v-if="!preview" class="timeline__filter">
         <span>Show</span>
         <select v-model="filter">
           <option value="all">All activity</option>
@@ -130,6 +121,7 @@ function technicalDetails(details) {
 }
 
 .timeline--preview {
+  gap: var(--space-2);
   padding: 0;
   background: transparent;
 }
@@ -147,6 +139,31 @@ function technicalDetails(details) {
   color: var(--text-heading);
   font: var(--fw-bold) var(--fs-lg)/var(--lh-heading) var(--font-display);
   letter-spacing: var(--ls-tight);
+}
+
+.timeline--preview .timeline__header h3 {
+  font-size: 0.9rem;
+}
+
+.timeline--preview .timeline__entry {
+  gap: var(--space-2);
+}
+
+.timeline--preview .timeline__marker {
+  margin-top: var(--space-3);
+}
+
+.timeline--preview .timeline__content {
+  padding: var(--space-2) 0 var(--space-3);
+}
+
+.timeline--preview .timeline__time,
+.timeline--preview .timeline__date {
+  padding-top: var(--space-2);
+}
+
+.timeline--preview .timeline__headline {
+  gap: var(--space-1);
 }
 
 .timeline__filter {
@@ -310,6 +327,11 @@ function technicalDetails(details) {
 @media (max-width: 760px) {
   .timeline__header {
     display: grid;
+  }
+
+  .timeline--preview .timeline__header {
+    display: flex;
+    align-items: center;
   }
 
   .timeline__filter {

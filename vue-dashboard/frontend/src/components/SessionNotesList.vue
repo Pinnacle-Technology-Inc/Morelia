@@ -1,6 +1,7 @@
 <script setup>
 import { FilePlus2, Pencil } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
+import { formatCentralTimestamp, timestampMs } from "../datetime";
 
 defineProps({
   notes: { type: Array, default: () => [] },
@@ -10,14 +11,14 @@ defineProps({
 defineEmits(["add", "edit"]);
 
 function formatTimestamp(value) {
-  if (!value) return "Unavailable";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+  return formatCentralTimestamp(value, { fallback: value ? String(value) : "Unavailable" });
 }
 
 function wasEdited(note) {
   if (!note.created_at || !note.updated_at) return false;
-  return new Date(note.updated_at).getTime() > new Date(note.created_at).getTime();
+  const updatedAt = timestampMs(note.updated_at);
+  const createdAt = timestampMs(note.created_at);
+  return updatedAt !== null && createdAt !== null && updatedAt > createdAt;
 }
 </script>
 
@@ -26,7 +27,9 @@ function wasEdited(note) {
     <header class="session-notes__heading">
       <div>
         <h4>Notes</h4>
-        <p>Operator context retained with this session.</p>
+        <p v-if="state !== 'loading' && state !== 'unavailable' && !notes.length">
+          No notes have been added.
+        </p>
       </div>
       <BaseButton variant="secondary" size="small" @click="$emit('add')">
         <FilePlus2 :size="15" /> Add note
@@ -37,8 +40,7 @@ function wasEdited(note) {
     <p v-else-if="state === 'unavailable'" class="session-notes__message session-notes__message--error" role="alert">
       {{ error || "Notes are unavailable." }}
     </p>
-    <p v-else-if="!notes.length" class="session-notes__message">No notes have been added.</p>
-    <ol v-else class="session-notes__list">
+    <ol v-else-if="notes.length" class="session-notes__list">
       <li v-for="note in notes" :key="note.id" class="session-note">
         <div class="session-note__content">
           <p>{{ note.body }}</p>
@@ -81,6 +83,11 @@ function wasEdited(note) {
 .session-notes__heading p,
 .session-note p {
   margin: 0;
+}
+
+.session-notes__heading h4 {
+  color: var(--text-heading);
+  font: var(--fw-bold) 0.9rem/var(--lh-heading) var(--font-display);
 }
 
 .session-notes__heading p,

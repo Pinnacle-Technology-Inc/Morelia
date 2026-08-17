@@ -31,6 +31,7 @@ import {
 } from "../session-events";
 import { createSessionNote, loadSessionNotes, updateSessionNote } from "../session-notes-api";
 import { buildActivityTimeline, buildSessionTimeline, formatGapWindow as displayGapWindow } from "../session-timeline";
+import { formatCentralTimestamp } from "../datetime";
 import {
   deriveFlowStatus,
   deriveRatState,
@@ -231,7 +232,7 @@ const sessionDeviceFlows = computed(() => {
       action: device.action,
       pendingRecovery: device.pending_recovery,
       rate: "Unavailable",
-      lastData: detail.value?.latest_report?.received_at ?? "Unavailable",
+      lastData: formatCentralTimestamp(detail.value?.latest_report?.received_at, { fallback: "Unavailable" }),
       watchdog: formatStatus(detail.value?.watchdog_state),
       sinks,
     };
@@ -408,9 +409,34 @@ function gapWindow(gap) {
 }
 
 function formatTimestamp(value) {
-  if (!value) return "—";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? String(value) : parsed.toLocaleString();
+  return formatCentralTimestamp(value, { fallback: value ? String(value) : "—" });
+}
+
+function normalizeTemplatePath(value) {
+  return String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "").toLowerCase();
+}
+
+function formatTemplateStatLabel(key) {
+  return String(key)
+    .replaceAll("_", " ")
+    .split(" ")
+    .map((word) => ({ id: "ID", ss: "SS" })[word.toLowerCase()] ?? `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function formatTemplateStatValue(value) {
+  if (Array.isArray(value)) {
+    const groups = [];
+    for (const item of value) {
+      const display = formatTemplateStatValue(item);
+      const last = groups.at(-1);
+      if (last?.value === display) last.count += 1;
+      else groups.push({ value: display, count: 1 });
+    }
+    return groups.map((group) => `${group.value}${group.count > 1 ? ` ×${group.count}` : ""}`).join(", ");
+  }
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return String(value);
 }
 
 // While spectating, /status is re-read on a slow timer AND opportunistically

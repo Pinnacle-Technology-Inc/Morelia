@@ -5,6 +5,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { acknowledgeIncident, loadGaps, loadIncidents } from "../history-api";
+import { formatCentralTimestamp, timestampMs } from "../datetime";
 
 const activeTab = ref("incidents");
 const rows = ref([]);
@@ -23,7 +24,12 @@ const tabs = [
 
 function formatGapBoundary(value) {
   if (value === null || value === undefined) return "—";
-  if (typeof value === "string" || typeof value === "number") return String(value);
+  const normalized = gapBoundaryValue(value);
+  if (normalized !== null) {
+    const fallback = typeof value === "object" ? null : String(value);
+    const formatted = formatCentralTimestamp(normalized, { fallback });
+    if (formatted) return formatted;
+  }
   try {
     return JSON.stringify(value);
   } catch {
@@ -31,11 +37,19 @@ function formatGapBoundary(value) {
   }
 }
 
-function gapBoundaryTime(value) {
-  const timestamp = value && typeof value === "object" ? value.ts : value;
+function gapBoundaryValue(value) {
+  const timestamp = value && typeof value === "object"
+    ? value.ts ?? value.timestamp
+    : value;
   if (typeof timestamp !== "string" && typeof timestamp !== "number") return null;
-  const parsed = new Date(timestamp).getTime();
-  return Number.isNaN(parsed) ? null : parsed;
+  if (typeof timestamp === "number" && Math.abs(timestamp) < 1_000_000_000_000) {
+    return timestamp * 1000;
+  }
+  return timestamp;
+}
+
+function gapBoundaryTime(value) {
+  return timestampMs(gapBoundaryValue(value));
 }
 
 function formatGapDuration(gap) {
@@ -110,7 +124,7 @@ onMounted(() => loadPage());
           <thead><tr><th>Time</th><th>Session</th><th>Stream</th><th>Reason</th><th>Policy</th><th>Outcome</th><th>State</th><th /></tr></thead>
           <tbody>
             <tr v-for="incident in rows" :key="incident.incident_id">
-              <td><code>{{ incident.opened_at ?? "—" }}</code></td><td><strong>Session {{ incident.session_id }}</strong></td>
+              <td><code>{{ formatCentralTimestamp(incident.opened_at) }}</code></td><td><strong>Session {{ incident.session_id }}</strong></td>
               <td><code>{{ incident.device_id ?? "—" }}</code></td><td>{{ incident.reason }}</td><td>{{ incident.policy ?? "—" }}</td>
               <td>{{ incidentOutcome(incident) }}</td><td><StatusBadge compact :value="incident.status" /></td>
               <td><button v-if="incident.status === 'open'" class="table-action" type="button" @click="acknowledge(incident)">Acknowledge</button></td>

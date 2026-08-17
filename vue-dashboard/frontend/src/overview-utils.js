@@ -1,7 +1,9 @@
+import { timestampMs } from "./datetime";
+
 export function sortSessionsOldestFirst(sessions) {
   return [...sessions].sort((left, right) => {
-    const leftTime = Date.parse(left.startTime ?? "") || Number.POSITIVE_INFINITY;
-    const rightTime = Date.parse(right.startTime ?? "") || Number.POSITIVE_INFINITY;
+    const leftTime = timestampMs(left.startTime) ?? Number.POSITIVE_INFINITY;
+    const rightTime = timestampMs(right.startTime) ?? Number.POSITIVE_INFINITY;
     return leftTime - rightTime;
   });
 }

@@ -8,6 +8,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { countSessionsForTab, filterSessions, sessionTabs } from "../session-utils";
+import { formatCentralDate, formatCentralTimestamp } from "../datetime";
 
 const props = defineProps({
   sessions: { type: Array, required: true },
@@ -50,14 +51,16 @@ watch(sessionErrorMessage, (message, previousMessage) => {
 function timeLabel(session) {
   if (session.lifecycle === "Active") return session.duration ?? "In progress";
   if (session.scheduledTime) {
-    return new Date(session.scheduledTime).toLocaleString("en-US", {
+    return formatCentralTimestamp(session.scheduledTime, {
+      year: undefined,
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+      second: undefined,
     });
   }
-  if (session.startTime) return new Date(session.startTime).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  if (session.startTime) return formatCentralDate(session.startTime, { year: undefined });
   return "-";
 }
 </script>

@@ -26,6 +26,7 @@ import {
   filterExperiments,
   summarizeExperiments,
 } from "../experiment-utils";
+import { formatCentralTimestamp } from "../datetime";
 
 const experiments = ref([]);
 const state = ref("loading");
@@ -66,15 +67,8 @@ const confirmLabel = computed(() => {
   return pendingAction.value?.kind === "delete" ? "Delete permanently" : "Archive experiment";
 });
 
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  dateStyle: "medium",
-  timeStyle: "short",
-});
-
 function formatDate(value) {
-  if (!value) return "—";
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? "—" : dateFormatter.format(date);
+  return formatCentralTimestamp(value, { second: undefined });
 }
 
 async function refresh({ silent = false } = {}) {

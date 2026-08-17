@@ -11,6 +11,7 @@ import RepairTemplateDialog from "../components/RepairTemplateDialog.vue";
 import TemplateDetailPage from "./TemplateDetailPage.vue";
 import DeviceTemplateDetailPage from "./DeviceTemplateDetailPage.vue";
 import { sessionLifecycleLabel } from "../session-api";
+import { formatCentralTimestamp } from "../datetime";
 import {
   archiveTemplate,
   deleteSessionTemplate,
@@ -310,12 +311,7 @@ function deviceTemplateRouteName(template) {
 
 function formatDeviceTemplateModified(template) {
   const value = template.modified_at ?? template.created_at;
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "—";
-  return new Intl.DateTimeFormat(undefined, {
-    month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit",
-  }).format(date);
+  return formatCentralTimestamp(value, { second: undefined });
 }
 
 async function repaired() {
