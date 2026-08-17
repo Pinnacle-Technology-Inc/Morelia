@@ -1,6 +1,6 @@
 """Watchdog process orchestration: manifest -> driver -> outbox -> direct ingest.
 
-Wires one ``RuntimeControlDriver`` instance for one dataflow. Every
+Wires one ``MoreliaRuntime`` instance for one dataflow. Every
 ``RuntimeReport`` the driver emits is enqueued to the local SQLite outbox
 *before* any delivery attempt (packet 04's durability boundary — see
 ``app.watchdog_process.outbox``), then flushed directly to the control
@@ -24,22 +24,26 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from time import monotonic
+from typing import TYPE_CHECKING
 
 import structlog
 
 from app.contracts.watchdog_process_protocol import WatchdogTelemetryEnvelope
-from app.runtime_child.driver import RuntimeControlDriver, RuntimePhase, RuntimeReport
+from app.runtime_child.driver import RuntimePhase, RuntimeReport
 from app.runtime_host.manifest import Manifest
 from app.watchdog_process.outbox import WatchdogOutbox
 from app.watchdog_process.telemetry_client import DeliveryOutcome, DeliveryResult, TelemetryClient
 
+if TYPE_CHECKING:
+    from app.runtime_child.morelia import MoreliaRuntime
+
 _log = structlog.get_logger(__name__)
 
-# Phases from which the driver's own stop() guard (RuntimeControlDriver.stop)
-# accepts being called — mirrors runtime_host/__main__.py's _STOPPABLE_PHASES.
+# Phases from which MoreliaRuntime.stop() accepts being called; mirrors
+# runtime_host/__main__.py's _STOPPABLE_PHASES.
 _STOPPABLE_PHASES = (RuntimePhase.PREFLIGHT, RuntimePhase.RUNNING)
 
-DriverFactory = Callable[..., RuntimeControlDriver]
+DriverFactory = Callable[..., "MoreliaRuntime"]
 
 # How many consecutive 409s a never-yet-accepted watchdog tolerates before
 # giving up anyway. At the driver's report cadence this is well past any
@@ -90,7 +94,7 @@ class WatchdogProcess:
         self._stale_grace_attempts = stale_grace_attempts
         self._delivered_once = False
         self._stale_streak = 0
-        self.driver: RuntimeControlDriver = build_driver(
+        self.driver: MoreliaRuntime = build_driver(
             manifest=manifest,
             on_report=self._on_report,
         )
