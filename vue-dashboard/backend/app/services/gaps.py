@@ -148,22 +148,35 @@ def _record_disconnect_gap(
             else None
         )
         recording_continued = disconnect.get("recording_continued") is True
+        detection_source = disconnect.get("detection_source")
+        if not isinstance(detection_source, str) or len(detection_source) > 80:
+            detection_source = None
+        gap_reason = disconnect.get("reason")
+        if not isinstance(gap_reason, str) or not gap_reason or len(gap_reason) > 120:
+            gap_reason = "physical disconnect"
         duration = float(ended_at - started_at)
         operation = _recovery_operation(report.recovery_id) if report.recovery_id else None
         details = {
             "episode_id": episode_id,
             "duration_seconds": duration,
             "recording_continued": recording_continued,
-            "missing_value": "NaN",
             "report_sequence": report.sequence,
         }
+        if detection_source is not None:
+            details["detection_source"] = detection_source
+        read_failure_count = disconnect.get("read_failure_count")
+        if isinstance(read_failure_count, int) and not isinstance(read_failure_count, bool):
+            details["read_failure_count"] = read_failure_count
+        if detection_source != "source_reader":
+            details["missing_value"] = "NaN"
         device_label = device_id if isinstance(device_id, str) and device_id else "The stream"
         duration_label = f"{duration:g} second" + ("" if duration == 1 else "s")
-        continuity = (
-            "recording continued with NaN placeholders"
-            if recording_continued
-            else "the stream restarted and output continuity must be verified per sink"
-        )
+        if recording_continued and detection_source == "source_reader":
+            continuity = "the worker remained active; output continuity must be verified"
+        elif recording_continued:
+            continuity = "recording continued with NaN placeholders"
+        else:
+            continuity = "the stream restarted and output continuity must be verified per sink"
         with transaction():
             gap = _gaps.create(
                 gap_id=episode_id,
@@ -178,7 +191,7 @@ def _record_disconnect_gap(
                 # recorded separately when that evidence exists.
                 boundary_kind=None,
                 boundary_version=None,
-                reason="physical disconnect",
+                reason=gap_reason,
                 confidence=GapConfidence.UNCERTAIN,
                 gap_start={"timestamp": float(started_at)},
                 gap_end={"timestamp": float(ended_at)},

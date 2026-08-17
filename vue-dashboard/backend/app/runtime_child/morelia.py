@@ -12,6 +12,7 @@ import queue
 import sys
 import threading
 import time
+import uuid
 from collections.abc import Callable, Mapping
 from contextlib import contextmanager, suppress
 from enum import Enum
@@ -317,6 +318,8 @@ class MoreliaRuntime:
         self._sink_seq: dict[tuple[str, str], int] = {}
         self._source_error_queue: Any | None = None
         self._source_status_by_device: dict[str, dict[str, object]] = {}
+        self._source_failure_by_device: dict[str, dict[str, object]] = {}
+        self._source_recovery_by_device: dict[str, list[dict[str, object]]] = {}
         self._device_id_by_port = {
             str(device_flow.port).lower(): device_flow.device_id
             for device_flow in manifest.device_flows
@@ -1101,6 +1104,7 @@ class MoreliaRuntime:
                     stream.get("initiating_failure_reason")
                     or stream.get("failure_reason")
                     or heartbeat.get("reason")
+                    or disconnect.get("reason")
                 ),
                 recovery_stage=recovery.get("status"),
                 policy_mode=recovery.get("policy"),
@@ -1148,6 +1152,44 @@ class MoreliaRuntime:
             action_detail = action_detail if isinstance(action_detail, dict) else {}
             disconnect = action_detail.get("disconnect")
             disconnect = disconnect if isinstance(disconnect, dict) else None
+            action_name = _bounded_text(action.get("taken"), 120)
+            source_recoveries = self._source_recovery_by_device.get(device_id, [])
+            source_recovery = source_recoveries[0] if source_recoveries else None
+            if source_recovery is not None and action_name == "connection_restored":
+                if disconnect is None:
+                    disconnect = source_recoveries.pop(0)
+                else:
+                    watchdog_start = disconnect.get("started_at")
+                    watchdog_end = disconnect.get("ended_at")
+                    if (
+                        isinstance(watchdog_start, (int, float))
+                        and not isinstance(watchdog_start, bool)
+                        and isinstance(watchdog_end, (int, float))
+                        and not isinstance(watchdog_end, bool)
+                    ):
+                        for recovery_index, candidate in enumerate(source_recoveries):
+                            candidate_start = candidate.get("started_at")
+                            candidate_end = candidate.get("ended_at")
+                            if (
+                                isinstance(candidate_start, (int, float))
+                                and not isinstance(candidate_start, bool)
+                                and isinstance(candidate_end, (int, float))
+                                and not isinstance(candidate_end, bool)
+                                and max(watchdog_start, candidate_start)
+                                <= min(watchdog_end, candidate_end)
+                            ):
+                                source_recoveries.pop(recovery_index)
+                                break
+            if (
+                source_recovery is not None
+                and action_name in (None, "", "none")
+                and health is StreamStatus.HEALTHY
+            ):
+                source_recoveries.pop(0)
+                action_name = "connection_restored"
+                disconnect = source_recovery
+            if not source_recoveries:
+                self._source_recovery_by_device.pop(device_id, None)
             recovery_event = stream.get("recovery_event")
             recovery_event = recovery_event if isinstance(recovery_event, dict) else {}
             startup = signals.get("startup")
@@ -1170,7 +1212,7 @@ class MoreliaRuntime:
                     "initiating_failure_reason": _bounded_text(
                         stream.get("initiating_failure_reason"), 320
                     ),
-                    "action": _bounded_text(action.get("taken"), 120),
+                    "action": action_name,
                     "consecutive_nonhealthy_ticks": self._nonhealthy_streak_by_device[device_id],
                     "failure": {
                         "count": failure.get("count"),
@@ -1295,6 +1337,7 @@ class MoreliaRuntime:
         age_sec = (time.time_ns() - timestamp_ns) / 1_000_000_000
         if age_sec > get_config().SOURCE_STATUS_STALE_AFTER_SECONDS:
             self._source_status_by_device.pop(device_id, None)
+            getattr(self, "_source_failure_by_device", {}).pop(device_id, None)
             return None
         return status
 
@@ -1332,17 +1375,64 @@ class MoreliaRuntime:
                 or timestamp_ns < 0
             ):
                 status["timestamp_ns"] = time.time_ns()
+            timestamp_ns = status["timestamp_ns"]
+            state = status.get("state")
+            failures = getattr(self, "_source_failure_by_device", None)
+            if failures is None:
+                failures = {}
+                self._source_failure_by_device = failures
+            if state == "degraded" and device_id not in failures:
+                failures[device_id] = {
+                    "episode_id": uuid.uuid4().hex,
+                    "started_at": timestamp_ns / 1_000_000_000,
+                    "exception_type": status.get("exception_type"),
+                }
+            elif state == "recovery_window_expired":
+                failures.pop(device_id, None)
             # ``recovered``/``healthy`` clears the degraded latch; do not keep error fields.
-            if status.get("state") in ("recovered", "healthy"):
+            if state in ("recovered", "healthy"):
                 previous = self._source_status_by_device.pop(device_id, None)
+                failure = failures.pop(device_id, None)
+                episode_id = failure.get("episode_id") if failure else None
+                started_at = failure.get("started_at") if failure else None
+                ended_at = timestamp_ns / 1_000_000_000
+                if (
+                    state == "recovered"
+                    and isinstance(episode_id, str)
+                    and episode_id
+                    and isinstance(started_at, (int, float))
+                    and not isinstance(started_at, bool)
+                    and isinstance(ended_at, (int, float))
+                    and not isinstance(ended_at, bool)
+                    and ended_at >= started_at
+                ):
+                    recoveries = getattr(self, "_source_recovery_by_device", None)
+                    if recoveries is None:
+                        recoveries = {}
+                        self._source_recovery_by_device = recoveries
+                    recoveries.setdefault(device_id, []).append(
+                        {
+                            "episode_id": episode_id,
+                            "started_at": float(started_at),
+                            "ended_at": float(ended_at),
+                            "elapsed_sec": float(ended_at - started_at),
+                            "recording_continued": True,
+                            "detection_source": "source_reader",
+                            "reason": "source read interruption",
+                            "max_heartbeat_age_sec": getattr(
+                                self, "_max_heartbeat_age_sec", None
+                            ),
+                            "read_failure_count": status.get("consecutive_failures", 0),
+                        }
+                    )
                 if previous is not None:
                     _log.info(
                         "source read recovered",
                         component="morelia_watchdog",
                         dataflow_id=self._manifest.dataflow_id,
                         device_id=device_id,
-                        exception_type=previous.get("exception_type"),
-                        failures_survived=status.get("consecutive_failures"),
+                        source_read_error_type=previous.get("exception_type"),
+                        source_read_consecutive_failures=status.get("consecutive_failures"),
                     )
                 continue
             self._source_status_by_device[device_id] = status
