@@ -131,6 +131,7 @@ onBeforeUnmount(() => {
         :load-error="sessionCatalogError"
         @open-session="openSession"
         @view-attention="changeTab('sessions')"
+        @view-history="changeTab('incidents')"
         @create-session="newTemplate"
       />
       <!-- On success or a 409 duplicate, the wizard hands back a template id

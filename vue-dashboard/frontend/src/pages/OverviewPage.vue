@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { ChevronDown } from "@lucide/vue";
 import ActiveSessionCard from "../components/ActiveSessionCard.vue";
 import BaseCard from "../components/BaseCard.vue";
@@ -12,6 +12,11 @@ import {
   useOverviewLayout,
 } from "../composables/useOverviewLayout";
 import { summarizeAttentionSessions } from "../session-utils";
+import { loadDeviceConfigs } from "../devices-api";
+import { formatCentralTimestamp } from "../datetime";
+import { loadIncidents } from "../history-api";
+
+const RECENT_INCIDENT_LIMIT = 5;
 
 const props = defineProps({
   sessions: { type: Array, required: true },
@@ -19,17 +24,53 @@ const props = defineProps({
   loadError: { type: String, default: "" },
 });
 
-defineEmits(["open-session", "view-attention", "create-session"]);
+defineEmits(["open-session", "view-attention", "view-history", "create-session"]);
 
 const attention = computed(() => summarizeAttentionSessions(props.sessions));
 const activeSessions = computed(() => props.sessions.filter((session) => session.lifecycle === "Active"));
 const scheduled = computed(() => props.sessions.filter((session) => session.lifecycle === "Scheduled"));
+const deviceConfigs = ref([]);
+const recentIncidents = ref([]);
+const recentHistoryState = ref("loading");
+const recentHistoryError = ref("");
 const deviceFlows = computed(() => props.sessions.flatMap((session) =>
   (Array.isArray(session.deviceFlows) ? session.deviceFlows : []).map((flow) => ({
     ...flow,
     sessionId: session.id,
   })),
 ));
+
+onMounted(async () => {
+  try {
+    deviceConfigs.value = await loadDeviceConfigs();
+  } catch {
+    deviceConfigs.value = [];
+  }
+});
+
+onMounted(async () => {
+  try {
+    const page = await loadIncidents({ pageSize: RECENT_INCIDENT_LIMIT });
+    recentIncidents.value = Array.isArray(page.items) ? page.items : [];
+    recentHistoryState.value = "live";
+  } catch (error) {
+    recentIncidents.value = [];
+    recentHistoryState.value = "unavailable";
+    recentHistoryError.value = error instanceof Error
+      ? error.message
+      : "Recent incident history is unavailable.";
+  }
+});
+
+function incidentStream(incident) {
+  return incident.sink_id ?? incident.device_id ?? incident.dataflow_id ?? "—";
+}
+
+function incidentOutcome(incident) {
+  if (incident.resolution) return incident.resolution;
+  return incident.status === "resolved" ? "Unavailable" : "Pending";
+}
+
 let storage = null;
 try {
   storage = window.localStorage;
@@ -126,6 +167,7 @@ const {
               <ActiveSessionCard
                 :session="session"
                 :devices="devicesForSession(session.id)"
+                :device-configs="deviceConfigs"
                 :expanded="isSessionExpanded(session.id)"
                 @drag-start="startSessionDrag"
                 @drag-end="endSessionDrag"
@@ -173,8 +215,65 @@ const {
     </div>
 
     <section>
-      <SectionTitle title="Recent Incidents & Recoveries" />
-      <BaseCard><div class="empty-state">Recent incidents and recoveries are unavailable until the live history contract is wired.</div></BaseCard>
+      <SectionTitle title="Recent Incidents & Recoveries">
+        <button class="section-link" type="button" @click="$emit('view-history')">
+          View history →
+        </button>
+      </SectionTitle>
+      <BaseCard>
+        <div
+          v-if="recentHistoryState === 'loading'"
+          class="empty-state"
+          role="status"
+        >
+          Loading recent incidents…
+        </div>
+        <div
+          v-else-if="recentHistoryState === 'unavailable'"
+          class="empty-state"
+          role="alert"
+        >
+          Recent incidents and recoveries are unavailable. {{ recentHistoryError }}
+        </div>
+        <div v-else-if="!recentIncidents.length" class="empty-state" role="status">
+          No incidents or recoveries have been recorded.
+        </div>
+        <div v-else class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Session</th>
+                <th>Stream</th>
+                <th>Reason</th>
+                <th>Outcome</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="incident in recentIncidents"
+                :key="incident.incident_id"
+                class="overview-history-row"
+                @click="$emit('open-session', String(incident.session_id))"
+              >
+                <td><code>{{ formatCentralTimestamp(incident.opened_at) }}</code></td>
+                <td>
+                  <button
+                    class="overview-history-link"
+                    type="button"
+                    @click.stop="$emit('open-session', String(incident.session_id))"
+                  >
+                    Session {{ incident.session_id }}
+                  </button>
+                </td>
+                <td><code>{{ incidentStream(incident) }}</code></td>
+                <td>{{ incident.reason }}</td>
+                <td>{{ incidentOutcome(incident) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </BaseCard>
     </section>
   </div>
 </template>
@@ -213,5 +312,28 @@ const {
 
 .empty-state--welcome .button {
   margin-top: var(--space-2);
+}
+
+.overview-history-row {
+  cursor: pointer;
+}
+
+.overview-history-row:hover {
+  background: var(--surface-sage);
+}
+
+.overview-history-link {
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: var(--fw-bold);
+  cursor: pointer;
+}
+
+.overview-history-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 </style>
