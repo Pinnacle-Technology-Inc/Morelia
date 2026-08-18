@@ -204,6 +204,17 @@ def _create_idempotent_run_session(
 
 def _scheduled_requirements(session: Session) -> list[dict]:
     requirements: list[dict] = []
+    snapshot = (
+        session.source_template_snapshot
+        if isinstance(session.source_template_snapshot, Mapping)
+        else {}
+    )
+    snapshot_content = snapshot.get("content")
+    snapshot_flows = (
+        snapshot_content.get("device_flows")
+        if isinstance(snapshot_content, Mapping)
+        else []
+    ) or []
     for flow_index, flow in enumerate(session.device_flows or []):
         config_id = int(flow["device_config_id"])
         config = device_configs.get_by_id(config_id)
@@ -213,17 +224,49 @@ def _scheduled_requirements(session: Session) -> list[dict]:
             from app.domain.errors import DeviceConfigNotFound
 
             raise DeviceConfigNotFound(config_id)
-        requirements.append({
-            "flow_index": flow_index,
-            "preferred_device_config_id": config_id,
-            "required_device_type": str(config.device_type.value)
+        device_type = (
+            str(config.device_type.value)
             if hasattr(config.device_type, "value")
-            else str(config.device_type),
-            "preferred_hardware_id": config.hardware_id,
-            "preferred_parameters": dict(config.parameters or {}),
-            "selected_device_config_id": None,
-            "match": None,
-        })
+            else str(config.device_type)
+        )
+        preferred_parameters = dict(config.parameters or {})
+        snapshot_flow = (
+            snapshot_flows[flow_index]
+            if flow_index < len(snapshot_flows)
+            and isinstance(snapshot_flows[flow_index], Mapping)
+            else {}
+        )
+        template_path = snapshot_flow.get("device_template_path")
+        required_template = (
+            device_templates.get_by_path(template_path)
+            if isinstance(template_path, str) and template_path
+            else None
+        )
+        if required_template is None:
+            raise InvalidSessionEntry(
+                f"device_flows[{flow_index}].device_template_path",
+                "scheduled runs need the referenced device template to snapshot its settings",
+            )
+        required_parameters = dict(required_template.content.get("parameters") or {})
+        required_hash = snapshot_flow.get("device_template_content_hash")
+        if not isinstance(required_hash, str):
+            required_hash = device_templates.content_hash(
+                {"type": device_type, "parameters": required_parameters}
+            )
+        requirements.append(
+            {
+                "flow_index": flow_index,
+                "preferred_device_config_id": config_id,
+                "required_device_type": device_type,
+                "required_device_template_path": required_template.file_path,
+                "required_configuration_hash": required_hash,
+                "required_parameters": required_parameters,
+                "preferred_hardware_id": config.hardware_id,
+                "preferred_parameters": preferred_parameters,
+                "selected_device_config_id": None,
+                "match": None,
+            }
+        )
     return requirements
 
 
