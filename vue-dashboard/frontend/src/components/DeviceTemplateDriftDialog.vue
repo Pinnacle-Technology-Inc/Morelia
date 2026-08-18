@@ -18,6 +18,10 @@ const props = defineProps({
   rows: { type: Array, required: true },
   busy: { type: Boolean, default: false },
   error: { type: String, default: "" },
+  // Some callers can accept either side. Start Run cannot: the backend only
+  // accepts an exact template match, so keeping the current settings simply
+  // means cancelling this repair and choosing another device.
+  allowDeviceSettings: { type: Boolean, default: true },
 });
 
 const emit = defineEmits(["choose", "close"]);
@@ -55,7 +59,9 @@ function formatValue(row, side) {
           <p>
             {{ differences.length }}
             setting{{ differences.length === 1 ? "" : "s" }} on this device
-            {{ differences.length === 1 ? "does" : "do" }} not match it. Choose which side to use.
+            {{ differences.length === 1 ? "does" : "do" }} not match it.
+            <template v-if="allowDeviceSettings">Choose which side to use.</template>
+            <template v-else>Apply the template settings to make this device available for the run.</template>
           </p>
         </div>
 
@@ -106,7 +112,7 @@ function formatValue(row, side) {
       <footer class="drift-footer">
         <BaseButton variant="secondary" :disabled="busy" @click="$emit('close')">Cancel</BaseButton>
         <div>
-          <BaseButton variant="secondary" :disabled="busy" @click="emit('choose', 'device')">
+          <BaseButton v-if="allowDeviceSettings" variant="secondary" :disabled="busy" @click="emit('choose', 'device')">
             B · Keep this device's settings
           </BaseButton>
           <BaseButton :disabled="busy" @click="emit('choose', 'template')">

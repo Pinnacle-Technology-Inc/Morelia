@@ -29,6 +29,13 @@ const props = defineProps({
   // suggested a device ("Exact match", "Type match", …).
   annotate: { type: Function, default: null },
   selectable: { type: Function, default: isDeviceSelectable },
+  // Optional action for a row that cannot currently be selected. Start Run
+  // uses this for both first-time configuration and applying the flow's
+  // template to an existing, mismatched config.
+  configureLabel: {
+    type: Function,
+    default: (device) => (device?.status === "unconfigured" ? "Configure" : ""),
+  },
 });
 const emit = defineEmits(["toggle", "configure", "rescan"]);
 
@@ -39,12 +46,19 @@ function isSelected(device) {
   return device.id != null && props.selected.includes(device.id);
 }
 
-// Present but unconfigured hardware is listed on purpose so an operator can see
-// (and set up) a device that is plugged in but not yet usable. Clicking such a
-// row opens configuration rather than silently doing nothing.
+function configurationAction(device) {
+  return String(props.configureLabel?.(device) ?? "").trim();
+}
+
+function unavailableMessage(device) {
+  return configurationAction(device) || props.annotate?.(device) || "Unavailable for this stream";
+}
+
+// A disabled row may still offer a repair action: configure scan-only hardware
+// or bring an existing config into line with the required template.
 function onRow(device) {
   if (!props.selectable(device)) {
-    if (device.status === "unconfigured") emit("configure", device);
+    if (configurationAction(device)) emit("configure", device);
     return;
   }
   emit("toggle", device);
@@ -103,13 +117,13 @@ function onRow(device) {
               <span
                 v-else
                 class="row-warning"
-                title="Configure this device before using it as a stream."
-                aria-label="Configure this device before using it as a stream."
+                :title="unavailableMessage(device)"
+                :aria-label="unavailableMessage(device)"
               ><AlertTriangle :size="16" /></span>
             </td>
             <td>
               <strong>{{ device.name }}</strong>
-              <span v-if="!selectable(device)" class="row-warning-copy">Configure before use</span>
+              <span v-if="!selectable(device)" class="row-warning-copy">{{ unavailableMessage(device) }}</span>
               <span v-else-if="annotate && annotate(device)" class="row-annotation">{{ annotate(device) }}</span>
             </td>
             <td>{{ device.type }}</td>
@@ -117,12 +131,12 @@ function onRow(device) {
             <td><code>{{ device.port }}</code></td>
             <td>
               <button
-                v-if="device.status === 'unconfigured'"
+                v-if="configurationAction(device)"
                 type="button"
                 class="table-action"
                 @click.stop="emit('configure', device)"
               >
-                Configure
+                {{ configurationAction(device) }}
               </button>
             </td>
           </tr>

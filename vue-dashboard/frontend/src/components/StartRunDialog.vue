@@ -14,6 +14,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { AlertTriangle, FolderPen, RefreshCw, X } from "@lucide/vue";
 import BaseButton from "./BaseButton.vue";
 import DeviceScanTable from "./DeviceScanTable.vue";
+import DeviceTemplateDriftDialog from "./DeviceTemplateDriftDialog.vue";
 import FolderPickerDialog from "./FolderPickerDialog.vue";
 import GuardedDialog from "./GuardedDialog.vue";
 import StatusBadge from "./StatusBadge.vue";
@@ -25,7 +26,13 @@ import {
   loadSessionNameSuggestion,
   templateRevisionChanged,
 } from "../session-api";
-import { createDeviceConfigFromTemplate, isDeviceSelectable, loadDevicePool } from "../devices-api";
+import {
+  createDeviceConfigFromTemplate,
+  editDeviceConfig,
+  isDeviceSelectable,
+  loadDeviceConfig,
+  loadDevicePool,
+} from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
 import { outputFolder, validateOutputFolders } from "../sink-location-recovery";
 import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
@@ -36,6 +43,7 @@ import {
   templateStateHint,
 } from "../templates-api";
 import {
+  compareParameters,
   defaultRunFileStem,
   normalizeTemplateRef,
   sessionNameFromSuggestion,
@@ -76,6 +84,9 @@ const defaultOutputFolder = ref("");
 // Which sink the folder picker is open for: { flowIndex, sinkIndex } or null.
 const folderPickerTarget = ref(null);
 const configuringHardware = new Set();
+const reconfigurationReview = ref(null);
+const reconfigurationBusy = ref(false);
+const reconfigurationError = ref("");
 // A rejected create carrying the backend's proposed alternative path, so a
 // collision is one click to resolve rather than a path to retype.
 const collision = ref(null);
@@ -181,7 +192,10 @@ function isPreferenceSelectable(device, flowIndex) {
 
 function annotateFor(flowIndex) {
   return (device) => {
-    if (runMode.value !== "schedule" && !matchesFlowTemplate(device, flowIndex)) {
+    if (!matchesFlowTemplate(device, flowIndex)) {
+      if (runMode.value === "schedule") {
+        return "Template settings will be applied at the scheduled start";
+      }
       return "Configuration does not match the required device template";
     }
     const planned = plannerAssignment(flowIndex);
@@ -189,6 +203,21 @@ function annotateFor(flowIndex) {
       return planned.match ? `Planner: ${planned.match} match` : "Planner suggestion";
     }
     if (matchesFlowTemplate(device, flowIndex)) return "Matches the required device template";
+    return "";
+  };
+}
+
+function configureLabelFor(flowIndex) {
+  return (device) => {
+    if (device.status === "unconfigured") return "Configure";
+    if (
+      runMode.value !== "schedule" &&
+      device.configId != null &&
+      device.status === "free" &&
+      !matchesFlowTemplate(device, flowIndex)
+    ) {
+      return "Apply template settings";
+    }
     return "";
   };
 }
@@ -431,6 +460,15 @@ async function rescanDevices() {
   try {
     const pool = await loadDevicePool();
     devices.value = pool.devices;
+    // The planner ranks by physical compatibility and may suggest a config
+    // whose settings belong to another template. Do not leave that row looking
+    // selected once the pool gives us the configuration hashes needed to tell.
+    for (const assignment of assignments.value) {
+      const selected = deviceFor(assignment.deviceConfigId);
+      if (selected && !isPreferenceSelectable(selected, assignment.flowIndex)) {
+        assignment.deviceConfigId = null;
+      }
+    }
     scanState.value = "ready";
   } catch (reason) {
     // The previous list stays on screen: a live scan takes a couple of seconds,
@@ -487,9 +525,95 @@ async function load() {
   }
 }
 
-// An unconfigured compatible row is configured from this stream's template,
-// so the operator chooses hardware without recreating its settings.
+async function reviewDeviceReconfiguration(flowIndex, device) {
+  const requiredTemplate = deviceTemplateForFlow(flowIndex);
+  if (!requiredTemplate || device.configId == null) {
+    scanError.value = "This device cannot be updated because its saved config or required template is unavailable.";
+    return;
+  }
+  const key = `${flowIndex}:${device.hardwareId}`;
+  if (configuringHardware.has(key)) return;
+  configuringHardware.add(key);
+  scanError.value = "";
+  reconfigurationError.value = "";
+  try {
+    if (!(await revisionIsCurrent())) return;
+    const config = await loadDeviceConfig(device.configId);
+    reconfigurationReview.value = {
+      flowIndex,
+      device,
+      template: requiredTemplate,
+      rows: compareParameters(
+        requiredTemplate.content?.parameters ?? {},
+        config.parameters ?? {},
+      ),
+    };
+  } catch (error) {
+    scanError.value = describeError(error, "The device settings could not be compared with this stream's template.");
+  } finally {
+    configuringHardware.delete(key);
+  }
+}
+
+function closeReconfigurationReview() {
+  if (reconfigurationBusy.value) return;
+  reconfigurationReview.value = null;
+  reconfigurationError.value = "";
+}
+
+async function applyRequiredTemplate() {
+  const review = reconfigurationReview.value;
+  if (!review || reconfigurationBusy.value) return;
+  reconfigurationBusy.value = true;
+  reconfigurationError.value = "";
+  try {
+    if (!(await revisionIsCurrent())) {
+      reconfigurationReview.value = null;
+      return;
+    }
+    await editDeviceConfig(review.device.configId, {
+      parameters: review.template.content?.parameters ?? {},
+      source_template: review.template.file_path ?? review.template.name,
+    });
+    await rescanDevices();
+    const configured = devices.value.find(
+      (candidate) =>
+        candidate.configId === review.device.configId &&
+        isPreferenceSelectable(candidate, review.flowIndex),
+    );
+    if (!configured) {
+      reconfigurationError.value =
+        "The settings were saved, but the device is no longer available to assign. Scan again when it is ready.";
+      return;
+    }
+    const assignment = assignments.value[review.flowIndex];
+    if (assignment) assignment.deviceConfigId = configured.id;
+    reconfigurationReview.value = null;
+  } catch (error) {
+    reconfigurationError.value = describeError(
+      error,
+      "The required template settings could not be applied to this device.",
+    );
+  } finally {
+    reconfigurationBusy.value = false;
+  }
+}
+
+function chooseReconfiguration(choice) {
+  if (choice === "template") {
+    applyRequiredTemplate();
+    return;
+  }
+  closeReconfigurationReview();
+}
+
+// An unconfigured compatible row is created from this stream's template. An
+// existing mismatched config takes the guarded rewrite path above instead.
 async function configureDevice(flowIndex, device) {
+  if (device.status !== "unconfigured") {
+    await reviewDeviceReconfiguration(flowIndex, device);
+    return;
+  }
   const template = deviceTemplateForFlow(flowIndex);
   const hardwareId = device.hardwareId;
   const port = device.port;
@@ -644,7 +768,7 @@ async function submit({ force = false } = {}) {
 // dismissing the folder picker would take the whole run form with it.
 function onKeydown(event) {
   if (event.key !== "Escape") return;
-  if (folderPickerTarget.value) return;
+  if (folderPickerTarget.value || reconfigurationReview.value) return;
   emit("cancel");
 }
 
@@ -752,6 +876,7 @@ watch(() => props.templateId, load);
                   :devices="candidateDevices(assignment.flowIndex)"
                   :selected="assignment.deviceConfigId == null ? [] : [assignment.deviceConfigId]"
                   :annotate="annotateFor(assignment.flowIndex)"
+                  :configure-label="configureLabelFor(assignment.flowIndex)"
                   :selectable="(device) => isPreferenceSelectable(device, assignment.flowIndex)"
                   :scanning="scanState === 'scanning'"
                   :scan-error="scanState === 'error' ? scanError : ''"
@@ -827,7 +952,7 @@ watch(() => props.templateId, load);
             </label>
             <fieldset v-if="runMode === 'schedule'" class="run-mode">
               <legend>Device availability at start time</legend>
-              <p>The preferred device will be used when available. Otherwise, the scheduler selects the closest free compatible device; if none exists, it cancels the run.</p>
+              <p>The scheduler uses a free, available device of the required type and applies this template's settings before starting. If no same-type device exists, it cancels the run.</p>
             </fieldset>
           </section>
 
@@ -873,6 +998,17 @@ watch(() => props.templateId, load);
     :model-value="folderPickerFolder"
     @select="chooseFolder"
     @close="folderPickerTarget = null"
+  />
+  <DeviceTemplateDriftDialog
+    v-if="reconfigurationReview"
+    :device="reconfigurationReview.device"
+    :template-name="reconfigurationReview.template.name"
+    :rows="reconfigurationReview.rows"
+    :busy="reconfigurationBusy"
+    :error="reconfigurationError"
+    :allow-device-settings="false"
+    @choose="chooseReconfiguration"
+    @close="closeReconfigurationReview"
   />
   <GuardedDialog
     v-if="forceClaimDialog && currentClaimConflict"
