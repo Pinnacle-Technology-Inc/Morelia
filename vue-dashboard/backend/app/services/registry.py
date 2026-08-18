@@ -57,6 +57,11 @@ _DEVICE_MORELIA_TYPES: dict[DeviceType, MoreliaType] = {
     DeviceType.POD8401HR: ("Morelia.Devices.PodDevice_8401HR", "Pod8401HR"),
 }
 
+_DEFAULT_SAMPLE_RATE = 2_000
+_DEFAULT_SAMPLE_RATE_DEVICE_TYPES = frozenset(
+    {DeviceType.POD8206HR, DeviceType.POD8401HR}
+)
+
 _SINK_MORELIA_TYPES: dict[SinkType, MoreliaType] = {
     SinkType.CSV: ("Morelia.Stream.sink.csv_sink", "CSVSink"),
     SinkType.EDF: ("Morelia.Stream.sink.edf_sink", "EDFSink"),
@@ -145,7 +150,11 @@ class DeviceSpec:
         if morelia_type is None:
             raise UnsupportedDeviceType(type_key)
 
-        coerced = _validate("device", type_key, _load_param_schema(morelia_type), values)
+        defaulted = dict(values)
+        if device_type in _DEFAULT_SAMPLE_RATE_DEVICE_TYPES:
+            defaulted.setdefault("sample_rate", _DEFAULT_SAMPLE_RATE)
+
+        coerced = _validate("device", type_key, _load_param_schema(morelia_type), defaulted)
         return cls(type=device_type, parameters=tuple(sorted(coerced.items())))
 
     def as_dict(self) -> dict[str, object]:

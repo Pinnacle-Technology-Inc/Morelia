@@ -541,62 +541,6 @@ def list_all() -> list[Session]:
     return _repo.public_all()
 
 
-def complete(session_id: int) -> Session:
-    """Explicitly archive a resource-free stopped session.
-
-    Completion is its own durable dataflow operation. It never calls Stop and
-    therefore cannot infer terminal history from a prior stop operation.
-    """
-    session = get(session_id)
-    if session.command_in_flight:
-        raise CommandInFlight(session_id)
-    if session.status is not SessionStatus.STOPPED:
-        raise InvalidTransition(session.status)
-
-    dataflow_id = session.dataflow_id or uuid4().hex
-    request_id = _request_id("completing")
-    try:
-        operation = create_operation(
-            session_id=session_id,
-            dataflow_id=dataflow_id,
-            command="complete",
-            request_key=request_id,
-            request_id=request_id,
-        )
-    except OperationConflict as exc:
-        raise CommandInFlight(session_id, code=exc.code, details=exc.details) from exc
-
-    # A retried request with the same durable request key is idempotent after
-    # successful completion; it must not create a second terminal operation.
-    if operation.state is OperationState.SUCCEEDED:
-        return session
-    if operation.state is not OperationState.QUEUED:
-        raise CommandInFlight(session_id)
-
-    transition_operation(operation.operation_id, OperationState.CLAIMED)
-    try:
-        with transaction():
-            if not _repo.try_acquire_in_flight_lock(session_id):
-                raise CommandInFlight(session_id)
-            session.command_in_flight = True
-            session.command_id = operation.command_id
-            session.status = SessionStatus.COMPLETED
-            session.command_in_flight = False
-        transition_operation(operation.operation_id, OperationState.DISPATCHED)
-        transition_operation(operation.operation_id, OperationState.SUCCEEDED)
-    except Exception as exc:
-        with transaction():
-            session.command_in_flight = False
-        transition_operation(
-            operation.operation_id,
-            OperationState.FAILED,
-            error_code=type(exc).__name__,
-            error_message=str(exc),
-        )
-        raise
-    return session
-
-
 def start_managed(
     session_id: int,
     supervisor,
@@ -726,10 +670,10 @@ def start_managed(
             if discard_on_predispatch_failure and dispatch_attempted:
                 # Never expose a repairable pre-run record. A dispatch error is ambiguous with
                 # respect to command acceptance; proven teardown makes the run
-                # stopped, while unproven teardown remains a STARTING recovery
+                # completed, while unproven teardown remains a STARTING recovery
                 # case with its claims and runtime identity intact.
                 session.status = (
-                    SessionStatus.STOPPED if teardown_proven else SessionStatus.STARTING
+                    SessionStatus.COMPLETED if teardown_proven else SessionStatus.STARTING
                 )
             elif publish_for_reconciliation and not teardown_proven:
                 session.status = SessionStatus.STARTING
@@ -783,7 +727,6 @@ def start_managed(
 
     with transaction():
         session.command_in_flight = False
-        session.status = SessionStatus.ACTIVE
 
     return session
 
@@ -854,7 +797,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
             session.command_id = envelope.correlation.command_id
             session.dataflow_id = dataflow_id
             session.watchdog_id = watchdog_id
-            session.status = SessionStatus.ENDING
+            session.status = SessionStatus.STOPPING
 
         supervisor.stop(session, envelope=envelope)
     except Exception as exc:
@@ -866,7 +809,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
             _release_session_device_configs(session)
             with transaction():
                 session.command_in_flight = False
-                session.status = SessionStatus.STOPPED
+                session.status = SessionStatus.COMPLETED
                 session.runtime_port = None
                 session.runtime_token = None
             _resolve_stop_supervision_incidents(session, dataflow_id)
@@ -904,7 +847,7 @@ def stop_managed(session_id: int, supervisor, *, force: bool = False) -> Session
 
     with transaction():
         session.command_in_flight = False
-        session.status = SessionStatus.STOPPED
+        session.status = SessionStatus.COMPLETED
         session.runtime_port = None
         session.runtime_token = None
 

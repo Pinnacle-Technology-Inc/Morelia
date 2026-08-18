@@ -63,7 +63,6 @@ const LIVE_HEALTH_LABELS = {
 const RESTING_HEALTH = {
   Preparing: SessionHealth.NOT_RUNNING,
   Scheduled: SessionHealth.NOT_RUNNING,
-  Stopped: SessionHealth.NOT_RUNNING,
   Completed: SessionHealth.NOT_RUNNING,
   Cancelled: SessionHealth.NOT_RUNNING,
 };
@@ -102,7 +101,7 @@ export function needsAttention(session) {
 export function sessionMatchesTab(session, tab) {
   if (tab === "all") return true;
   if (tab === "needs-attention") return needsAttention(session);
-  if (tab === "active") return ["Active", "Starting", "Ending"].includes(session.lifecycle);
+  if (tab === "active") return ["Active", "Starting", "Stopping"].includes(session.lifecycle);
   if (tab === "scheduled") return session.lifecycle === "Scheduled";
   if (tab === "completed") return ["Completed", "Cancelled"].includes(session.lifecycle) && !session.archived;
   if (tab === "archived") return session.archived === true;
@@ -110,7 +109,7 @@ export function sessionMatchesTab(session, tab) {
 }
 
 export function isRunningLifecycle(lifecycle) {
-  return ["Active", "Starting", "Ending"].includes(lifecycle);
+  return ["Active", "Starting", "Stopping"].includes(lifecycle);
 }
 
 export function filterSessions(sessions, tab, search = "") {

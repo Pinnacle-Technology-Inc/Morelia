@@ -38,7 +38,7 @@ const config = {
   Scheduled: { icon: Clock3, tone: "blue" },
   Starting: { icon: LoaderCircle, tone: "amber" },
   Active: { icon: Play, tone: "green" },
-  Ending: { icon: StopCircle, tone: "orange" },
+  Stopping: { icon: StopCircle, tone: "orange" },
   Completed: { icon: CheckCircle2, tone: "green" },
   Cancelled: { icon: XCircle, tone: "neutral" },
   Healthy: { icon: CheckCircle2, tone: "green" },

@@ -156,7 +156,7 @@ def _orphan_session_candidates() -> list[Session]:
     """
     return db.session.scalars(
         db.select(Session).where(
-            Session.status.in_((SessionStatus.ACTIVE, SessionStatus.ENDING)),
+            Session.status.in_((SessionStatus.ACTIVE, SessionStatus.STOPPING)),
             Session.runtime_port.is_(None),
             Session.command_in_flight == False,  # noqa: E712
             Session.dataflow_id.isnot(None),
@@ -174,7 +174,7 @@ def _reconcile_orphan_sessions(summary: ReconciliationSummary) -> Reconciliation
     """Close orphaned managed sessions and free their leaked device claims.
 
     A daemon shutdown, or a stop whose runtime was already gone, can leave a
-    session ACTIVE/ENDING with its device configs still CLAIMED — the claim then
+    session ACTIVE/STOPPING with its device configs still CLAIMED — the claim then
     outlives the runtime and blocks the next session that needs the device.
 
     The signal is deliberately narrow to avoid touching a healthy session:
@@ -195,7 +195,7 @@ def _reconcile_orphan_sessions(summary: ReconciliationSummary) -> Reconciliation
         if not claimed:
             continue  # nothing leaked (e.g. a non-managed session)
         with transaction():
-            session.status = SessionStatus.STOPPED
+            session.status = SessionStatus.COMPLETED
             session.runtime_port = None
             session.runtime_token = None
             session.command_in_flight = False
@@ -388,7 +388,7 @@ def _reconcile_stop_operation(
         _finish_operation(operation, OperationState.SUCCEEDED)
         _release_session_lock(
             operation,
-            status=SessionStatus.STOPPED,
+            status=SessionStatus.COMPLETED,
             release_device_configs=True,
         )
         return _inc(summary, succeeded_operations=1)

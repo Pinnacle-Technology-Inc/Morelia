@@ -353,10 +353,9 @@ class EventPoller:
         session = SessionRepository().get_by_dataflow_id(dataflow_id)
         if session is None:
             return
-        if session.status is SessionStatus.ENDING:
+        if session.status is SessionStatus.STOPPING:
             return
         if session.status in {
-            SessionStatus.STOPPED,
             SessionStatus.COMPLETED,
             SessionStatus.CANCELLED,
         }:

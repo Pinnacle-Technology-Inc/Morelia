@@ -20,15 +20,13 @@ defineEmits(["open-session", "open-templates", "retry"]);
 
 const activeTab = ref("all");
 const search = ref("");
-// STOPPED was the old intermediate state between stopping a run and explicitly
-// completing it. A stopped run is now terminal, so keep older catalog payloads
-// readable without exposing the retired lifecycle in the UI.
-const sessions = computed(() => props.sessions.map((session) =>
-  String(session.lifecycle).toLowerCase() === "stopped"
-    ? { ...session, lifecycle: "Completed" }
-    : session,
-));
-const visibleSessions = computed(() => filterSessions(sessions.value, activeTab.value, search.value));
+const sessions = computed(() => props.sessions);
+const visibleSessions = computed(() => filterSessions(sessions.value, activeTab.value, search.value)
+  .sort((left, right) => {
+    const leftCreatedAt = timestampMs(left.createdAt) ?? Number.NEGATIVE_INFINITY;
+    const rightCreatedAt = timestampMs(right.createdAt) ?? Number.NEGATIVE_INFINITY;
+    return rightCreatedAt - leftCreatedAt;
+  }));
 const counts = computed(() => Object.fromEntries(
   sessionTabs.map((tab) => [tab.id, countSessionsForTab(sessions.value, tab.id)]),
 ));

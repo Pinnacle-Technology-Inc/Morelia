@@ -294,6 +294,19 @@ class SessionRepository:
             db.select(Session).where(Session.dataflow_id == dataflow_id)
         ).first()
 
+    def mark_active_if_starting(self, dataflow_id: str) -> bool:
+        """Promote STARTING only; late reports must not revive terminalizing runs."""
+        with transaction():
+            result = db.session.execute(
+                db.update(Session)
+                .where(
+                    Session.dataflow_id == dataflow_id,
+                    Session.status == SessionStatus.STARTING,
+                )
+                .values(status=SessionStatus.ACTIVE)
+            )
+        return result.rowcount == 1
+
     def with_dataflow_id(self) -> list[Session]:
         """Sessions that believe they own a dataflow — candidates for reconcile()."""
         return db.session.scalars(

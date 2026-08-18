@@ -656,16 +656,16 @@ def complete_session_acquisitions(
 
 
 class OutputReconciliationRefused(RuntimeError):
-    """A stopped-session output repair failed its ownership safety gates."""
+    """A completed-session output repair failed its ownership safety gates."""
 
 
 def _require_repairable_session(session_id: int) -> Session:
     session = db.session.get(Session, session_id)
     if session is None:
         raise KeyError(f"session {session_id} not found")
-    if session.status not in (SessionStatus.STOPPED, SessionStatus.COMPLETED):
+    if session.status is not SessionStatus.COMPLETED:
         raise OutputReconciliationRefused(
-            f"session {session_id} is {session.status!s}, not stopped or completed"
+            f"session {session_id} is {session.status!s}, not completed"
         )
     if session.runtime_port is not None or session.runtime_token is not None:
         raise OutputReconciliationRefused(
@@ -835,7 +835,7 @@ def reconcile_stopped_session_outputs(session_id: int, *, apply: bool = False) -
     return report
 
 
-def reconcile_stopped_session_acquisitions() -> list[AcquisitionCompletion]:
+def reconcile_completed_session_acquisitions() -> list[AcquisitionCompletion]:
     """Repair finalization scheduling that an older stop path left incomplete.
 
     Only terminal sessions are considered. Per-output isolation inside
@@ -844,7 +844,7 @@ def reconcile_stopped_session_acquisitions() -> list[AcquisitionCompletion]:
     """
     session_ids = db.session.scalars(
         db.select(Session.id)
-        .where(Session.status.in_((SessionStatus.STOPPED, SessionStatus.COMPLETED)))
+        .where(Session.status == SessionStatus.COMPLETED)
         .order_by(Session.id.asc())
     ).all()
     outcomes: list[AcquisitionCompletion] = []

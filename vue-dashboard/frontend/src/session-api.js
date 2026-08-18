@@ -6,8 +6,7 @@ const lifecycleLabels = {
   scheduled: "Scheduled",
   starting: "Starting",
   active: "Active",
-  ending: "Ending",
-  stopped: "Stopped",
+  stopping: "Stopping",
   completed: "Completed",
   cancelled: "Cancelled",
 };
@@ -223,11 +222,14 @@ export async function stopSession(sessionId, { force = false } = {}) {
   });
 }
 
-export async function completeSession(sessionId) {
-  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/complete`, {
+export async function recoverSession(sessionId, { deviceId, action = "restart" } = {}) {
+  const target = String(deviceId ?? "").trim();
+  if (!target) throw new TypeError("A recovery target device is required.");
+  if (action !== "restart") throw new TypeError("Restart is the only supported recovery action.");
+  return requestJson(`/api/v1/sessions/${encodeURIComponent(sessionId)}/commands/recover`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: "{}",
+    body: JSON.stringify({ device_id: target, action }),
   });
 }
 
@@ -256,8 +258,8 @@ export function normalizeSession(session, fleetSession = {}) {
     // id/name/status/phase/health (session_status.fleet_overview) — there is no
     // watchdog_state on the list payload. This used to be derived from
     // `lifecycle`, which made it a second copy of the State column that
-    // additionally reported a bare "Stopped" the operator could not tell apart
-    // from the Stopped lifecycle. It stays unresolved here; SessionDetailPage
+    // additionally reported a bare "Stopped" the operator could not identify
+    // as a runtime state. It stays unresolved here; SessionDetailPage
     // overwrites it with the real `watchdog_state` from /status.
     watchdog: "Unknown",
     phase: fleetSession.phase ?? null,

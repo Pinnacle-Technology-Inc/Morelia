@@ -5,10 +5,10 @@
 // only turns the number this module returns into a setTimeout.
 
 /** Lifecycles the server is expected to move on its own within seconds. */
-export const TRANSITIONAL_LIFECYCLES = Object.freeze(["Starting", "Ending"]);
+export const TRANSITIONAL_LIFECYCLES = Object.freeze(["Starting", "Stopping"]);
 
 /** Lifecycles that change without any operator action (runtime/watchdog driven). */
-export const LIVE_LIFECYCLES = Object.freeze(["Active", "Starting", "Ending"]);
+export const LIVE_LIFECYCLES = Object.freeze(["Active", "Starting", "Stopping"]);
 
 export const FAST_POLL_MS = 2000;
 export const LIVE_POLL_MS = 5000;

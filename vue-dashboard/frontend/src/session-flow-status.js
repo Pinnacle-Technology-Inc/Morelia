@@ -48,8 +48,7 @@ const RESTING_REASON = {
   Unknown: "Fetching this session's current status…",
   Preparing: "Preparing this run for dispatch.",
   Scheduled: "Scheduled. Waiting for its start time.",
-  Stopped: "Stopped. This run is closed; start another run from its source template.",
-  Completed: "Completed. This session is archived and read-only.",
+  Completed: "Completed. This run is closed and read-only; start another run from its source template if needed.",
   Cancelled: "Cancelled before dispatch. No compatible device was available at start time.",
 };
 
@@ -92,7 +91,7 @@ const ACTIVITY_NOTE = {
 
 const RUNNING_HEADLINE = {
   Starting: "Starting up",
-  Ending: "Stopping",
+  Stopping: "Stopping",
 };
 
 // ---------------------------------------------------------------------------
@@ -355,7 +354,7 @@ export function deriveFlowStatus({
 
   const unproven = isOutboxUnproven(outboxHealth);
 
-  // Starting/Ending are transitions: health hasn't stabilized yet, so it doesn't
+  // Starting/Stopping are transitions: health hasn't stabilized yet, so it doesn't
   // get a vote until the session reaches Active.
   let tone = lifecycle === "Active" ? (HEALTH_TONE[health] ?? FlowTone.WARN) : FlowTone.WARN;
   tone = worstTone(tone, ACTIVITY_TONE[activityState] ?? FlowTone.IDLE);

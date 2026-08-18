@@ -131,13 +131,8 @@ const view = computed(() => {
   return props.session ?? PLACEHOLDER_SESSION;
 });
 
-// STOPPED was the old intermediate state before an explicit Complete command.
-// Stopping is terminal now, but this compatibility mapping keeps historical or
-// briefly stale payloads from leaking the retired lifecycle into the page.
-const lifecycle = computed(() => {
-  const value = pendingLifecycle.value ?? view.value.lifecycle;
-  return String(value).toLowerCase() === "stopped" ? "Completed" : value;
-});
+const lifecycle = computed(() => pendingLifecycle.value ?? view.value.lifecycle);
+const showSessionHealth = computed(() => !["Starting", "Stopping"].includes(lifecycle.value));
 
 // Session provenance is immutable history. The registry resource below is a
 // separate, current-state lookup used only to decide whether a NEW child run can
@@ -715,7 +710,7 @@ onUnmounted(() => {
 });
 
 function applyCommandResult(result) {
-  const labels = { preparing: "Preparing", scheduled: "Scheduled", starting: "Starting", active: "Active", ending: "Ending", stopped: "Completed", completed: "Completed", cancelled: "Cancelled" };
+  const labels = { preparing: "Preparing", scheduled: "Scheduled", starting: "Starting", active: "Active", stopping: "Stopping", completed: "Completed", cancelled: "Cancelled" };
   if (result?.status && labels[result.status]) pendingLifecycle.value = labels[result.status];
   emit("state-changed", result);
 }

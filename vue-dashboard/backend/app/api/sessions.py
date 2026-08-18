@@ -220,13 +220,6 @@ def recover_session(payload, session_id):
     )
 
 
-@blp.route("/<int:session_id>/complete", methods=["POST"])
-@blp.response(202, SessionSchema)
-def complete_session(session_id):
-    _require_lifecycle_commands_enabled()
-    return session_service.complete(session_id)
-
-
 @blp.route("/<int:session_id>/template-export", methods=["POST"])
 @blp.arguments(ExportSessionTemplateSchema)
 @blp.response(201, SessionTemplateSchema)
