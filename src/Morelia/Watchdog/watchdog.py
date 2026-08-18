@@ -778,15 +778,11 @@ class StreamWatcher (threading.Thread):
         Only the automate policy re-arms; recommend mode always waits for an
         explicit control-plane command.
 
-        needs_action is only ever reached with the port present and openable
-        (restarts actually ran, but the worker would not verify), so:
-        - Port still present -> recovery is genuinely exhausted against a live
-          device; hold and wait for a command rather than thrashing restarts.
-        - Port absent -> a physical disconnect. Prioritize self-recovery: hand
-          straight back to the waiting_for_port loop, which already polls for
-          the port's return and restarts once it can be reopened. This avoids
-          gating on a two-tick "saw it leave then saw it come back" race that
-          can miss a fast unplug/replug and strand the stream in needs_action.
+        Automate can reach needs_action after exhausting retries against a live
+        device. If the device later disappears, re-arm its automatic port-wait
+        loop with a fresh budget. Recommend deliberately never takes this path:
+        physical disconnects remain needs_action and expose current port
+        presence to the control plane until an operator approves a restart.
 
         Output: bool (True | False).
         - True: recovery re-armed; the caller should resume the reconnect loop.
@@ -1089,7 +1085,7 @@ class StreamWatcher (threading.Thread):
                 }
             self._capture_worker_fault(m.stop_stream(self.stream_index))
 
-        if self._recovery_policy == "recommend" and not self._physical_disconnect:
+        if self._recovery_policy == "recommend":
             lifecycle_state = m.set_lifecycle_state(
                 self.stream_index,
                 "needs_action",
@@ -1106,7 +1102,7 @@ class StreamWatcher (threading.Thread):
                 "initiating_failure_reason": failure_reason,
                 "failure_count": self._failure_count,
                 "recovery_policy": self._recovery_policy,
-                "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
+                "recommended_commands": ["restart_stream"],
                 "lifecycle_state": lifecycle_state,
             }
 
@@ -1145,8 +1141,9 @@ class StreamWatcher (threading.Thread):
             )
             if not worker_alive:
                 # The heartbeat window already ended and the worker closed its
-                # sinks. Continue through the normal restart path, but treat a
-                # physical reconnect as automatic even in recommend mode.
+                # sinks. Continue through the normal policy path; Recommend
+                # still requires an explicit operator command after a physical
+                # reconnect.
                 self._physical_disconnect = True
                 if elapsed >= self._max_heartbeat_age_sec:
                     self._disconnected = True
@@ -1298,13 +1295,38 @@ class StreamWatcher (threading.Thread):
             self._capture_worker_fault(self._monitor.stop_stream(self.stream_index))
 
         self._disconnected = True
-        self._monitor.set_lifecycle_state(
+        lifecycle_state = self._monitor.set_lifecycle_state(
             self.stream_index,
-            "running",
+            "needs_action" if self._recovery_policy == "recommend" else "running",
             reason="heartbeat_age_exceeded",
             requested_by="watchdog",
-            command="heartbeat_age_exceeded",
+            command=(
+                "recommend_recovery"
+                if self._recovery_policy == "recommend"
+                else "heartbeat_age_exceeded"
+            ),
         )
+        if self._recovery_policy == "recommend":
+            return {
+                **base,
+                "ok": False,
+                "action": "needs_action",
+                "failure_reason": "needs_action",
+                "initiating_failure_reason": "heartbeat_age_exceeded",
+                "failure_count": self._failure_count,
+                "hardware_present": False,
+                "disconnect": {
+                    "elapsed_sec": elapsed,
+                    "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
+                    "recording_continued": False,
+                    "episode_id": self._disconnect_episode_id,
+                    "started_at": self._disconnect_started_at_epoch,
+                    "exceeded_at": time.time(),
+                },
+                "recovery_policy": self._recovery_policy,
+                "recommended_commands": ["restart_stream"],
+                "lifecycle_state": lifecycle_state,
+            }
         return {
             **base,
             "ok": False,
@@ -1521,7 +1543,7 @@ class StreamWatcher (threading.Thread):
             "initiating_failure_reason": reason,
             "recovery_policy": self._recovery_policy,
             "recovery_attempt": self._recovery_attempt(),
-            "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
+            "recommended_commands": ["restart_stream"],
             "lifecycle_state": lifecycle_state,
         }
         if restart_result is not None:
@@ -1741,7 +1763,7 @@ class StreamWatcher (threading.Thread):
 
         lifecycle_state = m.get_lifecycle_state(self.stream_index)
         if (
-            (self._recovery_policy == "recommend" and not self._physical_disconnect)
+            self._recovery_policy == "recommend"
             or lifecycle_state.get("state") == "needs_action"
         ):
             initiating_failure_reason = (
@@ -1761,7 +1783,7 @@ class StreamWatcher (threading.Thread):
                 "action": "needs_action",
                 "failure_reason": "needs_action",
                 "initiating_failure_reason": initiating_failure_reason,
-                "recommended_commands": ["restart_stream", "restart_session", "start", "stop"],
+                "recommended_commands": ["restart_stream"],
                 "lifecycle_state": lifecycle_state,
             }
 
@@ -1908,6 +1930,10 @@ class StreamWatcher (threading.Thread):
             }
 
     def _build_waiting_for_command_result(self, *, action, failure_reason, lifecycle_state):
+        try:
+            hardware_present = self._monitor.is_stream_port_present(self.stream_index)
+        except Exception:
+            hardware_present = None
         result = {
             "stream_index": self.stream_index,
             "ok": False,
@@ -1917,7 +1943,8 @@ class StreamWatcher (threading.Thread):
             "stream_status": self._safe_get_stream_status(),
             "heartbeat": self._get_heartbeat(),
             "recovery_policy": self._recovery_policy,
-            "recommended_commands": ["restart_stream", "restart_session", "start"],
+            "recommended_commands": ["restart_stream"],
+            "hardware_present": hardware_present,
             "lifecycle_state": lifecycle_state,
         }
         if action == "needs_action":
