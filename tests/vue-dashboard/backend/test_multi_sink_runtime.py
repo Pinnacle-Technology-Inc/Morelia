@@ -138,7 +138,10 @@ def _create_device_config(
         device_type=DeviceType.POD8206HR,
         hardware_id=hardware_id,
         port=port,
-        parameters={"preamp_gain": 10},
+        parameters={
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            },
     )
 
 
@@ -151,7 +154,10 @@ def _create_template(*, tmp_path, name="bench-rig"):
         name,
         {
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         },
     )
 

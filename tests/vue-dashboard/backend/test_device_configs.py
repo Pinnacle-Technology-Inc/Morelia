@@ -12,7 +12,10 @@ from app.domain.errors import DeviceClaimConflict, DeviceConfigExists
 from app.services.device_configs import InvalidHardwareId, claim, create, rename
 from app.services import sessions as session_service
 
-_PARAMS = {"preamp_gain": 10}
+_PARAMS = {
+    "preamp_gain": 10,
+    "sample_rate": 2_000,
+    }
 
 
 def test_create_accepts_valid_five_char_alphanumeric_hardware_id(app):
@@ -33,11 +36,9 @@ def test_create_accepts_valid_five_char_alphanumeric_hardware_id(app):
 @pytest.mark.parametrize(
     "bad_hardware_id",
     [
-        "123456789",  # too long (9 digits)
-        "a123",       # contains a letter
-        "12a34",      # contains a letter
-        "12 34",      # contains a space
-        "12_34",      # contains an underscore
+        "", # too short
+        "0123456789", # too long
+        "!123" # special char
     ],
 )
 def test_create_rejects_hardware_id_not_matching_pattern(app, bad_hardware_id):

@@ -45,7 +45,10 @@ def _create_device_templates() -> None:
     create_device_template("pod-high", _DEVICE_CONTENT)
     create_device_template(
         "pod-low",
-        {"type": "pod8206hr", "parameters": {"preamp_gain": 100}},
+        {"type": "pod8206hr", "parameters": {
+            "preamp_gain": 100,
+            "sample_rate": 2000,
+            }},
     )
 
 
