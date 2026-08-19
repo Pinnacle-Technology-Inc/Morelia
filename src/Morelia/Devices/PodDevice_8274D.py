@@ -342,7 +342,7 @@ class Pod8274D(AcquisitionDevice) :
                     "2. Ensure the battery is installed correctly.\n"
                     "3. If the battery was recently unsealed, allow it to be "
                     "exposed to air for at least 60 seconds before use.\n"
-                    "4. If you have many devices powered on, you may need to increase scan_timeout_sec to allow more time for the scan.\n"
+                    "4. If you have many devices powered on, you may need to increase timeout_sec to allow more time for the scan.\n"
                     "5. Move the device closer to the USB dongle and remove "
                     "potential sources of interference.\n"
                     "6. Remove and replace the device battery.\n"
