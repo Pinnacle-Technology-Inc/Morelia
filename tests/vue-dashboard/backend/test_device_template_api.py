@@ -11,7 +11,7 @@ _VALID_CONTENT = {
 }
 _ALTERED_CONTENT = {
     "type": "pod8206hr",
-    "parameters": {"preamp_gain": 10, "sample_rate": 2500, "lowpass_ch0": 50},
+    "parameters": {"preamp_gain": 10, "sample_rate": 1000, "lowpass_ch0": 50},
 }
 
 
@@ -60,7 +60,7 @@ def test_put_edits_device_template_in_place(client, app):
         "type": "pod8206hr",
         "parameters": {
             "preamp_gain": 10,
-            "sample_rate": 2500,
+            "sample_rate": 1000,
             "lowpass_ch0": 50,
         },
     }

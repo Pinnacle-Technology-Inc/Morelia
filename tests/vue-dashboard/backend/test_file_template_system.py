@@ -100,13 +100,13 @@ def test_session_template_resolves_changed_path_and_hash(tmp_path):
 
         device_templates.update(
             "pod",
-            {"type": "pod8206hr", "parameters": {"preamp_gain": 10, "sample_rate": 4000}},
+            {"type": "pod8206hr", "parameters": {"preamp_gain": 10, "sample_rate": 1000}},
         )
         resolved, warnings = session_templates.resolve_device_template_reference(
             stored.content["device_flows"][0]
         )
 
-        assert resolved.content["parameters"]["sample_rate"] == 4000
+        assert resolved.content["parameters"]["sample_rate"] == 1000
         assert warnings
 
 
@@ -115,7 +115,10 @@ def test_device_config_records_source_template_hash(tmp_path):
     with app.app_context():
         template = device_templates.create(
             "pod",
-            {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+            {"type": "pod8206hr", "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                }},
         )
         config = device_configs.create_from_template(
             template,

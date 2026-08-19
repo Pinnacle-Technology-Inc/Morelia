@@ -34,7 +34,7 @@ _VALID_CONTENT = {
 }
 _ALTERED_CONTENT = {
     "type": "pod8206hr",
-    "parameters": {"preamp_gain": 10, "sample_rate": 2500, "lowpass_ch0": 50},
+    "parameters": {"preamp_gain": 10, "sample_rate": 1000, "lowpass_ch0": 50},
 }
 
 
@@ -85,14 +85,20 @@ def test_public_content_hash_ignores_name_and_canonicalizes_values():
         {
             "name": "main-pod",
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": "10"},
+            "parameters": {
+                "preamp_gain": "10",
+                "sample_rate": "2000",
+                },
         }
     )
     b = content_hash(
         {
             "name": "backup-pod",
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         }
     )
 
@@ -116,7 +122,10 @@ def test_create_with_existing_name_overwrites_in_place(app):
     with app.app_context():
         first = create("pod-high", _VALID_CONTENT)
         second = create("pod-high", _ALTERED_CONTENT)
-        third = create("pod-high", {"type": "pod8206hr", "parameters": {"preamp_gain": 100}})
+        third = create("pod-high", {"type": "pod8206hr", "parameters": {
+            "preamp_gain": 100,
+            "sample_rate": 2000,
+            }})
 
         assert first.name == "pod-high"
         assert second.name == "pod-high"
@@ -154,7 +163,7 @@ def test_update_rewrites_content_in_place_and_recomputes_hash(app):
             "type": "pod8206hr",
             "parameters": {
                 "preamp_gain": 10,
-                "sample_rate": 2500,
+                "sample_rate": 1000,
                 "lowpass_ch0": 50,
             },
         }
@@ -195,7 +204,10 @@ sample_rate = "2000"
 def test_import_can_override_source_name(app):
     with app.app_context():
         cfg = import_config(
-            {"name": "from-file", "type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+            {"name": "from-file", "type": "pod8206hr", "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                }},
             name="from-ui",
         )
 
@@ -285,7 +297,7 @@ def test_diff_reports_precise_parameter_changes(app):
             "parameters": {
                 "added": {"lowpass_ch0": 50},
                 "removed": {},
-                "modified": {"sample_rate": {"old": 2000, "new": 2500}},
+                "modified": {"sample_rate": {"old": 2000, "new": 1000}},
             },
         }
 

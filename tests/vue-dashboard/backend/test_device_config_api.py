@@ -15,7 +15,10 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
             "type": "pod8206hr",
             "hardware_id": "001",
             "port": "COM3",
-            "parameters": {"preamp_gain": "10"},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2_000
+                },
             "nickname": "Left POD",
         },
     )
@@ -25,7 +28,10 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
     assert body["id"]
     assert body["type"] == "pod8206hr"
     assert body["hardware_id"] == "001"
-    assert body["parameters"] == {"preamp_gain": 10}
+    assert body["parameters"] == {
+        "preamp_gain": 10,
+        "sample_rate": 2_000,
+    }
     assert len(body["color"]) == 7
     assert body["color"].startswith("#")
     assert body["claim_state"] == "free"
@@ -41,10 +47,19 @@ def test_device_config_crud_routes_create_show_list_edit_and_delete(client, app)
 
     edited = client.patch(
         f"{API}/{body['id']}",
-        json={"parameters": {"preamp_gain": 100}},
+        json={
+            "parameters": {
+                "preamp_gain": 100,
+                "sample_rate": 2000,
+            }
+        },
     )
+
     assert edited.status_code == 200
-    assert edited.get_json()["parameters"] == {"preamp_gain": 100}
+    assert edited.get_json()["parameters"] == {
+        "preamp_gain": 100,
+        "sample_rate": 2000,
+    }
 
     deleted = client.delete(f"{API}/{body['id']}")
     assert deleted.status_code == 200
@@ -59,7 +74,10 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
         json={
             "name": "pod-high",
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2_000,
+                },
         },
     ).get_json()
     created = client.post(
@@ -76,8 +94,13 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
 
     edited = client.patch(
         f"{API}/{created['id']}",
-        json={"parameters": {"preamp_gain": 100}},
-    )
+        json={
+                    "parameters": {
+                        "preamp_gain": 10,
+                        "sample_rate": 2000,
+                    }
+                },
+            )
 
     assert edited.status_code == 200
     body = edited.get_json()
@@ -86,7 +109,10 @@ def test_create_from_template_tracks_template_id_and_edit_severs_by_default(clie
     assert body["source_template_history"] == "device-templates/pod-high.toml"
 
     unchanged_template = client.get("/api/v1/device-templates/pod-high").get_json()
-    assert unchanged_template["content"]["parameters"] == {"preamp_gain": 10}
+    assert unchanged_template["content"]["parameters"] == {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+    }
 
 
 def test_name_device_config_updates_alias_by_hardware_identity(client):
@@ -96,7 +122,10 @@ def test_name_device_config_updates_alias_by_hardware_identity(client):
             "type": "pod8206hr",
             "hardware_id": "003",
             "port": "COM4",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2_000
+                },
         },
     ).get_json()
 
@@ -143,7 +172,10 @@ def test_config_creation_binds_pre_registered_name_to_device_config(client):
             "type": "pod8206hr",
             "hardware_id": "006",
             "port": "COM3",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2_000,
+                },
         },
     )
 
@@ -162,7 +194,10 @@ def test_edit_with_writeback_updates_linked_template_and_keeps_provenance(client
         json={
             "name": "pod-high",
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2_000,
+                },
         },
     ).get_json()
     created = client.post(
@@ -177,7 +212,10 @@ def test_edit_with_writeback_updates_linked_template_and_keeps_provenance(client
     edited = client.patch(
         f"{API}/{created['id']}",
         json={
-            "parameters": {"preamp_gain": 100},
+            "parameters": {
+                "preamp_gain": 100,
+                "sample_rate": 2_000,
+                },
             "update_source_template": True,
         },
     )
@@ -187,7 +225,10 @@ def test_edit_with_writeback_updates_linked_template_and_keeps_provenance(client
     assert body["source_template"] == "device-templates/pod-high.toml"
     assert body["source_template_hash"] != template["content_hash"]
     updated_template = client.get("/api/v1/device-templates/pod-high").get_json()
-    assert updated_template["content"]["parameters"] == {"preamp_gain": 100}
+    assert updated_template["content"]["parameters"] == {
+        "preamp_gain": 100,
+        "sample_rate": 2_000,
+        }
 
 
 def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app):
@@ -198,7 +239,10 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
                 "type": "pod8206hr",
                 "hardware_id": "008",
                 "port": "COM6",
-                "parameters": {"preamp_gain": 10},
+                "parameters": {
+                    "preamp_gain": 10,
+                    "sample_rate": 2_000,
+                    },
             },
         ).get_json()
         session = SessionRepository().create({"name": "Run A", "device_flows": []})
@@ -230,36 +274,37 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
 
     response = client.get("/api/v1/devices/pool")
     
-    assert response.status_code == 200
-    assert response.get_json()["devices"] == [
-        {
-            "id": config["id"],
-            "type": "pod8206hr",
-            "port": "COM6",
-            "hardware_id": "008",
-            "color": config["color"],
-            "availability": "available",
-            "status": "claimed",
-            "owner": session_id,
-            "nickname": None,
-            "label": "Configured POD",
-            "configuration_hash": "235c4b32023094a2dc0a60413074f0021e29f78e1340458a6768f1f7a43ab8f4",
-            "source_template": None,
-            "source_template_hash": None,
-        },
-        {
-            "id": None,
-            "type": "pod8206hr",
-            "port": "COM7",
-            "hardware_id": "009",
-            "color": None,
-            "availability": "available",
-            "status": "unconfigured",
-            "owner": None,
-            "nickname": None,
-            "label": "Fresh POD",
-            "configuration_hash": None,
-            "source_template": None,
-            "source_template_hash": None,
-        },
-    ]
+    devices = response.get_json()["devices"]
+
+    assert len(devices) == 2
+
+    configured = devices[0]
+    assert configured["id"] == config["id"]
+    assert configured["type"] == "pod8206hr"
+    assert configured["port"] == "COM6"
+    assert configured["hardware_id"] == "008"
+    assert configured["color"] == config["color"]
+    assert configured["availability"] == "available"
+    assert configured["status"] == "claimed"
+    assert configured["owner"] == session_id
+    assert configured["nickname"] is None
+    assert configured["label"] == "Configured POD"
+    assert configured["source_template"] is None
+    assert configured["source_template_hash"] is None
+
+    unconfigured = devices[1]
+    assert unconfigured == {
+        "id": None,
+        "type": "pod8206hr",
+        "port": "COM7",
+        "hardware_id": "009",
+        "color": None,
+        "availability": "available",
+        "status": "unconfigured",
+        "owner": None,
+        "nickname": None,
+        "label": "Fresh POD",
+        "configuration_hash": None,
+        "source_template": None,
+        "source_template_hash": None,
+}

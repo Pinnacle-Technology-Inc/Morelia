@@ -14,7 +14,10 @@ def test_expired_starting_claim_can_be_reclaimed(app):
             device_type=DeviceType.POD8206HR,
             hardware_id="001",
             port="COM4",
-            parameters={"preamp_gain": 10},
+            parameters={
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         )
         device_configs.claim(first.id, session_id=first_session.id, starting=True, lease_seconds=1)
         with transaction():

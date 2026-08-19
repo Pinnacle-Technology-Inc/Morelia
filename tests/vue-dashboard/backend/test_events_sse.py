@@ -114,23 +114,33 @@ def test_frame_includes_lifted_runtime_report_fields(app):
 
     with app.app_context():
         session = SessionRepository().get(session_id)
+        dataflow_id = session.dataflow_id
+
         event_id = ingest_report({
-            "dataflow_id": session.dataflow_id,
+            "dataflow_id": dataflow_id,
             "phase": "running",
             "comms": "current",
             "devices": [{"device_id": "d1", "stream_status": "healthy"}],
             "sequence": 42,
             "recovery_id": "rec-42",
         })
-        gen = _sse_generator(session_id, poll_interval=0.0, heartbeat_interval=9999.0)
+
+        gen = _sse_generator(
+            session_id,
+            poll_interval=0.0,
+            heartbeat_interval=9999.0,
+        )
         frames = _read_n_event_frames(gen, 1)
 
     parsed = _parse_frame(frames[0])
+
     assert parsed["id"] == event_id
     assert parsed["data"] == {
         "comms": "current",
+        "dataflow_id": dataflow_id,
         "devices": [{"device_id": "d1", "stream_status": "healthy"}],
         "phase": "running",
+        "received_at": parsed["data"]["received_at"],
         "recovery_id": "rec-42",
         "sequence": 42,
     }

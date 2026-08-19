@@ -12,9 +12,15 @@ from app.services.registry import lookup_device, lookup_sink, sink_parameter_sch
 
 
 def test_lookup_device_pod8206hr_minimal_required():
-    spec = lookup_device("pod8206hr", {"preamp_gain": 10})
+    spec = lookup_device("pod8206hr", {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+        })
     assert spec.type is DeviceType.POD8206HR
-    assert spec.as_dict() == {"preamp_gain": 10}
+    assert spec.as_dict() == {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+        }
 
 
 def test_lookup_device_pod8206hr_full_parameter_set():
@@ -42,14 +48,14 @@ def test_lookup_device_coerces_string_numbers():
 
 
 def test_lookup_device_parameter_insertion_order_does_not_matter():
-    a = lookup_device("pod8206hr", {"preamp_gain": 10, "lowpass_ch0": 50})
-    b = lookup_device("pod8206hr", {"lowpass_ch0": 50, "preamp_gain": 10})
+    a = lookup_device("pod8206hr", {"preamp_gain": 10, "lowpass_ch0": 50, "sample_rate": 2000})
+    b = lookup_device("pod8206hr", {"sample_rate": 2000, "lowpass_ch0": 50, "preamp_gain": 10})
     assert a == b
     assert a.parameters == b.parameters
 
 
 def test_lookup_device_spec_is_frozen_and_hashable():
-    spec = lookup_device("pod8206hr", {"preamp_gain": 10})
+    spec = lookup_device("pod8206hr", {"preamp_gain": 10, "sample_rate": 2000})
     with pytest.raises((AttributeError, TypeError)):
         spec.type = DeviceType.POD8206HR  # type: ignore[misc]
     assert hash(spec) is not None
@@ -91,11 +97,11 @@ def test_lookup_device_unknown_parameter_raises():
 
 def test_lookup_device_bad_preamp_gain_value_raises():
     with pytest.raises(ValueError, match="preamp_gain must be 10 or 100"):
-        lookup_device("pod8206hr", {"preamp_gain": 42})
+        lookup_device("pod8206hr", {"preamp_gain": 42, "sample_rate": 2000})
 
 
 def test_lookup_device_preamp_gain_string_coerces_then_validates():
-    spec = lookup_device("pod8206hr", {"preamp_gain": "100"})
+    spec = lookup_device("pod8206hr", {"preamp_gain": "100", "sample_rate": 2000})
     assert spec.as_dict()["preamp_gain"] == 100
 
 
@@ -103,7 +109,10 @@ def test_lookup_device_pod8401hr_accepts_six_secondary_channel_modes(monkeypatch
     class _Preamp:
         __members__ = {"Preamp8407_SE": object()}
 
-    monkeypatch.setattr("app.services.registry._import_preamp_enum", lambda: _Preamp)
+    monkeypatch.setattr(
+        "Morelia.Devices.PodDevice_8401HR._SECONDARY_CHANNEL_MODE_NAMES",
+        frozenset({"ANALOG", "DIGITAL"}),
+    )
 
     spec = lookup_device(
         "pod8401hr",
@@ -137,7 +146,10 @@ def test_lookup_device_pod8401hr_rejects_four_secondary_channel_modes(monkeypatc
     class _Preamp:
         __members__ = {"Preamp8407_SE": object()}
 
-    monkeypatch.setattr("app.services.registry._import_preamp_enum", lambda: _Preamp)
+    monkeypatch.setattr(
+        "Morelia.Devices.PodDevice_8401HR._SECONDARY_CHANNEL_MODE_NAMES",
+        frozenset({"ANALOG", "DIGITAL"}),
+    )
 
     with pytest.raises(ValueError, match="secondary_channel_modes must be a 6-tuple"):
         lookup_device(
