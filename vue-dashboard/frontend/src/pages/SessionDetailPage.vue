@@ -21,7 +21,7 @@ import SessionDiagnosticLog from "../components/SessionDiagnosticLog.vue";
 import SessionTimeline from "../components/SessionTimeline.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { normalizeSession, stopSession } from "../session-api";
+import { normalizeSession, recoverSession, stopSession } from "../session-api";
 import { loadSessionActivity } from "../session-activity-api";
 import { loadSessionDetail } from "../session-detail-api";
 import {
@@ -272,6 +272,15 @@ const sessionDeviceFlows = computed(() => {
       reason: device.reason,
       action: device.action,
       pendingRecovery: device.pending_recovery,
+      recoveryPolicy: device.recovery_policy,
+      recoveryState: device.recovery_state ?? "idle",
+      recoveryStage: device.recovery_stage,
+      recoveryAttempt: device.recovery_attempt,
+      recoveryAttemptMax: device.recovery_attempt_max,
+      requiresApproval: device.requires_approval === true,
+      hardwarePresent: device.hardware_present,
+      controlAvailable: device.control_available === true,
+      allowedRecoveryActions: device.allowed_recovery_actions ?? [],
       rate: "Unavailable",
       lastData: formatCentralTimestamp(detail.value?.latest_report?.received_at, { fallback: "Unavailable" }),
       watchdog: formatStatus(detail.value?.watchdog_state),
@@ -295,8 +304,34 @@ const detailIncidents = computed(() => detail.value?.incidents ?? []);
 const detailGaps = computed(() => detail.value?.gaps ?? []);
 const recovery = computed(() => detail.value?.recovery ?? null);
 const recoveryPolicy = computed(() => view.value.policy ? formatStatus(view.value.policy) : "Unavailable");
+const recoveryPolicyMode = computed(() => String(view.value.policy ?? "").toLowerCase());
+const recoveryDevices = computed(() =>
+  sessionDeviceFlows.value.filter((device) => device.recoveryState !== "idle"),
+);
 // Already fetched on every poll and, until now, dropped on the floor.
 const detailOperations = computed(() => detail.value?.operations ?? []);
+const recoveryOperations = computed(() =>
+  detailOperations.value.filter((operation) => ["reconnect", "restart", "reset-stream"].includes(operation.command)),
+);
+const activeRecoveryDeviceIds = computed(() => new Set(
+  recoveryOperations.value
+    .filter((operation) => ["queued", "claimed", "dispatched", "running", "verifying"].includes(operation.state))
+    .map((operation) => operation.target_device_id),
+));
+const actionableRecoveryDevices = computed(() =>
+  recoveryDevices.value.filter(
+    (device) => device.allowedRecoveryActions.includes("restart") && !activeRecoveryDeviceIds.value.has(device.device),
+  ),
+);
+const automatedRecoveryNeedsOperatorAction = computed(() =>
+  recoveryDevices.value.some((device) => ["awaiting_approval", "exhausted"].includes(device.recoveryState))
+  || recoveryOperations.value.some((operation) =>
+    ["queued", "claimed", "dispatched", "running", "verifying"].includes(operation.state),
+  ),
+);
+const showOperatorRecoveryActivity = computed(() =>
+  recoveryPolicyMode.value === "recommend" || automatedRecoveryNeedsOperatorAction.value,
+);
 const timelineEntries = computed(() => (
   activityRecords.value.length
     ? buildActivityTimeline(activityRecords.value)
@@ -538,16 +573,6 @@ async function resolveSourceDeviceTemplates({ force = false } = {}) {
   }
 }
 
-function formatRecoveryEvidence(value) {
-  if (value === null || value === undefined) return "Unavailable";
-  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") return String(value);
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return "Unavailable";
-  }
-}
-
 async function startAnotherRun() {
   // Revalidate at the click boundary as well as on page load. Unit 14 repeats
   // this check before create, but a stale button must not navigate there after
@@ -762,7 +787,40 @@ function openForceStopDialog() {
 }
 
 function confirmForceStop() {
-  return runLifecycleCommand(() => stopSession(props.sessionId, { force: true }));
+  return runLifecycleCommand(
+    () => stopSession(props.sessionId, { force: true }),
+    { optimisticLifecycle: "Stopping" },
+  );
+}
+
+function openRecoveryDialog(device) {
+  dismissCommandError();
+  selectedRecoveryDevice.value = device;
+  dialog.value = "recovery";
+}
+
+function closeRecoveryDialog() {
+  dialog.value = null;
+  selectedRecoveryDevice.value = null;
+}
+
+async function confirmRecovery() {
+  const device = selectedRecoveryDevice.value;
+  if (!device || commandBusy.value || !device.allowedRecoveryActions.includes("restart")) return;
+  commandBusy.value = true;
+  closeRecoveryDialog();
+  try {
+    await recoverSession(props.sessionId, { deviceId: device.device, action: "restart" });
+    await refreshDetail();
+    await refreshActivity();
+  } catch (error) {
+    commandProblem.value = error?.problem ?? null;
+    commandError.value = problemMessage(error, "The recovery command failed.");
+    await refreshDetail({ silent: true });
+    await refreshActivity();
+  } finally {
+    commandBusy.value = false;
+  }
 }
 
 function sinkIsPlot(sink) {
@@ -802,7 +860,8 @@ const plotTargets = computed(() => {
 
 const visibleTabs = computed(() => [
   { id: "overview", label: "Overview" },
-  { id: "streams", label: "Streams" },
+  // Streams is intentionally hidden until the dedicated view is ready.
+  // { id: "streams", label: "Streams" },
   ...(plotTargets.value.length ? [{ id: "plot", label: "Live Plot" }] : []),
   { id: "recovery", label: "Recovery" },
   { id: "incidents", label: "Issues & Data Gaps" },
@@ -824,7 +883,7 @@ const tabCounts = computed(() => {
   // incidents are excluded for the same reason. The badge answers "is anything
   // waiting on me right now", which is the only question that earns a red dot.
   if (actionableIssues.value.length) counts.incidents = actionableIssues.value.length;
-  if (detail.value?.recovery) counts.recovery = 1;
+  if (actionableRecoveryDevices.value.length) counts.recovery = actionableRecoveryDevices.value.length;
   return counts;
 });
 
@@ -1096,20 +1155,109 @@ const tabTones = computed(() => ({
       </div>
 
       <div v-else-if="activeTab === 'recovery'" class="recovery-layout">
-        <BaseCard class="detail-panel"><h3>Assigned Policy</h3><dl class="detail-list"><div><dt>Policy</dt><dd>{{ recoveryPolicy }}</dd></div><div><dt>Verification</dt><dd>Device, sink, data rate</dd></div></dl></BaseCard>
-        <BaseCard class="detail-panel">
-          <h3>Recovery Activity</h3>
-          <div v-if="detailUnavailable" class="detail-alert">Recovery data unavailable.</div>
-          <div v-else-if="detail?.recovery" class="phase-list"><span class="current">{{ detail.recovery.phase }}</span><span>Attempt {{ detail.recovery.attempt }}</span><span>{{ detail.recovery.hardware_access }}</span></div>
-          <div v-else class="phase-list"><span>No recovery reported</span></div>
-          <div class="card-actions">
-            <BaseButton @click="dialog = 'approve'"><Play :size="16" /> Approve Recovery</BaseButton>
-            <BaseButton variant="secondary">Retry Recovery</BaseButton>
-            <BaseButton variant="secondary">Mark Resolved</BaseButton>
+        <BaseCard class="detail-panel recovery-card recovery-policy-card">
+          <header class="recovery-card__header">
+            <div>
+              <h3>Assigned Policy</h3>
+              <p>How this session responds when a stream stops reporting.</p>
+            </div>
+          </header>
+          <div class="recovery-card__body">
+            <dl class="detail-list">
+              <div><dt>Policy</dt><dd>{{ recoveryPolicy }}</dd></div>
+              <div v-if="recoveryPolicyMode === 'recommend'"><dt>Decision</dt><dd>Every stream restart waits for operator approval.</dd></div>
+              <div v-else-if="recoveryPolicyMode === 'automate'"><dt>Decision</dt><dd>Automatic recovery runs until its retry budget is exhausted.</dd></div>
+              <div><dt>Verification</dt><dd>Fresh device telemetry must report Healthy.</dd></div>
+            </dl>
           </div>
         </BaseCard>
-        <BaseCard class="detail-panel detail-panel--wide recovery-story" aria-live="polite">
-          <header class="recovery-story__heading">
+        <BaseCard class="detail-panel recovery-card recovery-activity-card" aria-live="polite">
+          <header class="recovery-card__header">
+            <div>
+              <h3>{{ recoveryPolicyMode === "recommend" ? "Operator Activity" : "Live Status" }}</h3>
+              <p v-if="recoveryPolicyMode === 'recommend'">Review recovery requests and approve a stream restart when action is required.</p>
+              <p v-else>Live source and watchdog telemetry updates recovery progress here. Manual retry appears only after automation gives up.</p>
+            </div>
+          </header>
+          <div class="recovery-card__body recovery-card__body--activity">
+          <div v-if="detailUnavailable" class="detail-alert">Recovery data unavailable.</div>
+            <p v-else-if="!recoveryDevices.length" class="records-empty recovery-empty">
+              {{ recoveryPolicyMode === "recommend" ? "No recovery action requires operator review." : "No automatic stream recovery is active." }}
+            </p>
+            <div v-else class="recovery-device-list">
+              <article v-for="device in recoveryDevices" :key="device.id" class="recovery-device">
+                <header>
+                  <div><h4>{{ device.device }}</h4><code>{{ device.hardwareId }}</code></div>
+                  <StatusBadge :value="formatStatus(device.recoveryState)" />
+                </header>
+                <dl class="recovery-device__facts">
+                  <div><dt>Reason</dt><dd>{{ device.reason ? formatStatus(device.reason) : "Not reported" }}</dd></div>
+                  <div><dt>Hardware</dt><dd>{{ device.hardwarePresent === true ? "Connected" : device.hardwarePresent === false ? "Not connected" : "Unconfirmed" }}</dd></div>
+                  <div><dt>Stage</dt><dd>{{ formatStatus(device.recoveryStage ?? device.action) }}</dd></div>
+                  <div><dt>Attempt</dt><dd>{{ device.recoveryAttempt == null ? "—" : `${device.recoveryAttempt} of ${device.recoveryAttemptMax ?? "?"}` }}</dd></div>
+                  <div><dt>Last report</dt><dd>{{ device.lastData }}</dd></div>
+                </dl>
+                <div v-if="device.requiresApproval" class="form-notice" role="status">
+                  Approval required before restarting this stream.
+                </div>
+                <div v-if="device.recoveryState === 'exhausted'" class="form-notice" role="status">
+                  Automatic recovery exhausted its retry budget. Operator intervention is required.
+                </div>
+                <div v-if="device.recoveryState === 'waiting_for_hardware'" class="form-notice" role="status">
+                  Connect the device before a restart can be approved.
+                </div>
+                <div v-if="activeRecoveryDeviceIds.has(device.device)" class="form-notice" role="status">
+                  Restart dispatched. Waiting for fresh Healthy telemetry to verify recovery.
+                </div>
+                <div v-if="['awaiting_approval', 'exhausted'].includes(device.recoveryState)" class="card-actions">
+                  <BaseButton
+                    :disabled="commandBusy || activeRecoveryDeviceIds.has(device.device) || !device.allowedRecoveryActions.includes('restart')"
+                    :title="device.controlAvailable ? 'Restart this stream' : 'Fresh watchdog control is unavailable'"
+                    @click="openRecoveryDialog(device)"
+                  >
+                    <Play :size="16" /> {{ device.requiresApproval ? "Approve Recovery" : "Retry Recovery" }}
+                  </BaseButton>
+                </div>
+              </article>
+            </div>
+            <section v-if="recovery" class="recovery-nested-section recovery-runtime-section">
+              <header>
+                <div>
+                  <h4>Runtime Recovery</h4>
+                  <p>{{ recovery.operator_message }}</p>
+                </div>
+              </header>
+              <div class="phase-list"><span class="current">{{ formatStatus(recovery.phase) }}</span><span>Attempt {{ recovery.attempt }}</span><span>{{ formatStatus(recovery.hardware_access) }}</span></div>
+            </section>
+            <section v-if="showOperatorRecoveryActivity" class="recovery-nested-section recovery-operator-section">
+              <header>
+                <div>
+                  <h4>{{ recoveryPolicyMode === "recommend" ? "Command History" : "Operator Action Required" }}</h4>
+                  <p v-if="recoveryPolicyMode === 'automate'">Automation cannot complete this recovery without operator action.</p>
+                  <p v-else>Commands requested by an operator are retained here.</p>
+                </div>
+              </header>
+              <p v-if="!recoveryOperations.length" class="records-empty recovery-empty">
+                {{ recoveryPolicyMode === "recommend" ? "No operator recovery commands have been recorded." : "No operator command has been sent yet." }}
+              </p>
+              <div v-else class="table-wrap">
+                <table class="data-table records-table">
+                  <thead><tr><th>Device</th><th>Action</th><th>Status</th><th>Requested</th></tr></thead>
+                  <tbody>
+                    <tr v-for="operation in recoveryOperations" :key="operation.operation_id">
+                      <td><code>{{ operation.target_device_id ?? "—" }}</code></td>
+                      <td>{{ formatStatus(operation.command) }}</td>
+                      <td><StatusBadge :value="formatStatus(operation.state)" /></td>
+                      <td>{{ formatTimestamp(operation.created_at) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </BaseCard>
+        <BaseCard class="detail-panel detail-panel--wide recovery-card recovery-story" aria-live="polite">
+          <header class="recovery-card__header recovery-story__heading">
             <div>
               <h3>Verified Recovery Story</h3>
               <p>Canonical output and retained source components for this run.</p>
@@ -1119,8 +1267,9 @@ const tabTones = computed(() => ({
               :value="artifactLabel(recoveryOutputs[0].artifact_state)"
             />
           </header>
+          <div class="recovery-card__body recovery-story__body">
           <p v-if="detailUnavailable" class="detail-alert">Output verification is unavailable.</p>
-          <p v-else-if="!recoveryOutputs.length" class="records-empty">
+            <p v-else-if="!recoveryOutputs.length" class="records-empty recovery-empty">
             This run has no segmented file output requiring a merge.
           </p>
           <template v-else>
@@ -1166,6 +1315,7 @@ const tabTones = computed(() => ({
               </details>
             </article>
           </template>
+          </div>
         </BaseCard>
       </div>
 
@@ -1286,8 +1436,23 @@ const tabTones = computed(() => ({
         <span>The session cannot be restarted; start another run from its source template if needed.</span>
       </div>
     </GuardedDialog>
-    <GuardedDialog v-if="dialog === 'approve'" title="Approve Recovery Action" :description="recovery?.operator_message ?? 'Recovery details are unavailable.'" :confirm-label="recovery ? 'Approve Recovery' : 'Close'" @close="dialog = null" @confirm="dialog = null">
-      <dl class="detail-list"><div><dt>Policy</dt><dd>{{ recoveryPolicy }}</dd></div><div><dt>Reason</dt><dd>{{ recovery?.reason ? formatStatus(recovery.reason) : "Unavailable" }}</dd></div><div><dt>Phase</dt><dd>{{ recovery?.phase ? formatStatus(recovery.phase) : "Unavailable" }}</dd></div><div><dt>Attempt</dt><dd>{{ recovery?.attempt ?? "Unavailable" }}</dd></div><div><dt>Next retry</dt><dd>{{ recovery?.next_retry_at ? formatTimestamp(recovery.next_retry_at) : "Unavailable" }}</dd></div><div><dt>Hardware access</dt><dd>{{ recovery?.hardware_access ? formatStatus(recovery.hardware_access) : "Unavailable" }}</dd></div><div><dt>Evidence</dt><dd><code>{{ formatRecoveryEvidence(recovery?.evidence) }}</code></dd></div></dl>
+    <GuardedDialog
+      v-if="dialog === 'recovery' && selectedRecoveryDevice"
+      :title="selectedRecoveryDevice.requiresApproval ? 'Approve Recovery Action' : 'Retry Recovery Action'"
+      :description="selectedRecoveryDevice.requiresApproval ? 'No recovery command has been sent. Confirm to restart this one stream.' : 'Automation has stopped retrying. Confirm a guarded manual stream restart.'"
+      :cancel-label="selectedRecoveryDevice.requiresApproval ? 'Decline for now' : 'Cancel'"
+      :confirm-label="commandBusy ? 'Sending…' : selectedRecoveryDevice.requiresApproval ? 'Approve Recovery' : 'Retry Recovery'"
+      :confirm-disabled="commandBusy || !selectedRecoveryDevice.allowedRecoveryActions.includes('restart')"
+      @close="closeRecoveryDialog"
+      @confirm="confirmRecovery"
+    >
+      <dl class="detail-list">
+        <div><dt>Affected device</dt><dd>{{ selectedRecoveryDevice.device }}</dd></div>
+        <div><dt>Hardware ID</dt><dd><code>{{ selectedRecoveryDevice.hardwareId }}</code></dd></div>
+        <div><dt>Reason</dt><dd>{{ selectedRecoveryDevice.reason ? formatStatus(selectedRecoveryDevice.reason) : "Not reported" }}</dd></div>
+        <div><dt>Proposed action</dt><dd>Restart this device stream</dd></div>
+        <div><dt>Impact</dt><dd>The stream worker and its sinks restart; the session remains active and any missing interval is retained as a data gap.</dd></div>
+      </dl>
     </GuardedDialog>
     <GuardedDialog
       v-if="noteEditor"

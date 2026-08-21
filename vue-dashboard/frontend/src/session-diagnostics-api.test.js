@@ -34,9 +34,9 @@ describe("session diagnostics API", () => {
     );
   });
 
-  it("defaults the plain-text support export URL to Human", () => {
+  it("uses the backend default diagnostics view for the readable export", () => {
     expect(sessionDiagnosticsExportUrl("run/a")).toBe(
-      "/api/v1/sessions/run%2Fa/diagnostics.txt?view=human",
+      "/api/v1/sessions/run%2Fa/diagnostics.txt?view=default",
     );
   });
 
@@ -61,8 +61,8 @@ describe("session diagnostics API", () => {
     );
   });
 
-  it("integrates an accessible Human and Verbose selector in the existing log UI", () => {
-    expect(diagnosticLogSource).toContain('value="human"');
+  it("integrates an accessible Default and Verbose selector in the existing log UI", () => {
+    expect(diagnosticLogSource).toContain('value="default"');
     expect(diagnosticLogSource).toContain('value="verbose"');
     expect(diagnosticLogSource).toContain("Readable diagnostics with repetitive telemetry");
     expect(diagnosticLogSource).toContain("Complete raw telemetry including IDs");

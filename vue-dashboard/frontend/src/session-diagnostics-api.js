@@ -1,6 +1,6 @@
 import { apiUrl, requestJson } from "./api-client";
 
-export const DIAGNOSTICS_VIEWS = Object.freeze(["human", "verbose"]);
+export const DIAGNOSTICS_VIEWS = Object.freeze(["default", "verbose"]);
 
 export function loadSessionDiagnostics(sessionId, { pageSize = 500, cursor = null } = {}) {
   const query = new URLSearchParams({ page_size: String(pageSize) });
@@ -10,7 +10,7 @@ export function loadSessionDiagnostics(sessionId, { pageSize = 500, cursor = nul
   );
 }
 
-export function sessionDiagnosticsExportUrl(sessionId, view = "human") {
+export function sessionDiagnosticsExportUrl(sessionId, view = "default") {
   if (!DIAGNOSTICS_VIEWS.includes(view)) {
     throw new TypeError(`Unsupported diagnostics view: ${view}`);
   }
@@ -20,7 +20,7 @@ export function sessionDiagnosticsExportUrl(sessionId, view = "human") {
   );
 }
 
-export async function loadSessionDiagnosticsText(sessionId, view = "human") {
+export async function loadSessionDiagnosticsText(sessionId, view = "default") {
   const response = await fetch(sessionDiagnosticsExportUrl(sessionId, view), {
     headers: { Accept: "text/plain" },
   });

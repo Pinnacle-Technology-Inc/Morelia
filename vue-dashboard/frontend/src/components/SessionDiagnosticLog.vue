@@ -14,7 +14,7 @@ const props = defineProps({
 const content = ref("");
 const state = ref("loading");
 const error = ref("");
-const view = ref("human");
+const view = ref("default");
 let requestSequence = 0;
 
 const exportUrl = computed(() => sessionDiagnosticsExportUrl(props.sessionId, view.value));
@@ -59,10 +59,10 @@ watch(view, refresh);
     <fieldset class="diagnostics__view-selector">
       <legend>View</legend>
       <div class="diagnostics__view-options">
-        <label :class="{ 'is-selected': view === 'human' }">
-          <input v-model="view" type="radio" name="diagnostics-view" value="human" />
+        <label :class="{ 'is-selected': view === 'default' }">
+          <input v-model="view" type="radio" name="diagnostics-view" value="default" />
           <span>
-            <strong>Human</strong>
+            <strong>Default</strong>
             Readable diagnostics with repetitive telemetry and identifier noise removed.
           </span>
         </label>
