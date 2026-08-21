@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref, watch } from "vue";
-import { AlertTriangle, Check, Cpu } from "@lucide/vue";
+import { AlertTriangle, Check, FileCode2 } from "@lucide/vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -148,7 +148,7 @@ async function create() {
     <PageHeader eyebrow="Reusable device configuration" title="Create Device Template" />
     <BaseCard class="device-template-wizard">
       <ol class="wizard-steps" aria-label="Device template creation progress">
-        <li v-for="(label, index) in steps" :key="label" :class="{ active: index === step, complete: index < step }">
+        <li v-for="(label, index) in steps" :key="label" :class="{ active: index === step, complete: index < step }" :aria-label="`Step ${index + 1}: ${label}`" :aria-current="index === step ? 'step' : undefined">
           <span><Check v-if="index < step" :size="13" /><template v-else>{{ index + 1 }}</template></span>{{ label }}
         </li>
       </ol>
@@ -195,46 +195,85 @@ async function create() {
         <div v-else class="wizard-section">
           <div><h2>Review and create</h2><p>The canonical configuration is the identity; the name is only its human label.</p></div>
           <div v-if="matches.length" class="match-notice" role="status">
-            <strong>These settings already exist.</strong>
-            <p>Reuse the matching template instead of creating a repeated configuration.</p>
-            <BaseButton v-for="template in matches" :key="template.file_path" variant="secondary" @click="emit('open-existing', templateReference(template))">Open {{ template.name }}</BaseButton>
+            <strong>Duplicate configuration conflict</strong>
+            <p>The canonical content hash <code>{{ validation.content_hash }}</code> already belongs to {{ matches.length === 1 ? "an existing template" : "existing templates" }}. Choose how you want to continue.</p>
+            <div class="duplicate-choices">
+              <section>
+                <span>Option 1</span>
+                <strong>Use an existing template</strong>
+                <p>Reuse the same validated device settings without adding another copy.</p>
+                <div class="match-actions"><BaseButton v-for="template in visibleMatches" :key="template.file_path" variant="secondary" @click="emit('open-existing', templateReference(template))">Open {{ template.name }}</BaseButton></div>
+                <small v-if="remainingMatchCount">Also matches {{ remainingMatchCount }} other existing template{{ remainingMatchCount === 1 ? "" : "s" }}.</small>
+              </section>
+              <section>
+                <span>Option 2</span>
+                <strong>Create a separate template</strong>
+                <p>Keep the new name even though its canonical device settings are identical.</p>
+                <label class="duplicate-acknowledgement"><input v-model="duplicateAcknowledged" type="checkbox" /><span>I understand this creates a duplicate configuration.</span></label>
+              </section>
+            </div>
           </div>
-          <dl class="review-list"><div><dt>Name</dt><dd>{{ name.trim() }}</dd></div><div><dt>Type</dt><dd><code>{{ validation?.content?.type }}</code></dd></div><div><dt>Hash</dt><dd><code>{{ validation?.content_hash }}</code></dd></div><div><dt>Parameters</dt><dd><pre>{{ JSON.stringify(validation?.content?.parameters ?? {}, null, 2) }}</pre></dd></div></dl>
+          <dl class="review-list"><div><dt>Name</dt><dd>{{ normalizedName }}</dd></div><div><dt>File</dt><dd><code>{{ filename }}</code></dd></div><div><dt>Type</dt><dd><code>{{ validation?.content?.type }}</code></dd></div><div><dt>Hash</dt><dd><code>{{ validation?.content_hash }}</code></dd></div><div><dt>TOML source</dt><dd><pre>{{ toml }}</pre></dd></div></dl>
           <p v-if="createError" class="validation-copy" role="alert">{{ createError }}</p>
         </div>
       </section>
 
-      <footer><BaseButton variant="quiet" @click="back">{{ step === 0 ? "Choose another type" : "Back" }}</BaseButton><BaseButton v-if="step < 2" :disabled="step === 0 ? !canContinue : validationState === 'validating'" @click="next">{{ step === 1 ? "Validate & Continue" : "Continue" }}</BaseButton><BaseButton v-else :disabled="busy || Boolean(matches.length)" @click="create">{{ busy ? "Creating…" : "Create Device Template" }}</BaseButton></footer>
+      <footer><BaseButton variant="quiet" @click="back">{{ step === 0 ? "Choose another type" : "Back" }}</BaseButton><BaseButton v-if="step < 2" :disabled="step === 0 ? !canContinue : validationState === 'validating'" @click="next">{{ step === 1 && !isValidated ? "Validate & Continue" : "Continue" }}</BaseButton><div v-else class="create-action"><small v-if="matches.length && !duplicateAcknowledged">Choose an existing template or acknowledge the duplicate above.</small><BaseButton :disabled="busy || (Boolean(matches.length) && !duplicateAcknowledged)" @click="create">{{ busy ? "Creating…" : matches.length ? "Create New Template Anyway" : "Create Device Template" }}</BaseButton></div></footer>
     </BaseCard>
   </div>
 </template>
 
 <style scoped>
-.create-device-template-page { overflow-y: auto; }
-.device-template-wizard { overflow: hidden; }
-.wizard-steps { display: grid; grid-template-columns: repeat(3, 1fr); margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--border-card); background: var(--surface-muted); }
+.create-device-template-page { overflow-y: auto; scrollbar-gutter: stable; }
+.create-device-template-page :deep(.page-header) { position: sticky; z-index: 2; top: 0; padding-block: var(--space-2); background: var(--surface-page); }
+.device-template-wizard { display: flex; min-height: 0; flex-direction: column; overflow: hidden; }
+.wizard-steps { display: grid; grid-template-columns: repeat(3, 1fr); flex: 0 0 auto; margin: 0; padding: 0; list-style: none; border-bottom: 1px solid var(--border-card); background: var(--surface-muted); }
 .wizard-steps li { display: flex; align-items: center; justify-content: center; gap: var(--space-2); padding: var(--space-3); color: var(--text-muted); font: var(--fw-bold) var(--fs-xs) var(--font-display); }
 .wizard-steps li > span { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--sage-300); border-radius: var(--radius-pill); }
 .wizard-steps .active, .wizard-steps .complete { color: var(--text-accent); }
 .wizard-steps .active > span, .wizard-steps .complete > span { color: white; border-color: var(--accent); background: var(--accent); }
-.wizard-content { padding: var(--space-5); }
+.wizard-content { min-height: 0; flex: 1 1 auto; overflow-y: auto; padding: var(--space-5); scrollbar-gutter: stable; }
 .wizard-section { display: grid; gap: var(--space-5); }
 .wizard-section h2 { font-size: var(--fs-h3); }
 .wizard-section > div > p { margin-top: var(--space-2); color: var(--text-muted); }
+.wizard-heading-split { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.template-mode-badge { display: inline-flex; align-items: center; gap: var(--space-2); padding: 0.4rem 0.65rem; border: 1px solid var(--sage-300); border-radius: var(--radius-pill); color: var(--text-accent); background: var(--sage-50); font-size: var(--fs-xs); font-weight: var(--fw-bold); white-space: nowrap; }
 .field { display: grid; gap: var(--space-2); }
 .field > span { color: var(--text-accent); font: var(--fw-bold) var(--fs-xs) var(--font-display); text-transform: uppercase; letter-spacing: var(--ls-wide); }
-.field input, .field select, .field textarea { width: 100%; padding: var(--space-3); border: 1px solid var(--sage-300); border-radius: var(--radius-sm); background: var(--surface-card); }
-.field textarea { min-height: 360px; resize: vertical; font: var(--fs-sm)/1.6 var(--font-mono); }
+.field input, .field select { width: 100%; padding: var(--space-3); border: 1px solid var(--sage-300); border-radius: var(--radius-sm); background: var(--surface-card); }
 .field small, .parameter-layout aside { color: var(--text-muted); }
 .parameter-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, 0.35fr); gap: var(--space-4); align-items: start; }
 .parameter-layout aside { display: grid; gap: var(--space-3); padding: var(--space-4); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-muted); font-size: var(--fs-xs); }
 .parameter-layout code, .review-list code { overflow-wrap: anywhere; }
+.toml-editor-shell { min-width: 0; overflow: hidden; border: 1px solid var(--green-950); border-radius: var(--radius-md); background: #10271a; box-shadow: var(--shadow-card); }
+.toml-editor-toolbar { min-height: 46px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: 0 var(--space-4); color: var(--sage-100); background: #17452d; }
+.toml-editor-toolbar > div { display: flex; align-items: center; gap: var(--space-2); }
+.toml-editor-toolbar strong { font-family: var(--font-display); font-size: var(--fs-xs); }
+.toml-editor-toolbar span { padding: 0.2rem 0.45rem; border: 1px solid rgba(255, 255, 255, 0.22); border-radius: var(--radius-sm); color: var(--sage-200); font-size: 0.62rem; font-weight: var(--fw-bold); }
+.toml-editor-toolbar code { overflow: hidden; color: var(--sage-200); text-overflow: ellipsis; white-space: nowrap; }
+.toml-editor-shell textarea { width: 100%; min-height: 440px; display: block; padding: var(--space-5); resize: vertical; border: 0; outline: 0; color: #edf6f0; background: #10271a; font: 0.8rem/1.7 var(--font-mono); tab-size: 2; }
+.toml-editor-shell textarea:focus-visible { box-shadow: inset var(--shadow-focus); }
+.conflict-notice { display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); padding: var(--space-4); border: 1px solid #dfaaa6; border-left: var(--border-accent) solid var(--error); border-radius: var(--radius-md); background: #faf0ef; }
+.conflict-notice strong { color: var(--error); }
+.conflict-notice p { margin-top: var(--space-1); color: var(--text-muted); font-size: var(--fs-xs); }
 .match-notice { display: grid; gap: var(--space-3); padding: var(--space-4); border-left: var(--border-accent) solid var(--accent); background: var(--sage-50); }
+.match-notice code { overflow-wrap: anywhere; }
+.match-notice small { color: var(--text-muted); }
+.match-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.duplicate-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
+.duplicate-choices section { display: grid; align-content: start; gap: var(--space-2); padding: var(--space-4); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); }
+.duplicate-choices section > span { color: var(--text-accent); font: var(--fw-bold) 0.68rem var(--font-display); letter-spacing: var(--ls-wide); text-transform: uppercase; }
+.duplicate-choices section > strong { color: var(--text-heading); font-size: var(--fs-sm); }
+.duplicate-choices section > p { color: var(--text-muted); font-size: var(--fs-xs); line-height: var(--lh-body); }
+.duplicate-acknowledgement { display: flex; align-items: flex-start; gap: var(--space-2); margin-top: var(--space-2); color: var(--text-body); font-size: var(--fs-xs); line-height: var(--lh-snug); cursor: pointer; }
+.duplicate-acknowledgement input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
 .review-list { display: grid; gap: var(--space-3); margin: 0; }
 .review-list > div { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: var(--space-3); padding-bottom: var(--space-3); border-bottom: 1px solid var(--border-card); }
 .review-list dt { color: var(--text-muted); font-size: var(--fs-xs); }
 .review-list dd { margin: 0; }
 .review-list pre { max-height: 240px; overflow: auto; margin: 0; white-space: pre-wrap; }
-.device-template-wizard footer { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border-top: 1px solid var(--border-card); }
-@media (max-width: 760px) { .parameter-layout { grid-template-columns: 1fr; } .wizard-steps li { flex-direction: column; } }
+.device-template-wizard footer { display: flex; flex: 0 0 auto; justify-content: space-between; gap: var(--space-3); padding: var(--space-4); border-top: 1px solid var(--border-card); background: var(--surface-card); }
+.create-action { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-3); }
+.create-action small { max-width: 320px; color: var(--error); font-size: var(--fs-xs); text-align: right; }
+@media (max-width: 760px) { .parameter-layout, .duplicate-choices { grid-template-columns: 1fr; } .wizard-steps li { flex-direction: column; } .wizard-heading-split, .conflict-notice, .device-template-wizard footer, .create-action { align-items: stretch; flex-direction: column; } .create-action small { max-width: none; text-align: left; } }
 </style>
