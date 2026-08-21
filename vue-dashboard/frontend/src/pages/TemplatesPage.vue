@@ -1,5 +1,5 @@
 <script setup>
-import { Archive, ArrowDown, ArrowUp, ArrowUpDown, Download, Filter, Play, Plus, Radar, Trash2, Wrench } from "@lucide/vue";
+import { Archive, ArrowDown, ArrowUp, ArrowUpDown, ChevronDown, Download, Filter, Play, Plus, Radar, Trash2, Wrench } from "@lucide/vue";
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import BaseButton from "../components/BaseButton.vue";
 import BaseCard from "../components/BaseCard.vue";
@@ -15,8 +15,8 @@ import { formatCentralTimestamp } from "../datetime";
 import {
   archiveTemplate,
   deleteSessionTemplate,
+  deviceTemplateRepairTarget,
   duplicateTemplateFrom,
-  importSessionTemplate,
   loadDeviceTemplateCatalog,
   loadSessionTemplateCatalog,
   registerDiscoveredTemplate,
@@ -24,6 +24,7 @@ import {
   templateFlowSummary,
   templateStateHint,
 } from "../templates-api";
+import { importTemplateFile } from "../template-import";
 
 const props = defineProps({
   templateId: { type: String, default: null },
@@ -46,6 +47,9 @@ const repairTemplate = ref(null);
 const fileInput = ref(null);
 const filterMenu = ref(null);
 const filterOpen = ref(false);
+const importMenu = ref(null);
+const importMenuOpen = ref(false);
+const importType = ref("session");
 const sessionSort = ref("state");
 const sessionSortDirection = ref("asc");
 const tabs = [
@@ -97,8 +101,16 @@ function resetSessionStates() {
   selectedSessionStates.value = [...defaultSessionStates];
 }
 
-function closeFilterOnOutsideClick(event) {
+function closeMenusOnOutsideClick(event) {
   if (filterOpen.value && !filterMenu.value?.contains(event.target)) filterOpen.value = false;
+  if (importMenuOpen.value && !importMenu.value?.contains(event.target)) importMenuOpen.value = false;
+}
+
+function chooseImportType(type) {
+  importType.value = type;
+  importMenuOpen.value = false;
+  importError.value = "";
+  fileInput.value?.click();
 }
 
 function setSessionSort(column) {
@@ -351,32 +363,16 @@ async function deleteMissing(template) {
   }
 }
 
-/**
- * Import a template the operator authored elsewhere.
- *
- * A TOML file is imported by dropping it in the templates folder, then running
- * a template scan; the scan adopts it without the portal touching the bytes.
- * This picker covers the other direction: structured configuration exported
- * from somewhere else, sent through the same create contract.
- */
+/** Import a TOML or structured JSON template authored elsewhere. */
 async function importFile(event) {
   const file = event.target.files?.[0];
   if (!file) return;
   importError.value = "";
   importing.value = true;
   try {
-    const text = await file.text();
-    let payload;
-    try {
-      payload = JSON.parse(text);
-    } catch {
-      importError.value =
-        "That file is not structured template configuration. To import a TOML template, " +
-        "put the file in the session-templates folder, then choose Scan Templates.";
-      return;
-    }
-    const created = await importSessionTemplate(payload);
-    emit("open-template", created.template_id);
+    const created = await importTemplateFile(file, importType.value);
+    if (importType.value === "device") openDeviceTemplate(created);
+    else emit("open-template", created.template_id);
   } catch (error) {
     // One configuration, one identity: a duplicate opens the template that
     // already holds it rather than renaming or retrying this one.
@@ -394,10 +390,10 @@ async function importFile(event) {
 
 onMounted(() => {
   refresh();
-  document.addEventListener("pointerdown", closeFilterOnOutsideClick);
+  document.addEventListener("pointerdown", closeMenusOnOutsideClick);
 });
 
-onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnOutsideClick));
+onBeforeUnmount(() => document.removeEventListener("pointerdown", closeMenusOnOutsideClick));
 </script>
 
 <template>
@@ -425,13 +421,33 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
       description="Manage reusable device and session templates."
     >
       <BaseButton @click="emit('new-template')"><Plus :size="16" /> New Template</BaseButton>
-      <BaseButton variant="secondary" :disabled="importing" @click="fileInput?.click()">
+      <div ref="importMenu" class="template-import-menu" @keydown.esc="importMenuOpen = false">
+        <BaseButton
+          variant="secondary"
+          :disabled="importing"
+          aria-haspopup="menu"
+          :aria-expanded="importMenuOpen"
+          aria-controls="template-import-options"
+          @click="importMenuOpen = !importMenuOpen"
+        >
         <Download :size="16" /> {{ importing ? "Importing…" : "Import Template" }}
+          <ChevronDown :size="14" aria-hidden="true" />
       </BaseButton>
+        <div v-if="importMenuOpen" id="template-import-options" class="template-import-popover" role="menu">
+          <button type="button" role="menuitem" @click="chooseImportType('session')">
+            <strong>Session template</strong>
+            <span>Import session flows and sink configuration.</span>
+          </button>
+          <button type="button" role="menuitem" @click="chooseImportType('device')">
+            <strong>Device template</strong>
+            <span>Import reusable device parameters.</span>
+          </button>
+        </div>
+      </div>
       <BaseButton variant="secondary" :disabled="scanning" @click="refresh">
         <Radar :size="16" /> {{ scanning ? "Scanning…" : "Scan Templates" }}
       </BaseButton>
-      <input ref="fileInput" type="file" accept=".json,application/json" hidden @change="importFile" />
+      <input ref="fileInput" type="file" accept=".toml,.json,application/toml,application/json" hidden @change="importFile" />
     </PageHeader>
 
     <BaseCard class="workspace-card">
@@ -659,6 +675,58 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeFilterOnO
   height: 2rem;
   padding: 0;
   justify-content: center;
+}
+
+.template-import-menu {
+  position: relative;
+}
+
+.template-import-popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + var(--space-2));
+  right: 0;
+  display: grid;
+  width: 17rem;
+  padding: var(--space-2);
+  border: 1px solid var(--border-card);
+  border-radius: var(--radius-md);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-md);
+}
+
+.template-import-popover button {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  color: var(--text-body);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.template-import-popover button:hover,
+.template-import-popover button:focus-visible {
+  color: var(--ink);
+  background: var(--surface-muted);
+  outline: none;
+}
+
+.template-import-popover button:focus-visible {
+  box-shadow: var(--shadow-focus);
+}
+
+.template-import-popover strong {
+  font-family: var(--font-display);
+  font-size: var(--fs-sm);
+}
+
+.template-import-popover span {
+  color: var(--text-muted);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-body);
 }
 
 .template-filter {
