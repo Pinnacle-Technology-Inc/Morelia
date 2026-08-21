@@ -44,17 +44,21 @@ const validation = ref(null);
 const validatedDraft = ref("");
 const busy = ref(false);
 const createError = ref("");
+const duplicateAcknowledged = ref(false);
 
-const filename = computed(() => `${name.value.trim() || "untitled-device-template"}.toml`);
-const nameCollision = computed(() => {
-  const candidate = name.value.trim();
-  return templates.value.some((template) => template.name === candidate || templateReference(template) === candidate);
-});
-const draftKey = computed(() => `${deviceType.value}\n${parametersText.value}`);
+const normalizedName = computed(() => name.value.trim().replace(/\.(toml|json)$/i, "").trim());
+const filename = computed(() => `${normalizedName.value || "untitled-device-template"}.toml`);
+const nameMatch = computed(() => templates.value.find((template) => {
+  const candidate = normalizedName.value;
+  return candidate && (template.name === candidate || templateReference(template) === candidate);
+}) ?? null);
+const draftKey = computed(() => toml.value);
 const isValidated = computed(() => validationState.value === "valid" && validatedDraft.value === draftKey.value);
 const matches = computed(() => validation.value?.matches ?? []);
+const visibleMatches = computed(() => matches.value.slice(0, 3));
+const remainingMatchCount = computed(() => Math.max(matches.value.length - visibleMatches.value.length, 0));
 const canContinue = computed(() => {
-  if (step.value === 0) return Boolean(name.value.trim() && deviceType.value && !nameCollision.value);
+  if (step.value === 0) return Boolean(normalizedName.value && deviceType.value && !nameMatch.value);
   if (step.value === 1) return isValidated.value;
   return false;
 });
@@ -77,6 +81,7 @@ watch(toml, () => {
   validationError.value = "";
   validation.value = null;
   createError.value = "";
+  duplicateAcknowledged.value = false;
 });
 
 onMounted(async () => {
@@ -110,6 +115,7 @@ async function validate({ advance = false } = {}) {
 
 async function next() {
   if (step.value === 0 && canContinue.value) step.value = 1;
+  else if (step.value === 1 && isValidated.value) step.value = 2;
   else if (step.value === 1) await validate({ advance: true });
 }
 
@@ -119,12 +125,12 @@ function back() {
 }
 
 async function create() {
-  if (!isValidated.value || matches.value.length || nameCollision.value) return;
+  if (!isValidated.value || nameMatch.value || (matches.value.length && !duplicateAcknowledged.value)) return;
   busy.value = true;
   createError.value = "";
   try {
     const created = await createDeviceTemplate({
-      name: name.value.trim(),
+      name: normalizedName.value,
       type: validation.value.content.type,
       parameters: validation.value.content.parameters,
     });
@@ -152,8 +158,11 @@ async function create() {
         <div v-if="step === 0" class="wizard-section">
           <div><h2>Name and type</h2><p>The name becomes a reusable TOML file; the device type controls validation.</p></div>
           <label class="field"><span>Template name</span><input v-model="name" autofocus placeholder="e.g. 8206-high-gain" /><small>File: <code>{{ filename }}</code></small></label>
-          <p v-if="nameCollision" class="validation-copy" role="alert">That name is already in use. Open the existing template or choose another name.</p>
-          <label class="field"><span>Device type</span><select v-model="deviceType" :disabled="!types.length"><option v-for="row in types" :key="row.type" :value="row.type">{{ row.type }}</option></select></label>
+          <div v-if="nameMatch" class="conflict-notice" role="alert">
+            <div><strong>Name conflict</strong><p><code>{{ filename }}</code> is already used by {{ nameMatch.name }}.</p></div>
+            <BaseButton variant="secondary" @click="emit('open-existing', templateReference(nameMatch))">Open existing</BaseButton>
+          </div>
+          <label class="field"><span>Starter device type</span><select v-model="deviceType" :disabled="!types.length"><option v-for="row in types" :key="row.type" :value="row.type">{{ row.type }}</option></select><small>This seeds the editor. The TOML remains the source of truth.</small></label>
         </div>
 
         <div v-else-if="step === 1" class="wizard-section">
@@ -171,10 +180,13 @@ async function create() {
               <textarea id="device-template-toml" v-model="toml" spellcheck="false" autocomplete="off" autocapitalize="off" />
             </section>
             <aside>
-              <strong>{{ deviceType }}</strong>
-              <p>Required: <code>{{ types.find((row) => row.type === deviceType)?.required_parameters.join(", ") || "none" }}</code></p>
-              <p>Optional: <code>{{ types.find((row) => row.type === deviceType)?.optional_parameters.join(", ") || "none" }}</code></p>
+              <strong>{{ validation?.content?.type ?? deviceType }}</strong>
+              <p>Required: <code>{{ types.find((row) => row.type === (validation?.content?.type ?? deviceType))?.required_parameters.join(", ") || "none" }}</code></p>
+              <p>Optional: <code>{{ types.find((row) => row.type === (validation?.content?.type ?? deviceType))?.optional_parameters.join(", ") || "none" }}</code></p>
+              <p>The template name comes from Step 1; TOML owns the device type and parameters.</p>
               <p v-if="validationState === 'valid'">Hash: <code>{{ validation.content_hash }}</code></p>
+              <p v-else-if="validationState === 'validating'" role="status">Validating TOML…</p>
+              <p v-else>Changes must be validated before you can create the template.</p>
               <p v-if="validationError" class="validation-copy" role="alert">{{ validationError }}</p>
             </aside>
           </div>
