@@ -15,6 +15,10 @@ describe("template-centric session closure", () => {
     expect(appSource).toContain('@open-templates="changeTab(\'templates\')"');
   });
 
+  it("keeps incident details out of session catalog rows", () => {
+    expect(sessionsPageSource).not.toContain('v-if="session.attentionReason"');
+  });
+
   it("never restarts a stopped session in place", () => {
     expect(sessionDetailSource).not.toContain("restartStopped");
     expect(sessionDetailSource).not.toContain("confirmRestart");

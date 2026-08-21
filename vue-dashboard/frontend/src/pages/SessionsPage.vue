@@ -8,7 +8,7 @@ import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
 import { countSessionsForTab, filterSessions, sessionTabs } from "../session-utils";
-import { formatCentralDate, formatCentralTimestamp } from "../datetime";
+import { formatCentralTimestamp, timestampMs } from "../datetime";
 
 const props = defineProps({
   sessions: { type: Array, required: true },
@@ -47,19 +47,16 @@ watch(sessionErrorMessage, (message, previousMessage) => {
 });
 
 function timeLabel(session) {
-  if (session.lifecycle === "Active") return session.duration ?? "In progress";
-  if (session.scheduledTime) {
-    return formatCentralTimestamp(session.scheduledTime, {
-      year: undefined,
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: undefined,
-    });
-  }
-  if (session.startTime) return formatCentralDate(session.startTime, { year: undefined });
-  return "-";
+  const timestamp = session.scheduledTime ?? session.createdAt;
+  return formatCentralTimestamp(timestamp, {
+    fallback: "-",
+    year: undefined,
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: undefined,
+  });
 }
 </script>
 
@@ -91,13 +88,12 @@ function timeLabel(session) {
       <div v-if="visibleSessions.length" class="table-wrap">
         <table class="data-table sessions-table">
           <thead>
-            <tr><th>Session</th><th>State</th><th>Session Health</th><th>Experiment</th><th>Streams</th><th>Time</th><th /></tr>
+            <tr><th>Session</th><th>State</th><th>Session Health</th><th>Experiment</th><th>Streams</th><th>Created / Scheduled</th><th /></tr>
           </thead>
           <tbody>
             <tr v-for="session in visibleSessions" :key="session.id" @click="$emit('open-session', session.id)">
               <td>
                 <strong>{{ session.name }}</strong>
-                <small v-if="session.attentionReason">{{ session.attentionReason }}</small>
               </td>
               <td><StatusBadge :value="session.lifecycle" /></td>
               <td><StatusBadge :value="session.health" /></td>
