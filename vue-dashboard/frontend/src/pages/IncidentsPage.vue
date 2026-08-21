@@ -1,4 +1,5 @@
 <script setup>
+import { CheckCircle2 } from "@lucide/vue";
 import { onMounted, ref, watch } from "vue";
 import BaseCard from "../components/BaseCard.vue";
 import PageHeader from "../components/PageHeader.vue";
@@ -112,9 +113,11 @@ onMounted(() => loadPage());
       description="Review interruptions, data gaps, guarded actions, and verification outcomes."
     />
     <BaseCard class="workspace-card">
-      <TabBar :tabs="tabs" :active="activeTab" @change="activeTab = $event" />
-      <div v-if="activeTab !== 'history'" class="detail-tab-actions">
-        <label>Filter <select v-if="activeTab === 'incidents'" v-model="status"><option value="">All states</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option><option value="resolved">Resolved</option></select><select v-else v-model="confidence"><option value="">All confidence</option><option value="confirmed">Confirmed</option><option value="estimated">Estimated</option><option value="uncertain">Uncertain</option></select></label>
+      <div class="workspace-chrome">
+        <TabBar :tabs="tabs" :active="activeTab" @change="activeTab = $event" />
+        <div v-if="activeTab !== 'history'" class="toolbar">
+          <label>Filter <select v-if="activeTab === 'incidents'" v-model="status"><option value="">All states</option><option value="open">Open</option><option value="acknowledged">Acknowledged</option><option value="resolved">Resolved</option></select><select v-else v-model="confidence"><option value="">All confidence</option><option value="confirmed">Confirmed</option><option value="estimated">Estimated</option><option value="uncertain">Uncertain</option></select></label>
+        </div>
       </div>
       <p v-if="pageState === 'loading'">Loading history…</p>
       <p v-else-if="pageState === 'unavailable'" class="detail-alert">{{ pageError }}</p>
@@ -126,14 +129,26 @@ onMounted(() => loadPage());
             <tr v-for="incident in rows" :key="incident.incident_id">
               <td><code>{{ formatCentralTimestamp(incident.opened_at) }}</code></td><td><strong>Session {{ incident.session_id }}</strong></td>
               <td><code>{{ incident.device_id ?? "—" }}</code></td><td>{{ incident.reason }}</td><td>{{ incident.policy ?? "—" }}</td>
-              <td>{{ incidentOutcome(incident) }}</td><td><StatusBadge compact :value="incident.status" /></td>
+              <td>{{ incidentOutcome(incident) }}</td>
+              <td>
+                <span
+                  v-if="incident.status === 'resolved'"
+                  class="status-badge status-badge--compact status-badge--green"
+                  role="img"
+                  aria-label="Resolved"
+                  title="Resolved"
+                >
+                  <CheckCircle2 :size="16" aria-hidden="true" />
+                </span>
+                <StatusBadge v-else compact :value="incident.status ?? 'Unknown'" />
+              </td>
               <td><button v-if="incident.status === 'open'" class="table-action" type="button" @click="acknowledge(incident)">Acknowledge</button></td>
             </tr>
           </tbody>
         </table>
         <table v-else-if="activeTab === 'gaps'" class="data-table">
-          <thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Session</th><th>Stream</th><th>Cause</th><th>Incident</th><th>Confidence</th></tr></thead>
-          <tbody><tr v-for="gap in rows" :key="gap.gap_id"><td><code>{{ formatGapBoundary(gap.gap_start) }}</code></td><td><code>{{ formatGapBoundary(gap.gap_end) }}</code></td><td>{{ formatGapDuration(gap) }}</td><td><strong>Session {{ gap.session_id }}</strong></td><td><code>{{ gap.sink_id ?? gap.device_id ?? "—" }}</code></td><td>{{ gap.reason ?? "—" }}</td><td><code>{{ gap.incident_id ?? "—" }}</code></td><td>{{ gap.confidence ?? "—" }}</td></tr></tbody>
+          <thead><tr><th>Start</th><th>End</th><th>Duration</th><th>Session</th><th>Stream</th><th>Cause</th><th>Incident</th></tr></thead>
+          <tbody><tr v-for="gap in rows" :key="gap.gap_id"><td><code>{{ formatGapBoundary(gap.gap_start) }}</code></td><td><code>{{ formatGapBoundary(gap.gap_end) }}</code></td><td>{{ formatGapDuration(gap) }}</td><td><strong>Session {{ gap.session_id }}</strong></td><td><code>{{ gap.sink_id ?? gap.device_id ?? "—" }}</code></td><td>{{ gap.reason ?? "—" }}</td><td><code>{{ gap.incident_id ?? "—" }}</code></td></tr></tbody>
         </table>
         <div v-if="activeTab !== 'history' && pageState === 'live' && hasMore"><button type="button" class="table-action" @click="loadPage(nextCursor)">Next page</button></div>
       </div>
