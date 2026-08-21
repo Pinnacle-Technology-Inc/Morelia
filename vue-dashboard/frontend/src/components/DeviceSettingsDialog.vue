@@ -9,7 +9,12 @@ import {
   loadDeviceConfig,
   registerDeviceName,
 } from "../devices-api";
-import { createDeviceTemplate, loadDeviceTemplates, matchDeviceTemplate } from "../templates-api";
+import {
+  createDeviceTemplate,
+  loadDeviceTemplateSource,
+  loadDeviceTemplates,
+  matchDeviceTemplate,
+} from "../templates-api";
 
 const props = defineProps({
   // A device-pool row (from loadDevicePool). `configId` is set for configured
@@ -30,9 +35,13 @@ const name = ref(props.device.nickname ?? "");
 const hardwareId = ref(props.device.hardwareId ?? "");
 const port = ref(props.device.port ?? "");
 
-// Edit mode: the persisted config and its parameters as typed, editable rows.
+// Persisted parameters stay typed internally for save/template matching while
+// the operator sees the canonical TOML source as one read-only document.
 const config = ref(null);
 const paramRows = ref([]);
+const templateSource = ref("");
+const templateSourceState = ref("idle"); // idle | loading | ready | error
+const templateSourceError = ref("");
 
 // Every dashboard-managed config starts from, and finishes linked to, a template.
 const templates = ref([]);
@@ -121,9 +130,34 @@ function useTemplateParameters(template) {
     .map((key) => classifyRow(key, parameters[key]));
 }
 
-function selectTemplate() {
+async function loadSelectedTemplateSource() {
+  const reference = selectedTemplateReference.value;
+  if (!reference) {
+    templateSource.value = "";
+    templateSourceState.value = "idle";
+    templateSourceError.value = "";
+    return;
+  }
+
+  templateSourceState.value = "loading";
+  templateSourceError.value = "";
+  try {
+    const loaded = await loadDeviceTemplateSource(reference);
+    if (reference !== selectedTemplateReference.value) return;
+    templateSource.value = loaded.toml;
+    templateSourceState.value = "ready";
+  } catch (reason) {
+    if (reference !== selectedTemplateReference.value) return;
+    templateSource.value = "";
+    templateSourceState.value = "error";
+    templateSourceError.value = reason instanceof Error ? reason.message : "Could not load the device template source.";
+  }
+}
+
+async function selectTemplate() {
   useTemplateParameters(selectedTemplate.value);
   errorMsg.value = "";
+  await loadSelectedTemplateSource();
 }
 
 onMounted(async () => {
@@ -150,6 +184,7 @@ onMounted(async () => {
       selectedTemplateReference.value = templatesForType.value[0]?.file_path ?? "";
       useTemplateParameters(selectedTemplate.value);
     }
+    await loadSelectedTemplateSource();
     loadState.value = "ready";
   } catch (reason) {
     loadState.value = "error";
@@ -310,15 +345,14 @@ function displayLabel(value) {
             <small v-if="mode === 'edit'">Currently linked to <code>{{ currentSourceTemplate ?? "no template" }}</code>. Choosing another template loads its canonical values below.</small>
             <small v-if="!templatesForType.length">No templates exist for this device type. Create one from Templates before configuring this device.</small>
           </label>
-          <p v-if="selectedTemplateReference && !paramRows.length" class="empty-state">This template has no editable parameters.</p>
-          <div v-else-if="selectedTemplateReference" class="form-grid">
-            <label v-for="row in paramRows" :key="row.key" class="field" :class="{ 'field--wide': row.type === 'json' }">
-              <span>{{ row.key }}</span>
-              <select v-if="row.type === 'boolean'" v-model="row.value"><option value="true">true</option><option value="false">false</option></select>
-              <input v-else-if="row.type === 'number'" v-model="row.value" type="number" step="any" />
-              <textarea v-else-if="row.type === 'json'" v-model="row.value" spellcheck="false" />
-              <input v-else v-model="row.value" type="text" />
-            </label>
+          <div v-if="selectedTemplateReference" class="device-toml field--wide">
+            <div class="device-toml__header">
+              <span>Template TOML</span>
+              <code>{{ selectedTemplate?.file_path ?? selectedTemplateReference }}</code>
+            </div>
+            <p v-if="templateSourceState === 'loading'" class="device-toml__state" aria-busy="true">Loading TOML source…</p>
+            <p v-else-if="templateSourceState === 'error'" class="device-toml__state" role="alert">{{ templateSourceError }}</p>
+            <pre v-else class="device-toml__source" tabindex="0" aria-label="Read-only device template TOML"><code>{{ templateSource }}</code></pre>
           </div>
         </div>
 
@@ -375,4 +409,28 @@ function displayLabel(value) {
 .device-dialog__badges { display: flex; gap: var(--space-2); margin-top: var(--space);}
 .device-dialog .field span { display: flex; align-items: center; gap: 0.4rem; }
 .device-dialog input[type="radio"] { width: auto; min-height: auto; }
+.device-toml { display: grid; min-width: 0; gap: var(--space-2); }
+.device-toml__header { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); }
+.device-toml__header span { color: var(--text-heading); font-size: var(--fs-sm); font-weight: var(--fw-bold); }
+.device-toml__header code { color: var(--text-muted); overflow-wrap: anywhere; text-align: right; }
+.device-toml__source,
+.device-toml__state {
+  min-height: 280px;
+  margin: 0;
+  padding: var(--space-4);
+  overflow: auto;
+  color: #edf6f0;
+  border: 1px solid var(--green-950);
+  border-radius: var(--radius-md);
+  background: #10271a;
+  font: var(--fs-xs)/1.65 var(--font-mono);
+  white-space: pre;
+  tab-size: 2;
+}
+.device-toml__source:focus-visible { outline: 2px solid var(--yellow-300); outline-offset: 2px; }
+.device-toml__state { display: grid; place-items: center; color: var(--text-on-dark-muted); white-space: normal; }
+@media (max-width: 560px) {
+  .device-toml__header { align-items: flex-start; flex-direction: column; }
+  .device-toml__header code { text-align: left; }
+}
 </style>
