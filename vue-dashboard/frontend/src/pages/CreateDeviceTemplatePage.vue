@@ -8,26 +8,33 @@ import {
   createDeviceTemplate,
   loadDeviceTemplateTypes,
   loadDeviceTemplates,
-  matchDeviceTemplate,
+  validateDeviceTemplateToml,
 } from "../templates-api";
 
 const emit = defineEmits(["cancel", "created", "open-existing"]);
-const steps = ["Details", "Parameters", "Review"];
+const steps = ["Details", "TOML", "Review"];
 const examples = {
-  pod8206hr: { preamp_gain: 10, sample_rate: 2000 },
-  pod8401hr: {
-    preamp: "Preamp8407_SE",
-    primary_channel_modes: ["BIOSENSOR", "EEG_EMG", "EEG_EMG", "EEG_EMG"],
-    secondary_channel_modes: ["DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL"],
-    ss_gain: [1, 5, 5, 5],
-    sample_rate: 2000,
-  },
+  pod8206hr: `type = "pod8206hr"
+
+[parameters]
+preamp_gain = 10
+sample_rate = 2000
+`,
+  pod8401hr: `type = "pod8401hr"
+
+[parameters]
+preamp = "Preamp8407_SE"
+primary_channel_modes = ["BIOSENSOR", "EEG_EMG", "EEG_EMG", "EEG_EMG"]
+secondary_channel_modes = ["DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL"]
+ss_gain = [1, 5, 5, 5]
+sample_rate = 2000
+`,
 };
 
 const step = ref(0);
 const name = ref("");
 const deviceType = ref("");
-const parametersText = ref("{}");
+const toml = ref("");
 const types = ref([]);
 const templates = ref([]);
 const loadError = ref("");
@@ -61,12 +68,12 @@ function templateReference(template) {
 }
 
 function seedParameters(type) {
-  parametersText.value = JSON.stringify(examples[type] ?? {}, null, 2);
+  toml.value = examples[type] ?? `type = "${type}"\n\n[parameters]\n`;
 }
 
 watch(deviceType, seedParameters);
-watch([deviceType, parametersText], () => {
-  validationState.value = parametersText.value.trim() ? "dirty" : "idle";
+watch(toml, () => {
+  validationState.value = toml.value.trim() ? "dirty" : "idle";
   validationError.value = "";
   validation.value = null;
   createError.value = "";
@@ -83,24 +90,17 @@ onMounted(async () => {
   }
 });
 
-function parsedParameters() {
-  const value = JSON.parse(parametersText.value || "{}");
-  if (!value || Array.isArray(value) || typeof value !== "object") throw new Error("Parameters must be a JSON object.");
-  return value;
-}
-
 async function validate({ advance = false } = {}) {
+  if (!toml.value.trim() || validationState.value === "validating") return;
   validationState.value = "validating";
   validationError.value = "";
   const snapshot = draftKey.value;
   try {
-    const result = await matchDeviceTemplate({ type: deviceType.value, parameters: parsedParameters() });
+    const result = await validateDeviceTemplateToml(toml.value);
     if (snapshot !== draftKey.value) return;
     validation.value = result;
     validatedDraft.value = snapshot;
     validationState.value = "valid";
-    parametersText.value = JSON.stringify(result.content?.parameters ?? {}, null, 2);
-    validatedDraft.value = draftKey.value;
     if (advance) step.value = 2;
   } catch (error) {
     validationState.value = "error";
@@ -157,9 +157,19 @@ async function create() {
         </div>
 
         <div v-else-if="step === 1" class="wizard-section">
-          <div><h2>Configure parameters</h2><p>Edit the JSON values. Validation canonicalizes them before hashing.</p></div>
+          <div class="wizard-heading-split">
+            <div><h2>Edit as TOML</h2><p>Validation checks the complete device template and canonicalizes its parameters before hashing.</p></div>
+            <span class="template-mode-badge"><FileCode2 :size="15" /> TOML only</span>
+          </div>
           <div class="parameter-layout">
-            <label class="field"><span>Parameters</span><textarea v-model="parametersText" spellcheck="false" /></label>
+            <section class="toml-editor-shell" aria-labelledby="device-toml-editor-title">
+              <header class="toml-editor-toolbar">
+                <div><strong id="device-toml-editor-title">Device template source</strong><span>TOML</span></div>
+                <code>{{ filename }}</code>
+              </header>
+              <label class="visually-hidden" for="device-template-toml">Device template TOML</label>
+              <textarea id="device-template-toml" v-model="toml" spellcheck="false" autocomplete="off" autocapitalize="off" />
+            </section>
             <aside>
               <strong>{{ deviceType }}</strong>
               <p>Required: <code>{{ types.find((row) => row.type === deviceType)?.required_parameters.join(", ") || "none" }}</code></p>
