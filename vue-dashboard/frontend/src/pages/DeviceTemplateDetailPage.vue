@@ -54,14 +54,15 @@ async function refresh() {
       });
       if (!loaded) throw reason;
       activeTab.value = "source";
-      error.value = loaded.error ?? "This template is invalid. Edit and validate its TOML source to repair it.";
+      error.value = loaded.validation_error ?? "This template is invalid. Edit and validate its TOML source to repair it.";
     }
     const loadedSource = await loadDeviceTemplateSource(loaded.file_path);
     template.value = loaded;
     source.value = loadedSource.toml;
     draft.value = loadedSource.toml;
-    editing.value = false;
-    validationState.value = "idle";
+    editing.value = loaded.status === "INVALID";
+    validationState.value = editing.value ? "error" : "idle";
+    validationError.value = editing.value ? (loaded.validation_error ?? error.value) : "";
     state.value = "ready";
   } catch (reason) {
     error.value = describeError(reason, "This device template could not be loaded.");

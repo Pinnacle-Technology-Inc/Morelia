@@ -3,6 +3,7 @@ import {
   canRunTemplate,
   createSessionTemplate,
   deleteDeviceTemplate,
+  deviceTemplateRepairTarget,
   hasDeviceTemplateDrift,
   loadDeviceTemplates,
   loadSessionTemplateCatalog,
@@ -74,6 +75,21 @@ it("does not offer Start run when the backend reports a run blocker", () => {
   expect(canRunTemplate(normalized)).toBe(false);
   expect(templateControls(normalized).map((control) => control.id)).not.toContain("run");
   expect(templateStateHint(normalized)).toMatch(/device template changed/i);
+});
+
+it("exposes the device-template repair target from a run blocker", () => {
+  const blocked = {
+    ...REGISTRY_ROW,
+    runnable: false,
+    runBlockers: [{
+      code: "device_template_invalid",
+      message: "Flow 1's device template is invalid.",
+      device_template_path: "device-templates/pod-high.toml",
+      recovery_action: "repair_device_template",
+    }],
+  };
+
+  expect(deviceTemplateRepairTarget(blocked)).toBe("device-templates/pod-high.toml");
 });
 
 it("normalizes the backend run-gate contract", async () => {

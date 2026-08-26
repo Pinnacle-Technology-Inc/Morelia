@@ -316,6 +316,11 @@ function openDeviceTemplate(template) {
   emit("open-device-template", deviceTemplateRouteName(template));
 }
 
+function openBlockedDeviceTemplate(template) {
+  const filePath = deviceTemplateRepairTarget(template);
+  if (filePath) openDeviceTemplate({ file_path: filePath });
+}
+
 function deviceTemplateRouteName(template) {
   const filename = String(template.file_path ?? "").split("/").pop();
   return filename?.replace(/\.toml$/i, "") || template.name;
@@ -572,6 +577,17 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeMenusOnOu
               </td>
               <td @click.stop @keydown.stop>
                 <div class="row-actions">
+                  <BaseButton
+                    v-if="deviceTemplateRepairTarget(template)"
+                    class="template-row-icon-action"
+                    size="small"
+                    variant="secondary"
+                    aria-label="Repair blocked device template"
+                    title="Repair blocked device template"
+                    @click="openBlockedDeviceTemplate(template)"
+                  >
+                    <Wrench :size="15" />
+                  </BaseButton>
                   <BaseButton
                     v-if="template.state === 'INVALID'"
                     class="template-row-icon-action"

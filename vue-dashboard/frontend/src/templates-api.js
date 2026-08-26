@@ -204,6 +204,16 @@ export function hasDeviceTemplateDrift(template) {
   );
 }
 
+/** Return the invalid dependency path the backend says an operator can repair. */
+export function deviceTemplateRepairTarget(template) {
+  const blocker = asList(template?.runBlockers).find(
+    (candidate) => candidate?.recovery_action === "repair_device_template" &&
+      typeof candidate?.device_template_path === "string" &&
+      candidate.device_template_path.trim(),
+  );
+  return blocker?.device_template_path.trim() || null;
+}
+
 /** Only a reproducible ACTIVE revision can produce a run. */
 export function canRunTemplate(template) {
   if (template?.state !== "ACTIVE") return false;
