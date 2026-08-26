@@ -416,7 +416,10 @@ def _claimed_config_session(*, status: SessionStatus, runtime_port: int | None):
         device_type=DeviceType.POD8206HR,
         hardware_id="001",
         port="COM3",
-        parameters={"preamp_gain": 10},
+        parameters={
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            },
     )
     session = Session(
         id=1,

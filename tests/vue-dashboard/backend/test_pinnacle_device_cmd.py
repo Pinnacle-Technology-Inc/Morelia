@@ -345,20 +345,25 @@ def test_device_template_show_prints_daemon_template(monkeypatch, tmp_path):
 def test_device_template_import_copies_source_file_to_library(app, monkeypatch, tmp_path):
     source = tmp_path / "custom-file.toml"
     source.write_text(
-        "\n".join(['name = "custom-name"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10"]),
+        "\n".join(['name = "custom-name"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10", "sample_rate = 2000"]),
         encoding="utf-8",
     )
     artifact = {
         "name": "custom-name",
         "type": "pod8206hr",
-        "parameters": {"preamp_gain": 10},
+        "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000},
     }
     library_dir = tmp_path / "device-templates"
     imported = {
         "name": "custom-name",
         "file_path": "custom-file.toml",
         "type": "pod8206hr",
-        "content": {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+        "content": {"type": "pod8206hr", "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            }},
         "content_hash": device_template_content_hash(artifact),
     }
     fake = FakeDaemonClient(gets=[[], [imported]])
@@ -380,15 +385,21 @@ def test_device_template_import_copies_source_file_to_library(app, monkeypatch, 
 def test_device_template_import_name_renames_file_and_toml_name(app, monkeypatch, tmp_path):
     source = tmp_path / "original.toml"
     source.write_text(
-        "\n".join(['name = "original"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10"]),
+        "\n".join(['name = "original"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10", "sample_rate = 2000"]),
         encoding="utf-8",
     )
-    artifact = {"name": "renamed", "type": "pod8206hr", "parameters": {"preamp_gain": 10}}
+    artifact = {"name": "renamed", "type": "pod8206hr", "parameters": {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+        }}
     imported = {
         "name": "renamed",
         "file_path": "renamed.toml",
         "type": "pod8206hr",
-        "content": {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+        "content": {"type": "pod8206hr", "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            }},
         "content_hash": device_template_content_hash(artifact),
     }
     library_dir = tmp_path / "device-templates"
@@ -413,10 +424,13 @@ def test_device_template_import_name_renames_file_and_toml_name(app, monkeypatch
 def test_device_template_import_duplicate_hash_prompts_and_aborts(app, monkeypatch, tmp_path):
     source = tmp_path / "copy.toml"
     source.write_text(
-        "\n".join(['name = "copy"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10"]),
+        "\n".join(['name = "copy"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10", "sample_rate = 2000"]),
         encoding="utf-8",
     )
-    artifact = {"name": "copy", "type": "pod8206hr", "parameters": {"preamp_gain": 10}}
+    artifact = {"name": "copy", "type": "pod8206hr", "parameters": {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+        }}
     library_dir = tmp_path / "device-templates"
     fake = FakeDaemonClient(
         gets=[
@@ -446,10 +460,13 @@ def test_device_template_import_duplicate_hash_prompts_and_aborts(app, monkeypat
 def test_device_template_import_duplicate_hash_continues_when_confirmed(app, monkeypatch, tmp_path):
     source = tmp_path / "copy.toml"
     source.write_text(
-        "\n".join(['name = "copy"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10"]),
+        "\n".join(['name = "copy"', 'type = "pod8206hr"', "", "[parameters]", "preamp_gain = 10", "sample_rate = 2000"]),
         encoding="utf-8",
     )
-    artifact = {"name": "copy", "type": "pod8206hr", "parameters": {"preamp_gain": 10}}
+    artifact = {"name": "copy", "type": "pod8206hr", "parameters": {
+        "preamp_gain": 10,
+        "sample_rate": 2000,
+        }}
     imported = {
         "name": "copy",
         "file_path": "copy.toml",
@@ -612,7 +629,10 @@ def test_device_template_edit_interactive_no_changes_skips_put(monkeypatch):
         "type": "pod8206hr",
         "content": {
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         },
     }
     fake = FakeDaemonClient(gets=[current])
@@ -731,13 +751,19 @@ def test_device_template_export_uses_positional_reference_and_output_name(
         "id": 1,
         "name": "pod-left",
         "type": "pod8206hr",
-        "content": {"type": "pod8206hr", "parameters": {"preamp_gain": 10}},
+        "content": {"type": "pod8206hr", "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            }},
     }
     config = {
         "id": 7,
         "type": "pod8206hr",
         "hardware_id": "A1B2C",
-        "parameters": {"preamp_gain": "10"},
+        "parameters": {
+            "preamp_gain": "10",
+            "sample_rate": "2000",
+            },
         "nickname": "left-pod",
     }
     fake = FakeDaemonClient(gets=[[config], config], posts=[saved])
@@ -761,7 +787,10 @@ def test_device_template_export_uses_positional_reference_and_output_name(
             {
                 "name": "pod-left",
                 "type": "pod8206hr",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
             },
         ),
     ]
@@ -775,7 +804,10 @@ def test_device_template_export_from_config_with_name_saves_template(app, monkey
         "type": "pod8206hr",
         "content": {
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         },
     }
     fake = FakeDaemonClient(
@@ -785,7 +817,10 @@ def test_device_template_export_from_config_with_name_saves_template(app, monkey
                 "type": "pod8206hr",
                 "hardware_id": "A1B2C",
                 "port": "COM3",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
                 "nickname": "left-pod",
             },
             [],
@@ -815,11 +850,22 @@ def test_device_template_export_from_config_with_name_saves_template(app, monkey
             {
                 "name": "pod-left",
                 "type": "pod8206hr",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
             },
         ),
     ]
-    expected_toml = 'name = "pod-left"\ntype = "pod8206hr"\n\n[parameters]\npreamp_gain = 10\n'
+    expected_toml = (
+        'name = "pod-left"\n'
+        'type = "pod8206hr"\n'
+        '\n'
+        '[parameters]\n'
+        'preamp_gain = 10\n'
+        'sample_rate = 2000\n'
+    )
+
     assert expected_toml in result.output
     assert saved_toml == expected_toml
     assert "saved template: pod-left" in result.stderr
@@ -831,7 +877,10 @@ def test_device_template_export_from_config_blocks_duplicate_content(monkeypatch
     artifact = {
         "name": "existing-pod",
         "type": "pod8206hr",
-        "parameters": {"preamp_gain": 10},
+        "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            },
     }
     fake = FakeDaemonClient(
         gets=[
@@ -840,7 +889,10 @@ def test_device_template_export_from_config_blocks_duplicate_content(monkeypatch
                 "type": "pod8206hr",
                 "hardware_id": "A1B2C",
                 "port": "COM3",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
                 "nickname": "left-pod",
             },
             [
@@ -850,7 +902,10 @@ def test_device_template_export_from_config_blocks_duplicate_content(monkeypatch
                     "type": "pod8206hr",
                     "content": {
                         "type": "pod8206hr",
-                        "parameters": {"preamp_gain": 10},
+                        "parameters": {
+                            "preamp_gain": 10,
+                            "sample_rate": 2000,
+                            },
                     },
                     "content_hash": device_template_content_hash(artifact),
                 }
@@ -877,7 +932,10 @@ def test_device_template_export_from_config_force_allows_duplicate_content(app, 
     artifact = {
         "name": "existing-pod",
         "type": "pod8206hr",
-        "parameters": {"preamp_gain": 10},
+        "parameters": {
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            },
     }
     saved = {
         "id": 2,
@@ -885,7 +943,10 @@ def test_device_template_export_from_config_force_allows_duplicate_content(app, 
         "type": "pod8206hr",
         "content": {
             "type": "pod8206hr",
-            "parameters": {"preamp_gain": 10},
+            "parameters": {
+                "preamp_gain": 10,
+                "sample_rate": 2000,
+                },
         },
     }
     fake = FakeDaemonClient(
@@ -895,7 +956,10 @@ def test_device_template_export_from_config_force_allows_duplicate_content(app, 
                 "type": "pod8206hr",
                 "hardware_id": "A1B2C",
                 "port": "COM3",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
                 "nickname": "left-pod",
             },
             [
@@ -905,7 +969,10 @@ def test_device_template_export_from_config_force_allows_duplicate_content(app, 
                     "type": "pod8206hr",
                     "content": {
                         "type": "pod8206hr",
-                        "parameters": {"preamp_gain": 10},
+                        "parameters": {
+                            "preamp_gain": 10,
+                            "sample_rate": 2000,
+                            },
                     },
                     "content_hash": device_template_content_hash(artifact),
                 }
@@ -942,11 +1009,23 @@ def test_device_template_export_from_config_force_allows_duplicate_content(app, 
             {
                 "name": "new-pod",
                 "type": "pod8206hr",
-                "parameters": {"preamp_gain": "10"},
+                "parameters": {
+                    "preamp_gain": "10",
+                    "sample_rate": "2000",
+                    },
             },
         ),
     ]
-    expected_toml = 'name = "new-pod"\ntype = "pod8206hr"\n\n[parameters]\npreamp_gain = 10\n'
+
+    expected_toml = (
+        'name = "new-pod"\n'
+        'type = "pod8206hr"\n'
+        '\n'
+        '[parameters]\n'
+        'preamp_gain = 10\n'
+        'sample_rate = 2000\n'
+    )
+    
     assert expected_toml in result.output
     assert saved_toml == expected_toml
 

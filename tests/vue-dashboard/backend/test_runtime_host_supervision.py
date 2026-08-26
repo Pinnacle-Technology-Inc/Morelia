@@ -144,7 +144,10 @@ def _create_session_config_shape_session(
         device_type=DeviceType.POD8206HR,
         hardware_id=hardware_id,
         port="COM3",
-        parameters={"preamp_gain": 10},
+        parameters={
+            "preamp_gain": 10,
+            "sample_rate": 2000,
+            },
     )
     session = Session(
         name=name,

@@ -157,7 +157,10 @@ def test_resolve_snapshot_immutable_after_config_edit(app):
             "snap-pod",
             {
                 "type": "pod8206hr",
-                "parameters": {"preamp_gain": 100},
+                "parameters": {
+                    "preamp_gain": 100,
+                    "sample_rate": 2000,
+                    },
             },
         )
 
