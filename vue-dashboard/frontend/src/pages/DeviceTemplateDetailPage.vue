@@ -134,7 +134,7 @@ async function copy(value, label) {
 </script>
 
 <template>
-  <div class="page page--workspace device-template-detail-page">
+  <div class="page page--detail device-template-detail-page">
     <div v-if="state === 'loading'" class="empty-state" aria-busy="true">Loading device template…</div>
     <template v-else-if="template">
       <PageHeader eyebrow="Device template" :title="template.name" :description="template.file_path">
@@ -144,7 +144,7 @@ async function copy(value, label) {
       </PageHeader>
       <p v-if="error" class="form-notice" role="alert"><AlertTriangle :size="18" /> {{ error }}</p>
       <BaseCard class="detail-content">
-        <TabBar :tabs="tabs" :active="activeTab" @change="activeTab = $event" />
+        <TabBar class="detail-tabs" :tabs="tabs" :active="activeTab" @change="activeTab = $event" />
         <section v-if="activeTab === 'configuration'" class="detail-panel" role="tabpanel">
           <dl class="identity-grid"><div><dt>Device type</dt><dd><code>{{ template.type }}</code></dd></div><div><dt>Parameters</dt><dd>{{ parameters.length }}</dd></div><div><dt>Status</dt><dd>{{ template.status }}</dd></div></dl>
           <table class="parameter-table"><thead><tr><th>Parameter</th><th>Canonical value</th></tr></thead><tbody><tr v-for="([key, value]) in parameters" :key="key"><th scope="row"><code>{{ key }}</code></th><td><code>{{ typeof value === 'string' ? value : JSON.stringify(value) }}</code></td></tr></tbody></table>
@@ -167,7 +167,15 @@ async function copy(value, label) {
 
 <style scoped>
 .device-template-detail-page { overflow-y: auto; }
-.detail-content { overflow: hidden; }
+.detail-content { overflow: visible; }
+.detail-tabs {
+  position: sticky;
+  top: calc(-1 * var(--space-6));
+  z-index: 10;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--sage-50);
+  box-shadow: 0 1px 0 var(--border-card), 0 8px 16px rgb(5 48 25 / 8%);
+}
 .detail-panel, .source-panel { display: grid; gap: var(--space-5); padding: var(--space-5); }
 .identity-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-3); margin: 0; }
 .identity-grid > div { padding: var(--space-4); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-muted); }

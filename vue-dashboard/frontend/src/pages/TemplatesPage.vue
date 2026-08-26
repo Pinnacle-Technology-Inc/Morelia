@@ -435,9 +435,9 @@ onBeforeUnmount(() => document.removeEventListener("pointerdown", closeMenusOnOu
           aria-controls="template-import-options"
           @click="importMenuOpen = !importMenuOpen"
         >
-        <Download :size="16" /> {{ importing ? "Importing…" : "Import Template" }}
+          <Download :size="16" /> {{ importing ? "Importing…" : "Import Template" }}
           <ChevronDown :size="14" aria-hidden="true" />
-      </BaseButton>
+        </BaseButton>
         <div v-if="importMenuOpen" id="template-import-options" class="template-import-popover" role="menu">
           <button type="button" role="menuitem" @click="chooseImportType('session')">
             <strong>Session template</strong>

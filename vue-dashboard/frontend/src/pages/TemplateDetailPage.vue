@@ -372,6 +372,7 @@ watch(() => props.templateId, refresh);
 
       <BaseCard class="detail-content">
         <TabBar
+          class="detail-tabs"
           :tabs="TABS"
           :active="activeTab"
           :counts="tabCounts"
@@ -521,6 +522,17 @@ watch(() => props.templateId, refresh);
 .template-attention {
   display: grid;
   gap: var(--space-2);
+}
+.detail-content {
+  overflow: visible;
+}
+.detail-tabs {
+  position: sticky;
+  top: calc(-1 * var(--space-6));
+  z-index: 10;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  background: var(--sage-50);
+  box-shadow: 0 1px 0 var(--border-card), 0 8px 16px rgb(5 48 25 / 8%);
 }
 /* .detail-panel > p sets margin-bottom: 1rem for prose that leads into content;
    the rename picker's line is the last text before the options, so the wrapper
