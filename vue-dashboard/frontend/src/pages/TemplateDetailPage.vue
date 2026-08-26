@@ -14,6 +14,7 @@ import {
   loadSessionTemplate,
   loadSessionTemplateSource,
   registerDiscoveredTemplate,
+  refreshTemplateDependencyRevision,
   resolveTemplateRename,
   templateControls,
   templateFlowSummary,
@@ -247,6 +248,12 @@ async function run(control) {
       template.value = await registerDiscoveredTemplate(template.value.reference);
     } else if (control.id === "accept_change") {
       template.value = await acceptTemplateChange(template.value.templateId);
+    } else if (control.id === "refresh_dependency_revision") {
+      const previousTemplateId = template.value.templateId;
+      template.value = await refreshTemplateDependencyRevision(template.value.templateId);
+      if (template.value.templateId !== previousTemplateId) {
+        emit("open-template", template.value.templateId);
+      }
     } else if (control.id === "archive") {
       template.value = await archiveTemplate(template.value.templateId);
     } else if (control.id === "resolve_rename") {

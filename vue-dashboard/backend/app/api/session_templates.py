@@ -209,6 +209,16 @@ def accept_template_change(template_id):
         _raise_state_conflict(template, exc)
 
 
+@blp.route("/<string:template_id>/actions/refresh-dependency-revision", methods=["POST"])
+@blp.response(200, SessionTemplateSchema)
+def refresh_dependency_revision(template_id):
+    template = _template_by_id(template_id)
+    try:
+        return session_template_service.refresh_dependency_revision(template_id)
+    except ValueError as exc:
+        _raise_state_conflict(template, exc)
+
+
 @blp.route("/<string:template_id>/actions/archive", methods=["POST"])
 @blp.response(200, SessionTemplateSchema)
 def archive_template(template_id):

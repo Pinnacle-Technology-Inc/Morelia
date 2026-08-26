@@ -461,11 +461,19 @@ class SessionTemplateFile:
     def allowed_actions(self) -> list[str]:
         if self.derived_allowed_actions is not None:
             return self.derived_allowed_actions
-        return {
+        actions = {
             "DISCOVERED": ["register"],
             "ACTIVE": ["archive"],
             "CHANGED": ["accept_change", "archive"],
         }.get(self.state, [])
+        if self.state == "ACTIVE":
+            dependency_blockers = _dependency_run_blockers(self.content or {})
+            if dependency_blockers and all(
+                blocker["code"] == "device_template_changed"
+                for blocker in dependency_blockers
+            ):
+                return ["refresh_dependency_revision", *actions]
+        return actions
 
     @property
     def lineage_parent_id(self) -> str | None:

@@ -117,6 +117,15 @@ const SERVER_ACTIONS = Object.freeze({
       "A new registry entry becomes ACTIVE. Past runs keep their recorded source revision. " +
       "Your TOML file is not modified by this action.",
   },
+  refresh_dependency_revision: {
+    id: "refresh_dependency_revision",
+    label: "Use current device revisions",
+    title: "Pin the current linked device-template revisions and accept them as a new session-template revision.",
+    confirm:
+      "Use the current linked device-template revisions?\n\n" +
+      "The hashes shown in the warnings will replace the old pins in this session template. " +
+      "This creates a new active session-template revision; past runs keep their recorded revision.",
+  },
   archive: {
     id: "archive",
     label: "Archive",
@@ -275,6 +284,15 @@ export async function registerDiscoveredTemplate(reference) {
 export async function acceptTemplateChange(templateId) {
   return normalizeTemplate(
     await send(`/api/v1/session-templates/${encodeURIComponent(templateId)}/actions/accept-change`, "POST"),
+  );
+}
+
+export async function refreshTemplateDependencyRevision(templateId) {
+  return normalizeTemplate(
+    await send(
+      `/api/v1/session-templates/${encodeURIComponent(templateId)}/actions/refresh-dependency-revision`,
+      "POST",
+    ),
   );
 }
 
