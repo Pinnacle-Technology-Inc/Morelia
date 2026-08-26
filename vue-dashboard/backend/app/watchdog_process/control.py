@@ -49,6 +49,8 @@ class ControllableWatchdog(Protocol):
 
     def rebind_runtime(self, runtime_id: str) -> None: ...
 
+    def recover(self, recovery_id: str, device_id: str) -> None: ...
+
 
 class _Server(ThreadingHTTPServer):
     daemon_threads = True
@@ -155,7 +157,7 @@ class _Handler(BaseHTTPRequestHandler):
         )
 
     def do_POST(self) -> None:
-        if self.path not in {"/adopt", "/stop"}:
+        if self.path not in {"/adopt", "/recover", "/stop"}:
             self._send(HTTPStatus.NOT_FOUND, {"error": "not found"})
             return
         if not self._require_auth():
@@ -167,11 +169,12 @@ class _Handler(BaseHTTPRequestHandler):
         if recovery_id is None:
             self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid recovery_id"})
             return
-        allowed = (
-            {"recovery_id", "runtime_id"}
-            if self.path == "/adopt"
-            else {"recovery_id", "command_id", "request_id"}
-        )
+        if self.path == "/adopt":
+            allowed = {"recovery_id", "runtime_id"}
+        elif self.path == "/recover":
+            allowed = {"recovery_id", "device_id"}
+        else:
+            allowed = {"recovery_id", "command_id", "request_id"}
         if set(payload) - allowed:
             self._send(HTTPStatus.BAD_REQUEST, {"error": "unknown correlation field"})
             return
@@ -197,6 +200,54 @@ class _Handler(BaseHTTPRequestHandler):
                 outcome="adopted",
             )
             self._send(HTTPStatus.OK, {"status": "adopted", "recovery_id": recovery_id})
+            return
+        if self.path == "/recover":
+            device_id = self._required_id(payload, "device_id")
+            if device_id is None:
+                self._send(HTTPStatus.BAD_REQUEST, {"error": "invalid device_id"})
+                return
+            _log.info(
+                "watchdog_recovery_accepted",
+                recovery_id=recovery_id,
+                device_id=device_id,
+                watchdog_id=self.server.process.identity.watchdog_id,
+                runtime_id=self.server.process.identity.runtime_id,
+                dataflow_id=self.server.process.manifest.dataflow_id,
+                outcome="accepted",
+            )
+            # ThreadingHTTPServer already runs this handler on a background
+            # request thread. Complete the HTTP acknowledgement before doing
+            # the potentially slow hardware restart so the runtime host does
+            # not mistake an in-progress recovery for a control timeout.
+            self._send(
+                HTTPStatus.ACCEPTED,
+                {"status": "accepted", "recovery_id": recovery_id, "device_id": device_id},
+            )
+            try:
+                self.server.process.recover(recovery_id, device_id)
+            except Exception as exc:  # noqa: BLE001 - report asynchronous command failure
+                _log.error(
+                    "watchdog_recovery_failed",
+                    recovery_id=recovery_id,
+                    device_id=device_id,
+                    watchdog_id=self.server.process.identity.watchdog_id,
+                    runtime_id=self.server.process.identity.runtime_id,
+                    dataflow_id=self.server.process.manifest.dataflow_id,
+                    outcome="failed",
+                    error=type(exc).__name__,
+                    message=str(exc),
+                    exc_info=True,
+                )
+            else:
+                _log.info(
+                    "watchdog_recovery_confirmed",
+                    recovery_id=recovery_id,
+                    device_id=device_id,
+                    watchdog_id=self.server.process.identity.watchdog_id,
+                    runtime_id=self.server.process.identity.runtime_id,
+                    dataflow_id=self.server.process.manifest.dataflow_id,
+                    outcome="succeeded",
+                )
             return
         _log.info(
             "watchdog_stop_accepted",
@@ -308,6 +359,13 @@ class WatchdogControlClient:
         if request_id:
             payload["request_id"] = request_id
         return self._request("POST", "/stop", payload)
+
+    def recover(self, *, recovery_id: str, device_id: str) -> dict[str, object]:
+        return self._request(
+            "POST",
+            "/recover",
+            {"recovery_id": recovery_id, "device_id": device_id},
+        )
 
     def _request(
         self, method: str, path: str, payload: dict[str, object] | None = None

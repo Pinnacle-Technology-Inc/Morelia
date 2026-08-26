@@ -38,6 +38,19 @@ from app.runtime_host.manifest import Manifest
 
 _log = structlog.get_logger(__name__)
 
+_HARDWARE_ABSENT_ACTIONS = frozenset(
+    {
+        "unplug_detected",
+        "waiting_for_port",
+    }
+)
+_HARDWARE_PRESENT_ACTIONS = frozenset(
+    {
+        "connection_restored",
+        "waiting_for_port_release",
+    }
+)
+
 
 class WorkerStartupError(RuntimeError):
     """A stream worker failed before every stream produced its first packet."""
@@ -320,6 +333,7 @@ class MoreliaRuntime:
         self._source_status_by_device: dict[str, dict[str, object]] = {}
         self._source_failure_by_device: dict[str, dict[str, object]] = {}
         self._source_recovery_by_device: dict[str, list[dict[str, object]]] = {}
+        self._pending_recovery_by_device: dict[str, str] = {}
         self._device_id_by_port = {
             str(device_flow.port).lower(): device_flow.device_id
             for device_flow in manifest.device_flows
@@ -396,19 +410,24 @@ class MoreliaRuntime:
         assert self._watchdog is not None
 
         stream_index = self._stream_by_device[device_id]
-        monitor = getattr(self._watchdog, "dataflow_monitor", None)
-        restart_one_stream = getattr(monitor, "restart_one_stream", None)
-        if not callable(restart_one_stream):
+        stream_command = getattr(self._watchdog, "stream_command", None)
+        if not callable(stream_command):
             raise RuntimeError(
-                "Morelia Watchdog does not expose dataflow_monitor.restart_one_stream()"
+                "Morelia Watchdog does not expose stream_command()"
             )
 
-        result = restart_one_stream(stream_index)
+        result = stream_command(
+            stream_index,
+            command="restart_stream",
+            requested_by="operator",
+            blocking=True,
+        )
         if not result.get("ok"):
             raise RuntimeError(
                 result.get("error") or result.get("status") or "Morelia recovery failed"
             )
 
+        self._pending_recovery_by_device[device_id] = recovery_id
         self._emit_from_watchdog_report(
             self._watchdog.get_report(verbose=True),
             recovery_id=recovery_id,
@@ -639,7 +658,14 @@ class MoreliaRuntime:
                 "on_source_error": source_error_sender,
             }
             if getattr(DataFlow, "supports_source_recovery_window", False):
-                flowgraph_kwargs["source_recovery_window_sec"] = self._max_heartbeat_age_sec
+                # Source-level port reopen is itself a recovery action. Keep it
+                # automatic only for Automate; Recommend must wait for the
+                # explicit stream command after the watchdog stops the worker.
+                flowgraph_kwargs["source_recovery_window_sec"] = (
+                    self._max_heartbeat_age_sec
+                    if self._manifest.policy == "automate"
+                    else None
+                )
             self._flowgraph = DataFlow(network, **flowgraph_kwargs)
             self._watchdog = Watchdog(
                 flowgraph=self._flowgraph,
@@ -988,6 +1014,14 @@ class MoreliaRuntime:
         recovery_id: str | None = None,
     ) -> None:
         stream_reports = list(report.get("streams", []))
+        if recovery_id is None:
+            for index, device_id in enumerate(self._device_ids):
+                pending_id = self._pending_recovery_by_device.get(device_id)
+                stream = stream_reports[index] if index < len(stream_reports) else {}
+                if pending_id and self._map_stream_status(stream.get("stream_health")) is StreamStatus.HEALTHY:
+                    recovery_id = pending_id
+                    self._pending_recovery_by_device.pop(device_id, None)
+                    break
         devices = []
         for index, device_id in enumerate(self._device_ids):
             stream = stream_reports[index] if index < len(stream_reports) else {}
@@ -1150,9 +1184,12 @@ class MoreliaRuntime:
             action = action if isinstance(action, dict) else {}
             action_detail = action.get("detail")
             action_detail = action_detail if isinstance(action_detail, dict) else {}
+            action_name = _bounded_text(action.get("taken"), 120)
+            hardware_present = action_detail.get("hardware_present")
+            if not isinstance(hardware_present, bool):
+                hardware_present = None
             disconnect = action_detail.get("disconnect")
             disconnect = disconnect if isinstance(disconnect, dict) else None
-            action_name = _bounded_text(action.get("taken"), 120)
             source_recoveries = self._source_recovery_by_device.get(device_id, [])
             source_recovery = source_recoveries[0] if source_recoveries else None
             if source_recovery is not None and action_name == "connection_restored":
@@ -1190,6 +1227,11 @@ class MoreliaRuntime:
                 disconnect = source_recovery
             if not source_recoveries:
                 self._source_recovery_by_device.pop(device_id, None)
+            if hardware_present is None:
+                if action_name in _HARDWARE_ABSENT_ACTIONS:
+                    hardware_present = False
+                elif action_name in _HARDWARE_PRESENT_ACTIONS:
+                    hardware_present = True
             recovery_event = stream.get("recovery_event")
             recovery_event = recovery_event if isinstance(recovery_event, dict) else {}
             startup = signals.get("startup")
@@ -1245,6 +1287,7 @@ class MoreliaRuntime:
                     "recovery": {
                         "status": _bounded_text(recovery_event.get("status"), 80),
                         "policy": _bounded_text(recovery_event.get("recovery_policy"), 80),
+                        "hardware_present": hardware_present,
                         # The watcher's real restart budget as {"current", "max"}
                         # — distinct from consecutive_nonhealthy_ticks above,
                         # which measures elapsed time, not attempts.

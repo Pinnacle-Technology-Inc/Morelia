@@ -296,6 +296,35 @@ def transition_operation(
     return operation
 
 
+def verify_recovery_report(report) -> None:
+    """Complete a dispatched recovery only after its target reports healthy."""
+    recovery_id = getattr(report, "recovery_id", None)
+    if not recovery_id:
+        return
+    operation = db.session.scalars(
+        db.select(Operation)
+        .where(Operation.recovery_id == recovery_id)
+        .order_by(Operation.id.desc())
+        .limit(1)
+    ).first()
+    if operation is None or operation.state in TERMINAL_STATES:
+        return
+    target = next(
+        (
+            device
+            for device in report.devices
+            if device.device_id == operation.target_device_id
+        ),
+        None,
+    )
+    if target is None or target.stream_status.value != "healthy":
+        return
+    if operation.state in {OperationState.DISPATCHED, OperationState.RUNNING}:
+        operation = transition_operation(operation.operation_id, OperationState.VERIFYING)
+    if operation.state is OperationState.VERIFYING:
+        transition_operation(operation.operation_id, OperationState.SUCCEEDED)
+
+
 def record_operation_failure_event(
     operation: Operation,
     *,

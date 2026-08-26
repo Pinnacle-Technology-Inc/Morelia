@@ -1125,6 +1125,8 @@ class StreamWatcher (threading.Thread):
             # port inventory itself cannot be read.
             return None
 
+        # Preserves OS information for down-the-stream recovery report
+        hardware_present = port_present
         now = time.monotonic()
         heartbeat = base.get("heartbeat", {})
         heartbeat_age = heartbeat.get("age_sec")
@@ -1162,6 +1164,7 @@ class StreamWatcher (threading.Thread):
                         "failure_reason": "waiting_for_port",
                         "initiating_failure_reason": "heartbeat_age_exceeded",
                         "failure_count": self._failure_count,
+                        "hardware_present": hardware_present,
                         "disconnect": {
                             "elapsed_sec": elapsed,
                             "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
@@ -1189,6 +1192,7 @@ class StreamWatcher (threading.Thread):
                     "action": "filling_missing_samples",
                     "failure_reason": "port_absent_heartbeat_window",
                     "failure_count": self._failure_count,
+                    "hardware_present": hardware_present,
                     "disconnect": {
                         "elapsed_sec": elapsed,
                         "remaining_sec": max(0.0, self._max_heartbeat_age_sec - elapsed),
@@ -1219,6 +1223,7 @@ class StreamWatcher (threading.Thread):
                     "action": "connection_restored",
                     "failure_reason": None,
                     "failure_count": 0,
+                    "hardware_present": hardware_present,
                     "disconnect": {
                         "elapsed_sec": elapsed,
                         "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
@@ -1256,6 +1261,7 @@ class StreamWatcher (threading.Thread):
                 "action": "unplug_detected" if first_observation else "filling_missing_samples",
                 "failure_reason": "port_absent_heartbeat_window",
                 "failure_count": self._failure_count,
+                "hardware_present": hardware_present,
                 "disconnect": {
                     "elapsed_sec": elapsed,
                     "remaining_sec": remaining,
@@ -1282,6 +1288,7 @@ class StreamWatcher (threading.Thread):
                     "initiating_failure_reason": "heartbeat_age_exceeded",
                     "failure_count": self._failure_count,
                     "busy": busy,
+                    "hardware_present": hardware_present,
                     "disconnect": {
                         "elapsed_sec": elapsed,
                         "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
@@ -1314,7 +1321,7 @@ class StreamWatcher (threading.Thread):
                 "failure_reason": "needs_action",
                 "initiating_failure_reason": "heartbeat_age_exceeded",
                 "failure_count": self._failure_count,
-                "hardware_present": False,
+                "hardware_present": hardware_present,
                 "disconnect": {
                     "elapsed_sec": elapsed,
                     "max_heartbeat_age_sec": self._max_heartbeat_age_sec,
@@ -1334,6 +1341,7 @@ class StreamWatcher (threading.Thread):
             "failure_reason": "waiting_for_port",
             "initiating_failure_reason": "heartbeat_age_exceeded",
             "failure_count": self._failure_count,
+            "hardware_present": hardware_present,
             "disconnect": {
                 "elapsed_sec": elapsed,
                 "max_heartbeat_age_sec": self._max_heartbeat_age_sec,

@@ -256,10 +256,15 @@ class WatchdogProcessDriver:
         self._phase = RuntimePhase.CLOSED
 
     def recover(self, recovery_id: str, device_id: str) -> None:
-        raise NotImplementedError(
-            "runtime_host does not yet forward recovery commands to the watchdog "
-            "process — there is no command channel into it yet (see packet 07)"
-        )
+        self._require(RuntimePhase.RUNNING)
+        with self._state_lock:
+            port = self._watchdog_control_port
+            token = self._watchdog_control_token
+            state = self._watchdog_state
+        if port is None or token is None or state is not WatchdogProcessState.RUNNING:
+            raise RuntimeError("watchdog recovery control is unavailable")
+        client = self._control_client_factory(port=port, token=token)
+        client.recover(recovery_id=recovery_id, device_id=device_id)
 
     # -- watchdog identity, surfaced by server.py's GET /status --------------
 

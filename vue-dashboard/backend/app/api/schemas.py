@@ -751,7 +751,7 @@ class RecoverSessionSchema(Schema):
     device_id = fields.String(required=True, validate=validate.Length(min=1))
     action = fields.String(
         required=True,
-        validate=validate.OneOf(["reconnect", "restart", "reset-stream"]),
+        validate=validate.OneOf(["restart"]),
     )
 
 

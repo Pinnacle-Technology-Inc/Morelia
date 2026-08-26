@@ -122,6 +122,10 @@ class WatchdogProcess:
             watchdog_id=self._identity.watchdog_id,
         )
 
+    def recover(self, recovery_id: str, device_id: str) -> None:
+        """Run one explicit operator-approved stream restart."""
+        self.driver.recover(recovery_id, device_id)
+
     @property
     def stopped(self) -> bool:
         """True once a fatal ingest response has stopped this process."""
@@ -156,6 +160,8 @@ class WatchdogProcess:
         }
         if report.diagnostics is not None:
             payload["diagnostics"] = dict(report.diagnostics)
+        if report.recovery_id is not None:
+            payload["recovery_id"] = report.recovery_id
         # Per-sink state crosses the boundary under its OWN payload key, kept
         # strictly separate from ``devices`` (source/stream health): a sink
         # failure never rides in as source health (gaps SINK-08/SINK-19/SINK-23).

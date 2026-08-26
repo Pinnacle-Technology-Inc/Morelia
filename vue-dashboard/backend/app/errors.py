@@ -105,6 +105,7 @@ def register_error_handlers(app) -> None:
         InvalidTransition,
         OperationNotFound,
         OperationResolutionError,
+        RecoveryCommandNotAllowed,
         RuntimeNotTracked,
         RuntimeStartupFailed,
         SessionNoteNotFound,
@@ -226,6 +227,10 @@ def register_error_handlers(app) -> None:
         _domain(422, "sink_parent_unavailable"),
     )
     app.register_error_handler(OperationNotFound,           _domain(404, "operation_not_found"))
+    app.register_error_handler(
+        RecoveryCommandNotAllowed,
+        _domain(409, "recovery_not_allowed"),
+    )
     app.register_error_handler(IncidentNotFound,            _domain(404, "incident_not_found"))
     app.register_error_handler(RuntimeNotTracked,           _domain(409, "runtime_not_tracked"))
     app.register_error_handler(RuntimeStartupFailed,        _domain(503, "runtime_startup_failed"))

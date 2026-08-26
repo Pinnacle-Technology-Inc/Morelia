@@ -86,6 +86,7 @@ def ingest_report(raw: Mapping) -> int:
     incidents.evaluate_sink_reports(
         report, session_id=session.id, policy=session.policy
     )
+    operations.verify_recovery_report(report)
 
     return event_id
 
@@ -147,6 +148,11 @@ def ingest_watchdog_report(raw: Mapping) -> int:
         runtime_id=envelope.runtime_id,
         watchdog_id=envelope.watchdog_id,
         report_id=envelope.report_id,
+        recovery_id=(
+            envelope.payload.get("recovery_id")
+            if isinstance(envelope.payload.get("recovery_id"), str)
+            else None
+        ),
     )
 
     # Direct watchdog reports remain authoritative even when the runtime host
@@ -186,5 +192,6 @@ def ingest_watchdog_report(raw: Mapping) -> int:
             incidents.evaluate_sink_reports(
                 report, session_id=session.id, policy=session.policy
             )
+            operations.verify_recovery_report(report)
 
     return event_id

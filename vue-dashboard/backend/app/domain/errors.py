@@ -44,6 +44,15 @@ class CommandInFlight(Exception):
         super().__init__(f"A command is already running on session {session_id!r}.")
 
 
+class RecoveryCommandNotAllowed(Exception):
+    """A recovery command did not match current, actionable telemetry."""
+
+    def __init__(self, message: str, *, details: dict | None = None):
+        self.code = "recovery_not_allowed"
+        self.details = dict(details) if details is not None else {}
+        super().__init__(message)
+
+
 class InvalidTransition(Exception):
     def __init__(self, current):
         self.current = current
@@ -426,6 +435,7 @@ __all__ = [
     "InvalidTransition",
     "OperationNotFound",
     "OperationResolutionError",
+    "RecoveryCommandNotAllowed",
     "RuntimeNotTracked",
     "SessionNotFound",
     "SessionNoteNotFound",

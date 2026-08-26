@@ -27,6 +27,7 @@ from app.domain.errors import (
     EmptySession,
     InvalidSessionEntry,
     InvalidTransition,
+    RecoveryCommandNotAllowed,
     RuntimeStartupFailed,
     SessionNotFound,
     SessionRunRequestConflict,
@@ -49,6 +50,7 @@ from app.services import (
     manifests,
     output_finalization,
     session_templates,
+    recovery_contract,
 )
 from app.services.device_list import build_pool_rows
 from app.services.operations import (
@@ -89,8 +91,59 @@ _STARTABLE = {SessionStatus.PREPARING, SessionStatus.SCHEDULED}
 _STOPPABLE = {SessionStatus.ACTIVE}
 # Recovery only makes sense against a live dataflow.
 _RECOVERABLE = {SessionStatus.ACTIVE}
-# The three escalating recovery intensities; all are STREAM-scope commands.
-RECOVER_ACTIONS = frozenset({"reconnect", "restart", "reset-stream"})
+# The runtime currently implements one honest, stream-scoped operation.
+RECOVER_ACTIONS = frozenset({"restart"})
+
+
+def _recovery_command_view(session: Session, device_id: str) -> dict[str, object]:
+    """Resolve command eligibility from current direct watchdog telemetry."""
+    latest = _events.latest_direct_telemetry_for_session(session.id)
+    config = get_config()
+    freshness = telemetry_freshness(
+        latest,
+        now=datetime.now(UTC),
+        stale_after_seconds=config.WATCHDOG_TELEMETRY_STALE_AFTER_SECONDS,
+        overflow_after_seconds=config.WATCHDOG_TELEMETRY_OVERFLOW_AFTER_SECONDS,
+    )
+    ownership = (
+        _runtimes.active_for_dataflow(session.dataflow_id)
+        if session.dataflow_id
+        else None
+    )
+    controls_current = bool(
+        freshness == "current"
+        and ownership is not None
+        and latest is not None
+        and latest.runtime_id == ownership.runtime_id
+        and latest.watchdog_id == ownership.watchdog_id
+        and ownership.watchdog_state is not None
+        and ownership.watchdog_state.value == "running"
+        and ownership.watchdog_control_port is not None
+    )
+
+    payload = latest.payload if latest is not None and isinstance(latest.payload, Mapping) else {}
+    diagnostics = payload.get("diagnostics")
+    streams = diagnostics.get("streams") if isinstance(diagnostics, Mapping) else []
+    diagnostic = next(
+        (
+            stream
+            for stream in streams or []
+            if isinstance(stream, Mapping) and stream.get("device_id") == device_id
+        ),
+        {},
+    )
+    recovery = diagnostic.get("recovery") if isinstance(diagnostic, Mapping) else {}
+    recovery = recovery if isinstance(recovery, Mapping) else {}
+    source_read = diagnostic.get("source_read") if isinstance(diagnostic, Mapping) else {}
+    source_read = source_read if isinstance(source_read, Mapping) else {}
+    return recovery_contract.project(
+        action=diagnostic.get("action") if isinstance(diagnostic, Mapping) else None,
+        stage=recovery.get("status"),
+        source_read_state=source_read.get("state"),
+        policy=recovery.get("policy") or session.policy,
+        hardware_present=recovery.get("hardware_present"),
+        controls_current=controls_current,
+    )
 
 
 def create(
@@ -997,7 +1050,22 @@ def _recover(
     if not dataflow_id:
         raise InvalidTransition(session.status)
 
-    watchdog_id = session.watchdog_id or uuid4().hex
+    command_view = _recovery_command_view(session, device_id)
+    allowed_actions = command_view["allowed_recovery_actions"]
+    if action not in allowed_actions:
+        state = command_view["recovery_state"]
+        raise RecoveryCommandNotAllowed(
+            "Recovery is not currently available for this device.",
+            details={
+                "device_id": device_id,
+                "recovery_state": state,
+                "control_available": command_view["control_available"],
+                "hardware_present": command_view["hardware_present"],
+                "allowed_actions": allowed_actions,
+            },
+        )
+
+    watchdog_id = _active_watchdog_id(dataflow_id) or session.watchdog_id or uuid4().hex
     request_id = _request_id("recovering")
     recovery_id = uuid4().hex
     active_runtime_id = resolve_runtime_id(dataflow_id)

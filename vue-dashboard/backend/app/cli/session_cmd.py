@@ -1115,7 +1115,7 @@ def stop_command(
     )
 
 
-_RECOVER_ACTIONS = ("reconnect", "restart", "reset-stream")
+_RECOVER_ACTIONS = ("restart",)
 
 
 @session.command(name="recover")
@@ -1129,9 +1129,9 @@ _RECOVER_ACTIONS = ("reconnect", "restart", "reset-stream")
 @click.option(
     "--action",
     type=click.Choice(_RECOVER_ACTIONS),
-    default="reconnect",
+    default="restart",
     show_default=True,
-    help="Recovery intensity: reconnect < restart < reset-stream.",
+    help="Restart the selected device stream after recovery becomes operator-actionable.",
 )
 @_wait_options
 def recover_command(
