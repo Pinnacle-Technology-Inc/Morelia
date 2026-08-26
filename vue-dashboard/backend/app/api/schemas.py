@@ -270,13 +270,15 @@ class UpdateSessionNoteSchema(Schema):
 
 
 class FleetSessionRowSchema(Schema):
-    """One row of the fleet overview (6f): lifecycle + live health + phase."""
+    """One fleet row, including context for an operator-actionable incident."""
 
     id = fields.Integer()
     name = fields.String()
     status = fields.Enum(SessionStatus, by_value=True)
     phase = fields.String(allow_none=True)
     health = fields.String(allow_none=True)
+    attention_reason = fields.String(allow_none=True)
+    attention_since = fields.DateTime(allow_none=True)
 
 
 class FleetOverviewSchema(Schema):

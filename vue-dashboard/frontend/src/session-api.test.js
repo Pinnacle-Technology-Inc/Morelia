@@ -2,11 +2,45 @@ import { afterEach, expect, it, vi } from "vitest";
 import {
   completeSession,
   createTemplateRun,
+  loadSessionCatalog,
   loadSessionNameSuggestion,
   stopSession,
 } from "./session-api";
 
 afterEach(() => vi.restoreAllMocks());
+
+it("maps overview incident context into the attention card model", async () => {
+  vi.stubGlobal("fetch", vi.fn(async (url) => ({
+    ok: true,
+    json: async () => url.endsWith("/sessions/")
+      ? [{
+          id: 7,
+          name: "attention-card",
+          status: "active",
+          device_flows: [],
+        }]
+      : {
+          running_count: 1,
+          total_count: 1,
+          sessions: [{
+            id: 7,
+            name: "attention-card",
+            status: "active",
+            health: "failed",
+            phase: "running",
+            attention_reason: "stream unhealthy",
+            attention_since: "2026-08-19T18:42:00+00:00",
+          }],
+        },
+  })));
+
+  const catalog = await loadSessionCatalog();
+
+  expect(catalog.sessions[0]).toMatchObject({
+    attentionReason: "stream unhealthy",
+    attentionSince: "2026-08-19T18:42:00+00:00",
+  });
+});
 
 it("requests a name suggestion for the selected template", async () => {
   const fetchMock = vi.fn(async () => ({

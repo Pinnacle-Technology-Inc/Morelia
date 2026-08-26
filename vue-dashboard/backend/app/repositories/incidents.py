@@ -94,6 +94,16 @@ class IncidentRepository:
             query = query.where(Incident.status == _status_value(status))
         return db.session.scalars(query.order_by(Incident.opened_at.desc())).all()
 
+    def list_unresolved_for_session(self, session_id: int) -> list[Incident]:
+        """Return current incidents newest-first without scanning resolved history."""
+        query = db.select(Incident).where(
+            Incident.session_id == session_id,
+            Incident.status.in_(
+                (IncidentStatus.OPEN.value, IncidentStatus.ACKNOWLEDGED.value)
+            ),
+        )
+        return db.session.scalars(query.order_by(Incident.opened_at.desc())).all()
+
     def list_page(
         self,
         *,

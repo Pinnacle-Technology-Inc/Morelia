@@ -41,7 +41,8 @@ from app.repositories.incidents import IncidentRepository
 from app.repositories.recovery_gaps import RecoveryGapRepository
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
-from app.services import escalation, operations
+from app.services import escalation, operations, recovery_contract
+from app.services.incidents import requires_action_for_reason
 
 # A session counts as "running" in the fleet tally when its lifecycle is ACTIVE
 # (started, not yet ended). Lifecycle is the authority here — not liveness — so
@@ -509,6 +510,14 @@ def fleet_overview(
         if session.status in _RUNNING_STATUSES:
             running += 1
         latest = _events.latest_report_for_session(session.id)
+        actionable_incident = next(
+            (
+                incident
+                for incident in _incidents.list_unresolved_for_session(session.id)
+                if requires_action_for_reason(incident.reason)
+            ),
+            None,
+        )
         rows.append(
             {
                 "id": session.id,
@@ -516,6 +525,12 @@ def fleet_overview(
                 "status": session.status,
                 "phase": _phase_value(latest),
                 "health": _health_value(session, live_health),
+                "attention_reason": (
+                    actionable_incident.reason if actionable_incident is not None else None
+                ),
+                "attention_since": (
+                    actionable_incident.opened_at if actionable_incident is not None else None
+                ),
             }
         )
     return {

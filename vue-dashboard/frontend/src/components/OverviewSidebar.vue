@@ -58,6 +58,19 @@ function formatScheduledTime(value) {
     hourCycle: "h23",
   });
 }
+
+function formatAttentionTime(value) {
+  return formatCentralTimestamp(value, {
+    fallback: "",
+    year: undefined,
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    second: undefined,
+    timeZoneName: undefined,
+  });
+}
 </script>
 
 <template>
@@ -134,10 +147,12 @@ function formatScheduledTime(value) {
                   <StatusBadge :value="session.lifecycle" />
                   <StatusBadge :value="session.health" />
                 </div>
-                <p>{{ session.attentionReason }}</p>
+                <p v-if="session.attentionReason">{{ session.attentionReason }}</p>
               </div>
               <div class="attention-action">
-                <code>Since {{ session.attentionSince }}</code>
+                <code v-if="session.attentionSince">
+                  Since {{ formatAttentionTime(session.attentionSince) }}
+                </code>
                 <strong>Review recovery <ArrowUpRight :size="15" /></strong>
               </div>
             </div>

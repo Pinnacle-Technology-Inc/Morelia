@@ -263,6 +263,8 @@ export function normalizeSession(session, fleetSession = {}) {
     // overwrites it with the real `watchdog_state` from /status.
     watchdog: "Unknown",
     phase: fleetSession.phase ?? null,
+    attentionReason: fleetSession.attention_reason ?? null,
+    attentionSince: fleetSession.attention_since ?? null,
     policy: session.policy,
     deviceFlows: flows,
     createdAt: session.created_at ?? null,
