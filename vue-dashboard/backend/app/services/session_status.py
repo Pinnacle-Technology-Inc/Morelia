@@ -22,6 +22,7 @@ surfaces the *raw* per-device stream states, so the two views cannot disagree.
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -93,10 +94,22 @@ def _phase_value(latest: BackendEvent | None) -> str | None:
     return latest.phase if latest is not None else None
 
 
+def _nonnegative_seconds(value: object) -> float | None:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    try:
+        seconds = float(value)
+    except (OverflowError, ValueError):
+        return None
+    return seconds if math.isfinite(seconds) and seconds >= 0 else None
+
+
 def _latest_report(
     latest: BackendEvent | None,
     *,
     phase_report: BackendEvent | None = None,
+    session_policy: object = None,
+    controls_current: bool = False,
 ) -> dict[str, object] | None:
     """Shape live payload state while retaining host-owned phase metadata."""
     if latest is None:
@@ -128,6 +141,8 @@ def _latest_report(
             device,
             diagnostic_by_device.get(device.get("device_id"), {}),
             interval_seconds=interval_seconds,
+            session_policy=session_policy,
+            controls_current=controls_current,
         )
         for device in raw_devices
         if isinstance(device, Mapping)
@@ -151,10 +166,16 @@ def _latest_report_device(
     diagnostic: Mapping[str, object],
     *,
     interval_seconds: float,
+    session_policy: object = None,
+    controls_current: bool = False,
 ) -> dict[str, object | None]:
     """Project bounded watchdog recovery context onto one device row."""
     heartbeat = diagnostic.get("heartbeat")
     heartbeat = heartbeat if isinstance(heartbeat, Mapping) else {}
+    source_read = diagnostic.get("source_read")
+    source_read = source_read if isinstance(source_read, Mapping) else {}
+    disconnect = diagnostic.get("disconnect")
+    disconnect = disconnect if isinstance(disconnect, Mapping) else {}
     recovery = diagnostic.get("recovery")
     recovery = recovery if isinstance(recovery, Mapping) else {}
     worker = diagnostic.get("worker")
@@ -176,12 +197,37 @@ def _latest_report_device(
         or diagnostic.get("initiating_failure_reason")
         or diagnostic.get("failure_reason")
         or heartbeat.get("reason")
+        or source_read.get("message")
     )
     stage = recovery.get("status")
-    pending = action in {"waiting_for_port", "waiting_for_port_release"} or stage in {
-        "waiting_for_port",
-        "waiting_for_port_release",
-        "retry_wait",
+    source_read_state = source_read.get("state")
+    disconnect_elapsed_seconds = _nonnegative_seconds(disconnect.get("elapsed_sec"))
+    disconnect_window_seconds = _nonnegative_seconds(
+        disconnect.get("max_heartbeat_age_sec")
+    )
+    disconnect_remaining_seconds = _nonnegative_seconds(
+        disconnect.get("remaining_sec")
+    )
+    if (
+        disconnect_remaining_seconds is None
+        and disconnect_elapsed_seconds is not None
+        and disconnect_window_seconds is not None
+    ):
+        disconnect_remaining_seconds = max(
+            0.0,
+            disconnect_window_seconds - disconnect_elapsed_seconds,
+        )
+    recovery_view = recovery_contract.project(
+        action=action,
+        stage=stage,
+        source_read_state=source_read_state,
+        policy=recovery.get("policy") or session_policy,
+        hardware_present=recovery.get("hardware_present"),
+        controls_current=controls_current,
+    )
+    pending = recovery_view["recovery_state"] in {
+        "recovering",
+        "waiting_for_hardware",
     }
     # The watchdog publishes its ACTUAL restart budget as {"current", "max"}
     # (Watchdog._recovery_attempt). This row previously reported
@@ -198,9 +244,15 @@ def _latest_report_device(
         "action": action,
         "reason": reason,
         "worker_fault": worker_fault,
-        "recovery_stage": stage,
+        # Source-level automatic reconnect happens before the watchdog needs to
+        # take a stream action. Preserve that stage so the UI can show progress
+        # instead of an empty recovery card during the reconnect window.
+        "recovery_stage": stage or source_read_state,
         "recovery_attempt": attempt.get("current"),
         "recovery_attempt_max": attempt.get("max"),
+        "disconnect_elapsed_seconds": disconnect_elapsed_seconds,
+        "disconnect_remaining_seconds": disconnect_remaining_seconds,
+        "disconnect_window_seconds": disconnect_window_seconds,
         "nonhealthy_ticks": nonhealthy_ticks,
         # Seconds this device has been continuously non-healthy, so the frontend
         # never has to know the watchdog's cadence to render "down for 45s".
@@ -208,6 +260,7 @@ def _latest_report_device(
             diagnostic, interval_seconds=interval_seconds
         ),
         "pending_recovery": pending,
+        **recovery_view,
     }
 
 
@@ -559,6 +612,23 @@ def detail(
 
     phase_report = _events.latest_report_for_session(session_id)
     latest = _events.latest_runtime_report_for_session(session_id)
+    telemetry = _telemetry_view(session_id)
+    latest_direct = _events.latest_direct_telemetry_for_session(session_id)
+    active_runtime = (
+        _runtimes.active_for_dataflow(session.dataflow_id)
+        if session.dataflow_id
+        else None
+    )
+    controls_current = bool(
+        telemetry["outbox_health"] == "current"
+        and active_runtime is not None
+        and latest_direct is not None
+        and latest_direct.runtime_id == active_runtime.runtime_id
+        and latest_direct.watchdog_id == active_runtime.watchdog_id
+        and active_runtime.watchdog_state is not None
+        and active_runtime.watchdog_state.value == "running"
+        and active_runtime.watchdog_control_port is not None
+    )
     runtimes = _runtimes.list_for_session(session_id)
     incidents = _incidents.list_for_session(session_id)
     try:
@@ -571,12 +641,17 @@ def detail(
         "session": session,
         "health": _health_value(session, live_health),
         "phase": _phase_value(phase_report),
-        "latest_report": _latest_report(latest, phase_report=phase_report),
+        "latest_report": _latest_report(
+            latest,
+            phase_report=phase_report,
+            session_policy=session.policy,
+            controls_current=controls_current,
+        ),
         "runtimes": runtimes,
         "operations": operations.list_for_session(session_id, limit=_OPERATIONS_LIMIT),
         "incidents": incidents,
         "gaps": _gaps.list_for_session(session_id),
         "sinks": sinks,
         **_active_runtime_view(runtimes),
-        **_telemetry_view(session_id),
+        **telemetry,
     }

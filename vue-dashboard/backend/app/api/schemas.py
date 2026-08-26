@@ -302,12 +302,23 @@ class LatestStreamEventDeviceSchema(Schema):
     # made "attempt 2 of 3" unrenderable.
     recovery_attempt = fields.Integer(allow_none=True)
     recovery_attempt_max = fields.Integer(allow_none=True)
+    # Physical-disconnect observation window reported by the watchdog. These
+    # remain optional for non-physical failures where no window was measured.
+    disconnect_elapsed_seconds = fields.Float(allow_none=True)
+    disconnect_remaining_seconds = fields.Float(allow_none=True)
+    disconnect_window_seconds = fields.Float(allow_none=True)
     # Consecutive non-healthy watchdog reports, and that streak converted to
     # seconds using the watchdog's own cadence — so the frontend never has to
     # know the report interval to say "down for 45s".
     nonhealthy_ticks = fields.Integer(allow_none=True)
     nonhealthy_seconds = fields.Float(allow_none=True)
     pending_recovery = fields.Boolean()
+    recovery_policy = fields.String(allow_none=True)
+    recovery_state = fields.String()
+    requires_approval = fields.Boolean()
+    hardware_present = fields.Boolean(allow_none=True)
+    control_available = fields.Boolean()
+    allowed_recovery_actions = fields.List(fields.String())
 
 
 class LatestStreamEventSchema(Schema):

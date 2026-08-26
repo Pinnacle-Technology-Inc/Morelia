@@ -5,6 +5,7 @@ import BaseButton from "./BaseButton.vue";
 defineProps({
   title: { type: String, required: true },
   description: String,
+  cancelLabel: { type: String, default: "Cancel" },
   confirmLabel: { type: String, default: "Confirm" },
   confirmDisabled: Boolean,
   danger: Boolean,
@@ -21,7 +22,7 @@ defineEmits(["close", "confirm"]);
       </header>
       <div class="dialog__content"><slot /></div>
       <footer>
-        <BaseButton variant="secondary" @click="$emit('close')">Cancel</BaseButton>
+        <BaseButton variant="secondary" @click="$emit('close')">{{ cancelLabel }}</BaseButton>
         <BaseButton
           :variant="danger ? 'danger' : 'primary'"
           :disabled="confirmDisabled"

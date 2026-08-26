@@ -60,6 +60,7 @@ const detailError = ref("");
 const commandError = ref("");
 const commandProblem = ref(null);
 const commandBusy = ref(false);
+const selectedRecoveryDevice = ref(null);
 const sourceTemplate = ref(null);
 const sourceTemplateState = ref("idle");
 const sourceTemplateError = ref("");
@@ -277,6 +278,9 @@ const sessionDeviceFlows = computed(() => {
       recoveryStage: device.recovery_stage,
       recoveryAttempt: device.recovery_attempt,
       recoveryAttemptMax: device.recovery_attempt_max,
+      disconnectElapsedSeconds: device.disconnect_elapsed_seconds,
+      disconnectRemainingSeconds: device.disconnect_remaining_seconds,
+      disconnectWindowSeconds: device.disconnect_window_seconds,
       requiresApproval: device.requires_approval === true,
       hardwarePresent: device.hardware_present,
       controlAvailable: device.control_available === true,
@@ -455,6 +459,34 @@ function formatStatus(value) {
     .split("_")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+const DEFINITELY_DISCONNECTED_ACTIONS = new Set([
+  "unplug_detected",
+  "waiting_for_port",
+]);
+
+function recoveryHardwarePresence(device) {
+  if (device.hardwarePresent === true) return "Connected";
+  if (device.hardwarePresent === false || DEFINITELY_DISCONNECTED_ACTIONS.has(device.action)) {
+    return "Disconnected";
+  }
+  return "Presence not checked";
+}
+
+function formatRecoverySeconds(value) {
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) return null;
+  return `${value.toLocaleString(undefined, { maximumFractionDigits: 1 })}s`;
+}
+
+function recoveryObservationWindow(device) {
+  const window = formatRecoverySeconds(device.disconnectWindowSeconds);
+  if (!window) return "Not reported";
+  const remainingSeconds = device.disconnectRemainingSeconds;
+  const remaining = formatRecoverySeconds(remainingSeconds);
+  if (remainingSeconds === 0) return `Observation window ended (${window} limit)`;
+  if (remaining) return `${remaining} remaining of ${window}`;
+  return `${window} observation window`;
 }
 
 // Why an incident reached an operator, in their words rather than the wire's.
@@ -1108,7 +1140,7 @@ const tabTones = computed(() => ({
           <h3>Current Recovery</h3>
           <p v-if="detailUnavailable">Recovery status is unavailable.</p>
           <p v-else>{{ detail.recovery.operator_message }}</p>
-          <BaseButton v-if="detail?.recovery" @click="dialog = 'approve'"><Shield :size="16" /> Review Action</BaseButton>
+          <BaseButton v-if="detail?.recovery" @click="activeTab = 'recovery'"><Shield :size="16" /> Review Recovery</BaseButton>
         </BaseCard>
       </div>
 
@@ -1180,21 +1212,25 @@ const tabTones = computed(() => ({
             </div>
           </header>
           <div class="recovery-card__body recovery-card__body--activity">
-          <div v-if="detailUnavailable" class="detail-alert">Recovery data unavailable.</div>
+            <div v-if="detailUnavailable" class="detail-alert">Recovery data unavailable.</div>
             <p v-else-if="!recoveryDevices.length" class="records-empty recovery-empty">
               {{ recoveryPolicyMode === "recommend" ? "No recovery action requires operator review." : "No automatic stream recovery is active." }}
             </p>
             <div v-else class="recovery-device-list">
               <article v-for="device in recoveryDevices" :key="device.id" class="recovery-device">
                 <header>
-                  <div><h4>{{ device.device }}</h4><code>{{ device.hardwareId }}</code></div>
+                  <div><h4>{{ device.device }}</h4><code v-if="device.hardwareId">{{ device.hardwareId }}</code></div>
                   <StatusBadge :value="formatStatus(device.recoveryState)" />
                 </header>
                 <dl class="recovery-device__facts">
                   <div><dt>Reason</dt><dd>{{ device.reason ? formatStatus(device.reason) : "Not reported" }}</dd></div>
-                  <div><dt>Hardware</dt><dd>{{ device.hardwarePresent === true ? "Connected" : device.hardwarePresent === false ? "Not connected" : "Unconfirmed" }}</dd></div>
+                  <div><dt>Hardware</dt><dd>{{ recoveryHardwarePresence(device) }}</dd></div>
                   <div><dt>Stage</dt><dd>{{ formatStatus(device.recoveryStage ?? device.action) }}</dd></div>
                   <div><dt>Attempt</dt><dd>{{ device.recoveryAttempt == null ? "—" : `${device.recoveryAttempt} of ${device.recoveryAttemptMax ?? "?"}` }}</dd></div>
+                  <div v-if="recoveryPolicyMode === 'recommend' && device.disconnectWindowSeconds != null">
+                    <dt>Observation window</dt>
+                    <dd>{{ recoveryObservationWindow(device) }}</dd>
+                  </div>
                   <div><dt>Last report</dt><dd>{{ device.lastData }}</dd></div>
                 </dl>
                 <div v-if="device.requiresApproval" class="form-notice" role="status">
@@ -1268,53 +1304,53 @@ const tabTones = computed(() => ({
             />
           </header>
           <div class="recovery-card__body recovery-story__body">
-          <p v-if="detailUnavailable" class="detail-alert">Output verification is unavailable.</p>
+            <p v-if="detailUnavailable" class="detail-alert">Output verification is unavailable.</p>
             <p v-else-if="!recoveryOutputs.length" class="records-empty recovery-empty">
-            This run has no segmented file output requiring a merge.
-          </p>
-          <template v-else>
-            <article
-              v-for="output in recoveryOutputs"
-              :key="output.logical_sink_id"
-              class="recovery-output"
-            >
-              <div class="recovery-output__summary">
-                <div>
-                  <strong>{{ output.sinkId }}</strong>
-                  <span>{{ artifactLabel(output.artifact_state) }}</span>
+              This run has no segmented file output requiring a merge.
+            </p>
+            <template v-else>
+              <article
+                v-for="output in recoveryOutputs"
+                :key="output.logical_sink_id"
+                class="recovery-output"
+              >
+                <div class="recovery-output__summary">
+                  <div>
+                    <strong>{{ output.sinkId }}</strong>
+                    <span>{{ artifactLabel(output.artifact_state) }}</span>
+                  </div>
+                  <dl class="recovery-output__metrics">
+                    <div><dt>Recoveries</dt><dd>{{ formatCount(output.recovery_count) }}</dd></div>
+                    <div><dt>Components</dt><dd>{{ formatCount(output.component_count) }}</dd></div>
+                    <div><dt>Captured samples</dt><dd>{{ formatCount(output.captured_samples) }}</dd></div>
+                    <div><dt>Known sample loss</dt><dd>{{ formatCount(output.sample_loss) }}</dd></div>
+                  </dl>
                 </div>
-                <dl class="recovery-output__metrics">
-                  <div><dt>Recoveries</dt><dd>{{ formatCount(output.recovery_count) }}</dd></div>
-                  <div><dt>Components</dt><dd>{{ formatCount(output.component_count) }}</dd></div>
-                  <div><dt>Captured samples</dt><dd>{{ formatCount(output.captured_samples) }}</dd></div>
-                  <div><dt>Known sample loss</dt><dd>{{ formatCount(output.sample_loss) }}</dd></div>
-                </dl>
-              </div>
-              <div v-if="output.canonical_path" class="canonical-output">
-                <span>Canonical {{ output.verified ? "verified" : "recorded" }} file</span>
-                <code>{{ output.canonical_path }}</code>
-                <small v-if="output.sink_type === 'pvfs' && output.verified">
-                  Original timestamps and real recovery gaps are preserved in the PVFS timeline.
-                </small>
-              </div>
-              <div v-else class="detail-alert">
-                No canonical merged file has been published. The retained components remain available.
-              </div>
-              <details class="recovery-components">
-                <summary>Retained recovery components ({{ output.component_count }})</summary>
-                <ol>
-                  <li v-for="component in output.components" :key="component.output_id">
-                    <code>{{ component.path }}</code>
-                    <span>
-                      Segment {{ component.segment_index + 1 }} ·
-                      {{ formatCount(component.captured_samples) }} samples ·
-                      {{ component.termination_reason ?? component.acquisition_state }}
-                    </span>
-                  </li>
-                </ol>
-              </details>
-            </article>
-          </template>
+                <div v-if="output.canonical_path" class="canonical-output">
+                  <span>Canonical {{ output.verified ? "verified" : "recorded" }} file</span>
+                  <code>{{ output.canonical_path }}</code>
+                  <small v-if="output.sink_type === 'pvfs' && output.verified">
+                    Original timestamps and real recovery gaps are preserved in the PVFS timeline.
+                  </small>
+                </div>
+                <div v-else class="detail-alert">
+                  No canonical merged file has been published. The retained components remain available.
+                </div>
+                <details class="recovery-components">
+                  <summary>Retained recovery components ({{ output.component_count }})</summary>
+                  <ol>
+                    <li v-for="component in output.components" :key="component.output_id">
+                      <code>{{ component.path }}</code>
+                      <span>
+                        Segment {{ component.segment_index + 1 }} ·
+                        {{ formatCount(component.captured_samples) }} samples ·
+                        {{ component.termination_reason ?? component.acquisition_state }}
+                      </span>
+                    </li>
+                  </ol>
+                </details>
+              </article>
+            </template>
           </div>
         </BaseCard>
       </div>
@@ -1448,7 +1484,7 @@ const tabTones = computed(() => ({
     >
       <dl class="detail-list">
         <div><dt>Affected device</dt><dd>{{ selectedRecoveryDevice.device }}</dd></div>
-        <div><dt>Hardware ID</dt><dd><code>{{ selectedRecoveryDevice.hardwareId }}</code></dd></div>
+        <div v-if="selectedRecoveryDevice.hardwareId"><dt>Hardware ID</dt><dd><code>{{ selectedRecoveryDevice.hardwareId }}</code></dd></div>
         <div><dt>Reason</dt><dd>{{ selectedRecoveryDevice.reason ? formatStatus(selectedRecoveryDevice.reason) : "Not reported" }}</dd></div>
         <div><dt>Proposed action</dt><dd>Restart this device stream</dd></div>
         <div><dt>Impact</dt><dd>The stream worker and its sinks restart; the session remains active and any missing interval is retained as a data gap.</dd></div>
