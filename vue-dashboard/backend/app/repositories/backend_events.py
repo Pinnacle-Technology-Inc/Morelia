@@ -148,6 +148,33 @@ class BackendEventRepository:
             .limit(1)
         ).first()
 
+    def latest_direct_telemetry_for_identity(
+        self,
+        dataflow_id: str,
+        *,
+        runtime_id: str,
+        watchdog_id: str,
+    ) -> BackendEvent | None:
+        """Return the newest direct report from one process generation.
+
+        A session retains reports from every watchdog generation. Callers that
+        describe current state must fence the read as strictly as ingest fences
+        writes, otherwise a respawn can temporarily revive the dead watchdog's
+        last report while the replacement has not reported yet.
+        """
+        return db.session.scalars(
+            db.select(BackendEvent)
+            .where(
+                BackendEvent.dataflow_id == dataflow_id,
+                BackendEvent.event_type == "runtime.report",
+                BackendEvent.report_id.is_not(None),
+                BackendEvent.runtime_id == runtime_id,
+                BackendEvent.watchdog_id == watchdog_id,
+            )
+            .order_by(BackendEvent.id.desc())
+            .limit(1)
+        ).first()
+
     def since(self, session_id: int, after_id: int, limit: int) -> list[BackendEvent]:
         """Return events for a session with id > after_id, ascending by id."""
         return list(

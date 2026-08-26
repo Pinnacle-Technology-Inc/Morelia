@@ -31,7 +31,7 @@ from app.models.backend_event import BackendEvent
 from app.repositories.backend_events import BackendEventRepository
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
-from app.runtime_child.driver import RuntimePhase, RuntimeReport
+from app.runtime_child.driver import DeviceReport, RuntimePhase, RuntimeReport
 from app.services import incidents
 from app.services.event_ingest import ingest_report
 from app.services.health_state import aggregate_streams, derive
@@ -258,6 +258,8 @@ class EventPoller:
         phase = RuntimePhase.IDLE
         probe_succeeded = False
         last_error: str | None = None
+        runtime_id_raw: str | None = None
+        watchdog_id_raw: str | None = None
         watchdog_state_raw: str | None = None
         respawn_exhausted = False
 
@@ -266,6 +268,10 @@ class EventPoller:
             probe_succeeded = True
             if isinstance(status.get("phase"), str):
                 phase = RuntimePhase(status["phase"])
+            if isinstance(status.get("runtime_id"), str):
+                runtime_id_raw = status["runtime_id"]
+            if isinstance(status.get("watchdog_id"), str):
+                watchdog_id_raw = status["watchdog_id"]
             watchdog_state_raw = status.get("watchdog_state")
             respawn_exhausted = bool(status.get("watchdog_respawn_exhausted"))
             reports = status.get("reports", [])
@@ -289,8 +295,15 @@ class EventPoller:
         )
         health_state = self._health_state(
             link_status=link_status,
-            latest_report=latest_report,
+            direct_telemetry=self._current_direct_telemetry(
+                target.dataflow_id,
+                runtime_id=runtime_id_raw,
+                watchdog_id=watchdog_id_raw,
+            ),
+            host_report=latest_report,
             phase=phase,
+            watchdog_state_raw=watchdog_state_raw,
+            respawn_exhausted=respawn_exhausted,
         )
         self._evaluate_incident_signals(
             target.dataflow_id,
@@ -403,6 +416,48 @@ class EventPoller:
                 return row
         return None
 
+    def _current_direct_telemetry(
+        self,
+        dataflow_id: str,
+        *,
+        runtime_id: str | None,
+        watchdog_id: str | None,
+    ) -> BackendEvent | None:
+        """Newest fresh direct report for the active watchdog generation.
+
+        Runtime-host probing reconciles a respawned ``watchdog_id`` before this
+        method runs in production. Requiring both the active durable identity
+        and a running/adopted watchdog prevents the previous generation's last
+        report from being presented as current during the hand-off window.
+        """
+        if runtime_id is None or watchdog_id is None:
+            return None
+        ownership = RuntimeOwnershipRepository().active_for_dataflow(dataflow_id)
+        if (
+            ownership is None
+            or ownership.runtime_id != runtime_id
+            or ownership.watchdog_id != watchdog_id
+            or ownership.watchdog_state
+            not in {WatchdogProcessState.RUNNING, WatchdogProcessState.ADOPTED}
+        ):
+            return None
+        latest = BackendEventRepository().latest_direct_telemetry_for_identity(
+            dataflow_id,
+            runtime_id=runtime_id,
+            watchdog_id=watchdog_id,
+        )
+        if (
+            telemetry_freshness(
+                latest,
+                now=self._clock(),
+                stale_after_seconds=self.telemetry_stale_after_seconds,
+                overflow_after_seconds=self.telemetry_overflow_after_seconds,
+            )
+            != "current"
+        ):
+            return None
+        return latest
+
     def _is_stale(self, last_seen_at: datetime | None, threshold_seconds: float) -> bool:
         if last_seen_at is None:
             return False  # nothing seen yet is not evidence of staleness
@@ -413,20 +468,62 @@ class EventPoller:
     def _health_state(
         *,
         link_status: LinkStatus,
-        latest_report: RuntimeReport | None,
+        direct_telemetry: BackendEvent | None,
+        host_report: RuntimeReport | None,
         phase: RuntimePhase,
+        watchdog_state_raw: str | None,
+        respawn_exhausted: bool,
     ) -> HealthState:
-        if latest_report is None:
-            stream_agg = StreamStatus.HEALTHY
-            recovery_active = False
-        else:
-            stream_agg = aggregate_streams(latest_report.devices)
-            phase = latest_report.phase
-            recovery_active = latest_report.recovery_id is not None
+        # Reachability remains host-probe authority and outranks content. A
+        # reachable host whose watchdog exhausted its respawn budget is still a
+        # failed acquisition, not a healthy host.
+        if link_status is LinkStatus.UNREACHABLE:
+            return HealthState.UNREACHABLE
+        if phase in (RuntimePhase.STOPPED, RuntimePhase.CLOSED):
+            return HealthState.STOPPED
+        if respawn_exhausted:
+            return HealthState.FAILED
+
+        devices: tuple[DeviceReport, ...] = ()
+        recovery_active = False
+        has_stream_evidence = False
+        if direct_telemetry is not None:
+            raw_devices = (direct_telemetry.payload or {}).get("devices")
+            if isinstance(raw_devices, list) and raw_devices:
+                try:
+                    devices = tuple(DeviceReport.from_dict(raw) for raw in raw_devices)
+                except (KeyError, TypeError, ValueError):
+                    devices = ()
+                else:
+                    has_stream_evidence = True
+            recovery_active = direct_telemetry.recovery_id is not None
+        elif host_report is not None and host_report.devices:
+            # Compatibility for runtime drivers that still carry device content
+            # through the host ring. The watchdog-process driver deliberately
+            # emits an empty tuple, which is absence of evidence rather than a
+            # vacuously healthy fleet.
+            devices = host_report.devices
+            has_stream_evidence = True
+            recovery_active = host_report.recovery_id is not None
+
+        if not has_stream_evidence:
+            if (
+                recovery_active
+                or watchdog_state_raw == WatchdogProcessState.CRASHED.value
+            ):
+                return HealthState.RECOVERING
+            provisional = derive(
+                link_status=link_status,
+                stream_agg=StreamStatus.HEALTHY,
+                phase=phase,
+                op_state=None,
+                recovery_active=False,
+            )
+            return HealthState.UNKNOWN if provisional is HealthState.HEALTHY else provisional
 
         return derive(
             link_status=link_status,
-            stream_agg=stream_agg,
+            stream_agg=aggregate_streams(devices),
             phase=phase,
             op_state=None,
             recovery_active=recovery_active,
