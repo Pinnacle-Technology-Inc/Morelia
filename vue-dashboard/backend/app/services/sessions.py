@@ -11,6 +11,7 @@ wires this via request_logging middleware. CLI callers must bind it manually:
 """
 
 import json
+from collections.abc import Mapping
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from uuid import uuid4
@@ -42,6 +43,7 @@ from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
 from app.services import (
     device_configs,
+    device_templates,
     experiments,
     incidents,
     manifests,
@@ -364,9 +366,17 @@ def create_run(data: dict, *, supervisor=None) -> Session:
     )
 
 
+def _required_scheduled_parameters(requirement: Mapping) -> dict:
+    required = requirement.get("required_parameters")
+    if isinstance(required, Mapping):
+        return dict(required)
+    preferred = requirement.get("preferred_parameters")
+    return dict(preferred) if isinstance(preferred, Mapping) else {}
+
+
 def _candidate_rank(row: dict, requirement: dict) -> tuple:
     config = device_configs.get_by_id(int(row["id"]))
-    preferred = requirement.get("preferred_parameters") or {}
+    preferred = _required_scheduled_parameters(requirement)
     parameters = dict(config.parameters or {}) if config is not None else {}
     equal_parameters = sum(
         1 for key, value in preferred.items() if parameters.get(key) == value
@@ -396,18 +406,38 @@ def _resolve_scheduled_assignments(
     for requirement in sorted(requirements, key=lambda item: int(item["flow_index"])):
         flow_index = int(requirement["flow_index"])
         required_type = requirement.get("required_device_type")
+        required_hash = requirement.get("required_configuration_hash")
+        if not required_hash:
+            required_hash = device_templates.content_hash(
+                {
+                    "type": required_type,
+                    "parameters": _required_scheduled_parameters(requirement),
+                }
+            )
         compatible = [
             row
             for row in available
-            if int(row["id"]) not in used and row.get("type") == required_type
+            if int(row["id"]) not in used
+            and row.get("type") == required_type
         ]
         preferred_id = int(requirement["preferred_device_config_id"])
         exact = next((row for row in compatible if int(row["id"]) == preferred_id), None)
         chosen = exact
-        match = "exact"
-        if chosen is None and compatible:
-            chosen = sorted(compatible, key=lambda row: _candidate_rank(row, requirement))[0]
-            match = "closest_compatible"
+        if chosen is not None:
+            reconfigure = chosen.get("configuration_hash") != required_hash
+            match = "preferred_reconfigured" if reconfigure else "exact"
+        else:
+            matching = [
+                row for row in compatible if row.get("configuration_hash") == required_hash
+            ]
+            candidates = matching or compatible
+            chosen = (
+                sorted(candidates, key=lambda row: _candidate_rank(row, requirement))[0]
+                if candidates
+                else None
+            )
+            reconfigure = bool(chosen and chosen.get("configuration_hash") != required_hash)
+            match = "closest_compatible_reconfigured" if reconfigure else "configuration_match"
         if chosen is None:
             unresolved.append(flow_index)
             continue
@@ -417,8 +447,29 @@ def _resolve_scheduled_assignments(
             "flow_index": flow_index,
             "device_config_id": selected_id,
             "match": match,
+            "reconfigure": reconfigure,
         })
     return selected, unresolved
+
+
+def _apply_scheduled_configuration(requirement: Mapping, result: Mapping) -> None:
+    """Bring one selected free fallback to the frozen scheduled settings."""
+    if not result.get("reconfigure"):
+        return
+    required_parameters = _required_scheduled_parameters(requirement)
+    required_hash = requirement.get("required_configuration_hash")
+    template_path = requirement.get("required_device_template_path")
+    source_template = None
+    if isinstance(template_path, str) and template_path:
+        current_template = device_templates.get_by_path(template_path)
+        if current_template is not None and current_template.content_hash == required_hash:
+            source_template = current_template.file_path
+    device_configs.edit(
+        int(result["device_config_id"]),
+        parameters=required_parameters,
+        update_source_template=False,
+        source_template=source_template,
+    )
 
 
 def execute_scheduled(
@@ -457,6 +508,10 @@ def execute_scheduled(
         return session
 
     selected_by_flow = {item["flow_index"]: item for item in selected}
+    for requirement in requirements:
+        result = selected_by_flow[int(requirement["flow_index"])]
+        _apply_scheduled_configuration(requirement, result)
+
     flows = [dict(flow) for flow in (session.device_flows or [])]
     resolved_requirements: list[dict] = []
     for requirement in requirements:

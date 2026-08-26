@@ -135,6 +135,42 @@ function describeError(error, fallback) {
   return error?.problem?.detail ?? error?.message ?? fallback;
 }
 
+function naturalList(items) {
+  if (items.length < 2) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items.at(-1)}`;
+}
+
+function assignmentWarningMessage(warning) {
+  if (typeof warning === "string") return warning;
+  if (!warning || typeof warning !== "object") return "A device assignment needs your attention.";
+  if (warning.code !== "identity_unavailable") {
+    return warning.message || "A device assignment needs your attention.";
+  }
+
+  const flowIndex = Number.isInteger(warning.flow_index) ? warning.flow_index : 0;
+  const flowLabel = flows.value[flowIndex]?.nickname || `Stream ${flowIndex + 1}`;
+  const requested = warning.requested_hardware_id || "the requested device";
+  const alternatives = Array.isArray(warning.alternatives)
+    ? warning.alternatives.map((device) => {
+      const identity = device.hardware_id
+        ? `device ${device.hardware_id}`
+        : `device configuration ${device.device_config_id}`;
+      return device.port ? `${identity} on ${device.port}` : identity;
+    })
+    : [];
+
+  if (!alternatives.length) {
+    return `${flowLabel} requests hardware ${requested}, but it isn't currently available. Connect it or make it free, then rescan.`;
+  }
+  return `${flowLabel} requests hardware ${requested}, but it isn't currently available. Available alternatives are ${naturalList(alternatives)}. Choose one below, or rescan when ${requested} is available.`;
+}
+
+function assignmentWarningKey(warning, index) {
+  if (!warning || typeof warning !== "object") return `${index}:${String(warning)}`;
+  return `${warning.code || "warning"}:${warning.flow_index ?? index}`;
+}
+
 function deviceFor(configId) {
   return configId == null ? null : devices.value.find((device) => device.id === configId) ?? null;
 }
@@ -833,8 +869,12 @@ watch(() => props.templateId, load);
             </div>
           </section>
 
-          <p v-for="warning in assignmentPlan?.warnings ?? []" :key="warning" class="form-notice">
-            <AlertTriangle :size="18" /> {{ warning }}
+          <p
+            v-for="(warning, warningIndex) in assignmentPlan?.warnings ?? []"
+            :key="assignmentWarningKey(warning, warningIndex)"
+            class="form-notice"
+          >
+            <AlertTriangle :size="18" /> {{ assignmentWarningMessage(warning) }}
           </p>
 
           <!-- One run section owns every template flow. Each flow is a sub-card:
