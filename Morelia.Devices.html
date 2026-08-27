@@ -65,7 +65,7 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.signal.html">Morelia.signal package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -507,13 +507,17 @@ subclasses).</p>
 <li><p><strong>cmd</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Command number.</p></li>
 <li><p><strong>payload</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>]</span>) – None when there is no payload. If there is a payload, set to an integer value or a bytes string. Defaults to None.</p></li>
 <li><p><strong>validate_checksum</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Set to True to validate the checksum. Set to False to skip validation. Defaults to True.</p></li>
+<li><p><strong>timeout_sec</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Time to wait for device to return a packet.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type<span class="colon">:</span></dt>
-<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.packet.html#Morelia.packet.pod_packet.PodPacket" title="Morelia.packet.pod_packet.PodPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">PodPacket</span></code></a></span></p>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>TimeoutError</strong> – If the device does not respond within the specified timeout.</p>
 </dd>
-<dt class="field-odd">Returns<span class="colon">:</span></dt>
-<dd class="field-odd"><p>POD packet beginning with STX and ending with ETX. This may                 be a control packet, data packet, or an unformatted packet (STX+something+ETX).</p>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="Morelia.packet.html#Morelia.packet.pod_packet.PodPacket" title="Morelia.packet.pod_packet.PodPacket"><code class="xref py py-class docutils literal notranslate"><span class="pre">PodPacket</span></code></a></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>POD packet beginning with STX and ending with ETX. This may                 be a control packet, data packet, or an unformatted packet (STX+something+ETX).</p>
 </dd>
 </dl>
 </dd></dl>
@@ -781,18 +785,76 @@ Raises TimeoutError if no data in timeout_sec.</p>
 <span id="morelia-devices-poddevice-8274d-module"></span><h2>Morelia.Devices.PodDevice_8274D module<a class="headerlink" href="#module-Morelia.Devices.PodDevice_8274D" title="Link to this heading"></a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">921600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">Morelia.Devices.PodDevice_8274D.</span></span><span class="sig-name descname"><span class="pre">Pod8274D</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baudrate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">921600</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device_serial_number</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scan_timeout_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#Morelia.Devices.acquisition_device.AcquisitionDevice" title="Morelia.Devices.acquisition_device.AcquisitionDevice"><code class="xref py py-class docutils literal notranslate"><span class="pre">AcquisitionDevice</span></code></a></p>
-<p>POD_8274D handles communication using an 8274D POD device. Currently under construction and is unreliable.</p>
+<p>Handle communication with an 8274D POD device.</p>
+<p>This class initializes the serial port, configures device-specific commands,
+and optionally connects to a remote 8274 device by serial number during initialization.
+If <code class="docutils literal notranslate"><span class="pre">device_serial_number</span></code> is provided, the constructor will automatically scan for
+and connect to the specified device.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>port</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Serial port to be opened. Used when initializing the COM_io instance.</p></li>
-<li><p><strong>baudrate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Baud rate of the opened serial port. Default value is 9600.</p></li>
-<li><p><strong>device_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Virtual name used to indentify device.</p></li>
+<li><p><strong>baudrate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></span>) – Baud rate of the opened serial port. Defaults to 921600 bps.</p></li>
+<li><p><strong>device_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Virtual name used to identify the device locally.</p></li>
+<li><p><strong>device_serial_number</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span>) – Serial number of the remote 8274D device to connect to 
+(printed on device).
+If provided, the device will be automatically located and connected during
+initialization. Defaults to None (no automatic connection).</p></li>
+<li><p><strong>scan_timeout_sec</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Maximum number of seconds to scan for the device when
+<code class="docutils literal notranslate"><span class="pre">device_serial_number</span></code> is provided. Defaults to 15 seconds.</p></li>
 </ul>
 </dd>
 </dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D.SAMPLES_PER_PACKET">
+<span class="sig-name descname"><span class="pre">SAMPLES_PER_PACKET</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">40</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D.SAMPLES_PER_PACKET" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D.connect_to_device">
+<span class="sig-name descname"><span class="pre">connect_to_device</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device_serial_number</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout_sec</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">15</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D.connect_to_device" title="Link to this definition"></a></dt>
+<dd><p>Connect to an 8274 device by name.</p>
+<p>This method scans connected 8274D devices for the provided device name,
+which is automatically prefixed with <code class="docutils literal notranslate"><span class="pre">8274-</span></code> before matching. It issues
+a <code class="docutils literal notranslate"><span class="pre">DEVICE</span> <span class="pre">LIST</span> <span class="pre">INFO</span></code> request for each index until the requested device
+is found, then sends a <code class="docutils literal notranslate"><span class="pre">CONNECT</span></code> command to establish a connection.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device_name</strong> – The device name to connect to. By default, this is
+the device’s serial number printed on the device.</p></li>
+<li><p><strong>timeout_sec</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – Maximum number of seconds to continue scanning for a
+matching device before raising a <code class="xref py py-class docutils literal notranslate"><span class="pre">ConnectionError</span></code>. Defaults to 15 seconds.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><ul class="simple">
+<li><p><strong>TypeError</strong> – If <code class="docutils literal notranslate"><span class="pre">device_name</span></code> is not a string.</p></li>
+<li><p><strong>ConnectionError</strong> – If the device cannot be found.</p></li>
+<li><p><strong>TimeoutError</strong> – if the connection attempt fails
+within the timeout period.</p></li>
+</ul>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D.get_dict">
+<span class="sig-name descname"><span class="pre">get_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D.get_dict" title="Link to this definition"></a></dt>
+<dd><p>Obtains pod __init__ argument values to use for process pickling</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="Morelia.Devices.PodDevice_8274D.Pod8274D.sample_rate">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">sample_rate</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></span><a class="headerlink" href="#Morelia.Devices.PodDevice_8274D.Pod8274D.sample_rate" title="Link to this definition"></a></dt>
+<dd><p>Currently set sample rate.</p>
+</dd></dl>
+
 </dd></dl>
 
 </section>

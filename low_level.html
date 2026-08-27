@@ -91,7 +91,7 @@
   <section id="low-level-interaction-with-pod-systems">
 <h1><a class="toc-backref" href="#id1" role="doc-backlink">Low-Level Interaction with POD Systems 📊</a><a class="headerlink" href="#low-level-interaction-with-pod-systems" title="Link to this heading"></a></h1>
 <p>This section of the documentation covers the low-level API
-provided Morelia that is used to read and write packets to
+provided by Morelia that is used to read and write packets to
 POD devices. Using the three methods covered here, it is possible to take full advantage of every device Morelia has support for.</p>
 <nav class="contents" id="contents">
 <p class="topic-title">Contents</p>
@@ -182,11 +182,11 @@ to any command in the command reference</strong>.</p>
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pod8206HR</span>
 
 <span class="c1"># As always, the first step is to connect to our device.</span>
-<span class="c1"># For this example, let&#39;s assume there is an 8206HR on /dev/ttyUSB0.</span>
-<span class="c1"># Let&#39;s also sent the preamplifier gain to 10.</span>
-<span class="n">pod</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="c1"># For this example, let's assume there is an 8206HR on /dev/ttyUSB0.</span>
+<span class="c1"># Let's also sent the preamplifier gain to 10.</span>
+<span class="n">pod</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
-<span class="c1"># As our first example, let&#39;s set the lowpass filter on channel 2</span>
+<span class="c1"># As our first example, let's set the lowpass filter on channel 2</span>
 <span class="c1"># to 24 Hz. After consulting the command reference, we</span>
 <span class="c1"># can see that the SET LOWPASS command is number 103 and</span>
 <span class="c1"># takes two arguments: the channel number we want to set the filter</span>
@@ -196,14 +196,14 @@ to any command in the command reference</strong>.</p>
 <span class="c1"># value, so there will be no response packet. Therefore, WritePacket</span>
 <span class="c1"># is the right method for the job! If we were to use WriteRead, a</span>
 <span class="c1"># a TimeoutError would be raised. This is because there is no</span>
-<span class="c1"># response packet, si the device would time out when trying to read</span>
-<span class="c1"># a packet from the 8206HR&#39;s buffer.</span>
+<span class="c1"># response packet, so the device would time out when trying to read</span>
+<span class="c1"># a packet from the 8206HR's buffer.</span>
 
 <span class="c1"># Putting all of that together, we can set the lowpass filter value</span>
 <span class="c1"># using the following method call.</span>
 <span class="n">pod</span><span class="o">.</span><span class="n">WritePacket</span><span class="p">(</span><span class="mi">103</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">24</span><span class="p">))</span>
 
-<span class="c1"># Next, let&#39;s verify that the lowpass value on channel 2 is what</span>
+<span class="c1"># Next, let's verify that the lowpass value on channel 2 is what</span>
 <span class="c1"># we expect. Consulting the command reference, we can see that the</span>
 <span class="c1"># GET LOWPASS command (number 102) is what we are after. We</span>
 <span class="c1"># can also see that it takes one argument (the channel we want the lowpass value of)</span>
@@ -224,11 +224,11 @@ to any command in the command reference</strong>.</p>
 <span class="c1"># filter on channel 2.</span>
 <span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">ReadPODPacket</span><span class="p">()</span>
 
-<span class="c1"># As you might imagine, doing things this was with two method calls</span>
+<span class="c1"># As you might imagine, doing things with two method calls</span>
 <span class="c1"># can get a bit cumbersome and make our code cluttered. Situations</span>
-<span class="c1"># like this are exactly why we have WriteRead! Usinf WriteRead,</span>
+<span class="c1"># like this are exactly why we have WriteRead! Using WriteRead,</span>
 <span class="c1"># we can use one method call to send the GET LOWPASS command</span>
-<span class="c1"># and read the response. Let&#39;s see this alternative way of doing things.</span>
+<span class="c1"># and read the response. Let's see this alternative way of doing things.</span>
 <span class="n">lowpass_channel_2_packet</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">WriteRead</span><span class="p">(</span><span class="mi">102</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
 
 <span class="c1"># Easy as pie! Now remember, both ReadPODPacket and WriteRead return</span>
@@ -238,7 +238,7 @@ to any command in the command reference</strong>.</p>
 <span class="c1"># the packet via the payload attribute. Since GET LOWPASS returns a</span>
 <span class="c1"># single value, the tuple will contain only one attribute.</span>
 <span class="c1"># Therefore, we can print the value the device has reported as the</span>
-<span class="c1"># value set for channel 2&#39;s lowpass filter as follows.</span>
+<span class="c1"># value set for channel 2's lowpass filter as follows.</span>
 <span class="n">lowpass_channel_2_packet_payload</span> <span class="o">=</span> <span class="n">lowpass_channel_2_packet</span><span class="o">.</span><span class="n">payload</span>
 <span class="nb">print</span><span class="p">(</span><span class="n">lowpass_channel_2_packet_payload</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 </pre></div>
@@ -249,7 +249,7 @@ to any command in the command reference</strong>.</p>
 <p>As a final note in this section, we need to talk about the low-level
 API and streaming. Due to current limitations within the API,
 <strong>you cannot use the low-level API while streaming from a device</strong>.
-Ideally, this will not be a limit in future versions, but for now
+Ideally, this will not be a limit in future versions, but for now,
 any ControlPacket objects recieved during streaming will be discarded.</p>
 <p>If you would like to use any commands during streaming, you must first
 stop any streaming, then issue your commands, and start streaming again

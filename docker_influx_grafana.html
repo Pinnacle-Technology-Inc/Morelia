@@ -205,7 +205,7 @@
 </a>
 <section id="customizing-dashboards-for-your-needs">
 <h3><a class="toc-backref" href="#id9" role="doc-backlink">Customizing Dashboards for Your Needs 🎉</a><a class="headerlink" href="#customizing-dashboards-for-your-needs" title="Link to this heading"></a></h3>
-<p>Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashbaord in the “edit” mode. To enter edit mode, just press the button in the top right corner.</p>
+<p>Editing a Grafana dashboard is not too difficult. After loading up your dashboard on Grafana, you can change different settings of the dashboard in the “edit” mode. To enter edit mode, just press the button in the top right corner.</p>
 <img alt="_images/edit_dashboard.png" src="_images/edit_dashboard.png" />
 <p>After entering this mode, you are free to move panels, create new panels, and edit dashboard settings. After you are finished, you can save the dashboard by clicking the “Saved dashboard” button, and then either copying the JSON to clipboard or saving the JSON to a file.</p>
 <a class="reference internal image-reference" href="_images/save_dashboard.png"><img alt="_images/save_dashboard.png" height="466" src="_images/save_dashboard.png" width="472" />
@@ -216,7 +216,7 @@
 <p>In your dashboard, you can edit panels by clicking the top right menu button on a panel, and then clicking “Edit”.</p>
 <a class="reference internal image-reference" href="_images/edit_panel.png"><img alt="_images/edit_panel.png" height="218" src="_images/edit_panel.png" width="585" />
 </a>
-<p>Each panel queries information out of a database and can present it in variousways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which databse you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports.</p>
+<p>Each panel queries information out of a database and can present it in various ways. If you want to edit how it queries (what information it looks for), you can change that inside of the query editor. Depending on which database you are querying from (by default Influx), you may need to structure your query based on the query language that the database supports.</p>
 <a class="reference internal image-reference" href="_images/query.png"><img alt="_images/query.png" height="206" src="_images/query.png" width="924" />
 </a>
 <p>On the right-hand side, there are settings to change how the data is displayed. By default, we set each panel to show a time series (data flowing in through time), but other options include vizualizations such as a bar chart or a table (which will show more precise timestamps).</p>
@@ -227,12 +227,12 @@
 </section>
 <section id="json-specifics">
 <h4><a class="toc-backref" href="#id11" role="doc-backlink">JSON Specifics 📁</a><a class="headerlink" href="#json-specifics" title="Link to this heading"></a></h4>
-<p>In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, you can see below is the beginning and end of a single panel in the dashboard.</p>
+<p>In the case you want to directly edit the dashboard from the JSON file, there are a couple of key parts which you can change. The JSON files for these dashboards can be pretty long, but upon closer inspection you can find that each part of the dashboard has its own section. For example, what you can see below is the beginning and end of a single panel in the dashboard.</p>
 <a class="reference internal image-reference" href="_images/panel_begin.png"><img alt="_images/panel_begin.png" height="274" src="_images/panel_begin.png" width="430" />
 </a>
 <a class="reference internal image-reference" href="_images/panel_end.png"><img alt="_images/panel_end.png" height="241" src="_images/panel_end.png" width="445" />
 </a>
-<p>At the bottom of the file, you will find a “title” line, which stores a string. Changing this string will update the title fo your dashboard.</p>
+<p>At the bottom of the file, you will find a “title” line, which stores a string. Changing this string will update the title for your dashboard.</p>
 <a class="reference internal image-reference" href="_images/json_title.png"><img alt="_images/json_title.png" height="26" src="_images/json_title.png" width="375" />
 </a>
 <p>At the top of the file, you will find a “description” line, which stores a string. Changing this string will update the description of your dashboard.</p>

@@ -120,9 +120,9 @@ downloads and sets up all the dependencies for Morelia.</p>
 </section>
 <section id="installing-morelia-for-development">
 <h3>Installing Morelia for Development 🚜<a class="headerlink" href="#installing-morelia-for-development" title="Link to this heading"></a></h3>
-<p>After you have cloned the source code (and hopefully set up and Anaconda environment, but again, that step is not strictly required),
-the last step is to install Morelia itself for development! Currently, the way to do this is using <code class="docutils literal notranslate"><span class="pre">pip</span></code> to creat an <strong>editable install</strong>.
-This allows us to Morelia as if it is a package installed in our environment, but the package will automatically update as we make
+<p>After you have cloned the source code (and hopefully set up an Anaconda environment, but again, that step is not strictly required),
+the last step is to install Morelia itself for development! Currently, the way to do this is using <code class="docutils literal notranslate"><span class="pre">pip</span></code> to create an <strong>editable install</strong>.
+This allows us to treat Morelia as if it is a package installed in our environment, but the package will automatically update as we make
 changes to the source code. Therefore, <strong>there is no need to reinstall Morelia each time</strong>.</p>
 <p>To create this editable install, run the following in the top level of your repository:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">e</span> <span class="o">.</span>
@@ -138,7 +138,7 @@ of your repository</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pytest</span>
 </pre></div>
 </div>
-<p>It is worth noting there is also an <code class="docutils literal notranslate"><span class="pre">old_tests</span></code> folder. These scripts from a deprecated testing framework that require physical devices to
+<p>It is worth noting that there is also an <code class="docutils literal notranslate"><span class="pre">old_tests</span></code> folder. These scripts are from a deprecated testing framework that require physical devices to
 be plugged into your computer. Currently, these are still in the repository as they can be useful for in-house testing of devices or testing
 some older functionality that do not yet have pytest tests written. The future of these files is uncertain, but for now they are there so
 it’s probably useful to know what they are.</p>

@@ -148,7 +148,7 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.data_flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFlow</span>
 
 <span class="c1"># Connect to an 8206HR devices on on /dev/ttyUSB0-2 and set the preamplifer gain to 10.</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># Change the sample rate of pod_2 to be 1300 Hz.</span>
 <span class="n">pod_1</span><span class="o">.</span><span class="n">sample_rate</span> <span class="o">=</span> <span class="mi">1300</span>

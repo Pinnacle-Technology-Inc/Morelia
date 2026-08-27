@@ -102,7 +102,7 @@
   <section id="the-hitchhiker-s-guide-to-morelia">
 <h1><a class="toc-backref" href="#id1" role="doc-backlink">The Hitchhiker’s Guide to Morelia 🐍</a><a class="headerlink" href="#the-hitchhiker-s-guide-to-morelia" title="Link to this heading"></a></h1>
 <p>Welcome to the getting started guide for Pinnacle Technology’s Python API: Morelia. This tutorial is meant for complete beginners,
-and only assumes basic Python programming skills. If you have not used Python before, or simply need to refresher, <a class="reference external" href="https://docs.python.org/3/tutorial/index.html">the official
+and only assumes basic Python programming skills. If you have not used Python before, or simply need a refresher, <a class="reference external" href="https://docs.python.org/3/tutorial/index.html">the official
 Python tutorial</a> is a good place to start. In terms of content, this guide contains:</p>
 <nav class="contents" id="contents">
 <p class="topic-title">Contents</p>
@@ -256,10 +256,10 @@ and defaults to <code class="docutils literal notranslate"><span class="pre">Non
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Devices</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pod8206HR</span>
 
 <span class="c1"># Connect to an 8206HR on /dev/ttyUSB0 and set the preamplifer gain to 10.</span>
-<span class="n">pod</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 </pre></div>
 </div>
-<p>It’s really as simple as that! Granted, some devices are much more complex that other due to vast number of configuration options (e.g. the 8401HR), but overall
+<p>It’s really as simple as that! Granted, some devices are much more complex than that other due to vast number of configuration options (e.g. the 8401HR), but overall,
 connecting to most devices will look similar to the above example.</p>
 </section>
 <section id="configuring-devices">

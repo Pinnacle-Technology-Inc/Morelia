@@ -65,7 +65,7 @@
 <li class="toctree-l4"><a class="reference internal" href="Morelia.signal.html">Morelia.signal package</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-Morelia">Module contents</a></li>
+<li class="toctree-l3"><a class="reference internal" href="Morelia.html#module-contents">Module contents</a></li>
 </ul>
 </li>
 </ul>
@@ -384,6 +384,27 @@ two’s complement number is ignored and the integer encoded in the hex is retur
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="Morelia.packet.conversion.ascii_bytes_to_string">
+<span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">ascii_bytes_to_string</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg_b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strip_null</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ascii'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.ascii_bytes_to_string" title="Link to this definition"></a></dt>
+<dd><p>Convert raw bytes or byte values to a string using ASCII decoding.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg_b</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]</span>) – Raw bytes or a tuple/list of byte values to decode.</p></li>
+<li><p><strong>strip_null</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, truncate at the first null byte. Defaults to True.</p></li>
+<li><p><strong>encoding</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Text encoding to use. Defaults to ‘ascii’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Decoded string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="Morelia.packet.conversion.binary_bytes_to_ascii_bytes">
 <span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">binary_bytes_to_ascii_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_chars</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">byteorder</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Endianness.BIG</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.binary_bytes_to_ascii_bytes" title="Link to this definition"></a></dt>
 <dd><p>Converts a binary-coded decimal bytestring to an ASCII-encoded one.</p>
@@ -493,6 +514,39 @@ two’s complement number is ignored and the integer encoded in the hex is retur
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="Morelia.packet.conversion.ints_to_binary_bytes_split">
+<span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">ints_to_binary_bytes_split</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fields</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msg_len_bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">byteorder</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.ints_to_binary_bytes_split" title="Link to this definition"></a></dt>
+<dd><p>Packs integer values into a bitfield and returns bytes.</p>
+<p>Each field is defined as (value, msb_index, lsb_index), where the value is
+placed into the bit range [lsb_index : msb_index).</p>
+<p>Negative values are encoded using two’s complement within the field width.
+Fields must not exceed their bit width.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span></p>
+</dd>
+</dl>
+<section id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>fields<span class="classifier">list of (int, int, int)</span></dt><dd><p>(value, msb_index, lsb_index) bitfield definitions.</p>
+</dd>
+<dt>msg_len_bytes<span class="classifier">int</span></dt><dd><p>Output byte length.</p>
+</dd>
+<dt>byteorder<span class="classifier">Endianness</span></dt><dd><p>Output byte order.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h3>Returns<a class="headerlink" href="#returns" title="Link to this heading"></a></h3>
+<dl class="simple">
+<dt>bytes</dt><dd><p>Packed binary message.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="Morelia.packet.conversion.neg_int_to_twos_complement">
 <span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">neg_int_to_twos_complement</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nbits</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.neg_int_to_twos_complement" title="Link to this definition"></a></dt>
 <dd><p>Gets the <a class="reference external" href="https://en.wikipedia.org/wiki/Two%27s_complement">two’s complement</a> of the argument value (negative int).</p>
@@ -508,6 +562,27 @@ two’s complement number is ignored and the integer encoded in the hex is retur
 </dd>
 <dt class="field-odd">Returns<span class="colon">:</span></dt>
 <dd class="field-odd"><p>The two’s complament representation of <code class="docutils literal notranslate"><span class="pre">val</span></code>. This may seem wrong, but if you look at the returned number in binary, it should match <code class="docutils literal notranslate"><span class="pre">val</span></code> but as two’s complament.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="Morelia.packet.conversion.string_to_ascii_bytes">
+<span class="sig-prename descclassname"><span class="pre">Morelia.packet.conversion.</span></span><span class="sig-name descname"><span class="pre">string_to_ascii_bytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">msg_s</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encoding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ascii'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Morelia.packet.conversion.string_to_ascii_bytes" title="Link to this definition"></a></dt>
+<dd><p>Convert a string to ASCII-encoded bytes.</p>
+<p>This is the inverse of <a class="reference internal" href="#Morelia.packet.conversion.ascii_bytes_to_string" title="Morelia.packet.conversion.ascii_bytes_to_string"><code class="xref py py-func docutils literal notranslate"><span class="pre">ascii_bytes_to_string()</span></code></a> for text payloads.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>msg_s</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – String to encode.</p></li>
+<li><p><strong>encoding</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Text encoding to use. Defaults to ‘ascii’.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>ASCII-encoded bytes for <code class="docutils literal notranslate"><span class="pre">msg_s</span></code>.</p>
 </dd>
 </dl>
 </dd></dl>

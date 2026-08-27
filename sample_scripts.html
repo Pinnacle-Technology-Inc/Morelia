@@ -93,10 +93,10 @@
 <p class="admonition-title">Important</p>
 <p>If you are running Morelia in Windows, you’ll need to wrap all of your code in the block below:</p>
 </div>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
-<span class="w">   </span><span class="sd">&#39;&#39;&#39;</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+<span class="w">   </span><span class="sd">'''</span>
 <span class="sd">   All code should be placed here, besides imports</span>
-<span class="sd">   &#39;&#39;&#39;</span>
+<span class="sd">   '''</span>
 </pre></div>
 </div>
 <section id="hr-examples">
@@ -108,10 +108,10 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.data_flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFlow</span>
 
 <span class="c1"># create a new 8206HR pod device from the Linux port ttyUSB0</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># create a new edf sink object, using the dump_1.edf file from the same directory</span>
-<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_1.edf'</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
 
 <span class="c1"># create a list of tuples for the pod/sink mappings</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_sink_1</span><span class="p">])]</span>
@@ -122,7 +122,7 @@
 <span class="c1"># set flag to false</span>
 <span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span>
 
-<span class="c1"># use &#39;with&#39; statement to begin streaming</span>
+<span class="c1"># use 'with' statement to begin streaming</span>
 <span class="k">with</span> <span class="n">flowgraph</span><span class="p">:</span>
 
   <span class="c1"># stream infinitely</span>
@@ -138,12 +138,12 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.data_flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFlow</span>
 
 <span class="c1"># create a new 8206HR pod device from the Linux port ttyUSB0</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># create a new influx sink object, using user-defined values</span>
 <span class="c1"># for a container outside of the terraform one provided</span>
 <span class="c1"># reminder: bucket in influx is like a database, and measurement is like a table.</span>
-<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_1</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;experiment1&#39;</span><span class="p">)</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_1</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">'http://localhost:8086'</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">'supersecret'</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">'pinnacle'</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">'influx_dump'</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">'experiment1'</span><span class="p">)</span>
 
 <span class="c1"># create a list of tuples for the pod/sink mappings</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_1</span><span class="p">])]</span>
@@ -162,15 +162,15 @@
 <span class="kn">from</span><span class="w"> </span><span class="nn">Morelia.Stream.data_flow</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFlow</span>
 
 <span class="c1"># create 3 new 8206HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB1'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB2'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># create 3 new edf sink objects, using the</span>
 <span class="c1"># dump_1.edf, dump_2.edf, and dump_3.edf files from the same directory</span>
-<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
-<span class="n">edf_sink_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
-<span class="n">edf_sink_3</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_3.edf&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_1.edf'</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_sink_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_2.edf'</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+<span class="n">edf_sink_3</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_3.edf'</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
 
 <span class="c1"># create 3 new influx sink objects, using the default values in the influx sink class</span>
 <span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod_1</span><span class="p">)</span>
@@ -206,46 +206,46 @@
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
 <span class="c1"># create 4 new 8206HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
-<span class="n">pod_4</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB3&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB1'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB2'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">pod_4</span> <span class="o">=</span> <span class="n">Pod8206HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB3'</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
 
 <span class="c1"># add pods to a list, with the names of each pod</span>
-<span class="n">pod_list</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;pod_1&quot;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;pod_2&quot;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;pod_3&quot;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">),</span>
-            <span class="p">(</span><span class="s2">&quot;pod_4&quot;</span><span class="p">,</span> <span class="n">pod_4</span><span class="p">)]</span>
+<span class="n">pod_list</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">"pod_1"</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"pod_2"</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"pod_3"</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">),</span>
+            <span class="p">(</span><span class="s2">"pod_4"</span><span class="p">,</span> <span class="n">pod_4</span><span class="p">)]</span>
 
 <span class="c1"># update the sample rates of all of the pod devices to 500</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pod</span> <span class="ow">in</span> <span class="n">pod_list</span><span class="p">:</span>
   <span class="n">pod</span><span class="o">.</span><span class="n">sample_rate</span> <span class="o">=</span> <span class="mi">500</span>
-  <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">&#39;GET SAMPLE RATE&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sample rate value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 500: </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+  <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">'GET SAMPLE RATE'</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample rate value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 500: </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># update the sample rates of all of the pod devices to 2000 (maximum)</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pod</span> <span class="ow">in</span> <span class="n">pod_list</span><span class="p">:</span>
   <span class="n">pod</span><span class="o">.</span><span class="n">sample_rate</span> <span class="o">=</span> <span class="mi">2000</span>
-  <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">&#39;GET SAMPLE RATE&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
-  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sample rate value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 2000: </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+  <span class="n">sample_rate</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">'GET SAMPLE RATE'</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Sample rate value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 2000: </span><span class="si">{</span><span class="n">sample_rate</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># update the TTL of all of the pod devices to 0</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pod</span> <span class="ow">in</span> <span class="n">pod_list</span><span class="p">:</span>
-  <span class="n">pod</span><span class="o">.</span><span class="n">write_packet</span><span class="p">(</span><span class="s1">&#39;SET TTL OUT&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
+  <span class="n">pod</span><span class="o">.</span><span class="n">write_packet</span><span class="p">(</span><span class="s1">'SET TTL OUT'</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">))</span>
   <span class="c1"># add a small sleep so that the response to the write packet</span>
   <span class="c1"># above does not interfere with the write_read</span>
   <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
-  <span class="n">ttl_val</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">&#39;GET TTL IN&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span>
-  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TTL value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 0: </span><span class="si">{</span><span class="n">ttl_val</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+  <span class="n">ttl_val</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">'GET TTL IN'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span>
+  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TTL value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 0: </span><span class="si">{</span><span class="n">ttl_val</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 
 <span class="c1"># update the TTL of all of the pod devices to 1</span>
 <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">pod</span> <span class="ow">in</span> <span class="n">pod_list</span><span class="p">:</span>
-  <span class="n">pod_1</span><span class="o">.</span><span class="n">write_packet</span><span class="p">(</span><span class="s1">&#39;SET TTL OUT&#39;</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+  <span class="n">pod_1</span><span class="o">.</span><span class="n">write_packet</span><span class="p">(</span><span class="s1">'SET TTL OUT'</span><span class="p">,</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
   <span class="c1"># add a small sleep so that the response to the write packet</span>
   <span class="c1"># above does not interfere with the write_read</span>
   <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
-  <span class="n">ttl_val</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">&#39;GET TTL IN&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;TTL value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 1: </span><span class="si">{</span><span class="n">ttl_val</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+  <span class="n">ttl_val</span> <span class="o">=</span> <span class="n">pod</span><span class="o">.</span><span class="n">write_read</span><span class="p">(</span><span class="s1">'GET TTL IN'</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+  <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"TTL value of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> after update to 1: </span><span class="si">{</span><span class="n">ttl_val</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </pre></div>
 </div>
 </section>
@@ -269,10 +269,10 @@
 <span class="n">secondary_channel_modes</span> <span class="o">=</span>  <span class="p">(</span><span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">)</span>
 
 <span class="c1"># create a new 8401HR pod device from the Linux port ttyUSB0, and with the initialized values above</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
 
 <span class="c1"># create a new edf sink object, using the dump_1.edf file from the same directory</span>
-<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_1.edf'</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
 
 <span class="c1"># create a list of tuples for the pod/sink mappings</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">edf_sink_1</span><span class="p">])]</span>
@@ -283,7 +283,7 @@
 <span class="c1"># set flag to false</span>
 <span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span>
 
-<span class="c1"># use &#39;with&#39; statement to begin streaming</span>
+<span class="c1"># use 'with' statement to begin streaming</span>
 <span class="k">with</span> <span class="n">flowgraph</span><span class="p">:</span>
 
   <span class="c1"># stream infinitely</span>
@@ -310,12 +310,12 @@
 <span class="n">secondary_channel_modes</span> <span class="o">=</span>  <span class="p">(</span><span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">,</span> <span class="n">SecondaryChannelMode</span><span class="o">.</span><span class="n">DIGITAL</span><span class="p">)</span>
 
 <span class="c1"># create a new 8401HR pod device from the Linux port ttyUSB0, and with the initialized values above</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
 
 <span class="c1"># create a new influx sink object, using user-defined values</span>
 <span class="c1"># for a container outside of the terraform one provided</span>
 <span class="c1"># reminder: bucket in influx is like a database, and measurement is like a table.</span>
-<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_1</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://localhost:8086&#39;</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">&#39;supersecret&#39;</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">&#39;pinnacle&#39;</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">&#39;influx_dump&#39;</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">&#39;experiment1&#39;</span><span class="p">)</span>
+<span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod</span><span class="o">=</span><span class="n">pod_1</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">'http://localhost:8086'</span><span class="p">,</span> <span class="n">api_token</span><span class="o">=</span><span class="s1">'supersecret'</span><span class="p">,</span> <span class="n">org</span><span class="o">=</span><span class="s1">'pinnacle'</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="s1">'influx_dump'</span><span class="p">,</span> <span class="n">measurement</span><span class="o">=</span><span class="s1">'experiment1'</span><span class="p">)</span>
 
 <span class="c1"># create a list of tuples for the pod/sink mappings</span>
 <span class="n">mapping</span> <span class="o">=</span> <span class="p">[(</span><span class="n">pod_1</span><span class="p">,</span> <span class="p">[</span><span class="n">influx_sink_1</span><span class="p">])]</span>
@@ -346,15 +346,15 @@
 
 <span class="c1"># create 3 new 8401HR pod devices from the Linux ports ttyUSB0, ttyUSB1, and ttyUSB2</span>
 <span class="c1"># with the initialized values above</span>
-<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB0&#39;</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
-<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB1&#39;</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
-<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">&#39;/dev/ttyUSB2&#39;</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
+<span class="n">pod_1</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB0'</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
+<span class="n">pod_2</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB1'</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
+<span class="n">pod_3</span> <span class="o">=</span> <span class="n">Pod8401HR</span><span class="p">(</span><span class="s1">'/dev/ttyUSB2'</span><span class="p">,</span> <span class="n">Preamp</span><span class="o">.</span><span class="n">Preamp8406_SE4</span><span class="p">,</span> <span class="n">primary_channel_modes</span><span class="p">,</span> <span class="n">secondary_channel_modes</span><span class="p">,</span> <span class="n">ss_gain</span><span class="p">,</span> <span class="n">preamp_gain</span><span class="p">)</span>
 
 <span class="c1"># create 3 new edf sink objects, using the</span>
 <span class="c1"># dump_1.edf, dump_2.edf, and dump_3.edf files from the same directory</span>
-<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_1.edf&#39;</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
-<span class="n">edf_sink_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_2.edf&#39;</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
-<span class="n">edf_sink_3</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">&#39;dump_3.edf&#39;</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
+<span class="n">edf_sink_1</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_1.edf'</span><span class="p">,</span> <span class="n">pod_1</span><span class="p">)</span>
+<span class="n">edf_sink_2</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_2.edf'</span><span class="p">,</span> <span class="n">pod_2</span><span class="p">)</span>
+<span class="n">edf_sink_3</span> <span class="o">=</span> <span class="n">EDFSink</span><span class="p">(</span><span class="s1">'dump_3.edf'</span><span class="p">,</span> <span class="n">pod_3</span><span class="p">)</span>
 
 <span class="c1"># create 3 new influx sink objects, using the default values in the influx sink class</span>
 <span class="n">influx_sink_1</span> <span class="o">=</span> <span class="n">InfluxSink</span><span class="p">(</span><span class="n">pod_1</span><span class="p">)</span>
