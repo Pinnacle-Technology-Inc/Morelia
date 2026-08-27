@@ -2,12 +2,11 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
 
-import csv
 try:
     from typing import Self
 except ImportError:
@@ -43,16 +42,15 @@ class BufferSink(SinkInterface):
     def __enter__(self) -> Self:
         self._batch = []
         if isinstance(self._pod, Pod8206HR):
-            self._buffer.append(('time', 'EEG1', 'EEG2', 'EEG3/EMG'))
+            self._buffer.append(('Time', 'EEG1', 'EEG2', 'EEG3/EMG'))
 
         elif isinstance(self._pod, Pod8401HR):
-
             preamp_channel_names: list[str] = Pod8401HR.get_channel_map_for_preamp_device(self._pod.preamp).values() if not self._pod.preamp is None else ['A', 'B', 'C', 'D']
 
-            self._buffer.append(('time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
+            self._buffer.append(('Time',) + tuple(preamp_channel_names) + ('aEXT0', 'aEXT1', 'aTTL1', 'aTTL2', 'aTTL3', 'aTTL4'))
 
         elif isinstance(self._pod, Pod8274D):
-            self._buffer.append(('time', 'length_in_bytes', 'data'))
+            self._buffer.append(('Time', 'Ch5 Batch', 'Ch6 Batch', 'Ch7 Batch'))
 
         else:
             raise ValueError(f'Device "{self._pod.device_name}" cannot be streamed from!')
@@ -80,9 +78,10 @@ class BufferSink(SinkInterface):
             aext_data = (packet.ext0, packet.ext1)
             attl_data = (packet.ttl1, packet.ttl2, packet.ttl3, packet.ttl4)
             row = (timestamp, (channel_data + aext_data + attl_data))
+        elif isinstance(self._pod, Pod8274D):
+            row = (timestamp, (packet.ch5, packet.ch6, packet.ch7))
         else:
             return
-            #TODO: 8274D
 
         self._batch.append(row)
         self._flush_batch_if_full()

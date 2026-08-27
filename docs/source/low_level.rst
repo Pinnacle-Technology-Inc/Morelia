@@ -3,7 +3,7 @@ Low-Level Interaction with POD Systems 📊
 ##########################################
 
 This section of the documentation covers the low-level API 
-provided Morelia that is used to read and write packets to
+provided by Morelia that is used to read and write packets to
 POD devices. Using the three methods covered here, it is possible to take full advantage of every device Morelia has support for.
 
 .. contents::
@@ -113,7 +113,7 @@ to any command in the command reference**.
   # value, so there will be no response packet. Therefore, WritePacket
   # is the right method for the job! If we were to use WriteRead, a
   # a TimeoutError would be raised. This is because there is no
-  # response packet, si the device would time out when trying to read
+  # response packet, so the device would time out when trying to read
   # a packet from the 8206HR's buffer.
 
   # Putting all of that together, we can set the lowpass filter value
@@ -141,9 +141,9 @@ to any command in the command reference**.
   # filter on channel 2.
   lowpass_channel_2_packet = pod.ReadPODPacket()
 
-  # As you might imagine, doing things this was with two method calls
+  # As you might imagine, doing things with two method calls
   # can get a bit cumbersome and make our code cluttered. Situations
-  # like this are exactly why we have WriteRead! Usinf WriteRead,
+  # like this are exactly why we have WriteRead! Using WriteRead,
   # we can use one method call to send the GET LOWPASS command
   # and read the response. Let's see this alternative way of doing things.
   lowpass_channel_2_packet = pod.WriteRead(102, (1,))
@@ -166,7 +166,7 @@ The Current Trouble with Streaming 😭
 As a final note in this section, we need to talk about the low-level
 API and streaming. Due to current limitations within the API,
 **you cannot use the low-level API while streaming from a device**.
-Ideally, this will not be a limit in future versions, but for now
+Ideally, this will not be a limit in future versions, but for now,
 any ControlPacket objects recieved during streaming will be discarded.
 
 If you would like to use any commands during streaming, you must first

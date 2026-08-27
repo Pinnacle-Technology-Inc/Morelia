@@ -31,6 +31,8 @@ resource "docker_container" "grafana" {
     type = "bind"
   }
 
+  //If using windows, uncomment the 5 lines below. If using Linux, make no changes
+
   // mounts {
   //   target = "/var/lib/grafana/dashboards"
   //   source = abspath("${path.module}/grafana/dashboards")

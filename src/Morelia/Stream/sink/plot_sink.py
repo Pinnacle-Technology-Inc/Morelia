@@ -11,7 +11,7 @@ time base in traditional EEG layout (stacked traces, time on X).
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -48,16 +48,22 @@ _SKIP_INITIAL_SAMPLES = 10
 _DEFAULT_MAX_DISPLAY_RATE = 2000
 
 
-def _channel_values_8206(packet: DataPacket) -> tuple[float, ...]:
+def _channel_values_8206(packet: DataPacket) -> list[tuple[float, ...]]:
     ch0 = float(packet.ch0) if not (math.isnan(packet.ch0) or math.isinf(packet.ch0)) else 0.0
     ch1 = float(packet.ch1) if not (math.isnan(packet.ch1) or math.isinf(packet.ch1)) else 0.0
     ch2 = float(packet.ch2) if not (math.isnan(packet.ch2) or math.isinf(packet.ch2)) else 0.0
-    return (ch0, ch1, ch2)
+    return [ (ch0, ch1, ch2) ]
 
 
-def _channel_values_8401(packet: DataPacket) -> tuple[float, ...]:
-    return (float(packet.ch0), float(packet.ch1), float(packet.ch2), float(packet.ch3))
+def _channel_values_8401(packet: DataPacket) -> list[tuple[float, ...]]:
+    ch0 = float(packet.ch0)
+    ch1 = float(packet.ch1)
+    ch2 = float(packet.ch2)
+    ch3 = float(packet.ch3)
+    return [ (ch0, ch1, ch2, ch3) ]
 
+def _channel_values_8274(packet: DataPacket) -> list[tuple[float, ...]]:
+    return list(zip(packet.ch5, packet.ch6, packet.ch7))
 
 class PlotSink(SinkInterface):
     """Stream data to a live EEG-style plot via a shared queue.
@@ -116,8 +122,8 @@ class PlotSink(SinkInterface):
                         self._channel_names = ("A", "B", "C", "D")
             self._get_values = _channel_values_8401
         elif isinstance(self._pod, Pod8274D):
-            self._channel_names = channel_names if channel_names is not None else ("data",)
-            self._get_values = lambda p: (float(getattr(p, "data", 0) or 0),)
+            self._channel_names = channel_names if channel_names is not None else ("Ch5", "Ch6", "Ch7")
+            self._get_values = _channel_values_8274
         else:
             raise ValueError(f'Device "{getattr(self._pod, "device_name", self._pod)}" is not supported by PlotSink.')
 
@@ -158,15 +164,39 @@ class PlotSink(SinkInterface):
             pass
 
     def flush(self, timestamp: int, packet: DataPacket) -> None:
+        # Skip initial unstable samples
         if self._skip_remaining > 0:
             self._skip_remaining -= 1
             return
+
+        # Decimation
         self._decimate_counter += 1
         if self._decimate_counter < self._decimate_step:
             return
         self._decimate_counter = 0
-        values = self._get_values(packet)
-        self._buffer.append((timestamp, values))
+
+        # Extract values (DEVICE-SPECIFIC)
+        if isinstance(self._pod, Pod8206HR):
+            values = _channel_values_8206(packet)
+            self._buffer.append((timestamp, values[0]))
+
+        elif isinstance(self._pod, Pod8401HR):
+            values = _channel_values_8401(packet)
+            self._buffer.append((timestamp, values[0]))
+
+        elif isinstance(self._pod, Pod8274D):
+            values = _channel_values_8274(packet)
+
+            sample_period_ns = int(1e9 / self._pod.sample_rate)
+
+            for i, value in enumerate(values):
+                ts = timestamp + i * sample_period_ns
+                self._buffer.append((ts, value))
+
+        else:
+            return
+
+        # Chunk flush
         if len(self._buffer) >= self._chunk_samples:
             self._flush_buffer()
 

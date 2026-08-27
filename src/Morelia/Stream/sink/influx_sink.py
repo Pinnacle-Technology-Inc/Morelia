@@ -2,7 +2,7 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert' 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -10,6 +10,7 @@ __email__       = 'sales@pinnaclet.com'
 from influxdb_client import InfluxDBClient, WriteApi, WriteOptions
 import reactivex as rx
 import reactivex.operators as ops
+from typing import List
 try:
     from typing import Self
 except ImportError:
@@ -41,10 +42,14 @@ class InfluxSink(SinkInterface):
         self._bucket: str = bucket
         self._measurement: str = measurement
         self.observe_on_scheduler = observe_on_scheduler
-         
+
+        buffer_size = 1000
+        
         if isinstance(self._pod, Pod8401HR):
-            def _line_protocol_factory(timestamp, packet) -> str:
-                return f"""{self._measurement},channel=CHA,name={self._pod.device_name} value={packet.ch0} {timestamp}
+            buffer_size = self._pod.sample_rate // 2
+
+            def _line_protocol_factory(timestamp, packet) -> List[bytes]:
+                return [ f"""{self._measurement},channel=CHA,name={self._pod.device_name} value={packet.ch0} {timestamp}
                        {self._measurement},channel=CHB,name={self._pod.device_name} value={packet.ch1} {timestamp}
                        {self._measurement},channel=CHC,name={self._pod.device_name} value={packet.ch2} {timestamp}
                        {self._measurement},channel=CHD,name={self._pod.device_name} value={packet.ch3} {timestamp}
@@ -54,16 +59,37 @@ class InfluxSink(SinkInterface):
                        {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
                        {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
                        {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
-
+                ]
         elif isinstance(self._pod, Pod8206HR):
-            def _line_protocol_factory(timestamp, packet) -> str:
-                return f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={packet.ch0} {timestamp}
+            buffer_size = self._pod.sample_rate // 2
+
+            def _line_protocol_factory(timestamp, packet) -> List[bytes]:
+                return [
+                     f"""{self._measurement},channel=CH0,name={self._pod.device_name} value={packet.ch0} {timestamp}
                        {self._measurement},channel=CH1,name={self._pod.device_name} value={packet.ch1} {timestamp}
                        {self._measurement},channel=CH2,name={self._pod.device_name} value={packet.ch2} {timestamp}
                        {self._measurement},channel=TTL1,name={self._pod.device_name} value={packet.ttl1} {timestamp}
                        {self._measurement},channel=TTL2,name={self._pod.device_name} value={packet.ttl2} {timestamp}
                        {self._measurement},channel=TTL3,name={self._pod.device_name} value={packet.ttl3} {timestamp}
                        {self._measurement},channel=TTL4,name={self._pod.device_name} value={packet.ttl4} {timestamp}""".encode('utf-8')
+                ]
+
+        elif isinstance(self._pod, Pod8274D):
+            buffer_size = self._pod.sample_rate // (self._pod.SAMPLES_PER_PACKET * 2)
+
+            def _line_protocol_factory(timestamp, packet) -> List[bytes]:
+
+                lines = []
+                sample_period_ns = int(1e9 / self._pod.sample_rate)
+
+                for i, (ch5, ch6, ch7) in enumerate(zip(packet.ch5, packet.ch6, packet.ch7)):
+                    ts = timestamp + i * sample_period_ns
+
+                    lines.append(f"{self._measurement},channel=CH5,name={self._pod.device_name} value={ch5} {ts}".encode())
+                    lines.append(f"{self._measurement},channel=CH6,name={self._pod.device_name} value={ch6} {ts}".encode())
+                    lines.append(f"{self._measurement},channel=CH7,name={self._pod.device_name} value={ch7} {ts}".encode())
+
+                return lines
         
         if self._pod.port_inst is None:
             pass
@@ -71,8 +97,8 @@ class InfluxSink(SinkInterface):
             self._subject = rx.Subject()
             self._data = self._subject.pipe(
                 ops.starmap(_line_protocol_factory),
-                ops.buffer_with_count(self._pod.sample_rate//2),
-                ops.map(lambda x: b'\n'.join(x))
+                ops.buffer_with_count(buffer_size),
+                ops.map(lambda batches: b'\n'.join(line for batch in batches for line in batch))
             )
 
     @property

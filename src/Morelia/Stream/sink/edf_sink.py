@@ -2,7 +2,7 @@
 
 __author__      = 'James Hurd'
 __maintainer__  = 'Thresa Kelly'
-__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert']
+__credits__     = ['James Hurd', 'Sam Groth', 'Thresa Kelly', 'Seth Gabbert', 'Sean Gupta']
 __license__     = 'New BSD License'
 __copyright__   = 'Copyright (c) 2024, Thresa Kelly'
 __email__       = 'sales@pinnaclet.com'
@@ -45,7 +45,7 @@ class EDFSink(SinkInterface):
             self._channels = tuple(preamp_channel_names) + ('EXT0', 'EXT1', 'TTL1', 'TTL2', 'TTL3', 'TTL4')
 
         elif isinstance(self._pod, Pod8274D):
-                self._channels('length_in_bytes', 'data')
+                self._channels = ('Ch5', 'Ch6', 'Ch7')
 
         self._buffer = [ [] for _ in self._channels ]
 
@@ -134,7 +134,6 @@ class EDFSink(SinkInterface):
 
     #we have a "useless" timestamp paramater here so we implement the same function "interface".
     #TODO: check if sink is open
-    #TODO: 8274
     def flush(self, timestamp: int, packet: DataPacket) -> None:
         """
         :meta private:
@@ -172,50 +171,78 @@ class EDFSink(SinkInterface):
             self._buffer[8].append(float(packet.ttl3))
             self._buffer[9].append(float(packet.ttl4))
 
+        elif isinstance(self._pod, Pod8274D):
+            for (ch5, ch6, ch7) in zip(packet.ch5, packet.ch6, packet.ch7):
+                self._buffer[0].append(ch5)
+                self._buffer[1].append(ch6)
+                self._buffer[2].append(ch7)
+
         if len(self._buffer[0]) >= self._pod.sample_rate:
             self._write_buffer_to_edf()
 
     def _write_buffer_to_edf(self) -> None:
         # Validate buffer before writing
         if not self._buffer or len(self._buffer) == 0:
-            return  # Nothing to write
-        
+            print("returned, nothing to write")
+            return
+
         # Check that all buffers have the same length
         buffer_lengths = [len(b) for b in self._buffer]
         if not buffer_lengths or len(set(buffer_lengths)) != 1:
-            # Mismatched buffer lengths - skip this write to avoid EDF error
-            # This can happen if packets were dropped/corrupted
             import sys
-            print(f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}", file=sys.stderr)
-            self._buffer = [ [] for _ in self._channels ]
+            print(
+                f"Warning: Skipping EDF write due to mismatched buffer lengths: {buffer_lengths}",
+                file=sys.stderr
+            )
+            self._buffer = [[] for _ in self._channels]
             return
-        
-        # Convert to numpy arrays and validate data
+
+        # Validate data
         try:
-            arrays = []
             for buf in self._buffer:
                 arr = np.array(buf, dtype=np.float64)
-                # Check for invalid values (NaN, inf)
+
                 if np.any(np.isnan(arr)) or np.any(np.isinf(arr)):
                     import sys
-                    print(f"Warning: Skipping EDF write due to NaN/inf values in buffer", file=sys.stderr)
-                    self._buffer = [ [] for _ in self._channels ]
+                    print(
+                        "Warning: Skipping EDF write due to NaN/inf values in buffer",
+                        file=sys.stderr
+                    )
+                    self._buffer = [[] for _ in self._channels]
                     return
-                arrays.append(arr)
-            
-            # All arrays should have the same length at this point
-            if len(arrays) > 0 and len(arrays[0]) > 0:
+
+            samples_per_record = self._pod.sample_rate
+
+            # Write complete EDF records only
+            while len(self._buffer[0]) >= samples_per_record:
+
+                arrays = [
+                    np.array(
+                        buf[:samples_per_record],
+                        dtype=np.float64
+                    )
+                    for buf in self._buffer
+                ]
+
                 self._edf_writer.writeSamples(arrays)
+
+                # Remove written samples and keep overflow
+                for i in range(len(self._buffer)):
+                    self._buffer[i] = self._buffer[i][samples_per_record:]
+
         except OSError as e:
-            # Handle EDF write errors gracefully
             import sys
-            print(f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
+            print(
+                f"Warning: EDF write error (dropping buffer): {type(e).__name__}: {e}",
+                file=sys.stderr
+            )
+
         except Exception as e:
-            # Catch any other unexpected errors
             import sys
-            print(f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}", file=sys.stderr)
-        
-        self._buffer = [ [] for _ in self._channels ]
+            print(
+                f"Warning: Unexpected error writing to EDF (dropping buffer): {type(e).__name__}: {e}",
+                file=sys.stderr
+            )
 
     def get_dict(self):
         return {
