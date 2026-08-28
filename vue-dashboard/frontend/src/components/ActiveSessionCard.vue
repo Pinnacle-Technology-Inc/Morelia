@@ -12,6 +12,7 @@ import { timestampMs } from "../datetime";
 const props = defineProps({
   session: { type: Object, required: true },
   devices: { type: Array, default: () => [] },
+  deviceConfigs: { type: Array, default: () => [] },
   expanded: Boolean,
 });
 
@@ -39,11 +40,32 @@ const displaySession = computed(() => {
   });
 });
 
+const configuredFlows = computed(() => {
+  const flows = detail.value?.session?.device_flows ?? props.session.deviceFlows ?? [];
+  const configsById = new Map(
+    props.deviceConfigs.map((config) => [String(config.id), config]),
+  );
+
+  return flows.map((flow) => {
+    const config = configsById.get(String(flow?.device_config_id ?? ""));
+    const nickname = String(config?.nickname ?? "").trim();
+    const deviceType = config?.type ?? config?.device_type ?? flow?.device_type ?? flow?.type ?? null;
+    const hardwareId = config?.hardware_id ?? config?.hardwareId ?? flow?.hardware_id ?? null;
+    return {
+      ...flow,
+      nickname: nickname || null,
+      device_type: deviceType,
+      hardware_id: hardwareId,
+      device_id: deviceType && hardwareId ? `${deviceType}:${hardwareId}` : null,
+    };
+  });
+});
+
 const streamRows = computed(() =>
   deriveStreamRows({
     devices: detail.value?.latest_report?.devices ?? [],
     sinks: detail.value?.sinks ?? [],
-    configuredFlows: detail.value?.session?.device_flows ?? props.session.deviceFlows ?? [],
+    configuredFlows: configuredFlows.value,
     unproven: isOutboxUnproven(detail.value?.outbox_health),
   }),
 );
@@ -177,7 +199,7 @@ onUnmounted(() => {
           :phase="displaySession.phase"
           :activity-state="activityState"
           :streams="streamRows"
-          :configured-flows="detail?.session?.device_flows ?? displaySession.deviceFlows ?? []"
+          :configured-flows="configuredFlows"
           :detail-available="detailAvailable"
           :detail-error="detailError"
           :outbox-health="detail?.outbox_health ?? null"

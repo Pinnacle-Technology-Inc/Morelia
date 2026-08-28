@@ -155,7 +155,7 @@ code { font-family: var(--font-mono); font-size: var(--fs-xs); }
 .session-card-slot--drop-before::before, .session-card-slot--drop-after::after { position: absolute; top: var(--space-3); bottom: var(--space-3); z-index: 2; width: 4px; content: ""; border-radius: var(--radius-pill); background: var(--accent); box-shadow: 0 0 0 3px var(--sage-100); pointer-events: none; }
 .session-card-slot--drop-before::before { left: calc(var(--space-4) / -2 - 2px); }
 .session-card-slot--drop-after::after { right: calc(var(--space-4) / -2 - 2px); }
-.session-card { padding: var(--space-5); }
+.session-card { padding: var(--space-4) var(--space-5); }
 .session-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .session-card__controls { display: flex; flex: 0 0 auto; align-items: center; gap: var(--space-1); }
 .session-drag-handle, .session-disclosure { display: grid; width: 34px; height: 34px; place-items: center; color: var(--text-muted); border: 0; border-radius: var(--radius-md); background: transparent; cursor: pointer; }
@@ -164,28 +164,32 @@ code { font-family: var(--font-mono); font-size: var(--fs-xs); }
 .session-drag-handle:hover, .session-disclosure:hover { color: var(--primary); background: var(--surface-sage); }
 .session-card h3, .scheduled-card h3 { font-size: var(--fs-lg); }
 .session-card__head p, .scheduled-card p { display: flex; align-items: center; gap: var(--space-2); margin-top: var(--space-2); color: var(--text-muted); font-size: var(--fs-sm); }
-.badge-row { margin-top: 1rem; }
+.badge-row { margin-top: var(--space-3); }
 /* Column count follows the number of stats rendered, rather than being pinned
    to however many there happened to be — a fixed `repeat(3, 1fr)` left a dead
    column behind when the fabricated Session Monitor stat was removed. */
-.session-stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.session-stats { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
 .session-stats > div { min-width: 0; padding: 0 0.8rem; border-left: 1px solid var(--border); }
 .session-stats > div:first-child { padding-left: 0; border-left: 0; }
 .session-stats dt { color: var(--text-muted); font-family: var(--font-display); font-size: 0.68rem; font-weight: var(--fw-bold); text-transform: uppercase; letter-spacing: var(--ls-wide); }
 .session-stats dd { margin-top: var(--space-2); font: var(--fs-xs) var(--font-mono); }
-.session-devices { margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--border); }
+.session-devices { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--border); }
 .session-devices__heading { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
 .session-devices__heading strong { color: var(--text-accent); font-family: var(--font-display); font-size: var(--fs-xs); letter-spacing: var(--ls-wide); text-transform: uppercase; }
 .session-devices__heading span { color: var(--text-muted); font-size: var(--fs-xs); }
-.session-devices ul { display: grid; gap: var(--space-2); margin: var(--space-3) 0 0; padding: 0; list-style: none; }
+.session-devices ul { display: grid; gap: var(--space-2); margin: var(--space-2) 0 0; padding: 0; list-style: none; }
 .session-devices li { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-sage); }
+.session-devices .flow-rail .flow-rail__row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: var(--space-2); padding: 0; border: 0; border-radius: 0; background: transparent; }
+.session-devices .flow-rail .flow-rail__row + .flow-rail__row { padding-top: var(--space-2); border-top: 1px solid var(--border-card); }
+.session-devices .flow-rail .flow-rail__path { display: grid; grid-template-columns: clamp(5.5rem, 28%, 9rem) minmax(0, 1fr); align-items: center; gap: var(--space-3); padding: var(--space-2) var(--space-4); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-sage); }
+.session-devices .flow-rail .flow-rail__note { display: grid; align-items: start; gap: var(--space-1); padding: 0 var(--space-4); }
 .device-row__identity { display: grid; min-width: 0; grid-template-columns: auto 1fr; gap: var(--space-1) var(--space-2); }
 .device-row__identity strong { font-size: var(--fs-sm); }
 .device-row__identity span { overflow: hidden; color: var(--text-muted); font-size: var(--fs-xs); text-overflow: ellipsis; white-space: nowrap; }
 .device-row__identity code { grid-column: 1 / -1; color: var(--text-muted); }
 .device-row__status { display: flex; flex: 0 0 auto; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); color: var(--text-muted); font-size: var(--fs-xs); }
 .session-devices__empty { margin-top: var(--space-3); color: var(--text-muted); font-size: var(--fs-sm); }
-.session-card__footer { display: flex; justify-content: flex-end; margin-top: var(--space-4); padding-top: var(--space-3); border-top: 1px solid var(--border); }
+.session-card__footer { display: flex; justify-content: flex-end; margin-top: var(--space-3); padding-top: var(--space-2); border-top: 1px solid var(--border); }
 .session-open-action { display: inline-flex; align-items: center; gap: var(--space-1); padding: var(--space-1) 0; color: var(--primary); border: 0; background: transparent; font-family: var(--font-display); font-size: var(--fs-xs); font-weight: var(--fw-bold); cursor: pointer; }
 .session-open-action:hover { text-decoration: underline; text-underline-offset: 0.2rem; }
 .active-sessions-toggle { display: flex; min-height: 40px; align-items: center; justify-content: center; gap: var(--space-2); width: 100%; margin-top: var(--space-4); color: var(--primary); border: 1px solid var(--border-card); border-radius: var(--radius-md); background: var(--surface-card); font-family: var(--font-display); font-size: var(--fs-xs); font-weight: var(--fw-bold); cursor: pointer; }

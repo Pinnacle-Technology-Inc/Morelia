@@ -1,7 +1,6 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
 import { deriveFlowStatus, formatReportAge } from "../session-flow-status";
-import { isRunningLifecycle } from "../session-utils";
 
 const props = defineProps({
   lifecycle: { type: String, default: "Unknown" },
@@ -88,7 +87,7 @@ const fallbackRows = computed(() => {
 // session layers the source's current runtime status onto each of its sink paths.
 // This keeps the footprint stable and preserves useful live health information.
 const displayedRows = computed(() => {
-  if (!isRunningLifecycle(props.lifecycle) || !props.streams.length) return fallbackRows.value;
+  if (props.lifecycle !== "Active" || !props.streams.length) return fallbackRows.value;
   if (!props.configuredFlows.length) return props.streams;
 
   return fallbackRows.value.map((path) => {
@@ -106,7 +105,11 @@ const displayedRows = computed(() => {
   });
 });
 const displayedReason = computed(() => {
-  const reason = String(status.value.reason ?? "").trim();
+  let reason = String(status.value.reason ?? "").trim();
+  const phaseSentence = props.phase ? `Phase: ${props.phase}.` : "";
+  if (phaseSentence && reason.toLowerCase().startsWith(phaseSentence.toLowerCase())) {
+    reason = reason.slice(phaseSentence.length).trim();
+  }
   const headline = String(status.value.headline ?? "").trim();
   if (!reason || !headline) return reason;
   const prefix = `${headline}.`;
@@ -119,7 +122,12 @@ const displayedReason = computed(() => {
 <template>
   <!-- aria-live=polite, not assertive: status changes here are ambient context
        for a spectating operator, not something to interrupt them mid-task. -->
-  <section class="flow-bar" :class="`flow-bar--${status.tone}`" role="status" aria-live="polite">
+  <section
+    class="flow-bar"
+    :class="[`flow-bar--${status.tone}`, { 'is-flowing': status.flowing }]"
+    role="status"
+    aria-live="polite"
+  >
     <!-- No lifecycle/health badges here. The page header already renders both,
          about 200px above this line and from the same two variables — two
          "Active" chips and two "Healthy" chips on one screen read as four
@@ -149,18 +157,20 @@ const displayedReason = computed(() => {
                inline now because this rail replaced the Overview "Stream Health"
                tiles, which printed it — folding those tiles in here must not
                silently drop the one field they carried that the rail did not. -->
-          <span class="flow-rail__name">
-            {{ row.label }}
-            <code v-if="row.hardwareId" class="flow-rail__hardware">{{ row.hardwareId }}</code>
-          </span>
-          <span
-            class="flow-rail__track"
-            :class="{ 'is-flowing': row.flowing }"
-            role="img"
-            :aria-label="`${row.label}: ${row.status}${row.flowing ? ', data transferring' : ', not transferring'}.${row.reason ? ` ${row.reason}.` : ''}`"
-          >
-            <span class="flow-rail__fill" />
-          </span>
+          <div class="flow-rail__path">
+            <span class="flow-rail__name">
+              <span class="flow-rail__label" :title="row.label">{{ row.label }}</span>
+              <code v-if="row.hardwareId" class="flow-rail__hardware">{{ row.hardwareId }}</code>
+            </span>
+            <span
+              class="flow-rail__track"
+              :class="{ 'is-flowing': row.flowing }"
+              role="img"
+              :aria-label="`${row.label}: ${row.status}${row.flowing ? ', data transferring' : ', not transferring'}.${row.reason ? ` ${row.reason}.` : ''}`"
+            >
+              <span class="flow-rail__fill" />
+            </span>
+          </div>
           <span class="flow-rail__note">
             <span class="flow-rail__status">{{ row.status }}</span>
             <span v-if="row.reason" class="flow-rail__reason">
@@ -174,7 +184,7 @@ const displayedReason = computed(() => {
       </ul>
     </div>
 
-    <p class="flow-bar__reason" :title="status.reason">{{ displayedReason }}</p>
+    <p v-if="displayedReason" class="flow-bar__reason" :title="status.reason">{{ displayedReason }}</p>
 
   </section>
 </template>
@@ -225,8 +235,7 @@ const displayedReason = computed(() => {
 }
 /* Pulse the dot only while something is actually moving. A resting or stalled
    session showing a heartbeat is a lie. */
-.flow-bar--good .flow-bar__dot,
-.flow-bar--warn .flow-bar__dot {
+.flow-bar.is-flowing .flow-bar__dot {
   animation: flow-pulse 1.8s ease-in-out infinite;
 }
 .flow-bar__headline {
@@ -270,7 +279,7 @@ const displayedReason = computed(() => {
 .flow-rail__row {
   --row-tone: var(--text-muted);
   display: grid;
-  grid-template-columns: minmax(7rem, 1fr) minmax(10rem, 3fr) minmax(8rem, 1.5fr);
+  grid-template-columns: minmax(0, 4fr) minmax(8rem, 1.5fr);
   align-items: center;
   gap: var(--space-3);
   width: 100%;
@@ -292,6 +301,13 @@ const displayedReason = computed(() => {
 .flow-rail__row--fallback {
   --row-tone: var(--tone);
 }
+.flow-rail__path {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(10rem, 3fr);
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
 
 .flow-rail__name {
   display: flex;
@@ -302,8 +318,10 @@ const displayedReason = computed(() => {
   font-size: var(--fs-xs);
   color: var(--text-body);
 }
-.flow-rail__name,
+.flow-rail__label,
 .flow-rail__hardware {
+  display: block;
+  max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -367,17 +385,15 @@ const displayedReason = computed(() => {
    lines and the row grows taller than the two-line version costs. */
 @container flow-bar (max-width: 26rem) {
   .flow-rail__row {
-    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 7rem);
+    grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
-      "name  track"
-      "note  note";
+      "path"
+      "note";
     row-gap: var(--space-2);
   }
-  .flow-rail__name {
-    grid-area: name;
-  }
-  .flow-rail__track {
-    grid-area: track;
+  .flow-rail__path {
+    grid-area: path;
+    grid-template-columns: minmax(0, 1fr) minmax(3.5rem, 7rem);
   }
   .flow-rail__note {
     grid-area: note;

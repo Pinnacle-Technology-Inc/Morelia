@@ -231,6 +231,18 @@ function matchConfiguredFlow(deviceId, configuredFlows, index) {
   );
   return byId ?? configuredFlows[index] ?? {};
 }
+
+function deviceIdentity(deviceId) {
+  const value = String(deviceId ?? "").trim();
+  const separator = value.indexOf(":");
+  if (separator < 1 || separator === value.length - 1) {
+    return { deviceType: value || null, hardwareId: null };
+  }
+  return {
+    deviceType: value.slice(0, separator),
+    hardwareId: value.slice(separator + 1),
+  };
+}
 function workerFaultCopy(fault, { recovered = false } = {}) {
   if (!fault) return null;
   if (fault.reason === "protocol_violation") {
@@ -262,6 +274,10 @@ export function deriveStreamRows({
   return devices.map((device, index) => {
     const deviceId = device?.device_id ?? null;
     const configured = matchConfiguredFlow(deviceId, configuredFlows, index);
+    const identity = deviceIdentity(deviceId);
+    const nickname = String(configured.nickname ?? "").trim();
+    const deviceType = configured.device_type ?? configured.deviceType ?? configured.type ?? identity.deviceType;
+    const hardwareId = configured.hardware_id ?? configured.hardwareId ?? identity.hardwareId;
     const ownSinks = sinks.filter((sink) => sink.source_id === deviceId);
     const sinkSummary = summarizeSinks(ownSinks);
     const streamTone = STREAM_TONE[device?.stream_status] ?? FlowTone.IDLE;
@@ -279,8 +295,8 @@ export function deriveStreamRows({
 
     return {
       id: deviceId ?? `device-${index}`,
-      label: configured.nickname ?? deviceId ?? `Device ${index + 1}`,
-      hardwareId: configured.hardware_id ?? null,
+      label: nickname || deviceType || `Device ${index + 1}`,
+      hardwareId: nickname ? null : hardwareId,
       // Unproven rows never animate and never claim green: the values are the
       // last ones we were told, not the ones that are true now.
       tone: unproven ? worstTone(rolled.tone, FlowTone.WARN) : rolled.tone,
@@ -344,6 +360,7 @@ export function deriveFlowStatus({
 } = {}) {
   if (!isRunningLifecycle(lifecycle)) {
     return {
+      lifecycle,
       tone: FlowTone.IDLE,
       flowing: false,
       unproven: false,
@@ -359,9 +376,12 @@ export function deriveFlowStatus({
   let tone = lifecycle === "Active" ? (HEALTH_TONE[health] ?? FlowTone.WARN) : FlowTone.WARN;
   tone = worstTone(tone, ACTIVITY_TONE[activityState] ?? FlowTone.IDLE);
   if (!detailAvailable) tone = worstTone(tone, FlowTone.WARN);
-  // The rail is the unfolded truth, so it can only make the verdict worse than
-  // the rollup, never better — a green `health` cannot outvote an unhealthy row.
-  for (const row of streams) tone = worstTone(tone, row.tone);
+  // Stream evidence becomes authoritative only after startup. During lifecycle
+  // transitions, old rows describe the previous stable state and must not paint
+  // Starting or Stopping as healthy, degraded, or failed.
+  if (lifecycle === "Active") {
+    for (const row of streams) tone = worstTone(tone, row.tone);
+  }
   // A quiet runtime is a floor, not a ceiling: it can never read green, but a
   // genuinely failed stream still outranks it.
   if (unproven) tone = worstTone(tone, FlowTone.WARN);
@@ -380,8 +400,9 @@ export function deriveFlowStatus({
   if (!notes.length) notes.push(railReason(streams));
 
   return {
+    lifecycle,
     tone,
-    flowing: tone !== FlowTone.BAD,
+    flowing: lifecycle !== "Stopping" && tone !== FlowTone.BAD,
     unproven,
     headline: streamHeadline({ lifecycle, tone, streams, unproven }),
     reason: notes.join(" "),
@@ -419,6 +440,7 @@ function railReason(streams) {
  * @param {object[]} streams  rail rows, for the Suspect gait (its own frame set).
  */
 export function deriveRatState(status, streams = []) {
+  if (status.lifecycle === "Stopping") return "stopping";
   if (status.tone === FlowTone.IDLE) return "paused";
   if (status.tone === FlowTone.BAD) return "stopped";
   if (streams.some((row) => row.status === "Suspect")) return "suspect";

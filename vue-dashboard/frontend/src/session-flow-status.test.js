@@ -354,18 +354,19 @@ describe("deriveStreamRows — the per-stream axis", () => {
     expect(rows[0].unproven).toBe(true);
   });
 
-  it("labels rows from the configured flow, matching by identity before position", () => {
+  it("uses a configured nickname alone, matching by identity before position", () => {
     const rows = deriveStreamRows({
       devices: [device({ device_id: "b" }), device({ device_id: "a" })],
       configuredFlows: [
-        { nickname: "a", hardware_id: "HW-A" },
-        { nickname: "b", hardware_id: "HW-B" },
+        { device_id: "a", nickname: "Left cortex", hardware_id: "HW-A" },
+        { device_id: "b", nickname: "Right cortex", hardware_id: "HW-B" },
       ],
     });
     // Report order differs from config order — matching by position would put
-    // HW-A on device b.
-    expect(rows[0].hardwareId).toBe("HW-B");
-    expect(rows[1].hardwareId).toBe("HW-A");
+    // the left-cortex label on device b. A nickname also replaces, rather than
+    // accompanies, the raw hardware identity.
+    expect(rows.map((row) => row.label)).toEqual(["Right cortex", "Left cortex"]);
+    expect(rows.map((row) => row.hardwareId)).toEqual([null, null]);
   });
 
   it("tolerates a report with no devices", () => {
