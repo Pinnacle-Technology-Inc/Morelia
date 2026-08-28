@@ -79,6 +79,7 @@ def _pvfs_writer_target(
     device_preferences: list[dict] | None = None,
     shutdown_reporter=None,
     evidence_queue=None,
+    sample_count=None,
 ) -> None:
     """Child-process PVFS writer. Owns the container's native I/O exclusively.
 
@@ -143,6 +144,9 @@ def _pvfs_writer_target(
                 if idf is not None:
                     idf.append_block(block_start, ch_buf)
             samples_written += n
+            if sample_count is not None:
+                with sample_count.get_lock():
+                    sample_count.value = samples_written
             for b in buf:
                 b.clear()
 
@@ -272,6 +276,7 @@ class ManagedPvfsSink:
         self._writer_proc: "mp.Process | None" = None
         self._writer_stop = None
         self._writer_evidence_queue = None
+        self._writer_sample_count = None
         self._shutdown_reporter = None
 
     # -- lifecycle ----------------------------------------------------------
@@ -564,6 +569,7 @@ class ManagedPvfsSink:
     def _start_writer_process(self, path: str) -> None:
         self._writer_queue = mp.Queue(maxsize=0)
         self._writer_evidence_queue = mp.Queue(maxsize=0) if self._shutdown_reporter is not None else None
+        self._writer_sample_count = mp.Value("q", 0)
         self._writer_stop = mp.Event()
         self._writer_proc = mp.Process(
             target=_pvfs_writer_target,
@@ -577,6 +583,7 @@ class ManagedPvfsSink:
                 self._device_preferences,
                 self._shutdown_reporter,
                 self._writer_evidence_queue,
+                self._writer_sample_count,
             ),
         )
         self._writer_proc.start()
@@ -778,6 +785,8 @@ class ManagedPvfsSink:
                 except Empty:
                     continue
                 observed.add(getattr(record, "action", None))
+        if self._writer_sample_count is not None:
+            self._samples_written = int(self._writer_sample_count.value)
         # Release the queue's feeder resources deterministically.
         if self._writer_queue is not None:
             try:
@@ -795,6 +804,7 @@ class ManagedPvfsSink:
         self._writer_queue = None
         self._writer_stop = None
         self._writer_evidence_queue = None
+        self._writer_sample_count = None
         if self._forced_termination:
             return "PVFS writer process was force-terminated"
         if proc is not None and getattr(proc, "exitcode", 0) != 0:
