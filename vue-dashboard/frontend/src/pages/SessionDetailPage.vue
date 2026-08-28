@@ -49,6 +49,7 @@ import { canRunTemplate, loadDeviceTemplates, loadSessionTemplate, templateState
 const props = defineProps({
   session: { type: Object, default: null },
   sessionId: { type: [String, Number], required: true },
+  initialLifecycle: { type: String, default: null },
 });
 const emit = defineEmits(["back", "start-another-run", "state-changed"]);
 
@@ -79,11 +80,18 @@ const activity = ref({ state: SessionEventState.IDLE, events: [], error: null })
 const activityRecords = ref([]);
 const activityRecordsState = ref("loading");
 const activityRecordsError = ref("");
-// Optimistic lifecycle from a just-issued command, shown until the refetch that
-// follows it lands. Cleared by refreshDetail() so the server always wins.
-const pendingLifecycle = ref(null);
+// A just-created run needs enough time for its first stream reports to settle.
+// Keep the command's truthful Starting result through one complete detail poll
+// before allowing Active health evaluation to appear.
+const STARTING_MIN_DISPLAY_MS = 6000;
+const initialLifecycle = props.initialLifecycle ? formatStatus(props.initialLifecycle) : null;
+const pendingLifecycle = ref(initialLifecycle);
+const startingHoldUntil = initialLifecycle === "Starting"
+  ? Date.now() + STARTING_MIN_DISPLAY_MS
+  : 0;
 let eventStream;
 let pollTimer = null;
+let startingHoldTimer = null;
 let activityRefreshTimer = null;
 let detailRefreshTimer = null;
 let sourceTemplateRequest = 0;
@@ -140,11 +148,14 @@ const showSessionHealth = computed(() => !["Starting", "Stopping"].includes(life
 // be created; the frozen snapshot is never used to restart this session.
 const sourceTemplateId = computed(() => detail.value?.session?.source_template_id ?? null);
 const sourceTemplateSnapshot = computed(() => detail.value?.session?.source_template_snapshot ?? null);
+const sourceSnapshotVersion = computed(() => sourceTemplateSnapshot.value?.canonical_hash_version ?? null);
 const sourceSnapshotContent = computed(() => sourceTemplateSnapshot.value?.content ?? null);
 const sourceInformationContent = computed(() => sourceSnapshotContent.value ?? sourceTemplate.value?.content ?? null);
-const sourceInformationFlows = computed(() =>
-  Array.isArray(sourceInformationContent.value?.device_flows) ? sourceInformationContent.value.device_flows : [],
-);
+const sourceInformationFlows = computed(() => {
+  const sourceFlows = sourceInformationContent.value?.device_flows;
+  if (Array.isArray(sourceFlows) && sourceFlows.length) return sourceFlows;
+  return Array.isArray(detail.value?.session?.device_flows) ? detail.value.session.device_flows : [];
+});
 const sourceInformationSinkCount = computed(() =>
   sourceInformationFlows.value.reduce(
     (total, flow) => total + (Array.isArray(flow?.sinks) ? flow.sinks.length : 0),
@@ -159,24 +170,21 @@ const sourceFlowDetails = computed(() => sourceInformationFlows.value.map((flow,
   const linkedTemplate = sourceDeviceTemplatesByPath.value.get(normalizeTemplatePath(path));
   const parameters = linkedTemplate?.content?.parameters;
   const stats = [];
-  const deviceType = linkedTemplate?.type ?? linkedTemplate?.content?.type;
+  const deviceType = linkedTemplate?.type ?? linkedTemplate?.content?.type ?? flow?.device_type ?? flow?.type;
+  if (flow?.hardware_id != null) stats.push({ label: "Hardware ID", value: formatTemplateStatValue(flow.hardware_id) });
   if (deviceType != null) stats.push({ label: "Device type", value: formatTemplateStatValue(deviceType) });
+  if (flow?.port != null) stats.push({ label: "Port", value: formatTemplateStatValue(flow.port) });
   if (parameters && typeof parameters === "object") {
     for (const [key, value] of Object.entries(parameters)) {
       if (value != null) stats.push({ label: formatTemplateStatLabel(key), value: formatTemplateStatValue(value) });
     }
   }
-  if (flow?.hardware_id != null) stats.push({ label: "Hardware ID", value: formatTemplateStatValue(flow.hardware_id) });
-  if (flow?.port != null) stats.push({ label: "Port", value: formatTemplateStatValue(flow.port) });
 
   const expectedHash = flow?.device_template_content_hash ?? null;
   const observedHash = linkedTemplate?.content_hash ?? null;
   return {
     key: `${path || "stream"}-${index}`,
-    title: flow?.nickname || path.split("/").pop()?.replace(/\.toml$/i, "") || `Stream ${index + 1}`,
-    path,
-    expectedHash,
-    revisionMatches: Boolean(expectedHash && observedHash && expectedHash === observedHash),
+    title: flow?.nickname || flow?.device_type || path.split("/").pop()?.replace(/\.toml$/i, "") || `Stream ${index + 1}`,
     revisionDiffers: Boolean(expectedHash && observedHash && expectedHash !== observedHash),
     stats,
     statsUnavailable: linkedTemplate
@@ -193,10 +201,10 @@ const sourceFlowDetails = computed(() => sourceInformationFlows.value.map((flow,
     })),
   };
 }));
-const sourceSnapshotJson = computed(() => JSON.stringify(sourceTemplateSnapshot.value, null, 2));
 const hasSourceProvenance = computed(() => Boolean(
   sourceTemplateId.value ||
   sourceTemplateSnapshot.value ||
+  sourceSnapshotVersion.value ||
   detail.value?.session?.source_template_name ||
   detail.value?.session?.source_template_ref ||
   detail.value?.session?.source_template_hash
@@ -251,6 +259,9 @@ const sessionDeviceFlows = computed(() => {
   const configuredFlows = detail.value?.session?.device_flows ?? [];
   return reportDevices.map((device, index) => {
     const configured = configuredFlows[index] ?? {};
+    const hardwareId = typeof configured.hardware_id === "string" && configured.hardware_id.trim()
+      ? configured.hardware_id.trim()
+      : null;
     const sinks = (detail.value?.sinks ?? [])
       .filter((sink) => sink.source_id === device.device_id)
       .map((sink) => ({
@@ -268,7 +279,7 @@ const sessionDeviceFlows = computed(() => {
       id: device.device_id ?? `device-${index}`,
       device: device.device_id ?? "Unknown device",
       type: configured.device_type ?? configured.type ?? "Unknown type",
-      hardwareId: configured.hardware_id ?? "Unknown hardware",
+      hardwareId,
       health: formatStatus(device.stream_status),
       reason: device.reason,
       action: device.action,
@@ -437,6 +448,8 @@ const ratState = computed(() =>
 );
 
 const ratCaption = computed(() => {
+  if (lifecycle.value === "Starting") return "Session starting";
+  if (lifecycle.value === "Stopping") return "Session stopping";
   const captions = {
     running: "Session streaming",
     recovering: "Session recovering",
@@ -622,8 +635,14 @@ async function refreshDetail({ silent = false } = {}) {
     detail.value = await loadSessionDetail(props.sessionId);
     detailState.value = "live";
     detailError.value = "";
-    // The server has now spoken; drop any optimistic post-command lifecycle.
-    pendingLifecycle.value = null;
+    const serverLifecycle = view.value.lifecycle;
+    const retainStarting = pendingLifecycle.value === "Starting"
+      && Date.now() < startingHoldUntil
+      && ["Unknown", "Starting", "Active"].includes(serverLifecycle);
+    // Stopping/completed/cancelled always win immediately. Active waits until
+    // the startup stabilization window has elapsed so partial telemetry cannot
+    // flash a misleading degraded state as the page opens.
+    if (!retainStarting) pendingLifecycle.value = null;
     await resolveSourceTemplate();
     await resolveSourceDeviceTemplates();
   } catch (error) {
@@ -743,6 +762,12 @@ async function saveNote() {
 }
 
 onMounted(() => {
+  if (startingHoldUntil > Date.now()) {
+    startingHoldTimer = setTimeout(() => {
+      pendingLifecycle.value = null;
+      startingHoldTimer = null;
+    }, startingHoldUntil - Date.now());
+  }
   refreshDetail();
   refreshActivity();
   refreshNotes();
@@ -762,6 +787,7 @@ onMounted(() => {
 onUnmounted(() => {
   eventStream?.stop();
   if (pollTimer) clearInterval(pollTimer);
+  if (startingHoldTimer !== null) clearTimeout(startingHoldTimer);
   if (activityRefreshTimer !== null) clearTimeout(activityRefreshTimer);
   if (detailRefreshTimer !== null) clearTimeout(detailRefreshTimer);
 });
@@ -781,9 +807,10 @@ function dismissCommandError() {
   commandProblem.value = null;
 }
 
-async function runLifecycleCommand(command) {
+async function runLifecycleCommand(command, { optimisticLifecycle = null } = {}) {
   if (commandBusy.value) return;
   commandBusy.value = true;
+  if (optimisticLifecycle) pendingLifecycle.value = optimisticLifecycle;
   dialog.value = null;
   commandError.value = "";
   commandProblem.value = null;
@@ -793,6 +820,7 @@ async function runLifecycleCommand(command) {
     await refreshDetail();
     await refreshActivity();
   } catch (error) {
+    pendingLifecycle.value = null;
     commandProblem.value = error?.problem ?? null;
     commandError.value = problemMessage(error, "The lifecycle command failed.");
     // Pull the persisted operation outcome immediately so a failed normal Stop
@@ -810,7 +838,10 @@ function openStopDialog() {
 }
 
 function confirmStop() {
-  return runLifecycleCommand(() => stopSession(props.sessionId));
+  return runLifecycleCommand(
+    () => stopSession(props.sessionId),
+    { optimisticLifecycle: "Stopping" },
+  );
 }
 
 function openForceStopDialog() {
@@ -939,7 +970,7 @@ const tabTones = computed(() => ({
         <div class="title-row">
           <h1>{{ view.name }}</h1>
           <StatusBadge :value="lifecycle" />
-          <StatusBadge :value="view.health" />
+          <StatusBadge v-if="showSessionHealth" :value="view.health" />
         </div>
         <p v-if="view.experiment"><FlaskConical :size="16" /> {{ view.experiment }}</p>
         <!-- `view.duration` used to be rendered here as `?? "Not started"`.
@@ -965,7 +996,7 @@ const tabTones = computed(() => ({
           <Play :size="16" /> Run source template
         </BaseButton>
         <BaseButton
-          v-if="isRunningLifecycle(lifecycle)"
+          v-if="isRunningLifecycle(lifecycle) && lifecycle !== 'Stopping'"
           variant="danger"
           :disabled="commandBusy"
           :title="forceStopRequired ? 'The previous Stop could not prove a clean shutdown' : 'Stop this session cleanly'"
@@ -998,7 +1029,7 @@ const tabTones = computed(() => ({
               <div v-if="view.cancellation"><dt>Cancellation</dt><dd>{{ view.cancellation.detail ?? view.cancellation.code }}</dd></div>
             </dl>
             <div class="session-rat">
-              <RatRunIndicator :state="ratState" size="lg" />
+              <RatRunIndicator :state="ratState" :label="ratCaption" size="lg" />
               <p :class="`session-rat__caption session-rat__caption--${ratState}`">{{ ratCaption }}</p>
             </div>
           </div>
@@ -1036,49 +1067,35 @@ const tabTones = computed(() => ({
           </div>
         </BaseCard>
         <BaseCard
-          v-if="hasSourceProvenance"
+          v-if="hasSourceProvenance || sourceInformationFlows.length"
           class="detail-panel detail-panel--wide source-template-card"
         >
           <header class="source-template-heading">
             <div>
-              <h3>Source template</h3>
-              <p>Immutable provenance captured when this run was created.</p>
+              <h3>Hardware &amp; Outputs</h3>
+              <p>Devices, acquisition settings, and output destinations used by this session.</p>
             </div>
-            <StatusBadge v-if="sourceTemplateState === 'live'" :value="sourceTemplate.state" />
           </header>
-          <p :class="{ 'form-notice': sourceTemplateState === 'unavailable' || (sourceTemplateState === 'live' && !canRunTemplate(sourceTemplate)) }">
-            {{ sourceTemplateGuidance }}
-          </p>
           <dl class="source-template-summary">
-            <div><dt>Recovery policy</dt><dd>{{ formatStatus(sourceInformationContent?.policy) }}</dd></div>
-            <div><dt>Streams</dt><dd>{{ sourceInformationFlows.length }}</dd></div>
-            <div><dt>Sinks</dt><dd>{{ sourceInformationSinkCount }}</dd></div>
-          </dl>
-          <dl class="detail-list source-template-identity">
-            <div><dt>Stored name</dt><dd>{{ detail?.session?.source_template_name ?? "Unavailable" }}</dd></div>
-            <div><dt>Stored reference</dt><dd><code>{{ detail?.session?.source_template_ref ?? "Unavailable" }}</code></dd></div>
-            <div><dt>Template revision ID</dt><dd><code>{{ sourceTemplateId ?? "Unavailable" }}</code></dd></div>
-            <div><dt>Accepted hash</dt><dd><code>{{ detail?.session?.source_template_hash ?? "Unavailable" }}</code></dd></div>
+            <div><dt>Session template</dt><dd>{{ detail?.session?.source_template_name ?? "Legacy session" }}</dd></div>
+            <div><dt>Devices</dt><dd>{{ sourceInformationFlows.length }}</dd></div>
+            <div><dt>Outputs</dt><dd>{{ sourceInformationSinkCount }}</dd></div>
           </dl>
 
-          <section v-if="sourceFlowDetails.length" class="source-flow-list" aria-label="Source template stream configuration">
+          <section v-if="sourceFlowDetails.length" class="source-flow-list" aria-label="Session hardware and output configuration">
             <article v-for="(flow, flowIndex) in sourceFlowDetails" :key="flow.key" class="source-flow">
               <header class="source-flow__heading">
                 <div>
-                  <span>Stream {{ flowIndex + 1 }}</span>
+                  <span>Device {{ flowIndex + 1 }}</span>
                   <h4>{{ flow.title }}</h4>
-                  <code>{{ flow.path || "Device template unavailable" }}</code>
                 </div>
-                <span v-if="flow.revisionMatches" class="source-flow__revision source-flow__revision--matched">
-                  Accepted device revision
-                </span>
-                <span v-else-if="flow.revisionDiffers" class="source-flow__revision source-flow__revision--changed">
-                  Current TOML differs from this run
+                <span v-if="flow.revisionDiffers" class="source-flow__revision source-flow__revision--changed">
+                  Configuration changed since this run
                 </span>
               </header>
 
               <p v-if="flow.revisionDiffers" class="source-flow__notice">
-                The values below come from the current device-template TOML. The run retained a different accepted hash.
+                Current device settings differ from the configuration used by this session.
               </p>
               <dl v-if="flow.stats.length" class="source-flow__stats">
                 <div v-for="stat in flow.stats" :key="stat.label">
@@ -1102,27 +1119,9 @@ const tabTones = computed(() => ({
                   </li>
                 </ul>
               </div>
-              <details v-if="flow.expectedHash" class="source-flow__revision-details">
-                <summary>Device-template revision</summary>
-                <code>{{ flow.expectedHash }}</code>
-              </details>
             </article>
           </section>
-          <p v-else class="form-notice">No stream configuration was stored with this source template.</p>
-
-          <details v-if="sourceTemplateSnapshot" class="source-snapshot">
-            <summary>Frozen source snapshot</summary>
-            <p>Canonical hash version <code>{{ sourceTemplateSnapshot.canonical_hash_version }}</code></p>
-            <pre>{{ sourceSnapshotJson }}</pre>
-          </details>
-          <p v-else class="form-notice">No frozen source snapshot was stored for this legacy run.</p>
-          <BaseButton
-            v-if="sourceTemplateState === 'unavailable' && sourceTemplateId"
-            variant="secondary"
-            @click="resolveSourceTemplate({ force: true })"
-          >
-            Retry source lookup
-          </BaseButton>
+          <p v-else class="form-notice">Hardware and output configuration is unavailable for this session.</p>
           <BaseButton
             v-if="sourceDeviceTemplatesState === 'unavailable'"
             variant="secondary"
@@ -1413,7 +1412,7 @@ const tabTones = computed(() => ({
               <div v-else class="table-wrap">
                 <table class="data-table records-table">
                   <thead>
-                    <tr><th>Gap</th><th>Device</th><th>Sink</th><th>Reason</th><th>Window</th><th>Confidence</th><th>Recorded</th></tr>
+                    <tr><th>Gap</th><th>Device</th><th>Sink</th><th>Reason</th><th>Window</th><th>Recorded</th></tr>
                   </thead>
                   <tbody>
                     <tr v-for="gap in detailGaps" :key="gap.gap_id">
@@ -1422,7 +1421,6 @@ const tabTones = computed(() => ({
                       <td><code>{{ gap.sink_id ?? "—" }}</code></td>
                       <td>{{ gap.reason }}</td>
                       <td>{{ displayGapWindow(gap) }}</td>
-                      <td>{{ formatStatus(gap.confidence) }}</td>
                       <td>{{ formatTimestamp(gap.created_at) }}</td>
                     </tr>
                   </tbody>

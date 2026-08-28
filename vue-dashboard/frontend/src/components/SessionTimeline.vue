@@ -46,14 +46,6 @@ function formatTime(value) {
   if (timestampMs(value) === null) return "";
   return formatCentralTime(value);
 }
-
-function technicalDetails(details) {
-  try {
-    return JSON.stringify(details ?? {}, null, 2);
-  } catch {
-    return "Technical details are unavailable.";
-  }
-}
 </script>
 
 <template>
@@ -93,10 +85,6 @@ function technicalDetails(details) {
             <strong>{{ entry.title }}</strong>
             <span class="timeline__summary">{{ entry.summary }}</span>
           </div>
-          <details v-if="!preview && entry.details" class="timeline__details">
-            <summary>Technical details</summary>
-            <pre>{{ technicalDetails(entry.details) }}</pre>
-          </details>
         </div>
         <template v-if="entry.at">
           <time class="timeline__time" :datetime="entry.at">{{ formatTime(entry.at) }}</time>
@@ -259,15 +247,19 @@ function technicalDetails(details) {
   gap: var(--space-2);
   flex-wrap: nowrap;
   min-height: var(--space-4);
+  overflow: hidden;
   line-height: var(--lh-snug);
 }
 
 .timeline__headline strong {
+  min-width: 0;
+  overflow: hidden;
   color: var(--text-heading);
   font-family: var(--font-display);
   font-size: var(--fs-sm);
   font-weight: var(--fw-bold);
   letter-spacing: var(--ls-tight);
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -301,29 +293,6 @@ function technicalDetails(details) {
 .timeline__category.is-supervision { color: var(--info); }
 .timeline__category.is-operations { color: var(--text-body); }
 
-.timeline__details {
-  margin-top: var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--fs-xs);
-}
-
-.timeline__details summary {
-  cursor: pointer;
-  font-weight: var(--fw-bold);
-}
-
-.timeline__details pre {
-  max-height: 18rem;
-  overflow: auto;
-  margin-bottom: 0;
-  padding: var(--space-3);
-  border: 1px solid var(--border-card);
-  border-radius: var(--radius-sm);
-  background: var(--surface-card);
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
 @media (max-width: 760px) {
   .timeline__header {
     display: grid;
@@ -340,32 +309,7 @@ function technicalDetails(details) {
   }
 
   .timeline__entry {
-    grid-template-columns: var(--space-3) minmax(0, 1fr) max-content;
-  }
-
-  .timeline__marker {
-    grid-row: 1 / span 2;
-  }
-
-  .timeline__content {
-    grid-column: 2 / -1;
-    padding-bottom: var(--space-2);
-  }
-
-  .timeline__time,
-  .timeline__date {
-    grid-row: 2;
-    padding-top: 0;
-    padding-bottom: var(--space-3);
-  }
-
-  .timeline__time {
-    grid-column: 2;
-    justify-self: end;
-  }
-
-  .timeline__date {
-    grid-column: 3;
+    gap: var(--space-2);
   }
 }
 </style>
