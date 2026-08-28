@@ -22,7 +22,7 @@ def output() -> None:
 @click.option("--dry-run", is_flag=True, help="Preview safe repairs without writing.")
 @click.option("--apply", "apply_changes", is_flag=True, help="Apply the reported repairs.")
 def reconcile_command(session_id: int, dry_run: bool, apply_changes: bool) -> None:
-    """Repair superseded open components for one stopped session."""
+    """Repair superseded open components for one completed session."""
     if dry_run and apply_changes:
         raise click.UsageError("--dry-run and --apply are mutually exclusive")
 

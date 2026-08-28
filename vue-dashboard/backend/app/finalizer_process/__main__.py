@@ -40,7 +40,7 @@ from app.services.output_finalization import (
     MergerRegistry,
     build_default_merger_registry,
     coordinator_from_config,
-    reconcile_stopped_session_acquisitions,
+    reconcile_completed_session_acquisitions,
     resolve_merger,
 )
 
@@ -151,7 +151,7 @@ def main(
         nonlocal partials_cleaned
         with app.app_context():
             coordinator = coordinator_factory(config)
-            reconcile_stopped_session_acquisitions()
+            reconcile_completed_session_acquisitions()
             cleanup_partials = getattr(coordinator, "cleanup_inactive_partials", None)
             if not partials_cleaned and cleanup_partials is not None:
                 removed = cleanup_partials()
