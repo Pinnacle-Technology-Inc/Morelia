@@ -11,11 +11,9 @@ if __name__ == "__main__":
     port_8206_0 = "COM4"  # change to the first 8206HR's port
     port_8206_1 = "COM5"  # change to the second 8206HR's port
 
-    pod_8206_0 = Pod8206HR(port_8206_0, 10)
-    pod_8206_0.sample_rate = 2000
+    pod_8206_0 = Pod8206HR(port_8206_0, 10, sample_rate=2000)
 
-    pod_8206_1 = Pod8206HR(port_8206_1, 10)
-    pod_8206_1.sample_rate = 2000
+    pod_8206_1 = Pod8206HR(port_8206_1, 10, sample_rate=2000)
 
     # Each stream gets its own destination sink.
     sink_8206_0 = CSVSink(file_path="stream0_8206.csv", pod=pod_8206_0)

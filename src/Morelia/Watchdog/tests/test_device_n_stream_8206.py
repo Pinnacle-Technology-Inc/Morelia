@@ -30,11 +30,9 @@ FAILURE_THRESHOLD = 3
 MAX_HEARTBEAT_AGE_SEC = 10.0
 
 if __name__ == "__main__":
-    dataflow_pod = Pod8206HR(DATAFLOW_PORT, GAIN)
-    dataflow_pod.sample_rate = SAMPLE_RATE
+    dataflow_pod = Pod8206HR(DATAFLOW_PORT, GAIN, sample_rate=SAMPLE_RATE)
 
-    hardware_only_pod = Pod8206HR(HARDWARE_ONLY_PORT, GAIN)
-    hardware_only_pod.sample_rate = SAMPLE_RATE
+    hardware_only_pod = Pod8206HR(HARDWARE_ONLY_PORT, GAIN, sample_rate=SAMPLE_RATE)
 
     flowgraph = DataFlow([
         (dataflow_pod, [CSVSink(file_path=CSV_PATH, pod=dataflow_pod)]),

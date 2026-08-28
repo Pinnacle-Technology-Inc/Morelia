@@ -1306,7 +1306,7 @@ class Pod8401HR(AcquisitionDevice) :
 
     def _check_sample_rate(self, value: object) -> None:
         if not isinstance(value, int) or isinstance(value, bool) or not 2000 <= value <= 20_000:
-            raise ValueError("sample_rate must be an integer >= 2000 and <= 10,000")
+            raise ValueError("sample_rate must be an integer >= 2000 and <= 20,000")
 
     @property
     def param_schema(self):

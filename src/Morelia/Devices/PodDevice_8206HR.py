@@ -319,11 +319,11 @@ class Pod8206HR(AcquisitionDevice) :
             required=frozenset(
                 {
                     "preamp_gain",
-                    "sample_rate",
                     }
                 ),
             optional=frozenset(
                 {
+                    "sample_rate",
                     "lowpass_ch0",
                     "lowpass_ch1",
                     "lowpass_ch2",
