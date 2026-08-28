@@ -1,5 +1,0 @@
-name = "snap-pod"
-type = "pod8206hr"
-
-[parameters]
-preamp_gain = 100

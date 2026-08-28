@@ -1,8 +1,0 @@
-name = "df8401.toml"
-type = "pod8401hr"
-
-[parameters]
-preamp = "Preamp8407_SE"
-primary_channel_modes = ["BIOSENSOR", "EEG_EMG", "EEG_EMG", "EEG_EMG"]
-secondary_channel_modes = ["DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL", "DIGITAL"]
-ss_gain = [1, 5, 5, 5]
