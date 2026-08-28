@@ -1281,6 +1281,47 @@ def accept_change(template_id: str) -> SessionTemplateFile:
     return result
 
 
+def refresh_dependency_revision(template_id: str) -> SessionTemplateFile:
+    """Pin current linked device-template hashes as a new session revision."""
+
+    with _reconciliation_lock:
+        template = get_by_id(template_id)
+        if template is None:
+            raise SessionTemplateNotFound(template_id)
+        blockers = template.run_blockers
+        if template.state != "ACTIVE" or not blockers or any(
+            blocker["code"] != "device_template_changed" for blocker in blockers
+        ):
+            raise ValueError(
+                f"template {template_id!r} has no device-template revisions that can be refreshed"
+            )
+
+        content = {
+            "policy": template.content["policy"],
+            "device_flows": [dict(flow) for flow in template.content["device_flows"]],
+        }
+        for blocker in blockers:
+            flow_index = blocker["flow_index"]
+            path = blocker["device_template_path"]
+            try:
+                current = device_templates.get_by_path(path)
+            except (DeviceTemplateNotFound, ValueError) as exc:
+                raise ValueError(f"device template {path!r} is no longer available") from exc
+            if current is None:
+                raise ValueError(f"device template {path!r} is no longer available")
+            content["device_flows"][flow_index]["device_template_content_hash"] = current.content_hash
+
+        path = _direct_file(_library_dir() / template.relative_path)
+        if path is None:
+            raise SessionTemplateNotFound(template.relative_path)
+        if template.observed_hash != template.registered_hash:
+            raise ValueError(
+                f"template {template_id!r} changed while its dependency revisions were being reviewed"
+            )
+        _write_atomic(path, _to_toml(content))
+        return accept_change(template_id)
+
+
 def resolve_ambiguous_rename(template_id: str, selected_relative_path: str) -> SessionTemplateFile:
     """Preserve the old ID on the selected rename and mark other candidates duplicate."""
 
