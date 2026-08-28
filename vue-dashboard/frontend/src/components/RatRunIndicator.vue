@@ -46,16 +46,17 @@ const FRAME_SETS = {
 const INTERVAL_MS = {
   running: 90,
   recovering: 160,
+  stopping: 160,
   suspect: 140,
 };
 
 const props = defineProps({
-  /** Session-level motion: running | recovering | suspect | paused | stopped */
+  /** Session-level motion: running | recovering | stopping | suspect | paused | stopped */
   state: {
     type: String,
     default: "paused",
     validator: (value) =>
-      ["running", "recovering", "suspect", "paused", "stopped"].includes(value),
+      ["running", "recovering", "stopping", "suspect", "paused", "stopped"].includes(value),
   },
   // Sizes name a HEIGHT, not a box. Width follows from the state's aspect,
   // because a galloping rat is genuinely wider than a sitting one and forcing
@@ -95,7 +96,7 @@ const frameStyle = computed(() => ({
 const isAnimating = computed(
   () =>
     !reducedMotion.value &&
-    (props.state === "running" || props.state === "recovering" || props.state === "suspect"),
+    ["running", "recovering", "stopping", "suspect"].includes(props.state),
 );
 
 const src = computed(() => frames.value[frameIndex.value] ?? frames.value[0]);
@@ -104,6 +105,7 @@ const ariaLabel = computed(() => {
   if (props.label) return props.label;
   if (props.state === "running") return "Session streaming";
   if (props.state === "recovering") return "Session recovering";
+  if (props.state === "stopping") return "Session stopping";
   if (props.state === "suspect") return "Session has a suspect stream";
   if (props.state === "stopped") return "Session stalled";
   return "Session idle";

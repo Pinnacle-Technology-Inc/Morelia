@@ -323,7 +323,7 @@ class SessionRepository:
                     (
                         SessionStatus.STARTING,
                         SessionStatus.ACTIVE,
-                        SessionStatus.ENDING,
+                        SessionStatus.STOPPING,
                     )
                 ),
             )

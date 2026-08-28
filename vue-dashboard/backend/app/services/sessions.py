@@ -20,6 +20,8 @@ import structlog
 from sqlalchemy.exc import IntegrityError
 from structlog.contextvars import bound_contextvars, get_contextvars
 
+from app.config import get_config
+from app.control.event_poller import telemetry_freshness
 from app.database import db, transaction
 from app.domain.enums import OperationState, PolicyMode, SessionStatus
 from app.domain.errors import (
@@ -41,6 +43,7 @@ from app.models.runtime_manifest import RuntimeManifest
 from app.models.runtime_ownership import RuntimeOwnership
 from app.models.session import Session
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
+from app.repositories.backend_events import BackendEventRepository
 from app.repositories.sessions import SessionRepository
 from app.services import (
     device_configs,
@@ -67,6 +70,7 @@ _log = structlog.get_logger(__name__)
 
 _repo = SessionRepository()
 _runtimes = RuntimeOwnershipRepository()
+_events = BackendEventRepository()
 
 
 def _active_runtime_id(dataflow_id: str) -> str | None:
@@ -88,7 +92,7 @@ def _active_watchdog_id(dataflow_id: str) -> str | None:
 
 # Safe to start: never run yet. One session = one run; repeat = new session.
 _STARTABLE = {SessionStatus.PREPARING, SessionStatus.SCHEDULED}
-_STOPPABLE = {SessionStatus.ACTIVE}
+_STOPPABLE = {SessionStatus.STARTING, SessionStatus.ACTIVE}
 # Recovery only makes sense against a live dataflow.
 _RECOVERABLE = {SessionStatus.ACTIVE}
 # The runtime currently implements one honest, stream-scoped operation.
@@ -1101,6 +1105,7 @@ def _recover(
         runtime_id=active_runtime_id,
     )
 
+    transition_operation(operation.operation_id, OperationState.DISPATCHED)
     try:
         dispatch(session, envelope)
     except Exception as exc:
@@ -1111,9 +1116,6 @@ def _recover(
             error_message=str(exc),
         )
         raise
-
-    transition_operation(operation.operation_id, OperationState.DISPATCHED)
-    transition_operation(operation.operation_id, OperationState.SUCCEEDED)
 
     with transaction():
         session.command_id = envelope.correlation.command_id

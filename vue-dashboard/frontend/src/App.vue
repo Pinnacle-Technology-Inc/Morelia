@@ -20,6 +20,7 @@ import { useSessionCatalog } from "./composables/useSessionCatalog";
 const initialRoute = parseHash(window.location.hash);
 const activeTab = ref(initialRoute.tab);
 const selectedSessionId = ref(initialRoute.sessionId);
+const createdSessionInitialLifecycle = ref(null);
 const selectedTemplateId = ref(initialRoute.templateId);
 const templateView = ref(initialRoute.templateView);
 // The catalog polls itself in the background, so Overview and Sessions pick up
@@ -40,6 +41,7 @@ const selectedSession = computed(() =>
 function changeTab(tab) {
   activeTab.value = tab;
   selectedSessionId.value = null;
+  createdSessionInitialLifecycle.value = null;
   selectedTemplateId.value = null;
   templateView.value = null;
   syncHash();
@@ -47,15 +49,23 @@ function changeTab(tab) {
 
 function openSession(id) {
   selectedSessionId.value = id;
+  createdSessionInitialLifecycle.value = null;
   selectedTemplateId.value = null;
   templateView.value = null;
   syncHash();
 }
 
-// The atomic command has already started or scheduled the returned session.
-function openCreatedSession(id) {
+// Preserve the atomic command's lifecycle through navigation. Without this,
+// the detail page opens from only an id and can mistake incomplete first-poll
+// telemetry for an already degraded Active session.
+function openCreatedSession(result) {
+  const id = result?.id ?? result;
+  createdSessionInitialLifecycle.value = result?.status ?? null;
   refreshSessionCatalog({ silent: true });
-  openSession(id);
+  selectedSessionId.value = String(id);
+  selectedTemplateId.value = null;
+  templateView.value = null;
+  syncHash();
 }
 
 function openTemplate(id, view = "detail") {
@@ -103,6 +113,7 @@ function applyHash() {
   const route = parseHash(window.location.hash);
   activeTab.value = route.tab;
   selectedSessionId.value = route.sessionId;
+  createdSessionInitialLifecycle.value = null;
   selectedTemplateId.value = route.templateId;
   templateView.value = route.templateView;
 }
@@ -170,6 +181,7 @@ onBeforeUnmount(() => {
         :key="selectedSessionId"
         :session="selectedSession ?? null"
         :session-id="selectedSessionId"
+        :initial-lifecycle="createdSessionInitialLifecycle"
         @back="returnToSessions"
         @start-another-run="openTemplate($event, 'run')"
         @state-changed="refreshSessionCatalog({ silent: true })"

@@ -16,8 +16,8 @@ from app.domain.errors import StaleWatchdogReport, UnknownDataflow
 from app.repositories.backend_events import BackendEventRepository
 from app.repositories.runtime_ownership import RuntimeOwnershipRepository
 from app.repositories.sessions import SessionRepository
-from app.runtime_child.driver import RuntimeReport
-from app.services import gaps, incidents
+from app.runtime_child.driver import RuntimePhase, RuntimeReport
+from app.services import gaps, incidents, operations
 
 
 def ingest_report(raw: Mapping) -> int:
@@ -61,6 +61,9 @@ def ingest_report(raw: Mapping) -> int:
         phase=report.phase.value,
         comms=report.comms.value,
     )
+
+    if report.phase is RuntimePhase.RUNNING:
+        SessionRepository().mark_active_if_starting(report.dataflow_id)
 
     # Step 5: derive operator history from the report. Gaps run first so the
     # incident opened for a recovered stream is still unresolved and linkable.
@@ -168,6 +171,8 @@ def ingest_watchdog_report(raw: Mapping) -> int:
                 "devices": envelope.payload.get("devices", []),
                 "sequence": sequence,
             }
+            if isinstance(envelope.payload.get("recovery_id"), str):
+                report_values["recovery_id"] = envelope.payload["recovery_id"]
             for optional in ("diagnostics", "sinks"):
                 if optional in envelope.payload:
                     report_values[optional] = envelope.payload[optional]
@@ -176,6 +181,7 @@ def ingest_watchdog_report(raw: Mapping) -> int:
             report = None
         session = SessionRepository().get(ownership.session_id)
         if report is not None and session is not None:
+            SessionRepository().mark_active_if_starting(report.dataflow_id)
             config = get_config()
             # The direct watchdog path is the real-time authority while the
             # runtime-host report stream is quiet. Project the same healed gap

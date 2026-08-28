@@ -783,7 +783,10 @@ async function submit({ force = false } = {}) {
       force,
     });
     submitState.value = "complete";
-    emit("created", String(result.id));
+    // Keep the lifecycle returned by the atomic start command. The detail page
+    // uses it as its initial snapshot instead of jumping straight from this
+    // dialog to whatever the first status poll happens to report.
+    emit("created", result);
   } catch (error) {
     if (/template/i.test(error?.problem?.code ?? "")) {
       submitState.value = "stale";
