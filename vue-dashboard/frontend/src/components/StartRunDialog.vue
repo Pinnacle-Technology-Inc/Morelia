@@ -35,6 +35,7 @@ import {
 } from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
 import { outputFolder, validateOutputFolders } from "../sink-location-recovery";
+import { durationSecondsFromMinutes, MAX_DURATION_MINUTES } from "../session-timing";
 import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
 import {
   canRunTemplate,
@@ -70,6 +71,8 @@ const name = ref("");
 const experimentId = ref("");
 const notes = ref("");
 const runMode = ref("start");
+// Enable only after the durable runtime deadline and reconciliation are integrated.
+const durationMinutes = ref(30);
 const scheduleAt = ref("");
 const requestIdentity = ref({ fingerprint: "", key: "" });
 
@@ -436,6 +439,15 @@ const unresolvedSinkCount = computed(
   () => assignments.value.filter((assignment) => !flowSinksResolved(assignment.flowIndex)).length,
 );
 const scheduleIncomplete = computed(() => runMode.value === "schedule" && !scheduleAt.value);
+const durationError = computed(() => {
+  if (runMode.value !== "timed") return "";
+  try {
+    durationSecondsFromMinutes(durationMinutes.value);
+    return "";
+  } catch (error) {
+    return error.message;
+  }
+});
 
 const submitDisabled = computed(
   () =>
@@ -446,7 +458,7 @@ const submitDisabled = computed(
     unassignedCount.value > 0 ||
     unresolvedSinkCount.value > 0 ||
     Boolean(folderValidationError.value) ||
-    scheduleIncomplete.value,
+    scheduleIncomplete.value || Boolean(durationError.value),
 );
 
 // Why Start is disabled, in the operator's terms, ordered by what they should
@@ -460,6 +472,7 @@ const blockedReason = computed(() => {
   if (unresolvedSinkCount.value) return "Every file sink needs a folder and a filename.";
   if (folderValidationError.value) return folderValidationError.value;
   if (scheduleIncomplete.value) return "Pick a start time to schedule this run.";
+  if (durationError.value) return durationError.value;
   return "";
 });
 
@@ -721,6 +734,7 @@ function payload() {
     experimentId: experimentId.value,
     notes: notes.value,
     scheduleAt: runMode.value === "schedule" ? scheduleAt.value : "",
+    durationMinutes: runMode.value === "timed" ? durationMinutes.value : undefined,
   });
 }
 
@@ -987,8 +1001,14 @@ watch(() => props.templateId, load);
             <div class="section-heading"><div><span class="section-kicker">Timing</span><h3>Create and start</h3></div></div>
             <fieldset class="run-mode">
               <label><input v-model="runMode" type="radio" value="start" /><span><strong>Start now</strong><small>Validate and start this run in one request.</small></span></label>
+              <label><input v-model="runMode" type="radio" value="timed" /><span><strong>Run now for a duration</strong><small>Stop automatically after the first recorded data starts the timer.</small></span></label>
               <label><input v-model="runMode" type="radio" value="schedule" /><span><strong>Schedule for later</strong><small>Save one future run without claiming hardware now.</small></span></label>
             </fieldset>
+            <label v-if="runMode === 'timed'" class="field schedule-field">
+              <span>Run duration (minutes)</span>
+              <input v-model="durationMinutes" type="number" min="1" :max="MAX_DURATION_MINUTES" step="1" :aria-invalid="Boolean(durationError)" aria-describedby="run-duration-hint" />
+              <small id="run-duration-hint">{{ durationError || 'Whole minutes. The timer continues during data gaps. You can stop at any time.' }}</small>
+            </label>
             <label v-if="runMode === 'schedule'" class="field schedule-field">
               <span>Scheduled start</span>
               <input v-model="scheduleAt" type="datetime-local" />

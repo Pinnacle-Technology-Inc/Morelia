@@ -39,6 +39,28 @@ const RESOLVED = [
 
 const startRunSource = readFileSync(new URL("./StartRunDialog.vue", import.meta.url), "utf8");
 
+describe("timed immediate payload", () => {
+  it("converts whole minutes once and includes them in the retry fingerprint", () => {
+    const inputs = { template: ACTIVE_TEMPLATE, assignments: RESOLVED };
+    const timed = buildTemplateRunPayload({ ...inputs, durationMinutes: "30" });
+    expect(timed.execution).toEqual({ mode: "immediate", duration_seconds: 1800 });
+    expect(JSON.stringify(timed)).toBe(JSON.stringify(buildTemplateRunPayload({ ...inputs, durationMinutes: 30 })));
+    expect(JSON.stringify(timed)).not.toBe(JSON.stringify(buildTemplateRunPayload({ ...inputs, durationMinutes: 31 })));
+    expect(buildTemplateRunPayload(inputs).execution).toEqual({ mode: "immediate" });
+  });
+
+  it.each(["", "1.5", "1e2", null, true, 0, -1, 35791395])("refuses invalid whole minutes %s", (minutes) => {
+    expect(() => buildTemplateRunPayload({ template: ACTIVE_TEMPLATE, assignments: RESOLVED, durationMinutes: minutes }))
+      .toThrow(/whole minutes/i);
+  });
+
+  it("rejects a duration combined with scheduling", () => {
+    expect(() => buildTemplateRunPayload({ template: ACTIVE_TEMPLATE, assignments: RESOLVED,
+      durationMinutes: 30, scheduleAt: "2030-01-01T00:00:00Z",
+    })).toThrow(/scheduled runs cannot/i);
+  });
+});
+
 describe("sink destination composition", () => {
   it("takes the extension from the sink type, not from what was typed", () => {
     expect(composeSinkLocation("D:/runs", "left", "csv")).toBe("D:/runs/left.csv");

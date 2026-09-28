@@ -1,5 +1,6 @@
 import { requestJson } from "./api-client";
 import { normalizeSession } from "./session-utils";
+import { durationSecondsFromMinutes, validateDurationSeconds } from "./session-timing";
 
 export async function loadSessionCatalog() {
   const [storedResult, fleetResult] = await Promise.allSettled([
@@ -81,6 +82,7 @@ export function buildTemplateRunPayload({
   experimentId = "",
   notes = "",
   scheduleAt = "",
+  durationMinutes,
   now = new Date(),
 } = {}) {
   if (template?.state !== "ACTIVE") throw new TypeError("The selected template is not ACTIVE.");
@@ -142,6 +144,10 @@ export function buildTemplateRunPayload({
   if (cleanExperimentId) payload.experiment_id = cleanExperimentId;
   if (cleanNotes) payload.notes = cleanNotes;
   payload.execution = { mode: "immediate" };
+  if (durationMinutes !== undefined) {
+    if (scheduleAt) throw new TypeError("Scheduled runs cannot have a duration.");
+    payload.execution.duration_seconds = durationSecondsFromMinutes(durationMinutes);
+  }
   if (scheduleAt) {
     const scheduled = new Date(scheduleAt);
     if (Number.isNaN(scheduled.getTime()) || scheduled <= now) {
@@ -180,6 +186,12 @@ export function validateTemplateRunPayload(payload) {
   }
   if (!payload.execution || !["immediate", "scheduled"].includes(payload.execution.mode)) {
     throw new TypeError("An immediate or scheduled execution mode is required.");
+  }
+  if (Object.hasOwn(payload.execution, "duration_seconds")) {
+    if (payload.execution.mode !== "immediate") {
+      throw new TypeError("Scheduled runs cannot have a duration.");
+    }
+    validateDurationSeconds(payload.execution.duration_seconds);
   }
 }
 
