@@ -25,6 +25,7 @@ from app.models.output_file import OutputFile
 from app.output import managed_file
 from app.output.csv_schema import csv_fieldnames
 from app.output.managed_file import ManagedOutputFile
+from app.output.recording_bounds import acknowledge_recording, bind_recording, buffer_sample_time
 
 
 class ManagedCsvSinkError(Exception):
@@ -42,6 +43,9 @@ class ManagedCsvSink:
     """
 
     supports_missing_samples = True
+
+    def bind_recording_callback(self, callback) -> None:
+        bind_recording(self, callback)
 
     def __init__(
         self,
@@ -141,7 +145,8 @@ class ManagedCsvSink:
             self._dict_writer = csv.DictWriter(target, fieldnames=self._fieldnames)
             if self._device_csv:
                 self._adapter = _CsvRecoveryAdapter(
-                    pod=self._pod, target=target, fieldnames=self._fieldnames
+                    pod=self._pod, target=target, fieldnames=self._fieldnames,
+                    on_row=self._record_written_row,
                 )
             self._output_id = self._managed.record.output_id
             self._last_checkpoint = time.monotonic()
@@ -163,7 +168,10 @@ class ManagedCsvSink:
             return
         try:
             if self._managed is not None:
-                self._managed.close(row_offset=self._row_count)
+                try:
+                    self._checkpoint()
+                finally:
+                    self._managed.close(row_offset=self._row_count)
         finally:
             self._closed = True
             self._release_database_context()
@@ -185,6 +193,8 @@ class ManagedCsvSink:
         assert self._managed is not None
         self._dict_writer.writerow(row)
         self._row_count += 1
+        if any(value is not None for key, value in row.items() if key not in {"time", "timestamp", "ts"}):
+            buffer_sample_time(self, row.get("timestamp", row.get("time", row.get("ts"))))
         self._maybe_checkpoint()
 
     def flush(self, *args: object) -> None:
@@ -220,11 +230,18 @@ class ManagedCsvSink:
         """Flush file bytes, then save their position and the data-row count together."""
         self._managed.checkpoint(self._row_count)
         self._last_checkpoint = time.monotonic()
+        acknowledge_recording(self)
 
     def _maybe_checkpoint(self) -> None:
         """Save progress when due; this runs on writes, not on a background timer."""
-        if time.monotonic() - self._last_checkpoint >= self._checkpoint_interval_sec:
+        first_recording = getattr(self, "_recording_pending", None) is not None and not self._recording_started
+        if first_recording or time.monotonic() - self._last_checkpoint >= self._checkpoint_interval_sec:
             self._checkpoint()
+
+    def _record_written_row(self, row) -> None:
+        # Recovery inserts missing-sample placeholders; they are not real data.
+        if any(value is not None for value in row[1:]):
+            buffer_sample_time(self, row[0])
 
     # -- Settings used to rebuild the sink ---------------------------------
 
@@ -403,14 +420,18 @@ class _TextTarget(Protocol):
 
 class _CountingWriter:
     """Count rows only after the CSV writer successfully writes them."""
-    def __init__(self, target: _TextTarget) -> None:
+    def __init__(self, target: _TextTarget, on_row=None) -> None:
         self._writer = csv.writer(target)
         self.rows_written = 0
+        self._on_row = on_row
 
     def writerow(self, row: Iterable[object]) -> int:
+        row = tuple(row)
         result = self._writer.writerow(row)
         # A burst can fail after some rows; retain those successful writes.
         self.rows_written += 1
+        if self._on_row is not None:
+            self._on_row(row)
         return result
 
 
@@ -419,12 +440,12 @@ class _CsvRecoveryAdapter:
     """
 
     def __init__(
-        self, *, pod: object, target: _TextTarget, fieldnames: Sequence[str]
+        self, *, pod: object, target: _TextTarget, fieldnames: Sequence[str], on_row=None
     ) -> None:
         self.validate(pod=pod, fieldnames=fieldnames)
         from Morelia.Stream.sink.csv_sink import CSVSink
 
-        self._writer = _CountingWriter(target)
+        self._writer = _CountingWriter(target, on_row=on_row)
         # Skip CSVSink.__enter__ and supply our writer; file_path is unused.
         self._serializer = CSVSink(file_path="", pod=pod)
         self._serializer._csv_writer = self._writer
