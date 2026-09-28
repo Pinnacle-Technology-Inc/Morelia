@@ -27,6 +27,7 @@ import multiprocessing as mp
 import os
 import sqlite3
 import time
+from threading import Thread
 from collections.abc import Callable
 from queue import Empty
 from pathlib import Path
@@ -39,6 +40,7 @@ from app.domain.enums import SinkType
 from app.models.output_file import OutputFile
 from app.output import managed_file
 from app.output.managed_file import ManagedOutputFile
+from app.output.recording_bounds import acknowledge_recording, bind_recording, buffer_sample_time, sample_time
 from Morelia.shutdown import ShutdownActor, ShutdownOutcome, ShutdownPhase
 
 _log = structlog.get_logger(__name__)
@@ -80,6 +82,8 @@ def _pvfs_writer_target(
     shutdown_reporter=None,
     evidence_queue=None,
     sample_count=None,
+    recording_queue=None,
+    recording_identity=None,
 ) -> None:
     """Child-process PVFS writer. Owns the container's native I/O exclusively.
 
@@ -128,6 +132,8 @@ def _pvfs_writer_target(
 
         n_channels = len(channels)
         buf: list[list[float]] = [[] for _ in channels]
+        sample_times = []
+        block_times = []
         samples_written = 0
         flush_threshold = max(1, int(sample_rate))
 
@@ -136,19 +142,42 @@ def _pvfs_writer_target(
             if not buf[0]:
                 return
             n = len(buf[0])
-            block_start = HighTime.from_seconds(
-                start_time.to_seconds() + samples_written / sample_rate
-            )
+            block_start = HighTime.from_seconds(block_times[0].timestamp() if block_times else
+                start_time.to_seconds() + samples_written / sample_rate)
             for ch_name, ch_buf in zip(channels, buf):
                 idf = pvfs_data._indexed_data_files.get(ch_name)
-                if idf is not None:
-                    idf.append_block(block_start, ch_buf)
+                if idf is None:
+                    raise ManagedPvfsSinkError(f"PVFS channel missing during write: {ch_name}")
+                if idf.append_block(block_start, ch_buf) != 0:
+                    raise ManagedPvfsSinkError(f"PVFS block write failed: {ch_name}")
+            if recording_queue is not None and sample_times:
+                for idf in pvfs_data._indexed_data_files.values():
+                    idf.flush(synchronous=True)
+                pvfs_data.flush(synchronous=True)
+                recording_queue.put({
+                    **recording_identity,
+                    "first_sample_at": min(sample_times).isoformat(),
+                    "last_sample_at": max(sample_times).isoformat(),
+                })
             samples_written += n
             if sample_count is not None:
                 with sample_count.get_lock():
                     sample_count.value = samples_written
             for b in buf:
                 b.clear()
+            sample_times.clear()
+            block_times.clear()
+
+        def buffer_item(item):
+            if isinstance(item, dict):
+                timestamp = sample_time(item.get("timestamp"))
+                if timestamp is not None:
+                    block_times.append(timestamp)
+                    if item.get("recorded", True):
+                        sample_times.append(timestamp)
+                item = item["values"]
+            for ch_idx in range(n_channels):
+                buf[ch_idx].append(item[ch_idx])
 
         def drain_queue() -> None:
             while True:
@@ -156,8 +185,7 @@ def _pvfs_writer_target(
                     item = queue.get_nowait()
                 except Exception:
                     break
-                for ch_idx in range(n_channels):
-                    buf[ch_idx].append(item[ch_idx])
+                buffer_item(item)
                 if len(buf[0]) >= flush_threshold:
                     write_buf()
 
@@ -166,8 +194,7 @@ def _pvfs_writer_target(
                 item = queue.get(timeout=0.1)
             except Exception:
                 continue
-            for ch_idx in range(n_channels):
-                buf[ch_idx].append(item[ch_idx])
+            buffer_item(item)
             drain_queue()
             if len(buf[0]) >= flush_threshold:
                 write_buf()
@@ -263,6 +290,7 @@ class ManagedPvfsSink:
         self._pvfs_data = None  # pvfs_tools PvfsDataFile, created worker-side in open()
         self._start_time = None
         self._buffer: list[list[float]] = []
+        self._buffer_start_time = None
         self._samples_written = 0
         self._forced_termination = False
         self._pvfs_close_failed = False
@@ -278,6 +306,9 @@ class ManagedPvfsSink:
         self._writer_evidence_queue = None
         self._writer_sample_count = None
         self._shutdown_reporter = None
+        self._writer_recording_queue = None
+        self._recording_thread = None
+        self._recording_error = None
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -408,7 +439,10 @@ class ManagedPvfsSink:
 
     # -- writes -------------------------------------------------------------
 
-    def write_frame(self, samples) -> None:
+    def bind_recording_callback(self, callback) -> None:
+        bind_recording(self, callback)
+
+    def write_frame(self, samples, *, timestamp=None, recorded=True) -> None:
         """Append one sample per channel (ordered to match ``channels``)."""
         if not self._opened:
             self.open()
@@ -417,31 +451,38 @@ class ManagedPvfsSink:
                 f"expected {len(self._channels)} channel samples, got {len(samples)}"
             )
         values = [_coerce(v) for v in samples]
+        if self._recording_error is not None:
+            raise ManagedPvfsSinkError("PVFS recording acknowledgement failed") from self._recording_error
 
         if self._use_writer_process:
             if self._writer_queue is not None:
                 try:
-                    self._writer_queue.put_nowait(tuple(values))
+                    self._writer_queue.put_nowait({"values": tuple(values), "timestamp": timestamp, "recorded": recorded})
                 except Exception:
                     # Unbounded queue: a failed put is an anomaly, not a drop path.
                     # Backlog/drop telemetry is a packet-18/26 concern (see handoff).
                     pass
             return
 
+        if not self._buffer[0]:
+            self._buffer_start_time = sample_time(timestamp)
         for index, value in enumerate(values):
             self._buffer[index].append(value)
+        if recorded:
+            buffer_sample_time(self, timestamp)
         if len(self._buffer[0]) >= self._flush_threshold:
             self._write_buffer()
 
     def write_row(self, row: dict) -> None:
         """Append one frame from a ``{channel_label: value}`` mapping."""
-        self.write_frame([row.get(channel, 0.0) for channel in self._channels])
+        self.write_frame([row.get(channel, 0.0) for channel in self._channels],
+                         timestamp=row.get("timestamp", row.get("time")))
 
     def flush(self, *args: object) -> None:
         """No-arg: flush buffered blocks. ``(timestamp, packet)``: Morelia stream.
 
         The Morelia worker calls ``flush(timestamp, packet)`` once per packet; the
-        timestamp is unused (PVFS block time is derived from ``samples_written``).
+        sample timestamp follows the values into the native writer acknowledgement.
         """
         if not args:
             if (
@@ -454,8 +495,9 @@ class ManagedPvfsSink:
             return
         if len(args) != 2:
             raise TypeError("flush() expects no args or (timestamp, packet)")
-        _timestamp, packet = args
-        self.write_frame(self._frame_from_packet(packet))
+        timestamp, packet = args
+        self.write_frame(self._frame_from_packet(packet), timestamp=timestamp,
+                         recorded=not getattr(packet, "is_missing_sample", False))
 
     # -- introspection / reconstruction ------------------------------------
 
@@ -534,6 +576,7 @@ class ManagedPvfsSink:
         self._samples_written = 0
         self._forced_termination = False
         self._buffer = [[] for _ in self._channels]
+        self._buffer_start_time = None
 
         if self._use_writer_process:
             self._start_writer_process(self._record.path)
@@ -571,6 +614,9 @@ class ManagedPvfsSink:
         self._writer_evidence_queue = mp.Queue(maxsize=0) if self._shutdown_reporter is not None else None
         self._writer_sample_count = mp.Value("q", 0)
         self._writer_stop = mp.Event()
+        self._recording_error = None
+        if getattr(self, "_recording_callback", None) is not None:
+            self._writer_recording_queue = mp.Queue(maxsize=0)
         self._writer_proc = mp.Process(
             target=_pvfs_writer_target,
             args=(
@@ -584,9 +630,25 @@ class ManagedPvfsSink:
                 self._shutdown_reporter,
                 self._writer_evidence_queue,
                 self._writer_sample_count,
+                self._writer_recording_queue,
+                {"source_id": self._device_id, "sink_id": self._sink_id},
             ),
         )
         self._writer_proc.start()
+        if self._writer_recording_queue is not None:
+            self._recording_thread = Thread(target=self._relay_recording, daemon=True)
+            self._recording_thread.start()
+
+    def _relay_recording(self):
+        # A separate thread delivers writes even when acquisition is stalled.
+        while True:
+            event = self._writer_recording_queue.get()
+            if event is None:
+                return
+            try:
+                self._recording_callback(event)
+            except Exception as exc:
+                self._recording_error = exc
 
     def _finalize_segment(self, *, termination_reason: str, acquisition_state: str) -> None:
         """Flush remaining data, close the container/child, mark the component closed.
@@ -787,6 +849,16 @@ class ManagedPvfsSink:
                 observed.add(getattr(record, "action", None))
         if self._writer_sample_count is not None:
             self._samples_written = int(self._writer_sample_count.value)
+        if self._writer_recording_queue is not None:
+            self._writer_recording_queue.put(None)
+            self._recording_thread.join(timeout=2)
+            if self._recording_thread.is_alive():
+                self._recording_error = RuntimeError("PVFS recording relay did not finish")
+            else:
+                self._writer_recording_queue.close()
+                self._writer_recording_queue.join_thread()
+                self._writer_recording_queue = None
+                self._recording_thread = None
         # Release the queue's feeder resources deterministically.
         if self._writer_queue is not None:
             try:
@@ -807,6 +879,8 @@ class ManagedPvfsSink:
         self._writer_sample_count = None
         if self._forced_termination:
             return "PVFS writer process was force-terminated"
+        if self._recording_error is not None:
+            return "PVFS recording acknowledgement failed"
         if proc is not None and getattr(proc, "exitcode", 0) != 0:
             return f"PVFS writer process exited with code {proc.exitcode}"
         if self._shutdown_reporter is not None and required - observed:
@@ -849,17 +923,24 @@ class ManagedPvfsSink:
                 self._record.sample_loss = self._record.sample_loss + dropped
             return
         n = lengths[0]
-        block_start = HighTime.from_seconds(
-            self._start_time.to_seconds() + self._samples_written / self._sample_rate
-        )
+        pending = getattr(self, "_recording_pending", None)
+        block_start = HighTime.from_seconds(self._buffer_start_time.timestamp() if self._buffer_start_time else
+            self._start_time.to_seconds() + self._samples_written / self._sample_rate)
         for ch_name, buf in zip(self._channels, self._buffer):
             idf = self._pvfs_data._indexed_data_files.get(ch_name)
-            if idf is not None:
-                idf.append_block(block_start, buf)
+            if idf is None:
+                raise ManagedPvfsSinkError(f"PVFS channel missing during write: {ch_name}")
+            if idf.append_block(block_start, buf) != 0:
+                raise ManagedPvfsSinkError(f"PVFS block write failed: {ch_name}")
+        if pending is not None:
+            for idf in self._pvfs_data._indexed_data_files.values():
+                idf.flush(synchronous=True)
+            self._pvfs_data.flush(synchronous=True)
         self._samples_written += n
         self._buffer = [[] for _ in self._channels]
         with transaction():
             self._record.row_offset = self._samples_written
+        acknowledge_recording(self)
 
     def _frame_from_packet(self, packet: object) -> list[float]:
         if getattr(packet, "is_missing_sample", False):

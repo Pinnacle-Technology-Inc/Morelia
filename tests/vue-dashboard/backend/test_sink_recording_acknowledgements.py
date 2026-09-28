@@ -1,5 +1,6 @@
 """File acknowledgements follow successful writes and preserve sample time."""
 import csv
+import time
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -7,6 +8,7 @@ import pytest
 
 from app.output.managed_csv_sink import ManagedCsvSink
 from app.output.managed_edf_sink import ManagedEdfSink
+from app.output.managed_pvfs_sink import ManagedPvfsSink
 
 STAMP = 1_790_164_800_000_000_000
 ISO = datetime.fromtimestamp(STAMP // 1_000_000_000, UTC).isoformat()
@@ -86,3 +88,25 @@ def test_edf_failed_native_write_never_acknowledges(tmp_path, app, monkeypatch):
                 sink.flush(STAMP, SimpleNamespace(ch0=1))
             assert events == []
         sink.close()
+
+
+@pytest.mark.parametrize("writer_process", [False, True])
+def test_pvfs_native_ack_is_not_enqueue_and_does_not_wait_for_next_sample(tmp_path, app, writer_process):
+    path = tmp_path / "ack.pvfs"
+    events = []
+    with app.app_context():
+        sink = ManagedPvfsSink(path=path, dataflow_id="recording-pvfs", channels=["EEG1"], units=["uV"], sample_rate=2,
+                               device_id="pod:one", sink_id="pvfs", use_writer_process=writer_process)
+        sink.bind_recording_callback(events.append)
+        try:
+            sink.flush(STAMP, SimpleNamespace(ch0=1))
+            assert events == []
+            sink.flush(STAMP + 500_000_000, SimpleNamespace(ch0=2))
+            deadline = time.monotonic() + 8
+            while not events and time.monotonic() < deadline:
+                time.sleep(0.01)
+            assert events, "a native write must report without requiring another source packet"
+            assert events[0]["first_sample_at"] == ISO
+            assert events[0]["last_sample_at"].endswith(".500000+00:00")
+        finally:
+            sink.close()
