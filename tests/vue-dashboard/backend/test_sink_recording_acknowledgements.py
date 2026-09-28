@@ -1,7 +1,11 @@
-"""File acknowledgements follow successful writes and preserve sample time."""
+"""Real file/native writers and durable network outboxes at recording boundaries.
+
+Only the remote service client is substituted. Its failed writes are negative
+controls: enqueueing alone cannot produce a recording acknowledgement.
+"""
 import csv
-import time
 from datetime import UTC, datetime
+import time
 from types import SimpleNamespace
 
 import pytest
@@ -9,6 +13,10 @@ import pytest
 from app.output.managed_csv_sink import ManagedCsvSink
 from app.output.managed_edf_sink import ManagedEdfSink
 from app.output.managed_pvfs_sink import ManagedPvfsSink
+from app.output.influx_sink import ManagedInfluxSink
+from app.output.quest_sink import ManagedQuestSink
+from app.output.plot_sink import ManagedPlotSink
+from app.watchdog_process.sink_delivery_outbox import SinkDeliveryOutbox
 
 STAMP = 1_790_164_800_000_000_000
 ISO = datetime.fromtimestamp(STAMP // 1_000_000_000, UTC).isoformat()
@@ -55,6 +63,17 @@ def test_csv_failed_checkpoint_never_acknowledges_buffered_samples(tmp_path, app
         sink.close()
 
 
+def test_csv_missing_sample_placeholders_do_not_start_recording(tmp_path, app):
+    with app.app_context():
+        sink = csv_sink(tmp_path / "missing.csv")
+        events = []
+        sink.bind_recording_callback(events.append)
+        sink.flush(STAMP, SimpleNamespace(is_missing_sample=True))
+        sink.flush()
+        assert events == []
+        sink.close()
+
+
 def test_real_edf_acknowledges_only_written_batch_and_retains_buffered_sample_times(tmp_path, app):
     from pyedflib import EdfReader
     path = tmp_path / "ack.edf"
@@ -88,6 +107,46 @@ def test_edf_failed_native_write_never_acknowledges(tmp_path, app, monkeypatch):
                 sink.flush(STAMP, SimpleNamespace(ch0=1))
             assert events == []
         sink.close()
+
+
+class Destination:
+    up = True
+    def ready(self):
+        return self.up
+    def validate_schema(self, _table):
+        pass
+    def write(self, payload):
+        if not self.up:
+            raise ConnectionError("injected refused write")
+    def close(self):
+        pass
+
+
+@pytest.mark.parametrize("sink_type", [ManagedInfluxSink, ManagedQuestSink])
+def test_service_queue_is_not_recording_and_replay_preserves_original_sample_time(tmp_path, sink_type):
+    destination = Destination()
+    outbox = SinkDeliveryOutbox(tmp_path / "delivery.sqlite3")
+    options = {"api_token_env": "TEST_ONLY_TOKEN", "secret_resolver": lambda _: "test"} if sink_type is ManagedInfluxSink else {}
+    sink = sink_type(dataflow_id="recording-service", device_id="pod:one", sink_id="remote",
+                     client_factory=lambda **_: destination, delivery_outbox=outbox,
+                     reconnect_min_interval_seconds=0, **options)
+    events = []
+    sink.bind_recording_callback(events.append)
+    sink.open()
+    destination.up = False
+    sink.flush(STAMP, SimpleNamespace(ch0=1))
+    assert sink.pending_count() == 1
+    assert events == []
+    destination.up = True
+    sink.replay()
+    assert sink.pending_count() == 0
+    assert events == [{"source_id": "pod:one", "sink_id": "remote", "first_sample_at": ISO, "last_sample_at": ISO}]
+    sink.close()
+    outbox.close()
+
+
+def test_plot_presentation_is_not_a_recording_sink():
+    assert not hasattr(ManagedPlotSink, "bind_recording_callback")
 
 
 @pytest.mark.parametrize("writer_process", [False, True])
