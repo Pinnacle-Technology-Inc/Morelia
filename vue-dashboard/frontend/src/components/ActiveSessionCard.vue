@@ -5,7 +5,7 @@ import BaseCard from "./BaseCard.vue";
 import SessionFlowBar from "./SessionFlowBar.vue";
 import StatusBadge from "./StatusBadge.vue";
 import { loadSessionDetail } from "../session-detail-api";
-import { normalizeSession } from "../session-api";
+import { normalizeSession } from "../session-utils";
 import { deriveStreamRows, isOutboxUnproven } from "../session-flow-status";
 import { timestampMs } from "../datetime";
 

@@ -21,7 +21,7 @@ import SessionDiagnosticLog from "../components/SessionDiagnosticLog.vue";
 import SessionTimeline from "../components/SessionTimeline.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { normalizeSession, recoverSession, stopSession } from "../session-api";
+import { recoverSession, stopSession } from "../session-api";
 import { loadSessionActivity } from "../session-activity-api";
 import { loadSessionDetail } from "../session-detail-api";
 import {
@@ -38,7 +38,7 @@ import {
   deriveStreamRows,
   isOutboxUnproven,
 } from "../session-flow-status";
-import { isRunningLifecycle } from "../session-utils";
+import { isRunningLifecycle, normalizeSession } from "../session-utils";
 import { canRunTemplate, loadDeviceTemplates, loadSessionTemplate, templateStateHint } from "../templates-api";
 
 // `session` is an OPTIONAL fast-path only: the catalog row, when the operator

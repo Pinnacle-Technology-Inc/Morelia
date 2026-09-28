@@ -10,7 +10,7 @@ import TabBar from "../components/TabBar.vue";
 import RepairTemplateDialog from "../components/RepairTemplateDialog.vue";
 import TemplateDetailPage from "./TemplateDetailPage.vue";
 import DeviceTemplateDetailPage from "./DeviceTemplateDetailPage.vue";
-import { sessionLifecycleLabel } from "../session-api";
+import { sessionLifecycleLabel } from "../session-utils";
 import { formatCentralTimestamp } from "../datetime";
 import {
   archiveTemplate,

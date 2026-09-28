@@ -1,24 +1,5 @@
 import { requestJson } from "./api-client";
-import { resolveSessionHealth } from "./session-utils";
-
-const lifecycleLabels = {
-  preparing: "Preparing",
-  scheduled: "Scheduled",
-  starting: "Starting",
-  active: "Active",
-  stopping: "Stopping",
-  completed: "Completed",
-  cancelled: "Cancelled",
-};
-
-/**
- * The operator-facing name for a wire `status`, for surfaces that show a session
- * without loading one. Exported so the templates catalog reports a run's state in
- * the same words the sessions table does, from one mapping rather than a copy.
- */
-export function sessionLifecycleLabel(status) {
-  return lifecycleLabels[status] ?? "Unknown";
-}
+import { normalizeSession } from "./session-utils";
 
 export async function loadSessionCatalog() {
   const [storedResult, fleetResult] = await Promise.allSettled([
@@ -231,43 +212,4 @@ export async function recoverSession(sessionId, { deviceId, action = "restart" }
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ device_id: target, action }),
   });
-}
-
-export function normalizeSession(session, fleetSession = {}) {
-  const flows = Array.isArray(session.device_flows) ? session.device_flows : [];
-  const sinkCount = flows.reduce(
-    (total, flow) => total + (Array.isArray(flow?.sinks) ? flow.sinks.length : 0),
-    0,
-  );
-  const lifecycle = sessionLifecycleLabel(session.status);
-  const health = resolveSessionHealth(fleetSession.health, lifecycle);
-
-  return {
-    id: String(session.id),
-    name: session.name,
-    lifecycle,
-    health,
-    experiment: session.experiment_id ? String(session.experiment_id) : null,
-    scheduledTime: session.schedule?.start_at ?? null,
-    fallbackPolicy: session.schedule?.fallback_policy ?? null,
-    cancellation: session.cancellation_details ?? session.schedule?.cancellation ?? null,
-    deviceCount: flows.length,
-    streamCount: flows.length,
-    sinkCount,
-    // The catalog CANNOT know this: /sessions/overview returns only
-    // id/name/status/phase/health (session_status.fleet_overview) — there is no
-    // watchdog_state on the list payload. This used to be derived from
-    // `lifecycle`, which made it a second copy of the State column that
-    // additionally reported a bare "Stopped" the operator could not identify
-    // as a runtime state. It stays unresolved here; SessionDetailPage
-    // overwrites it with the real `watchdog_state` from /status.
-    watchdog: "Unknown",
-    phase: fleetSession.phase ?? null,
-    attentionReason: fleetSession.attention_reason ?? null,
-    attentionSince: fleetSession.attention_since ?? null,
-    policy: session.policy,
-    deviceFlows: flows,
-    createdAt: session.created_at ?? null,
-    isOwner: true,
-  };
 }

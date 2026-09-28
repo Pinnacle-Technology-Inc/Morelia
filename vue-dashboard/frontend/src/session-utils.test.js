@@ -3,6 +3,7 @@ import {
   countSessionsForTab,
   filterSessions,
   isRunningLifecycle,
+  normalizeSession,
   operationOutcome,
   resolveSessionHealth,
   summarizeAttentionSessions,
@@ -98,6 +99,14 @@ describe("session health resolution", () => {
     expect(resolveSessionHealth("stopped", "Active")).toBe("Not streaming");
     expect(resolveSessionHealth(null, "Stopped")).toBe("Not running");
   });
+});
+
+it("preserves authoritative sample timestamps and legacy nulls", () => {
+  expect(normalizeSession({ id: 1, status: "active", duration_seconds: 60,
+    started_at: "2026-09-23T12:00:00Z", ended_at: "2026-09-23T12:00:15Z",
+  })).toMatchObject({ durationSeconds: 60, startedAt: "2026-09-23T12:00:00Z", endedAt: "2026-09-23T12:00:15Z" });
+  expect(normalizeSession({ id: 2, status: "completed", created_at: "2026-01-01T00:00:00Z" }))
+    .toMatchObject({ durationSeconds: null, startedAt: null, endedAt: null });
 });
 
 describe("stop outcome presentation", () => {
