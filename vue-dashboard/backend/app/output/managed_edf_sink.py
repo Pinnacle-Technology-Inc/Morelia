@@ -49,6 +49,7 @@ from app.domain.enums import SinkType
 from app.models.output_file import OutputFile
 from app.output import managed_file
 from app.output.managed_file import ManagedOutputFile
+from app.output.recording_bounds import acknowledge_recording, bind_recording, buffer_sample_time
 
 # EDF header scaling constants (mirror Morelia's EDFSink so merged artifacts and
 # single-segment recordings share one digital<->physical mapping).
@@ -93,6 +94,9 @@ class ManagedEdfSink:
     - The ``pod`` kwarg injected by Morelia reconstruction is accepted; channels
       and the sample rate are derived from it when not given explicitly.
     """
+
+    def bind_recording_callback(self, callback) -> None:
+        bind_recording(self, callback)
 
     def __init__(
         self,
@@ -243,7 +247,7 @@ class ManagedEdfSink:
 
     # -- writes -------------------------------------------------------------
 
-    def write_frame(self, samples) -> None:
+    def write_frame(self, samples, *, timestamp=None) -> None:
         """Append one sample per channel (ordered to match ``channels``)."""
         if not self._opened:
             self.open()
@@ -253,6 +257,7 @@ class ManagedEdfSink:
             )
         for index, value in enumerate(samples):
             self._buffer[index].append(float(value))
+        buffer_sample_time(self, timestamp)
         # One data record == sample_rate frames; flush a whole record at a time so
         # each incremental writeSamples() aligns to a record boundary.
         if len(self._buffer[0]) >= self._record_frames:
@@ -260,13 +265,14 @@ class ManagedEdfSink:
 
     def write_row(self, row: dict) -> None:
         """Append one frame from a ``{channel_label: value}`` mapping."""
-        self.write_frame([_coerce(row.get(channel, 0.0)) for channel in self._channels])
+        self.write_frame([_coerce(row.get(channel, 0.0)) for channel in self._channels],
+                         timestamp=row.get("timestamp", row.get("time")))
 
     def flush(self, *args: object) -> None:
         """No-arg: flush buffered records. ``(timestamp, packet)``: Morelia stream.
 
         The Morelia worker calls ``flush(timestamp, packet)`` once per packet; the
-        timestamp is unused (EDF ordering is implicit in write order).
+        timestamp identifies the sample; acknowledgements wait for writeSamples.
         """
         if not args:
             if self._opened and self._buffer and len(self._buffer[0]) > 0:
@@ -274,8 +280,9 @@ class ManagedEdfSink:
             return
         if len(args) != 2:
             raise TypeError("flush() expects no args or (timestamp, packet)")
-        _timestamp, packet = args
-        self.write_frame(self._frame_from_packet(packet))
+        timestamp, packet = args
+        self.write_frame(self._frame_from_packet(packet),
+                         timestamp=None if getattr(packet, "is_missing_sample", False) else timestamp)
 
     # -- introspection / reconstruction ------------------------------------
 
@@ -340,18 +347,23 @@ class ManagedEdfSink:
         """
         assert self._record is not None
         lost = 0
+        failures = []
         if self._buffer and len(self._buffer[0]) > 0:
             try:
                 self._write_buffer()
-            except Exception:
+            except Exception as exc:
                 lost = len(self._buffer[0])
+                failures.append(("final buffer write", exc))
         if self._writer is not None:
             try:
                 self._writer.close()
-            except Exception:
-                if termination_reason == "clean":
-                    termination_reason = "writer_failure"
+            except Exception as exc:
+                failures.append(("native writer close", exc))
         self._writer = None
+
+        if failures:
+            termination_reason = "writer_failure"
+            acquisition_state = "interrupted"
 
         path = self._record.path
         byte_size = os.path.getsize(path) if os.path.exists(path) else 0
@@ -363,16 +375,27 @@ class ManagedEdfSink:
             if lost:
                 self._record.sample_loss = self._record.sample_loss + lost
 
+        # Persist evidence and attempt native close even when the final write
+        # fails, then propagate so the worker cannot issue a clean sink receipt.
+        if failures:
+            details = "; ".join(f"{phase}: {type(exc).__name__}: {exc}" for phase, exc in failures)
+            raise ManagedEdfSinkError(f"EDF shutdown failed: {details}") from failures[0][1]
+
     def _write_buffer(self) -> None:
         import numpy as np
 
         assert self._writer is not None and self._record is not None
         arrays = [np.array(channel, dtype=np.float64) for channel in self._buffer]
+        pending = getattr(self, "_recording_pending", None)
+        if self._total_frames == 0 and pending is not None:
+            # EDF's header describes recorded samples, not descriptor/open time.
+            self._writer.setStartdatetime(pending[0])
         self._writer.writeSamples(arrays)
         self._total_frames += len(self._buffer[0])
         self._buffer = [[] for _ in self._channels]
         with transaction():
             self._record.row_offset = self._total_frames
+        acknowledge_recording(self)
 
     def _make_writer(self, path: str):
         from pyedflib import EdfWriter
