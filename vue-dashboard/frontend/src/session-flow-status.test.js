@@ -164,7 +164,7 @@ describe("deriveFlowStatus — running lifecycles", () => {
     });
     // No rail: `Stream health` covers it, and the waiting copy stays reachable
     // for a session that genuinely has not reported.
-    expect(deriveFlowStatus({ lifecycle: "Ending", activityState: "live" }).reason).toMatch(
+    expect(deriveFlowStatus({ lifecycle: "Starting", activityState: "live" }).reason).toMatch(
       /Waiting for the first/,
     );
     expect(status.reason).toContain("Healthy");

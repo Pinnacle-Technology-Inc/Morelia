@@ -3,6 +3,7 @@ import {
   countSessionsForTab,
   filterSessions,
   isRunningLifecycle,
+  operationOutcome,
   resolveSessionHealth,
   summarizeAttentionSessions,
 } from "./session-utils";
@@ -96,5 +97,39 @@ describe("session health resolution", () => {
     // disagreement — it must not render as the Stopped lifecycle.
     expect(resolveSessionHealth("stopped", "Active")).toBe("Not streaming");
     expect(resolveSessionHealth(null, "Stopped")).toBe("Not running");
+  });
+});
+
+describe("stop outcome presentation", () => {
+  it("shows successful stops with and without explicit warnings", () => {
+    expect(operationOutcome({ command: "stop", state: "succeeded" }))
+      .toMatchObject({ label: "Completed", tone: "good", completed: true });
+    expect(operationOutcome({ command: "stop", state: "succeeded", details: {
+      warnings: [{ code: "unclean_shutdown", message: "Recording quality could not be confirmed." }],
+    } })).toMatchObject({ label: "Completed with warnings", tone: "warn" });
+  });
+
+  it.each(["failed", "uncertain"])("does not reinterpret %s from one owner's teardown receipt", (state) => {
+    const operation = { command: "stop", state, details: {
+      teardown_confirmed: true, output_integrity_confirmed: false,
+    } };
+    expect(operationOutcome(operation)).toMatchObject({
+      state, tone: "bad", completed: false,
+    });
+    expect(operation.state).toBe(state);
+    expect(operation.details.output_integrity_confirmed).toBe(false);
+    expect(operationOutcome({ ...operation, details: { ...operation.details, output_integrity_confirmed: true } }))
+      .toMatchObject({ state, tone: "bad", completed: false });
+  });
+
+  it.each(["failed", "uncertain"])("preserves %s without proof the session stopped", (state) => {
+    expect(operationOutcome({ command: "stop", state, details: { teardown_confirmed: false } }))
+      .toMatchObject({ state, tone: "bad", completed: false });
+  });
+
+  it("does not reinterpret failures of other commands", () => {
+    expect(operationOutcome({ command: "start", state: "failed", details: {
+      teardown_confirmed: true, output_integrity_confirmed: false,
+    } })).toMatchObject({ state: "failed", label: "Failed", tone: "bad", completed: false, warnings: [] });
   });
 });

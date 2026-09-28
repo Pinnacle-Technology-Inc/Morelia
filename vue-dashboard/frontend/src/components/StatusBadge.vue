@@ -40,6 +40,7 @@ const config = {
   Active: { icon: Play, tone: "green" },
   Stopping: { icon: StopCircle, tone: "orange" },
   Completed: { icon: CheckCircle2, tone: "green" },
+  "Completed with warnings": { icon: AlertTriangle, tone: "amber" },
   Cancelled: { icon: XCircle, tone: "neutral" },
   Healthy: { icon: CheckCircle2, tone: "green" },
   Suspect: { icon: AlertTriangle, tone: "amber" },

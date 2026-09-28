@@ -137,3 +137,27 @@ export function summarizeAttentionSessions(sessions, limit = 3) {
     hidden: attentionSessions.length - visible.length,
   };
 }
+
+/** Stop completion and recording quality are separate outcomes. Preserve raw receipts. */
+export function operationOutcome(operation = {}) {
+  const state = String(operation.state ?? "").trim().toLowerCase() || "unknown";
+  const stop = String(operation.command ?? "").trim().toLowerCase() === "stop";
+  const details = operation.details ?? {};
+  // Only the operation outcome verifies session-wide teardown. A receipt may
+  // describe one runtime owner while another owner is still running.
+  const completed = stop && state === "succeeded";
+  const warnings = stop && Array.isArray(details.warnings) ? [...details.warnings] : [];
+  const result = details.shutdown_result;
+  const unclean = result && (result.forced_termination === true || result.forced === true ||
+    result.outcome === "forced" || result.clean === false ||
+    (result.stream_results ?? []).some((stream) => stream?.forced_termination === true));
+  if (stop && (unclean || (details.teardown_confirmed === true && details.output_integrity_confirmed !== true)) &&
+      !warnings.some((warning) => warning?.code === "unclean_shutdown")) {
+    warnings.push({ code: "unclean_shutdown", message: "Unclean shutdown; output integrity is not confirmed." });
+  }
+  const label = completed ? warnings.length ? "Completed with warnings" : "Completed"
+    : state[0].toUpperCase() + state.slice(1);
+  const tone = completed ? warnings.length ? "warn" : "good"
+    : state === "succeeded" ? "good" : ["failed", "uncertain"].includes(state) ? "bad" : "neutral";
+  return { state: completed ? "succeeded" : state, label, tone, completed, warnings };
+}

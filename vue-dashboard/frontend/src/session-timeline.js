@@ -1,4 +1,5 @@
 import { formatCentralTimestamp, timestampMs } from "./datetime";
+import { operationOutcome } from "./session-utils";
 
 export const TimelineCategory = Object.freeze({
   DATAFLOW: "dataflow",
@@ -238,15 +239,18 @@ function addGapEntry(gap, add) {
 function addOperationEntry(operation, add) {
   if (!operation || typeof operation !== "object") return;
   const state = normalize(operation.state) || "recorded";
+  const outcome = operationOutcome(operation);
   const command = label(operation.command || "Operation");
   const recovery = Boolean(operation.recovery_id) || normalize(operation.command).includes("recover");
   add({
     key: `operation:${operation.operation_id ?? orderKey(operation)}`,
     at: operation.resolved_at || operation.finished_at || operation.updated_at || operation.created_at,
     category: recovery ? TimelineCategory.RECOVERY : TimelineCategory.OPERATIONS,
-    tone: operationTone(state),
-    title: `${command} ${label(state).toLowerCase()}`,
-    summary: operation.error_message || operation.resolution_note || operationSummary(operation, state),
+    tone: outcome.tone,
+    title: `${command} ${outcome.label.toLowerCase()}`,
+    summary: outcome.completed
+      ? outcome.warnings.map((warning) => warning.message || warning.code).join("; ") || "The session stopped."
+      : operation.error_message || operation.resolution_note || operationSummary(operation, state),
     details: operation,
   });
 }
@@ -254,12 +258,6 @@ function addOperationEntry(operation, add) {
 function operationSummary(operation, state) {
   const target = operation.target_device_id || operation.scope;
   return target ? `${label(state)} for ${target}.` : `${label(state)}.`;
-}
-
-function operationTone(state) {
-  if (state === "succeeded") return "good";
-  if (state === "failed" || state === "uncertain") return "bad";
-  return "neutral";
 }
 
 function recordSummary(record, fallback) {
