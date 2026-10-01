@@ -1,8 +1,10 @@
 # local imports 
 import time
+import traceback
 from Morelia.Devices import Pod, AcquisitionDevice
 
 from Morelia.packet.data import DataPacket8274D
+from Morelia.packet.data.data_packet_8274HR import DataPacket8274HR
 from Morelia.packet.legacy import Packet
 
 from Morelia.packet import ControlPacket
@@ -22,19 +24,18 @@ class Pod8274D(AcquisitionDevice) :
     """Handle communication with an 8274D POD device.
 
     This class initializes the serial port, configures device-specific commands,
-    and optionally connects to a remote 8274 device by serial number during initialization.
-    If ``device_serial_number`` is provided, the constructor will automatically scan for
+    and optionally connects to a remote transmitter by advertised name during initialization.
+    If ``transmitter_name`` is provided, the constructor will automatically scan for
     and connect to the specified device.
 
     :param port: Serial port to be opened. Used when initializing the COM_io instance.
     :param baudrate: Baud rate of the opened serial port. Defaults to 921600 bps.
     :param device_name: Virtual name used to identify the device locally.
-    :param device_serial_number: Serial number of the remote 8274D device to connect to 
-        (printed on device).
+    :param transmitter_name: Full advertised name of the remote transmitter to connect to.
         If provided, the device will be automatically located and connected during
         initialization. Defaults to None (no automatic connection).
     :param scan_timeout_sec: Maximum number of seconds to scan for the device when
-        ``device_serial_number`` is provided. Defaults to 15 seconds.
+        ``transmitter_name`` is provided. Defaults to 15 seconds.
     """
 
     # Device primary and secondary gain map
@@ -44,6 +45,7 @@ class Pod8274D(AcquisitionDevice) :
         "8274-SE":      (100,           26),
         "8274-SE3":     (100,           26),
         "8274-IE":      (100,           13),
+        "8274-SE3-EI":  (50.12,         26),
     }
 
     # Sample rate index map
@@ -53,15 +55,22 @@ class Pod8274D(AcquisitionDevice) :
         2: 256,
         3: 128
     }
+    _HR_SAMPLE_RATES = (128, 256, 512, 1024, 2000)
 
     SAMPLES_PER_PACKET = 40
+    _ACCEL_CHANNELS = {
+        '8474-SE2D': (2, 3),
+        '8474-SEA': (3,),
+        '8474-SLA': (3,),
+        '8474-SE3A': (3,),
+    }
 
-    def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None, device_serial_number: str | None = None, scan_timeout_sec: int|float = 15, sample_rate: int | None = None) -> None :
+    def __init__(self, port: str|int, baudrate:int=921600, device_name: str | None = None, transmitter_name: str | None = None, scan_timeout_sec: int|float = 15, sample_rate: int | None = None) -> None :
         """Initialize the 8274D device and optionally connect to a remote device.
 
         Sets up the serial port, loads command definitions for the 8274D, initializes
         the device, enables local scanning, and optionally connects to a remote device
-        if a ``device_serial_number`` is provided.
+        if a ``transmitter_name`` is provided.
         """
         # initialize POD_Basics
         super().__init__(port, 1024, baudrate=baudrate, device_name=device_name, get_sample_rate_cmd_no=208, set_sample_rate_cmd_no=210)
@@ -70,8 +79,8 @@ class Pod8274D(AcquisitionDevice) :
         if sample_rate is not None:
             self._sample_rate = sample_rate
         
-        # Set device serial number
-        self._device_serial_number = device_serial_number
+        # Set advertised transmitter name
+        self._transmitter_name = transmitter_name
 
         # Set scan timeout for BT device scan
         self._scan_timeout_sec = scan_timeout_sec
@@ -108,11 +117,11 @@ class Pod8274D(AcquisitionDevice) :
         self._commands.add_command(204, 'GET SERIAL NUMBER',        (0,),                    (UINT16,),              False, 'Requests a read - returns SL_STATUS_T value.  0x0000 is success, all others are error codes.')
         self._commands.add_command(205, 'GET SERIAL NUMBER REPLY',  (0,),                    tuple([UINT8]*6),       False, 'Returned serial number')
         self._commands.add_command(206, 'GET MODEL NUMBER',         (0,),                    (UINT16,),              False, 'SL_STATUS_T.')
-        self._commands.add_command(207, 'GET MODEL NUMBER REPLY',   (0,),                    tuple([UINT8]*12),      False, 'Returned model number.')
+        self._commands.add_command(207, 'GET MODEL NUMBER REPLY',   (0,),                    tuple([UINT8]*12),      False, 'Returned model number')
         # recieved only commands below vvv 
         self._commands.add_command(208, 'GET SAMPLE RATE',          (0,),                    (UINT16,),              False, 'SL_STATUS_T')
-        self._commands.add_command(209, 'GET SAMPLE RATE REPLY',    (0,),                    (UINT8,),               False, 'Returned sample rate, 0 = 1024, 1 = 512, 2 = 256, 3 = 128')
-        self._commands.add_command(210, 'SET SAMPLE RATE',          (UINT8,),                   (UINT16,),              False, 'Requires 0,1,2,3 sample rate, returns SL_STATUS_T')
+        self._commands.add_command(209, 'GET SAMPLE RATE REPLY',    (0,),                    (UINT8,),               False, 'Legacy: 0 = 1024, 1 = 512, 2 = 256, 3 = 128. HR/M2: sample rate divided by 8.')
+        self._commands.add_command(210, 'SET SAMPLE RATE',          (UINT8,),                   (UINT16,),              False, 'Legacy: rate index 0–3. HR/M2: sample rate divided by 8; returns SL_STATUS_T.')
         self._commands.add_command(211, 'PROCEDURE COMPLETE',       (0,),                    (0,),                False, 'A special response that is generated upon a successful write or any remote GATT operation.  Every SET and GET will generate one ')
        # self._commands.add_command(212, 'GET RSSI',               (0,),                    (UINT16,),              False, 'SL_STATUS_T')
        # self._commands.add_command(213, 'GET RSSI REPLY',          (0,),                    (0,),                False, 'The value of RSSI, from -128 to +20')
@@ -128,6 +137,9 @@ class Pod8274D(AcquisitionDevice) :
 
         # Holds device type, assigned when device is connected using connect_device()
         self._device_type = None
+        self._is_hr = False
+        self._number_channels = 3
+        self._accelerometer_channels = ()
 
         # Set defaults to most common values
         self._primary_gain = 100
@@ -136,11 +148,22 @@ class Pod8274D(AcquisitionDevice) :
         # Reboot device
         self.write_read(cmd="RESET")
 
-        # Attempt to connect to device by serial number if provided by the user
-        if self._device_serial_number:
-            self.connect_to_device(device_serial_number=self._device_serial_number, timeout_sec=self._scan_timeout_sec)
+        # Attempt to connect by advertised transmitter name if supplied
+        if self._transmitter_name:
+            self.connect_to_device(transmitter_name=self._transmitter_name, timeout_sec=self._scan_timeout_sec)
 
         def decode_payload(cmd_number: int, payload: bytes) -> tuple:
+            if cmd_number == 207:
+                if len(payload) % 26 == 0:
+                    block_length = 26
+                elif len(payload) % 24 == 0:
+                    block_length = 24
+                else:
+                    raise ValueError('Invalid model reply length')
+                if not payload:
+                    raise ValueError('Empty model reply')
+                return tuple(bytes.fromhex(payload[-block_length:].decode('ascii')))
+
             if cmd_number == 12:
                 """
                 Firmware version is stored in the receiver's GATT table, and things
@@ -194,7 +217,8 @@ class Pod8274D(AcquisitionDevice) :
             r = self.read_pod_packet()
         except Exception as e:
             # handle the error (log it and return None)
-            print(f"Error reading pod packet: {e}")
+            print(f"Error reading reply for command {cmd!r}, sent payload {payload!r}: {e}", flush=True)
+            traceback.print_exc()
             r = None
 
         if cmd in ['LOCAL SCAN'] and payload == 1:
@@ -212,7 +236,8 @@ class Pod8274D(AcquisitionDevice) :
                         r = self.read_pod_packet()
                     except Exception as e:
                         # handle the error (log it and return None)
-                        print(f"Error reading pod packet: {e}")
+                        print(f"Error reading reply for command {cmd!r}, sent payload {payload!r}: {e}", flush=True)
+                        traceback.print_exc()
                         r = None
                     
                     retries += 1
@@ -237,30 +262,30 @@ class Pod8274D(AcquisitionDevice) :
                 return read
             if cmd == 'GET MODEL NUMBER':
                 return conv.ascii_bytes_to_string(bytes(read.payload))
+            
         return r
     
-    def connect_to_device(self, device_serial_number: str, timeout_sec: int|float = 15) -> None:
+    def connect_to_device(self, transmitter_name: str, timeout_sec: int|float = 15) -> None:
         """Connect to an 8274 device by name.
 
-        This method scans connected 8274D devices for the provided device name,
-        which is automatically prefixed with ``8274-`` before matching. It issues
+        This method scans for the supplied advertised transmitter name. Both names
+        are trimmed and compared directly, with no prefix or suffix processing. It issues
         a ``DEVICE LIST INFO`` request for each index until the requested device
         is found, then sends a ``CONNECT`` command to establish a connection.
 
-        :param device_name: The device name to connect to. By default, this is
-            the device's serial number printed on the device.
+        :param transmitter_name: Full advertised transmitter name to match.
         :param timeout_sec: Maximum number of seconds to continue scanning for a
             matching device before raising a :class:`ConnectionError`. Defaults to 15 seconds.
 
-        :raises TypeError: If ``device_name`` is not a string.
+        :raises TypeError: If ``transmitter_name`` is not a string.
         :raises ConnectionError: If the device cannot be found.
         :raises TimeoutError:  if the connection attempt fails
             within the timeout period.
         """
 
         # Validate type
-        if not isinstance(device_serial_number, str):
-            raise TypeError(f"device_name must be a string, got {type(device_serial_number).__name__}")
+        if not isinstance(transmitter_name, str):
+            raise TypeError(f"transmitter_name must be a string, got {type(transmitter_name).__name__}")
         
         # Reboot device
         self.write_read(cmd="RESET")
@@ -268,9 +293,8 @@ class Pod8274D(AcquisitionDevice) :
         # Start scanning for devices
         self.write_read(cmd="LOCAL SCAN", payload=1)
 
-        # Remove white space on ends and complete device name
-        device_serial_number.strip()
-        device_serial_number = "8274-" + device_serial_number
+        # Trim the supplied name; match the advertised name directly.
+        transmitter_name = transmitter_name.strip()
 
         # Start tracking time
         start = time.time()
@@ -295,6 +319,8 @@ class Pod8274D(AcquisitionDevice) :
                     if r:
                         # Parse out device name from packet payload
                         name = self._get_name_from_device_list_info_packet(r)
+                        if name is not None:
+                            name = name.strip()
                         # Skip empty slots
                         if name in (None, "", "UNKNOWN"):
                             continue
@@ -302,34 +328,41 @@ class Pod8274D(AcquisitionDevice) :
                         found_devices_list.append(name)
 
                         # Check if device name matches
-                        if name == device_serial_number:
+                        if name == transmitter_name:
                             # Connect to the device
                             r = self.write_read(cmd="CONNECT", payload=scan_index)
                             # Check connection success
                             if r.command_number == 201:
                                 # Successful connection
 
-                                # Set device sample rate to local _sample_rate
-                                if self._sample_rate is not None:
-                                    self.sample_rate = self._sample_rate
-
                                 # Get device type         
-                                self._device_type = self.write_read(cmd='GET MODEL NUMBER')
+                                model = self.write_read(cmd='GET MODEL NUMBER').strip('\x00')
+                                self._is_hr = ('HR-' in model or 'M2-' in model)
+                                self._number_channels = 4 if model.startswith('8474') or model.startswith('8274HR-SE4R') or model.startswith('8274M2-SE4R') else 3
+                                self._device_type = model.replace('HR-', '-', 1).replace('M2-', '-', 1) if self._is_hr else model
+                                self._accelerometer_channels = self._ACCEL_CHANNELS.get(self._device_type, ())
 
                                 # Set gain values based on device type
                                 try:
-                                    self._primary_gain, self._secondary_gain = self._DEVICE_GAINS[self._device_type]
+                                    self._primary_gain, self._secondary_gain = self._DEVICE_GAINS.get(self._device_type, (100, 26))
+                                    if self._device_type not in self._DEVICE_GAINS and self._device_type not in (
+                                        '8474-SE4R', '8274-SE4R', '8474-SE4', '8474-SE3M',
+                                        '8474-SE2D', '8474-SEA', '8474-SLA', '8474-SE3A'):
+                                        raise KeyError(self._device_type)
                                 except KeyError:
                                     raise ConnectionError(
-                                        f"Failed to connect to device {device_serial_number}. "
+                                        f"Failed to connect to device {transmitter_name}. "
                                         "Unable to get device type"
                                     )
+
+                                if self._sample_rate is not None:
+                                    self.sample_rate = self._sample_rate
 
                                 # exit loop
                                 break
                             else:
                                 # Failure during connection
-                                raise ConnectionError(f"Failed to connect to device {device_serial_number}.")
+                                raise ConnectionError(f"Failed to connect to device {transmitter_name}.")
 
                     # Increment index
                     scan_index += 1
@@ -338,9 +371,9 @@ class Pod8274D(AcquisitionDevice) :
                     # Time ran out for scan
                     # Show troubleshooting tips
                     raise TimeoutError(
-                        f"Failed to connect to the device '{device_serial_number}' within {timeout_sec} seconds.\n\n"
+                        f"Failed to connect to the device '{transmitter_name}' within {timeout_sec} seconds.\n\n"
                         "Troubleshooting:\n"
-                        "1. Verify the device serial number is correct and matches exactly.\n"
+                        "1. Verify the advertised transmitter name is correct and matches exactly.\n"
                         "2. Ensure the battery is installed correctly.\n"
                         "3. If the battery was recently unsealed, allow it to be "
                         "exposed to air for at least 60 seconds before use.\n"
@@ -397,6 +430,13 @@ class Pod8274D(AcquisitionDevice) :
                 return packet
             raw_packet = packet.raw_packet if hasattr(packet, "raw_packet") else packet
             try:
+                if self._is_hr:
+                    data = DataPacket8274HR(raw_packet=raw_packet, number_channels=self._number_channels,
+                                            primary_gain=self._primary_gain, secondary_gain=self._secondary_gain)
+                    for channel in self._accelerometer_channels:
+                        data.channels[channel][:] = [round(adc * (2.42 / 16384) / 0.174 - 0.04, 12)
+                                                     for adc in data.raw_channels[channel]]
+                    return data
                 return DataPacket8274D(raw_packet=raw_packet, primary_gain=self._primary_gain, secondary_gain=self._secondary_gain)
             except TypeError:
                 # Not a valid 8274D data packet; ignore and keep reading.
@@ -411,15 +451,20 @@ class Pod8274D(AcquisitionDevice) :
             r1 = self.read_pod_packet() # Returns the packet for the command
             r2 = self.read_pod_packet() # Returns the packet contianing the sample rate index value
             sample_rate_index = r2.payload[0]
-            self._sample_rate = self._SAMPLE_RATE_INDEX[sample_rate_index]
+            self._sample_rate = sample_rate_index * 8 if self._is_hr else self._SAMPLE_RATE_INDEX[sample_rate_index]
         return self._sample_rate
         # return r
     
     @sample_rate.setter
     def sample_rate(self, rate: int) -> None:
-        key = next((k for k, v in self._SAMPLE_RATE_INDEX.items() if v == rate), None)
+        if self._is_hr:
+            valid_rates = self._HR_SAMPLE_RATES
+            key = rate // 8 if rate in valid_rates else None
+        else:
+            valid_rates = tuple(self._SAMPLE_RATE_INDEX.values())
+            key = next((index for index, value in self._SAMPLE_RATE_INDEX.items() if value == rate), None)
         if key is None:
-            raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(self._SAMPLE_RATE_INDEX.values())}')
+            raise ValueError(f'Sample rate {rate} not valid. Please use one of the following valid sample rates: {list(valid_rates)}')
         r = self.write_read('SET SAMPLE RATE', key)
         if r.command_number != 211: # Successfully set sample rate
             raise RuntimeWarning(f"WARNING: Sample rate may not have been set. Current sample rate: {self.sample_rate}")
@@ -433,6 +478,6 @@ class Pod8274D(AcquisitionDevice) :
         }
         if self._sample_rate is not None:
             d['sample_rate'] = self._sample_rate
-        if self._device_serial_number is not None:
-            d['device_serial_number'] = self._device_serial_number
+        if self._transmitter_name is not None:
+            d['transmitter_name'] = self._transmitter_name
         return d
