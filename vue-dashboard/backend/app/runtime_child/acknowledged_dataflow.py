@@ -1,19 +1,16 @@
-"""Dashboard-owned shutdown instrumentation for the unchanged Morelia stream engine.
-
-The adapter deliberately calls the legacy ``get_data`` function instead of
-altering Morelia.Stream.  A source proxy and two no-op context-manager sinks
-observe the existing teardown boundaries without changing acquisition code.
-"""
+"""Track session start time and confirm that acquisition workers and output sinks shut down."""
 
 from __future__ import annotations
 
 import gc
 import multiprocessing as mp
+from multiprocessing.process import BaseProcess
 import os
 import signal
 import sys
 import time
 import uuid
+from datetime import UTC, datetime
 
 from Morelia.shutdown import (
     ShutdownAction,
@@ -24,10 +21,28 @@ from Morelia.shutdown import (
 )
 from Morelia.Stream import source as legacy_source
 from Morelia.Stream.data_flow import DataFlow as LegacyDataFlow
+from Morelia.Watchdog.healthSink import HealthSink
+
+
+class ArrivalHealthSink(HealthSink):
+    """Observe the first data arriving at HealthSink so the scheduler can track the session start time."""
+
+    def bind_arrival_callback(self, callback):
+        self._arrival_callback = callback
+        self._arrival_reported = False
+
+    def flush(self, timestamp, packet):
+        super().flush(timestamp, packet)
+        callback = getattr(self, "_arrival_callback", None)
+        if (callback is not None and not self._arrival_reported
+                and not getattr(packet, "is_missing_sample", False)):
+            callback({"event_type": "first_data", "arrived_at":
+                      datetime.fromtimestamp(self._window_start, UTC).isoformat()})
+            self._arrival_reported = True
 
 
 class ShutdownReporter:
-    """Pickle-compatible worker reporter backed by a parent-owned queue."""
+    """Send worker shutdown progress to the parent so it can verify cleanup."""
 
     def __init__(self, status_queue, shutdown_id: str, stream_index: int) -> None:
         self.status_queue = status_queue
@@ -79,7 +94,7 @@ class ShutdownReporter:
 
 
 class _SourceLifecycleProxy:
-    """Delegate a legacy pod while observing its existing context boundaries."""
+    """Let shutdown checks confirm that acquisition stopped and the device port closed."""
 
     def __init__(self, source, stop_event, reporter: ShutdownReporter | None) -> None:
         self._source = source
@@ -112,7 +127,7 @@ class _SourceLifecycleProxy:
 
 
 class _LifecycleSentinel:
-    """A no-op sink that brackets legacy ExitStack teardown in reverse order."""
+    """Confirm output shutdown only after every sink closes successfully."""
 
     observe_on_scheduler = None
 
@@ -134,8 +149,13 @@ class _LifecycleSentinel:
         return None
 
 
-def _bind_sink_callbacks(sinks, on_sink_error, reporter: ShutdownReporter | None) -> None:
+def _bind_sink_callbacks(sinks, on_sink_error, reporter: ShutdownReporter | None, recording_queue=None) -> None:
     for sink in sinks:
+        if recording_queue is not None and type(sink) is ArrivalHealthSink:
+            sink.bind_arrival_callback(recording_queue.put)
+        bind_recording = getattr(sink, "bind_recording_callback", None)
+        if recording_queue is not None and callable(bind_recording):
+            bind_recording(recording_queue.put)
         bind_error = getattr(sink, "bind_error_callback", None)
         if callable(bind_error):
             bind_error(on_sink_error)
@@ -145,7 +165,7 @@ def _bind_sink_callbacks(sinks, on_sink_error, reporter: ShutdownReporter | None
 
 
 def _database_config_for_worker() -> dict | None:
-    """Snapshot the parent app's database settings for the spawn boundary."""
+    """Give spawned workers the same database settings as the parent app."""
     from flask import current_app, has_app_context
 
     if not has_app_context():
@@ -157,6 +177,27 @@ def _database_config_for_worker() -> dict | None:
         "SQLALCHEMY_DATABASE_URI": database_uri,
         "SQLITE_BUSY_TIMEOUT_MS": current_app.config.get("SQLITE_BUSY_TIMEOUT_MS", 5_000),
     }
+
+
+def _redirect_worker_stdout_to_log() -> None:
+    """Keep logging failures from interrupting output cleanup after a host crash.
+
+    Workers inherit the host's control pipe as stdout, so send their logs to stderr.
+    """
+    stdout_fd = sys.stdout.fileno()
+    os.dup2(sys.stderr.fileno(), stdout_fd)
+    if sys.platform == "win32":
+        import ctypes
+        import msvcrt
+        from ctypes import wintypes
+
+        # Update the separate Windows handle so writer processes also inherit the log.
+        kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+        set_std_handle = kernel32.SetStdHandle
+        set_std_handle.argtypes = (wintypes.DWORD, wintypes.HANDLE)
+        set_std_handle.restype = wintypes.BOOL
+        if not set_std_handle(-11, msvcrt.get_osfhandle(stdout_fd)):
+            raise ctypes.WinError(ctypes.get_last_error())
 
 
 def acknowledged_get_data_wrapper(
@@ -174,8 +215,11 @@ def acknowledged_get_data_wrapper(
     max_error_message_chars=500,
     source_error_emit_interval_sec=1.0,
     database_config=None,
+    recording_queue=None,
 ):
-    """Spawn target that instruments unchanged legacy ``get_data`` teardown."""
+    """Run acquisition with reports for session timing and output shutdown."""
+    if mp.parent_process() is not None:
+        _redirect_worker_stdout_to_log()
     try:
         signal.signal(signal.SIGINT, signal.SIG_IGN)
     except (AttributeError, ValueError):
@@ -195,20 +239,24 @@ def acknowledged_get_data_wrapper(
             ).app_context()
             database_context.push()
 
+        if manual_stop_event.is_set():
+            return
         source = source_class(**source_dict)
-        # This dashboard-only opt-in keeps heartbeat policy out of the legacy
-        # DataFlow API while allowing its source loop to preserve the same sinks.
+        # Allow device recovery to keep using the session's existing output sinks.
         if source_recovery_window_sec is not None:
             source._source_recovery_window_sec = source_recovery_window_sec
         sinks = [
-            sink_class(**{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list
+            (ArrivalHealthSink if sink_class is HealthSink else sink_class)(
+                **{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list
         ]
-        _bind_sink_callbacks(sinks, on_sink_error, reporter)
+        # Observe arrival before slow or failed writes affect session timing.
+        # Use exact types because isinstance also accepts output sinks with flush().
+        sinks.sort(key=lambda sink: type(sink) not in (HealthSink, ArrivalHealthSink))
+        _bind_sink_callbacks(sinks, on_sink_error, reporter, recording_queue)
         instrumented_source = _SourceLifecycleProxy(source, manual_stop_event, reporter)
         instrumented_sinks = sinks
         if reporter is not None:
-            # ExitStack exits in reverse: the finalization sentinel exits first and
-            # the completion sentinel exits only after every real sink has closed.
+            # ExitStack closes in reverse order, so confirm completion after all sinks close.
             instrumented_sinks = [
                 _LifecycleSentinel(reporter, starts_finalization=False),
                 *sinks,
@@ -259,15 +307,91 @@ def _close_queue(status_queue) -> None:
         join_thread()
 
 
+def _sinks_may_own_processes(sinks):
+    """Check whether shutdown must also wait for output writer processes."""
+    pvfs_types = {
+        ("app.output.managed_pvfs_sink", "ManagedPvfsSink"),
+        ("Morelia.Stream.sink.pvfs_sink", "PvfsSink"),
+    }
+    return any(
+        getattr(sink, "owns_child_processes", False) is True
+        or (any((cls.__module__, cls.__name__) in pvfs_types for cls in type(sink).__mro__)
+            and bool(getattr(sink, "_use_writer_process", True)))
+        for sink in sinks
+    )
+
+
+def _coordinate_worker_shutdown(worker, stop_event, status_queue, shutdown_id,
+                                stream_index, join_timeout_sec, *, deadline=None,
+                                previous=None, descendants_possible=False,
+                                launch_not_attempted=False):
+    """Confirm that the worker and its output writers stopped, retaining any output failures."""
+    if previous is not None and previous.get("teardown_confirmed") is True:
+        return dict(previous)
+    # Skip shutdown only when we know the worker never started. Joining it would fail.
+    never_started = ((isinstance(worker, BaseProcess)
+                      and worker._popen is None and not worker._closed)
+                     or (worker is None and launch_not_attempted))
+    if never_started:
+        if stop_event is not None:
+            stop_event.set()
+        return {
+            "ok": True, "stream_index": stream_index,
+            "shutdown_id": shutdown_id, "worker_status": "not_started",
+            "worker_started": False, "worker_exited": False,
+            "worker_exitcode": None, "teardown_confirmed": True,
+            "worker_accounted": True, "descendants_possible": descendants_possible,
+            "descendants_teardown_confirmed": True,
+            "terminal_phase": "complete", "shutdown_phase": "complete",
+            "forced_termination": False, "missing_phases": [],
+            "transcript": (), "shutdown_transcript": (),
+        }
+    result = coordinate_shutdown(
+        worker, stop_event, status_queue, shutdown_id, stream_index,
+        join_timeout_sec, deadline=deadline,
+    )
+    exited = (worker is not None and not worker.is_alive()
+              and worker.exitcode is not None)
+    result["worker_exited"] = exited
+    result["worker_accounted"] = worker is not None and (
+        isinstance(worker, BaseProcess) or getattr(worker, "pid", None) is not None)
+    result["descendants_possible"] = descendants_possible
+    sinks_finalized = any(
+        record.phase is ShutdownPhase.SINKS_FINALIZED
+        and record.action == "all_sinks_closed"
+        and record.actor == ShutdownActor.DATAFLOW_WORKER.value
+        and record.outcome in (ShutdownOutcome.ACKNOWLEDGED, ShutdownOutcome.COMPLETED)
+        for record in result.get("transcript", ())
+    )
+    descendants_confirmed = (not descendants_possible or sinks_finalized
+                             or (previous is not None and previous.get("descendants_teardown_confirmed") is True))
+    result["descendants_teardown_confirmed"] = descendants_confirmed
+    result["teardown_confirmed"] = exited and descendants_confirmed
+    if not result["teardown_confirmed"]:
+        result["ok"] = False
+        result["terminal_phase"] = result["shutdown_phase"] = "failed"
+        result["worker_status"] = "failed"
+    if previous is not None and previous.get("ok") is not True:
+        # Keep the earlier failure visible even if the worker has since exited.
+        result["previous_shutdown_result"] = previous.get("previous_shutdown_result", dict(previous))
+        result["ok"] = False
+        result["terminal_phase"] = result["shutdown_phase"] = "failed"
+        result["worker_status"] = "failed"
+        result["forced_termination"] = bool(result.get("forced_termination") or previous.get("forced_termination"))
+    return result
+
+
 class AcknowledgedDataFlow(LegacyDataFlow):
-    """Dashboard-only DataFlow subclass with worker evidence and strict stop results."""
+    """Require shutdown results for every acquisition worker and its output writers."""
 
     supports_source_recovery_window = True
+    supports_recording_acknowledgements = True
 
     def __init__(
         self,
         *args,
         source_recovery_window_sec=None,
+        recording_queue=None,
         max_error_message_chars=500,
         source_error_emit_interval_sec=1.0,
         **kwargs,
@@ -284,8 +408,66 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             raise ValueError("max_error_message_chars must be greater than zero")
         if self._source_error_emit_interval_sec <= 0:
             raise ValueError("source_error_emit_interval_sec must be greater than zero")
-        self._shutdown_status_queues: list[object | None] = []
-        self._shutdown_ids: list[str | None] = []
+        self._recording_queue = recording_queue
+        self._acquisition_guard = None
+        self._registered_stop_events = []
+        self._ever_started_worker = False
+        # Account for every stream even if the session stops before acquisition starts.
+        # These IDs cover that case; each collection attempt gets new IDs for its history.
+        self._workers = [None] * len(self._network)
+        self._manual_stop_events = [None] * len(self._network)
+        self._shutdown_status_queues: list[object | None] = [None] * len(self._network)
+        self._shutdown_ids: list[str | None] = [str(uuid.uuid4()) for _ in self._network]
+        self._shutdown_results: dict[int, dict] = {}
+        self._prior_shutdown_results: list[dict] = []
+        self._shutdown_descendants_possible: dict[int, bool] = {}
+        self._shutdown_generation_ids: set[str] = set()
+        self._worker_start_attempted: dict[int, bool] = {
+            index: False for index in range(len(self._network))
+        }
+
+    def retain_previous_shutdown(self, result) -> None:
+        """Keep earlier output failures visible after a worker is replaced."""
+        if not any(previous.get("shutdown_id") == result.get("shutdown_id")
+                   for previous in self._prior_shutdown_results):
+            self._prior_shutdown_results.append(dict(result))
+
+    def worker_inventory_complete(self, current_results):
+        """Require shutdown results for every configured stream and each worker replacement."""
+        indexes = [row.get("stream_index") for row in current_results]
+        rows = [*current_results, *self._prior_shutdown_results]
+        return (
+            len(indexes) == len(self._network)
+            and set(indexes) == set(range(len(self._network)))
+            and all(row.get("worker_accounted") is True for row in rows)
+            and self._shutdown_generation_ids <= {row.get("shutdown_id") for row in rows}
+        )
+
+    def descendants_possible(self, stream_index):
+        if stream_index not in self._shutdown_descendants_possible:
+            # Remember whether this worker can own writers across shutdown retries.
+            self._shutdown_descendants_possible[stream_index] = _sinks_may_own_processes(
+                self._network[stream_index][1])
+        return self._shutdown_descendants_possible[stream_index]
+
+    def rebuild_with_network(self, network):
+        """Preserve cancellation, reporting, and shutdown history when rebuilding acquisition."""
+        replacement = type(self)(
+            network, on_sink_error=self._on_sink_error,
+            on_source_error=self._on_source_error,
+            source_recovery_window_sec=self._source_recovery_window_sec,
+            max_error_message_chars=self._max_error_message_chars,
+            source_error_emit_interval_sec=self._source_error_emit_interval_sec,
+            recording_queue=self._recording_queue,
+        )
+        replacement._acquisition_guard = self._acquisition_guard
+        # The runtime still cancels through the original flow, so share replacement stop events.
+        replacement._registered_stop_events = self._registered_stop_events
+        replacement._prior_shutdown_results = list(self._prior_shutdown_results)
+        replacement._shutdown_generation_ids = set(self._shutdown_generation_ids)
+        for result in self._shutdown_results.values():
+            replacement.retain_previous_shutdown(result)
+        return replacement
 
     def make_worker(
         self,
@@ -298,6 +480,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         shutdown_id=None,
         stream_index=0,
     ):
+        self._registered_stop_events.append(manual_stop_event)
         args = (
             duration_sec,
             manual_stop_event,
@@ -313,37 +496,53 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             self._max_error_message_chars,
             self._source_error_emit_interval_sec,
             _database_config_for_worker(),
+            self._recording_queue,
         )
         return _create_worker(args=args)
 
     def _start_collecting(self, duration_sec: float = float("inf")) -> None:
-        self._manual_stop_events = []
-        self._shutdown_status_queues = []
-        self._shutdown_ids = []
-        self._workers = []
+        for result in self._shutdown_results.values():
+            self.retain_previous_shutdown(result)
+        stream_count = len(self._network)
+        self._manual_stop_events = [None] * stream_count
+        self._shutdown_status_queues = [None] * stream_count
+        self._shutdown_ids = [str(uuid.uuid4()) for _ in self._network]
+        self._shutdown_generation_ids.update(self._shutdown_ids)
+        self._shutdown_results = {}
+        self._shutdown_descendants_possible = {
+            index: _sinks_may_own_processes(sinks)
+            for index, (_source, sinks) in enumerate(self._network)
+        }
+        self._worker_start_attempted = {index: False for index in range(stream_count)}
+        self._workers = [None] * stream_count
         for stream_index, (source, sinks) in enumerate(self._network):
             stop_event = mp.Event()
+            self._manual_stop_events[stream_index] = stop_event
             status_queue = mp.Queue()
-            shutdown_id = str(uuid.uuid4())
-            self._manual_stop_events.append(stop_event)
-            self._shutdown_status_queues.append(status_queue)
-            self._shutdown_ids.append(shutdown_id)
+            self._shutdown_status_queues[stream_index] = status_queue
+            shutdown_id = self._shutdown_ids[stream_index]
             if hasattr(source, "_port"):
                 source.close_port()
             gc.collect()
-            self._workers.append(
-                self.make_worker(
-                    duration_sec,
-                    stop_event,
-                    source,
-                    sinks,
-                    status_queue=status_queue,
-                    shutdown_id=shutdown_id,
-                    stream_index=stream_index,
-                )
+            self._workers[stream_index] = self.make_worker(
+                duration_sec,
+                stop_event,
+                source,
+                sinks,
+                status_queue=status_queue,
+                shutdown_id=shutdown_id,
+                stream_index=stream_index,
             )
-        for worker in self._workers:
-            worker.start()
+        for stream_index, worker in enumerate(self._workers):
+            if self._acquisition_guard is not None:
+                self._acquisition_guard()
+            self._worker_start_attempted[stream_index] = True
+            try:
+                worker.start()
+            finally:
+                if isinstance(worker, BaseProcess) and worker._popen is not None:
+                    self._ever_started_worker = True
+            self._ever_started_worker = True
 
     def stop_collection(self, join_timeout_sec: float = 15.0):
         deadline = time.monotonic() + max(0.0, float(join_timeout_sec))
@@ -355,28 +554,51 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         for index, worker in enumerate(self._workers):
             status_queue = self._shutdown_status_queues[index] if index < len(self._shutdown_status_queues) else None
             shutdown_id = self._shutdown_ids[index] if index < len(self._shutdown_ids) else str(uuid.uuid4())
-            results.append(
-                coordinate_shutdown(
-                    worker,
-                    None,
-                    status_queue,
-                    shutdown_id,
-                    index,
-                    join_timeout_sec,
-                    deadline=deadline,
-                )
+            previous = self._shutdown_results.get(index)
+            result = _coordinate_worker_shutdown(
+                worker,
+                None,
+                status_queue,
+                shutdown_id,
+                index,
+                join_timeout_sec,
+                deadline=deadline,
+                previous=previous,
+                descendants_possible=self.descendants_possible(index),
+                launch_not_attempted=self._worker_start_attempted.get(index) is False,
             )
-            _close_queue(status_queue)
-            try:
-                worker.close()
-            except Exception:
-                pass
+            results.append(result)
+            self._shutdown_results[index] = dict(result)
+            if result.get("teardown_confirmed") is True:
+                _close_queue(status_queue)
+                if index < len(self._shutdown_status_queues):
+                    self._shutdown_status_queues[index] = None
+                if worker is not None:
+                    try:
+                        worker.close()
+                    except Exception:
+                        pass
+                self._workers[index] = None
 
-        self._manual_stop_events = []
-        self._shutdown_status_queues = []
-        self._shutdown_ids = []
-        self._workers = []
-        return {"ok": all(result["ok"] for result in results), "stream_results": results}
+        previous = self._prior_shutdown_results
+        queues_released = not any(queue is not None for queue in self._shutdown_status_queues)
+        if not any(worker is not None for worker in self._workers) and queues_released:
+            self._manual_stop_events = []
+            self._shutdown_status_queues = []
+            self._shutdown_ids = []
+            self._workers = []
+        if not results:
+            results = list(self._shutdown_results.values())
+        all_results = [*results, *previous]
+        inventory_complete = self.worker_inventory_complete(results)
+        return {
+            "ok": inventory_complete and all(result.get("ok") is True for result in all_results),
+            "teardown_confirmed": inventory_complete and queues_released and all(result.get("teardown_confirmed") is True for result in all_results),
+            "worker_inventory_complete": inventory_complete,
+            "forced_termination": any(result.get("forced_termination") is True for result in all_results),
+            "stream_results": results,
+            "previous_stream_results": [dict(item) for item in previous],
+        }
 
     def collect_for_seconds(self, duration_sec: float) -> None:
         self._start_collecting(duration_sec)
