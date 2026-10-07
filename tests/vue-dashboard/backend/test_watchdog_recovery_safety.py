@@ -10,7 +10,7 @@ from app.control.watchdog_recovery import (
     decide_recovery,
 )
 from app.domain.enums import PolicyMode, SinkType
-from app.runtime_host.manifest import DeviceFlow, Manifest
+from app.runtime_host.manifest import MANIFEST_SCHEMA_VERSION, DeviceFlow, Manifest
 from app.watchdog_process.hardware_lease import HardwareLeaseBusy, HardwareLeaseSet
 from app.watchdog_process.control import (
     WatchdogControlAuthenticationError,
@@ -22,7 +22,7 @@ from app.watchdog_process.process import WatchdogIdentity
 
 def _manifest(*, port: str = "COM3") -> Manifest:
     return Manifest(
-        schema_version="1",
+        schema_version=MANIFEST_SCHEMA_VERSION,
         dataflow_id="df-recovery",
         policy=PolicyMode.AUTOMATE,
         device_flows=(

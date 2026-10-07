@@ -81,17 +81,15 @@ def test_duration_optional_and_scheduled_forbidden():
             "start_at": (datetime.now(UTC) + timedelta(days=1)).isoformat()})
 
 
-def test_manifest_duration_version_hash_and_legacy_roundtrip():
-    legacy = Manifest(schema_version="2", dataflow_id="data", policy=PolicyMode.AUTOMATE,
+def test_manifest_duration_hash_and_roundtrip():
+    untimed = Manifest(schema_version="3", dataflow_id="data", policy=PolicyMode.AUTOMATE,
         device_flows=(DeviceFlow(device_id="source", name="device", hardware_id="123",
             port="COM1", parameters={}, sink_type=SinkType.CSV, sink_location="/data/test.csv"),))
-    assert "duration_seconds" not in legacy.to_dict()
-    assert Manifest.from_dict(legacy.to_dict()).hash == legacy.hash
-    timed = replace(legacy, schema_version="3", duration_seconds=60)
+    assert untimed.to_dict()["duration_seconds"] is None
+    assert Manifest.from_dict(untimed.to_dict()).hash == untimed.hash
+    timed = replace(untimed, duration_seconds=60)
     assert Manifest.from_dict(timed.to_dict()) == timed
     assert timed.hash != replace(timed, duration_seconds=61).hash
-    with pytest.raises(ValueError):
-        replace(legacy, duration_seconds=60)
     tampered = timed.to_dict() | {"duration_seconds": 61}
     with pytest.raises(ValueError, match="hash mismatch"):
         Manifest.from_dict(tampered)

@@ -102,8 +102,8 @@ def session_id(sup_app):
                     "hardware_id": "001",
                     "port": "usb-1",
                     "parameters": {},
-                    "sink_type": "csv",
-                    "sink_location": "/data/dev-sup-1.csv",
+                    "sinks": [{"sink_id": "dev-sup-1:csv", "name": "csv",
+                               "type": "csv", "parameters": {"file_path": "/data/dev-sup-1.csv"}}],
                 }
             ],
         )

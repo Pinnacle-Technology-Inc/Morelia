@@ -108,25 +108,26 @@ def test_session_preview_prints_manifest_json_and_persists_nothing(app, monkeypa
 
     assert result.exit_code == 0, result.output
     payload = json.loads(result.output)
-    # v2 manifest wire form carries the nullable session identity; a preview
-    # leaves it null (see manifests.build_for_preview).
+    # Previews do not create a session or set a run duration.
     assert set(payload) == {
         "schema_version",
         "dataflow_id",
         "policy",
         "device_flows",
         "session_id",
+        "duration_seconds",
         "hash",
     }
-    assert payload["schema_version"] == "2"
+    assert payload["schema_version"] == "3"
     assert payload["session_id"] is None
+    assert payload["duration_seconds"] is None
     assert payload["dataflow_id"] == "preview-session"
     assert payload["policy"] == "recommend"
     assert payload["device_flows"][0]["parameters"] == {
         "preamp_gain": 10,
         "sample_rate": 2000,
     }
-    # Ordered v2 sink collection with a source-local identity and a resolved
+    # Ordered sink collection with a source-local identity and a resolved
     # absolute file_path for the CSV (file) sink.
     sinks = payload["device_flows"][0]["sinks"]
     assert len(sinks) == 1

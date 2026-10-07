@@ -1,12 +1,4 @@
-"""Contract tests for the immutable runtime manifest v2 (packet 06).
-
-These prove that a Manifest (and its nested SinkConfig / DeviceFlow value
-objects) serializes and round-trips cleanly, is immutable after construction,
-rejects invalid/secret/unknown configurations, produces a stable content hash
-for equal inputs (with sink order significant but dict order not), reads and
-translates persisted v1 documents to a single canonical file sink, and carries
-a nullable durable session identity.
-"""
+"""Validate current manifest settings, stable hashes, and rejected inputs."""
 
 import pytest
 
@@ -17,8 +9,6 @@ from app.runtime_host.manifest import (
     Manifest,
     SinkConfig,
 )
-
-_V1_SCHEMA_VERSION = "1"
 
 
 # ---------------------------------------------------------------------------
@@ -104,16 +94,16 @@ def test_device_flow_nickname_defaults_to_none_when_absent():
     assert DeviceFlow.from_dict(wire).nickname is None
 
 
-def test_wire_form_is_pure_v2_without_v1_sink_fields():
+def test_wire_form_uses_ordered_sinks():
     wire = _flow("dev-a").to_dict()
     assert "sinks" in wire
     assert "sink_type" not in wire
     assert "sink_location" not in wire
 
 
-def test_schema_version_is_two():
-    assert MANIFEST_SCHEMA_VERSION == "2"
-    assert _manifest().to_dict()["schema_version"] == "2"
+def test_schema_version_is_three():
+    assert MANIFEST_SCHEMA_VERSION == "3"
+    assert _manifest().to_dict()["schema_version"] == "3"
 
 
 # ---------------------------------------------------------------------------
@@ -237,10 +227,10 @@ def test_sink_config_rejects_unknown_fields():
         SinkConfig.from_dict(wire)
 
 
-def test_device_flow_rejects_mixing_v1_and_v2_shapes():
+def test_device_flow_rejects_legacy_wire_fields():
     wire = _flow("dev-a").to_dict()
     wire["sink_type"] = "csv"
-    with pytest.raises(ValueError, match="cannot mix"):
+    with pytest.raises(ValueError, match="unknown device flow fields"):
         DeviceFlow.from_dict(wire)
 
 
@@ -506,77 +496,26 @@ def test_manifest_from_dict_accepts_absent_hash():
     assert Manifest.from_dict(wire) == _manifest()
 
 
-# ---------------------------------------------------------------------------
-# v1 backward reading (release-critical for adoption / respawn)
-# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("version", ["1", "2"])
+def test_manifest_rejects_old_versions_in_wire_and_constructor(version):
+    from dataclasses import replace
 
-
-def _v1_flow_wire(device_id: str, location: str) -> dict:
-    return {
-        "device_id": device_id,
-        "name": f"device-{device_id}",
-        "nickname": None,
-        "hardware_id": f"hw-{device_id}",
-        "port": "usb-1",
-        "parameters": {"sample_rate": 250},
-        "sink_type": "csv",
-        "sink_location": location,
-    }
-
-
-def _v1_manifest_wire(with_hash: bool = False) -> dict:
-    import hashlib
-    import json
-
-    payload = {
-        "schema_version": _V1_SCHEMA_VERSION,
-        "dataflow_id": "df-1",
-        "policy": "recommend",
-        "device_flows": [_v1_flow_wire("dev-a", "/data/dev-a.csv")],
-    }
-    wire = dict(payload)
-    if with_hash:
-        canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
-        wire["hash"] = hashlib.sha256(canonical.encode()).hexdigest()
-    return wire
-
-
-def test_v1_manifest_is_read_and_translated_to_v2():
-    m = Manifest.from_dict(_v1_manifest_wire())
-    # Emits v2, never v1.
-    assert m.schema_version == "2"
-    assert m.session_id is None
-    df = m.device_flows[0]
-    assert len(df.sinks) == 1
-    sink = df.sinks[0]
-    assert sink.type is SinkType.CSV
-    assert sink.parameters["file_path"] == "/data/dev-a.csv"
-    # Wire form is pure v2.
-    assert "sink_type" not in m.to_dict()["device_flows"][0]
-
-
-def test_v1_device_flow_from_dict_translates_single_sink():
-    df = DeviceFlow.from_dict(_v1_flow_wire("dev-a", "/data/dev-a.csv"))
-    assert df.sinks[0].sink_id == "dev-a:csv"
-    assert df.sink_type is SinkType.CSV  # compat property
-    assert df.sink_location == "/data/dev-a.csv"  # compat property
-
-
-def test_v1_manifest_stored_hash_is_validated():
-    wire = _v1_manifest_wire(with_hash=True)
-    # Valid stored v1 hash: read succeeds.
-    assert Manifest.from_dict(wire).schema_version == "2"
-
-
-def test_v1_manifest_rejects_tampered_stored_hash():
-    wire = _v1_manifest_wire(with_hash=True)
-    wire["hash"] = "0" * 64
-    with pytest.raises(ValueError, match="hash mismatch"):
+    wire = _manifest().to_dict() | {"schema_version": version}
+    with pytest.raises(ValueError, match="unsupported manifest schema version"):
         Manifest.from_dict(wire)
+    with pytest.raises(ValueError, match="unsupported manifest schema version"):
+        replace(_manifest(), schema_version=version)
+
+
+def test_device_flow_rejects_flattened_single_sink_wire():
+    wire = _flow("dev-a").to_dict()
+    del wire["sinks"]
+    wire.update(sink_type="csv", sink_location="/data/dev-a.csv")
+    with pytest.raises(ValueError, match="unknown device flow fields"):
+        DeviceFlow.from_dict(wire)
 
 
 def test_legacy_construction_keywords_still_supported():
-    """manifests.py / supervisor.py build DeviceFlow with legacy kwargs."""
     df = DeviceFlow(
         device_id="pod:1",
         name="pod",

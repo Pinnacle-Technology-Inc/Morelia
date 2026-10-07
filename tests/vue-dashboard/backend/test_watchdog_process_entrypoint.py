@@ -58,11 +58,6 @@ def _device_flow(device_id: str = "dev-a") -> DeviceFlow:
 
 
 def _manifest(dataflow_id: str = "df-1") -> Manifest:
-    # Use the current manifest schema version: hand-constructing a legacy
-    # schema_version="1" object and round-tripping it through to_dict() is not a
-    # supported path (v1 exists only as inbound wire, normalized to v2 on read —
-    # see Manifest.from_dict). build_process() writes/reads this manifest, so it
-    # must be a native current-version manifest.
     return Manifest(
         schema_version=MANIFEST_SCHEMA_VERSION,
         dataflow_id=dataflow_id,
