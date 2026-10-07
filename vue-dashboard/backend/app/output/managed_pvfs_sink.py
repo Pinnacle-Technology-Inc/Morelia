@@ -30,8 +30,11 @@ import sqlite3
 import time
 from threading import Thread
 from collections.abc import Callable, Iterable
+from contextlib import suppress
+from datetime import UTC, datetime
 from queue import Empty
 from pathlib import Path
+from types import SimpleNamespace
 from uuid import uuid4
 
 import structlog
@@ -627,6 +630,131 @@ class ManagedPvfsSink:
             idf._delta_time = HighTime(0, 1.0 / self._sample_rate)
         if self._device_preferences:
             pvfs_data.set_device_preferences(self._device_preferences)
+
+    @staticmethod
+    def _create_legacy_writer(config: dict):
+        """Open the legacy writer with a resolved layout, including podless recordings."""
+        from Morelia.Stream.sink.pvfs_sink import PvfsSink
+
+        legacy_writer = PvfsSink.__new__(PvfsSink)
+        legacy_writer._file_path = config["path"]
+        legacy_writer._pod = SimpleNamespace(sample_rate=config["rate"])
+        legacy_writer._channels = tuple(config["channels"])
+        legacy_writer._units = tuple(config["units"])
+        legacy_writer._buffer = [[] for _ in legacy_writer._channels]
+        legacy_writer._pvfs_data = None
+        legacy_writer._start_time = None
+        legacy_writer._samples_written = 0
+        legacy_writer._use_writer_process = False
+        legacy_writer.observe_on_scheduler = None
+        legacy_writer._device_preferences = config.get("preferences")
+        legacy_writer._writer_queue = None
+        legacy_writer._writer_proc = None
+        legacy_writer._writer_stop = None
+        state = {"confirmed": 0, "failure": None, "closed": False,
+                 "first_recorded": None, "last_recorded": None}
+        try:
+            legacy_writer.__enter__()
+            for name in legacy_writer._channels:
+                channel = legacy_writer._pvfs_data._indexed_data_files.get(name)
+                if channel is None:
+                    raise ManagedPvfsSinkError(f"PVFS channel missing during setup: {name}")
+                original = channel.append_block
+
+                def checked(timestamp, values, *, original=original, name=name):
+                    result = original(timestamp, values)
+                    if result != 0:
+                        raise ManagedPvfsSinkError(f"PVFS block write failed: {name}: {result}")
+                    return result
+
+                channel.append_block = checked
+            return legacy_writer, state
+        except BaseException as exc:
+            # __enter__ failures still leave native resources owned by this writer.
+            state["failure"] = f"PVFS startup failed: {type(exc).__name__}: {exc}"
+            ManagedPvfsSink._close_legacy_writer(legacy_writer, state)
+            error = ManagedPvfsSinkError(state["failure"])
+            error.legacy_writer = legacy_writer
+            error.legacy_state = state
+            raise error from exc
+
+    @staticmethod
+    def _append_legacy_writer_frame(legacy_writer, state: dict, command: dict) -> dict | None:
+        """Buffer a positional frame and its real-sample bounds until a block is ready."""
+        if state["failure"] is not None or state["closed"]:
+            raise ManagedPvfsSinkError("PVFS legacy writer is unavailable")
+        values = command["values"]
+        if len(values) != len(legacy_writer._channels):
+            raise ValueError("PVFS frame channel count mismatch")
+        position = legacy_writer._samples_written + len(legacy_writer._buffer[0])
+        for buffer, value in zip(legacy_writer._buffer, values, strict=True):
+            buffer.append(value)
+        if command.get("recorded", True):
+            if state["first_recorded"] is None:
+                state["first_recorded"] = position
+            state["last_recorded"] = position
+        if len(legacy_writer._buffer[0]) >= max(1, int(legacy_writer._pod.sample_rate)):
+            return ManagedPvfsSink._flush_legacy_writer(legacy_writer, state)
+        return None
+
+    @staticmethod
+    def _flush_legacy_writer(legacy_writer, state: dict) -> dict | None:
+        """Check and persist a legacy block before confirming its count and recording bounds."""
+        if state["failure"] is not None or state["closed"]:
+            raise ManagedPvfsSinkError("PVFS legacy writer is unavailable")
+        try:
+            lengths = [len(buffer) for buffer in legacy_writer._buffer]
+            if len(lengths) != len(legacy_writer._channels) or len(set(lengths)) != 1:
+                raise ManagedPvfsSinkError("PVFS channel buffer lengths differ")
+            for name in legacy_writer._channels:
+                if legacy_writer._pvfs_data._indexed_data_files.get(name) is None:
+                    raise ManagedPvfsSinkError(f"PVFS channel missing during write: {name}")
+            count = lengths[0]
+            legacy_writer._write_buffer_to_pvfs()
+            for channel in legacy_writer._pvfs_data._indexed_data_files.values():
+                channel.flush(synchronous=True)
+            legacy_writer._pvfs_data.flush(synchronous=True)
+            state["confirmed"] += count
+            if not count:
+                return None
+            origin = legacy_writer._start_time.to_seconds()
+            rate = legacy_writer._pod.sample_rate
+
+            def recorded_time(position):
+                if position is None:
+                    return None
+                return datetime.fromtimestamp(origin + position / rate, UTC).isoformat()
+
+            ack = {"confirmed": state["confirmed"],
+                   "first_sample_at": recorded_time(state["first_recorded"]),
+                   "last_sample_at": recorded_time(state["last_recorded"])}
+            state["first_recorded"] = state["last_recorded"] = None
+            return ack
+        except BaseException as exc:
+            # An append may already have reached another channel. Never replay it.
+            state["failure"] = f"PVFS block flush failed: {type(exc).__name__}: {exc}"
+            raise
+
+    @staticmethod
+    def _close_legacy_writer(legacy_writer, state: dict) -> dict:
+        """Release native ownership with strict close checking, retaining any earlier failure."""
+        ack = None
+        if not state["closed"]:
+            if state["failure"] is None:
+                with suppress(Exception):
+                    ack = ManagedPvfsSink._flush_legacy_writer(legacy_writer, state)
+            try:
+                native = legacy_writer._pvfs_data
+                if native is None or native.close() is True:
+                    state["closed"] = True
+                else:
+                    state["failure"] = state["failure"] or "PVFS native close returned false"
+            except Exception as exc:
+                state["failure"] = state["failure"] or (
+                    f"PVFS native close failed: {type(exc).__name__}: {exc}"
+                )
+        return {"confirmed": state["confirmed"], "native_closed": state["closed"],
+                "failure": state["failure"], "ack": ack}
 
     def _start_writer_process(self, path: str) -> None:
         self._writer_queue = mp.Queue(maxsize=0)
