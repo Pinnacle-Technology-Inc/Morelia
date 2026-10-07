@@ -35,7 +35,7 @@ import {
 } from "../devices-api";
 import { browseDirectories } from "../filesystem-api";
 import { outputFolder, validateOutputFolders } from "../sink-location-recovery";
-import { durationSecondsFromMinutes, MAX_DURATION_MINUTES } from "../session-timing";
+import { durationSecondsFromMinutes, maxDurationSeconds } from "../session-timing";
 import { compatiblePoolDevicesForFlow, deviceTypeForFlow, loadAssignmentPlan } from "../template-planner-api";
 import {
   canRunTemplate,
@@ -1006,7 +1006,7 @@ watch(() => props.templateId, load);
             </fieldset>
             <label v-if="runMode === 'timed'" class="field schedule-field">
               <span>Run duration (minutes)</span>
-              <input v-model="durationMinutes" type="number" min="1" :max="MAX_DURATION_MINUTES" step="1" :aria-invalid="Boolean(durationError)" aria-describedby="run-duration-hint" />
+              <input v-model="durationMinutes" type="number" min="1" :max="Math.floor(maxDurationSeconds() / 60)" step="1" :aria-invalid="Boolean(durationError)" aria-describedby="run-duration-hint" />
               <small id="run-duration-hint">{{ durationError || 'Whole minutes. The timer continues during data gaps. You can stop at any time.' }}</small>
             </label>
             <label v-if="runMode === 'schedule'" class="field schedule-field">

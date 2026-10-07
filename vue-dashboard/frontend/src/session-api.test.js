@@ -71,7 +71,7 @@ const TEMPLATE_RUN_PAYLOAD = {
   execution: { mode: "immediate" },
 };
 
-it.each([null, true, false, "60", 0, -1, 1.5, 2147483648])("rejects invalid duration %s before making a request", async (duration) => {
+it.each([null, true, false, "60", 0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1])("rejects invalid duration %s before making a request", async (duration) => {
   const fetchMock = vi.fn();
   vi.stubGlobal("fetch", fetchMock);
   await expect(createTemplateRun({ ...TEMPLATE_RUN_PAYLOAD,

@@ -78,6 +78,7 @@ class SessionRepository:
                 experiment_id=data.get("experiment_id"),
                 notes=(str(data.get("notes")).strip() or None) if data.get("notes") is not None else None,
                 schedule=data.get("schedule"),
+                duration_seconds=data.get("duration_seconds"),
                 scheduled_for=data.get("scheduled_for"),
                 schedule_claim_token=data.get("schedule_claim_token"),
                 schedule_claim_expires_at=data.get("schedule_claim_expires_at"),

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { durationSecondsFromMinutes, sessionTiming, sessionStopExplanation, validateDurationSeconds } from "./session-timing";
+import { durationSecondsFromMinutes, maxDurationSeconds, sessionTiming, sessionStopExplanation, validateDurationSeconds } from "./session-timing";
 
 const start = "2026-09-23T12:00:00Z";
 const at = (seconds) => Date.parse(start) + seconds * 1000;
@@ -53,10 +53,30 @@ describe("recorded span and display countdown", () => {
     expect(sessionTiming({ ...run, endedAt: "2026-09-23T11:59:59Z" }).recordedLabel).toBe("Recording timing unavailable");
   });
 
-  it("accepts storage boundaries and rejects minutes whose conversion overflows", () => {
-    expect(validateDurationSeconds(2147483647)).toBe(2147483647);
-    expect(durationSecondsFromMinutes(35791394)).toBe(2147483640);
-    expect(() => durationSecondsFromMinutes(35791395)).toThrow();
+  it("accepts durations above the signed 32-bit range", () => {
+    expect(validateDurationSeconds(2147483648)).toBe(2147483648);
+    expect(durationSecondsFromMinutes(35791395)).toBe(2147483700);
+    expect(sessionTiming({ ...run, durationSeconds: 2147483648 }, at(0)).timed).toBe(true);
+  });
+
+  it("rejects durations that lose integer precision", () => {
+    expect(() => validateDurationSeconds(Number.MAX_SAFE_INTEGER + 1)).toThrow();
+    expect(() => durationSecondsFromMinutes(Number.MAX_SAFE_INTEGER)).toThrow();
+  });
+
+  it.each(["9999-12-31T23:59:57.123Z", "9999-12-31T18:59:57.123-05:00"])("uses Python's datetime boundary from %s", (started) => {
+    expect(maxDurationSeconds(started)).toBe(2);
+    expect(validateDurationSeconds(2, started)).toBe(2);
+    expect(() => validateDurationSeconds(3, started)).toThrow(/Python's datetime maximum/);
+    expect(maxDurationSeconds("9999-12-31T23:59:59.999Z")).toBe(0);
+  });
+
+  it("validates minutes and displayed durations against their start time", () => {
+    const started = "9999-12-31T23:58:59Z";
+    expect(durationSecondsFromMinutes(1, started)).toBe(60);
+    expect(() => durationSecondsFromMinutes(2, started)).toThrow(/Python's datetime maximum/);
+    expect(sessionTiming({ ...run, startedAt: started }, Date.parse("9999-12-31T23:59:30Z")).timed).toBe(true);
+    expect(sessionTiming({ ...run, startedAt: "9999-12-31T23:59:01Z" }).timed).toBe(false);
   });
 });
 

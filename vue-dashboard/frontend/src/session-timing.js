@@ -1,25 +1,35 @@
 import { timestampMs } from "./datetime";
 import { operationOutcome } from "./session-utils";
 
-export const MAX_DURATION_SECONDS = 2147483647; //Max value for signed 32-bit integer
-export const MAX_DURATION_MINUTES = Math.floor(MAX_DURATION_SECONDS / 60);
+// JavaScript stores milliseconds; Python's datetime ends within this last millisecond.
+const PYTHON_DATETIME_MAX_MS = Date.parse("9999-12-31T23:59:59.999Z");
 
-export function validateDurationSeconds(seconds) {
-  if (!Number.isInteger(seconds) || seconds < 1 || seconds > MAX_DURATION_SECONDS) {
-    throw new TypeError(`Duration must be a whole number of seconds from 1 to ${MAX_DURATION_SECONDS}.`);
+export function maxDurationSeconds(startAt = Date.now()) {
+  const started = timestampMs(startAt);
+  if (started === null) throw new TypeError("A valid start time is required.");
+  return Math.max(0, Math.floor((PYTHON_DATETIME_MAX_MS - started) / 1000));
+}
+
+export function validateDurationSeconds(seconds, startAt = Date.now()) {
+  if (!Number.isSafeInteger(seconds) || seconds < 1) {
+    throw new TypeError("Duration must be a positive whole number of seconds represented exactly.");
+  }
+  const maximum = maxDurationSeconds(startAt);
+  if (seconds > maximum) {
+    throw new TypeError(`Duration must be at most ${maximum} seconds from the start time. The deadline cannot exceed Python's datetime maximum (9999-12-31 UTC).`);
   }
   return seconds;
 }
 
-export function durationSecondsFromMinutes(minutes) {
+export function durationSecondsFromMinutes(minutes, startAt = Date.now()) {
   // Input elements provide strings. Accept ordinary whole decimal minutes only.
   const validInput = typeof minutes === "number" ||
     (typeof minutes === "string" && /^\d+$/.test(minutes.trim()));
   const value = validInput ? Number(minutes) : Number.NaN;
-  if (!Number.isInteger(value) || value < 1 || value > MAX_DURATION_MINUTES) {
-    throw new TypeError(`Enter whole minutes from 1 to ${MAX_DURATION_MINUTES}.`);
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new TypeError("Enter positive whole minutes within the supported numeric precision.");
   }
-  return value * 60;
+  return validateDurationSeconds(value * 60, startAt);
 }
 
 export function formatDuration(seconds) {
@@ -32,7 +42,7 @@ export function sessionTiming(session, now = Date.now()) {
   const started = timestampMs(session?.startedAt);
   const ended = timestampMs(session?.endedAt);
   const duration = session?.durationSeconds;
-  const timed = Number.isInteger(duration) && duration > 0 && duration <= MAX_DURATION_SECONDS;
+  const timed = Number.isSafeInteger(duration) && duration > 0 && duration <= maxDurationSeconds(started ?? now);
   const terminal = ["completed", "cancelled", "stopped"].includes(String(session?.lifecycle ?? "").toLowerCase());
   const stopping = String(session?.lifecycle ?? "").toLowerCase() === "stopping";
   const deadline = started !== null && timed ? started + duration * 1000 : null; //Calculate everything in miliseconds

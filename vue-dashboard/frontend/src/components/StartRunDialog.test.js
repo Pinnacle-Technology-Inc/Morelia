@@ -49,7 +49,7 @@ describe("timed immediate payload", () => {
     expect(buildTemplateRunPayload(inputs).execution).toEqual({ mode: "immediate" });
   });
 
-  it.each(["", "1.5", "1e2", null, true, 0, -1, 35791395])("refuses invalid whole minutes %s", (minutes) => {
+  it.each(["", "1.5", "1e2", null, true, 0, -1, Number.MAX_SAFE_INTEGER + 1])("refuses invalid whole minutes %s", (minutes) => {
     expect(() => buildTemplateRunPayload({ template: ACTIVE_TEMPLATE, assignments: RESOLVED, durationMinutes: minutes }))
       .toThrow(/whole minutes/i);
   });

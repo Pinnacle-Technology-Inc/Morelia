@@ -234,7 +234,10 @@ def resolve(
             .order_by(RuntimeManifest.id.desc())
         ).first()
         if persisted is not None:
-            return Manifest.from_dict(persisted.content)
+            saved = Manifest.from_dict(persisted.content)
+            if saved.duration_seconds != session.duration_seconds:
+                raise InvalidSessionEntry("duration_seconds", "does not match the immutable runtime manifest")
+            return saved
 
     flows = session.device_flows or []
     if not flows:
@@ -247,6 +250,7 @@ def resolve(
         flows=flows,
         session_id_for_errors=session_id,
         validate_sink_locations=validate_sink_locations,
+        duration_seconds=session.duration_seconds,
     )
 
     # Avoid saving the same manifest twice.
@@ -292,6 +296,7 @@ def _build_manifest(
     flows: list[Mapping[str, Any]],
     session_id_for_errors: int | None,
     validate_sink_locations: bool = True,
+    duration_seconds: int | None = None,
 ) -> Manifest:
     """Load device configs and build their runtime sink settings."""
     device_flows: list[DeviceFlow] = []
@@ -337,10 +342,23 @@ def _build_manifest(
                 f"persisted device config {normalized_config_id!r} ({device_type!r}) "
                 f"is invalid: {exc}",
             ) from exc
-        # Refresh serial ports for new runs only. Skip previews, stop/reconcile, and D2XX.
+        connection = None
+        # Explicit connection preferences resolve once, without opening hardware.
+        # Configs without connection preferences keep their existing port resolution.
+        if session_id_for_errors is not None and validate_sink_locations and getattr(config, "connection", None):
+            from app.services.connections import resolve_connection
+            try:
+                connection = resolve_connection(hardware_id, config.connection, device_type)
+                port = str(connection["address"])
+                if config.port != port:
+                    with transaction():
+                        config.port = port
+            except PortResolutionError as exc:
+                raise InvalidSessionEntry(f"device_flows[{flow_index}].device_config_id", str(exc)) from exc
         if (
             session_id_for_errors is not None
             and validate_sink_locations
+            and not getattr(config, "connection", None)
             and not raw_parameters.get("use_d2xx", False)
         ):
             try:
@@ -398,6 +416,7 @@ def _build_manifest(
                 port=port,
                 parameters=device_spec.as_dict(),
                 sinks=sinks,
+                connection=connection,
             )
         )
 
@@ -412,4 +431,5 @@ def _build_manifest(
         device_flows=tuple(device_flows),
         # Previews have no saved session ID.
         session_id=session_id_for_errors,
+        duration_seconds=duration_seconds,
     )

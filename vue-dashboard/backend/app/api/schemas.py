@@ -13,6 +13,7 @@ from datetime import UTC, datetime
 
 from marshmallow import Schema, ValidationError, fields, validate, validates_schema
 
+from app.domain.duration import validate_duration_seconds
 from app.domain.enums import (
     DeviceClaimState,
     DeviceType,
@@ -150,6 +151,9 @@ class SessionRunTemplateInputSchema(Schema):
 
 
 class SessionRunExecutionSchema(Schema):
+    duration_seconds = fields.Raw(
+        allow_none=False,
+    )
     mode = fields.String(
         required=True,
         validate=validate.OneOf(["immediate", "scheduled"]),
@@ -157,6 +161,11 @@ class SessionRunExecutionSchema(Schema):
     start_at = fields.DateTime(load_default=None)
     @validates_schema
     def check_execution(self, data, **kwargs):
+        if "duration_seconds" in data:
+            try:
+                validate_duration_seconds(data["duration_seconds"])
+            except ValueError as exc:
+                raise ValidationError(str(exc), field_name="duration_seconds") from exc
         mode = data.get("mode")
         start_at = data.get("start_at")
         if mode == "immediate":
@@ -165,6 +174,8 @@ class SessionRunExecutionSchema(Schema):
                     "Must be omitted for an immediate run.", field_name="start_at"
                 )
             return
+        if "duration_seconds" in data:
+            raise ValidationError("Must be omitted for a scheduled run.", field_name="duration_seconds")
         if start_at is None:
             raise ValidationError("Required for a scheduled run.", field_name="start_at")
         aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)

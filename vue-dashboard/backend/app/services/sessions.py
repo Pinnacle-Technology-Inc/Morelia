@@ -23,6 +23,7 @@ from structlog.contextvars import bound_contextvars, get_contextvars
 from app.config import get_config
 from app.control.event_poller import telemetry_freshness
 from app.database import db, transaction
+from app.domain.duration import validate_duration_seconds
 from app.domain.enums import OperationState, PolicyMode, SessionStatus
 from app.domain.errors import (
     CommandInFlight,
@@ -212,6 +213,7 @@ def create(
         "experiment_id": data.get("experiment_id"),
         "notes": data.get("notes"),
         "schedule": data.get("schedule"),
+        "duration_seconds": data.get("duration_seconds"),
         "policy": PolicyMode(resolution.content["policy"]),
         "device_flows": device_flows,
         "source_template_id": template.template_id,
@@ -359,6 +361,14 @@ def create_run(data: dict, *, supervisor=None) -> Session:
     The idempotency key is global to this command. An identical retry returns
     the original row; reusing the key with different input is a typed conflict.
     """
+    execution = dict(data["execution"])
+    if "duration_seconds" in execution:
+        try:
+            validate_duration_seconds(execution["duration_seconds"])
+        except ValueError as exc:
+            raise InvalidSessionEntry("duration_seconds", str(exc)) from exc
+        if execution.get("mode") != "immediate":
+            raise InvalidSessionEntry("duration_seconds", "is only supported for immediate runs")
     request_key = str(data["idempotency_key"])
     fingerprint = _run_request_fingerprint(data)
     existing = _repo.get_by_creation_request_key(request_key)
@@ -373,6 +383,7 @@ def create_run(data: dict, *, supervisor=None) -> Session:
         for key, value in data.items()
         if key not in {"execution", "force", "idempotency_key", "schedule"}
     }
+    create_data["duration_seconds"] = execution.get("duration_seconds")
     if execution["mode"] == "scheduled":
         start_at = execution["start_at"]
         aware = start_at if start_at.tzinfo else start_at.replace(tzinfo=UTC)

@@ -18,6 +18,7 @@ class Session(db.Model):
         nullable=True,
     )
     notes             = db.Column(db.Text, nullable=True)
+    duration_seconds  = db.Column(db.Integer, nullable=True)
     schedule          = db.Column(db.JSON, nullable=True)
     scheduled_for     = db.Column(db.DateTime(timezone=True), nullable=True, index=True)
     schedule_claim_token = db.Column(db.String(64), nullable=True)

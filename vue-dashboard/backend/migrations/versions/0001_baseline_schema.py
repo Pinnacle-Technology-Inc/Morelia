@@ -45,6 +45,7 @@ def upgrade() -> None:
         sa.Column("schedule", sa.JSON(), nullable=True),
         sa.Column("scheduled_for", sa.DateTime(timezone=True), nullable=True),
         sa.Column("schedule_claim_token", sa.String(64), nullable=True),
+        sa.Column("duration_seconds", sa.Integer(), nullable=True),
         sa.Column("schedule_claim_expires_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("cancellation_details", sa.JSON(), nullable=True),
         sa.Column("cancelled_at", sa.DateTime(timezone=True), nullable=True),
