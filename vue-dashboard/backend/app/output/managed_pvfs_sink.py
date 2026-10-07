@@ -23,12 +23,13 @@ Methods
 
 from __future__ import annotations
 
+import math
 import multiprocessing as mp
 import os
 import sqlite3
 import time
 from threading import Thread
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from queue import Empty
 from pathlib import Path
 from uuid import uuid4
@@ -52,9 +53,8 @@ _WRITER_TERMINATE_TIMEOUT = 2.0
 
 _DEFAULT_SAMPLE_RATE = 400.0
 
-# label -> packet attribute, covering Pod8206HR / Pod8401HR / Pod8274D channel maps
-# (mirrors Morelia's PvfsSink.flush()). Labels absent here fall back to getattr.
-_PACKET_FIELD_FOR_LABEL: dict[str, str] = {
+# Retain the excluded 8274D conversion until its descriptor schema is decided.
+_LEGACY_8274_PACKET_FIELD_FOR_LABEL: dict[str, str] = {
     "EEG1": "ch0",
     "EEG2": "ch1",
     "EEG3/EMG": "ch2",
@@ -444,13 +444,24 @@ class ManagedPvfsSink:
 
     def write_frame(self, samples, *, timestamp=None, recorded=True) -> None:
         """Append one sample per channel (ordered to match ``channels``)."""
-        if not self._opened:
-            self.open()
+        if self._channels is None:
+            self._resolve_channels_units_rate()
+        if isinstance(samples, (str, bytes)):
+            raise ValueError("PVFS frame must contain one numeric scalar per channel")
+        try:
+            samples = tuple(samples)
+        except TypeError as exc:
+            raise ValueError("PVFS frame must contain one numeric scalar per channel") from exc
         if len(samples) != len(self._channels):
             raise ValueError(
                 f"expected {len(self._channels)} channel samples, got {len(samples)}"
             )
-        values = [_coerce(v) for v in samples]
+        if self._uses_legacy_8274_layout():
+            values = [_coerce(v) for v in samples]
+        else:
+            values = [_normalize_sample(v, preserve_nan=not recorded) for v in samples]
+        if not self._opened:
+            self.open()
         if self._recording_error is not None:
             raise ManagedPvfsSinkError("PVFS recording acknowledgement failed") from self._recording_error
 
@@ -475,8 +486,16 @@ class ManagedPvfsSink:
 
     def write_row(self, row: dict) -> None:
         """Append one frame from a ``{channel_label: value}`` mapping."""
-        self.write_frame([row.get(channel, 0.0) for channel in self._channels],
-                         timestamp=row.get("timestamp", row.get("time")))
+        if self._channels is None:
+            self._resolve_channels_units_rate()
+        if self._uses_legacy_8274_layout():
+            values = [row.get(channel, 0.0) for channel in self._channels]
+        else:
+            missing = [channel for channel in self._channels if channel not in row]
+            if missing:
+                raise ValueError("PVFS row is missing required channels: " + ", ".join(missing))
+            values = [row[channel] for channel in self._channels]
+        self.write_frame(values, timestamp=row.get("timestamp", row.get("time")))
 
     def flush(self, *args: object) -> None:
         """No-arg: flush buffered blocks. ``(timestamp, packet)``: Morelia stream.
@@ -943,13 +962,43 @@ class ManagedPvfsSink:
         acknowledge_recording(self)
 
     def _frame_from_packet(self, packet: object) -> list[float]:
+        """Read physical packet positions in the configured channel order."""
+        if self._channels is None:
+            self._resolve_channels_units_rate()
         if getattr(packet, "is_missing_sample", False):
             return [float("nan")] * len(self._channels)
+        if self._uses_legacy_8274_layout():
+            return [_coerce(getattr(packet, _LEGACY_8274_PACKET_FIELD_FOR_LABEL.get(label, label),
+                                    0.0)) for label in self._channels]
+        device_type = type(self._pod).__name__ if self._pod is not None else type(packet).__name__
+        expected = {"Pod8206HR": 3, "DataPacket8206HR": 3,
+                    "Pod8401HR": 4, "DataPacket8401HR": 4}.get(device_type)
+        if expected is not None and len(self._channels) != expected:
+            raise ValueError(
+                f"PVFS {device_type} requires {expected} physical channels; "
+                f"configured {len(self._channels)}"
+            )
         frame = []
-        for label in self._channels:
-            attr = _PACKET_FIELD_FOR_LABEL.get(label, label)
-            frame.append(_coerce(getattr(packet, attr, 0.0)))
+        for index, label in enumerate(self._channels):
+            field = f"ch{index}"
+            try:
+                value = getattr(packet, field)
+            except AttributeError as exc:
+                raise ValueError(
+                    f"PVFS packet is missing required field {field} for {label}"
+                ) from exc
+            try:
+                frame.append(_normalize_sample(value))
+            except ValueError as exc:
+                raise ValueError(
+                    f"PVFS packet field {field} for {label} must be a numeric scalar"
+                ) from exc
         return frame
+
+    def _uses_legacy_8274_layout(self) -> bool:
+        return type(self._pod).__name__ == "Pod8274D" or self._channels == [
+            "length_in_bytes", "data",
+        ]
 
     def _mark_record_failed(self, termination_reason: str) -> None:
         if self._record is None:
@@ -981,6 +1030,17 @@ class ManagedPvfsSink:
             raise ManagedPvfsSinkError(
                 f"units length {len(self._units)} != channels length {len(self._channels)}"
             )
+        if any(not isinstance(name, str) or not name.strip() for name in self._channels):
+            self._release_database_context()
+            raise ManagedPvfsSinkError("PVFS channel names must be nonempty strings")
+        try:
+            self._sample_rate = float(self._sample_rate)
+        except (TypeError, ValueError) as exc:
+            self._release_database_context()
+            raise ManagedPvfsSinkError("PVFS sample rate must be finite and positive") from exc
+        if not math.isfinite(self._sample_rate) or self._sample_rate <= 0:
+            self._release_database_context()
+            raise ManagedPvfsSinkError("PVFS sample rate must be finite and positive")
 
     def _release_database_context(self) -> None:
         if self._database_context is not None:
@@ -1020,20 +1080,16 @@ def _channels_units_for_pod(pod: object) -> tuple[tuple[str, ...], tuple[str, ..
         channels = ("EEG1", "EEG2", "EEG3/EMG")
         return channels, ("uV",) * len(channels)
     if name == "Pod8401HR":
-        preamp_names: list[str] | None = None
         preamp = getattr(pod, "preamp", None)
-        if preamp is not None:
-            try:
-                from Morelia.Devices import Pod8401HR
+        positions = ("A", "B", "C", "D")
+        if preamp is None:
+            return positions, ("uV",) * len(positions)
+        from Morelia.Devices import Pod8401HR
 
-                preamp_names = list(
-                    Pod8401HR.get_channel_map_for_preamp_device(preamp).values()
-                )
-            except Exception:
-                preamp_names = None
-        if not preamp_names:
-            preamp_names = ["A", "B", "C", "D"]
-        channels = tuple(preamp_names)
+        mapping = Pod8401HR.get_channel_map_for_preamp_device(preamp)
+        if mapping is None or any(position not in mapping for position in positions):
+            raise ManagedPvfsSinkError(f"PVFS cannot resolve 8401HR preamp {preamp!r}")
+        channels = tuple(mapping[position] for position in positions)
         return channels, ("uV",) * len(channels)
     if name == "Pod8274D":
         return ("length_in_bytes", "data"), ("", "")
@@ -1050,6 +1106,18 @@ def _coerce(value: object) -> float:
     if result != result or result in (float("inf"), float("-inf")):  # NaN/inf guard
         return 0.0
     return result
+
+
+def _normalize_sample(value: object, *, preserve_nan: bool = False) -> float:
+    if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+        raise ValueError("PVFS sample must be a numeric scalar")
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("PVFS sample must be a numeric scalar") from exc
+    if math.isnan(result) and preserve_nan:
+        return result
+    return result if math.isfinite(result) else 0.0
 
 
 def _ensure_database_context():
