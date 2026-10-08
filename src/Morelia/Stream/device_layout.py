@@ -149,6 +149,14 @@ def _expand_8274(timestamp_ns: int, packet: DataPacket, sample_rate: float) -> l
     ]
 
 
+def _expand_8274hr(timestamp_ns: int, packet: DataPacket, sample_rate: float) -> list[tuple[int, tuple[float, ...]]]:
+    period = getattr(packet, "sample_period_ns", _sample_period_ns(sample_rate))
+    return [
+        (timestamp_ns + i * period, tuple(float(value) for value in values))
+        for i, values in enumerate(zip(*packet.channels))
+    ]
+
+
 def _specs(names: Sequence[str], kind: ChannelKind = "analog", unit: str = "uV") -> tuple[ChannelSpec, ...]:
     return tuple(ChannelSpec(name=n, unit=unit, kind=kind) for n in names)
 
@@ -213,6 +221,22 @@ def resolve_layout(pod: AcquisitionDevice, *, profile: LayoutProfile = "analog")
         )
 
     if isinstance(pod, Pod8274D):
+        if getattr(pod, "_is_hr", False):
+            number_channels = pod._number_channels
+            accelerometer_channels = pod._accelerometer_channels
+            channels = tuple(
+                ChannelSpec(
+                    name=f"Ch{i + 1}",
+                    unit="g" if i in accelerometer_channels else "uV",
+                )
+                for i in range(number_channels)
+            )
+            return StreamLayout(
+                channels=channels,
+                expand=lambda ts, pkt: _expand_8274hr(ts, pkt, sample_rate),
+                batched=True,
+                analog_attrs=tuple(f"ch{i + 1}" for i in range(number_channels)),
+            )
         channels = _specs(("Ch5", "Ch6", "Ch7"))
         return StreamLayout(
             channels=channels,
