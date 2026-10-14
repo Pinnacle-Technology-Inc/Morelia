@@ -181,3 +181,113 @@ def test_partial_reads_update_remaining_timeout_without_global_gate(native, monk
     assert all(call.args[1] == 700 for call in handle.setTimeouts.call_args_list)
     assert handle.read.call_count == 3
     port.close_serial_port()
+
+
+def strict_monitor(resolver=None):
+    from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
+    source = SimpleNamespace(port="000123A", _use_d2xx=True, _d2xx_serial_only=True,
+                             close_port=Mock())
+    monitor = DataFlowMonitor(port_resolver=resolver)
+    monitor.flowgraph = SimpleNamespace(_network=[(source, [])])
+    monitor.snapshot_config = [{"source": {"source_dict": {
+        "port": "000123A", "use_d2xx": True, "d2xx_serial_only": True,
+        "flow_control": "none", "read_timeout_ms": 250, "write_timeout_ms": 700,
+    }}}]
+    monitor._hw.reset_streaming_device = Mock(return_value={"ok": True})
+    return monitor
+
+
+def test_strict_monitor_never_accepts_case_description_or_index_alias(monkeypatch):
+    monitor = strict_monitor()
+    listing = Mock(return_value=[{"serial": "000123a", "description": "000123A", "index": 0}])
+    from Morelia.Devices.SerialPorts import d2xx_helpers as legacy_helpers
+    monkeypatch.setattr(legacy_helpers, "list_d2xx_devices", listing)
+    assert not monitor.is_stream_port_present(0)
+    listing.assert_called_once_with()
+    with pytest.raises(FileNotFoundError):
+        monitor.reset_stream_device(0)
+    monitor._hw.reset_streaming_device.assert_not_called()
+
+
+def test_strict_monitor_revalidates_frozen_identity_before_reset(monkeypatch):
+    resolver = Mock(side_effect=ValueError("physical identity changed"))
+    monitor = strict_monitor(resolver)
+    with pytest.raises(ValueError, match="physical identity"):
+        monitor.is_stream_port_present(0)
+    with pytest.raises(ValueError, match="physical identity"):
+        monitor.reset_stream_device(0)
+    monitor._hw.reset_streaming_device.assert_not_called()
+    resolver.side_effect = None
+    resolver.return_value = "000123a"
+    with pytest.raises(ValueError, match="exact serial"):
+        monitor.reset_stream_device(0)
+    monitor._hw.reset_streaming_device.assert_not_called()
+
+
+def test_strict_monitor_openability_preserves_profile_and_selector(monkeypatch):
+    resolver = Mock(return_value="000123A")
+    monitor = strict_monitor(resolver)
+    source = monitor.flowgraph._network[0][0]
+    source.open_port_for_reset = Mock()
+    assert monitor.is_stream_port_openable(0, attempts=1)
+    source.open_port_for_reset.assert_called_once_with()
+    source.close_port.assert_called_once_with()
+    resolver.assert_called_once_with(0)
+
+
+
+def test_strict_monitor_reset_keeps_cancellation_guard_first():
+    resolver = Mock(return_value="000123A")
+    monitor = strict_monitor(resolver)
+    monitor.flowgraph._acquisition_guard = Mock(side_effect=RuntimeError("cancelled"))
+    with pytest.raises(RuntimeError, match="cancelled"):
+        monitor.reset_stream_device(0)
+    resolver.assert_not_called()
+    monitor._hw.reset_streaming_device.assert_not_called()
+
+
+def test_standalone_native_device_filter_keeps_case_distinct_serials():
+    from Morelia.Watchdog.watchdog import Watchdog
+    monitor = strict_monitor()
+    monitor.get_all_stream_status = lambda: [{"stream_index": 0}]
+    watchdog = Watchdog.__new__(Watchdog)
+    watchdog.dataflow_monitor = monitor
+    same = SimpleNamespace(port="000123A", _d2xx_serial_only=True)
+    other = SimpleNamespace(port="000123a", _d2xx_serial_only=True)
+    assert watchdog._filter_standalone_devices([same, other]) == [other]
+
+
+def test_strict_missing_native_never_falls_back_to_libftdi(monkeypatch):
+    monkeypatch.setattr(driver, "ftd", None)
+    monkeypatch.setattr(driver, "_native_wrapper", None)
+    with pytest.raises(ImportError):
+        helpers.list_d2xx_devices(native_only=True)
+    with pytest.raises(ImportError):
+        driver.D2XXPortIO("000123A", d2xx_serial_only=True)
+
+
+@pytest.mark.parametrize("prefix", [b"", b"\x02" + b"0002"])
+def test_continuous_garbage_obeys_one_packet_deadline(monkeypatch, prefix):
+    from app.discovery.managed_pods import Pod
+
+    ticks = iter(i / 20 for i in range(200))
+    monkeypatch.setattr(driver.time, "monotonic", lambda: next(ticks))
+    calls = []
+    data = iter(prefix)
+
+    def read(count):
+        calls.append(count)
+        assert len(calls) < 100, "reader ignored total deadline"
+        return bytes([next(data, ord("x"))])
+
+    port = driver.VcpPortIO.__new__(driver.VcpPortIO)
+    port.read_timeout_ms = 5000
+    port._serial_inst = SimpleNamespace(read=read, timeout=5, close=lambda: None)
+    pod = Pod("COM3", probe=True)
+    pod._port = port
+    try:
+        with pytest.raises(TimeoutError, match="deadline"):
+            pod.read_pod_packet(timeout_sec=0.5)
+        assert len(calls) < 15
+    finally:
+        pod.cleanup()

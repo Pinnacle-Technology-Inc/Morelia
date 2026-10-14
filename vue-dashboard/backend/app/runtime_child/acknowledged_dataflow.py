@@ -96,30 +96,75 @@ class ShutdownReporter:
 class _SourceLifecycleProxy:
     """Let shutdown checks confirm that acquisition stopped and the device port closed."""
 
-    def __init__(self, source, stop_event, reporter: ShutdownReporter | None) -> None:
+    def __init__(self, source, stop_event, reporter: ShutdownReporter | None, *, pause_on_read_error=True) -> None:
         self._source = source
         self._stop_event = stop_event
         self._reporter = reporter
+        self._pause_on_read_error = pause_on_read_error
         self._stop_observed = False
         self._source_stopped = False
+        self._port_closed = False
+        self._final_close_error = None
 
     def __getattr__(self, name):
-        return getattr(self._source, name)
+        value = getattr(self._source, name)
+        if (self._pause_on_read_error and callable(value)
+                and name in ("read_pod_packet", "read_pod_packet_streaming")):
+            def read(*args, **kwargs):
+                try:
+                    return value(*args, **kwargs)
+                except Exception:
+                    # Avoid rapid retries after unplugging; Stop interrupts the pause.
+                    self._stop_event.wait(0.1)
+                    raise
+            return read
+        return value
 
     def __enter__(self):
-        self._source.__enter__()
+        self._port_closed = False
+        self._source_stopped = False
+        self._final_close_error = None
+        try:
+            self._source.__enter__()
+        except BaseException:
+            # Failed context entry never calls __exit__, even after opening a port.
+            self._finish_source()
+            raise
         return self
 
     def __exit__(self, exc_type, exc, traceback):
         try:
             return self._source.__exit__(exc_type, exc, traceback)
         finally:
+            self._finish_source()
+
+    def _finish_source(self):
+        try:
             if self._reporter is not None and self._stop_event.is_set() and not self._stop_observed:
                 self._reporter.emit(ShutdownPhase.STOP_OBSERVED, "stop_event_observed")
                 self._stop_observed = True
+        finally:
+            # USB stop errors and failed reporting must not skip port cleanup.
+            try:
+                self.close_port()
+            except BaseException as exc:
+                self._final_close_error = exc
+                raise
+
+    def open_port(self, *args, **kwargs):
+        self._port_closed = False
+        self._source_stopped = False
+        self._final_close_error = None
+        return self._source.open_port(*args, **kwargs)
 
     def close_port(self):
-        result = self._source.close_port()
+        # Repeated acquisition cleanup must preserve a failed final close.
+        if self._final_close_error is not None:
+            raise self._final_close_error
+        result = None
+        if not self._port_closed:
+            result = self._source.close_port()
+            self._port_closed = True
         if self._reporter is not None and self._stop_event.is_set() and not self._source_stopped:
             self._reporter.emit(ShutdownPhase.SOURCE_STOPPED, "source_port_closed")
             self._source_stopped = True

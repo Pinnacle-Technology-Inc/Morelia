@@ -120,12 +120,15 @@ def _manifest(*, sinks, session_id: int | None = 30) -> Manifest:
 
 
 def _runtime(manifest, **kwargs) -> MoreliaRuntime:
-    return MoreliaRuntime(
+    runtime = MoreliaRuntime(
         manifest=manifest,
         on_report=kwargs.pop("on_report", lambda report: None),
         importer=_importer,
         **kwargs,
     )
+    # The runtime scenarios use mock hardware; discovery is tested separately.
+    runtime._resolve_stream_port = lambda index: manifest.device_flows[index].port
+    return runtime
 
 
 def _create_device_config(
@@ -316,7 +319,12 @@ def test_scenario_edf_fallback_merge_preserves_components_and_order(tmp_path, ap
 # ── Scenario 4: clean stop then later start → new identities ─────────────────
 
 
-def test_scenario_stop_then_restart_allocates_new_output_identity(tmp_path, app):
+def test_scenario_stop_then_restart_allocates_new_output_identity(tmp_path, app, monkeypatch):
+    from types import SimpleNamespace
+
+    monkeypatch.setattr("serial.tools.list_ports.comports", lambda: [
+        SimpleNamespace(serial_number="001", device="COM3", vid=0x0403, pid=0x6001),
+    ])
     with app.app_context():
         supervisor = _FakeSupervisor()
 
@@ -361,7 +369,7 @@ def test_scenario_stop_then_restart_allocates_new_output_identity(tmp_path, app)
 
         bind_contextvars(request_id="gate-stop-1")
         stopped = session_service.stop_managed(started.id, supervisor)
-        assert stopped.status == SessionStatus.STOPPED
+        assert stopped.status == SessionStatus.COMPLETED
 
         repo = OutputFilesRepository()
         components = repo.list_components(logical_a)

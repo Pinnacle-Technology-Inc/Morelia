@@ -16,6 +16,7 @@ import uuid
 from collections.abc import Callable, Mapping
 from contextlib import contextmanager, suppress
 from enum import Enum
+from dataclasses import replace
 from typing import Any
 
 import structlog
@@ -35,6 +36,8 @@ from app.database import create_database_app, db
 from app.models.output_file import OutputFile
 from app.runtime_child.sink_factory import RuntimeContext, build_sink, build_sinks
 from app.runtime_host.manifest import Manifest
+from app.runtime_child.device_connection import constructor_connection_kwargs, apply_or_defer_parameters, current_connection_address, current_connection_present, routing_key
+from app.services.connections import EndpointInventoryCache
 
 _log = structlog.get_logger(__name__)
 
@@ -72,7 +75,7 @@ class WorkerStartupError(RuntimeError):
 
 
 @contextmanager
-def _database_context():
+def _database_context(config_overrides=None):
     """App context for a parent-side ``output_files`` read, reusing any current one.
 
     The runtime child normally already runs inside an app context; recovery can
@@ -84,7 +87,7 @@ def _database_context():
     if has_app_context():
         yield
         return
-    context = create_database_app().app_context()
+    context = create_database_app(config_overrides=config_overrides).app_context()
     context.push()
     try:
         yield
@@ -236,11 +239,12 @@ def _import_morelia() -> tuple[type, type, type, type, type, type, type, type]:
     packet_module = importlib.import_module("Morelia.packet")
     from app.runtime_child.acknowledged_dataflow import AcknowledgedDataFlow
     from app.output.managed_csv_sink import ManagedCsvSink
+    from app.discovery.managed_pods import Pod8206HR, Pod8401HR
 
     return (
         watchdog_module.Watchdog,
-        devices_module.Pod8206HR,
-        devices_module.Pod8401HR,
+        Pod8206HR,
+        Pod8401HR,
         AcknowledgedDataFlow,
         ManagedCsvSink,
         devices_module.Preamp,
@@ -287,6 +291,7 @@ class MoreliaRuntime:
         source_error_queue_factory: Callable[[], Any] = _default_source_error_queue,
     ) -> None:
         self._manifest = manifest
+        self._database_config = None
         self._on_report = on_report
         self._failure_threshold = failure_threshold
         self._max_heartbeat_age_sec = max_heartbeat_age_sec
@@ -335,9 +340,11 @@ class MoreliaRuntime:
         self._source_recovery_by_device: dict[str, list[dict[str, object]]] = {}
         self._pending_recovery_by_device: dict[str, str] = {}
         self._device_id_by_port = {
-            str(device_flow.port).lower(): device_flow.device_id
+            routing_key(str(device_flow.port), native=bool(getattr(device_flow, "connection", None) and device_flow.connection["transport"] == "d2xx")): device_flow.device_id
             for device_flow in manifest.device_flows
         }
+        self._port_map_lock = threading.Lock()
+        self._presence_inventory = EndpointInventoryCache()
 
     @property
     def phase(self) -> RuntimePhase:
@@ -491,6 +498,9 @@ class MoreliaRuntime:
                 self._close_sinks()
         self._close_sink_error_queue()
         self._close_source_error_queue()
+        for pod in self._pods:
+            if getattr(pod, "_backend_managed", False):
+                pod.cleanup()
         self._phase = RuntimePhase.CLOSED
 
     def _emit_shutdown_transcript(self, result: object, *, elapsed_seconds: float) -> None:
@@ -612,6 +622,16 @@ class MoreliaRuntime:
         if self._watchdog is not None:
             return
 
+        # Watchdog threads must use this runtime's database, including factory
+        # overrides, when they refresh an address or read sink continuation data.
+        from flask import current_app, has_app_context
+
+        if has_app_context():
+            self._database_config = {
+                "SQLALCHEMY_DATABASE_URI": current_app.config["SQLALCHEMY_DATABASE_URI"],
+                "SQLITE_BUSY_TIMEOUT_MS": current_app.config.get("SQLITE_BUSY_TIMEOUT_MS", 5_000),
+            }
+
         (
             Watchdog,
             Pod8206HR,
@@ -630,6 +650,13 @@ class MoreliaRuntime:
             )
             for device_flow in self._manifest.device_flows:
                 device_type = self._device_type(device_flow)
+                construction_flow = device_flow
+                if self._manifest.session_id is not None:
+                    # Recreating a dashboard host also reuses a historical
+                    # manifest. Refresh its transport binding just like a stream
+                    # restart; never change the manifest used for reconciliation.
+                    port = self._resolve_stream_port(len(network))
+                    construction_flow = replace(device_flow, port=port)
                 pod = self._build_pod(
                     device_type,
                     Pod8206HR,
@@ -637,11 +664,13 @@ class MoreliaRuntime:
                     Preamp,
                     PrimaryChannelMode,
                     SecondaryChannelMode,
-                    device_flow,
+                    construction_flow,
                 )
                 # Track immediately so rollback can close the port if sinks fail next.
                 self._pods.append(pod)
                 self._pod_by_stream[len(network)] = pod
+                if construction_flow.port != device_flow.port:
+                    self._track_device_port(device_flow.device_id, construction_flow.port)
                 runtime_context = self._runtime_context(CSVSink, device_flow, device_type, pod)
                 sinks = build_sinks(device_flow.sinks, pod, runtime_context)
                 self._sinks.extend(sinks)
@@ -675,6 +704,8 @@ class MoreliaRuntime:
                 recovery_policy=self._manifest.policy,
                 reconstruction_hook=self._reconstruct_stream,
                 sample_rates=sample_rates,
+                port_resolver=self._resolve_stream_port,
+                port_presence_checker=self._stream_port_present,
             )
         except BaseException:
             self._rollback_stack_construction()
@@ -715,6 +746,38 @@ class MoreliaRuntime:
                 }
         return resume
 
+    def _device_for_source_port(self, source_port: str):
+        exact = self._device_id_by_port.get(source_port)
+        if exact is not None:
+            return exact
+        folded = self._device_for_source_port(source_port)
+        for flow in self._manifest.device_flows:
+            if flow.device_id == folded and getattr(flow, "connection", None) and flow.connection["transport"] == "d2xx":
+                return None
+        return folded
+
+    def _track_device_port(self, device_id: str, port: str) -> None:
+        """Update status routing when independently watched streams renumber."""
+        with self._port_map_lock:
+            self._device_id_by_port = {
+                **{address: identity for address, identity in self._device_id_by_port.items()
+                   if identity != device_id},
+                routing_key(port, native=any(flow.device_id == device_id and getattr(flow, "connection", None) and flow.connection["transport"] == "d2xx" for flow in self._manifest.device_flows)): device_id,
+            }
+
+    def _resolve_stream_port(self, stream_index: int) -> str:
+        """Refresh the dashboard's observed address without editing run history."""
+        device_flow = self._manifest.device_flows[stream_index]
+        with _database_context(self._database_config):
+            return current_connection_address(device_flow, self._device_type(device_flow))
+
+    def _stream_port_present(self, stream_index: int) -> bool:
+        device_flow = self._manifest.device_flows[stream_index]
+        with _database_context(self._database_config):
+            return current_connection_present(
+                device_flow, self._device_type(device_flow), inventory=self._presence_inventory,
+            )
+
     def _reconstruct_stream(self, stream_index: int):
         """Rebuild one stream's source and sinks for a watchdog recovery restart.
 
@@ -746,6 +809,9 @@ class MoreliaRuntime:
 
         device_flow = self._manifest.device_flows[stream_index]
         device_type = self._device_type(device_flow)
+        # Only override the transport address for construction. Settings, sink
+        # identities and hashes continue to come from the immutable manifest.
+        current_port = self._resolve_stream_port(stream_index)
         pod = self._build_pod(
             device_type,
             Pod8206HR,
@@ -753,13 +819,14 @@ class MoreliaRuntime:
             Preamp,
             PrimaryChannelMode,
             SecondaryChannelMode,
-            device_flow,
+            replace(device_flow, port=current_port),
         )
 
         # Track before building sinks so a sink failure still leaves the port
         # closeable by the rollback path, matching _build_stack's ordering.
         self._pods.append(pod)
         self._pod_by_stream[stream_index] = pod
+        self._track_device_port(device_flow.device_id, current_port)
         runtime_context = self._runtime_context(
             CSVSink,
             device_flow,
@@ -786,7 +853,8 @@ class MoreliaRuntime:
         self._sinks.clear()
 
         for pod in reversed(self._pods):
-            close = getattr(pod, "close_port", None)
+            close = (getattr(pod, "cleanup", None) if getattr(pod, "_backend_managed", False)
+                     else getattr(pod, "close_port", None))
             if not callable(close):
                 close = getattr(pod, "close", None)
             if callable(close):
@@ -879,15 +947,11 @@ class MoreliaRuntime:
         pod = Pod8206HR(
             device_flow.port,
             preamp_gain,
-            baudrate=baudrate,
+            **constructor_connection_kwargs(device_flow, legacy_baudrate=baudrate, legacy_use_d2xx=use_d2xx),
             device_name=device_name,
-            use_d2xx=use_d2xx,
             sample_rate=sample_rate,
         )
-        for key, value in params.items():
-            if not hasattr(pod, key):
-                raise ValueError(f"unsupported Pod8206HR parameter: {key!r}")
-            setattr(pod, key, value)
+        apply_or_defer_parameters(pod, params, device_flow)
         return pod
 
     @staticmethod
@@ -928,15 +992,11 @@ class MoreliaRuntime:
             secondary_channel_modes,
             ss_gain=ss_gain,
             preamp_gain=preamp_gain,
-            baudrate=baudrate,
+            **constructor_connection_kwargs(device_flow, legacy_baudrate=baudrate, legacy_use_d2xx=use_d2xx),
             device_name=device_name,
-            use_d2xx=use_d2xx,
             sample_rate=sample_rate,
         )
-        for key, value in params.items():
-            if not hasattr(pod, key):
-                raise ValueError(f"unsupported Pod8401HR parameter: {key!r}")
-            setattr(pod, key, value)
+        apply_or_defer_parameters(pod, params, device_flow)
         return pod
 
     @staticmethod
@@ -1401,7 +1461,7 @@ class MoreliaRuntime:
             status = _normalize_source_status(event)
             source_port = status.get("source_port")
             device_id = (
-                self._device_id_by_port.get(source_port.lower())
+                self._device_for_source_port(source_port)
                 if isinstance(source_port, str)
                 else None
             )
