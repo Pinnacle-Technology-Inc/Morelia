@@ -156,6 +156,8 @@ def test_live_prober_does_not_construct_model_class_for_identity(monkeypatch):
                     "availability": "unopenable",
                     "endpoints": (),
                     "transport": None,
+                    "scan_key": None,
+                    "probe_state": "complete",
                 }
             ],
         ),

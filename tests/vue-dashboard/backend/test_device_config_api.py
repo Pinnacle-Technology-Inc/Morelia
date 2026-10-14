@@ -284,7 +284,8 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
     assert configured["port"] == "COM6"
     assert configured["hardware_id"] == "008"
     assert configured["color"] == config["color"]
-    assert configured["availability"] == "available"
+    assert configured["availability"] == "unopenable"
+    assert configured["connection_error"] == "claimed"
     assert configured["status"] == "claimed"
     assert configured["owner"] == session_id
     assert configured["nickname"] is None
@@ -307,4 +308,13 @@ def test_device_pool_lists_configs_and_unconfigured_latest_scan_rows(client, app
         "configuration_hash": None,
         "source_template": None,
         "source_template_hash": None,
+        "connection": {
+            "preference": "auto",
+            "baudrate": 9600,
+            "read_timeout_ms": 5000,
+            "write_timeout_ms": 5000,
+        },
+        "endpoints": [],
+        "selected_transport": None,
+        "connection_error": None,
 }

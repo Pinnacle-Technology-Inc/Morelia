@@ -23,6 +23,7 @@ def test_get_devices_returns_fake_scan_result_in_testing(client):
             "hardware_id": "99999999",
             "label": "Fake POD 8206HR",
             "availability": "available",
+            "endpoints": [],
         }
     ]
 

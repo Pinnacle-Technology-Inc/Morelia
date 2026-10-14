@@ -54,6 +54,8 @@ class DiscoveredDevice:
     availability: str
     endpoints: tuple[dict[str, object], ...] = ()
     transport: str | None = None
+    scan_key: str | None = None
+    probe_state: str = "complete"
 
 
 @dataclass(frozen=True, slots=True)
