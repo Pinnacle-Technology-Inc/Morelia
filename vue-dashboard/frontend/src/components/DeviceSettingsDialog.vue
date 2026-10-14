@@ -8,6 +8,7 @@ import {
   editDeviceConfig,
   loadDeviceConfig,
   registerDeviceName,
+  connectionErrorMessage,
 } from "../devices-api";
 import {
   createDeviceTemplate,
@@ -34,6 +35,19 @@ const errorMsg = ref("");
 const name = ref(props.device.nickname ?? "");
 const hardwareId = ref(props.device.hardwareId ?? "");
 const port = ref(props.device.port ?? "");
+const connection = ref({
+  ...(props.device.connection ?? {}),
+  preference: props.device.connection?.preference ?? (mode === "create" ? "auto" : "vcp"),
+  baudrate: props.device.connection?.baudrate ?? 9600,
+});
+const connectionEditable = computed(() => mode === "create" || (config.value?.claim_state ?? props.device.status) === "free");
+const d2xxSupported = computed(() => ["pod8206hr", "pod8401hr"].includes(props.device.type));
+
+function connectionPayload() {
+  const baudrate = Number(connection.value.baudrate);
+  if (!Number.isSafeInteger(baudrate) || baudrate <= 0) throw new Error("Baud rate must be a positive integer.");
+  return { ...connection.value, baudrate };
+}
 
 // Persisted parameters stay typed internally for save/template matching while
 // the operator sees the canonical TOML source as one read-only document.
@@ -46,6 +60,7 @@ const templateSourceError = ref("");
 // Every dashboard-managed config starts from, and finishes linked to, a template.
 const templates = ref([]);
 const selectedTemplateReference = ref("");
+const templateChanged = ref(false);
 
 // Decision step (shown after Save on edit / custom-create).
 const step = ref("form"); // form | decision
@@ -155,6 +170,7 @@ async function loadSelectedTemplateSource() {
 }
 
 async function selectTemplate() {
+  templateChanged.value = true;
   useTemplateParameters(selectedTemplate.value);
   errorMsg.value = "";
   await loadSelectedTemplateSource();
@@ -169,6 +185,7 @@ onMounted(async () => {
     templates.value = Array.isArray(templateList) ? templateList : [];
     if (mode === "edit") {
       config.value = loadedConfig;
+      connection.value = { preference: "vcp", baudrate: 9600, ...(loadedConfig?.connection ?? {}) };
       currentSourceTemplate.value = loadedConfig?.source_template ?? null;
       const parameters = loadedConfig?.parameters ?? {};
       paramRows.value = Object.keys(parameters)
@@ -205,10 +222,21 @@ async function onSave() {
   errorMsg.value = "";
   busy.value = true;
   try {
+    if (!connectionEditable.value) throw new Error("Stop the device's run before changing its settings.");
+    connectionPayload();
     if (mode === "create") {
       await onCreate();
     } else {
-      await beginDecision(props.device.configId, buildParametersFromRows());
+      const parameters = buildParametersFromRows();
+      const saved = config.value?.parameters ?? {};
+      const sameParameters = JSON.stringify(Object.entries(parameters).sort()) === JSON.stringify(Object.entries(saved).sort());
+      if (sameParameters && !templateChanged.value) {
+        await renameIfChanged();
+        await editDeviceConfig(props.device.configId, { connection: connectionPayload() });
+        emit("saved");
+      } else {
+        await beginDecision(props.device.configId, parameters);
+      }
     }
   } catch (reason) {
     errorMsg.value = reason instanceof Error ? reason.message : "Save failed.";
@@ -219,7 +247,6 @@ async function onSave() {
 
 async function onCreate() {
   if (!hardwareId.value.trim()) throw new Error("Hardware ID is required to create a config.");
-  if (!port.value.trim()) throw new Error("Port is required to create a config.");
   if (!selectedTemplateReference.value) throw new Error("Pick a device template first.");
   await beginDecision(null, buildParametersFromRows());
 }
@@ -247,7 +274,7 @@ async function beginDecision(configId, parameters) {
 // --- Execute the chosen decision -------------------------------------------
 
 async function commit(patch) {
-  await editDeviceConfig(targetConfigId.value, patch);
+  await editDeviceConfig(targetConfigId.value, { ...patch, connection: connectionPayload() });
   emit("saved");
 }
 
@@ -272,7 +299,8 @@ async function onDecide() {
       await createDeviceConfigFromTemplate({
         template_name: templateReference(targetTemplate),
         hardware_id: hardwareId.value.trim(),
-        port: port.value.trim(),
+        ...(port.value.trim() ? { port: port.value.trim() } : {}),
+        connection: connectionPayload(),
         nickname: name.value.trim() || null,
       });
       emit("saved");
@@ -288,7 +316,7 @@ async function onDecide() {
 }
 
 function displayLabel(value) {
-  return { available: "Available", not_found: "Not found", unopenable: "Unopenable", free: "Free", claimed: "Claimed", unconfigured: "Unconfigured" }[value] ?? value;
+  return { available: "Available", unavailable: "Unavailable", not_found: "Not found", unopenable: "Unopenable", free: "Free", claimed: "Claimed", unconfigured: "Unconfigured" }[value] ?? value;
 }
 </script>
 
@@ -327,14 +355,35 @@ function displayLabel(value) {
               <input v-model="hardwareId" type="text" :readonly="mode === 'edit'" placeholder="FTDI serial" />
             </label>
             <label class="field">
-              <span>Port</span>
-              <input v-model="port" type="text" :readonly="mode === 'edit'" />
+              <span>Last seen address</span>
+              <input :value="port || hardwareId" type="text" readonly />
             </label>
             <label class="field">
               <span>Type</span>
               <input :value="device.type" type="text" readonly />
             </label>
           </div>
+
+          <fieldset class="connection-settings" :disabled="!connectionEditable || busy">
+            <legend>Connection for this device</legend>
+            <div class="form-grid">
+              <label class="field">
+                <span>Driver selection</span>
+                <select v-model="connection.preference">
+                  <option value="auto">Auto</option>
+                  <option value="vcp">VCP (COM / serial port)</option>
+                  <option value="d2xx" :disabled="!d2xxSupported">D2XX (native FTDI)</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>Baud rate</span>
+                <input v-model.number="connection.baudrate" type="number" min="1" step="1" />
+              </label>
+            </div>
+            <small>Auto prefers VCP when both connections are available. Each run keeps its selected driver during recovery.</small>
+            <small v-if="!connectionEditable">Stop the current run to change the connection.</small>
+            <p v-if="device.connectionError || device.connection_error" class="validation-copy" role="alert">{{ device.connectionError || connectionErrorMessage(device.connection_error) }}</p>
+          </fieldset>
 
           <label class="field field--wide">
             <span>{{ mode === "edit" ? "Current template" : "Start from template" }}</span>
@@ -395,7 +444,7 @@ function displayLabel(value) {
         <BaseButton variant="secondary" :disabled="busy" @click="step === 'decision' && mode !== 'create' ? (step = 'form') : $emit('close')">
           {{ step === "decision" && mode !== "create" ? "Back" : "Cancel" }}
         </BaseButton>
-        <BaseButton v-if="loadState === 'ready' && step === 'form'" :disabled="busy || !selectedTemplateReference" @click="onSave">
+        <BaseButton v-if="loadState === 'ready' && step === 'form'" :disabled="busy || !connectionEditable || (mode === 'create' && !selectedTemplateReference)" @click="onSave">
           {{ mode === "create" ? "Create config" : "Save" }}
         </BaseButton>
         <BaseButton v-else-if="step === 'decision' && decisionKind !== 'error'" :disabled="!canApplyDecision" @click="onDecide">Apply</BaseButton>
@@ -406,6 +455,8 @@ function displayLabel(value) {
 
 <style scoped>
 .device-dialog { width: min(720px, 100%); }
+.connection-settings { min-width: 0; padding: var(--space-3); border: 1px solid var(--border-card); border-radius: var(--radius); }
+.connection-settings small { display: block; margin-top: var(--space-2); color: var(--text-muted); }
 .device-dialog__badges { display: flex; gap: var(--space-2); margin-top: var(--space);}
 .device-dialog .field span { display: flex; align-items: center; gap: 0.4rem; }
 .device-dialog input[type="radio"] { width: auto; min-height: auto; }
