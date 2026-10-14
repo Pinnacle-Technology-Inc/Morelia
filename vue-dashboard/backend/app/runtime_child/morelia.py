@@ -750,7 +750,7 @@ class MoreliaRuntime:
         exact = self._device_id_by_port.get(source_port)
         if exact is not None:
             return exact
-        folded = self._device_for_source_port(source_port)
+        folded = self._device_id_by_port.get(source_port.lower())
         for flow in self._manifest.device_flows:
             if flow.device_id == folded and getattr(flow, "connection", None) and flow.connection["transport"] == "d2xx":
                 return None
