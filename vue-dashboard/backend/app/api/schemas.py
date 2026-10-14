@@ -519,7 +519,8 @@ class DeviceTemplateDeleteResponseSchema(Schema):
 class CreateDeviceConfigSchema(Schema):
     device_type = fields.Enum(DeviceType, by_value=True, required=True, data_key="type")
     hardware_id = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    port = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    port = fields.String(validate=validate.Length(min=1, max=255))
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     parameters = fields.Dict(keys=fields.String(), values=fields.Raw(), load_default=dict)
     nickname = fields.String(allow_none=True, load_default=None)
 
@@ -527,7 +528,8 @@ class CreateDeviceConfigSchema(Schema):
 class CreateDeviceConfigFromTemplateSchema(Schema):
     template_name = fields.String(required=True, validate=validate.Length(min=1, max=255))
     hardware_id = fields.String(required=True, validate=validate.Length(min=1, max=255))
-    port = fields.String(required=True, validate=validate.Length(min=1, max=255))
+    port = fields.String(validate=validate.Length(min=1, max=255))
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     nickname = fields.String(allow_none=True, load_default=None)
 
 
@@ -554,7 +556,8 @@ class DeviceRegistrationSchema(Schema):
 class EditDeviceConfigSchema(Schema):
     """Edit parameters; optionally push them to the linked template or relink to another (not both)."""
 
-    parameters = fields.Dict(keys=fields.String(), values=fields.Raw(), required=True)
+    parameters = fields.Dict(keys=fields.String(), values=fields.Raw())
+    connection = fields.Dict(keys=fields.String(), values=fields.Raw())
     update_source_template = fields.Boolean(load_default=False)
     source_template = fields.String(load_default=None, validate=validate.Length(min=1))
 
@@ -574,6 +577,7 @@ class DeviceConfigSchema(Schema):
     hardware_id = fields.String()
     port = fields.String()
     parameters = fields.Raw()
+    connection = fields.Dict()
     color = fields.String(validate=validate.Regexp(r"^#[0-9a-fA-F]{6}$"))
     nickname = fields.String(allow_none=True)
     source_template = fields.String(allow_none=True)
