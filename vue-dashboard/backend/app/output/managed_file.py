@@ -50,14 +50,13 @@ class ManagedOutputFile:
         self._record = record
         self._handle = handle
         self._owns_file_placeholder = _owns_file_placeholder
-        # Tracks whether this recording attempt owns the empty file placeholder.
+        # Used for recovery: tracks whether this recording attempt owns the empty file placeholder.
         # If not, the caller must leave that file alone and choose a new one.
 
     def release_file_placeholder(self) -> None:
-        """Release this attempt's empty placeholder for native PVFS creation.
+        """Release this attempt's empty placeholder for native PVFS writer to open
 
         The caller must already have confirmed that any previous writer stopped.
-        File size alone cannot establish ownership of an existing reservation.
         """
         if not self._owns_file_placeholder or self._handle.closed:
             raise ComponentAllocationError("no live fresh reservation owned by this attempt")
@@ -160,7 +159,7 @@ def create(
     logical_sink_id: str | None = None,
     segment_index: int = 0,
     previous_output_id: str | None = None,
-    fresh_reservation: bool = False,
+    require_new_file: bool = False,
 ) -> ManagedOutputFile:
     """Create an empty file and its database record.
 
@@ -168,7 +167,7 @@ def create(
     - Refuse to overwrite an existing file.
     - The sink writes its own header.
     - Use allocate_continuation() for later files in the same recording.
-    - fresh_reservation refuses stale database rows and permits one checked
+    - require_new_file refuses stale database rows and permits one checked
       placeholder release before native PVFS creation.
     """
     path = Path(path)
@@ -177,7 +176,7 @@ def create(
     if path.exists():
         raise OutputFileAlreadyExistsError(f"output path already exists: {path}")
 
-    if fresh_reservation:
+    if require_new_file:
         existing = db.session.scalars(
             db.select(OutputFile).where(OutputFile.path == str(path))
         ).first()
@@ -212,7 +211,7 @@ def create(
     except PermissionError as exc:
         raise OutputPathNotWritableError(f"cannot create output file at {path}: {exc}") from exc
 
-    return ManagedOutputFile(record, handle, _owns_file_placeholder=fresh_reservation)
+    return ManagedOutputFile(record, handle, _owns_file_placeholder=require_new_file)
 
 
 def reopen(
@@ -256,14 +255,15 @@ def allocate_continuation(
     path: str | Path | None = None,
     termination_reason: str = "recovery",
     schema_hash: str | None = None,
-    fresh_reservation: bool = False,
+    require_new_file: bool = False,
+    previous_writer_released: bool = True,
 ) -> ManagedOutputFile:
-    """Continue a recording in a new file after its previous writer has stopped.
+    """Allocate the next linked file without rewriting the prior recording.
 
-    - Caller must stop the old writer first.
+    - Confirm writer release, or pass previous_writer_released=False after worker exit.
     - Keep logical_sink_id; increment segment_index; link to the previous file.
     - Default name: recording.recovery-0001.edf.
-    - Reuse an already allocated next file on retry unless fresh_reservation is set.
+    - Reuse an already allocated next file on retry unless require_new_file is set.
     - PVFS fresh reservations reject existing records, including missing files.
     - The database prevents duplicate segment numbers for one recording.
     """
@@ -272,7 +272,7 @@ def allocate_continuation(
 
     existing = _component_at(logical_sink_id, next_index)
     if existing is not None:
-        if fresh_reservation:
+        if require_new_file:
             raise ComponentAllocationError(
                 f"ordinal {next_index} of logical output {logical_sink_id!r} is already allocated"
             )
@@ -282,7 +282,8 @@ def allocate_continuation(
                 f"is already claimed by predecessor "
                 f"{existing.previous_output_id!r}, not {previous.output_id!r}"
             )
-        _mark_superseded(previous, termination_reason=termination_reason)
+        _mark_superseded(previous, termination_reason=termination_reason,
+                         writer_released=previous_writer_released)
         return reopen(existing)  # Reuse the next file if it was already allocated.
 
     if path is None:
@@ -304,13 +305,13 @@ def allocate_continuation(
             logical_sink_id=logical_sink_id,
             segment_index=next_index,
             previous_output_id=previous.output_id,
-            fresh_reservation=fresh_reservation,
+            require_new_file=require_new_file,
         )
     except IntegrityError:
         # Another process may have created the next record after our initial check.
         db.session.rollback()
         winner = _component_at(logical_sink_id, next_index)
-        if fresh_reservation and winner is not None:
+        if require_new_file and winner is not None:
             raise ComponentAllocationError(
                 f"ordinal {next_index} of logical output {logical_sink_id!r} is already allocated"
             ) from None
@@ -319,22 +320,24 @@ def allocate_continuation(
         raise
 
     # Mark the old file interrupted only after the new file was created successfully.
-    _mark_superseded(previous, termination_reason=termination_reason)
+    _mark_superseded(previous, termination_reason=termination_reason,
+                     writer_released=previous_writer_released)
 
     return managed
 
 
-def _mark_superseded(previous: OutputFile, *, termination_reason: str) -> None:
-    """Mark the previous file closed and interrupted without changing its bytes.
-
-    Caller must stop the old writer first. Read its final size from disk.
-    """
+def _mark_superseded(previous: OutputFile, *, termination_reason: str,
+                     writer_released: bool = True) -> None:
+    """Record an interruption, marking the file closed only after writer release."""
     path = Path(previous.path)
     with transaction():
         if path.exists():
             previous.byte_offset = path.stat().st_size
-        previous.status = "closed"
-        previous.termination_reason = termination_reason
+        if writer_released:
+            previous.status = "closed"
+            previous.termination_reason = termination_reason
+        elif not previous.termination_reason:
+            previous.termination_reason = termination_reason
         previous.acquisition_state = "interrupted"
 
 
