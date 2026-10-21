@@ -152,7 +152,10 @@ class HardwareMonitor:
         try:
             device.close_port()
         except Exception:
-            pass
+            if getattr(device, "_backend_managed", False):
+                # The application retains ownership until native close is
+                # confirmed. A reset must not report success after failed close.
+                raise
 
     def _create_device(self, record):
         """
@@ -205,14 +208,20 @@ class HardwareMonitor:
             if opened_here:
                 # A just-stopped worker may not have released the port yet, so
                 # retry the open briefly before giving up.
+                last_open_error = None
                 for _ in range(5):
                     try:
-                        device.open_port()
+                        opener = getattr(device, "open_port_for_reset", device.open_port)
+                        opener()
                         break
-                    except Exception:
+                    except Exception as error:
+                        if callable(getattr(error, "retry_close", None)):
+                            raise
+                        last_open_error = f"{type(error).__name__}: {error}"
                         time.sleep(0.2)
                 else:
-                    return {"ok": False, "error": "open_port_failed_after_retries"}
+                    # Preserve the driver status for the watchdog's temporary-error policy.
+                    return {"ok": False, "error": f"open_port_failed_after_retries: {last_open_error}"}
             device.write_packet("STREAM", 0)
             drained, went_quiet, errs = 0, False, 0
             deadline = time.time() + max_reset_sec

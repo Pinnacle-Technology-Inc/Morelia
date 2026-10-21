@@ -22,6 +22,7 @@ from typing import Any
 from sqlalchemy import inspect
 
 from app.database import db, transaction
+from app.domain.connections import validate_device_connection
 from app.domain.enums import DeviceClaimState, DeviceType
 from app.domain.errors import (
     DeviceClaimConflict,
@@ -63,8 +64,9 @@ def create(
     *,
     device_type: DeviceType,
     hardware_id: str,
-    port: str,
+    port: str | None = None,
     parameters: Mapping[str, Any] | None = None,
+    connection: Mapping[str, Any] | None = None,
     nickname: str | None = None,
     source_template: str | None = None,
     source_template_hash: str | None = None,
@@ -90,11 +92,15 @@ def create(
         raise DeviceConfigExists(device_type.value, hardware_id)
 
     canonical = _canonical_parameters(device_type, parameters)
+    canonical_connection = validate_device_connection(device_type, connection)
+    # The address is only a cached observation. Run startup resolves identity.
+    address = hardware_id if canonical_connection["preference"] == "d2xx" else (port or hardware_id)
     row = _repository.create(
         device_type=device_type,
         hardware_id=hardware_id,
-        port=port,
+        port=address,
         parameters=canonical,
+        connection=canonical_connection,
         nickname=nickname,
         source_template=source_template,
         source_template_hash=source_template_hash,
@@ -107,7 +113,8 @@ def create_from_template(
     template: DeviceTemplate,
     *,
     hardware_id: str,
-    port: str,
+    port: str | None = None,
+    connection: Mapping[str, Any] | None = None,
     nickname: str | None = None,
 ) -> DeviceConfig:
     """Build a config by snapshot-copying *template*'s params.
@@ -120,6 +127,7 @@ def create_from_template(
         hardware_id=hardware_id,
         port=port,
         parameters=template.content.get("parameters", {}),
+        connection=connection,
         nickname=nickname,
         source_template=template.file_path,
         source_template_hash=template.content_hash,
@@ -202,9 +210,10 @@ def _resolve_template(reference: str, device_type: DeviceType) -> DeviceTemplate
 def edit(
     config_id: int,
     *,
-    parameters: Mapping[str, Any],
-    update_source_template: bool,
+    parameters: Mapping[str, Any] | None = None,
+    update_source_template: bool = False,
     source_template: str | None = None,
+    connection: Mapping[str, Any] | None = None,
 ) -> DeviceConfig:
     """Rewrite a config's parameters. Allowed only while the config is FREE.
 
@@ -239,6 +248,20 @@ def edit(
     if row.claim_state is not DeviceClaimState.FREE:
         raise DeviceConfigNotFree(config_id)
 
+    canonical_connection = (
+        validate_device_connection(row.device_type, connection) if connection is not None else None
+    )
+    if parameters is None:
+        if update_source_template or source_template is not None:
+            raise ValueError("parameters are required when changing template provenance")
+        if canonical_connection is None:
+            raise ValueError("provide parameters or connection to edit a device config")
+        with transaction():
+            row.connection = canonical_connection
+            if canonical_connection["preference"] == "d2xx":
+                row.port = row.hardware_id
+        return row
+
     canonical = _canonical_parameters(row.device_type, parameters)
 
     # Resolve before opening the transaction so an unknown template aborts the
@@ -251,6 +274,10 @@ def edit(
         # Set params first so the nested template write below commits both the
         # config row and the template in one flush (keeps the branch atomic).
         row.parameters = canonical
+        if canonical_connection is not None:
+            row.connection = canonical_connection
+            if canonical_connection["preference"] == "d2xx":
+                row.port = row.hardware_id
         if relink_target is not None:
             if row.source_template is not None and row.source_template != relink_target.file_path:
                 row.source_template_history = row.source_template

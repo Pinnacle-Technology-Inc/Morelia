@@ -59,11 +59,24 @@ def collect_doctor_lines() -> list[str]:
         f"python: {platform.python_version()}",
         f"runtime: {sys.executable}",
         collect_runtime_driver_line(),
+        collect_native_driver_line(),
         *collect_db_lines(),
         collect_migration_line(),
         collect_daemon_line(),
         *collect_sink_lines(),
     ]
+
+
+def collect_native_driver_line() -> str:
+    """Load the optional native library without enumerating or opening devices."""
+    if sys.platform != "win32":
+        return "native D2XX: unqualified platform (dashboard support targets Windows)"
+    try:
+        import ftd2xx
+        version = ftd2xx.getLibraryVersion()
+    except Exception as exc:  # Optional dependency must not break VCP readiness.
+        return f"native D2XX: unavailable ({_error_message(exc)})"
+    return f"native D2XX: library loaded (version={version}; device access not tested)"
 
 
 def collect_runtime_driver_line() -> str:

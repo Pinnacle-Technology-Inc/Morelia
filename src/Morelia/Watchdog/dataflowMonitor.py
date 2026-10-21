@@ -37,10 +37,16 @@ class DataFlowMonitor:
         flowgraph:DataFlow = None,
         reconstruction_hook=None,
         sample_rates=None,
+        port_resolver=None,
+        port_presence_checker=None,
     ):
         self.flowgraph = None
         self.snapshot_config = None
         self._reconstruction_hook = reconstruction_hook
+        # Optional application-owned address lookup. Device constructors and
+        # get_dict() remain unchanged; standalone callers retain port lookup.
+        self._port_resolver = port_resolver
+        self._port_presence_checker = port_presence_checker
         self._sample_rates = tuple(sample_rates or ())
         self.dataflow_status = "detached" # Overall DataFlow status.
         # Expected values:
@@ -537,6 +543,36 @@ class DataFlowMonitor:
                 return "worker"
             return "none"
 
+    def _strict_native_address_unlocked(self, stream_index):
+        """Validate the frozen native identity before presence/open/reset.
+
+        The application's resolver additionally checks the frozen backend and
+        physical identity. Standalone native sources use exact serial matching.
+        Native serial addresses cannot be renumbered like COM ports.
+        """
+        expected = self._get_stream_port_unlocked(stream_index)
+        if not expected.strip():
+            raise ValueError("Native recovery requires a nonempty exact serial identity")
+        if self._port_resolver is not None:
+            resolved = self._port_resolver(stream_index)
+            if resolved != expected:
+                raise ValueError("Native recovery cannot change the exact serial identity")
+            return resolved
+        from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
+        matches = [item for item in list_d2xx_devices()
+                   if (item.get("serial").decode("utf-8")
+                       if isinstance(item.get("serial"), bytes)
+                       else item.get("serial")) == expected]
+        if len(matches) > 1:
+            raise ValueError("Duplicate native serial identity during recovery")
+        return expected if matches else None
+
+    def _uses_strict_native_unlocked(self, stream_index):
+        source, _ = self.flowgraph._network[stream_index]
+        snapshot = self.snapshot_config[stream_index]["source"]["source_dict"]
+        return bool(getattr(source, "_d2xx_serial_only", False)
+                    or snapshot.get("d2xx_serial_only", False))
+
     def is_stream_port_present(self, stream_index):
         """
         Return True if the stream's serial port appears in the OS port list.
@@ -547,23 +583,37 @@ class DataFlowMonitor:
         self._require_flowgraph()
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
-            expected_port = self._get_stream_port_unlocked(stream_index).lower()
+            expected_port = self._get_stream_port_unlocked(stream_index)
+
+            if self._port_presence_checker is not None:
+                # Address selection is not evidence that the device is present.
+                result = self._port_presence_checker(stream_index)
+                if not isinstance(result, bool):
+                    raise RuntimeError("Device presence observation is unavailable")
+                return result
 
             source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
+            if self._uses_strict_native_unlocked(stream_index):
+                return bool(self._strict_native_address_unlocked(stream_index))
             if source_dict.get("use_d2xx"):
                 from Morelia.Devices.SerialPorts.d2xx_helpers import list_d2xx_devices
 
                 for device in list_d2xx_devices():
                     identifiers = {
-                        str(device.get(key, "")).lower()
+                        (value.decode("utf-8") if isinstance(value, bytes) else str(value)).lower()
                         for key in ("index", "serial", "description")
+                        for value in (device.get(key, ""),)
                     }
-                    if expected_port in identifiers:
+                    if expected_port.lower() in identifiers:
                         return True
                 return False
 
+            if self._port_resolver is not None:
+                # The application verifies physical identity, not the old name.
+                return bool(self._port_resolver(stream_index))
+
             for port_info in serial.tools.list_ports.comports():
-                if str(port_info.device).lower() == expected_port:
+                if str(port_info.device).lower() == expected_port.lower():
                     return True
 
             return False
@@ -589,17 +639,49 @@ class DataFlowMonitor:
             port_name = self._get_stream_port_unlocked(stream_index)
             source_dict = self.snapshot_config[stream_index]["source"]["source_dict"]
 
+            workers = getattr(self.flowgraph, "_workers", [])
+            worker = workers[stream_index] if stream_index < len(workers) else None
+            # A retained slot means shutdown has not yet confirmed ownership
+            # release, even when that particular worker has already exited.
+            if worker is not None:
+                return False
+
             for attempt in range(attempts):
                 try:
-                    if source_dict.get("use_d2xx"):
+                    source, _ = self.flowgraph._network[stream_index]
+                    managed_probe = getattr(source, "open_port_for_reset", None)
+                    if callable(managed_probe):
+                        if self._port_resolver is not None:
+                            port_name = self._port_resolver(stream_index)
+                            if port_name != source.port:
+                                # Reconstruct with the resolved address before
+                                # opening; never probe an old COM number.
+                                probe_source = type(source)(**{**source.get_dict(), "port": port_name})
+                            else:
+                                probe_source = source
+                        else:
+                            probe_source = source
+                        try:
+                            probe_source.open_port_for_reset()
+                        finally:
+                            probe_source.close_port()
+                    elif source_dict.get("use_d2xx") or self._uses_strict_native_unlocked(stream_index):
                         from Morelia.Devices.SerialPorts.D2XXComm import D2XXPortIO
 
+                        connection_kwargs = {}
+                        if self._uses_strict_native_unlocked(stream_index):
+                            port_name = self._strict_native_address_unlocked(stream_index)
+                            if port_name is None:
+                                return False
                         ser = D2XXPortIO(
                             port=port_name,
                             baudrate=int(source_dict.get("baudrate", 9600)),
+                            **connection_kwargs,
                         )
                         ser.close_serial_port()
                     else:
+                        if self._port_resolver is not None:
+                            port_name = self._port_resolver(stream_index)
                         ser = serial.Serial(
                             port=port_name,
                             timeout=timeout_sec,
@@ -855,7 +937,24 @@ class DataFlowMonitor:
         self._require_flowgraph()
         self._validate_stream_index(stream_index)
         with self._stream_lock(stream_index):
+            guard = getattr(self.flowgraph, "_acquisition_guard", None)
+            if guard is not None:
+                guard()
             source, _ = self.flowgraph._network[stream_index]
+            workers = getattr(self.flowgraph, "_workers", [])
+            if stream_index < len(workers) and workers[stream_index] is not None:
+                raise RuntimeError("Cannot reset before worker teardown is confirmed")
+            if self._uses_strict_native_unlocked(stream_index):
+                if self._strict_native_address_unlocked(stream_index) is None:
+                    raise FileNotFoundError("Exact native device is absent during reset")
+            if self._port_resolver is not None and not getattr(source, "_use_d2xx", False):
+                current_port = self._port_resolver(stream_index)
+                if current_port != self._get_stream_port_unlocked(stream_index):
+                    # The old address may belong to another device. The rebuilt
+                    # source will be reset at its newly resolved address instead.
+                    source.close_port()
+                    return {"ok": True, "stream_index": stream_index,
+                            "skipped": "port_changed", "port": current_port}
             result = self._hw.reset_streaming_device(source)
             if isinstance(result, dict):
                 result["stream_index"] = stream_index

@@ -34,6 +34,7 @@ class DeviceConfig(db.Model):
     hardware_id = db.Column(db.String(255), nullable=False, index=True)
     port = db.Column(db.String(255), nullable=False)
     parameters = db.Column(db.JSON, nullable=False, default=dict)
+    connection = db.Column(db.JSON, nullable=False, default=dict)
     color = db.Column(db.String(7), nullable=False, default=_random_color)
     nickname = db.Column(db.String(255), nullable=True)
     source_template = db.Column(db.String(1024), nullable=True)

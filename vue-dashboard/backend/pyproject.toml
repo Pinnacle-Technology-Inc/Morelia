@@ -31,6 +31,10 @@ dev = [
 hardware = [
     "pyserial>=3.5",
 ]
+d2xx = [
+    "pyserial>=3.5",
+    "ftd2xx; sys_platform == 'win32'",
+]
 
 # ----------------------------------------------------------------------------
 # Optional sink dependency groups.

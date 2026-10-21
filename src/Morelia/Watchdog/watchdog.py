@@ -87,9 +87,12 @@ class Watchdog:
     - Assess stream health.
     - Return compact or verbose watchdog dictionaries.
     """
-    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None, sample_rates=None):
+    def __init__(self, flowgraph:DataFlow = None, devices=(), failure_threshold:int = 3, max_heartbeat_age_sec:float = 2.0, first_packet_timeout_sec:float = None, max_auto_restart_attempts:int = 3, manifest=None, recovery_policy=None, reconstruction_hook=None, sample_rates=None, port_resolver=None, *, dataflow_monitor_factory=None, port_presence_checker=None):
         """
         Initialize stream and standalone-device monitoring state.
+
+        ``dataflow_monitor_factory`` optionally supplies an application-owned
+        DataFlowMonitor subclass. Ordinary callers use the standard monitor.
 
         Output: None.
         """
@@ -130,10 +133,12 @@ class Watchdog:
         
         #Setup dataflow monitor
         self.dataflow_monitor = (
-            DataFlowMonitor(
+            (dataflow_monitor_factory or DataFlowMonitor)(
                 flowgraph,
                 reconstruction_hook=reconstruction_hook,
                 sample_rates=self._sample_rates,
+                port_resolver=port_resolver,
+                port_presence_checker=port_presence_checker,
             )
             if flowgraph is not None
             else None
@@ -594,17 +599,26 @@ class Watchdog:
         
         stream_ports = set()
         for status in self.dataflow_monitor.get_all_stream_status(): 
+            strict_native = False
             try:                                            
                 port = self.dataflow_monitor.get_stream_port(status["stream_index"])
             except Exception:
                 port = None
+            try:
+                source, _ = self.dataflow_monitor.flowgraph._network[status["stream_index"]]
+                strict_native = getattr(source, "_d2xx_serial_only", False)
+            except (AttributeError, IndexError, TypeError):
+                pass
             if port is not None:
-                stream_ports.add(str(port).lower())
+                stream_ports.add(("native", str(port)) if strict_native
+                                 else ("legacy", str(port).lower()))
         
         standalone = []
         for device in devices:
-            device_port = str(getattr(device, "port", "")).lower()
-            if device_port and device_port in stream_ports:
+            device_port = str(getattr(device, "port", ""))
+            key = (("native", device_port) if getattr(device, "_d2xx_serial_only", False)
+                   else ("legacy", device_port.lower()))
+            if device_port and key in stream_ports:
                 continue 
             standalone.append(device)
         return standalone
@@ -815,19 +829,11 @@ class StreamWatcher (threading.Thread):
 
     @staticmethod
     def _is_port_lock_error(error_text):
-        """
-        Return True when a restart error means the serial port was still locked.
-
-        A restart that fails because the port could not be opened
-        (PermissionError / "Access is denied" / device busy) is the same
-        situation as waiting_for_port_release, not a genuine recovery attempt.
-
-        Output: bool (True | False).
-        """
+        """Recognize temporary VCP or D2XX failures while a device reconnects."""
         if not error_text:
             return False
         text = str(error_text).lower()
-        return any(
+        if any(
             marker in text
             for marker in (
                 "permissionerror",
@@ -836,7 +842,17 @@ class StreamWatcher (threading.Thread):
                 "resource busy",
                 "device or resource busy",
             )
+        ):
+            return True
+        parts = [part.strip() for part in text.split(":")]
+        native_error = any(
+            part == "deviceerror" or part.startswith("native ftdi ")
+            for part in parts[:-1]
         )
+        # Match driver statuses, so unrelated I/O failures still spend the restart budget.
+        return native_error and parts[-1] in {
+            "io_error", "device_not_found", "device_not_opened",
+        }
 
     # ------------------------------------------------------------------ #
     # Thread's 2 action paths: Detect & get info or recover disconnected  #

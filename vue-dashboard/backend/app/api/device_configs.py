@@ -55,7 +55,8 @@ def create_device_config_from_template(payload):
         return device_config_service.create_from_template(
             template,
             hardware_id=payload["hardware_id"],
-            port=payload["port"],
+            port=payload.get("port"),
+            connection=payload.get("connection"),
             nickname=payload["nickname"],
         )
     except (DeviceConfigExists, DeviceNicknameExists):
@@ -99,9 +100,10 @@ def edit_device_config(payload, config_id: int):
     try:
         return device_config_service.edit(
             config_id,
-            parameters=payload["parameters"],
-            update_source_template=payload["update_source_template"],
-            source_template=payload["source_template"],
+            parameters=payload.get("parameters"),
+            update_source_template=payload.get("update_source_template", False),
+            source_template=payload.get("source_template"),
+            connection=payload.get("connection"),
         )
     except DeviceTemplateNotFound:
         # Has its own registered 404 handler — an unknown relink target is a

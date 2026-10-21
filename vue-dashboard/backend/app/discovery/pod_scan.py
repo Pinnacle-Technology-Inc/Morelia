@@ -17,11 +17,9 @@ Both collaborators are injectable so tests run with zero real hardware.
 
 from __future__ import annotations
 
-import contextlib
 import os
 import sys
-import threading
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from typing import Any
@@ -54,6 +52,10 @@ class DiscoveredDevice:
     hardware_id: str | None
     label: str
     availability: str
+    endpoints: tuple[dict[str, object], ...] = ()
+    transport: str | None = None
+    scan_key: str | None = None
+    probe_state: str = "complete"
 
 
 @dataclass(frozen=True, slots=True)
@@ -70,6 +72,7 @@ class PodProbe:
     pinged: bool
     type_number: int | None
     hardware_id: str | None
+    error_code: str | None = None
 
 
 def detect_pod_devices(
@@ -227,75 +230,15 @@ def _import_devices_module() -> Any:
     return importlib.import_module("Morelia.Devices")
 
 
-# -- control-queue suppression for discovery probes ---------------------------
-#
-# Constructing a Morelia ``Pod`` normally spawns a ``queue_server.py`` subprocess
-# (see ``PacketManager.initialize_control_queue``) plus fixed ``sleep`` waits for
-# it to bind. That IPC only matters on the *streaming* path where the port is
-# handed to a worker (``self._port is None``). A discovery probe opens the port
-# directly and reads ``TYPE`` straight off pyserial, so the subprocess is spawned,
-# sits idle, and is torn down again — 1–3s of pure overhead per port.
-#
-# We neutralize the spawn by replacing ``initialize_control_queue`` with a no-op
-# for the duration of Pod construction. Discovery runs probes 4-wide, so this
-# must be safe when multiple threads enter and leave the patch concurrently.
-
-_control_queue_lock = threading.Lock()
-_control_queue_depth = 0
-_original_init_control_queue: Any = None
-
-
-@contextlib.contextmanager
-def _suppress_control_queue_spawn() -> Iterator[None]:
-    """Neutralize ``PacketManager.initialize_control_queue`` while a probe builds
-    its ``Pod``, so no ``queue_server.py`` subprocess is spawned.
-
-    Thread-safe: the no-op stays installed until the last concurrent probe exits.
-    """
-    global _control_queue_depth, _original_init_control_queue
-
-    with _control_queue_lock:
-        if _control_queue_depth == 0:
-            PacketManager = _import_packet_manager()
-            _original_init_control_queue = PacketManager.initialize_control_queue
-            PacketManager.initialize_control_queue = lambda self: None
-        _control_queue_depth += 1
-
-    try:
-        yield
-
-    finally:
-        with _control_queue_lock:
-            _control_queue_depth -= 1
-            if _control_queue_depth == 0:
-                PacketManager = _import_packet_manager()
-                PacketManager.initialize_control_queue = _original_init_control_queue
-                _original_init_control_queue = None
-
-
-
-def _import_packet_manager() -> type:
-    """Import Morelia's ``PacketManager`` lazily (honors ``MORELIA_SRC``)."""
-    import importlib
-
-    morelia_src = os.environ.get("MORELIA_SRC")
-    if morelia_src and morelia_src not in sys.path:
-        sys.path.insert(0, morelia_src)
-
-    module = importlib.import_module("Morelia.Devices.SerialPorts.queue_manager")
-    return module.PacketManager
-
-
 def _live_prober(port: str, *, baudrate: int = 9600, timeout_sec: float = 2.0) -> PodProbe:
     """Open port as a POD device and read its ``TYPE`` with a bounded timeout.
 
     Always releases the handle — discovery must not retain a port after scanning.
     """
-    devices_module = _import_devices_module()
-    pod_cls = devices_module.Pod
+    pod_cls = _import_probe_class()
     try:
-        with _suppress_control_queue_spawn():
-            pod = pod_cls(port, baudrate=baudrate)
+        pod = pod_cls(port, baudrate=baudrate, probe=True)
+        pod.open_port()
     except Exception:
         return PodProbe(opened=False, pinged=False, type_number=None, hardware_id=None)
 
@@ -319,6 +262,14 @@ def _live_prober(port: str, *, baudrate: int = 9600, timeout_sec: float = 2.0) -
         return PodProbe(opened=True, pinged=False, type_number=None, hardware_id=None)
     finally:
         _cleanup_pod(pod)
+
+
+def _import_probe_class():
+    """Load the backend adapter lazily, preserving the MORELIA_SRC boundary."""
+    _import_devices_module()
+    from app.discovery.managed_pods import Pod
+
+    return Pod
 
 
 def _payload_value(pod: Any, command: str, timeout_sec: float) -> Any:

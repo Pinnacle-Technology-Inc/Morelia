@@ -6,16 +6,20 @@ import DeviceSettingsDialog from "../components/DeviceSettingsDialog.vue";
 import PageHeader from "../components/PageHeader.vue";
 import StatusBadge from "../components/StatusBadge.vue";
 import TabBar from "../components/TabBar.vue";
-import { computed, nextTick, onMounted, ref } from "vue";
-import { loadDeviceConfigs, loadDevicePool, registerDeviceName } from "../devices-api";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { registerDeviceName, deviceConnectionLabel, connectionErrorMessage } from "../devices-api";
+import { createDeviceScanController } from "../device-scan";
 import { formatCentralTimestamp } from "../datetime";
 
 const activeTab = ref("all");
 const devices = ref([]);
 const state = ref("loading");
 const error = ref("");
+const scanWarnings = ref([]);
 const scanId = ref(null);
 const scannedAt = ref(null);
+const scanProgress = ref(null);
+const isScanning = computed(() => state.value === "loading" || state.value === "scanning");
 
 // Inline rename state, keyed by device.id.
 const renamingId = ref(null);
@@ -36,7 +40,7 @@ const tabs = [
 // device that is FREE but not_found must NOT appear here (that was the bug):
 // claim state and physical presence are independent axes.
 function isAvailable(device) {
-  return device.availability === "available" && device.status !== "claimed";
+  return device.availability === "available" && !device.connectionError && !["claimed", "starting"].includes(device.status);
 }
 
 const counts = computed(() => ({
@@ -56,49 +60,56 @@ const scannedAtLabel = computed(() => {
   return formatCentralTimestamp(scannedAt.value, { fallback: scannedAt.value });
 });
 
+const scanner = createDeviceScanController({
+  onUpdate(pool) {
+    devices.value = pool.devices;
+    scanId.value = pool.scanId;
+    scannedAt.value = pool.scannedAt;
+    scanWarnings.value = pool.warnings;
+    scanProgress.value = pool;
+    error.value = pool.scanError ?? "";
+    state.value = pool.scanState === "failed"
+      ? (pool.devices.length ? "ready" : "unavailable")
+      : pool.scanState === "complete" ? (pool.devices.length ? "ready" : "empty") : "scanning";
+  },
+  onError(reason) {
+    state.value = devices.value.length ? "ready" : "unavailable";
+    error.value = reason instanceof Error ? reason.message : "Device pool is unavailable.";
+  },
+});
+
 async function refresh() {
   state.value = "loading";
   error.value = "";
+  scanWarnings.value = [];
+  scanProgress.value = null;
   devices.value = [];
-  try {
-    const [pool, configs] = await Promise.all([loadDevicePool(), loadDeviceConfigs()]);
-    const configById = new Map(configs.map((config) => [config.id, config]));
-    devices.value = pool.devices.map((device) => {
-      const config = configById.get(device.configId);
-      if (!config) return device;
-      return {
-        ...device,
-        configSource: config.source_template ?? null,
-        sourceTemplateHash: config.source_template_hash ?? null,
-      };
-    });
-    scanId.value = pool.scanId;
-    scannedAt.value = pool.scannedAt;
-    state.value = pool.devices.length ? "ready" : "empty";
-  } catch (reason) {
-    state.value = "unavailable";
-    error.value = reason instanceof Error ? reason.message : "Device pool is unavailable.";
-  }
+  cancelRename();
+  return scanner.refresh();
 }
 
 onMounted(() => {
   refresh();
 });
+onUnmounted(() => scanner.dispose());
 
 function displayLabel(value) {
   return {
     available: "Available",
+    unavailable: "Unavailable",
     not_found: "Not found",
     unopenable: "Unopenable",
     free: "Free",
     claimed: "Claimed",
     unconfigured: "Unconfigured",
+    unverified: "Unverified",
   }[value] ?? value;
 }
 
 // --- Rename -----------------------------------------------------------------
 
 async function startRename(device) {
+  if (isScanning.value || device.probeState !== "complete") return;
   if (!device.hardwareId) return; // registration keys on hardware identity
   renameError.value = "";
   renamingId.value = device.id;
@@ -134,6 +145,7 @@ async function confirmRename(device) {
 // --- Settings dialog --------------------------------------------------------
 
 function openSettings(device) {
+  if (isScanning.value || device.probeState !== "complete") return;
   activeDevice.value = device;
 }
 
@@ -150,12 +162,25 @@ async function onSaved() {
       title="Devices"
       description="Review connected hardware, configured devices, availability, and session ownership."
     >
-      <BaseButton variant="secondary" :disabled="state === 'loading'" @click="refresh"><Radar :size="16" /> Scan Devices</BaseButton>
+      <BaseButton variant="secondary" :disabled="isScanning" @click="refresh"><Radar :size="16" /> Scan Devices</BaseButton>
     </PageHeader>
 
     <BaseCard class="workspace-card">
       <TabBar :tabs="tabs" :active="activeTab" :counts="counts" @change="activeTab = $event" />
-      <p v-if="state === 'loading'" class="empty-state" aria-busy="true">Loading device pool…</p>
+      <section v-if="scanWarnings.length" class="scan-warnings" role="status" aria-label="Scan warnings">
+        <strong>Scan warnings</strong>
+        <ul>
+          <li v-for="(warning, index) in scanWarnings" :key="`${warning.transport ?? 'scan'}:${warning.code ?? index}:${index}`">
+            <strong v-if="warning.transport">{{ warning.transport.toUpperCase() }}: </strong>{{ connectionErrorMessage(warning) }}
+          </li>
+        </ul>
+      </section>
+      <p v-if="isScanning" class="scan-progress" role="status" aria-live="polite">
+        {{ !scanProgress || scanProgress.scanState === 'enumerating'
+          ? 'Finding connected devices…'
+          : `Checked ${scanProgress.completed} of ${scanProgress.total} devices` }}
+      </p>
+      <p v-if="isScanning && !devices.length" class="empty-state" aria-busy="true">Waiting for device inventory…</p>
       <p v-else-if="state === 'unavailable'" class="empty-state" role="alert">{{ error }}</p>
       <p v-else-if="state === 'empty'" class="empty-state">No devices found in scan {{ scanId ?? "-" }}.</p>
       <div v-else class="table-wrap">
@@ -166,7 +191,7 @@ async function onSaved() {
               <th>Device</th>
               <th>Type</th>
               <th>Hardware ID</th>
-              <th>Port</th>
+              <th>Connection</th>
               <th>Availability</th>
               <th>Status</th>
               <th>Device Template</th>
@@ -178,8 +203,9 @@ async function onSaved() {
           <tbody>
             <tr
               v-for="device in visibleDevices"
-              :key="device.id"
-              tabindex="0"
+              :key="device.scanKey ?? device.id"
+              :tabindex="isScanning || device.probeState !== 'complete' ? -1 : 0"
+              :aria-disabled="isScanning || device.probeState !== 'complete'"
               @click="openSettings(device)"
               @keydown.enter="openSettings(device)"
             >
@@ -214,8 +240,8 @@ async function onSaved() {
               </td>
               <td>{{ device.type }}</td>
               <td><code>{{ device.hardwareId }}</code></td>
-              <td><code>{{ device.port }}</code><small v-if="device.portMismatch">Configured port differs from latest scan</small></td>
-              <td><StatusBadge compact :value="displayLabel(device.availability)" /></td>
+              <td>{{ deviceConnectionLabel(device) }}<br /><code>{{ device.port }}</code><small v-if="device.connectionError" class="validation-copy">{{ device.connectionError }}</small></td>
+              <td><StatusBadge compact :value="device.probeState !== 'complete' && !isScanning ? 'Not checked' : device.probeState === 'queued' ? 'Waiting' : device.probeState === 'probing' ? 'Checking' : displayLabel(device.availability)" /></td>
               <td><StatusBadge compact :value="displayLabel(device.status)" /></td>
               <td><code>{{ device.configSource ?? (device.status === "unconfigured" ? "Not configured" : "No template") }}</code><small v-if="device.templateDrift">Template drift</small></td>
               <td>{{ device.owningSession ?? "—" }}</td>
@@ -225,7 +251,7 @@ async function onSaved() {
           </tbody>
         </table>
       </div>
-      <p v-if="state === 'ready' || state === 'empty'" class="scan-meta">
+      <p v-if="scanId" class="scan-meta">
         <Clock3 :size="12" aria-hidden="true" />
         Scan <code>{{ scanId ?? "—" }}</code> · {{ scannedAtLabel }}
       </p>
@@ -241,7 +267,11 @@ async function onSaved() {
 </template>
 
 <style scoped>
+.scan-progress { margin: 0; padding: var(--space-3) var(--space-4); color: var(--text-heading); border-bottom: 1px solid var(--border-card); }
+.scan-warnings { margin: var(--space-3) var(--space-4); padding: var(--space-3); color: var(--text-heading); border: 1px solid var(--warning); border-radius: var(--radius); background: var(--surface-sage); }
+.scan-warnings ul { margin: var(--space-2) 0 0; padding-left: var(--space-4); }
 .data-table--clickable tbody tr { cursor: pointer; }
+.data-table--clickable tbody tr[aria-disabled="true"] { cursor: default; }
 .data-table--clickable tbody tr:hover { background: var(--sage-50); }
 .data-table--clickable tbody tr:focus-visible { outline: 2px solid var(--primary); outline-offset: -2px; }
 .device-name { cursor: default; }

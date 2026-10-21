@@ -387,6 +387,7 @@ def upgrade() -> None:
         sa.Column("hardware_id", sa.String(255), nullable=False),
         sa.Column("port", sa.String(255), nullable=False),
         sa.Column("parameters", sa.JSON(), nullable=False),
+        sa.Column("connection", sa.JSON(), nullable=False, server_default="{}"),
         sa.Column("color", sa.String(7), nullable=False),
         sa.Column("nickname", sa.String(255), nullable=True),
         sa.Column("source_template", sa.String(1024), nullable=True),

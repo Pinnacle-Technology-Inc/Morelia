@@ -21,7 +21,7 @@ from app.control.supervisor import HostSupervisor
 from app.services.discovery import (
     DeviceDiscoveryService,
     FakeDiscoveryProvider,
-    SerialPodProvider,
+    FtdiPodProvider,
     configured_device_types_from_db,
 )
 
@@ -36,12 +36,15 @@ def register_routes(api, app):
     if host_supervisor is None:
         host_supervisor = HostSupervisor()
     app.extensions["host_supervisor"] = host_supervisor
-    discovery_provider = FakeDiscoveryProvider() if app.testing else SerialPodProvider()
+    discovery_provider = FakeDiscoveryProvider() if app.testing else FtdiPodProvider(
+        directory=app.config["WATCHDOG_HARDWARE_LOCK_DIR"]
+    )
     configured_device_types = None if app.testing else configured_device_types_from_db
     app.extensions["device_discovery_provider"] = discovery_provider
     app.extensions["device_discovery_service"] = DeviceDiscoveryService(
         discovery_provider,
         configured_device_types,
+        context_factory=app.app_context,
     )
     api.register_blueprint(sessions_blp)
     api.register_blueprint(session_runs_blp)

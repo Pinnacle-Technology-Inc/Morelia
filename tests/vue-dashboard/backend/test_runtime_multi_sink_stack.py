@@ -88,12 +88,16 @@ def _csv_only_manifest(tmp_path) -> Manifest:
 
 
 def _runtime(manifest, **kwargs) -> MoreliaRuntime:
-    return MoreliaRuntime(
+    runtime = MoreliaRuntime(
         manifest=manifest,
         on_report=kwargs.pop("on_report", lambda report: None),
         importer=_importer,
         **kwargs,
     )
+    # These are sink tests with mock hardware and no device-config database.
+    # Serial discovery/persistence is covered by test_device_port_tracking.
+    runtime._resolve_stream_port = lambda index: manifest.device_flows[index].port
+    return runtime
 
 
 def test_stop_uses_graceful_dataflow_timeout_before_watchdog_close(tmp_path):

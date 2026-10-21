@@ -1,9 +1,8 @@
-import importlib
+import subprocess
 import sys
 from dataclasses import asdict, dataclass
 
 import pytest
-
 from app.domain.enums import DeviceType
 
 
@@ -29,14 +28,15 @@ def _probe(*, opened=True, pinged=True, type_number=48, hardware_id="POD-ID"):
 
 
 def test_importing_pod_scan_does_not_import_pyserial():
-    sys.modules.pop("app.discovery.pod_scan", None)
-    sys.modules.pop("serial", None)
-    sys.modules.pop("serial.tools.list_ports", None)
-
-    importlib.import_module("app.discovery.pod_scan")
-
-    assert "serial" not in sys.modules
-    assert "serial.tools.list_ports" not in sys.modules
+    result = subprocess.run(
+        [sys.executable, "-c", (
+            "import sys; import app.discovery.pod_scan; "
+            "assert 'serial' not in sys.modules; "
+            "assert 'serial.tools.list_ports' not in sys.modules"
+        )],
+        capture_output=True, text=True, timeout=15, check=False,
+    )
+    assert result.returncode == 0, result.stderr
 
 
 def test_detect_pod_devices_emits_identified_8206hr():
@@ -100,11 +100,14 @@ def test_live_prober_does_not_construct_model_class_for_identity(monkeypatch):
             self.payload = payload
 
     class BasePod:
-        def __init__(self, port, baudrate):
+        def __init__(self, port, baudrate, probe=False):
             self.port = port
             self.baudrate = baudrate
             self.commands: list[str] = []
             self.cleaned_up = False
+
+        def open_port(self):
+            pass
 
         def test_connection(self):
             return True
@@ -128,7 +131,7 @@ def test_live_prober_does_not_construct_model_class_for_identity(monkeypatch):
         Pod = BasePod
         Pod8206HR = ModelPod8206HR
 
-    monkeypatch.setattr(pod_scan, "_import_devices_module", lambda: DevicesModule)
+    monkeypatch.setattr(pod_scan, "_import_probe_class", lambda: BasePod)
 
     probe = pod_scan._live_prober("COM3")
 
@@ -151,6 +154,10 @@ def test_live_prober_does_not_construct_model_class_for_identity(monkeypatch):
                     "hardware_id": "USB VID:PID=0403:6001 SER=A100",
                     "label": "POD 8206HR",
                     "availability": "unopenable",
+                    "endpoints": (),
+                    "transport": None,
+                    "scan_key": None,
+                    "probe_state": "complete",
                 }
             ],
         ),
