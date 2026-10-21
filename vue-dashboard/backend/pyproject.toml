@@ -23,6 +23,7 @@ dependencies = [
 pinnacle = "app.cli.main:pinnacle"
 
 [project.optional-dependencies]
+diagnostics = ["psutil>=6.0,<8.0"]
 # Tools needed to develop/test, but not to *run* the app in production.
 dev = [
     "pytest>=8.0",
