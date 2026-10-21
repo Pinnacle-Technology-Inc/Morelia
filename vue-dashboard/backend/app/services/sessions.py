@@ -148,6 +148,7 @@ def _recovery_command_view(session: Session, device_id: str) -> dict[str, object
         policy=recovery.get("policy") or session.policy,
         hardware_present=recovery.get("hardware_present"),
         controls_current=controls_current,
+        failure_reason=diagnostic.get("initiating_failure_reason"),
     )
 
 

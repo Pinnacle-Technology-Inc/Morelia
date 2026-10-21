@@ -125,6 +125,11 @@ const RECOVERY_COPY = {
   retry_wait: "Retrying after a failed attempt",
 };
 
+const RECOVERY_ERROR_COPY = {
+  cleanup_failed: "Stream cleanup failed. Automatic recovery stopped. Stop the session before trying again.",
+  port_release_timeout: "Port recovery timed out after 15 seconds. Automatic recovery stopped. Check the device connection and close other programs using it before retrying.",
+};
+
 const STREAM_LABEL = {
   healthy: "Healthy",
   suspect: "Suspect",
@@ -303,7 +308,7 @@ export function deriveStreamRows({
       flowing: unproven ? false : rolled.flowing,
       unproven,
       status: STREAM_LABEL[device?.stream_status] ?? "Unknown",
-      reason: faultCopy ?? recoveryCopy ?? device?.reason ?? null,
+      reason: RECOVERY_ERROR_COPY[device?.reason] ?? faultCopy ?? recoveryCopy ?? device?.reason ?? null,
       workerFault: device?.worker_fault ?? null,
       attempt: recoveryCopy && attempt ? attempt : null,
       pendingRecovery: Boolean(device?.pending_recovery),

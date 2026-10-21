@@ -199,6 +199,8 @@ def _latest_report_device(
         or heartbeat.get("reason")
         or source_read.get("message")
     )
+    if diagnostic.get("initiating_failure_reason") in {"cleanup_failed", "port_release_timeout"}:
+        reason = diagnostic["initiating_failure_reason"]
     stage = recovery.get("status")
     source_read_state = source_read.get("state")
     disconnect_elapsed_seconds = _nonnegative_seconds(disconnect.get("elapsed_sec"))
@@ -224,6 +226,7 @@ def _latest_report_device(
         policy=recovery.get("policy") or session_policy,
         hardware_present=recovery.get("hardware_present"),
         controls_current=controls_current,
+        failure_reason=diagnostic.get("initiating_failure_reason"),
     )
     pending = recovery_view["recovery_state"] in {
         "recovering",

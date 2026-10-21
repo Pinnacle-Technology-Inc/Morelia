@@ -22,6 +22,7 @@ def project(
     policy: object,
     hardware_present: object,
     controls_current: bool,
+    failure_reason: object = None,
 ) -> dict[str, object]:
     """Return the bounded state the UI and command service both enforce."""
     action_name = action if isinstance(action, str) else None
@@ -34,7 +35,10 @@ def project(
     hardware = hardware_present if isinstance(hardware_present, bool) else None
 
     needs_action = action_name == "needs_action" or stage_name == "needs_action"
-    if needs_action and hardware is False:
+    recovery_blocked = needs_action and failure_reason in ("cleanup_failed", "port_release_timeout")
+    if recovery_blocked:
+        state = "exhausted"
+    elif needs_action and hardware is False:
         state = "waiting_for_hardware"
     elif needs_action and policy_name == "recommend":
         state = "awaiting_approval"
@@ -65,6 +69,8 @@ def project(
     requires_approval = policy_name == "recommend" and needs_action
     actionable_state = state in {"awaiting_approval", "exhausted"}
     allowed_actions = ["restart"] if controls_current and actionable_state else []
+    if recovery_blocked and (failure_reason == "cleanup_failed" or hardware is False):
+        allowed_actions = []
     return {
         "recovery_policy": policy_name,
         "recovery_state": state,

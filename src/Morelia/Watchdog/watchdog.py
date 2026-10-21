@@ -734,6 +734,9 @@ class StreamWatcher (threading.Thread):
         # shutdown transcript (see _capture_worker_fault). None until a worker
         # dies with something to say.
         self._worker_fault = None
+        self._recovery_block = None
+        self._port_release_started_at = None
+        self._port_release_timeout_sec = 15.0
 
     # ------------------------------------------------------------------ #
     # Thread lifecycle                                                   #
@@ -776,6 +779,8 @@ class StreamWatcher (threading.Thread):
         Output: None.
         """
         self._disconnected = False
+        self._recovery_block = None
+        self._port_release_started_at = None
         self._failure_count = 0
         self._recovery_attempt_count = 0
         self._response_grace = None
@@ -805,7 +810,7 @@ class StreamWatcher (threading.Thread):
         - True: recovery re-armed; the caller should resume the reconnect loop.
         - False: stay paused in needs_action.
         """
-        if self._recovery_policy != "automate":
+        if self._recovery_policy != "automate" or self._recovery_block is not None:
             return False
 
         try:
@@ -1102,7 +1107,9 @@ class StreamWatcher (threading.Thread):
                     "busy": busy,
                     "recovery_policy": self._recovery_policy,
                 }
-            self._capture_worker_fault(m.stop_stream(self.stream_index))
+            cleanup_failure = self._stop_for_recovery(base)
+            if cleanup_failure is not None:
+                return cleanup_failure
 
         if self._recovery_policy == "recommend":
             lifecycle_state = m.set_lifecycle_state(
@@ -1318,7 +1325,9 @@ class StreamWatcher (threading.Thread):
                     },
                     "recovery_policy": self._recovery_policy,
                 }
-            self._capture_worker_fault(self._monitor.stop_stream(self.stream_index))
+            cleanup_failure = self._stop_for_recovery(base)
+            if cleanup_failure is not None:
+                return cleanup_failure
 
         self._disconnected = True
         lifecycle_state = self._monitor.set_lifecycle_state(
@@ -1376,6 +1385,60 @@ class StreamWatcher (threading.Thread):
         return {
             "current": self._recovery_attempt_count,
             "max": self._max_auto_restart_attempts,
+        }
+
+    def _block_recovery(self, base, *, reason, error, **details):
+        """Keep the failure visible until an explicit command clears recovery state."""
+        self._recovery_block = {"error": error, **details}
+        if reason == "cleanup_failed":
+            self._recovery_block["recommended_commands"] = []
+        return {
+            **self._transition_to_needs_action(base, reason=reason),
+            **self._recovery_block,
+        }
+
+    def _stop_for_recovery(self, base):
+        """Stop the failed stream and require worker exit before recovery."""
+        try:
+            result = self._monitor.stop_stream(self.stream_index)
+        except Exception as error:
+            result = {"ok": False, "error": f"{type(error).__name__}: {error}"}
+        self._capture_worker_fault(result)
+        if isinstance(result, dict) and result.get("worker_exited") is not True and (
+            result.get("teardown_confirmed") is False
+            or (result.get("ok") is False and result.get("teardown_confirmed") is not True)
+        ):
+            return self._block_recovery(
+                base,
+                reason="cleanup_failed",
+                error=("Stream cleanup failed: acquisition worker exit could not be confirmed. "
+                       "Automatic recovery stopped. Stop the session before trying again."),
+                shutdown_result={key: result[key] for key in (
+                    "ok", "teardown_confirmed", "worker_exited", "worker_exitcode",
+                    "descendants_teardown_confirmed", "forced_termination", "error",
+                ) if key in result},
+            )
+        return None
+
+    def _wait_for_port_release(self, base, *, failure_reason="waiting_for_port_release", **details):
+        """Give a held port a bounded settling window before requiring operator action."""
+        now = time.monotonic()
+        if self._port_release_started_at is None:
+            self._port_release_started_at = now
+        if now - self._port_release_started_at >= self._port_release_timeout_sec:
+            return self._block_recovery(
+                base,
+                reason="port_release_timeout",
+                error=("Port recovery timed out after 15 seconds. Automatic recovery stopped. "
+                       "Check the device connection and close other programs using it before retrying."),
+                **details,
+            )
+        return {
+            **base,
+            "ok": False,
+            "action": "waiting_for_port_release",
+            "failure_reason": failure_reason,
+            **details,
         }
 
     def _capture_worker_fault(self, shutdown_result):
@@ -1436,37 +1499,21 @@ class StreamWatcher (threading.Thread):
 
     def _back_off_worker_cold_open(self, base, restart_result, verify_result,
                                    stream_status):
-        """
-        Handle a worker that crashed on its cold open as a settle-window retry.
-
-        Refund the recovery attempt (a doomed cold open is not a real recovery
-        try), clear the dead worker slot, and arm a short cool-down so the next
-        tick does not immediately respawn another doomed worker. The stream stays
-        disconnected and keeps polling, so it recovers on its own once a spawned
-        worker can hold the port.
-
-        Output: dict. A waiting_for_port_release-style action result.
-        """
+        """Stop a worker that failed to open the port and retry within the settling deadline."""
         self._recovery_attempt_count = max(0, self._recovery_attempt_count - 1)
         self._response_grace = None
         self._cold_open_backoff_remaining = self._cold_open_backoff_ticks
-        try:
-            # Also the only chance to learn why the worker died: stop_stream
-            # drains its status queue, and nobody else ever reads it.
-            self._capture_worker_fault(self._monitor.stop_stream(self.stream_index))
-        except Exception:
-            pass
-        return {
-            **base,
-            "ok": False,
-            "action": "waiting_for_port_release",
-            "failure_reason": "worker_cold_open_failed",
-            "restart_result": restart_result,
-            "verify_result": verify_result,
-            "stream_status": stream_status,
-            "recovery_attempt": self._recovery_attempt(),
-            "recovery_policy": self._recovery_policy,
-        }
+        cleanup_failure = self._stop_for_recovery(base)
+        if cleanup_failure is not None:
+            return cleanup_failure
+        return self._wait_for_port_release(
+            base,
+            failure_reason="worker_cold_open_failed",
+            restart_result=restart_result,
+            verify_result=verify_result,
+            stream_status=stream_status,
+            recovery_attempt=self._recovery_attempt(),
+        )
 
     def _response_grace_check_count(self):
         """Use ceiling-half of the detection threshold, with one minimum check."""
@@ -1485,6 +1532,7 @@ class StreamWatcher (threading.Thread):
         }
 
     def _finish_recovery_success(self, restart_result, verify_result, heartbeat_verify=None):
+        self._port_release_started_at = None
         physical_disconnect = self._physical_disconnect
         disconnect_episode_id = self._disconnect_episode_id
         disconnect_started_at = self._disconnect_started_at_epoch
@@ -1622,31 +1670,9 @@ class StreamWatcher (threading.Thread):
             }
 
         self._response_grace = None
-        try:
-            self._monitor.stop_stream(self.stream_index)
-        except Exception as error:
-            if self._recovery_attempt_count >= self._max_auto_restart_attempts:
-                return self._transition_to_needs_action(
-                    base,
-                    reason="restart_completed_worker_not_response",
-                    restart_result=grace["restart_result"],
-                    verify_result=grace["verify_result"],
-                    heartbeat_verify=heartbeat_verify,
-                    error=f"{type(error).__name__}: {error}",
-                )
-            return {
-                **base,
-                "ok": False,
-                "action": "reconnect_failed_stop_stream_failed",
-                "failure_reason": "restart_completed_worker_not_response",
-                "heartbeat": heartbeat,
-                "restart_result": grace["restart_result"],
-                "verify_result": grace["verify_result"],
-                "heartbeat_verify": heartbeat_verify,
-                "recovery_policy": self._recovery_policy,
-                "recovery_attempt": self._recovery_attempt(),
-                "error": f"{type(error).__name__}: {error}",
-            }
+        cleanup_failure = self._stop_for_recovery(base)
+        if cleanup_failure is not None:
+            return cleanup_failure
 
         if self._recovery_attempt_count >= self._max_auto_restart_attempts:
             return self._transition_to_needs_action(
@@ -1812,6 +1838,7 @@ class StreamWatcher (threading.Thread):
                 "initiating_failure_reason": initiating_failure_reason,
                 "recommended_commands": ["restart_stream"],
                 "lifecycle_state": lifecycle_state,
+                **(self._recovery_block or {}),
             }
 
         with m.stream_lifecycle_guard(
@@ -1832,6 +1859,10 @@ class StreamWatcher (threading.Thread):
             if self._response_grace is not None:
                 return self._advance_response_grace(base)
 
+            if (self._port_release_started_at is not None
+                    and time.monotonic() - self._port_release_started_at >= self._port_release_timeout_sec):
+                return self._wait_for_port_release(base)
+
             #Check if any port is available
             try:
                 port_present = m.is_stream_port_present(self.stream_index)
@@ -1845,6 +1876,7 @@ class StreamWatcher (threading.Thread):
                 }
             #if port is unavailable, wait
             if not port_present:
+                self._port_release_started_at = None
                 # Port vanished again -> a new unplug/replug sub-episode. Refresh
                 # the auto-restart budget so the next replug gets a full set of
                 # attempts instead of inheriting a half-spent count.
@@ -1857,12 +1889,7 @@ class StreamWatcher (threading.Thread):
                 }
             #if port exist but cant be opened, wait until next tick and retry
             if not m.is_stream_port_openable(self.stream_index):
-                return {
-                    **base,
-                    "ok": False,
-                    "action": "waiting_for_port_release",
-                    "failure_reason": "waiting_for_port_release",
-                }
+                return self._wait_for_port_release(base)
             #if port exist and can be opened, restart stream
             # Cooling down after a worker crashed on its cold open: don't respawn
             # a doomed worker every tick while the device finishes settling. The
@@ -1880,21 +1907,11 @@ class StreamWatcher (threading.Thread):
             self._recovery_attempt_count += 1
             restart_result = m.restart_one_stream(self.stream_index)
             if not restart_result["ok"]: #If restart status is bad
-                # A restart that fails because the port is still locked
-                # (PermissionError / "Access is denied") means the port was not
-                # truly released -- the openable probe passed inside the settle
-                # window. Treat it exactly like waiting_for_port_release: refund
-                # the attempt and back off, so a flaky port lock never drains the
-                # auto-restart budget.
+                # A device can appear before VCP or D2XX can use it. Wait for
+                # the next watchdog tick without spending the restart budget.
                 if self._is_port_lock_error(restart_result.get("error")):
                     self._recovery_attempt_count -= 1
-                    return {
-                        **base,
-                        "ok": False,
-                        "action": "waiting_for_port_release",
-                        "failure_reason": "waiting_for_port_release",
-                        "restart_result": restart_result,
-                    }
+                    return self._wait_for_port_release(base, restart_result=restart_result)
                 if self._recovery_attempt_count >= self._max_auto_restart_attempts:
                     return self._transition_to_needs_action(
                         base,
@@ -1976,6 +1993,7 @@ class StreamWatcher (threading.Thread):
         }
         if action == "needs_action":
             result["initiating_failure_reason"] = lifecycle_state.get("reason")
+            result.update(self._recovery_block or {})
         return result
     
     # ------------------------------------------------------------------ #
@@ -2270,6 +2288,9 @@ class StreamWatcher (threading.Thread):
                 "rule": "connection_restored",
                 "summary": "Connection restored; recording real samples again.",
             }
+
+        if action_result.get("initiating_failure_reason") in {"cleanup_failed", "port_release_timeout"}:
+            assessment["summary"] = action_result.get("error") or assessment["summary"]
 
         report = {
             "stream_index": self.stream_index,
