@@ -45,6 +45,23 @@ worker processes own the serial ports and preflight raises `RuntimeError`.
 another thread, a timer, or interrupt handling. `stop()` only stops the watcher
 loops. Always finish with `close()` to release DataFlow resources.
 
+Plain `DataFlow` workers stop through their stop event, a bounded join, and
+termination if the timeout expires. Watchdog reports a clean stop when the
+worker exits with code zero without forced termination. Plain streams do not
+allocate shutdown IDs or acknowledgement queues, including after recovery.
+
+Applications can supply a `DataFlowMonitor` subclass through the optional
+`Watchdog(..., dataflow_monitor_factory=CustomMonitor)` keyword. The monitor's
+`_start_worker`, `_stop_worker`, and `_clear_worker_state` hooks execute under
+the existing lifecycle locks. The stop hook receives the shared deadline and
+an already-set stop event; the monitor closes the process handle afterward.
+
+The dashboard supplies its own `AcknowledgedDataFlowMonitor`, paired with
+`AcknowledgedDataFlow`. That adapter owns IDs, queues, and transcript validation;
+missing acknowledgements and forced termination remain failures. The default
+watchdog has no acknowledgement protocol dependency. Legacy `DataFlow`, device,
+and acquisition APIs are unchanged.
+
 On Windows, put device construction and all multiprocessing work behind:
 
 ```python

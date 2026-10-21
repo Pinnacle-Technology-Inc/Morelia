@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import gc
 import multiprocessing as mp
-from multiprocessing.process import BaseProcess
 import os
 import signal
 import sys
+import threading
 import time
 import uuid
 from datetime import UTC, datetime
+from multiprocessing.process import BaseProcess
 
 from Morelia.shutdown import (
     ShutdownAction,
@@ -22,6 +23,7 @@ from Morelia.shutdown import (
 from Morelia.Stream import source as legacy_source
 from Morelia.Stream.data_flow import DataFlow as LegacyDataFlow
 from Morelia.Watchdog.healthSink import HealthSink
+from app.runtime_child.queue_diagnostics import DiagnosticQueue, label_queue
 
 
 class ArrivalHealthSink(HealthSink):
@@ -44,11 +46,19 @@ class ArrivalHealthSink(HealthSink):
 class ShutdownReporter:
     """Send worker shutdown progress to the parent so it can verify cleanup."""
 
-    def __init__(self, status_queue, shutdown_id: str, stream_index: int) -> None:
+    def __init__(self, status_queue, shutdown_id: str, stream_index: int, deadline=None) -> None:
         self.status_queue = status_queue
+        label_queue(status_queue, stream_index=stream_index, shutdown_id=shutdown_id)
         self.shutdown_id = shutdown_id
         self.stream_index = stream_index
         self.actor_pid = os.getpid()
+        self._deadline = deadline
+
+    @property
+    def shutdown_deadline(self):
+        """Return the parent's absolute monotonic deadline once shutdown starts."""
+        value = self._deadline.value if self._deadline is not None else 0.0
+        return value if value > 0 else None
 
     def emit(
         self,
@@ -261,6 +271,11 @@ def acknowledged_get_data_wrapper(
     source_error_emit_interval_sec=1.0,
     database_config=None,
     recording_queue=None,
+    shutdown_deadline=None,
+    predecessor_released=None,
+    source_reconnect_config=None,
+    descendants_released=None,
+    predecessor_worker_exited=None,
 ):
     """Run acquisition with reports for session timing and output shutdown."""
     if mp.parent_process() is not None:
@@ -272,9 +287,10 @@ def acknowledged_get_data_wrapper(
 
     reporter = None
     if shutdown_queue is not None and shutdown_id is not None:
-        reporter = ShutdownReporter(shutdown_queue, shutdown_id, stream_index)
+        reporter = ShutdownReporter(shutdown_queue, shutdown_id, stream_index, shutdown_deadline)
 
     database_context = None
+    sinks = []
     try:
         if database_config is not None:
             from app.database import create_database_app
@@ -287,18 +303,34 @@ def acknowledged_get_data_wrapper(
         if manual_stop_event.is_set():
             return
         source = source_class(**source_dict)
-        # Allow device recovery to keep using the session's existing output sinks.
-        if source_recovery_window_sec is not None:
-            source._source_recovery_window_sec = source_recovery_window_sec
         sinks = [
             (ArrivalHealthSink if sink_class is HealthSink else sink_class)(
                 **{**sink_dict, "pod": source}) for sink_class, sink_dict in sinks_list
         ]
+        for sink, released in zip(sinks, predecessor_released or [], strict=False):
+            if released is True:
+                sink._predecessor_released = True
+        for sink, exited in zip(sinks, predecessor_worker_exited or [], strict=False):
+            sink._predecessor_worker_exited = exited is True
         # Observe arrival before slow or failed writes affect session timing.
         # Use exact types because isinstance also accepts output sinks with flush().
         sinks.sort(key=lambda sink: type(sink) not in (HealthSink, ArrivalHealthSink))
-        _bind_sink_callbacks(sinks, on_sink_error, reporter, recording_queue)
-        instrumented_source = _SourceLifecycleProxy(source, manual_stop_event, reporter)
+        def report_sink_error(event):
+            if on_sink_error is None:
+                return
+            event = dict(event)
+            if source_reconnect_config is not None:
+                event["source_id"] = source_reconnect_config[0].device_id
+            for sink in sinks:
+                if getattr(sink, "sink_id", None) == event.get("sink_id"):
+                    record = getattr(sink, "_record", None)
+                    if record is not None:
+                        event.setdefault("output_id", record.output_id)
+                        event.setdefault("confirmed_samples", getattr(sink, "_samples_written", 0))
+                    break
+            on_sink_error(event)
+
+        _bind_sink_callbacks(sinks, report_sink_error, reporter, recording_queue)
         instrumented_sinks = sinks
         if reporter is not None:
             # ExitStack closes in reverse order, so confirm completion after all sinks close.
@@ -309,12 +341,24 @@ def acknowledged_get_data_wrapper(
             ]
 
         get_data_kwargs = {
-            "on_sink_error": on_sink_error,
+            "on_sink_error": report_sink_error,
             "on_source_error": on_source_error,
             "max_error_message_chars": max_error_message_chars,
             "source_error_emit_interval_sec": source_error_emit_interval_sec,
         }
-        legacy_source.get_data(
+        get_data = legacy_source.get_data
+        if any(any(cls.__module__ == "app.output.managed_pvfs_sink" for cls in type(sink).__mro__)
+               for sink in sinks):
+            from app.runtime_child.pvfs_acquisition import get_data as managed_get_data
+
+            get_data = managed_get_data
+            source._source_recovery_window_sec = source_recovery_window_sec
+            get_data_kwargs["reconnect_config"] = source_reconnect_config
+        instrumented_source = _SourceLifecycleProxy(
+            source, manual_stop_event, reporter,
+            pause_on_read_error=get_data is legacy_source.get_data,
+        )
+        get_data(
             duration_sec,
             manual_stop_event,
             instrumented_source,
@@ -328,6 +372,12 @@ def acknowledged_get_data_wrapper(
             reporter.failed("worker_shutdown_failed", exc)
         raise
     finally:
+        if descendants_released is not None:
+            owners = [sink for sink in sinks if _sinks_may_own_processes([sink])]
+            descendants_released.value = all(
+                callable(getattr(sink, "_ownership_released", None))
+                and sink._ownership_released() for sink in owners
+            )
         if database_context is not None:
             database_context.pop()
 
@@ -352,6 +402,11 @@ def _close_queue(status_queue) -> None:
         join_thread()
 
 
+def _create_shutdown_queue():
+    """Create a queue that a nested spawn writer can share on every host."""
+    return DiagnosticQueue("worker_shutdown", ctx=mp.get_context() if sys.platform == "win32" else mp.get_context("spawn"))
+
+
 def _sinks_may_own_processes(sinks):
     """Check whether shutdown must also wait for output writer processes."""
     pvfs_types = {
@@ -369,7 +424,7 @@ def _sinks_may_own_processes(sinks):
 def _coordinate_worker_shutdown(worker, stop_event, status_queue, shutdown_id,
                                 stream_index, join_timeout_sec, *, deadline=None,
                                 previous=None, descendants_possible=False,
-                                launch_not_attempted=False):
+                                launch_not_attempted=False, descendants_released=None):
     """Confirm that the worker and its output writers stopped, retaining any output failures."""
     if previous is not None and previous.get("teardown_confirmed") is True:
         return dict(previous)
@@ -408,7 +463,9 @@ def _coordinate_worker_shutdown(worker, stop_event, status_queue, shutdown_id,
         and record.outcome in (ShutdownOutcome.ACKNOWLEDGED, ShutdownOutcome.COMPLETED)
         for record in result.get("transcript", ())
     )
-    descendants_confirmed = (not descendants_possible or sinks_finalized
+    release_confirmed = (exited and descendants_released is not None
+                         and descendants_released.value == 1)
+    descendants_confirmed = (not descendants_possible or sinks_finalized or release_confirmed
                              or (previous is not None and previous.get("descendants_teardown_confirmed") is True))
     result["descendants_teardown_confirmed"] = descendants_confirmed
     result["teardown_confirmed"] = exited and descendants_confirmed
@@ -430,6 +487,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
     """Require shutdown results for every acquisition worker and its output writers."""
 
     supports_source_recovery_window = True
+    supports_identity_reconnect = True
     supports_recording_acknowledgements = True
 
     def __init__(
@@ -439,6 +497,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         recording_queue=None,
         max_error_message_chars=500,
         source_error_emit_interval_sec=1.0,
+        source_reconnect_configs=None,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
@@ -447,6 +506,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             if source_recovery_window_sec <= 0:
                 raise ValueError("source_recovery_window_sec must be greater than zero")
         self._source_recovery_window_sec = source_recovery_window_sec
+        self._source_reconnect_configs = source_reconnect_configs or {}
         self._max_error_message_chars = int(max_error_message_chars)
         self._source_error_emit_interval_sec = float(source_error_emit_interval_sec)
         if self._max_error_message_chars <= 0:
@@ -456,12 +516,16 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         self._recording_queue = recording_queue
         self._acquisition_guard = None
         self._registered_stop_events = []
+        self._registered_shutdown_deadlines = []
         self._ever_started_worker = False
         # Account for every stream even if the session stops before acquisition starts.
         # These IDs cover that case; each collection attempt gets new IDs for its history.
         self._workers = [None] * len(self._network)
         self._manual_stop_events = [None] * len(self._network)
         self._shutdown_status_queues: list[object | None] = [None] * len(self._network)
+        self._shutdown_deadlines = {}
+        self._shutdown_deadline_lock = threading.Lock()
+        self._descendants_released = {}
         self._shutdown_ids: list[str | None] = [str(uuid.uuid4()) for _ in self._network]
         self._shutdown_results: dict[int, dict] = {}
         self._prior_shutdown_results: list[dict] = []
@@ -504,10 +568,13 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             max_error_message_chars=self._max_error_message_chars,
             source_error_emit_interval_sec=self._source_error_emit_interval_sec,
             recording_queue=self._recording_queue,
+            source_reconnect_configs=self._source_reconnect_configs,
         )
         replacement._acquisition_guard = self._acquisition_guard
         # The runtime still cancels through the original flow, so share replacement stop events.
         replacement._registered_stop_events = self._registered_stop_events
+        replacement._registered_shutdown_deadlines = self._registered_shutdown_deadlines
+        replacement._shutdown_deadline_lock = self._shutdown_deadline_lock
         replacement._prior_shutdown_results = list(self._prior_shutdown_results)
         replacement._shutdown_generation_ids = set(self._shutdown_generation_ids)
         for result in self._shutdown_results.values():
@@ -526,6 +593,11 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         stream_index=0,
     ):
         self._registered_stop_events.append(manual_stop_event)
+        shutdown_deadline = mp.RawValue("d", 0.0)
+        self._shutdown_deadlines[stream_index] = shutdown_deadline
+        self._registered_shutdown_deadlines.append(shutdown_deadline)
+        descendants_released = mp.RawValue("b", False)
+        self._descendants_released[stream_index] = descendants_released
         args = (
             duration_sec,
             manual_stop_event,
@@ -542,6 +614,11 @@ class AcknowledgedDataFlow(LegacyDataFlow):
             self._source_error_emit_interval_sec,
             _database_config_for_worker(),
             self._recording_queue,
+            shutdown_deadline,
+            [getattr(sink, "_predecessor_released", False) is True for sink in sinks],
+            self._source_reconnect_configs.get(stream_index),
+            descendants_released,
+            [getattr(sink, "_predecessor_worker_exited", False) is True for sink in sinks],
         )
         return _create_worker(args=args)
 
@@ -563,7 +640,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
         for stream_index, (source, sinks) in enumerate(self._network):
             stop_event = mp.Event()
             self._manual_stop_events[stream_index] = stop_event
-            status_queue = mp.Queue()
+            status_queue = _create_shutdown_queue()
             self._shutdown_status_queues[stream_index] = status_queue
             shutdown_id = self._shutdown_ids[stream_index]
             if hasattr(source, "_port"):
@@ -589,8 +666,19 @@ class AcknowledgedDataFlow(LegacyDataFlow):
                     self._ever_started_worker = True
             self._ever_started_worker = True
 
+    def publish_shutdown_deadline(self, deadline, stream_index=None):
+        """Give native owners the remaining budget before their stop events are set."""
+        values = ([*self._shutdown_deadlines.values(), *self._registered_shutdown_deadlines]
+                  if stream_index is None
+                  else [self._shutdown_deadlines.get(stream_index)])
+        for value in values:
+            if value is not None:
+                with self._shutdown_deadline_lock:
+                    value.value = min(value.value, deadline) if value.value > 0 else deadline
+
     def stop_collection(self, join_timeout_sec: float = 15.0):
         deadline = time.monotonic() + max(0.0, float(join_timeout_sec))
+        self.publish_shutdown_deadline(deadline)
         for event in self._manual_stop_events:
             if event is not None:
                 event.set()
@@ -611,6 +699,7 @@ class AcknowledgedDataFlow(LegacyDataFlow):
                 previous=previous,
                 descendants_possible=self.descendants_possible(index),
                 launch_not_attempted=self._worker_start_attempted.get(index) is False,
+                descendants_released=self._descendants_released.get(index),
             )
             results.append(result)
             self._shutdown_results[index] = dict(result)

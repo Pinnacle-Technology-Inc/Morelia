@@ -158,6 +158,7 @@ def test_pvfs_native_ack_is_not_enqueue_and_does_not_wait_for_next_sample(tmp_pa
                                device_id="pod:one", sink_id="pvfs", use_writer_process=writer_process)
         sink.bind_recording_callback(events.append)
         try:
+            opened_at = time.time()
             sink.flush(STAMP, SimpleNamespace(ch0=1))
             assert events == []
             sink.flush(STAMP + 500_000_000, SimpleNamespace(ch0=2))
@@ -165,7 +166,10 @@ def test_pvfs_native_ack_is_not_enqueue_and_does_not_wait_for_next_sample(tmp_pa
             while not events and time.monotonic() < deadline:
                 time.sleep(0.01)
             assert events, "a native write must report without requiring another source packet"
-            assert events[0]["first_sample_at"] == ISO
-            assert events[0]["last_sample_at"].endswith(".500000+00:00")
+            first = datetime.fromisoformat(events[0]["first_sample_at"]).timestamp()
+            last = datetime.fromisoformat(events[0]["last_sample_at"]).timestamp()
+            assert opened_at <= first <= time.time()
+            assert last - first == pytest.approx(0.5)
+            assert events[0]["first_sample_at"] != ISO
         finally:
             sink.close()

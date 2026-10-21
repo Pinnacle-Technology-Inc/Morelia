@@ -3,6 +3,8 @@ from queue import Queue
 
 from Morelia.Watchdog.dataflowMonitor import DataFlowMonitor
 from Morelia.shutdown import ShutdownAction, ShutdownOutcome, ShutdownPhase
+from app.runtime_child.acknowledged_dataflow import AcknowledgedDataFlow
+from app.runtime_child.acknowledged_monitor import AcknowledgedDataFlowMonitor
 
 
 class FakeEvent:
@@ -115,9 +117,9 @@ class FakeSource:
         self.events.append(f"{self.name}.cleanup")
 
 
-class FakeFlowgraph:
+class FakeFlowgraph(AcknowledgedDataFlow):
     def __init__(self, source, worker, events):
-        self._network = [(source, [])]
+        super().__init__([(source, [])])
         self._workers = [worker]
         self._manual_stop_events = [FakeEvent(events)]
 
@@ -170,7 +172,7 @@ def make_multi_stream_monitor(stream_count, worker_factory):
             worker.shutdown_id = flowgraph._shutdown_ids[index]
             worker.stream_index = index
 
-    monitor = DataFlowMonitor(flowgraph=None)
+    monitor = AcknowledgedDataFlowMonitor(flowgraph=None)
     monitor.flowgraph = flowgraph
     monitor.snapshot_config = [
         {"source": {"source_dict": {}}}
@@ -193,7 +195,7 @@ def make_multi_stream_monitor(stream_count, worker_factory):
 
 def make_monitor(events, old_source, old_worker, replacement_source):
     flowgraph = FakeFlowgraph(old_source, old_worker, events)
-    monitor = DataFlowMonitor(flowgraph=None)
+    monitor = AcknowledgedDataFlowMonitor(flowgraph=None)
     monitor.flowgraph = flowgraph
     monitor.snapshot_config = [{"source": {"source_dict": {}}}]
     monitor._poll_locks = {0: threading.RLock()}
@@ -229,6 +231,34 @@ def test_restart_preserves_old_source_queue_server_until_full_shutdown():
     assert events.index("replacement.build") < events.index("worker.start")
     assert "old.cleanup" not in events
     assert "resources.wait" not in events
+
+
+def test_restart_joins_old_worker_then_builds_new_address_without_resetting_old():
+    events = []
+    old_source = FakeSource("old", events)
+    old_source.port = "COM3"
+    old_source._use_d2xx = False
+    replacement = FakeSource("replacement", events)
+    replacement.port = "COM7"
+    worker = FakeWorker(events)
+    monitor = make_monitor(events, old_source, worker, replacement)
+
+    def resolve(index):
+        assert not worker.is_alive(), "resolve only after the old worker has stopped"
+        events.append("port.resolve")
+        return "COM7"
+
+    monitor._port_resolver = resolve
+    resets = []
+    monitor._hw.reset_streaming_device = lambda source: resets.append(source.port) or {"ok": True}
+    result = monitor.restart_one_stream(0)
+
+    assert result["ok"]
+    assert events.index("worker.join") < events.index("port.resolve")
+    assert events.index("port.resolve") < events.index("replacement.build")
+    assert events.index("replacement.build") < events.index("worker.start")
+    assert resets == ["COM7"]
+    assert monitor.flowgraph._network[0][0].port == "COM7"
 
 
 def test_stop_stream_keeps_source_when_worker_slot_is_missing():

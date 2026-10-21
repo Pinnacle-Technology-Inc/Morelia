@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from threading import Event
 
 import pytest
 
@@ -26,6 +27,11 @@ def _runtime_with_watchdog(result):
             events.append(("watchdog_close", None))
 
     runtime = object.__new__(MoreliaRuntime)
+    runtime._local_cancel = Event()
+    runtime._startup_event = Event()
+    runtime._flowgraph = None
+    runtime._pods = []
+    runtime.shutdown_result = None
     runtime._phase = RuntimePhase.RUNNING
     runtime._watchdog = Watchdog()
     runtime._watchdog_thread = None
@@ -115,6 +121,6 @@ def test_forced_shutdown_raises_and_never_reports_stopped(monkeypatch):
     with pytest.raises(RuntimeError, match="forced_termination=true"):
         runtime.stop()
 
-    assert events[:3] == [("watchdog_stop", None), ("stop_dataflow", 15.0), ("watchdog_close", None)]
+    assert events == [("watchdog_stop", None), ("stop_dataflow", 15.0)]
     assert not emitted
     assert runtime.phase is RuntimePhase.RUNNING

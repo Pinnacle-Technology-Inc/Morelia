@@ -184,7 +184,10 @@ class Watchdog:
         Raises RuntimeError when DataFlow workers already own the ports, or
         when require_ready is True and one or more devices are not ready.
         """
-        if self.dataflow_monitor is not None and getattr(self.dataflow_monitor.flowgraph, "_workers", []):
+        if self.dataflow_monitor is not None and any(
+            worker is not None
+            for worker in getattr(self.dataflow_monitor.flowgraph, "_workers", [])
+        ):
             raise RuntimeError(
                 "preflight() must run before flowgraph.collect() — workers already own the ports.")
         hw = HardwareMonitor(failure_threshold=self.failure_threshold)
@@ -2012,6 +2015,7 @@ class StreamWatcher (threading.Thread):
             return {
                 "status": hb.get("state"),
                 "last_data_at": _to_rel(hb.get("last_data_at")),   # _to_rel is already module-level
+                "last_data_at_epoch": hb.get("last_data_at"),
                 "reason": hb.get("reason"),
                 "age_sec": hb.get("age_sec"),
                 "max_age_sec": hb.get("max_age_sec"),
