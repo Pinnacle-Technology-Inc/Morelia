@@ -22,11 +22,13 @@ handle is released (readers/writers closed) before ``tmp_path`` teardown.
 from __future__ import annotations
 
 import dataclasses
+import hashlib
+import struct
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
-
 from app.models.output_file import OutputFile
 from app.output.managed_pvfs_sink import ManagedPvfsSink
 from app.output.pvfs_merger import pvfs_merger, pvfs_staging_merger
@@ -40,6 +42,89 @@ from app.services.output_finalization import (
 _DF = "dataflow-pvfs-merge-001"
 _CH = ["EEG1", "EEG2"]
 _RATE = 10
+
+
+def test_duplicate_legacy_nc_merge_rejection_preserves_sources(tmp_path, app):
+    from Morelia.Devices import Preamp
+
+    pod = type("Pod8401HR", (), {"sample_rate": 4, "preamp": Preamp.Preamp8406_BIO})()
+    with app.app_context():
+        sink = ManagedPvfsSink(path=tmp_path / "nc.pvfs", dataflow_id="nc-merge", pod=pod).open()
+        logical = sink.record.logical_sink_id
+        for segment in range(2):
+            for index in range(4):
+                sink.flush(index, SimpleNamespace(ch0=index, ch1=index + 10,
+                                                  ch2=index + 20, ch3=index + 30))
+            if segment == 0:
+                sink.recover()
+            else:
+                sink.close()
+        refs = _refs(logical)
+        before = [hashlib.sha256(Path(ref.path).read_bytes()).hexdigest() for ref in refs]
+        result = pvfs_merger(_request(logical, tmp_path, refs=refs))
+    assert not result.ok
+    assert "duplicate channel names" in result.reason
+    assert result.published_path is None
+    assert [hashlib.sha256(Path(ref.path).read_bytes()).hexdigest() for ref in refs] == before
+
+
+@pytest.mark.parametrize("counts", [(1, 1), (5, 5), (5, 1)])
+@pytest.mark.parametrize("writer_process", [False, True])
+def test_packet_merge_keeps_single_sample_tails_and_channel_order(
+    tmp_path, app, counts, writer_process,
+):
+    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
+
+    from Morelia.Devices import Preamp
+    from Morelia.Stream.source import MissingSample
+
+    labels = ["Bio", "EEG1", "EMG", "EEG2"]
+    pod = type("Pod8401HR", (), {"sample_rate": 4, "preamp": Preamp.Preamp8407_SE})()
+    expected = {name: [] for name in labels}
+    with app.app_context():
+        sink = ManagedPvfsSink(path=tmp_path / "packets.pvfs", dataflow_id="tail-merge",
+                               pod=pod, use_writer_process=writer_process).open()
+        logical = sink.record.logical_sink_id
+        for segment, count in enumerate(counts):
+            for index in range(count):
+                missing = index == 1
+                row = [segment * 100 + column * 10 + index for column in range(4)]
+                packet = MissingSample() if missing else SimpleNamespace(
+                    ch0=row[0], ch1=row[1], ch2=row[2], ch3=row[3],
+                )
+                sink.flush(index, packet)
+                for name, value in zip(labels, row, strict=True):
+                    expected[name].append(float("nan") if missing else value)
+            if segment == 0:
+                sink.recover()
+            else:
+                sink.close()
+        refs = _refs(logical)
+        before = [hashlib.sha256(Path(ref.path).read_bytes()).hexdigest() for ref in refs]
+        result = pvfs_merger(_request(logical, tmp_path, refs=refs))
+    assert result.ok, result
+    assert result.sample_count == sum(counts)
+    assert [hashlib.sha256(Path(ref.path).read_bytes()).hexdigest() for ref in refs] == before
+    reader = PvfsDataFile()
+    assert reader.open(result.published_path)
+    try:
+        assert sorted(reader.get_channel_names(), key=lambda name: reader.get_channel_info(name).id) == labels
+        for name in labels:
+            channel = reader.open_channel(name)
+            actual = []
+            # Inspect payloads independently of the reader used by the merger.
+            for index, entry in enumerate(channel._indices):
+                start = entry.data_location + 32
+                end = (channel._indices[index + 1].data_location - 4
+                       if index + 1 < len(channel._indices)
+                       else channel._data_file.get_file_info().size)
+                channel._data_file.seek(start)
+                raw = channel._data_file.read(end - start)
+                assert len(raw) == end - start
+                actual.extend(struct.unpack(f"<{len(raw) // 4}f", raw))
+            np.testing.assert_allclose(actual, expected[name], equal_nan=True)
+    finally:
+        reader.close()
 
 
 # ---------------------------------------------------------------------------

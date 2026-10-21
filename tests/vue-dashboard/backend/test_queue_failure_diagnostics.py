@@ -151,3 +151,60 @@ def test_queue_identity_survives_spawn(capfd):
             child.join(timeout=5)
         queue.close()
         queue.join_thread()
+
+
+def test_real_pvfs_writer_rejects_sequence_gap_and_preserves_confirmed_samples(app, tmp_path, capfd):
+    from app.output.managed_pvfs_sink import ManagedPvfsSink, ManagedPvfsSinkError
+    from app.output.pvfs_merger import _read_channel
+    from pvfs_tools.Core.pvfs_data_file import PvfsDataFile
+
+    path = tmp_path / "injected-write.pvfs"
+    with app.app_context():
+        sink = ManagedPvfsSink(path=path, dataflow_id="RUN", channels=["EEG1"],
+                               sample_rate=4, use_writer_process=True,
+                               device_id="DEVICE", sink_id="DEVICE:pvfs")
+        sink.open()
+        queue = sink._writer_queue
+        send = queue._writer.send_bytes
+
+        def fail_sixth_frame(data):
+            if pickle.loads(data).get("sequence") == 6:
+                error = OSError("injected resource failure")
+                error.winerror = 1450
+                raise error
+            return send(data)
+
+        queue._writer.send_bytes = fail_sixth_frame
+        queue._reset()
+        try:
+            for value in range(1, 5):
+                sink.write_frame([float(value)])
+            sink.flush()
+            assert sink.record.row_offset == 4
+            with pytest.raises(ManagedPvfsSinkError, match="sequence"):
+                for value in range(5, 8):
+                    sink.write_frame([float(value)])
+                sink.flush()
+        finally:
+            with pytest.raises(ManagedPvfsSinkError):
+                sink.close()
+        assert sink.record.acquisition_state == "interrupted"
+        assert sink.record.row_offset == 4
+
+    events = records(capfd.readouterr().err)
+    failure, = [r for r in events if r["event"] == "ipc_queue_feeder_error"]
+    gap, = [r for r in events if r["event"] == "pvfs_writer_sequence_gap"]
+    summary, = [r for r in events if r["event"] == "pvfs_queue_stop_summary"]
+    assert failure["sequence"] == 6
+    assert failure["device_id"] == "DEVICE"
+    assert gap["expected_sequence"] == 6
+    assert gap["received_sequence"] == 7
+    assert summary["samples_written"] == 4
+    assert summary["forced_termination"] is False
+    reader = PvfsDataFile()
+    try:
+        assert reader.open(str(path))
+        _, values = _read_channel(reader.open_channel("EEG1"))
+        assert values == pytest.approx([1.0, 2.0, 3.0, 4.0])
+    finally:
+        reader.close()
