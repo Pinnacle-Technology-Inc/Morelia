@@ -1,4 +1,4 @@
-"""Validated physical-device connection preferences, separate from templates."""
+"""Validated physical-device connection preferences (D2XX with ftd2xx or VCP with PySerial)"""
 
 from collections.abc import Mapping
 from typing import Any
@@ -10,10 +10,6 @@ class ConnectionError(ValueError):
 
 def normalize_connection(value: Mapping[str, Any] | None) -> dict[str, Any]:
     """Validate connection preferences and fill in missing defaults.
-
-    Omitted settings default to VCP, 9600 baud, and 5000 ms timeouts.
-    Leave unspecified flow control for the resolver to choose: none for VCP,
-    RTS/CTS for D2XX. This function does not select or open a device.
     """
     if value is None:
         value = {}
@@ -44,10 +40,7 @@ def normalize_connection(value: Mapping[str, Any] | None) -> dict[str, Any]:
 def validate_device_connection(
     device_type: object, value: Mapping[str, Any] | None
 ) -> dict[str, Any]:
-    """Validate preferences and reject explicit D2XX for unsupported devices.
-
-    Return the settings with defaults applied. An ``auto`` preference remains
-    for the resolver to decide when it selects an available endpoint.
+    """Validate preferences and reject explicit D2XX for unsupported devices
     """
     connection = normalize_connection(value)
     type_key = getattr(device_type, "value", device_type)
@@ -64,10 +57,16 @@ def normalize_resolved_connection(
     """Check that a selected connection's transport, backend, and identity agree.
 
     Return a copy without choosing another endpoint or opening hardware.
-    When supplied, ``hardware_id`` must match the connection's device identity.
-    D2XX addresses must match the USB serial. The resolver may provide that
-    serial as ``physical_id`` when the device's hardware ID is an OS alias;
-    user preferences cannot set this field.
+    Field examples:
+        "transport": "vcp",
+        "backend": "pyserial",
+        "address": "COM3",
+        "hardware_id": "ABC",
+        "baudrate": 9600,
+        "flow_control": "none",
+        "read_timeout_ms": 5000,
+        "write_timeout_ms": 5000,
+        "selection_reason": "auto_vcp_first",
     """
     if not isinstance(value, Mapping):
         raise ConnectionError("resolved connection must be an object")

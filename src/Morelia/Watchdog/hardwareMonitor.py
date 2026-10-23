@@ -285,15 +285,16 @@ class HardwareMonitor:
         verify_cmd="GET SAMPLE RATE",
         desired_sample_rate=None,
     ):
-        """Reset/drain a device and confirm it answers a control command.
+        """Stop and drain streaming before configuring and verifying the device.
 
-        When ``desired_sample_rate`` is supplied, SET that manifest-owned rate
-        after the channel becomes quiet, then GET it back and require an exact
-        match. The operation resets between attempts and never raises.
+        Apply managed startup settings after the device becomes quiet. When
+        supplied, set and verify the desired sample rate. Configuration and
+        verification failures retry after another reset; return failure details
+        when attempts are exhausted.
         """
         opened_here = getattr(device, "_port", None) is None
-        if desired_sample_rate is not None:
-            if (
+        if desired_sample_rate is not None: #if there is a requested sample rate, validate
+            if ( #case sample rate is negative
                 isinstance(desired_sample_rate, bool)
                 or not isinstance(desired_sample_rate, int)
                 or desired_sample_rate <= 0
@@ -303,23 +304,29 @@ class HardwareMonitor:
                     "attempts_used": 0,
                     "error": "desired_sample_rate must be a positive integer",
                 }
-        if opened_here:
-            try:
-                device.open_port()
+        if opened_here: #if requested sample rate is good, try to open devic
+            try: #see if the device is a new device that need config or a returning device
+                opener = getattr(device, "open_port_for_reset", device.open_port)
+                opener()
             except Exception as e:
                 return {"ok": False, "attempts_used": 0, "error": f"open_port: {e}"}
         try:
             last_error = None
+            prepare = getattr(device, "prepare_acquisition", None)
             for attempt in range(attempts):
-                reset = self.reset_streaming_device(device)        # port already open -> no-op open
+                reset = self.reset_streaming_device(device)
                 try:
-                    if desired_sample_rate is not None:
+                    if desired_sample_rate is not None or callable(prepare):
                         if not reset.get("ok"):
                             raise RuntimeError(
                                 f"device reset failed: {reset.get('error', 'unknown error')}"
                             )
                         if not reset.get("device_quiet"):
                             raise RuntimeError("device did not become quiet before configuration")
+                    if callable(prepare):
+                        prepare()
+
+                    if desired_sample_rate is not None: #if there is a requested  sample rate, set it
                         device.write_read(
                             cmd="SET SAMPLE RATE",
                             payload=(desired_sample_rate,),
@@ -327,7 +334,7 @@ class HardwareMonitor:
                         )
                     response = device.write_read(cmd=verify_cmd, timeout_sec=timeout_sec)
                     actual_sample_rate = self._sample_rate_from_response(verify_cmd, response)
-                    if (
+                    if ( #check if the actual and requested sample rate is the same
                         desired_sample_rate is not None
                         and actual_sample_rate != desired_sample_rate
                     ):

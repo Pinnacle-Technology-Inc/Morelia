@@ -183,6 +183,77 @@ def test_reset_open_defers_type_and_settings(fake_transport):
         source.cleanup()
 
 
+@pytest.mark.parametrize("failed_command", [None, "TYPE", "SET SAMPLE RATE"])
+@pytest.mark.parametrize("desired_rate", [None, 2000])
+def test_preflight_drains_before_configuration_and_retries(
+    fake_transport, monkeypatch, failed_command, desired_rate,
+):
+    from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
+
+    commands = []
+    drained = False
+    failed_once = False
+
+    def write_packet(self, cmd, payload=None):
+        nonlocal drained
+        assert (cmd, payload) == ("STREAM", 0)
+        commands.append(cmd)
+        drained = False
+
+    def read_packet(self, *args, **kwargs):
+        nonlocal drained
+        commands.append("drain")
+        drained = True
+        raise TimeoutError("device is quiet")
+
+    def reply(self, cmd, payload=None, *args, **kwargs):
+        nonlocal failed_once
+        commands.append(cmd)
+        if not drained:
+            raise TimeoutError("configuration attempted before reset and drain")
+        if cmd == failed_command and not failed_once:
+            failed_once = True
+            raise TimeoutError("first configuration response missing")
+        return SimpleNamespace(payload=(48,) if cmd == "TYPE" else (2000,))
+
+    monkeypatch.setattr(LegacyPod, "write_packet", write_packet)
+    monkeypatch.setattr(LegacyPod, "read_pod_packet", read_packet)
+    monkeypatch.setattr(LegacyPod, "write_read", reply)
+    source = Pod8206HR("EXACT001", 10, use_d2xx=True, sample_rate=2000, probe=True)
+    try:
+        result = HardwareMonitor(3).preflight_device(
+            source, desired_sample_rate=desired_rate,
+        )
+        assert result["ok"], result
+        assert result["attempts_used"] == (2 if failed_command else 1)
+        assert commands[:3] == ["STREAM", "drain", "TYPE"]
+        assert commands.count("STREAM") == result["attempts_used"]
+        assert commands[-1] == "GET SAMPLE RATE"
+        assert source._port is None
+        assert fake_transport[-1] == ("close",)
+    finally:
+        source.cleanup()
+
+
+def test_preflight_does_not_configure_when_reset_fails(fake_transport, monkeypatch):
+    from Morelia.Watchdog.hardwareMonitor import HardwareMonitor
+
+    def write_packet(self, cmd, payload=None):
+        raise OSError("device did not accept STREAM 0")
+
+    monkeypatch.setattr(LegacyPod, "write_packet", write_packet)
+    source = Pod8206HR("EXACT001", 10, use_d2xx=True, sample_rate=2000, probe=True)
+    try:
+        result = HardwareMonitor(3).preflight_device(source, attempts=2)
+        assert not result["ok"]
+        assert result["attempts_used"] == 2
+        assert "device reset failed" in result["error"]
+        assert not any(event[0] == "command" for event in fake_transport)
+        assert source._port is None
+    finally:
+        source.cleanup()
+
+
 def test_wrong_model_closes_handle_without_applying_settings(
     fake_transport, monkeypatch
 ):
