@@ -39,19 +39,24 @@ export function formatDuration(seconds) {
 
 /** Display-only: clocks never issue Stop or infer that cleanup has completed. */
 export function sessionTiming(session, now = Date.now()) {
+  // Session start is the first real HealthSink arrival, excluding startup delay.
   const started = timestampMs(session?.startedAt);
-  const ended = timestampMs(session?.endedAt);
+  const bounds = (session?.recordingBounds ?? []).map((bound) => ({
+    first: timestampMs(bound.first_sample_at), last: timestampMs(bound.last_sample_at),
+  })).filter(({ first, last }) => first !== null && last !== null && last >= first);
+  const firstSample = bounds.length ? Math.min(...bounds.map((bound) => bound.first)) : null;
+  const lastSample = bounds.length ? Math.max(...bounds.map((bound) => bound.last)) : null;
   const duration = session?.durationSeconds;
   const timed = Number.isSafeInteger(duration) && duration > 0 && duration <= maxDurationSeconds(started ?? now);
   const terminal = ["completed", "cancelled", "stopped"].includes(String(session?.lifecycle ?? "").toLowerCase());
   const stopping = String(session?.lifecycle ?? "").toLowerCase() === "stopping";
   const deadline = started !== null && timed ? started + duration * 1000 : null; //Calculate everything in miliseconds
-  const recordedSeconds = started !== null && ended !== null && ended >= started
-    ? (ended - started) / 1000 : null;
+  const recordedSeconds = firstSample !== null && lastSample !== null
+    ? (lastSample - firstSample) / 1000 : null;
   const remainingSeconds = deadline !== null && !terminal && !stopping
     ? Math.max(0, Math.ceil((deadline - now) / 1000)) : null;
   const recordedLabel = recordedSeconds !== null ? formatDuration(recordedSeconds)
-    : started === null && timed && !terminal ? "Waiting for data" : "Recording timing unavailable";
+    : timed && !terminal && !session?.recordingBounds?.length ? (started === null ? "Waiting for data" : "Waiting for recording") : "Recording timing unavailable";
   const remainingLabel = !timed ? null : terminal ? "Run ended" : stopping ? "Stopping"
     : started === null ? "Waiting for data"
       : remainingSeconds === 0 ? "Duration reached; awaiting stop confirmation" : formatDuration(remainingSeconds);
@@ -59,6 +64,8 @@ export function sessionTiming(session, now = Date.now()) {
     timed, // true for a valid duration limit; false for an unlimited/invalid duration.
     deadlineMs: deadline, // Unix timestamp in milliseconds, or null before data starts/without a valid limit.
     recordedLabel, // First-to-last recorded span ("0h 10m 00s")
+    firstSampleAt: firstSample,
+    lastSampleAt: lastSample,
     limitLabel: timed ? formatDuration(duration) : "Unlimited", // Requested duration ("0h 30m 00s"), or "Unlimited".
     remainingLabel, // Countdown ("0h 20m 00s"), a status message, or null for an unlimited run.
   };
@@ -82,7 +89,7 @@ export function sessionStopExplanation(session, operations = []) {
     label = terminal ? "Stopped by user" : "User stop requested";
     if (scheduled !== null && requestedAt !== null && requestedAt < scheduled && !session.startedAt) {
       label += " before scheduled start";
-    } else if (timing.timed && (!session.startedAt || (requestedAt !== null && deadline !== null && requestedAt < deadline))) {
+    } else if (timing.timed && (deadline === null || (requestedAt !== null && requestedAt < deadline))) {
       label += " before duration ended";
     }
   } else {

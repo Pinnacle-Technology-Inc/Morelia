@@ -367,6 +367,7 @@ export function deriveFlowStatus({
     return {
       lifecycle,
       tone: FlowTone.IDLE,
+      toneReasons: [`lifecycle:${lifecycle}`],
       flowing: false,
       unproven: false,
       headline: RESTING_HEADLINE[lifecycle] ?? lifecycle ?? "Unknown",
@@ -379,17 +380,22 @@ export function deriveFlowStatus({
   // Starting/Stopping are transitions: health hasn't stabilized yet, so it doesn't
   // get a vote until the session reaches Active.
   let tone = lifecycle === "Active" ? (HEALTH_TONE[health] ?? FlowTone.WARN) : FlowTone.WARN;
-  tone = worstTone(tone, ACTIVITY_TONE[activityState] ?? FlowTone.IDLE);
-  if (!detailAvailable) tone = worstTone(tone, FlowTone.WARN);
+  const toneSources = [{ tone, reason: lifecycle === "Active" ? `health:${health}` : `lifecycle:${lifecycle}` }];
+  const includeTone = (value, reason) => {
+    toneSources.push({ tone: value, reason });
+    tone = worstTone(tone, value);
+  };
+  includeTone(ACTIVITY_TONE[activityState] ?? FlowTone.IDLE, `activity:${activityState}`);
+  if (!detailAvailable) includeTone(FlowTone.WARN, "detail:unavailable");
   // Stream evidence becomes authoritative only after startup. During lifecycle
   // transitions, old rows describe the previous stable state and must not paint
   // Starting or Stopping as healthy, degraded, or failed.
   if (lifecycle === "Active") {
-    for (const row of streams) tone = worstTone(tone, row.tone);
+    for (const row of streams) includeTone(row.tone, `stream:${row.id}:${row.status}`);
   }
   // A quiet runtime is a floor, not a ceiling: it can never read green, but a
   // genuinely failed stream still outranks it.
-  if (unproven) tone = worstTone(tone, FlowTone.WARN);
+  if (unproven) includeTone(FlowTone.WARN, `outbox:${outboxHealth}`);
 
   const notes = [];
   if (phase) notes.push(`Phase: ${phase}.`);
@@ -407,6 +413,7 @@ export function deriveFlowStatus({
   return {
     lifecycle,
     tone,
+    toneReasons: toneSources.filter((source) => source.tone === tone).map((source) => source.reason),
     flowing: lifecycle !== "Stopping" && tone !== FlowTone.BAD,
     unproven,
     headline: streamHeadline({ lifecycle, tone, streams, unproven }),

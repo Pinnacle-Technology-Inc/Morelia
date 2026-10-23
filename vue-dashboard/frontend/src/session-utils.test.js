@@ -101,12 +101,15 @@ describe("session health resolution", () => {
   });
 });
 
-it("preserves authoritative sample timestamps and legacy nulls", () => {
+it("preserves arrival time, recorded bounds and unknown timing", () => {
+  const bounds = [{ source_id: "source", sink_id: "csv",
+    first_sample_at: "2026-09-23T11:59:58Z", last_sample_at: "2026-09-23T12:00:15Z" }];
   expect(normalizeSession({ id: 1, status: "active", duration_seconds: 60,
     started_at: "2026-09-23T12:00:00Z", ended_at: "2026-09-23T12:00:15Z",
-  })).toMatchObject({ durationSeconds: 60, startedAt: "2026-09-23T12:00:00Z", endedAt: "2026-09-23T12:00:15Z" });
+    recording_bounds: bounds,
+  })).toMatchObject({ durationSeconds: 60, startedAt: "2026-09-23T12:00:00Z", endedAt: "2026-09-23T12:00:15Z", recordingBounds: bounds });
   expect(normalizeSession({ id: 2, status: "completed", created_at: "2026-01-01T00:00:00Z" }))
-    .toMatchObject({ durationSeconds: null, startedAt: null, endedAt: null });
+    .toMatchObject({ durationSeconds: null, startedAt: null, endedAt: null, recordingBounds: [] });
 });
 
 describe("stop outcome presentation", () => {

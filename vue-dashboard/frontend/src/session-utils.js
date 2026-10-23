@@ -8,8 +8,7 @@ export const sessionTabs = [
 ];
 
 // The backend returns health from a current poller snapshot, or null when none exists.
-// Inactive sessions show "Not running". Running sessions without a current
-// report show "Not reporting".
+// Inactive sessions show "Not running". Running sessions without a current report show "Not reporting".
 export const SessionHealth = Object.freeze({
   NOT_RUNNING: "Not running",
   HEALTHY: "Healthy",
@@ -144,6 +143,7 @@ export function normalizeSession(session, fleetSession = {}) {
     experiment: session.experiment_id ? String(session.experiment_id) : null,
     scheduledTime: session.schedule?.start_at ?? null,
     durationSeconds: session.duration_seconds ?? null,
+    recordingBounds: Array.isArray(session.recording_bounds) ? session.recording_bounds : [],
     startedAt: session.started_at ?? null,
     endedAt: session.ended_at ?? null,
     fallbackPolicy: session.schedule?.fallback_policy ?? null,

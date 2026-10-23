@@ -3,13 +3,29 @@ import { durationSecondsFromMinutes, maxDurationSeconds, sessionTiming, sessionS
 
 const start = "2026-09-23T12:00:00Z";
 const at = (seconds) => Date.parse(start) + seconds * 1000;
-const run = { lifecycle: "Active", durationSeconds: 60, startedAt: start, endedAt: "2026-09-23T12:00:15Z" };
+const recorded = (first = start, last = "2026-09-23T12:00:15Z") => [
+  { source_id: "source", sink_id: "csv", first_sample_at: first, last_sample_at: last },
+];
+const run = { lifecycle: "Active", durationSeconds: 60, startedAt: start, recordingBounds: recorded() };
 
 describe("recorded span and display countdown", () => {
-  it("does not arm a duration before the first recorded sample", () => {
-    expect(sessionTiming({ ...run, startedAt: null, endedAt: null }, at(120))).toEqual({
+  it("starts the countdown on arrival while recording can still be pending", () => {
+    expect(sessionTiming({ ...run, recordingBounds: [] }, at(20)))
+      .toMatchObject({ remainingLabel: "0h 00m 40s", recordedLabel: "Waiting for recording" });
+    expect(sessionTiming({ ...run, startedAt: null }, at(20)))
+      .toMatchObject({ remainingLabel: "Waiting for data", recordedLabel: "0h 00m 15s" });
+  });
+
+  it("keeps receipt timing independent of legacy sample timestamps", () => {
+    expect(sessionTiming({ ...run, startedAt: "2026-09-23T12:00:10Z" }, at(20)))
+      .toMatchObject({ remainingLabel: "0h 00m 50s", recordedLabel: "0h 00m 15s" });
+  });
+
+  it("does not arm a duration before the first data arrival", () => {
+    expect(sessionTiming({ ...run, startedAt: null, recordingBounds: [] }, at(120))).toEqual({
       timed: true, deadlineMs: null, recordedLabel: "Waiting for data",
       limitLabel: "0h 01m 00s", remainingLabel: "Waiting for data",
+      firstSampleAt: null, lastSampleAt: null,
     });
   });
 
@@ -34,7 +50,7 @@ describe("recorded span and display countdown", () => {
   });
 
   it("shows final drain samples beyond the limit and does not tick completed spans", () => {
-    const completed = { ...run, lifecycle: "Completed", endedAt: "2026-09-23T12:01:04Z" };
+    const completed = { ...run, lifecycle: "Completed", recordingBounds: recorded(start, "2026-09-23T12:01:04Z") };
     expect(sessionTiming(completed, at(90))).toMatchObject({ recordedLabel: "0h 01m 04s", remainingLabel: "Run ended" });
     expect(sessionTiming(completed, at(300)).recordedLabel).toBe("0h 01m 04s");
   });
@@ -49,8 +65,15 @@ describe("recorded span and display countdown", () => {
   });
 
   it("preserves a real zero-length recording span and rejects reversed evidence", () => {
-    expect(sessionTiming({ ...run, endedAt: start }).recordedLabel).toBe("0h 00m 00s");
-    expect(sessionTiming({ ...run, endedAt: "2026-09-23T11:59:59Z" }).recordedLabel).toBe("Recording timing unavailable");
+    expect(sessionTiming({ ...run, recordingBounds: recorded(start, start) }).recordedLabel).toBe("0h 00m 00s");
+    expect(sessionTiming({ ...run, recordingBounds: recorded(start, "2026-09-23T11:59:59Z") }).recordedLabel).toBe("Recording timing unavailable");
+  });
+
+  it("uses all saved bounds and never substitutes session arrival for missing bounds", () => {
+    const recordingBounds = [...recorded(), ...recorded("2026-09-23T11:59:55Z", "2026-09-23T12:00:20Z")];
+    expect(sessionTiming({ ...run, recordingBounds }).recordedLabel).toBe("0h 00m 25s");
+    expect(sessionTiming({ ...run, lifecycle: "Completed", recordingBounds: [], endedAt: "2026-09-23T12:00:15Z" }).recordedLabel)
+      .toBe("Recording timing unavailable");
   });
 
   it("accepts durations above the signed 32-bit range", () => {

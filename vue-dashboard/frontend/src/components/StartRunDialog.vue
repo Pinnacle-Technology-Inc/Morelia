@@ -28,6 +28,7 @@ import {
 } from "../session-api";
 import {
   createDeviceConfigFromTemplate,
+  connectionErrorMessage,
   editDeviceConfig,
   isDeviceSelectable,
   loadDeviceConfig,
@@ -82,6 +83,7 @@ const devices = ref([]);
 const deviceTemplates = ref([]);
 const scanState = ref("idle");
 const scanError = ref("");
+const scanWarnings = ref([]);
 const defaultOutputFolder = ref("");
 
 // Which sink the folder picker is open for: { flowIndex, sinkIndex } or null.
@@ -506,8 +508,10 @@ function returnToCurrentTemplate(guidance = "") {
 async function rescanDevices() {
   scanState.value = "scanning";
   scanError.value = "";
+  scanWarnings.value = [];
   try {
     const pool = await loadDevicePool();
+    scanWarnings.value = pool.warnings ?? [];
     devices.value = pool.devices;
     // The planner ranks by physical compatibility and may suggest a config
     // whose settings belong to another template. Do not leave that row looking
@@ -666,7 +670,7 @@ async function configureDevice(flowIndex, device) {
   const template = deviceTemplateForFlow(flowIndex);
   const hardwareId = device.hardwareId;
   const port = device.port;
-  if (!template || !hardwareId || !port) {
+  if (!template || !hardwareId) {
     scanError.value = "This device cannot be configured because the stream template or hardware details are unavailable.";
     return;
   }
@@ -680,6 +684,7 @@ async function configureDevice(flowIndex, device) {
       template_name: template.name,
       hardware_id: hardwareId,
       port,
+        connection: device.connection || { preference: "auto" },
       nickname: device.nickname,
     });
     await rescanDevices();
@@ -943,6 +948,16 @@ watch(() => props.templateId, load);
                   @rescan="rescanDevices"
                 >
                   <template #heading><h4>Pick a device for this stream</h4></template>
+                  <template #notices>
+                    <section v-if="scanWarnings.length" class="scan-warnings" role="status" aria-label="Scan warnings">
+                      <strong>Scan warnings</strong>
+                      <ul>
+                        <li v-for="(warning, index) in scanWarnings" :key="`${warning.transport ?? 'scan'}:${warning.code ?? index}:${index}`">
+                          <strong v-if="warning.transport">{{ warning.transport.toUpperCase() }}: </strong>{{ connectionErrorMessage(warning) }}
+                        </li>
+                      </ul>
+                    </section>
+                  </template>
                 </DeviceScanTable>
 
                 <h4 class="sink-heading">Sink destinations</h4>
@@ -1001,7 +1016,7 @@ watch(() => props.templateId, load);
             <div class="section-heading"><div><span class="section-kicker">Timing</span><h3>Create and start</h3></div></div>
             <fieldset class="run-mode">
               <label><input v-model="runMode" type="radio" value="start" /><span><strong>Start now</strong><small>Validate and start this run in one request.</small></span></label>
-              <label><input v-model="runMode" type="radio" value="timed" /><span><strong>Run now for a duration</strong><small>Stop automatically after the first recorded data starts the timer.</small></span></label>
+              <label><input v-model="runMode" type="radio" value="timed" /><span><strong>Run now for a duration</strong><small>Stop automatically after the first data arrival starts the timer.</small></span></label>
               <label><input v-model="runMode" type="radio" value="schedule" /><span><strong>Schedule for later</strong><small>Save one future run without claiming hardware now.</small></span></label>
             </fieldset>
             <label v-if="runMode === 'timed'" class="field schedule-field">
@@ -1395,6 +1410,17 @@ watch(() => props.templateId, load);
 .schedule-field {
   max-width: 24rem;
   margin-top: var(--space-4);
+}
+.scan-warnings {
+  margin: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  background: var(--surface-sage);
+}
+.scan-warnings ul {
+  margin: var(--space-2) 0 0;
+  padding-left: var(--space-4);
 }
 .notice-detail {
   display: block;
